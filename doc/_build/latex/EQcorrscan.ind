@@ -1,0 +1,63 @@
+\begin{theindex}
+\def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
+
+  \bigletter {Symbols}
+  \item \_channel\_loop() (in module match\_filter), \hyperpage{16}
+  \item \_node\_loop() (in module bright\_lights), \hyperpage{13}
+  \item \_read\_tt() (in module bright\_lights), \hyperpage{13}
+  \item \_resample\_grid() (in module bright\_lights), \hyperpage{14}
+  \item \_template\_gen() (in module template\_gen), \hyperpage{15}
+  \item \_template\_loop() (in module match\_filter), \hyperpage{16}
+
+  \indexspace
+  \bigletter B
+  \item blanksfile() (in module Sfile\_util), \hyperpage{9}
+  \item bright\_lights (module), \hyperpage{13}
+  \item brightness() (in module bright\_lights), \hyperpage{14}
+
+  \indexspace
+  \bigletter D
+  \item DETECTION (class in match\_filter), \hyperpage{16}
+
+  \indexspace
+  \bigletter F
+  \item find\_peaks() (in module findpeaks), \hyperpage{10}
+  \item find\_peaks2() (in module findpeaks), \hyperpage{10}
+  \item findpeaks (module), \hyperpage{10}
+  \item float\_conv() (in module Sfile\_util), \hyperpage{9}
+  \item from\_contbase() (in module template\_gen), \hyperpage{15}
+  \item from\_sfile() (in module template\_gen), \hyperpage{15}
+
+  \indexspace
+  \bigletter I
+  \item int\_conv() (in module Sfile\_util), \hyperpage{9}
+
+  \indexspace
+  \bigletter M
+  \item match\_filter (module), \hyperpage{15}
+  \item match\_filter() (in module match\_filter), \hyperpage{17}
+  \item match\_filter\_par (module), \hyperpage{11}
+
+  \indexspace
+  \bigletter N
+  \item normxcorr2() (in module match\_filter), \hyperpage{17}
+
+  \indexspace
+  \bigletter P
+  \item PICK (class in Sfile\_util), \hyperpage{9}
+  \item populateSfile() (in module Sfile\_util), \hyperpage{9}
+
+  \indexspace
+  \bigletter R
+  \item readwavename() (in module Sfile\_util), \hyperpage{9}
+
+  \indexspace
+  \bigletter S
+  \item Sfile\_util (module), \hyperpage{9}
+
+  \indexspace
+  \bigletter T
+  \item template\_gen (module), \hyperpage{14}
+  \item template\_gen\_par (module), \hyperpage{11}
+
+\end{theindex}

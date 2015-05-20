@@ -1,0 +1,27 @@
+\indexentry{Sfile\_util (module)|hyperpage}{9}
+\indexentry{PICK (class in Sfile\_util)|hyperpage}{9}
+\indexentry{blanksfile() (in module Sfile\_util)|hyperpage}{9}
+\indexentry{float\_conv() (in module Sfile\_util)|hyperpage}{9}
+\indexentry{int\_conv() (in module Sfile\_util)|hyperpage}{9}
+\indexentry{populateSfile() (in module Sfile\_util)|hyperpage}{9}
+\indexentry{readwavename() (in module Sfile\_util)|hyperpage}{9}
+\indexentry{findpeaks (module)|hyperpage}{10}
+\indexentry{find\_peaks() (in module findpeaks)|hyperpage}{10}
+\indexentry{find\_peaks2() (in module findpeaks)|hyperpage}{10}
+\indexentry{match\_filter\_par (module)|hyperpage}{11}
+\indexentry{template\_gen\_par (module)|hyperpage}{11}
+\indexentry{bright\_lights (module)|hyperpage}{13}
+\indexentry{\_node\_loop() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_read\_tt() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_resample\_grid() (in module bright\_lights)|hyperpage}{14}
+\indexentry{brightness() (in module bright\_lights)|hyperpage}{14}
+\indexentry{template\_gen (module)|hyperpage}{14}
+\indexentry{\_template\_gen() (in module template\_gen)|hyperpage}{15}
+\indexentry{from\_contbase() (in module template\_gen)|hyperpage}{15}
+\indexentry{from\_sfile() (in module template\_gen)|hyperpage}{15}
+\indexentry{match\_filter (module)|hyperpage}{15}
+\indexentry{DETECTION (class in match\_filter)|hyperpage}{16}
+\indexentry{\_channel\_loop() (in module match\_filter)|hyperpage}{16}
+\indexentry{\_template\_loop() (in module match\_filter)|hyperpage}{16}
+\indexentry{match\_filter() (in module match\_filter)|hyperpage}{17}
+\indexentry{normxcorr2() (in module match\_filter)|hyperpage}{17}

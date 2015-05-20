@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Ownership Management &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="ownership-management">
+<h1>2. Ownership Management<a class="headerlink" href="#ownership-management" title="Permalink to this headline">¶</a></h1>
+<p>Among the various types of instances interactions, sometimes an object
+may be <em>owned</em> by another object, so that the owner is responsible for
+destroying the owned object, like in Qt&#8217;s object system <a class="footnote-reference" href="#id2" id="id1">[1]</a>.
+This kind of relationship has a big role on interfacing with the target language, like
+with Python&#8217;s reference counting.</p>
+<div class="section" id="ownership-transfers">
+<h2>2.1. Ownership transfers<a class="headerlink" href="#ownership-transfers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="from-c-to-target">
+<h3>2.1.1. From C++ to target<a class="headerlink" href="#from-c-to-target" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>When an object that is currently owned by C++ has its ownership transfered
+back to the target language, the binding can know for sure when the object will be deleted and
+tie the C++ instance existence to the wrapper, calling the C++ destructor normally when the
+wrapper is deleted.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;modify-argument</span> <span class="na">index=</span><span class="s">&quot;1&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;define-ownership</span> <span class="na">class=</span><span class="s">&quot;target&quot;</span> <span class="na">owner=</span><span class="s">&quot;target&quot;</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/modify-argument&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="from-target-to-c">
+<h3>2.1.2. From target to C++<a class="headerlink" href="#from-target-to-c" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>In the opposite direction,when an object ownership is transfered from the target language
+to C++, the native code takes full control of the object life and you don&#8217;t
+know when that object will be deleted, rendering the wrapper object invalid,
+unless you&#8217;re wrapping an object with a virtual destructor,
+so you can override it and be notified of its destruction.</p>
+<p>By default it&#8217;s safer to just render the wrapper
+object invalid and raise some error if the user tries to access
+one of this objects members or pass it as argument to some function, to avoid unpleasant segfaults.
+Also you should avoid calling the C++ destructor when deleting the wrapper.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;modify-argument</span> <span class="na">index=</span><span class="s">&quot;1&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;define-ownership</span> <span class="na">class=</span><span class="s">&quot;target&quot;</span> <span class="na">owner=</span><span class="s">&quot;c++&quot;</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/modify-argument&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="parent-child-relationship">
+<h2>2.2. Parent-child relationship<a class="headerlink" href="#parent-child-relationship" title="Permalink to this headline">¶</a></h2>
+<p>One special type of relationship is the parent-child. When an object is called
+the parent of another object (the child), the former is in charge of deleting its
+child when deleted and the target language can trust that the child will be alive
+as long as the parent is, unless some other method can take the C++ ownership away from the parent.</p>
+<p>One of the main uses of this scheme is Qt&#8217;s object system, with ownership among QObject-derived
+classes, creating &#8220;trees&#8221; of instances.</p>
+<blockquote>
+<div><div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;modify-argument</span> <span class="na">index=</span><span class="s">&quot;this&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;parent</span> <span class="na">index=</span><span class="s">&quot;1&quot;</span> <span class="na">action=</span><span class="s">&quot;add&quot;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/modify-argument&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>In this example, the instance with the method that is being invoked (indicated by &#8216;index=&#8221;this&#8221;&#8217; on
+modify-argument) will be marked as a child
+of the first argument using the <cite>parent</cite> tag. To remove ownership, just use &#8220;remove&#8221; in the action attribute. <strong>Removing
+parentship also transfers the ownership back to python.</strong></p>
+</div>
+<div class="section" id="invalidation-after-use">
+<h2>2.3. Invalidation after use<a class="headerlink" href="#invalidation-after-use" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes an object is created as a virtual method call argument and destroyed after the
+call returned. In this case, you should use the <code class="docutils literal"><span class="pre">invalidate-after-use</span></code> attribute in the
+<code class="docutils literal"><span class="pre">modify-argument</span></code> tag to mark the wrapper as invalid right after the virtual method returns.</p>
+<blockquote>
+<div><div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;modify-argument</span> <span class="na">index=</span><span class="s">&quot;2&quot;</span> <span class="na">invalidate-after-use=</span><span class="s">&quot;yes&quot;</span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>In this example the second argument will be invalidated after this method call.</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>See <em>Object Trees and Object Ownership</em> <a class="reference external" href="http://doc.trolltech.com/4.5/objecttrees.html">http://doc.trolltech.com/4.5/objecttrees.html</a></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Ownership Management</a><ul>
+<li><a class="reference internal" href="#ownership-transfers">2.1. Ownership transfers</a><ul>
+<li><a class="reference internal" href="#from-c-to-target">2.1.1. From C++ to target</a></li>
+<li><a class="reference internal" href="#from-target-to-c">2.1.2. From target to C++</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#parent-child-relationship">2.2. Parent-child relationship</a></li>
+<li><a class="reference internal" href="#invalidation-after-use">2.3. Invalidation after use</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../_sources/build/pyside/sources/shiboken/ApiExtractor/doc/ownership.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../_sources/build/pyside/sources/shiboken/ApiExtractor/doc/ownership.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

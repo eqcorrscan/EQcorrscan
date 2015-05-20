@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>makeSfile &mdash; EQcorrscan 0.0.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>makeSfile</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for makeSfile</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Code to generate an empty s-file in nordic format for a given input waveform</span>
+<span class="sd">file.  Use to replace seisan&#39;s autoreg with a tool that doesn&#39;t require</span>
+<span class="sd">interactive responses</span>
+
+<span class="sd">v0.1 - Beginning writing in Paris-Orly airport while very sleepy</span>
+<span class="sd">v1.0 - Finished and working, impliments everything desired at this point</span>
+<span class="sd">v2.0 - Implimented writing picks to s-file and included picks class</span>
+
+<span class="sd">Calum John Chamberlain, Victoria University of Wellington - 11/11/2014</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PICK"><a class="viewcode-back" href="../index.html#makeSfile.PICK">[docs]</a><span class="k">class</span> <span class="nc">PICK</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pick information for seisan implimentation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
+    <span class="n">pickcount</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">impulsivity</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">polarity</span><span class="p">,</span>
+                 <span class="n">time</span><span class="p">,</span> <span class="n">coda</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">peri</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">AIN</span><span class="p">,</span> <span class="n">SNR</span><span class="p">,</span>
+                 <span class="n">azimuthres</span><span class="p">,</span> <span class="n">timeres</span><span class="p">,</span> <span class="n">finalweight</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">CAZ</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">=</span><span class="n">station</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulsivity</span><span class="o">=</span><span class="n">impulsivity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase</span><span class="o">=</span><span class="n">phase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">=</span><span class="n">weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polarity</span><span class="o">=</span><span class="n">polarity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">=</span><span class="n">time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coda</span><span class="o">=</span><span class="n">coda</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peri</span><span class="o">=</span><span class="n">peri</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">azimuth</span><span class="o">=</span><span class="n">azimuth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="o">=</span><span class="n">velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">AIN</span><span class="o">=</span><span class="n">AIN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SNR</span><span class="o">=</span><span class="n">SNR</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">azimuthres</span><span class="o">=</span><span class="n">azimuthres</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeres</span><span class="o">=</span><span class="n">timeres</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finalweight</span><span class="o">=</span><span class="n">finalweight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="o">=</span><span class="n">distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CAZ</span><span class="o">=</span><span class="n">CAZ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pickcount</span><span class="o">+=</span><span class="mi">1</span>
+
+</div>
+<div class="viewcode-block" id="blanksfile"><a class="viewcode-back" href="../modules.html#makeSfile.blanksfile">[docs]</a><span class="k">def</span> <span class="nf">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span><span class="n">evtype</span><span class="p">,</span><span class="n">userID</span><span class="p">,</span><span class="n">outdir</span><span class="p">,</span><span class="n">overwrite</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Module to generate an empty s-file with a populated header for a given</span>
+<span class="sd">    waveform.</span>
+
+<span class="sd">###############################################################################</span>
+
+<span class="sd">    # Arguments are the path of a wavefile (multiplexed miniseed file required)</span>
+<span class="sd">    # Event type (L,R,D) and user ID (four characters as used in seisan)</span>
+
+<span class="sd">###############################################################################</span>
+
+<span class="sd">    # Example s-file format:</span>
+<span class="sd">    # 2014  719  617 50.2 R                                                         1</span>
+<span class="sd">    # ACTION:ARG 14-11-11 10:53 OP:CALU STATUS:               ID:20140719061750     I</span>
+<span class="sd">    # 2014/07/2014-07-19-0617-50.SAMBA_030_00                                       6</span>
+<span class="sd">    # STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+    <span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span><span class="nn">os</span><span class="o">,</span> <span class="nn">datetime</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Wavefile: &#39;</span><span class="o">+</span><span class="n">wavefile</span><span class="o">+</span><span class="s">&#39; is invalid, try again with real data.&#39;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="c"># Check that user ID is the correct length</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">userID</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;User ID must be 4 characters long&#39;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="c"># Check that outdir exists</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&#39;Out path does not exist, I will not create this: &#39;</span><span class="o">+</span><span class="n">outdir</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="c"># Check that evtype is one of L,R,D</span>
+    <span class="k">if</span> <span class="n">evtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;L&#39;</span><span class="p">,</span><span class="s">&#39;R&#39;</span><span class="p">,</span><span class="s">&#39;D&#39;</span><span class="p">]:</span>
+        <span class="k">print</span> <span class="s">&#39;Event type must be either L, R or D&#39;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="c"># Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm</span>
+    <span class="n">sfilename</span><span class="o">=</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">second</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">evtype</span><span class="o">+</span><span class="s">&#39;.S&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c"># Check is sfilename exists</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">)</span> <span class="ow">and</span> <span class="n">overwrite</span><span class="o">==</span><span class="s">&#39;False&#39;</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Desired sfilename: &#39;</span><span class="o">+</span><span class="n">sfilename</span><span class="o">+</span><span class="s">&#39; exists, will not overwrite&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">sfilename</span><span class="o">=</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">second</span><span class="o">+</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">evtype</span><span class="o">+</span><span class="s">&#39;.S&#39;</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Tried generated files up to 10s in advance and found they&#39;</span>
+            <span class="k">print</span> <span class="s">&#39;all exist, you need to clean your stuff up!&#39;</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="c"># sys.exit()</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="c"># Write line 1 of s-file</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">second</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+            <span class="n">evtype</span><span class="o">+</span><span class="s">&#39;1&#39;</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">58</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="c"># Write line 2 of s-file</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; ACTION:ARG &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">year</span><span class="p">)[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; OP:&#39;</span><span class="o">+</span>\
+            <span class="n">userID</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; STATUS:&#39;</span><span class="o">+</span><span class="s">&#39;ID:&#39;</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">second</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+            <span class="s">&#39;I&#39;</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="c"># Write line 3 of s-file</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">wavefile</span><span class="o">+</span><span class="s">&#39;6&#39;</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">79</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">wavefile</span><span class="p">))</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="c"># Write final line of s-file</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU&#39;</span><span class="o">+</span>\
+            <span class="s">&#39; VELO AIN AR TRES W  DIS CAZ7</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&#39;Written s-file: &#39;</span><span class="o">+</span><span class="n">sfilename</span>
+    <span class="k">return</span> <span class="n">sfilename</span>
+</div>
+<div class="viewcode-block" id="populateSfile"><a class="viewcode-back" href="../modules.html#makeSfile.populateSfile">[docs]</a><span class="k">def</span> <span class="nf">populateSfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="n">picks</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Module to populate a blank nordic format S-file with pick information,</span>
+<span class="sd">    arguments required are the filename of the blank s-file and the picks</span>
+<span class="sd">    where picks is a dictionary of picks including station, channel,</span>
+<span class="sd">    impulsivity, phase, weight, polarity, time, coda, amplitude, peri, azimuth,</span>
+<span class="sd">    velocity, SNR, azimuth residual, Time-residual, final weight,</span>
+<span class="sd">    epicentral distance &amp; azimuth from event to station.</span>
+
+<span class="sd">    This is a full pick line information from the seisan manual, P. 341</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="c"># Find type 7 line, under which picks should be - if there are already</span>
+    <span class="c"># picks there we should preserve them</span>
+    <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">body</span><span class="o">=</span><span class="s">&#39;&#39;</span>
+    <span class="n">header</span><span class="o">=</span><span class="s">&#39;&#39;</span>
+    <span class="k">if</span> <span class="s">&#39;headerend&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="k">del</span> <span class="n">headerend</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">identifier</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">79</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;headerend&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">body</span><span class="o">+=</span><span class="n">line</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">header</span><span class="o">+=</span><span class="n">line</span>
+        <span class="k">if</span> <span class="n">identifier</span><span class="o">==</span><span class="s">&#39;7&#39;</span><span class="p">:</span>
+            <span class="n">headerend</span><span class="o">=</span><span class="n">lineno</span>
+        <span class="n">lineno</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="c">#</span>
+    <span class="c"># Now generate lines for the new picks</span>
+    <span class="n">newpicks</span><span class="o">=</span><span class="s">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
+        <span class="n">newpicks</span><span class="o">+=</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
+                <span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">impulsivity</span><span class="o">+</span>\
+                <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                <span class="n">pick</span><span class="o">.</span><span class="n">polarity</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span>\
+                <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">coda</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">amplitude</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">peri</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">azimuth</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">velocity</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">AIN</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">azimuthres</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">timeres</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">finalweight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">CAZ</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; </span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="c"># Write all new and old info back in</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">newpicks</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c"># Read arguments</span>
+    <span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Requires 5 arguments: wavefile, evtype, userID, outdir, overwrite&#39;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wavefile</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">evtype</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">userID</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">outdir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+    <span class="n">sfilename</span><span class="o">=</span><span class="n">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span><span class="n">evtype</span><span class="p">,</span><span class="n">userID</span><span class="p">,</span><span class="n">outdir</span><span class="p">,</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">sfilename</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

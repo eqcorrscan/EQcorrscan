@@ -1,0 +1,14 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction to the EQcorrscan package}{}
+\BOOKMARK [1][-]{section.1.1}{Installation}{chapter.1}
+\BOOKMARK [1][-]{section.1.2}{Functions}{chapter.1}
+\BOOKMARK [0][-]{chapter.2}{EQcorrscan tutorial}{}
+\BOOKMARK [0][-]{chapter.3}{Utils}{}
+\BOOKMARK [1][-]{section.3.1}{Sfile\137util}{chapter.3}
+\BOOKMARK [1][-]{section.3.2}{findpeaks}{chapter.3}
+\BOOKMARK [0][-]{chapter.4}{Par}{}
+\BOOKMARK [0][-]{chapter.5}{Core}{}
+\BOOKMARK [1][-]{section.5.1}{bright\137lights}{chapter.5}
+\BOOKMARK [1][-]{section.5.2}{template\137gen}{chapter.5}
+\BOOKMARK [1][-]{section.5.3}{match\137filter}{chapter.5}
+\BOOKMARK [0][-]{section*.26}{Python Module Index}{}
+\BOOKMARK [0][-]{section*.27}{Index}{}

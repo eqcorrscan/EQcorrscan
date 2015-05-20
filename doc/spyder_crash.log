@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/spyderlib/spyder.py", line 1922, in main
+    getRootModules()
+  File "/usr/lib/python2.7/dist-packages/spyderlib/utils/module_completion.py", line 43, in getRootModules
+    modules += moduleList(path)
+  File "/usr/lib/python2.7/dist-packages/spyderlib/utils/module_completion.py", line 76, in moduleList
+    if os.path.exists(os.path.join(path, p,'__init__.py'))\
+  File "/usr/lib/python2.7/genericpath.py", line 18, in exists
+    os.stat(path)
+KeyboardInterrupt
