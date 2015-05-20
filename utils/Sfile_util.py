@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Part of the rt2detection module to read nordic format s-files and write them
+Part of the EQcorrscan module to read nordic format s-files and write them
 EQcorrscan is a python module designed to run match filter routines for
 seismology, within it are routines for integration to seisan and obspy.
 With obspy integration (which is necessary) all main waveform formats can be
