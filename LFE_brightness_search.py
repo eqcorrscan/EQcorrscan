@@ -110,11 +110,12 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
             print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'*'
-            if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'):
-                if not 'stream' in locals():
-                    stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*')
-                else:
-                    stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*')
+            for chan in ['N','E','1','2']: # only take horizontal components
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*'):
+                    if not 'stream' in locals():
+                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
+                    else:
+                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
     else:
         for station in stations:
             fname='test_data/'+station+'-*-'+str(day.year)+\
