@@ -18,6 +18,23 @@ processing of the data using obspy modules (which also rely on scipy and numpy).
 from obspy import read, UTCDateTime
 from obspy.signal.filter import bandpass
 
+def _check_daylong(tr):
+    """
+    Function to check the data quality of the daylong file - check to see that
+    the day isn't just zeros, with large steps, if it is then the resampling will
+    hate it.
+
+    :type tr: obspy.Trace
+
+    :return qual: bool
+    """
+    import numpy as np
+    if len(tr.data)-len(np.nonzero(tr.data)) < 0.5*len(tr.data):
+        qual=False
+    else:
+        qual=True
+    return qual
+
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug):
     """
     Basic function to bandpass, downsample.  Works in place
@@ -38,6 +55,12 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug):
     for tr in st:
         if debug > 4:
             tr.plot()
+        # Check data quality first
+        qual=_check_daylong(tr)
+        if not qual:
+            msg="Data have more zeros than actual data, please check the raw" +\
+                    "data set-up and manually sort it"
+            raise ValueError(msg)
         # Check sampling rate and resample
         if tr.stats.sampling_rate != samp_rate:
             tr.resample(samp_rate)
@@ -85,6 +108,12 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
         print 'Working on: '+tr.stats.station+'.'+tr.stats.channel
     if debug >= 4:
         tr.plot()
+    # Do a brute force quality check
+    qual=_check_daylong(tr)
+    if not qual:
+        msg="Data have more zeros than actual data, please check the raw" +\
+                "data set-up and manually sort it"
+        raise ValueError(msg)
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         if debug>=2:
