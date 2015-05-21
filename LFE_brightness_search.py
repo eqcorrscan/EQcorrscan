@@ -75,9 +75,9 @@ lats=[]
 longs=[]
 depths=[]
 for node in nodes:
-    lats.append(node[0])
-    longs.append(node[1])
-    depths.append(node[2])
+    lats.append(float(node[0]))
+    longs.append(float(node[1]))
+    depths.append(float(node[2]))
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 fig = plt.figure()
@@ -134,6 +134,7 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
                                         templatedef.filter_order, templatedef.samp_rate,\
                                         matchdef.debug, day)
     if not Prep:
+        print "Running the detection routine"
         templates+=bright_lights.brightness(stations, nodes, lags, stream,\
                         brightdef.threshold, brightdef.thresh_type)
     else:
