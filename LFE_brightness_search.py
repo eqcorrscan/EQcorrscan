@@ -65,6 +65,25 @@ stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,
                                                      alllags,
                                                      brightdef.volume,
                                                      brightdef.resolution)
+# Remove lags that have a similar network moveout, e.g. the sum of the
+# differences in moveouts is small.
+print "Removing simlar lags"
+stations, nodes, lags = bright_lights._rm_similarlags(stations, nodes, lags,
+                                                      brightdef.nodesimthresh)
+print "Plotting new grid"
+lats=[]
+longs=[]
+depths=[]
+for node in nodes:
+    lats.append(node[0])
+    longs.append(node[1])
+    depths.append(node[2])
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(lats, longs, depths)
+plt.show()
 # Call the main function!
 templates=[]
 for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop through dates

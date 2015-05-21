@@ -15,10 +15,10 @@ stations=['EORO','WHYM','COSA','FOZ',
 
 nllpath='./grid'                       # Path to nonlinloc .csv grid files of
                                         # travel times
-#volume=[(-43.8,-43.55),
-#         (169.5,170.05),
-#         (15,40)]
-volume=[(-43.8,-43.78),(169.5,169.52),(15,18)]
+# volume=[(-43.8,-43.55),
+        # (169.5,170.05),
+        # (15,40)]
+volume=[(-43.8,-43.65),(169.5,169.65),(15,20)]
                                         # List of tuples in the form:
                                         # [(minlat,maxlat),(minlong,laxlong),
                                         # (mindepth,maxdepth)]
@@ -40,3 +40,7 @@ thresh_type='MAD'                       # Threshold type, can be either MAD
 phase='S'                               # Can be either P or S, will use this
                                         # when reading in the travel-time
                                         # grids.
+nodesimthresh=0.0625                    # Minimum cumulative difference in
+                                        # network moveout, should be about the
+                                        # period of twice the maximum frequency
+                                        # of the signal you want to detect
