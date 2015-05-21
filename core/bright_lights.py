@@ -83,10 +83,10 @@ def _read_tt(path, stations, phase):
             traveltime.append(float(row[3]))
         traveltime=np.array(traveltime)
         lags=traveltime-min(traveltime)
-        if 'alllags' in locals():
-            alllags=np.concatenate((alllags,[lags]), axis=0)
-        else:
+        if not 'alllags' in locals():
             alllags=[lags]
+        else:
+            alllags=np.concatenate((alllags,[lags]), axis=0)
         allnodes=nodes  # each element of allnodes should be the same as the
                         # other one, e.g. for each station the grid must be the
                         # same, hence allnodes=nodes
@@ -227,15 +227,16 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
             for tr in st:
                 lagged_data=tr.data[int(lag*tr.stats.sampling_rate):]
                 pad=np.zeros(int(lag*tr.stats.sampling_rate))
-                lagged_data=np.concatenate((pad,lagged_data))
+                lagged_energy=np.square(np.concatenate((pad,lagged_data)))
                 if not 'energy' in locals():
-                    energy=(np.square(lagged_data)/np.sqrt(np.mean(np.square(np.square(lagged_data))))).reshape(1,len(tr.data))
+                    energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
                 else:
                     # Apply lag to data and add it to energy - normalize the data here
-                    energy=np.concatenate((energy,(np.square(lagged_data)/np.sqrt(np.mean(np.square(np.square(lagged_data))))).reshape(1,len(tr.data))), axis=0)
-                    energy=np.sum(energy, axis=0)
-#    plt.plot(energy)
-#    plt.show()
+                    energy=np.concatenate((energy,(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))), axis=0)
+                    energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
+    energy=energy.reshape(len(lagged_energy),)
+    # plt.plot(energy)
+    # plt.show()
     print 'Finding detection for node: '+str(node)
     if 'energy' in locals():
         if thresh_type=='MAD':
@@ -291,13 +292,13 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     from par import template_gen_par as defaults
     from joblib import Parallel, delayed
     from utils.Sfile_util import PICK
-    import numpy as np, sys
+    import sys
     from copy import deepcopy
     from obspy import read as obsread
     #from joblib.pool import has_shareable_memory
     detections=[]
     detect_lags=[]
-    parallel=True
+    parallel=False
     # Loop through each node in the input
     # Linear run
     if not parallel:
