@@ -147,6 +147,56 @@ def _resample_grid(stations, nodes, lags, volume, resolution):
 
     return stations, resamp_nodes, resamp_lags
 
+def _rm_similarlags(stations, nodes, lags, threshold):
+    """
+    Function to remove those nodes that have a very similar network moveout
+    to another lag.
+
+    Will, for each node, calculate the difference in lagtime at each station
+    at every node, then sum these for each node to get a cumulative difference
+    in network moveout.  This will result in an array of arrays with zeros on
+    the diagonal.
+
+    :type stations: list
+    :param stations: List of station names from in the form where stations[i]\
+    refers to nodes[i][:] and lags[i][:]
+    :type nodes: list, tuple
+    :param nodes: List of node points where nodes[i] referes to stations[i] and\
+    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\
+    degrees, nodes[:][:][2] is depth in km.
+    :type lags: :class: 'numpy.array'
+    :param lags: Array of arrays where lags[i][:] refers to stations[i].\
+    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds
+    :type threhsold: float
+    :param threshold: Threshold for removal in seconds
+
+    :returns: list stations, list of lists of tuples nodes, :class: \
+    'numpy.array' lags station[1] refers to nodes[1] and lags[1]\
+    nodes[1][1] refers to station[1] and lags[1][1]\
+    nodes[n][n] is a tuple of latitude, longitude and depth.
+    """
+    import numpy as np
+    import sys
+    netdif=abs((lags.T-lags.T[0]).sum(axis=1).reshape(1,len(nodes)))>threshold
+    for i in xrange(len(nodes)):
+        netdif=np.concatenate((netdif, \
+                               abs((lags.T-lags.T[i]).sum(axis=1).reshape(1,len(nodes)))>threshold),\
+                              axis=0)
+        sys.stdout.write("\r"+str(float(i)/len(nodes)*100)+"% \r")
+        sys.stdout.flush()
+    nodes_out=[nodes[0]]
+    node_indeces=[0]
+    print "\n"
+    print len(nodes)
+    for i in xrange(1,len(nodes)):
+        if np.all(netdif[i][node_indeces]):
+            node_indeces.append(i)
+            nodes_out.append(nodes[i])
+    lags_out=lags.T[node_indeces].T
+    print "Removed "+str(len(nodes)-len(nodes_out))+" duplicate nodes"
+    return stations, nodes_out, lags_out
+
+
 def _node_loop(stations, node, lags, stream, threshold, thresh_type):
     """
     Internal function to allow for parallelisation of brightness
