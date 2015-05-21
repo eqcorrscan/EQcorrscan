@@ -228,15 +228,12 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
                 lagged_data=tr.data[int(lag*tr.stats.sampling_rate):]
                 pad=np.zeros(int(lag*tr.stats.sampling_rate))
                 lagged_data=np.concatenate((pad,lagged_data))
-                if 'energy' in locals():
-                    # Apply lag to data and add it to energy
-                    energy=[energy,np.square(lagged_data)]
-                    #print 'Second - Energy is shaped: '+str(np.shape(energy))
-                    energy=np.sum(energy, axis=0)
-                    #print 'Third - Energy is shaped: '+str(np.shape(energy))
+                if not 'energy' in locals():
+                    energy=(np.square(lagged_data)/np.sqrt(np.mean(np.square(np.square(lagged_data))))).reshape(1,len(tr.data))
                 else:
-                    energy=np.square(lagged_data)
-                    #print 'First - Energy is shaped: '+str(np.shape(energy))
+                    # Apply lag to data and add it to energy - normalize the data here
+                    energy=np.concatenate((energy,(np.square(lagged_data)/np.sqrt(np.mean(np.square(np.square(lagged_data))))).reshape(1,len(tr.data))), axis=0)
+                    energy=np.sum(energy, axis=0)
 #    plt.plot(energy)
 #    plt.show()
     print 'Finding detection for node: '+str(node)
