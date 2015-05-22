@@ -44,5 +44,5 @@ swin='all'                          # Boolean, use s-picks or not, if True the
                                     # used for stations with p-picks.
 saveloc='./templates'               # Location to save the templates to in
                                     # miniseed format
-debug=4                             # Debugging level from 0-5 with 5 being most
+debug=3                             # Debugging level from 0-5 with 5 being most
                                     # verbose

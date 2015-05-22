@@ -129,3 +129,28 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     else:
         plt.show()
     return
+
+def threeD_gridplot(nodes):
+    """
+    Function to plot in 3D a series of grid points.
+
+    :type nodes: List of tuples
+    :param nodes: List of tuples of the form (lat, long, depth)
+    """
+    lats=[]
+    longs=[]
+    depths=[]
+    for node in nodes:
+        lats.append(float(node[0]))
+        longs.append(float(node[1]))
+        depths.append(float(node[2]))
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(lats, longs, depths)
+    ax.set_ylabel("Latitude (deg)")
+    ax.set_xlabel("Longitude (deg)")
+    ax.set_zlabel("Depth(km)")
+    plt.show()
+    return
