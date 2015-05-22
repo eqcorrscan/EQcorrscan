@@ -197,7 +197,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     return stations, nodes_out, lags_out
 
 
-def _node_loop(stations, node, lags, stream, threshold, thresh_type):
+def _node_loop(stations, node, lags, stream):
     """
     Internal function to allow for parallelisation of brightness
 
@@ -205,14 +205,10 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
     :type node: tuple
     :type lags: list
     :type stream: :class: `obspy.Stream`
-    :type threshold: float
-    :type thresh_type: str
+
+    :return: energy (np.array), node (tuple), realstations (list of stations actaully used)
     """
     import numpy as np
-    from utils import findpeaks
-    from par import template_gen_par as defaults
-    from core.match_filter import DETECTION
-    realstations=[]
     i=0
     # Print what node we are working on as a check that things are happening!
     print 'Running the brightness function for: '+str(node)
@@ -222,7 +218,6 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
         lag=lags[i]
         # Loop through channels
         if st:
-            realstations.append(station)
             for tr in st:
                 lagged_data=tr.data[int(lag*tr.stats.sampling_rate):]
                 pad=np.zeros(int(lag*tr.stats.sampling_rate))
@@ -233,27 +228,48 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
                     # Apply lag to data and add it to energy - normalize the data here
                     energy=np.concatenate((energy,(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))), axis=0)
                     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
-    energy=energy.reshape(len(lagged_energy),)
-    print 'Finding detection for node: '+str(node)
-    if 'energy' in locals():
-        if thresh_type=='MAD':
-            thresh=(np.median(np.abs(energy))*threshold) # Raise to the power
-        elif thresh_type=='abs':
-            thresh=threshold
-        print 'Threshold is set to: '+str(thresh)
-        print 'Max of data is: '+str(max(energy))
-        peaks=findpeaks.find_peaks2(energy, thresh,
-                       defaults.length*st[0].stats.sampling_rate)
-        detections=[]
-        if peaks:
-            for peak in peaks:
-                detections.append(DETECTION(node[0]+'_'+node[1]+'_'+node[2],
-                                             peak[1]/stream[0].stats.sampling_rate,
-                                             len(realstations), peak[0], thresh,
-                                             'corr', realstations))
+    return energy
+
+def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
+    """
+    Function to find detections within the cumulative network response according
+    to Frank et al. (2014).
+
+    :type cum_net_resp: np.array
+    :param cum_net_resp: Array of cumulative network response for nodes
+    :type nodes: list of tuples
+    :param nodes: Nodes associated with the source of energy in the cum_net_resp
+    :type threshold: float
+    :type thresh_type: str
+    :type samp_rate: float
+    :type realstations: list of str
+
+    :return: detections as class DETECTION
+    """
+    from utils import findpeaks
+    from par import template_gen_par as defaults
+    from core.match_filter import DETECTION
+    import numpy as np
+
+    if thresh_type=='MAD':
+        thresh=(np.median(np.abs(cum_net_resp))*threshold) # Raise to the power
+    elif thresh_type=='abs':
+        thresh=threshold
+    print 'Threshold is set to: '+str(thresh)
+    print 'Max of data is: '+str(max(cum_net_resp))
+    peaks=findpeaks.find_peaks2(cum_net_resp, thresh,
+                    defaults.length*samp_rate, debug=0)
+    detections=[]
+    if peaks:
+        for peak in peaks:
+            node=nodes[peak[1]]
+            detections.append(DETECTION(node[0]+'_'+node[1]+'_'+node[2],
+                                         peak[1]/samp_rate,
+                                         len(realstations), peak[0], thresh,
+                                         'brightness', realstations))
     else:
         detections=[]
-    print 'For node '+str(node)+' I have found '+str(len(peaks))+' possible detections'
+    print 'I have found '+str(len(peaks))+' possible detections'
     return detections
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type):
@@ -292,7 +308,14 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     import sys
     from copy import deepcopy
     from obspy import read as obsread
-    #from joblib.pool import has_shareable_memory
+    import numpy as np
+    # Check that we actually have the correct stations
+    realstations=[]
+    for station in stations:
+        st=stream.select(station=station)
+        if st:
+            realstations+=station
+    energy=np.array([np.array([np.nan]*len(stream[0]))]*len(nodes))
     detections=[]
     detect_lags=[]
     parallel=False
@@ -300,22 +323,40 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     # Linear run
     if not parallel:
         for i in xrange(0,len(nodes)):
-            detections+=_node_loop(stations, nodes[i], lags[:,i],
-                                  stream, threshold, thresh_type)
+            energy[i]=_node_loop(stations, nodes[i], lags[:,i],
+                                  stream)
     else:
         # Parallel run
-        detections+=Parallel(n_jobs=2, verbose=5)(delayed(_node_loop)(stations, nodes[i],
-                                                          lags[:,i], stream,
-                                                          threshold, thresh_type)\
+        energy[i]=Parallel(n_jobs=2, verbose=5)(delayed(_node_loop)(stations, nodes[i],
+                                                          lags[:,i], stream)\
                                                           for i in xrange(0,len(nodes)))
+    # Now compute the cumulative network response and then detect possible events
+    indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
+    cum_net_resp=np.array([np.nan]*len(indeces))
+    cum_net_resp[0]=energy[indeces[0]][0]
+    peak_nodes=[nodes[indeces[0]]]
+    for i in xrange(1, len(indeces)):
+        cum_net_resp[i]=energy[indeces[i]][i]
+        peak_nodes.append(nodes[indeces[i]])
+    del energy
+    # Plot the data - convert cum_net_resp to a seismic Trace for simple plotting
+    # tr_net_resp=deepcopy(st[0])
+    # tr_net_resp.data=cum_net_resp
+    # tr_net_resp.plot()
+    # Find detection within this network response
+    print 'Finding detections in the cumulatve network response'
+    detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
+                     stream[0].stats.sampling_rate, realstations)
     templates=[]
-    temp_det=[]
-    #print np.shape(detections)
-    for detection in detections: # Flatten list
-        temp_det=temp_det+detection
-    detections=temp_det
+    # temp_det=[]
+    # return detections
+    # print np.shape(detections)
+    # for detection in detections: # Flatten list
+        # temp_det=temp_det+detection
+    # detections=temp_det
     j=0
     if detections:
+        print 'Converting detections in to templates'
         for detection in detections:
             j+=1
             copy_of_stream=deepcopy(stream)
@@ -325,7 +366,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
                     detection.template_name.split('_')[1],\
                     detection.template_name.split('_')[2])
             # Look up node in nodes and find the associated lags
-            index=nodes.index(node)
+            index=peak_nodes.index(node)
             detect_lags=lags[:,index]
             i=0
             picks=[]
@@ -361,8 +402,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
             template_name=defaults.saveloc+'/'+\
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
+            # Check coherancy here!
             template.write(template_name,format="MSEED")
             del copy_of_stream, tr, template
             templates.append(obsread(template_name))
+        else:
+            print 'No templates for you'
     return templates
 
