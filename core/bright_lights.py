@@ -338,7 +338,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     for i in xrange(1, len(indeces)):
         cum_net_resp[i]=energy[indeces[i]][i]
         peak_nodes.append(nodes[indeces[i]])
-    del energy
+    del energy, indeces
     # Plot the data - convert cum_net_resp to a seismic Trace for simple plotting
     # tr_net_resp=deepcopy(st[0])
     # tr_net_resp.data=cum_net_resp
@@ -347,6 +347,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
                      stream[0].stats.sampling_rate, realstations)
+    del cum_net_resp
     templates=[]
     # temp_det=[]
     # return detections
@@ -358,6 +359,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     if detections:
         print 'Converting detections in to templates'
         for detection in detections:
+            print 'Converting for detection '+str(j)+' of '+str(len(detections))
             j+=1
             copy_of_stream=deepcopy(stream)
             # Convert detections to PICK type - name of detection template
@@ -378,14 +380,14 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
                         #print tr.stats.station+'.'+tr.stats.channel+' at lag '+\
                         #    str(detect_lag)+' at time '+str(detection.detect_time)+\
                         #   ' on day '+str(tr.stats.starttime)
-                        if len(tr.stats.channel) != 3:
-                            print 'There is no channel for for this pick!!!'
-                            print station+' pick number: '+str(j)
-                            print tr.stats.starttime+detect_lag+detection.detect_time
-                            st.plot()
-                            sys.exit()
+                        # if len(tr.stats.channel) != 3:
+                            # print 'There is no channel for for this pick!!!'
+                            # print station+' pick number: '+str(j)
+                            # print tr.stats.starttime+detect_lag+detection.detect_time
+                            # st.plot()
+                            # sys.exit()
                         picks.append(PICK(station=station,
-                                          channel=tr.stats.channel[0]+tr.stats.channel[2],
+                                          channel=tr.stats.channel,
                                           impulsivity='E', phase='S',
                                           weight='3', polarity='',
                                           time=tr.stats.starttime+detect_lag+detection.detect_time,
@@ -396,14 +398,13 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
                                           CAZ=''))
                 i+=1
             print 'Generating template for detection: '+str(j)
-            template=(_template_gen(picks, copy_of_stream, defaults.samp_rate,
-                               defaults.lowcut, defaults.highcut,
-                               defaults.length, 'all'))
+            template=(_template_gen(picks, copy_of_stream, defaults.length, 'all'))
             template_name=defaults.saveloc+'/'+\
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
             template.write(template_name,format="MSEED")
+            print 'Written template as: '+template_name
             del copy_of_stream, tr, template
             templates.append(obsread(template_name))
         else:
