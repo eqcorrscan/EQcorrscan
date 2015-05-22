@@ -272,6 +272,21 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     print 'I have found '+str(len(peaks))+' possible detections'
     return detections
 
+def coherance(stream)
+    """
+    Function to determine the average network coherance of a given template or
+    detection.  You will want your stream to contain only signal as noise
+    will reduce the coherance (assuming it is incoherant random noise).
+
+    :type stream: obspy.Stream
+    :param stream: The stream of seismic data you want to calculate the
+                    coherance for.
+
+    :return: float - coherance
+    """
+    coherance=0.0
+    return coherance
+
 def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     """
     Function to calculate the brightness function in terms of energy for a day
@@ -403,8 +418,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            template.write(template_name,format="MSEED")
-            print 'Written template as: '+template_name
+            if coherance(template) > brightdef.coherance:
+                template.write(template_name,format="MSEED")
+                print 'Written template as: '+template_name
+            else:
+                print 'Template was incoherance'
             del copy_of_stream, tr, template
             templates.append(obsread(template_name))
         else:
