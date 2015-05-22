@@ -18,7 +18,7 @@ nllpath='./grid'                       # Path to nonlinloc .csv grid files of
 # volume=[(-43.8,-43.55),
         # (169.5,170.05),
         # (15,40)]
-volume=[(-43.8,-43.65),(169.5,169.65),(15,20)]
+volume=[(-43.8,-43.75),(169.5,169.52),(18,20)]
                                         # List of tuples in the form:
                                         # [(minlat,maxlat),(minlong,laxlong),
                                         # (mindepth,maxdepth)]

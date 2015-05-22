@@ -50,32 +50,32 @@ def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
         plt.savefig(savefile)
     return
 
-def peaks_plot(correlations, starttime, samp_rate, save=False, peaks=[(0,0)], \
+def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
                savefile=''):
     """
     Simple utility code to plot the correlation peaks to check that the peak
     finding routine is running correctly, used in debugging for the EQcorrscan
     module.
 
-    :type correlations: numpy.array
+    :type data: numpy.array
     :type starttime: obspy.UTCDateTime
     :type samp_rate: float
     :type save: Boolean, optional
     :type peaks: List of Tuple, optional
     :type savefile: String, optional
     """
-    npts=len(correlations)
+    npts=len(data)
     t = np.arange(npts, dtype=np.float32) / (samp_rate*3600)
     fig=plt.figure()
     ax1=fig.add_subplot(111)
-    ax1.plot(t, correlations, 'k')
+    ax1.plot(t, data, 'k')
     ax1.scatter(peaks[0][1]/(samp_rate*3600),abs(peaks[0][0]),color='r', label='Peaks')
     for peak in peaks:
         ax1.scatter(peak[1]/(samp_rate*3600),abs(peak[0]),color='r')
     ax1.legend()
     ax1.set_xlabel("Time after %s [hr]" % starttime.isoformat())
     ax1.axis('tight')
-    fig.suptitle('Correlation peaks')
+    fig.suptitle('Peaks')
     if not save:
         plt.show()
     else:
@@ -145,7 +145,6 @@ def threeD_gridplot(nodes):
         longs.append(float(node[1]))
         depths.append(float(node[2]))
     from mpl_toolkits.mplot3d import Axes3D
-    import matplotlib.pyplot as plt
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(lats, longs, depths)
@@ -153,4 +152,36 @@ def threeD_gridplot(nodes):
     ax.set_xlabel("Longitude (deg)")
     ax.set_zlabel("Depth(km)")
     plt.show()
+    return
+
+def detection_timeseries(stream, detector, detections):
+    """
+    Function to plot the data and detector with detections labelled in red,
+    will downsample if too many data points.
+
+    :type stream: obspy.Stream
+    :type detector: np.array
+    :type detections: np.array
+    :param detections: array of positions of detections in samples
+    """
+    from obspy import Trace
+    fig, axes = plt.subplots((len(stream)+1), 1, sharex=True)
+    axes=axes.ravel()
+    samp_rate=stream[0].stats.sampling_rate
+    for i in xrange(len(stream)):
+        tr=stream[i]
+        if tr.stats.sampling_rate > 10:
+            tr.decimate(int(tr.stats.sampling_rate/10))
+        time=np.arange(0, tr.stats.npts)/float(tr.stats.delta)
+        axes[i].plot(tr.data, time)
+        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel)
+    detector=Trace(detector)
+    detector.stats.sampling_rate=samp_rate
+    if detector.stats.sampling_rate > 10:
+        detector.decimate(int(detector.stats.sampling_rate/10))
+    time=np.arange(0, detector.stats.npts)/float(detector.stats.delta)
+    detector=detector.data
+    axes[len(axes)].plot(detector, time)
+    axes[len(axes)].set_xlabel('Time')
+    axes[len(axes)].set_ylabel('Detector')
     return

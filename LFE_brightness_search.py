@@ -116,8 +116,8 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
                 else:
                     stream+=obsread(fname)
     # Process the stream
-    print 'Processing the data'
     if not Test:
+        print 'Processing the data'
         for tr in stream:
             tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
                                         templatedef.filter_order, templatedef.samp_rate,\

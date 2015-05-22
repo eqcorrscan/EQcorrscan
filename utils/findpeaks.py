@@ -48,7 +48,7 @@ def find_peaks2(arr,thresh, trig_int, debug=0, \
     peaks_sort=sorted(initial_peaks, key=lambda amplitude:amplitude[0],\
                       reverse=True)
     # Debugging
-    if debug>=3:
+    if debug>=4:
         for peak in initial_peaks:
             print peak
     if initial_peaks:
@@ -88,9 +88,9 @@ def find_peaks2(arr,thresh, trig_int, debug=0, \
                             ' at sample '+str(next_peak[1])
 
         if debug >= 3:
-            from utils import daily_correl_plot
-            daily_correl_plot.peaks_plot(image, starttime, samp_rate, True, peaks,
-                                            'debug_out/cccsum_peaks_'+\
+            from utils import EQcorrscan_plotting
+            EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True, peaks,
+                                            'debug_output/peaks_'+\
                                               str(starttime.year)+'-'+\
                                               str(starttime.month)+'-'+\
                                               str(starttime.day)+'.pdf')
