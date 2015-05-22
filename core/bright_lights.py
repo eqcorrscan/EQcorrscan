@@ -212,7 +212,6 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
     from utils import findpeaks
     from par import template_gen_par as defaults
     from core.match_filter import DETECTION
-    import pylab as plt
     realstations=[]
     i=0
     # Print what node we are working on as a check that things are happening!
@@ -235,8 +234,6 @@ def _node_loop(stations, node, lags, stream, threshold, thresh_type):
                     energy=np.concatenate((energy,(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))), axis=0)
                     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
     energy=energy.reshape(len(lagged_energy),)
-    # plt.plot(energy)
-    # plt.show()
     print 'Finding detection for node: '+str(node)
     if 'energy' in locals():
         if thresh_type=='MAD':

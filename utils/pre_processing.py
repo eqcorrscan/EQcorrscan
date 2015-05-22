@@ -15,7 +15,7 @@ processing of the data using obspy modules (which also rely on scipy and numpy).
 # resource.
 
 
-from obspy import read, UTCDateTime
+from obspy import UTCDateTime
 from obspy.signal.filter import bandpass
 
 def _check_daylong(tr):
@@ -106,7 +106,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
         str(starttime.day).zfill(2)
     if debug>=2:
         print 'Working on: '+tr.stats.station+'.'+tr.stats.channel
-    if debug >= 4:
+    if debug >= 5:
         tr.plot()
     # Do a brute force quality check
     qual=_check_daylong(tr)
@@ -114,6 +114,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
         msg="Data have more zeros than actual data, please check the raw" +\
                 "data set-up and manually sort it"
         raise ValueError(msg)
+    tr=tr.detrend('simple')    # Detrend data before filtering
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         if debug>=2:

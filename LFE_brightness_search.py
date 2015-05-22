@@ -39,6 +39,7 @@ from obspy import UTCDateTime, read as obsread
 # First generate the templates
 from core import bright_lights, match_filter
 from utils import pre_processing
+from utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 
 templates=[]
@@ -71,19 +72,7 @@ print "Removing simlar lags"
 stations, nodes, lags = bright_lights._rm_similarlags(stations, nodes, lags,
                                                       brightdef.nodesimthresh)
 print "Plotting new grid"
-lats=[]
-longs=[]
-depths=[]
-for node in nodes:
-    lats.append(float(node[0]))
-    longs.append(float(node[1]))
-    depths.append(float(node[2]))
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(lats, longs, depths)
-plt.show()
+plotting.threeD_gridplot(nodes)
 # Call the main function!
 templates=[]
 for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop through dates
@@ -92,8 +81,8 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
     print 'Working on day '+str(day)
     if not Test:
                 # Read in the data
-        if 'stream' in locals():
-            del stream
+        # if 'stream' in locals():
+            # del stream
         for station in stations:
             if len(station) == 3:
                 netcode='NZ'
@@ -132,7 +121,7 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
         for tr in stream:
             tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
                                         templatedef.filter_order, templatedef.samp_rate,\
-                                        matchdef.debug, day)
+                                        templatedef.debug, day)
     if not Prep:
         print "Running the detection routine"
         templates+=bright_lights.brightness(stations, nodes, lags, stream,\
