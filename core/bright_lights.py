@@ -285,6 +285,13 @@ def coherance(stream)
     :return: float - coherance
     """
     coherance=0.0
+    from match_filter import normxcorr2
+    # Loop through channels and generate a correlation value for each
+    # unique cross-channel pairing
+    for i in xrange(len(stream)):
+        for j in xrange(i+1,len(stream)):
+            coherance+=np.abs(normxcorr(stream[i].data, stream[j].data))
+    coherance=coherance/len(stream)
     return coherance
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type):
