@@ -125,7 +125,8 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
     if not Prep:
         print "Running the detection routine"
         templates+=bright_lights.brightness(stations, nodes, lags, stream,\
-                        brightdef.threshold, brightdef.thresh_type)
+                        brightdef.threshold, brightdef.thresh_type,\
+                        brightdef.coherance)
     else:
         for tr in stream:
             tr.write('test_data/'+tr.stats.station+'-'+tr.stats.channel+\
