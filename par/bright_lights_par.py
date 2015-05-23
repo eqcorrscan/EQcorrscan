@@ -44,3 +44,6 @@ nodesimthresh=0.0625                    # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
+coherance=0.2                           # Coherance threshold to remove
+                                        # incoherant peaks in the network
+                                        # response.

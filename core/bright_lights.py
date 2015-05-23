@@ -272,7 +272,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     print 'I have found '+str(len(peaks))+' possible detections'
     return detections
 
-def coherance(stream)
+def coherance(stream):
     """
     Function to determine the average network coherance of a given template or
     detection.  You will want your stream to contain only signal as noise
@@ -284,17 +284,19 @@ def coherance(stream)
 
     :return: float - coherance
     """
+    import numpy as np
     coherance=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
     # unique cross-channel pairing
     for i in xrange(len(stream)):
         for j in xrange(i+1,len(stream)):
-            coherance+=np.abs(normxcorr(stream[i].data, stream[j].data))
+            coherance+=np.abs(normxcorr2(stream[i].data, stream[j].data))
     coherance=coherance/len(stream)
     return coherance
 
-def brightness(stations, nodes, lags, stream, threshold, thresh_type):
+def brightness(stations, nodes, lags, stream, threshold, thresh_type,
+        coherance_thresh):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -320,6 +322,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
     :type thresh_type: str
     :param thresh_type: Either MAD or abs where MAD is the Mean Absolute\
     Deviation and abs is an absoulte brightness.
+    :type coherance_thresh: float
+    :param coherance_thresh: Threshold for removing incoherant peaks in the\
+            network response, those below this will not be used as templates.
 
     :return: list of templates as :class: `obspy.Stream` objects
     """
@@ -425,13 +430,16 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type):
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            if coherance(template) > brightdef.coherance:
+            if coherance(template) > coherance:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
+                coherant=True
             else:
-                print 'Template was incoherance'
+                print 'Template was incoherant'
+                coherant=False
             del copy_of_stream, tr, template
-            templates.append(obsread(template_name))
+            if coherant:
+                templates.append(obsread(template_name))
         else:
             print 'No templates for you'
     return templates
