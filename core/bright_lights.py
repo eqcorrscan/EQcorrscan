@@ -430,7 +430,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            if coherance(template) > coherance:
+            if coherance(template) > coherance_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
                 coherant=True
