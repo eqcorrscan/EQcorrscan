@@ -152,6 +152,7 @@ def threeD_gridplot(nodes):
     ax.set_xlabel("Longitude (deg)")
     ax.set_zlabel("Depth(km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
+    ax.get_yaxis().get_major_formatter().set_scientific(False)
     plt.show()
     return
 
