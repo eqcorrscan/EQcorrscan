@@ -187,3 +187,43 @@ def detection_timeseries(stream, detector, detections):
     axes[len(axes)].set_xlabel('Time')
     axes[len(axes)].set_ylabel('Detector')
     return
+
+def threeD_seismplot(stations, nodes):
+    """
+    Function to plot seismicity and stations in a 3D, movable, zoomable space
+    using matplotlibs Axes3D package.
+
+    :type stations: list of tuple
+    :param stations: list of one tuple per station of (lat, long, elevation),
+                    with up positive
+    :type nodes: list of tuple
+    :param nodes: list of one tuple per event of (lat, long, depth) with down
+                positive
+    """
+    stalats=[]
+    stalongs=[]
+    staelevs=[]
+    evlats=[]
+    evlongs=[]
+    evdepths=[]
+    for station in stations:
+        stalats+=[station[0]]
+        stalongs+=[station[1]]
+        staelevs+=[station[2]]
+    for node in nodes:
+        evlats+=[node[0]]
+        evlongs+=[node[1]]
+        evdepths+=[-1*node[2]]
+    from mpl_toolkits.mplot3d import Axes3D
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k")
+    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r")
+    ax.set_ylabel("Latitude (deg)")
+    ax.set_xlabel("Longitude (deg)")
+    ax.set_zlabel("Depth(km)")
+    ax.get_xaxis().get_major_formatter().set_scientific(False)
+    ax.get_yaxis().get_major_formatter().set_scientific(False)
+    plt.show()
+    return
+
