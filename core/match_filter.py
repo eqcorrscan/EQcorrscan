@@ -135,7 +135,7 @@ def _template_loop_dev(template, chan, delays):
     for i in xrange(0,len(template)):
         if template[i].stats.station == chan.stats.station and\
            template[i].stats.channel == chan.stats.channel:
-            pad=np.array([0]*int(delays[i]*chan.stats.sampling_rate))
+            pad=np.array([0]*int(round(delays[i]*chan.stats.sampling_rate)))
             # Apply shift to data
             image=np.append(chan.data,pad)[len(pad):]
             if matchdef.debug>=4:
@@ -154,9 +154,9 @@ def _template_loop_dev(template, chan, delays):
             # Hand off to the correlation function
             ccc=(normxcorr2(template[i].data, image))
             # Check which channels are not correlating properly --- TESTING DEBUG
-    if matchdef.debug >= 3:
+    if matchdef.debug >= 1:
         print '********* DEBUG:  '+chan.stats.station+'.'+\
-                chan.stats.channel+' ccc: '+str(max(ccc))
+                chan.stats.channel+' ccc: '+str(max(ccc[0]))
     if matchdef.debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
@@ -166,14 +166,14 @@ def _template_loop_dev(template, chan, delays):
         print 'shape of ccc: '+str(np.shape(ccc))
     return ccc
 
-def _channel_loop_dev(templates, delays, stream, plotvar):
+def _channel_loop_dev(templates, delays, stream):
     """
     Loop to generate cross channel correaltion sums for a series of templates -
     hands off the actual correlations to a sister function which can be run in
     parallel.
 
     :type templates: :class: 'obspy.Stream'
-    :param template: A list of templates, where each one should be an
+    :param templates: A list of templates, where each one should be an
     obspy.Stream object containing multiple traces of seismic data and the
     relevant header information.
     :type delays: float
@@ -208,20 +208,22 @@ def _channel_loop_dev(templates, delays, stream, plotvar):
         # Send off to sister function
         cccs_list=[]
         tic=time.clock()
-        # for i in xrange(0,len(templates)):
-            # cccs.append(_template_loop_dev(templates[i], tr, delays[i]))
+        if not len(templates) > 4:
+            for i in xrange(0,len(templates)):
+                cccs_list.append(_template_loop_dev(templates[i], tr, delays[i]))
             # if matchdef.debug >=3:
                 # print 'cccs shape: '+str(np.shape(cccs))
             # Returns a numpy array of the cross-correlation values for that
             # template and channel combination
-        cccs_list=Parallel(n_jobs=num_cores)(delayed\
+        else:
+            cccs_list=Parallel(n_jobs=num_cores)(delayed\
                                              (_template_loop_dev)(templates[i],\
                                                                   tr, delays[i])\
                                              for i in xrange(len(templates)))
         if matchdef.debug >= 2:
             print 'cccs_list is shaped: '+str(np.shape(cccs_list))
         for ccc in cccs_list:
-            if matchdef.debug >= 3:
+            if matchdef.debug >= 1:
                 print 'Single ccc is shaped: '+str(np.shape(ccc))
             if not 'cccs' in locals():
                 cccs=ccc
@@ -242,7 +244,7 @@ def _channel_loop_dev(templates, delays, stream, plotvar):
             print 'cccs_matrix shape: '+str(np.shape(cccs_matrix))
             print 'cccs_matrix is using '+str(cccs_matrix.nbytes/1000000)+' MB of memory'
         toc=time.clock()
-        if matchdef.debug>=1:
+        if matchdef.debug>=2:
             print 'Running the correlation loop for '+tr.stats.station+'.'+\
                     tr.stats.channel+' took: '+str(toc-tic)+' s'
     # Now we have an array of arrays with the first dimensional index giving the
@@ -346,7 +348,7 @@ def match_filter(template_names, templates, delays, stream, threshold,
     outtic=time.clock()
     # Edit here from previous, stable, but slow match_filter
     # [cccsums, no_chans]=_template_loop(templates, delays, stream, plotvar)
-    [cccsums, no_chans]=_channel_loop_dev(templates, delays, stream, plotvar)
+    [cccsums, no_chans]=_channel_loop_dev(templates, delays, stream)
     if len(cccsums[0])==0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc=time.clock()
