@@ -3,7 +3,7 @@
 Script to plot stations and events from a seisan database.
 """
 
-def volume_plot(stationpath, database):
+def volume_plot(stationpath, database, limits):
     """
     Function to read in station information from a file and earthquake info
     from sfiles.
@@ -29,7 +29,7 @@ def volume_plot(stationpath, database):
                 float(line.split(',')[0]), float(line.split(',')[4])/1000)]
     f.close()
     from utils import EQcorrscan_plotting
-    EQcorrscan_plotting.threeD_seismplot(stalocs, eqlocs)
+    EQcorrscan_plotting.threeD_seismplot(stalocs, eqlocs, limits)
     return
 
 if __name__ == "__main__":

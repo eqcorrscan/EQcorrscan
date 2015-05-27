@@ -27,16 +27,16 @@ sfiles=['63877_1_2_matlab_renamed',
         '59966_1_2_matlab_renamed'] # Names of s-files to use, list of strings,
                                     # or list of already generated templates
 
-samp_rate=100.0                     # Desired sampling rate, will be carried
+samp_rate=50.0                     # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
 
-lowcut=2.0                          # Lowcut for bandpass filter in Hz, float
+lowcut=5.0                          # Lowcut for bandpass filter in Hz, float
 
-highcut=8.0                         # Highcut for bandpass filter in Hz, float
+highcut=25.0                         # Highcut for bandpass filter in Hz, float
 
 filter_order=3                      # Number of corners for the filter
 
-length=6.0                          # Length of template window after pick
+length=3.0                          # Length of template window after pick
 
 swin='all'                          # Boolean, use s-picks or not, if True the
                                     # templates will include only channels with
