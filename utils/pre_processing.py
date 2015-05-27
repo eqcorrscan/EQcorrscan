@@ -35,7 +35,7 @@ def _check_daylong(tr):
         qual=True
     return qual
 
-def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug):
+def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     """
     Basic function to bandpass, downsample.  Works in place
     on data.  This is employed to ensure all parts of the data are processed
