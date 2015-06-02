@@ -13,7 +13,7 @@ stations=['EORO','WHYM','COSA','FOZ',
           'GOVA','LABE','MTFO','RPZ']   # List of stations to use for template
                                         # generation
 
-nllpath='./grid'                       # Path to nonlinloc .csv grid files of
+nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
                                         # travel times
 volume=[(-43.8,-43.55),
         (169.5,170.05),
@@ -37,9 +37,11 @@ threshold=200                           # Threshold value, if threshtype is
                                         # MAD to the power of this value
 thresh_type='MAD'                       # Threshold type, can be either MAD
                                         # or abs (case-sensitive)
-phase='S'                               # Can be either P or S, will use this
+phase='P'                               # Can be either P or S, will use this
                                         # when reading in the travel-time
                                         # grids.
+ps_ratio=1.68                           # P to S ratio if only one grid type
+                                        # provided, P is S*ps_ratio
 nodesimthresh=0.0625                    # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
