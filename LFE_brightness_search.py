@@ -59,7 +59,8 @@ print '     swin: '+templatedef.swin+'\n'
 print 'Reading in the original grids'
 stations, allnodes, alllags = \
             bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
-                                    brightdef.phase)
+                                    brightdef.phase, phaseout='S', \
+                                    ps_ratio=brightdef.ps_ratio)
 # Resample the grid to allow us to run it quickly!
 print 'Cutting the grid'
 stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,

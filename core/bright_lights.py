@@ -41,7 +41,7 @@ Pre-requisites:
     NonLinLoc       - used outside of all codes for travel-time generation
 """
 
-def _read_tt(path, stations, phase):
+def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     """
     Function to read in .csv files of slowness generated from Grid2Time (part
     of NonLinLoc by Anthony Lomax) and convert this to a useful format here.
@@ -53,6 +53,10 @@ def _read_tt(path, stations, phase):
     :param path: The path to the .csv Grid2Time outputs
     :type stations: list
     :param stations: List of station names to read slowness files for.
+    :type phaseout: str
+    :param phaseout: What phase to return the lagtimes in
+    :type ps_ratio: float
+    :param ps_ratio: p to s ratio for coversion
 
     :return: list stations, list of lists of tuples nodes, \
     :class: 'numpy.array' lags station[1] refers to nodes[1] and \
@@ -66,7 +70,7 @@ def _read_tt(path, stations, phase):
     # Locate the slowness file information
     gridfiles=[]
     for station in stations:
-        gridfiles+=(glob.glob(path+'/*.'+phase+'.'+station+'*.csv'))
+        gridfiles+=(glob.glob(path+'*.'+phase+'.'+station+'*.csv'))
     if not stations:
         print 'No slowness files found'
         sys.exit()
@@ -82,6 +86,11 @@ def _read_tt(path, stations, phase):
             nodes.append((row[0],row[1],row[2]))
             traveltime.append(float(row[3]))
         traveltime=np.array(traveltime)
+        if not phase == phaseout:
+            if phase == 'S':
+                traveltime=traveltime/1.68
+            else:
+                traveltime=traveltime*1.68
         lags=traveltime-min(traveltime)
         if not 'alllags' in locals():
             alllags=[lags]
@@ -343,7 +352,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         if st:
             realstations+=station
     del st
-    energy=np.array([np.array([np.nan]*len(stream[0]))]*len(nodes))
+    energy=np.array([np.array([0]*len(stream[0]))]*len(nodes))
     detections=[]
     detect_lags=[]
     parallel=False
