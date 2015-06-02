@@ -61,4 +61,4 @@ plot=False                          # boolean, True for plotting the daily
                                     # cccsum values for each template.
 cores=4                             # Value for number of parallel jobs to run
                                     # must be int
-debug=0                             # Debug level, 0-5 with 0 being less verbose
+debug=1                             # Debug level, 0-5 with 0 being less verbose

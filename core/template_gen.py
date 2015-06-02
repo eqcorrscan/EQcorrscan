@@ -55,22 +55,29 @@ def from_sfile(sfile):
     from utils import Sfile_util
     # Read in the header of the sfile
     wavefiles=Sfile_util.readwavename(sfile)
+    pathparts=sfile.split('/')[0:len(sfile.split('/'))-1]
+    wavpath=''
+    for part in pathparts:
+        if part == 'REA':
+            part='WAV'
+        wavpath+=part+'/'
     from obspy import read as obsread
     from utils import pre_processing
     from par import match_filter_par as matchdef
     from par import template_gen_par as tempdef
     # Read in waveform file
     for wavefile in wavefiles:
-        print "I am going to read waveform data from: "+wavefile
+        print "I am going to read waveform data from: "+wavpath+wavefile
         if 'st' in locals():
-            st+=obsread(wavefile)
+            st+=obsread(wavpath+wavefile)
         else:
-            st=obsread(wavefile)
+            st=obsread(wavpath+wavefile)
     for tr in st:
         if tr.stats.sampling_rate<tempdef.samp_rate:
             print 'Sampling rate of data is lower than sampling rate asked for'
             print 'As this is not good practice for correlations I will not do this'
-            sys.exit()
+            raise ValueError("Trace: "+tr.stats.station+" sampling rate: "+\
+                             str(tr.stats.sampling_rate))
     # Read in pick info
     picks=Sfile_util.readpicks(sfile)
     print "I have found the following picks"

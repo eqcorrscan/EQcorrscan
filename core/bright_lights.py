@@ -219,8 +219,8 @@ def _node_loop(stations, node, lags, stream):
         # Loop through channels
         if st:
             for tr in st:
-                lagged_data=tr.data[int(lag*tr.stats.sampling_rate):]
-                pad=np.zeros(int(lag*tr.stats.sampling_rate))
+                lagged_data=tr.data[int(round(lag*tr.stats.sampling_rate)):]
+                pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
                 lagged_energy=np.square(np.concatenate((pad,lagged_data)))
                 if not 'energy' in locals():
                     energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
@@ -334,7 +334,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     from utils.Sfile_util import PICK
     import sys
     from copy import deepcopy
-    from obspy import read as obsread
+    from obspy import read as obsread, Stream
     import numpy as np
     # Check that we actually have the correct stations
     realstations=[]
@@ -342,10 +342,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         st=stream.select(station=station)
         if st:
             realstations+=station
+    del st
     energy=np.array([np.array([np.nan]*len(stream[0]))]*len(nodes))
     detections=[]
     detect_lags=[]
     parallel=False
+    plotvar=True
     # Loop through each node in the input
     # Linear run
     if not parallel:
@@ -374,6 +376,18 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
                      stream[0].stats.sampling_rate, realstations)
+    # Plot the cumulative network response
+    if plotvar:
+        cum_net_trace=deepcopy(stream[0])
+        cum_net_trace.data=cum_net_resp
+        cum_net_trace.stats.station='NR'
+        cum_net_trace.stats.channel=''
+        cum_net_trace.stats.network=''
+        cum_net_trace.stats.location=''
+        cum_net_trace=Stream(cum_net_trace)
+        cum_net_trace+=stream.select(channel='*N')
+        cum_net_trace+=stream.select(channel='*1')
+        cum_net_trace.plot(size=(800,600), equal_scale=False)
     del cum_net_resp
     templates=[]
     # temp_det=[]
