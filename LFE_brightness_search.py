@@ -61,12 +61,17 @@ stations, allnodes, alllags = \
             bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
                                     brightdef.phase, phaseout='S', \
                                     ps_ratio=brightdef.ps_ratio)
+print 'I have read in '+str(len(allnodes))+' nodes'
 # Resample the grid to allow us to run it quickly!
 print 'Cutting the grid'
 stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,
                                                      alllags,
                                                      brightdef.volume,
                                                      brightdef.resolution)
+del allnodes, alllags
+# Check that we still have a grid!
+if len(nodes) == 0:
+    raise IOError("You have no nodes left")
 # Remove lags that have a similar network moveout, e.g. the sum of the
 # differences in moveouts is small.
 print "Removing simlar lags"
@@ -173,72 +178,59 @@ for station in stations:
 
 # Now run the match filter routine
 
+# # Loop over days
+# ndays=int(matchdef.enddate-matchdef.startdate+1)
+# newsfiles=[]
+# for i in range(0,ndays):
+    # # Set up where data are going to be read in from
+    # day=matchdef.startdate+(i*86400)
+    # if matchdef.baseformat=='yyyy/mm/dd':
+        # daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
+                # str(day.day).zfill(2)
+    # elif matchdef.baseformat=='Yyyyy/Rjjj.01':
+        # daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
+    # # Read in data using obspy's reading routines, data format will be worked
+    # # out by the obspy module
+    # # Note you might have to change this bit to match your naming structure
+    # for stachan in stations:
+        # # station is of the form STA.CHAN, to allow these to be in an odd
+        # # arrangements we can seperate them
+        # try:
+            # station=stachan.split('.')[0]
+            # channel=stachan.split('.')[1]
+        # except:
+            # print 'Issues with this station name: '+stachan
+            # sys.exit()
+        # if glob.glob(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*'):
+            # #print 'Reading data from: '+\
+            # #    glob.glob(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')[0]
+            # if not 'st' in locals():
+                # st=obsread(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')
+            # else:
+                # st+=obsread(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')
+        # else:
+            # print 'No data for '+stachan+' for day '+daydir+' in '+matchdef.contbase
+    # if not 'st' in locals():
+        # print 'No data found for day: '+str(day)
+        # break
+    # # Process data
+    # print 'Processing the data'
+    # for tr in st:
+        # tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
+                                            # templatedef.filter_order, templatedef.samp_rate,\
+                                            # matchdef.debug, day)
 
-# Loop over days
-ndays=int(matchdef.enddate-matchdef.startdate+1)
-newsfiles=[]
-for i in range(0,ndays):
-    # Set up where data are going to be read in from
-    day=matchdef.startdate+(i*86400)
-    if matchdef.baseformat=='yyyy/mm/dd':
-        daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
-                str(day.day).zfill(2)
-    elif matchdef.baseformat=='Yyyyy/Rjjj.01':
-        daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-    # Read in data using obspy's reading routines, data format will be worked
-    # out by the obspy module
-    # Note you might have to change this bit to match your naming structure
-    for stachan in stations:
-        # station is of the form STA.CHAN, to allow these to be in an odd
-        # arrangements we can seperate them
-        try:
-            station=stachan.split('.')[0]
-            channel=stachan.split('.')[1]
-        except:
-            print 'Issues with this station name: '+stachan
-            sys.exit()
-        if glob.glob(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*'):
-            #print 'Reading data from: '+\
-            #    glob.glob(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')[0]
-            if not 'st' in locals():
-                st=obsread(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')
-            else:
-                st+=obsread(matchdef.contbase+'/'+daydir+'/'+station+'*.'+channel+'.*')
-        else:
-            print 'No data for '+stachan+' for day '+daydir+' in '+matchdef.contbase
-    if not 'st' in locals():
-        print 'No data found for day: '+str(day)
-        break
-    # Process data
-    print 'Processing the data'
-    for tr in st:
-        if tr.stats.sampling_rate != templatedef.samp_rate:
-            #print 'Reasmpling '+tr.stats.station+'.'+tr.stats.channel
-            tr.resample(templatedef.samp_rate)
-        tr.detrend('linear')    # Detrend data before filtering
-        #print 'Filtering '+tr.stats.station+'.'+tr.stats.channel
-        tr.data=bandpass(tr.data, templatedef.lowcut, templatedef.highcut,
-                    tr.stats.sampling_rate, 4, True)
-        # Account for two letter channel names in s-files and therefore templates
-        tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
-        # Sanity check to ensure files are daylong
-        if int(tr.stats.npts/tr.stats.sampling_rate) != 86400:
-            print 'Data for '+tr.stats.station+'.'+tr.stats.channel+' is not of daylong length, will zero pad'
-            # Use obspy's trim function with zero padding
-            tr.trim(day,day+86400,pad=True,fill_value=0)
+    # # Call the match_filter module - returns detections, a list of detections
+    # # containted within the detection class with elements, time, template,
+    # # number of channels used and cross-channel correlation sum.
+    # print 'Running the detection routine'
+    # detections=match_filter.match_filter(templatedef.sfiles, templates, delays, st,
+                                         # matchdef.threshold, matchdef.threshtype,
+                                         # matchdef.trig_int*st[0].stats.sampling_rate,
+                                         # matchdef.plot)
 
-
-    # Call the match_filter module - returns detections, a list of detections
-    # containted within the detection class with elements, time, template,
-    # number of channels used and cross-channel correlation sum.
-    print 'Running the detection routine'
-    detections=match_filter.match_filter(templatedef.sfiles, templates, delays, st,
-                                         matchdef.threshold, matchdef.threshtype,
-                                         matchdef.trig_int*st[0].stats.sampling_rate,
-                                         matchdef.plot)
-
-    for detection in detections:
-        print 'template: '+detection.template_name+' detection at: '\
-            +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
-    # Call the lag generation routine - returns list of s-files generated
-    #newsfiles+=lagcalc(detections, st)
+    # for detection in detections:
+        # print 'template: '+detection.template_name+' detection at: '\
+            # +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
+    # # Call the lag generation routine - returns list of s-files generated
+    # #newsfiles+=lagcalc(detections, st)

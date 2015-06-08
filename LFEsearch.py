@@ -12,7 +12,13 @@ serach for repeats of them in contnuous data.
 """
 
 import sys, os, glob
-# sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
+bob=os.path.realpath(__file__)
+bob=bob.split('/')
+path='/'
+for i in xrange(len(bob)):
+    path+=bob[i]+'/'
+print path
+sys.path.insert(0,path)
 
 
 from par import template_gen_par as templatedef
