@@ -153,7 +153,7 @@ def _resample_grid(stations, nodes, lags, volume, resolution):
     resamp_lags=np.reshape(resamp_lags,(len(resamp_lags),len(stations))).T
     # Resample the nodes - they are sorted in order of size with largest long
     # then largest lat, then depth.
-
+    print 'Grid now has '+str(len(resamp_nodes))+' nodes'
     return stations, resamp_nodes, resamp_lags
 
 def _rm_similarlags(stations, nodes, lags, threshold):
@@ -259,11 +259,18 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     from par import template_gen_par as defaults
     from core.match_filter import DETECTION
     import numpy as np
-
+    cum_net_resp = np.nan_to_num(cum_net_resp) # Force no NaNs
+    if np.isnan(cum_net_resp).any():
+        raise ValueError("Nans present")
+    print 'Mean of data is: '+str(np.median(cum_net_resp))
+    print 'RMS of data is: '+str(np.sqrt(np.mean(np.square(cum_net_resp))))
+    print 'MAD of data is: '+str(np.median(np.abs(cum_net_resp)))
     if thresh_type=='MAD':
         thresh=(np.median(np.abs(cum_net_resp))*threshold) # Raise to the power
     elif thresh_type=='abs':
         thresh=threshold
+    elif thresh_type=='RMS':
+        thresh=(np.sqrt(np.mean(np.square(cum_net_resp))))*threshold
     print 'Threshold is set to: '+str(thresh)
     print 'Max of data is: '+str(max(cum_net_resp))
     peaks=findpeaks.find_peaks2(cum_net_resp, thresh,
@@ -381,10 +388,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # tr_net_resp=deepcopy(st[0])
     # tr_net_resp.data=cum_net_resp
     # tr_net_resp.plot()
-    # Find detection within this network response
-    print 'Finding detections in the cumulatve network response'
-    detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
-                     stream[0].stats.sampling_rate, realstations)
     # Plot the cumulative network response
     if plotvar:
         cum_net_trace=deepcopy(stream[0])
@@ -397,6 +400,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_trace+=stream.select(channel='*N')
         cum_net_trace+=stream.select(channel='*1')
         cum_net_trace.plot(size=(800,600), equal_scale=False)
+
+    # Find detection within this network response
+    print 'Finding detections in the cumulatve network response'
+    detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
+                     stream[0].stats.sampling_rate, realstations)
     del cum_net_resp
     templates=[]
     # temp_det=[]
@@ -418,7 +426,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     detection.template_name.split('_')[1],\
                     detection.template_name.split('_')[2])
             # Look up node in nodes and find the associated lags
-            index=peak_nodes.index(node)
+            index=nodes.index(node)
             detect_lags=lags[:,index]
             i=0
             picks=[]
