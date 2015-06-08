@@ -15,10 +15,13 @@ stations=['EORO','WHYM','COSA','FOZ',
 
 nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
                                         # travel times
-volume=[(-43.8,-43.55),
-        (169.5,170.05),
-        (15,40)]
-# volume=[(-43.8,-43.75),(169.5,169.52),(18,20)]
+# volume=[(-43.8,-43.55),
+        # (169.5,170.0),
+        # (20,35)]
+# volume=[(-43.8,-43.55),
+        # # (169.5,170.05),
+        # # (15,40)]
+volume=[(-43.8,-43.75),(169.6,169.85),(25,28)]
                                         # List of tuples in the form:
                                         # [(minlat,maxlat),(minlong,laxlong),
                                         # (mindepth,maxdepth)]
@@ -32,10 +35,10 @@ startdate=UTCDateTime('2009-07-14')     # obspy UTCDateTime object giving
                                         # date to start looking for templates
                                         # beyond
 enddate=UTCDateTime('2009-07-15')       # As above, but the end date
-threshold=200                           # Threshold value, if threshtype is
+threshold=10                            # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
-thresh_type='MAD'                       # Threshold type, can be either MAD
+thresh_type='RMS'                       # Threshold type, can be either MAD
                                         # or abs (case-sensitive)
 phase='P'                               # Can be either P or S, will use this
                                         # when reading in the travel-time
