@@ -145,4 +145,7 @@ if __name__ == '__main__':
                                        defaults.threshtype, tempdef.lowcut,\
                                        tempdef.highcut, tempdef.filter_order)
     from utils import EQcorrscan_plotting as plotting
-    plotting.threeD_gridplot(possible_locations)
+    if not len(possible_locations) == 0:
+        plotting.threeD_gridplot(possible_locations)
+    else:
+        raise ValueError("No possible location found")
