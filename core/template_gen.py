@@ -126,24 +126,24 @@ def from_contbase(sfile):
     header=Sfile_util.readheader(sfile)
     day=UTCDateTime(str(header.time.year)+'-'+str(header.time.month).zfill(2)+\
                     '-'+str(header.time.day).zfill(2))
-    if matchdef.baseformat=='yyyy/mm/dd':
-        daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
-                str(day.day).zfill(2)
-    elif matchdef.baseformat=='Yyyyy/Rjjj.01':
-        daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-    elif matchdef.baseformat=='yyyymmdd':
-        daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
-    print 'Looking in '+matchdef.contbase+'/'+daydir+' for seismic data'
 
     # Read in pick info
     picks=Sfile_util.readpicks(sfile)
     print "I have found the following picks"
     for pick in picks:
         print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
-        if 'wavefiles' in locals():
-            wavefiles+=glob.glob(matchdef.contbase+'/'+daydir+'/*'+pick.station+'*')
-        else:
-            wavefiles=(glob.glob(matchdef.contbase+'/'+daydir+'/*'+pick.station+'*'))
+        for contbase in matchdef.contbase:
+            if contbase[1] == 'yyyy/mm/dd':
+                daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
+                        str(day.day).zfill(2)
+            elif contbase[1]=='Yyyyy/Rjjj.01':
+                daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
+            elif contbase[1]=='yyyymmdd':
+                daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
+            if 'wavefiles' in locals():
+                wavefiles+=glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*')
+            else:
+                wavefiles=(glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*'))
     wavefiles=list(set(wavefiles))
 
     # Read in waveform file
@@ -156,8 +156,9 @@ def from_contbase(sfile):
             st=obsread(wavefile)
 
     # Porcess waveform data
-    st=pre_processing.dayproc(st, tempdef.lowcut, tempdef.highcut, tempdef.filter_order,\
-                      tempdef.samp_rate, matchdef.debug, day)
+    for tr in st:
+        tr=pre_processing.dayproc(tr, tempdef.lowcut, tempdef.highcut, tempdef.filter_order,\
+                                tempdef.samp_rate, matchdef.debug, day)
 
     # Cut the templates
     st1=_template_gen(picks, st, tempdef.length, tempdef.swin)
@@ -220,7 +221,7 @@ def _template_gen(picks, st, length, swin):
                     starttime=pick.time
         if 'starttime' in locals():
             print "Cutting "+tr.stats.station+'.'+tr.stats.channel
-            tr.trim(starttime=starttime,endtime=starttime+length)
+            tr.trim(starttime=starttime,endtime=starttime+length, nearest_sample=False)
             print tr.stats.starttime
             print tr.stats.endtime
             if 'st1' in locals():
