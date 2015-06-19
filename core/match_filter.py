@@ -270,14 +270,15 @@ def _channel_loop_dev(templates, delays, stream):
         # Now sum along the channel axis for each template to give the cccsum values
         # for each template for each day
         # This loop is disappointingly slow - due to layout in memory - axis=1 is fast
-        for i in xrange(0,len(templates)):
-            cccsum=np.sum(cccs_matrix[:,[i]], axis=0)
-            if matchdef.debug >= 3:
-                print 'cccsum is shaped thus: '+str(np.shape(cccsum))
-            if not 'cccsums' in locals():
-                cccsums=cccsum
-            else:
-                cccsums=np.append(cccsums,cccsum,axis=0)
+        cccsums=cccs_matrix.sum(axis=0)
+        # for i in xrange(0,len(templates)):
+            # cccsum=np.sum(cccs_matrix[:,[i]], axis=0)
+            # if matchdef.debug >= 3:
+                # print 'cccsum is shaped thus: '+str(np.shape(cccsum))
+            # if not 'cccsums' in locals():
+                # cccsums=cccsum
+            # else:
+                # cccsums=np.append(cccsums,cccsum,axis=0)
         if matchdef.debug>=2:
             print 'cccsums is shaped thus: '+str(np.shape(cccsums))
         cccs_matrix[0]=cccsums
