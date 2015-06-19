@@ -154,7 +154,7 @@ def _template_loop_dev(template, chan, delays):
             # Hand off to the correlation function
             ccc=(normxcorr2(template[i].data, image))
             # Check which channels are not correlating properly --- TESTING DEBUG
-    if matchdef.debug >= 1:
+    if matchdef.debug >= 3:
         print '********* DEBUG:  '+chan.stats.station+'.'+\
                 chan.stats.channel+' ccc: '+str(max(ccc[0]))
     if matchdef.debug >=3:
@@ -204,6 +204,19 @@ def _channel_loop_dev(templates, delays, stream):
     # _ = dump(stream, filename)
     # st_memmap = load(filename, mmap_mode='r+')
     # del stream
+
+    # Initialize cccs_matrix, which will be two arrays of len(templates) arrays,
+    # where the arrays cccs_matrix[0[:]] will be the cross channel sum for each
+    # template.
+
+    # Note: This requires all templates to be the same length, and all channels
+    # to be the same length
+    cccs_matrix=np.array([np.array([np.array([0.0]*(len(stream[0].data)-\
+                                   len(templates[0][0].data)+1))]*\
+                          len(templates))]*2)
+    # Initialize number of channels array
+    no_chans=np.array([0]*len(templates))
+
     for tr in stream:
         # Send off to sister function
         cccs_list=[]
@@ -220,70 +233,59 @@ def _channel_loop_dev(templates, delays, stream):
                                              (_template_loop_dev)(templates[i],\
                                                                   tr, delays[i])\
                                              for i in xrange(len(templates)))
-        if matchdef.debug >= 2:
+        if matchdef.debug >= 3:
             print 'cccs_list is shaped: '+str(np.shape(cccs_list))
-        for ccc in cccs_list:
-            if matchdef.debug >= 1:
-                print 'Single ccc is shaped: '+str(np.shape(ccc))
-            if not 'cccs' in locals():
-                cccs=ccc
-            else:
-                cccs=np.append(cccs, ccc, axis=0)
+        cccs=np.concatenate(cccs_list, axis=0)
         del cccs_list
         if matchdef.debug >=2:
             print 'After looping through templates the cccs is shaped: '+str(np.shape(cccs))
             print 'cccs is using: '+str(cccs.nbytes/1000000)+' MB of memory'
-        if not 'cccs_matrix' in locals():
-            cccs_matrix=np.reshape(cccs, (1,len(templates),max(np.shape(cccs))))
-        else:
-            cccs_matrix=np.append(cccs_matrix,\
-                                  np.reshape(cccs, (1,len(templates),max(np.shape(cccs)))),\
-                                  axis=0)
+        cccs_matrix[1]=np.reshape(cccs, (1,len(templates),max(np.shape(cccs))))
         del cccs
         if matchdef.debug >=2:
-            print 'cccs_matrix shape: '+str(np.shape(cccs_matrix))
+            print 'cccs_matrix shaped: '+str(np.shape(cccs_matrix))
             print 'cccs_matrix is using '+str(cccs_matrix.nbytes/1000000)+' MB of memory'
         toc=time.clock()
         if matchdef.debug>=2:
             print 'Running the correlation loop for '+tr.stats.station+'.'+\
                     tr.stats.channel+' took: '+str(toc-tic)+' s'
-    # Now we have an array of arrays with the first dimensional index giving the
-    # channel, the second dimensional index giving the template and the third
-    # dimensional index giving the position in the ccc, e.g.:
-    # np.shape(cccsums)=(len(stream), len(templates), len(ccc))
-    if matchdef.debug >=2:
-        print 'cccs_matrix is shaped: '+str(np.shape(cccs_matrix))
-    ########################## SLOW CONVERSION TO NUMPY ARRAY, DO IT BETTER!
-    # cccs_matrix=np.array(cccs_matrix)
-    # if matchdef.debug >=2:
-        # print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
-    # First work out how many channels were used
-    no_chans=[]
-    for i in xrange(0,len(templates)):
-        kchan=0
-        for j in xrange(0,len(stream)):
-            if not np.all(np.isnan(cccs_matrix[j][i])):
+        # Now we have an array of arrays with the first dimensional index giving the
+        # channel, the second dimensional index giving the template and the third
+        # dimensional index giving the position in the ccc, e.g.:
+        # np.shape(cccsums)=(len(stream), len(templates), len(ccc))
+
+        # cccs_matrix=np.array(cccs_matrix)
+        # if matchdef.debug >=2:
+            # print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
+        # First work out how many channels were used
+        for i in xrange(0,len(templates)):
+            if not np.all(np.isnan(cccs_matrix[1][i])):
                 # Check that there are some real numbers in the vector rather
                 # than being all nan, which is the default case for no match
                 # of image and template names
-                kchan+=1
+                no_chans[i]+=1
             else:
                 # Convert nan arrays to 0.0 so they can be added
-                cccs_matrix[j][i]=np.nan_to_num(cccs_matrix[j][i])
-        no_chans.append(kchan)
-
-    # Now sum along the channel axis for each template to give the cccsum values
-    # for each template for each day
-    cccsums=[]
-    for i in xrange(0,len(templates)):
-        cccsum=np.sum(cccs_matrix[:,[i]], axis=0)
-        if matchdef.debug >= 2:
-            print 'cccsum is shaped thus: '+str(np.shape(cccsum))
-        cccsum=np.reshape(cccsum,(max(np.shape(cccsum)),))
-        cccsums.append(cccsum)
-    if matchdef.debug>=2:
-        print 'cccsums is shaped thus: '+str(np.shape(cccsums))
-
+                cccs_matrix[1][i]=np.nan_to_num(cccs_matrix[1][i])
+        # Now sum along the channel axis for each template to give the cccsum values
+        # for each template for each day
+        # This loop is disappointingly slow - due to layout in memory - axis=1 is fast
+        for i in xrange(0,len(templates)):
+            cccsum=np.sum(cccs_matrix[:,[i]], axis=0)
+            if matchdef.debug >= 3:
+                print 'cccsum is shaped thus: '+str(np.shape(cccsum))
+            if not 'cccsums' in locals():
+                cccsums=cccsum
+            else:
+                cccsums=np.append(cccsums,cccsum,axis=0)
+        if matchdef.debug>=2:
+            print 'cccsums is shaped thus: '+str(np.shape(cccsums))
+        cccs_matrix[0]=cccsums
+        del cccsums
+    if matchdef.debug >=2:
+        print 'cccs_matrix is shaped: '+str(np.shape(cccs_matrix))
+    ########################## SLOW CONVERSION TO NUMPY ARRAY, DO IT BETTER!
+    cccsums=cccs_matrix[0]
     return cccsums, no_chans
 
 def match_filter(template_names, templates, delays, stream, threshold,
