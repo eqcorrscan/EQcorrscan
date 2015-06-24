@@ -11,28 +11,15 @@ Outline definitions for template generation
 
 sfilebase='.'                       # Location of nordic s-files, string
 
-sfiles=['63877_1_2_matlab_renamed',
-        '17208_1_2_3_matlab_renamed',
-        '60070_1_2_matlab_renamed',
-        '37575_1_2_matlab_renamed',
-        '55115_1_1_matlab_renamed',
-        '60905_1_matlab_renamed',
-        '61044_1_2_3_matlab_renamed',
-        '54905_1_2_3_4_5_matlab_renamed',
-        '61220_1_2_3_matlab_renamed',
-        '30442_1_2_matlab_renamed',
-        '55432_1_2_3_4_matlab_renamed',
-        '55200_1_2_3_4_5_matlab_renamed',
-        '61100_1_matlab_renamed',
-        '59966_1_2_matlab_renamed'] # Names of s-files to use, list of strings,
+sfiles=[] # Names of s-files to use, list of strings,
                                     # or list of already generated templates
 
-samp_rate=50.0                     # Desired sampling rate, will be carried
+samp_rate=20.0                     # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
 
-lowcut=5.0                          # Lowcut for bandpass filter in Hz, float
+lowcut=2.0                          # Lowcut for bandpass filter in Hz, float
 
-highcut=25.0                         # Highcut for bandpass filter in Hz, float
+highcut=8.0                         # Highcut for bandpass filter in Hz, float
 
 filter_order=3                      # Number of corners for the filter
 
