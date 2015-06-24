@@ -26,13 +26,15 @@ def cross_chan_coherance(st1, st2):
     """
     from core.match_filter import normxcorr2
     cccoh=0.0
-    kchan=len(st1)
+    kchan=0
     for tr in st1:
         tr1=tr.data
         # Assume you only have one waveform for each channel
         tr2=st2.select(station=tr.stats.station, \
-                       channel=tr.stats.channel)[0].data
-        cccoh+=normxcorr2(tr1,tr2)[0][0]
+                       channel=tr.stats.channel)
+        if tr2:
+            cccoh+=normxcorr2(tr1,tr2[0].data)[0][0]
+            kchan+=1
     cccoh=cccoh/kchan
     return cccoh
 
@@ -51,11 +53,14 @@ def distance_matrix(templates):
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(templates))]*len(templates))
     for i in xrange(len(templates)):
-        for j in xrange(len(templates)):
+        for j in xrange(i,len(templates)):
             if i==j:
                 dist_mat[i,j]=0.0
             else:
                 dist_mat[i,j]=1-np.abs(cross_chan_coherance(templates[i],templates[j]))
+    for i in xrange(1,len(templates)):
+        for j in xrange(i):
+            dist_mat[i,j]=dist_mat.T[i,j]
     return dist_mat
 
 def cluster(templates):
@@ -70,6 +75,10 @@ def cluster(templates):
     """
     from scipy.spatial.distance import squareform
     from scipy.cluster.hierarchy import linkage
+    from scipy.cluster.hierachy import dendrogram
     dist_mat=distance_matrix(templates)
     dist_vec=squareform(dist_mat)
+    # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
     Z = linkage(dist_vec)
+    D = dendrogram(Z)
+    plt.show()
