@@ -124,7 +124,11 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
     # Process the stream
     if not Test:
         print 'Processing the data'
+        stream=stream.merge(fill_value='interpolate')
+                        # Merge stream so that each trace is a single channel to
+                       # send to pre-processing
         for tr in stream:
+            # tr.plot()
             tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
                                         templatedef.filter_order, templatedef.samp_rate,\
                                         templatedef.debug, day)
@@ -135,6 +139,11 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
                         brightdef.coherance)
     else:
         for tr in stream:
+            print "Writing data as: test_data/"+tr.stats.station+'-'+tr.stats.channel+\
+                    '-'+str(tr.stats.starttime.year)+\
+                    '-'+str(tr.stats.starttime.month).zfill(2)+\
+                    '-'+str(tr.stats.starttime.day).zfill(2)+\
+                    '-processed.ms'
             tr.write('test_data/'+tr.stats.station+'-'+tr.stats.channel+\
                     '-'+str(tr.stats.starttime.year)+\
                     '-'+str(tr.stats.starttime.month).zfill(2)+\
