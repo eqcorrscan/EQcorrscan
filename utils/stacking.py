@@ -27,10 +27,7 @@ def linstack(streams):
         for tr in stack:
             print tr.stats.station+'.'+tr.stats.channel
             matchtr=streams[i].select(station=tr.stats.station,\
-                                       channel=tr.stats.channel)[0]
-            tr.data+=matchtr.data/max(matchtr.data)
-            if j==0:
-                plt.plot(tr.data)
-            j+=1
-    plt.show()
+                                       channel=tr.stats.channel)
+            if matchtr:
+                tr.data+=matchtr[0].data/max(matchtr[0].data)
     return stack
