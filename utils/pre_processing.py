@@ -115,17 +115,43 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
                 "data set-up and manually sort it"
         raise ValueError(msg)
     tr=tr.detrend('simple')    # Detrend data before filtering
-    # Check sampling rate and resample
-    if tr.stats.sampling_rate != samp_rate:
-        if debug>=2:
-            print 'Resampling'
-        tr.resample(samp_rate)
 
     # If there is one sample too many remove the first sample - this occurs
     # at station FOZ where the first sample is zero when it shouldn't be,
     # Not real sample generated during data download
     if len(tr.data)==(86400*tr.stats.sampling_rate)+1:
         tr.data=tr.data[1:len(tr.data)]
+    print len(tr.data)
+
+    # Sanity check to ensure files are daylong
+    if float(tr.stats.npts/tr.stats.sampling_rate) != 86400.0:
+        if debug >= 2:
+            print 'Data for '+tr.stats.station+'.'+tr.stats.channel+\
+                    ' is not of daylong length, will zero pad'
+        # Work out when the trace thinks it is starting - Aaron's time headers
+        # are often wrong
+        traceday=UTCDateTime(str(tr.stats.starttime.year)+'-'+\
+                            str(tr.stats.starttime.month)+'-'+\
+                            str(tr.stats.starttime.day))
+        # Use obspy's trim function with zero padding
+        tr=tr.trim(traceday,traceday+86400,pad=True,fill_value=0,\
+                    nearest_sample=True)
+        # If there is one sample too many after this remove the last one
+        # by convention
+        if len(tr.data)==(86400*tr.stats.sampling_rate)+1:
+            tr.data=tr.data[1:len(tr.data)]
+        if not tr.stats.sampling_rate*86400 == tr.stats.npts:
+                raise ValueError ('Data are not daylong for '+tr.stats.station+\
+                                  '.'+tr.stats.channel)
+
+    print len(tr.data)
+
+    # Check sampling rate and resample
+    if tr.stats.sampling_rate != samp_rate:
+        if debug>=2:
+            print 'Resampling'
+        tr.resample(samp_rate)
+
 
     # Filtering section
     tr=tr.detrend('simple')    # Detrend data before filtering
