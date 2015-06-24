@@ -279,7 +279,6 @@ def _channel_loop(templates, stream):
             print "--------- TIMER:    Trace loop took "+str(toc-tic)+" s"
     if matchdef.debug >=2:
         print 'cccs_matrix is shaped: '+str(np.shape(cccs_matrix))
-    ########################## SLOW CONVERSION TO NUMPY ARRAY, DO IT BETTER!
     cccsums=cccs_matrix[0]
     return cccsums, no_chans
 
