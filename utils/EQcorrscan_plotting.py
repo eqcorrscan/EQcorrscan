@@ -25,7 +25,7 @@ def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
     ax1 = plt.subplot2grid((2,5), (0,0), colspan=4)
     ax1.plot(t, trace.data, 'k')
     ax1.axis('tight')
-    ax1.set_ylim([-100,100])
+    ax1.set_ylim([-15*np.mean(np.abs(trace.data)),15*np.mean(np.abs(trace.data))])
     # Generate the subplot for the correlation sum data
     ax2 = plt.subplot2grid((2,5), (1,0), colspan=4, sharex=ax1)
     # Plot the threshold values
@@ -33,7 +33,7 @@ def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
     ax2.plot([min(t), max(t)], [-threshold,-threshold], color='r', lw=1)
     ax2.plot(t, cccsum, 'k')
     ax2.axis('tight')
-    ax2.set_ylim([-5, 5])
+    ax2.set_ylim([-1.7*threshold, 1.7*threshold])
     ax2.set_xlabel("Time after %s [hr]" % trace.stats.starttime.isoformat())
     # ax2.legend()
     # Generate a small subplot for the histogram of the cccsum data

@@ -82,7 +82,7 @@ class DETECTION(object):
         self.typeofdet=typeofdet
         self.detectioncount+=1
 
-def normxcorr2(template, image, i=0):
+def normxcorr2(template, image):
     """
     Base function to call the c++ correlation routine from the openCV image
     processing suite.  Requires you to have installed the openCV python
@@ -113,7 +113,7 @@ def normxcorr2(template, image, i=0):
     ccc=cv2.matchTemplate(cv_image,cv_template,cv2.TM_CCOEFF_NORMED)
     # Reshape ccc to be a 1D vector as is useful for seismic data
     ccc=ccc.reshape((1,len(ccc)))
-    return (i, ccc)
+    return ccc
 
 def _template_loop_dev(template, chan, station, channel, i):#, ccc_queue):
     """
@@ -141,12 +141,11 @@ def _template_loop_dev(template, chan, station, channel, i):#, ccc_queue):
         # I don't need to adds up, I should work this out earlier
         template_data=template.select(station=station, \
                                       channel=channel)
-        if template_data:
-            template_data=template_data[0] # Assuming you only have one template per channel
-            delay=template_data.stats.starttime-template.sort(['starttime'])[0].stats.starttime
-            pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
-            image=np.append(chan,pad)[len(pad):]
-            ccc=(normxcorr2(template_data.data, image))
+        template_data=template_data[0] # Assuming you only have one template per channel
+        delay=template_data.stats.starttime-template.sort(['starttime'])[0].stats.starttime
+        pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
+        image=np.append(chan,pad)[len(pad):]
+        ccc=(normxcorr2(template_data.data, image))
     if t.secs > 4:
         print "Single if statement took %s s" % t.secs
         if not template_data:
@@ -213,16 +212,14 @@ def _channel_loop_dev(templates, stream):
         tr_data=tr.data
         station=tr.stats.station
         channel=tr.stats.channel
-        templates_data=[template.select(station=station, channel=channel)[0].data\
-                         for template in templates]
-        # put these into shared memory, a np.array and two strings
         print "Starting parallel run"
         tic=time.clock()
         with Timer() as t:
             # Send off to sister function
             pool=Pool(processes=num_cores, maxtasksperchild=None)
-            results=[pool.apply_async(normxcorr2, args=(templates_data[i],\
-                                                        tr_data, i))\
+            results=[pool.apply_async(_template_loop_dev, args=(templates[i],\
+                                                        tr_data, station,\
+                                                                channel, i))\
                                   for i in xrange(len(templates))]
             pool.close()
         print "--------- TIMER:    Correlation loop took: %s s" % t.secs
@@ -357,7 +354,6 @@ def match_filter(template_names, templates, stream, threshold,
             template_stachan+=[(tr.stats.station, tr.stats.channel)]
     template_stachan=list(set(template_stachan))
     # Copy this here to keep it safe
-    stream_plot=copy.deepcopy(stream[0])
     for stachan in template_stachan:
         if not stream.select(station=stachan[0], channel=stachan[1]):
             # Add a trace of NaN's
@@ -407,13 +403,15 @@ def match_filter(template_names, templates, stream, threshold,
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintins timeing
         if plotvar:
+            stream_plot=copy.deepcopy(stream[0])
             # Downsample for plotting
-            stream_plot.decimate(int(stream[0].stats.sampling_rate/10))
+            stream_plot.decimate(int(stream[0].stats.sampling_rate/20))
             cccsum_plot=Trace(cccsum)
             cccsum_plot.stats.sampling_rate=stream[0].stats.sampling_rate
-            cccsum_plot=cccsum_plot.decimate(int(stream[0].stats.sampling_rate/10)).data
+            cccsum_plot=cccsum_plot.decimate(int(stream[0].stats.sampling_rate/20)).data
             # Enforce same length
             stream_plot.data=stream_plot.data[0:len(cccsum_plot)]
+            cccsum_plot=cccsum_plot[0:len(stream_plot.data)]
             EQcorrscan_plotting.triple_plot(cccsum_plot, stream_plot,\
                                             rawthresh, True,\
                                             'plot/cccsum_plot_'+template_names[i]+'_'+\
