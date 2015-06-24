@@ -14,4 +14,3 @@ multiple days at once, allowing exploitation of many cores.
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
 is based on the method outlined in Chamberlain et al. 2014 (G-cubed).
 
-THIS BRANCH IS FOR THE DEVELOPMENT OF THE BRIGHTNESS FUNCTION USED IN FRANK ET AL. 2013
