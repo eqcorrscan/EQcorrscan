@@ -19,7 +19,7 @@
 
 
 \title{EQcorrscan Documentation}
-\date{April 23, 2015}
+\date{June 24, 2015}
 \release{0.0.5}
 \author{Calum John Chamberlain}
 \newcommand{\sphinxlogo}{\includegraphics{EQcorrscan_logo.pdf}\par}
@@ -232,7 +232,13 @@ package:
 \PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}}
 
 \PYG{k+kn}{import} \PYG{n+nn}{sys}\PYG{o}{,} \PYG{n+nn}{os}\PYG{o}{,} \PYG{n+nn}{glob}
-\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{insert}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{/home/processor/Desktop/EQcorrscan}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{bob}\PYG{o}{=}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{realpath}\PYG{p}{(}\PYG{n}{\PYGZus{}\PYGZus{}file\PYGZus{}\PYGZus{}}\PYG{p}{)}
+\PYG{n}{bob}\PYG{o}{=}\PYG{n}{bob}\PYG{o}{.}\PYG{n}{split}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{path}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}
+\PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{xrange}\PYG{p}{(}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{bob}\PYG{p}{)}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n}{path}\PYG{o}{+}\PYG{o}{=}\PYG{n}{bob}\PYG{p}{[}\PYG{n}{i}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}
+\PYG{k}{print} \PYG{n}{path}
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{insert}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{n}{path}\PYG{p}{)}
 
 
 \PYG{k+kn}{from} \PYG{n+nn}{par} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen\PYGZus{}par} \PYG{k}{as} \PYG{n}{templatedef}
@@ -241,6 +247,37 @@ package:
 \PYG{k+kn}{from} \PYG{n+nn}{obspy} \PYG{k+kn}{import} \PYG{n}{UTCDateTime}\PYG{p}{,} \PYG{n}{read} \PYG{k}{as} \PYG{n}{obsread}
 \PYG{c}{\PYGZsh{} First generate the templates}
 \PYG{k+kn}{from} \PYG{n+nn}{core} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen}
+
+\PYG{k}{if} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{)} \PYG{o}{==} \PYG{l+m+mi}{2}\PYG{p}{:}
+    \PYG{n}{flag}\PYG{o}{=}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+    \PYG{k}{if} \PYG{n}{flag} \PYG{o}{==} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}debug}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+        \PYG{n}{Test}\PYG{o}{=}\PYG{n+nb+bp}{True}
+        \PYG{n}{Prep}\PYG{o}{=}\PYG{n+nb+bp}{False}
+    \PYG{k}{elif} \PYG{n}{flag} \PYG{o}{==} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}debug\PYGZhy{}prep}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+        \PYG{n}{Test}\PYG{o}{=}\PYG{n+nb+bp}{False}
+        \PYG{n}{Prep}\PYG{o}{=}\PYG{n+nb+bp}{True}
+    \PYG{k}{else}\PYG{p}{:}
+        \PYG{k}{raise} \PYG{n+ne}{ValueError}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{I don}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{t recognise the argument, I only know \PYGZhy{}\PYGZhy{}debug and \PYGZhy{}\PYGZhy{}debug\PYGZhy{}prep}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{k}{elif} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{)} \PYG{o}{==} \PYG{l+m+mi}{5}\PYG{p}{:}
+    \PYG{c}{\PYGZsh{} Arguments to allow the code to be run in multiple instances}
+    \PYG{n}{Split}\PYG{o}{=}\PYG{n+nb+bp}{True}
+    \PYG{n}{Test}\PYG{o}{=}\PYG{n+nb+bp}{False}
+    \PYG{n}{Prep}\PYG{o}{=}\PYG{n+nb+bp}{False}
+    \PYG{n}{args}\PYG{o}{=}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{:}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{)}\PYG{p}{]}
+    \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{xrange}\PYG{p}{(}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{args}\PYG{p}{)}\PYG{p}{)}\PYG{p}{:}
+        \PYG{k}{if} \PYG{n}{args}\PYG{p}{[}\PYG{n}{i}\PYG{p}{]} \PYG{o}{==} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}instance}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+            \PYG{n}{instance}\PYG{o}{=}\PYG{n+nb}{int}\PYG{p}{(}\PYG{n}{args}\PYG{p}{[}\PYG{n}{i}\PYG{o}{+}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{I will run this for instance }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{instance}\PYG{p}{)}
+        \PYG{k}{elif} \PYG{n}{args}\PYG{p}{[}\PYG{n}{i}\PYG{p}{]} \PYG{o}{==} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}splits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+            \PYG{n}{splits}\PYG{o}{=}\PYG{n+nb}{int}\PYG{p}{(}\PYG{n}{args}\PYG{p}{[}\PYG{n}{i}\PYG{o}{+}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{I will divide the days into }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{splits}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ chunks}\PYG{l+s}{\PYGZsq{}}
+
+\PYG{k}{elif} \PYG{o+ow}{not} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{argv}\PYG{p}{)} \PYG{o}{==} \PYG{l+m+mi}{1}\PYG{p}{:}
+    \PYG{k}{raise} \PYG{n+ne}{ValueError}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{I only take one argument, no arguments, or two flags with arguments}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{k}{else}\PYG{p}{:}
+    \PYG{n}{Test}\PYG{o}{=}\PYG{n+nb+bp}{False}
+    \PYG{n}{Prep}\PYG{o}{=}\PYG{n+nb+bp}{False}
+    \PYG{n}{Split}\PYG{o}{=}\PYG{n+nb+bp}{False}
 
 \PYG{n}{templates}\PYG{o}{=}\PYG{p}{[}\PYG{p}{]}
 \PYG{n}{delays}\PYG{o}{=}\PYG{p}{[}\PYG{p}{]}
@@ -271,6 +308,13 @@ package:
 
     \PYG{c}{\PYGZsh{} Calculate the delays for each template, do this only once so that we}
     \PYG{c}{\PYGZsh{} don\PYGZsq{}t have to do it heaps!}
+    \PYG{c}{\PYGZsh{} Check that all templates are the correct length}
+    \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{template}\PYG{p}{:}
+        \PYG{k}{if} \PYG{o+ow}{not} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{samp\PYGZus{}rate}\PYG{o}{*}\PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{length} \PYG{o}{==} \PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{npts}\PYG{p}{:}
+            \PYG{k}{raise} \PYG{n+ne}{ValueError}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Template for }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYGZbs{}
+                             \PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ is not the correct length, recut.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYGZbs{}
+                             \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ It is: }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{npts}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ and should be }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}
+                             \PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{samp\PYGZus{}rate}\PYG{o}{*}\PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{length}\PYG{p}{)}\PYG{p}{)}
     \PYG{c}{\PYGZsh{} Get minimum start time}
     \PYG{n}{mintime}\PYG{o}{=}\PYG{n}{UTCDateTime}\PYG{p}{(}\PYG{l+m+mi}{3000}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{)}
     \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{template}\PYG{p}{:}
@@ -283,8 +327,18 @@ package:
     \PYG{n}{delays}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{delay}\PYG{p}{)}
     \PYG{c}{\PYGZsh{} Generate list of stations in templates}
     \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{template}\PYG{p}{:}
-        \PYG{n}{stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYGZbs{}
-                        \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}
+        \PYG{c}{\PYGZsh{} Correct FOZ channels}
+        \PYG{k}{if} \PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{FOZ}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+            \PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{HH}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+        \PYG{k}{if} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{)}\PYG{o}{==}\PYG{l+m+mi}{3}\PYG{p}{:}
+            \PYG{n}{stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYGZbs{}
+                            \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{network}\PYG{p}{)}
+            \PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{o}{=}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+        \PYG{k}{elif} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{)}\PYG{o}{==}\PYG{l+m+mi}{2}\PYG{p}{:}
+            \PYG{n}{stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYGZbs{}
+                            \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{network}\PYG{p}{)}
+        \PYG{k}{else}\PYG{p}{:}
+            \PYG{k}{raise} \PYG{n+ne}{ValueError}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Channels are not named with either three or two charectars}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Template generation and processing is over, now to the match\PYGZhy{}filtering}
 
@@ -295,10 +349,11 @@ package:
 \PYG{c}{\PYGZsh{} Now run the match filter routine}
 \PYG{k+kn}{from} \PYG{n+nn}{core} \PYG{k+kn}{import} \PYG{n}{match\PYGZus{}filter}
 \PYG{k+kn}{from} \PYG{n+nn}{obspy} \PYG{k+kn}{import} \PYG{n}{read} \PYG{k}{as} \PYG{n}{obsread}
-\PYG{k+kn}{from} \PYG{n+nn}{obspy.signal.filter} \PYG{k+kn}{import} \PYG{n}{bandpass}
-\PYG{k+kn}{from} \PYG{n+nn}{obspy} \PYG{k+kn}{import} \PYG{n}{Stream}\PYG{p}{,} \PYG{n}{Trace}
-\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+\PYG{c}{\PYGZsh{} from obspy.signal.filter import bandpass}
+\PYG{c}{\PYGZsh{} from obspy import Stream, Trace}
+\PYG{c}{\PYGZsh{} import numpy as np}
 \PYG{k+kn}{from} \PYG{n+nn}{utils} \PYG{k+kn}{import} \PYG{n}{pre\PYGZus{}processing}
+\PYG{k+kn}{from} \PYG{n+nn}{joblib} \PYG{k+kn}{import} \PYG{n}{Parallel}\PYG{p}{,} \PYG{n}{delayed}
 
 \PYG{c}{\PYGZsh{} Loop over days}
 \PYG{n}{ndays}\PYG{o}{=}\PYG{n+nb}{int}\PYG{p}{(}\PYG{p}{(}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{enddate}\PYG{o}{\PYGZhy{}}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{startdate}\PYG{p}{)}\PYG{o}{/}\PYG{l+m+mi}{86400}\PYG{p}{)}\PYG{o}{+}\PYG{l+m+mi}{1}
@@ -309,21 +364,23 @@ package:
        \PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{UTCDateTime}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{hour}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{UTCDateTime}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{minute}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{w}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
 \PYG{n}{f}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{template, detect\PYGZhy{}time, cccsum, threshold, number of channels}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
 \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Will loop through }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{ndays}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ days}\PYG{l+s}{\PYGZsq{}}
+\PYG{k}{if} \PYG{n}{Split}\PYG{p}{:}
+    \PYG{k}{if} \PYG{n}{instance}\PYG{o}{==}\PYG{n}{splits}\PYG{p}{:}
+        \PYG{n}{ndays}\PYG{o}{=}\PYG{n}{ndays}\PYG{o}{\PYGZhy{}}\PYG{p}{(}\PYG{n}{ndays}\PYG{o}{/}\PYG{n}{splits}\PYG{p}{)}\PYG{o}{*}\PYG{p}{(}\PYG{n}{splits}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{)}
+    \PYG{k}{else}\PYG{p}{:}
+        \PYG{n}{ndays}\PYG{o}{=}\PYG{n}{ndays}\PYG{o}{/}\PYG{n}{splits}
+    \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{This instance will run for }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{ndays}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ days}\PYG{l+s}{\PYGZsq{}}
+    \PYG{n}{startdate}\PYG{o}{=}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{startdate}\PYG{o}{+}\PYG{p}{(}\PYG{l+m+mi}{86400}\PYG{o}{*}\PYG{p}{(}\PYG{p}{(}\PYG{n}{instance}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{o}{*}\PYG{n}{ndays}\PYG{p}{)}\PYG{p}{)}
+    \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{This instance will run from }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{startdate}\PYG{p}{)}
+\PYG{k}{else}\PYG{p}{:}
+    \PYG{n}{startdate}\PYG{o}{=}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{startdate}
 \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{n}{ndays}\PYG{p}{)}\PYG{p}{:}
     \PYG{k}{if} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{st}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
         \PYG{k}{del} \PYG{n}{st}
 
 
     \PYG{c}{\PYGZsh{} Set up where data are going to be read in from}
-    \PYG{n}{day}\PYG{o}{=}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{startdate}\PYG{o}{+}\PYG{p}{(}\PYG{n}{i}\PYG{o}{*}\PYG{l+m+mi}{86400}\PYG{p}{)}
-    \PYG{k}{if} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{yyyy/mm/dd}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
-        \PYG{n}{daydir}\PYG{o}{=}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYGZbs{}
-                \PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}
-    \PYG{k}{elif} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Yyyyy/Rjjj.01}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
-        \PYG{n}{daydir}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Y}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/R}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{julday}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.01}\PYG{l+s}{\PYGZsq{}}
-    \PYG{k}{elif} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{yyyymmdd}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
-        \PYG{n}{daydir}\PYG{o}{=}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}
-
+    \PYG{n}{day}\PYG{o}{=}\PYG{n}{startdate}\PYG{o}{+}\PYG{p}{(}\PYG{n}{i}\PYG{o}{*}\PYG{l+m+mi}{86400}\PYG{p}{)}
 
     \PYG{c}{\PYGZsh{} Read in data using obspy\PYGZsq{}s reading routines, data format will be worked}
     \PYG{c}{\PYGZsh{} out by the obspy module}
@@ -334,14 +391,43 @@ package:
         \PYG{c}{\PYGZsh{} arrangements we can seperate them}
         \PYG{n}{station}\PYG{o}{=}\PYG{n}{stachan}\PYG{o}{.}\PYG{n}{split}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}
         \PYG{n}{channel}\PYG{o}{=}\PYG{n}{stachan}\PYG{o}{.}\PYG{n}{split}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}
-        \PYG{k}{if} \PYG{n}{glob}\PYG{o}{.}\PYG{n}{glob}\PYG{p}{(}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{contbase}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{:}
-            \PYG{k}{if} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{st}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
-                \PYG{n}{st}\PYG{o}{+}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{contbase}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+        \PYG{n}{netcode}\PYG{o}{=}\PYG{n}{stachan}\PYG{o}{.}\PYG{n}{split}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+        \PYG{k}{if} \PYG{o+ow}{not} \PYG{n}{Test}\PYG{p}{:}
+            \PYG{c}{\PYGZsh{} Set up the base directory format}
+            \PYG{k}{for} \PYG{n}{base} \PYG{o+ow}{in} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{contbase}\PYG{p}{:}
+                \PYG{k}{if} \PYG{n}{base}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{==}\PYG{n}{netcode}\PYG{p}{:}
+                    \PYG{n}{contbase}\PYG{o}{=}\PYG{n}{base}
+            \PYG{k}{if} \PYG{o+ow}{not} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{contbase}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+                \PYG{k}{raise} \PYG{n+ne}{NameError}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{contbase is not defined for }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{netcode}\PYG{p}{)}
+            \PYG{n}{baseformat}\PYG{o}{=}\PYG{n}{contbase}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}
+            \PYG{k}{if} \PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{yyyy/mm/dd}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+                \PYG{n}{daydir}\PYG{o}{=}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYGZbs{}
+                        \PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}
+            \PYG{k}{elif} \PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Yyyyy/Rjjj.01}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+                \PYG{n}{daydir}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Y}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/R}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{julday}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.01}\PYG{l+s}{\PYGZsq{}}
+            \PYG{k}{elif} \PYG{n}{baseformat}\PYG{o}{==}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{yyyymmdd}\PYG{l+s}{\PYGZsq{}}\PYG{p}{:}
+                \PYG{n}{daydir}\PYG{o}{=}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}
+
+            \PYG{c}{\PYGZsh{} Try and find the appropriate files}
+            \PYG{k}{if} \PYG{n}{glob}\PYG{o}{.}\PYG{n}{glob}\PYG{p}{(}\PYG{n}{contbase}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{:}
+                \PYG{k}{if} \PYG{o+ow}{not} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{st}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+                    \PYG{n}{st}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{contbase}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+                \PYG{k}{else}\PYG{p}{:}
+                    \PYG{n}{st}\PYG{o}{+}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{contbase}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+                \PYG{n}{actual\PYGZus{}stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{station}\PYG{p}{)} \PYG{c}{\PYGZsh{} Add to this list only if we have the data}
             \PYG{k}{else}\PYG{p}{:}
-                \PYG{n}{st}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{contbase}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{/*}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{*.}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
-            \PYG{n}{actual\PYGZus{}stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{station}\PYG{p}{)} \PYG{c}{\PYGZsh{} Add to this list only if we have the data}
+                \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{No data for }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{stachan}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ for day }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ in }\PYG{l+s}{\PYGZsq{}}\PYGZbs{}
+                        \PYG{o}{+}\PYG{n}{contbase}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}
         \PYG{k}{else}\PYG{p}{:}
-            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{No data for }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{stachan}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ for day }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ in }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{contbase}
+            \PYG{n}{fname}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{test\PYGZus{}data/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{channel}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                           \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                           \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{day}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}processed.ms}\PYG{l+s}{\PYGZsq{}}
+            \PYG{k}{if} \PYG{n}{glob}\PYG{o}{.}\PYG{n}{glob}\PYG{p}{(}\PYG{n}{fname}\PYG{p}{)}\PYG{p}{:}
+                \PYG{k}{if} \PYG{o+ow}{not} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{st}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+                    \PYG{n}{st}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{fname}\PYG{p}{)}
+                \PYG{k}{else}\PYG{p}{:}
+                    \PYG{n}{st}\PYG{o}{+}\PYG{o}{=}\PYG{n}{obsread}\PYG{p}{(}\PYG{n}{fname}\PYG{p}{)}
+                \PYG{n}{actual\PYGZus{}stations}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{station}\PYG{p}{)}
     \PYG{n}{actual\PYGZus{}stations}\PYG{o}{=}\PYG{n+nb}{list}\PYG{p}{(}\PYG{n+nb}{set}\PYG{p}{(}\PYG{n}{actual\PYGZus{}stations}\PYG{p}{)}\PYG{p}{)}
 
     \PYG{k}{if} \PYG{o+ow}{not} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{st}\PYG{l+s}{\PYGZsq{}} \PYG{o+ow}{in} \PYG{n+nb}{locals}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
@@ -349,29 +435,46 @@ package:
     \PYG{k}{elif} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{actual\PYGZus{}stations}\PYG{p}{)} \PYG{o}{\PYGZlt{}} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{minsta}\PYG{p}{:}
         \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Data from fewer than }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{minsta}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ stations found, will not detect}\PYG{l+s}{\PYGZsq{}}
     \PYG{k}{else}\PYG{p}{:}
-        \PYG{c}{\PYGZsh{} Process data}
-        \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Processing the data for day }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}
-        \PYG{n}{st}\PYG{o}{=}\PYG{n}{pre\PYGZus{}processing}\PYG{o}{.}\PYG{n}{dayproc}\PYG{p}{(}\PYG{n}{st}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{lowcut}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{highcut}\PYG{p}{,}\PYGZbs{}
-                                  \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{filter\PYGZus{}order}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{samp\PYGZus{}rate}\PYG{p}{,}\PYGZbs{}
-                                  \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{debug}\PYG{p}{,} \PYG{n}{day}\PYG{p}{)}
+        \PYG{k}{if} \PYG{o+ow}{not} \PYG{n}{Test}\PYG{p}{:}
+            \PYG{c}{\PYGZsh{} Process data}
+            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Processing the data for day }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{daydir}
+            \PYG{k}{if} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{debug} \PYG{o}{\PYGZgt{}}\PYG{o}{=} \PYG{l+m+mi}{4}\PYG{p}{:}
+                \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{st}\PYG{p}{:}
+                    \PYG{n}{tr}\PYG{o}{=}\PYG{n}{pre\PYGZus{}processing}\PYG{o}{.}\PYG{n}{dayproc}\PYG{p}{(}\PYG{n}{tr}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{lowcut}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{highcut}\PYG{p}{,}\PYGZbs{}
+                                            \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{filter\PYGZus{}order}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{samp\PYGZus{}rate}\PYG{p}{,}\PYGZbs{}
+                                            \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{debug}\PYG{p}{,} \PYG{n}{day}\PYG{p}{)}
+            \PYG{k}{else}\PYG{p}{:}
+                \PYG{n}{st}\PYG{o}{=}\PYG{n}{Parallel}\PYG{p}{(}\PYG{n}{n\PYGZus{}jobs}\PYG{o}{=}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{st}\PYG{p}{)}\PYG{p}{)}\PYG{p}{(}\PYG{n}{delayed}\PYG{p}{(}\PYG{n}{pre\PYGZus{}processing}\PYG{o}{.}\PYG{n}{dayproc}\PYG{p}{)}\PYG{p}{(}\PYG{n}{tr}\PYG{p}{,} \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{lowcut}\PYG{p}{,}\PYGZbs{}
+                                                                   \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{highcut}\PYG{p}{,}\PYGZbs{}
+                                                                   \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{filter\PYGZus{}order}\PYG{p}{,}\PYGZbs{}
+                                                                   \PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{samp\PYGZus{}rate}\PYG{p}{,}\PYGZbs{}
+                                                                   \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{debug}\PYG{p}{,} \PYG{n}{day}\PYG{p}{)}\PYGZbs{}
+                                \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{st}\PYG{p}{)}
+        \PYG{k}{if} \PYG{o+ow}{not} \PYG{n}{Prep}\PYG{p}{:}
+            \PYG{c}{\PYGZsh{} Call the match\PYGZus{}filter module \PYGZhy{} returns detections, a list of detections}
+            \PYG{c}{\PYGZsh{} containted within the detection class with elements, time, template,}
+            \PYG{c}{\PYGZsh{} number of channels used and cross\PYGZhy{}channel correlation sum.}
+            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Running the detection routine}\PYG{l+s}{\PYGZsq{}}
+            \PYG{n}{detections}\PYG{o}{=}\PYG{n}{match\PYGZus{}filter}\PYG{o}{.}\PYG{n}{match\PYGZus{}filter}\PYG{p}{(}\PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{sfiles}\PYG{p}{,} \PYG{n}{templates}\PYG{p}{,} \PYG{n}{delays}\PYG{p}{,} \PYG{n}{st}\PYG{p}{,}
+                                                 \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{threshold}\PYG{p}{,} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{threshtype}\PYG{p}{,}
+                                                 \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{trig\PYGZus{}int}\PYG{p}{,}  \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{)}
 
-        \PYG{c}{\PYGZsh{} Call the match\PYGZus{}filter module \PYGZhy{} returns detections, a list of detections}
-        \PYG{c}{\PYGZsh{} containted within the detection class with elements, time, template,}
-        \PYG{c}{\PYGZsh{} number of channels used and cross\PYGZhy{}channel correlation sum.}
-        \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Running the detection routine}\PYG{l+s}{\PYGZsq{}}
-        \PYG{n}{detections}\PYG{o}{=}\PYG{n}{match\PYGZus{}filter}\PYG{o}{.}\PYG{n}{match\PYGZus{}filter}\PYG{p}{(}\PYG{n}{templatedef}\PYG{o}{.}\PYG{n}{sfiles}\PYG{p}{,} \PYG{n}{templates}\PYG{p}{,} \PYG{n}{delays}\PYG{p}{,} \PYG{n}{st}\PYG{p}{,}
-                                             \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{threshold}\PYG{p}{,} \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{threshtype}\PYG{p}{,}
-                                             \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{trig\PYGZus{}int}\PYG{p}{,}  \PYG{n}{matchdef}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{)}
-
-        \PYG{k}{for} \PYG{n}{detection} \PYG{o+ow}{in} \PYG{n}{detections}\PYG{p}{:}
-            \PYG{c}{\PYGZsh{} output detections to file}
-            \PYG{n}{f}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{template\PYGZus{}name}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}time}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
-                    \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}val}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{threshold}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
-                    \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{no\PYGZus{}chans}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
-            \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{template: }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{template\PYGZus{}name}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ detection at: }\PYG{l+s}{\PYGZsq{}}\PYGZbs{}
-                \PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}time}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ with a cccsum of: }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}val}\PYG{p}{)}
-        \PYG{k}{if} \PYG{n}{detections}\PYG{p}{:}
-            \PYG{n}{f}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+            \PYG{k}{for} \PYG{n}{detection} \PYG{o+ow}{in} \PYG{n}{detections}\PYG{p}{:}
+                \PYG{c}{\PYGZsh{} output detections to file}
+                \PYG{n}{f}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{template\PYGZus{}name}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}time}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                        \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}val}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{threshold}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                        \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{, }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{no\PYGZus{}chans}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+                \PYG{k}{print} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{template: }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{template\PYGZus{}name}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ detection at: }\PYG{l+s}{\PYGZsq{}}\PYGZbs{}
+                    \PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}time}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ with a cccsum of: }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{detection}\PYG{o}{.}\PYG{n}{detect\PYGZus{}val}\PYG{p}{)}
+            \PYG{k}{if} \PYG{n}{detections}\PYG{p}{:}
+                \PYG{n}{f}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+        \PYG{k}{else}\PYG{p}{:}
+            \PYG{k}{for} \PYG{n}{tr} \PYG{o+ow}{in} \PYG{n}{st}\PYG{p}{:}
+                \PYG{n}{tr}\PYG{o}{.}\PYG{n}{write}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{test\PYGZus{}data/}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{station}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{channel}\PYG{o}{+}\PYGZbs{}
+                         \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{starttime}\PYG{o}{.}\PYG{n}{year}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                         \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{starttime}\PYG{o}{.}\PYG{n}{month}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                         \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{tr}\PYG{o}{.}\PYG{n}{stats}\PYG{o}{.}\PYG{n}{starttime}\PYG{o}{.}\PYG{n}{day}\PYG{p}{)}\PYG{o}{.}\PYG{n}{zfill}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{o}{+}\PYGZbs{}
+                         \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}processed.ms}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{format}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{MSEED}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
 \PYG{n}{f}\PYG{o}{.}\PYG{n}{close}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
@@ -389,15 +492,6 @@ EQcorrscan is a python module designed to run match filter routines for
 seismology, within it are routines for integration to seisan and obspy.
 With obspy integration (which is necessary) all main waveform formats can be
 read in and output.
-
-This main section contains a script, LFE\_search.py which demonstrates the usage
-of the built in functions from template generation from picked waveforms
-through detection by match filter of continuous data to the generation of lag
-times to be used for relative locations.
-
-The match-filter routine described here was used a previous Matlab code for the
-Chamberlain et al. 2014 G-cubed publication.  The basis for the lag-time
-generation section is outlined in Hardebeck \& Shelly 2011, GRL.
 
 Code generated by Calum John Chamberlain of Victoria University of Wellington,
 2015.
@@ -435,24 +529,6 @@ waveform.
 
 \end{fulllineitems}
 
-\index{float\_conv() (in module Sfile\_util)}
-
-\begin{fulllineitems}
-\phantomsection\label{modules:Sfile_util.float_conv}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{float\_conv}}{\emph{string}}{}
-Convenience tool to convert from string to float, if empty string return
-NaN rather than an error
-
-\end{fulllineitems}
-
-\index{int\_conv() (in module Sfile\_util)}
-
-\begin{fulllineitems}
-\phantomsection\label{modules:Sfile_util.int_conv}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{int\_conv}}{\emph{string}}{}
-Convenience tool to convert from string to integer, if empty string return
-a 999 rather than an error
-
-\end{fulllineitems}
-
 \index{populateSfile() (in module Sfile\_util)}
 
 \begin{fulllineitems}
@@ -465,6 +541,19 @@ velocity, SNR, azimuth residual, Time-residual, final weight,
 epicentral distance \& azimuth from event to station.
 
 This is a full pick line information from the seisan manual, P. 341
+
+\end{fulllineitems}
+
+\index{readpicks() (in module Sfile\_util)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:Sfile_util.readpicks}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{readpicks}}{\emph{sfilename}}{}
+Function to read pick informaiton from the s-file
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+Sfile\_tile.PICK
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -615,12 +704,38 @@ python-pylab    - used for plotting
 NonLinLoc       - used outside of all codes for travel-time generation
 
 \end{description}
+\index{\_find\_detections() (in module bright\_lights)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:bright_lights._find_detections}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_find\_detections}}{\emph{cum\_net\_resp}, \emph{nodes}, \emph{threshold}, \emph{thresh\_type}, \emph{samp\_rate}, \emph{realstations}}{}
+Function to find detections within the cumulative network response according
+to Frank et al. (2014).
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{cum\_net\_resp}} (\emph{np.array}) -- Array of cumulative network response for nodes
+
+\item {} 
+\textbf{\texttt{nodes}} (\emph{list of tuples}) -- Nodes associated with the source of energy in the cum\_net\_resp
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+detections as class DETECTION
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{\_node\_loop() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{node}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}}{}
+\phantomsection\label{modules:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{node}, \emph{lags}, \emph{stream}}{}
 Internal function to allow for parallelisation of brightness
 \begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+energy (np.array), node (tuple), realstations (list of stations actaully used)
+
 \end{description}\end{quote}
 
 \end{fulllineitems}
@@ -628,7 +743,7 @@ Internal function to allow for parallelisation of brightness
 \index{\_read\_tt() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:bright_lights._read_tt}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_read\_tt}}{\emph{path}, \emph{stations}, \emph{phase}}{}
+\phantomsection\label{modules:bright_lights._read_tt}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_read\_tt}}{\emph{path}, \emph{stations}, \emph{phase}, \emph{phaseout='S'}, \emph{ps\_ratio=1.68}}{}
 Function to read in .csv files of slowness generated from Grid2Time (part
 of NonLinLoc by Anthony Lomax) and convert this to a useful format here.
 
@@ -641,6 +756,12 @@ both at the moment.
 
 \item {} 
 \textbf{\texttt{stations}} (\href{https://docs.python.org/library/functions.html\#list}{\emph{list}}) -- List of station names to read slowness files for.
+
+\item {} 
+\textbf{\texttt{phaseout}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- What phase to return the lagtimes in
+
+\item {} 
+\textbf{\texttt{ps\_ratio}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- p to s ratio for coversion
 
 \end{itemize}
 
@@ -681,10 +802,44 @@ list stations, list of lists of tuples nodes, :class:     `numpy.array' lags sta
 
 \end{fulllineitems}
 
+\index{\_rm\_similarlags() (in module bright\_lights)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:bright_lights._rm_similarlags}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_rm\_similarlags}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{threshold}}{}
+Function to remove those nodes that have a very similar network moveout
+to another lag.
+
+Will, for each node, calculate the difference in lagtime at each station
+at every node, then sum these for each node to get a cumulative difference
+in network moveout.  This will result in an array of arrays with zeros on
+the diagonal.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stations}} (\href{https://docs.python.org/library/functions.html\#list}{\emph{list}}) -- List of station names from in the form where stations{[}i{]}    refers to nodes{[}i{]}{[}:{]} and lags{[}i{]}{[}:{]}
+
+\item {} 
+\textbf{\texttt{nodes}} (\emph{list, tuple}) -- List of node points where nodes{[}i{]} referes to stations{[}i{]} and    nodes{[}:{]}{[}:{]}{[}0{]} is latitude in degrees, nodes{[}:{]}{[}:{]}{[}1{]} is longitude in    degrees, nodes{[}:{]}{[}:{]}{[}2{]} is depth in km.
+
+\item {} 
+\textbf{\texttt{lags}} -- Array of arrays where lags{[}i{]}{[}:{]} refers to stations{[}i{]}.    lags{[}i{]}{[}j{]} should be the delay to the nodes{[}i{]}{[}j{]} for stations{[}i{]} in seconds
+
+\item {} 
+\textbf{\texttt{threshold}} -- Threshold for removal in seconds
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+list stations, list of lists of tuples nodes, :class:     `numpy.array' lags station{[}1{]} refers to nodes{[}1{]} and lags{[}1{]}    nodes{[}1{]}{[}1{]} refers to station{[}1{]} and lags{[}1{]}{[}1{]}    nodes{[}n{]}{[}n{]} is a tuple of latitude, longitude and depth.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{brightness() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}}{}
+\phantomsection\label{modules:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}, \emph{coherance\_thresh}}{}
 Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.
 
@@ -710,10 +865,32 @@ sampling rates.
 \item {} 
 \textbf{\texttt{thresh\_type}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either MAD or abs where MAD is the Mean Absolute    Deviation and abs is an absoulte brightness.
 
+\item {} 
+\textbf{\texttt{coherance\_thresh}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.
+
 \end{itemize}
 
 \item[{Returns}] \leavevmode
 list of templates as :class: \emph{obspy.Stream} objects
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{coherance() (in module bright\_lights)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:bright_lights.coherance}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{coherance}}{\emph{stream}}{}
+Function to determine the average network coherance of a given template or
+detection.  You will want your stream to contain only signal as noise
+will reduce the coherance (assuming it is incoherant random noise).
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{stream}} (\emph{obspy.Stream}) -- The stream of seismic data you want to calculate the
+coherance for.
+
+\item[{Returns}] \leavevmode
+float - coherance
 
 \end{description}\end{quote}
 
@@ -934,57 +1111,18 @@ Type of detection, STA, corr, bright
 \index{\_channel\_loop() (in module match\_filter)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:match_filter._channel_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_channel\_loop}}{\emph{tr}, \emph{stream}, \emph{delay}}{}
-Intermediate step which can be run in parallel to correlate a single
-channel template with a single channel of data only if the channel and
-template match header values.  Written to allow parallelisation at this
-step.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode\begin{itemize}
-\item {} 
-\textbf{\texttt{tr}} -- Single trace of template seismic data
-
-\item {} 
-\textbf{\texttt{chan}} -- Single trace of day-long seismic data to be used as an image
-
-\item {} 
-\textbf{\texttt{delay}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- time in seconds to apply a lag to the data by.
-
-\end{itemize}
-
-\item[{Returns}] \leavevmode
-\begin{quote}\begin{description}
-\item[{class}] \leavevmode
-`numpy.array' of single channel cross-correlation values
-
-\end{description}\end{quote}
-
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_template\_loop() (in module match\_filter)}
-
-\begin{fulllineitems}
-\phantomsection\label{modules:match_filter._template_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_template\_loop}}{\emph{templates}, \emph{delays}, \emph{stream}, \emph{plotvar}}{}
-Higher level routine to handle correlation of a Stream of day-long data
-channels with a series of templates.  The idea is to run this in parallel
-as these correaltions can be run incredibly quickly at little cost.
-The most memory efficient way to run this would be to run the correlations
-in parallel for each channel.
+\phantomsection\label{modules:match_filter._channel_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_channel\_loop}}{\emph{templates}, \emph{stream}}{}
+Loop to generate cross channel correaltion sums for a series of templates -
+hands off the actual correlations to a sister function which can be run in
+parallel.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{\texttt{template}} -- A list of templates, where each one should be an
+\textbf{\texttt{templates}} -- A list of templates, where each one should be an
 
 \end{description}\end{quote}
 
 obspy.Stream object containing multiple traces of seismic data and the
 relevant header information.
-:type delays: float
-:param delays: A list of lists of delays order in the same way as the
-templates, e.g. delays{[}1{]}{[}1{]} referes to the first trace in templates{[}1{]}
-:type stream: :class: `obspy.Stream'
 :param stream: A single obspy.Stream object containing daylong seismic data
 to be correlated through using the templates.  This is in effect the image
 \begin{quote}\begin{description}
@@ -998,10 +1136,31 @@ correlation sums for each template for this day of data.
 
 \end{fulllineitems}
 
+\index{\_template\_loop() (in module match\_filter)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:match_filter._template_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_template\_loop}}{\emph{template}, \emph{chan}, \emph{station}, \emph{channel}, \emph{i=0}}{}
+Sister loop to handle the correlation of a single template (of multiple
+channels) with a single channel of data.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{i}} (\emph{Int}) -- Optional argument, used to keep track of which process is being
+
+\end{description}\end{quote}
+
+run.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+tuple of (i,ccc) with ccc as an ndarray
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{match\_filter() (in module match\_filter)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:match_filter.match_filter}\pysiglinewithargsret{\code{match\_filter.}\bfcode{match\_filter}}{\emph{template\_names}, \emph{templates}, \emph{delays}, \emph{stream}, \emph{threshold}, \emph{threshold\_type}, \emph{trig\_int}, \emph{plotvar}}{}
+\phantomsection\label{modules:match_filter.match_filter}\pysiglinewithargsret{\code{match\_filter.}\bfcode{match\_filter}}{\emph{template\_names}, \emph{templates}, \emph{stream}, \emph{threshold}, \emph{threshold\_type}, \emph{trig\_int}, \emph{plotvar}}{}
 Over-arching code to run the correlations of given templates with a day of
 seismic data and output the detections based on a given threshold.
 \begin{quote}\begin{description}

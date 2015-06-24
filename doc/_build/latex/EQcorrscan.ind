@@ -2,62 +2,64 @@
 \def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
 
   \bigletter {Symbols}
-  \item \_channel\_loop() (in module match\_filter), \hyperpage{16}
-  \item \_node\_loop() (in module bright\_lights), \hyperpage{13}
-  \item \_read\_tt() (in module bright\_lights), \hyperpage{13}
-  \item \_resample\_grid() (in module bright\_lights), \hyperpage{14}
-  \item \_template\_gen() (in module template\_gen), \hyperpage{15}
-  \item \_template\_loop() (in module match\_filter), \hyperpage{16}
+  \item \_channel\_loop() (in module match\_filter), \hyperpage{19}
+  \item \_find\_detections() (in module bright\_lights), \hyperpage{15}
+  \item \_node\_loop() (in module bright\_lights), \hyperpage{15}
+  \item \_read\_tt() (in module bright\_lights), \hyperpage{15}
+  \item \_resample\_grid() (in module bright\_lights), \hyperpage{16}
+  \item \_rm\_similarlags() (in module bright\_lights), \hyperpage{16}
+  \item \_template\_gen() (in module template\_gen), \hyperpage{17}
+  \item \_template\_loop() (in module match\_filter), \hyperpage{19}
 
   \indexspace
   \bigletter B
-  \item blanksfile() (in module Sfile\_util), \hyperpage{9}
-  \item bright\_lights (module), \hyperpage{13}
-  \item brightness() (in module bright\_lights), \hyperpage{14}
+  \item blanksfile() (in module Sfile\_util), \hyperpage{11}
+  \item bright\_lights (module), \hyperpage{15}
+  \item brightness() (in module bright\_lights), \hyperpage{16}
+
+  \indexspace
+  \bigletter C
+  \item coherance() (in module bright\_lights), \hyperpage{17}
 
   \indexspace
   \bigletter D
-  \item DETECTION (class in match\_filter), \hyperpage{16}
+  \item DETECTION (class in match\_filter), \hyperpage{18}
 
   \indexspace
   \bigletter F
-  \item find\_peaks() (in module findpeaks), \hyperpage{10}
-  \item find\_peaks2() (in module findpeaks), \hyperpage{10}
-  \item findpeaks (module), \hyperpage{10}
-  \item float\_conv() (in module Sfile\_util), \hyperpage{9}
-  \item from\_contbase() (in module template\_gen), \hyperpage{15}
-  \item from\_sfile() (in module template\_gen), \hyperpage{15}
-
-  \indexspace
-  \bigletter I
-  \item int\_conv() (in module Sfile\_util), \hyperpage{9}
+  \item find\_peaks() (in module findpeaks), \hyperpage{12}
+  \item find\_peaks2() (in module findpeaks), \hyperpage{12}
+  \item findpeaks (module), \hyperpage{12}
+  \item from\_contbase() (in module template\_gen), \hyperpage{18}
+  \item from\_sfile() (in module template\_gen), \hyperpage{18}
 
   \indexspace
   \bigletter M
-  \item match\_filter (module), \hyperpage{15}
-  \item match\_filter() (in module match\_filter), \hyperpage{17}
-  \item match\_filter\_par (module), \hyperpage{11}
+  \item match\_filter (module), \hyperpage{18}
+  \item match\_filter() (in module match\_filter), \hyperpage{19}
+  \item match\_filter\_par (module), \hyperpage{13}
 
   \indexspace
   \bigletter N
-  \item normxcorr2() (in module match\_filter), \hyperpage{17}
+  \item normxcorr2() (in module match\_filter), \hyperpage{20}
 
   \indexspace
   \bigletter P
-  \item PICK (class in Sfile\_util), \hyperpage{9}
-  \item populateSfile() (in module Sfile\_util), \hyperpage{9}
+  \item PICK (class in Sfile\_util), \hyperpage{11}
+  \item populateSfile() (in module Sfile\_util), \hyperpage{11}
 
   \indexspace
   \bigletter R
-  \item readwavename() (in module Sfile\_util), \hyperpage{9}
+  \item readpicks() (in module Sfile\_util), \hyperpage{11}
+  \item readwavename() (in module Sfile\_util), \hyperpage{11}
 
   \indexspace
   \bigletter S
-  \item Sfile\_util (module), \hyperpage{9}
+  \item Sfile\_util (module), \hyperpage{11}
 
   \indexspace
   \bigletter T
-  \item template\_gen (module), \hyperpage{14}
-  \item template\_gen\_par (module), \hyperpage{11}
+  \item template\_gen (module), \hyperpage{17}
+  \item template\_gen\_par (module), \hyperpage{13}
 
 \end{theindex}
