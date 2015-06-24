@@ -115,7 +115,7 @@ def normxcorr2(template, image):
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
 
-def _template_loop_dev(template, chan, station, channel, i):#, ccc_queue):
+def _template_loop(template, chan, station, channel, i=0):
     """
     Sister loop to handle the correlation of a single template (of multiple
     channels) with a single channel of data.
@@ -124,10 +124,11 @@ def _template_loop_dev(template, chan, station, channel, i):#, ccc_queue):
     :type chan: np.array
     :type station: String
     :type channel: String
-    :type ccc_queue: multiprocessing.Queue
-    :param ccc_queue: Output ccc np.array coded for multiprocessing
+    :type i: Int
+    :param i: Optional argument, used to keep track of which process is being
+    run.
 
-    :returns: ccc
+    :returns: tuple of (i,ccc) with ccc as an ndarray
     """
     from utils.timer import Timer
     from par import match_filter_par as matchdef
@@ -146,28 +147,26 @@ def _template_loop_dev(template, chan, station, channel, i):#, ccc_queue):
         pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
         image=np.append(chan,pad)[len(pad):]
         ccc=(normxcorr2(template_data.data, image))
-    if t.secs > 4:
+    if matchdef.debug >= 2 and t.secs > 4:
         print "Single if statement took %s s" % t.secs
         if not template_data:
             print "Didn't even correlate!"
         print station+' '+channel
-    # else:
-        # print "If statement without correlation took %s s" % t.secs
-    # if matchdef.debug >= 3:
-        # print '********* DEBUG:  '+station+'.'+\
-                # channel+' ccc: '+str(max(ccc[0]))
-    # if matchdef.debug >=3:
-        # print 'shape of ccc: '+str(np.shape(ccc))
-        # print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
-        # print 'ccc type is: '+str(type(ccc))
-    # # ccc=np.reshape(ccc,(len(ccc),))
-    # if matchdef.debug >=3:
-        # print 'shape of ccc: '+str(np.shape(ccc))
-    # ccc_queue.put(ccc)
-    # print "Parallel worker "+str(i)+" complete"
+    elif matchdef.debug >=2:
+        print "If statement without correlation took %s s" % t.secs
+    if matchdef.debug >= 3:
+        print '********* DEBUG:  '+station+'.'+\
+                channel+' ccc: '+str(max(ccc[0]))
+    if matchdef.debug >=3:
+        print 'shape of ccc: '+str(np.shape(ccc))
+        print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
+        print 'ccc type is: '+str(type(ccc))
+    if matchdef.debug >=3:
+        print 'shape of ccc: '+str(np.shape(ccc))
+        print "Parallel worker "+str(i)+" complete"
     return (i, ccc)
 
-def _channel_loop_dev(templates, stream):
+def _channel_loop(templates, stream):
     """
     Loop to generate cross channel correaltion sums for a series of templates -
     hands off the actual correlations to a sister function which can be run in
@@ -184,14 +183,11 @@ def _channel_loop_dev(templates, stream):
     correlation sums for each template for this day of data.
     :return: list of ints as number of channels used for each cross-correlation
     """
-    # from joblib import Parallel, delayed#, load, dump
-    #from joblib.pool import has_shareable_memory
-    # from obspy import Trace
     import time, cv2
     from multiprocessing import Pool
     from par import match_filter_par as matchdef
     from utils.timer import Timer
-    num_cores=matchdef.cores #multiprocessing.cpu_count()
+    num_cores=matchdef.cores
     if len(templates) < num_cores:
         num_cores = len(templates)
     if 'cccs_matrix' in locals():
@@ -212,32 +208,38 @@ def _channel_loop_dev(templates, stream):
         tr_data=tr.data
         station=tr.stats.station
         channel=tr.stats.channel
-        print "Starting parallel run"
+        if matchdef.debug >=1:
+            print "Starting parallel run"
         tic=time.clock()
         with Timer() as t:
             # Send off to sister function
             pool=Pool(processes=num_cores, maxtasksperchild=None)
-            results=[pool.apply_async(_template_loop_dev, args=(templates[i],\
+            results=[pool.apply_async(_template_loop, args=(templates[i],\
                                                         tr_data, station,\
                                                                 channel, i))\
                                   for i in xrange(len(templates))]
             pool.close()
-        print "--------- TIMER:    Correlation loop took: %s s" % t.secs
-        print " I have "+str(len(results))+" results"
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Correlation loop took: %s s" % t.secs
+            print " I have "+str(len(results))+" results"
         with Timer() as t:
             cccs_list=[p.get() for p in results]
-        print "--------- TIMER:    Getting results took took: %s s" % t.secs
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Getting results took took: %s s" % t.secs
         with Timer() as t:
             cccs_list.sort(key=lambda tup: tup[0]) # Sort by placeholder returned from function
-        print "--------- TIMER:    Sorting took took: %s s" % t.secs
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Sorting took took: %s s" % t.secs
         with Timer() as t:
             cccs_list = [ccc[1] for ccc in cccs_list]
-        print "--------- TIMER:    Extracting arrays took: %s s" % t.secs
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Extracting arrays took: %s s" % t.secs
         if matchdef.debug >= 3:
             print 'cccs_list is shaped: '+str(np.shape(cccs_list))
         with Timer() as t:
             cccs=np.concatenate(cccs_list, axis=0)
-        print "--------- TIMER:    cccs_list conversion: %s s" % t.secs
+        if matchdef.debug >=1:
+            print "--------- TIMER:    cccs_list conversion: %s s" % t.secs
         del cccs_list
         if matchdef.debug >=2:
             print 'After looping through templates the cccs is shaped: '+str(np.shape(cccs))
@@ -252,32 +254,29 @@ def _channel_loop_dev(templates, stream):
         # dimensional index giving the position in the ccc, e.g.:
         # np.shape(cccsums)=(len(stream), len(templates), len(ccc))
 
-        # cccs_matrix=np.array(cccs_matrix)
-        # if matchdef.debug >=2:
-            # print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
+        if matchdef.debug >=2:
+            print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
         # First work out how many channels were used
         for i in xrange(0,len(templates)):
-            # if not np.all(np.isnan(cccs_matrix[1][i])):
             if not np.all(cccs_matrix[1][i]==0):
                 # Check that there are some real numbers in the vector rather
                 # than being all 0, which is the default case for no match
                 # of image and template names
                 no_chans[i]+=1
-            # else:
-                # # Convert nan arrays to 0.0 so they can be added
-                # cccs_matrix[1][i]=np.nan_to_num(cccs_matrix[1][i])
         # Now sum along the channel axis for each template to give the cccsum values
         # for each template for each day
         # This loop is disappointingly slow - due to layout in memory - axis=1 is fast
         with Timer() as t:
             cccsums=cccs_matrix.sum(axis=0)
-        print "--------- TIMER:    Summing took %s s" % t.secs
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Summing took %s s" % t.secs
         if matchdef.debug>=2:
             print 'cccsums is shaped thus: '+str(np.shape(cccsums))
         cccs_matrix[0]=cccsums
         del cccsums
         toc=time.clock()
-        print "--------- TIMER:    Trace loop took "+str(toc-tic)+" s"
+        if matchdef.debug >=1:
+            print "--------- TIMER:    Trace loop took "+str(toc-tic)+" s"
     if matchdef.debug >=2:
         print 'cccs_matrix is shaped: '+str(np.shape(cccs_matrix))
     ########################## SLOW CONVERSION TO NUMPY ARRAY, DO IT BETTER!
@@ -375,7 +374,7 @@ def match_filter(template_names, templates, stream, threshold,
                 nulltrace.stats.starttime=template[0].stats.starttime
                 nulltrace.data=np.array([np.NaN]*len(template[0].data), dtype=np.float32)
                 template+=nulltrace
-    [cccsums, no_chans]=_channel_loop_dev(templates, stream)
+    [cccsums, no_chans]=_channel_loop(templates, stream)
     if len(cccsums[0])==0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc=time.clock()

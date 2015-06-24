@@ -69,9 +69,12 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
 
     # Locate the slowness file information
     gridfiles=[]
+    stations_out=[]
     for station in stations:
         gridfiles+=(glob.glob(path+'*.'+phase+'.'+station+'*.csv'))
-    if not stations:
+        if glob.glob(path+'*.'+phase+'.'+station+'*.csv'):
+            stations_out+=[station]
+    if not stations_out:
         print 'No slowness files found'
         sys.exit()
     # Read the files
@@ -100,7 +103,7 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
                         # other one, e.g. for each station the grid must be the
                         # same, hence allnodes=nodes
         f.close()
-    return stations, allnodes, alllags
+    return stations_out, allnodes, alllags
 
 def _resample_grid(stations, nodes, lags, volume, resolution):
     """
