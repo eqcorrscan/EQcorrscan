@@ -10,7 +10,9 @@ Outline definitions for bright_lights python code
 """
 from obspy import UTCDateTime
 stations=['EORO','WHYM','COSA','FOZ',
-          'GOVA','LABE','MTFO','RPZ']   # List of stations to use for template
+          'GOVA','LABE','MTFO','RPZ',
+          'COVA','FRAN','POCR','SOLU',
+          'WHAT','POCR2','WHAT2']   # List of stations to use for template
                                         # generation
 
 nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
@@ -31,10 +33,10 @@ resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # for resampled grid in decimal
                                         # degrees and km respectively.
                                         # with depth increasing down
-startdate=UTCDateTime('2009-07-14')     # obspy UTCDateTime object giving
+startdate=UTCDateTime('2013-03-28')     # obspy UTCDateTime object giving
                                         # date to start looking for templates
                                         # beyond
-enddate=UTCDateTime('2009-07-15')       # As above, but the end date
+enddate=UTCDateTime('2013-03-29')       # As above, but the end date
 threshold=10                            # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
