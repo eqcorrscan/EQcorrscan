@@ -209,7 +209,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     return stations, nodes_out, lags_out
 
 
-def _node_loop(stations, node, lags, stream):
+def _node_loop(stations, node, lags, stream, i=0):
     """
     Internal function to allow for parallelisation of brightness
 
@@ -240,7 +240,7 @@ def _node_loop(stations, node, lags, stream):
                     # Apply lag to data and add it to energy - normalize the data here
                     energy=np.concatenate((energy,(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))), axis=0)
                     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
-    return energy
+    return (i, energy)
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
     """
@@ -349,7 +349,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     """
     from core.template_gen import _template_gen
     from par import template_gen_par as defaults
-    from joblib import Parallel, delayed
+    from par import match_filter_par as matchdef
+    # from joblib import Parallel, delayed
+    from multiprocessing import Pool
     from utils.Sfile_util import PICK
     import sys
     from copy import deepcopy
@@ -362,7 +364,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         if st:
             realstations+=station
     del st
-    energy=np.array([np.array([0]*len(stream[0]))]*len(nodes))
+    # energy=np.array([np.array([0]*len(stream[0]))]*len(nodes))
     detections=[]
     detect_lags=[]
     parallel=True
@@ -375,9 +377,22 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                   stream)
     else:
         # Parallel run
-        energy[i]=Parallel(n_jobs=10, verbose=5)(delayed(_node_loop)(stations, nodes[i],
-                                                          lags[:,i], stream)\
-                                                          for i in xrange(0,len(nodes)))
+        num_cores=matchdef.cores
+        if num_cores > len(nodes):
+            num_cores=len(nodes)
+        pool=Pool(processes=num_cores, maxtasksperchild=None)
+        results=[pool.apply_async(_node_loop, args=(stations, nodes[i],\
+                                                    lags[:,i], stream, i))\
+                                  for i in xrange(len(nodes))]
+        pool.close()
+        energy=[p.get() for p in results]
+        energy.sort(key=lambda tup: tup[0])
+        energy = [node[1] for node in energy]
+        energy=np.concatenate(energy, axis=0)
+        print energy.shape
+        # energy[i]=Parallel(n_jobs=2, verbose=5)(delayed(_node_loop)(stations, nodes[i],
+                                                          # lags[:,i], stream)\
+                                                          # for i in xrange(0,len(nodes)))
     # Now compute the cumulative network response and then detect possible events
     indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
     cum_net_resp=np.array([np.nan]*len(indeces))
