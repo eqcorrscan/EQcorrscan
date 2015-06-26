@@ -365,7 +365,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     energy=np.array([np.array([0]*len(stream[0]))]*len(nodes))
     detections=[]
     detect_lags=[]
-    parallel=False
+    parallel=True
     plotvar=True
     # Loop through each node in the input
     # Linear run
@@ -375,7 +375,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                   stream)
     else:
         # Parallel run
-        energy[i]=Parallel(n_jobs=2, verbose=5)(delayed(_node_loop)(stations, nodes[i],
+        energy[i]=Parallel(n_jobs=10, verbose=5)(delayed(_node_loop)(stations, nodes[i],
                                                           lags[:,i], stream)\
                                                           for i in xrange(0,len(nodes)))
     # Now compute the cumulative network response and then detect possible events
@@ -416,6 +416,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # for detection in detections: # Flatten list
         # temp_det=temp_det+detection
     # detections=temp_det
+    nodesout=[]
     j=0
     if detections:
         print 'Converting detections in to templates'
@@ -428,6 +429,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             node=(detection.template_name.split('_')[0],\
                     detection.template_name.split('_')[1],\
                     detection.template_name.split('_')[2])
+            nodesout+=[node]
             # Look up node in nodes and find the associated lags
             index=nodes.index(node)
             detect_lags=lags[:,index]
@@ -476,5 +478,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 templates.append(obsread(template_name))
         else:
             print 'No templates for you'
-    return templates
+    nodesout=list(set(nodesout))
+    return templates, nodes
 
