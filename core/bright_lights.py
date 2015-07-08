@@ -40,7 +40,7 @@ Pre-requisites:
     python-pylab    - used for plotting
     NonLinLoc       - used outside of all codes for travel-time generation
 """
-
+import numpy as np
 def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     """
     Function to read in .csv files of slowness generated from Grid2Time (part
@@ -65,7 +65,6 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     """
 
     import glob, sys, csv
-    import numpy as np
 
     # Locate the slowness file information
     gridfiles=[]
@@ -105,7 +104,7 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
         f.close()
     return stations_out, allnodes, alllags
 
-def _resample_grid(stations, nodes, lags, volume, resolution):
+def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners, resolution):
     """
     Function to resample the lagtime grid to a given volume.  For use if the
     grid from Grid2Time is too large or you want to run a faster, downsampled
@@ -121,35 +120,27 @@ def _resample_grid(stations, nodes, lags, volume, resolution):
     :type lags: :class: 'numpy.array'
     :param lags: Array of arrays where lags[i][:] refers to stations[i].\
     lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds\
-    :type volume: tuple
-    :param volume: list of tuples: [(mindepth, maxdepth),(minlat, maxlat),(minlong,\
-    maxlong)].  This will be interpreted as a cuboid.
+    :type mindepth: float
+    :param mindepth: Upper limit of volume
+    :type maxdepth: float
+    :param maxdepth: Lower limit of volume
+    :type corners: matplotlib.Path
+    :param corners: matplotlib path of the corners for the 2D polygon to cut to
+    in lat and long
 
     :return: list stations, list of lists of tuples nodes, :class: \
     'numpy.array' lags station[1] refers to nodes[1] and lags[1]\
     nodes[1][1] refers to station[1] and lags[1][1]\
     nodes[n][n] is a tuple of latitude, longitude and depth.
     """
-    import sys, numpy as np
+    import sys
     resamp_nodes=[]
     resamp_lags=[]
-    # Extract info from volume
-    minlat=volume[0][0]
-    maxlat=volume[0][1]
-    minlong=volume[1][0]
-    maxlong=volume[1][1]
-    mindepth=volume[2][0]
-    maxdepth=volume[2][1]
-    # Check that the box makes sense
-    if minlat >= maxlat or minlong >= maxlong or mindepth >= maxdepth:
-        print "Your box doesn't make sense, check your values"
-        sys.exit()
     # Cut the volume
     for i in xrange(0,len(nodes)):
-        # If the node is within the range, keep it
-        if minlong < float(nodes[i][0]) < maxlong and\
-            minlat < float(nodes[i][1]) < maxlat and\
-            mindepth < float(nodes[i][2]) < maxdepth:
+        # If the node is within the volume range, keep it
+        if mindepth < float(nodes[i][2]) < maxdepth and\
+           corners.contains_point(nodes[i][0:2]):
                 resamp_nodes.append(nodes[i])
                 resamp_lags.append([lags[:,i]])
     # Reshape the lags
@@ -187,7 +178,6 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     nodes[1][1] refers to station[1] and lags[1][1]\
     nodes[n][n] is a tuple of latitude, longitude and depth.
     """
-    import numpy as np
     import sys
     netdif=abs((lags.T-lags.T[0]).sum(axis=1).reshape(1,len(nodes)))>threshold
     for i in xrange(len(nodes)):
@@ -209,37 +199,36 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     return stations, nodes_out, lags_out
 
 
-def _node_loop(stations, node, lags, stream, i=0):
+def _node_loop(stations, lags, stream, i=0):
     """
     Internal function to allow for parallelisation of brightness
 
     :type stations: list
-    :type node: tuple
     :type lags: list
     :type stream: :class: `obspy.Stream`
 
-    :return: energy (np.array), node (tuple), realstations (list of stations actaully used)
+    :return: (i, energy (np.array))
     """
-    import numpy as np
-    i=0
-    # Print what node we are working on as a check that things are happening!
-    print 'Running the brightness function for: '+str(node)
-    # Loop through stations
-    for station in stations:
-        st=stream.select(station=station)
-        lag=lags[i]
-        # Loop through channels
-        if st:
-            for tr in st:
-                lagged_data=tr.data[int(round(lag*tr.stats.sampling_rate)):]
-                pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
-                lagged_energy=np.square(np.concatenate((pad,lagged_data)))
-                if not 'energy' in locals():
-                    energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
-                else:
-                    # Apply lag to data and add it to energy - normalize the data here
-                    energy=np.concatenate((energy,(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))), axis=0)
-                    energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
+    from par import bright_lights_par as brightdef
+    for tr in stream:
+        j = [n for n, x in enumerate(stations) if x ==tr.stats.station]
+        # Check that there is only one matching station
+        if not len(j)==1:
+            raise IOError('Too many stations')
+        lag=lags[j[0]]
+        lagged_data=tr.data[int(round(lag*tr.stats.sampling_rate)):]
+        pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
+        lagged_energy=np.square(np.concatenate((pad,lagged_data)))
+        # Clip energy
+        lagged_energy=np.clip(lagged_energy, 0, brightdef.clip_level*np.mean(lagged_energy))
+        if not 'energy' in locals():
+            energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
+        else:
+            # Apply lag to data and add it to energy - normalize the data here
+            energy=np.concatenate((energy,\
+                                    (lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))),\
+                                    axis=0)
+            energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
     return (i, energy)
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
@@ -261,7 +250,6 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     from utils import findpeaks
     from par import template_gen_par as defaults
     from core.match_filter import DETECTION
-    import numpy as np
     cum_net_resp = np.nan_to_num(cum_net_resp) # Force no NaNs
     if np.isnan(cum_net_resp).any():
         raise ValueError("Nans present")
@@ -303,15 +291,14 @@ def coherance(stream):
 
     :return: float - coherance
     """
-    import numpy as np
     coherance=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
     # unique cross-channel pairing
     for i in xrange(len(stream)):
         for j in xrange(i+1,len(stream)):
-            coherance+=np.abs(normxcorr2(stream[i].data, stream[j].data))
-    coherance=coherance/len(stream)
+            coherance+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
+    coherance=2*coherance/(len(stream)*(len(stream)-1))
     return coherance
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
@@ -350,13 +337,19 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     from core.template_gen import _template_gen
     from par import template_gen_par as defaults
     from par import match_filter_par as matchdef
+    from par import bright_lights_par as brightdef
+    if brightdef.plotsave:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.ioff()
     # from joblib import Parallel, delayed
-    from multiprocessing import Pool
+    from multiprocessing import Pool, cpu_count
     from utils.Sfile_util import PICK
     import sys
     from copy import deepcopy
     from obspy import read as obsread, Stream
-    import numpy as np
+    import matplotlib.pyplot as plt
     # Check that we actually have the correct stations
     realstations=[]
     for station in stations:
@@ -364,7 +357,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         if st:
             realstations+=station
     del st
-    # energy=np.array([np.array([0]*len(stream[0]))]*len(nodes))
+    # Convert the data to float 16 to reduce memory consumption, shouldn't be
+    # too detrimental
+    stream_copy=stream.copy()
+    for i in xrange(len(stream)):
+        stream[i].data=stream[i].data.astype(np.float16)
     detections=[]
     detect_lags=[]
     parallel=True
@@ -380,8 +377,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         num_cores=matchdef.cores
         if num_cores > len(nodes):
             num_cores=len(nodes)
+        if num_cores > cpu_count():
+            num_cores=cpu_count()
         pool=Pool(processes=num_cores, maxtasksperchild=None)
-        results=[pool.apply_async(_node_loop, args=(stations, nodes[i],\
+        results=[pool.apply_async(_node_loop, args=(stations,\
                                                     lags[:,i], stream, i))\
                                   for i in xrange(len(nodes))]
         pool.close()
@@ -390,9 +389,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         energy = [node[1] for node in energy]
         energy=np.concatenate(energy, axis=0)
         print energy.shape
-        # energy[i]=Parallel(n_jobs=2, verbose=5)(delayed(_node_loop)(stations, nodes[i],
-                                                          # lags[:,i], stream)\
-                                                          # for i in xrange(0,len(nodes)))
     # Now compute the cumulative network response and then detect possible events
     indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
     cum_net_resp=np.array([np.nan]*len(indeces))
@@ -402,11 +398,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_resp[i]=energy[indeces[i]][i]
         peak_nodes.append(nodes[indeces[i]])
     del energy, indeces
-    # Plot the data - convert cum_net_resp to a seismic Trace for simple plotting
-    # tr_net_resp=deepcopy(st[0])
-    # tr_net_resp.data=cum_net_resp
-    # tr_net_resp.plot()
-    # Plot the cumulative network response
     if plotvar:
         cum_net_trace=deepcopy(stream[0])
         cum_net_trace.data=cum_net_resp
@@ -417,7 +408,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_trace=Stream(cum_net_trace)
         cum_net_trace+=stream.select(channel='*N')
         cum_net_trace+=stream.select(channel='*1')
-        cum_net_trace.plot(size=(800,600), equal_scale=False)
+        if not brightdef.plotsave:
+            cum_net_trace.plot(size=(800,600), equal_scale=False)
+        else:
+            cum_net_trace.plot(size=(800,600), equal_scale=False,\
+                               outfile='NR_timeseries.png')
 
     # Find detection within this network response
     print 'Finding detections in the cumulatve network response'
@@ -425,12 +420,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                      stream[0].stats.sampling_rate, realstations)
     del cum_net_resp
     templates=[]
-    # temp_det=[]
-    # return detections
-    # print np.shape(detections)
-    # for detection in detections: # Flatten list
-        # temp_det=temp_det+detection
-    # detections=temp_det
     nodesout=[]
     j=0
     if detections:
@@ -438,12 +427,13 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         for detection in detections:
             print 'Converting for detection '+str(j)+' of '+str(len(detections))
             j+=1
-            copy_of_stream=deepcopy(stream)
+            copy_of_stream=deepcopy(stream_copy)
             # Convert detections to PICK type - name of detection template
             # is the node.
             node=(detection.template_name.split('_')[0],\
                     detection.template_name.split('_')[1],\
                     detection.template_name.split('_')[2])
+            print node
             nodesout+=[node]
             # Look up node in nodes and find the associated lags
             index=nodes.index(node)
@@ -455,15 +445,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 st=copy_of_stream.select(station=station)
                 if len(st) != 0:
                     for tr in st:
-                        #print tr.stats.station+'.'+tr.stats.channel+' at lag '+\
-                        #    str(detect_lag)+' at time '+str(detection.detect_time)+\
-                        #   ' on day '+str(tr.stats.starttime)
-                        # if len(tr.stats.channel) != 3:
-                            # print 'There is no channel for for this pick!!!'
-                            # print station+' pick number: '+str(j)
-                            # print tr.stats.starttime+detect_lag+detection.detect_time
-                            # st.plot()
-                            # sys.exit()
                         picks.append(PICK(station=station,
                                           channel=tr.stats.channel,
                                           impulsivity='E', phase='S',
@@ -491,8 +472,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             del copy_of_stream, tr, template
             if coherant:
                 templates.append(obsread(template_name))
-        else:
-            print 'No templates for you'
+            else:
+                print 'No templates for you'
     nodesout=list(set(nodesout))
-    return templates, nodes
+    return templates, nodesout
 

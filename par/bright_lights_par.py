@@ -9,6 +9,8 @@
 Outline definitions for bright_lights python code
 """
 from obspy import UTCDateTime
+import numpy as np
+import matplotlib.path as mplPath
 stations=['EORO','WHYM','COSA','FOZ',
           'GOVA','LABE','MTFO','RPZ',
           'COVA','FRAN','POCR','SOLU',
@@ -17,26 +19,27 @@ stations=['EORO','WHYM','COSA','FOZ',
 
 nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
                                         # travel times
-# volume=[(-43.8,-43.55),
-        # (169.5,170.0),
-        # (20,35)]
-# volume=[(-43.8,-43.55),
-        # # (169.5,170.05),
-        # # (15,40)]
-volume=[(-43.8,-43.75),(169.6,169.85),(25,28)]
-                                        # List of tuples in the form:
-                                        # [(minlat,maxlat),(minlong,laxlong),
-                                        # (mindepth,maxdepth)]
+corners=mplPath.Path(np.array([[169.6, -44],\
+                           [170.5, -43.5],\
+                           [170.5, -43.25],\
+                           [169.6, -43.65]]))
+                                        # Numpy array to be converted into a
+                                        # matplotlib path - should descirbe
+                                        # the horizontal polygon to search within
                                         # Where coordinates are decimal degrees
-                                        # in lat and long and km in depth
+                                        # in lat and long
+mindepth=15
+maxdepth=45                             # Depth cuts in km, cannot use these polygonally
 resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # for resampled grid in decimal
                                         # degrees and km respectively.
                                         # with depth increasing down
-startdate=UTCDateTime('2013-03-28')     # obspy UTCDateTime object giving
+# startdate=UTCDateTime('2013-03-28')     # obspy UTCDateTime object giving
+startdate=UTCDateTime('2010-08-31')     # obspy UTCDateTime object giving
                                         # date to start looking for templates
                                         # beyond
-enddate=UTCDateTime('2013-03-29')       # As above, but the end date
+# enddate=UTCDateTime('2013-03-29')       # As above, but the end date
+enddate=UTCDateTime('2010-09-01')       # As above, but the end date
 threshold=10                            # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
@@ -51,6 +54,10 @@ nodesimthresh=0.0625                    # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
-coherance=0.2                           # Coherance threshold to remove
+coherance=0.10                          # Coherance threshold to remove
                                         # incoherant peaks in the network
                                         # response.
+plotsave=True                           # Save plots, set to True to not show
+                                        # any plots
+clip_level=8                            # Level to clip energy amplitudes to as
+                                        # a multiplier of the mean energy amplitdue
