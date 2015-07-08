@@ -34,6 +34,11 @@ else:
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
+if brightdef.plotsave:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.ioff()
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, read as obsread
 # First generate the templates
@@ -66,7 +71,9 @@ print 'I have read in '+str(len(allnodes))+' nodes'
 print 'Cutting the grid'
 stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,
                                                      alllags,
-                                                     brightdef.volume,
+                                                     brightdef.mindepth,
+                                                     brightdef.maxdepth,
+                                                     brightdef.corners,
                                                      brightdef.resolution)
 del allnodes, alllags
 # Check that we still have a grid!
@@ -78,9 +85,10 @@ print "Removing simlar lags"
 stations, nodes, lags = bright_lights._rm_similarlags(stations, nodes, lags,
                                                       brightdef.nodesimthresh)
 print "Plotting new grid"
-plotting.threeD_gridplot(nodes)
+plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png')
 # Call the main function!
 templates=[]
+nodesout=[]
 for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop through dates
     # Set up where data are going to be read in from
     day=brightdef.startdate+i
@@ -133,10 +141,16 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
                                         templatedef.filter_order, templatedef.samp_rate,\
                                         templatedef.debug, day)
     if not Prep:
+        stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
         print "Running the detection routine"
-        templates+=bright_lights.brightness(stations, nodes, lags, stream,\
+        detect_templates, detect_nodes=bright_lights.brightness(stations, \
+                        nodes, lags, stream_copy,
                         brightdef.threshold, brightdef.thresh_type,\
                         brightdef.coherance)
+        templates+=detect_templates
+        nodesout+=detect_nodes
+        plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
+                                 savefile='Detected_nodes.png')
     else:
         for tr in stream:
             print "Writing data as: test_data/"+tr.stats.station+'-'+tr.stats.channel+\
@@ -181,9 +195,15 @@ for template in templates:
 # Sort stations into a unique list - this list will ensure we only read in data
 # we need, which is VERY important as I/O is very costly and will eat memory
 stations=list(set(stations))
-print len(stations)
-for station in stations:
-    print station
+
+node_file=open('Nodes_detected.csv','w')
+for node in nodesout:
+    node_file.write(node[0]+','+node[1]+','+node[2]+'\n')
+node_file.close()
+
+# print len(stations)
+# for station in stations:
+    # print station
 
 # Now run the match filter routine
 
