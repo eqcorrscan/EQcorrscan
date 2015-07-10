@@ -13,9 +13,9 @@ All rights reserved.
 
 """
 
-# Import PICK class definition from makeSfile
 
 from obspy import UTCDateTime
+import numpy as np
 class PICK:
     """
     Pick information for seisan implimentation
@@ -93,6 +93,17 @@ def _float_conv(string):
     except:
         floatstring=float('NaN')
     return floatstring
+
+def _str_conv(number):
+    """
+    Convenience tool to convert a number, either float or into into a string,
+    if the int is 999, or the float is NaN, returns empty string.
+    """
+    if (type(number)==float and np.isnan(number)) or number==999:
+        string=' '
+    else:
+        string=str(number)
+    return string
 
 def readheader(sfilename):
     f=open(sfilename,'r')
@@ -204,11 +215,11 @@ def readpicks(sfilename):
             polarity=''
         else:
             phase=line[10:14].strip()
-            polarity=line[6]
+            polarity=line[15]
         try:
             time=UTCDateTime(evtime.year,evtime.month,evtime.day,
                              int(line[18:20]),int(line[20:22]),int(line[23:25]),
-                             int(line[26:28]))
+                             int(line[26:28])*10000)
         except (ValueError):
             time=UTCDateTime(evtime.year,evtime.month,evtime.day,
                              int(line[18:20]),int(line[20:22]),0,0)
@@ -379,23 +390,36 @@ def populateSfile(sfilename, picks):
     # Now generate lines for the new picks
     newpicks=''
     for pick in picks:
-        newpicks+=' '+pick.station.ljust(5)+pick.channel[0]+\
-                pick.channel[len(pick.channel)-1]+' '+pick.impulsivity+\
-                pick.phase.ljust(4)+str(pick.weight).rjust(1)+' '+\
-                pick.polarity+' '+str(pick.time.hour).rjust(2)+\
-                str(pick.time.minute).rjust(2)+str(pick.time.second).rjust(3)+\
-                '.'+str(pick.time.microsecond).ljust(2)+\
-                str(pick.coda).rjust(5)+str(pick.amplitude).rjust(7)+\
-                str(pick.peri).rjust(5)+str(pick.azimuth).rjust(6)+\
-                str(pick.velocity).rjust(5)+str(pick.AIN).rjust(4)+\
-                str(pick.azimuthres).rjust(3)+str(pick.timeres).rjust(5)+\
-                str(pick.finalweight).rjust(2)+str(pick.distance).rjust(4)+\
-                str(pick.CAZ).rjust(4)+' \n'
+        if pick.distance >= 100.0:
+            pick.distance=int(pick.distance)
+        else:
+            pick.distance=round(pick.distance,1)
+        newpicks+=' '+pick.station.ljust(5)+\
+                pick.channel[0]+pick.channel[len(pick.channel)-1]+\
+                ' '+pick.impulsivity+\
+                pick.phase.ljust(4)+\
+                _str_conv(pick.weight).rjust(1)+' '+\
+                pick.polarity+' '+\
+                str(pick.time.hour).rjust(2)+\
+                str(pick.time.minute).rjust(2)+\
+                str(pick.time.second).rjust(3)+'.'+str(pick.time.microsecond).ljust(2)[0:2]+\
+                _str_conv(pick.coda).rjust(5)[0:5]+\
+                _str_conv(round(pick.amplitude,1)).rjust(7)[0:7]+\
+                _str_conv(pick.peri).rjust(5)+\
+                _str_conv(pick.azimuth).rjust(6)+\
+                _str_conv(pick.velocity).rjust(5)+\
+                _str_conv(pick.AIN).rjust(4)+\
+                _str_conv(pick.azimuthres).rjust(3)+\
+                _str_conv(pick.timeres).rjust(6)+\
+                _str_conv(pick.finalweight).rjust(2)+\
+                _str_conv(pick.distance).rjust(4)+\
+                _str_conv(pick.CAZ).rjust(4)+' \n'
     # Write all new and old info back in
     f=open(sfilename, 'w')
     f.write(header)
     f.write(newpicks)
     f.write(body)
+    f.write('\n')
     f.close()
 
 if __name__=='__main__':
