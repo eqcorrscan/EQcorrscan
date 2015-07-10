@@ -74,6 +74,10 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="">Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sfile-util">Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#per-processing">per_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eqcorrscan-plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mag-calc">mag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#par">Par</a></li>
@@ -262,6 +266,18 @@ if multiple peaks within this window this code will find the highest.
 </dd></dl>
 
 </div>
+<div class="section" id="clustering">
+<h2>clustering<a class="headerlink" href="#clustering" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="per-processing">
+<h2>per_processing<a class="headerlink" href="#per-processing" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="eqcorrscan-plotting">
+<h2>EQcorrscan_plotting<a class="headerlink" href="#eqcorrscan-plotting" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="mag-calc">
+<h2>mag_calc<a class="headerlink" href="#mag-calc" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 <div class="section" id="par">
 <h1>Par<a class="headerlink" href="#par" title="Permalink to this headline">¶</a></h1>
@@ -342,13 +358,13 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._node_loop">
-<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>node</em>, <em>lags</em>, <em>stream</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to allow for parallelisation of brightness</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">energy (np.array), node (tuple), realstations (list of stations actaully used)</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(i, energy (np.array))</td>
 </tr>
 </tbody>
 </table>
@@ -382,7 +398,7 @@ both at the moment.</p>
 
 <dl class="function">
 <dt id="bright_lights._resample_grid">
-<code class="descclassname">bright_lights.</code><code class="descname">_resample_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>volume</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_resample_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._resample_grid" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_resample_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>mindepth</em>, <em>maxdepth</em>, <em>corners</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_resample_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._resample_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to resample the lagtime grid to a given volume.  For use if the
 grid from Grid2Time is too large or you want to run a faster, downsampled
 scan.</p>
@@ -390,16 +406,24 @@ scan.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]    refers to nodes[i][:] and lags[i][:]</li>
 <li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in    degrees, nodes[:][:][2] is depth in km.</li>
-<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds    :type volume: tuple</li>
-<li><strong>volume</strong> &#8211; list of tuples: [(mindepth, maxdepth),(minlat, maxlat),(minlong,    maxlong)].  This will be interpreted as a cuboid.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds    :type mindepth: float</li>
+<li><strong>mindepth</strong> &#8211; Upper limit of volume</li>
+<li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lower limit of volume</li>
+<li><strong>corners</strong> (<em>matplotlib.Path</em>) &#8211; matplotlib path of the corners for the 2D polygon to cut to</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</p>
-</td>
+</tbody>
+</table>
+<p>in lat and long</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</td>
 </tr>
 </tbody>
 </table>
