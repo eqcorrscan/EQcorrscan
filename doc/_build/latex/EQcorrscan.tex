@@ -19,7 +19,7 @@
 
 
 \title{EQcorrscan Documentation}
-\date{June 24, 2015}
+\date{July 10, 2015}
 \release{0.0.5}
 \author{Calum John Chamberlain}
 \newcommand{\sphinxlogo}{\includegraphics{EQcorrscan_logo.pdf}\par}
@@ -639,6 +639,436 @@ Lists of peak values and locations.
 
 
 
+\section{clustering}
+\label{modules:clustering}\label{modules:module-clustering}\index{clustering (module)}
+Code to compute the linkage between seismograms and cluster them accordingly
+
+Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015
+
+Implimented to streamline templates after template detection in beamforming
+methods, employed by implimentation of Frank et al. code.
+
+As such this code is designed to work only for templates with the same channels
+\index{cluster() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.cluster}\pysiglinewithargsret{\code{clustering.}\bfcode{cluster}}{\emph{templates}}{}
+Function to take a set of templates and cluster them, will return clustered
+templates
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+List of cluster groups, array of length len(templates), with
+each number relating to a cluster
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{cross\_chan\_coherance() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.cross_chan_coherance}\pysiglinewithargsret{\code{clustering.}\bfcode{cross\_chan\_coherance}}{\emph{st1}, \emph{st2}}{}
+Function to determine the cross-channel coherancy between two streams of
+multichannel seismic data.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+cross channel coherance, float - normalized by number of channels
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{distance\_matrix() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.distance_matrix}\pysiglinewithargsret{\code{clustering.}\bfcode{distance\_matrix}}{\emph{templates}}{}
+Function to compute the distance matrix for all templates - will give
+distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
+have small distances, and an equally well correlated reverse image will
+have the same distance as apositively correlated image - this is an issue
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+ndarray - distance matrix
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+
+\section{per\_processing}
+\label{modules:per-processing}\label{modules:module-pre_processing}\index{pre\_processing (module)}
+Utilities module for the EQcorrscan package written by Calum Chamberlain of
+Victoria University Wlelington.  These functions are designed to do the basic
+processing of the data using obspy modules (which also rely on scipy and numpy).
+\index{\_check\_daylong() (in module pre\_processing)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:pre_processing._check_daylong}\pysiglinewithargsret{\code{pre\_processing.}\bfcode{\_check\_daylong}}{\emph{tr}}{}
+Function to check the data quality of the daylong file - check to see that
+the day isn't just zeros, with large steps, if it is then the resampling will
+hate it.
+\begin{quote}\begin{description}
+\item[{Return qual}] \leavevmode
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{dayproc() (in module pre\_processing)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:pre_processing.dayproc}\pysiglinewithargsret{\code{pre\_processing.}\bfcode{dayproc}}{\emph{tr}, \emph{lowcut}, \emph{highcut}, \emph{filt\_order}, \emph{samp\_rate}, \emph{debug}, \emph{starttime}}{}
+Basic function to bandpass, downsample and check headers and length of trace
+to ensure files start at the start of a day and are daylong.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+obspy.Stream
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{shortproc() (in module pre\_processing)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:pre_processing.shortproc}\pysiglinewithargsret{\code{pre\_processing.}\bfcode{shortproc}}{\emph{st}, \emph{lowcut}, \emph{highcut}, \emph{filt\_order}, \emph{samp\_rate}, \emph{debug=0}}{}
+Basic function to bandpass, downsample.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+obspy.Stream
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+
+\section{EQcorrscan\_plotting}
+\label{modules:module-EQcorrscan_plotting}\label{modules:eqcorrscan-plotting}\index{EQcorrscan\_plotting (module)}
+Utility code for most of the plots used as part of the EQcorrscan package.
+\index{cumulative\_detections() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.cumulative_detections}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{cumulative\_detections}}{\emph{dates}, \emph{template\_names}, \emph{save=False}, \emph{savefile='`}}{}
+Simple plotting function to take a list of UTCDateTime objects and plot
+a cumulative detections list.  Can take dates as a list of lists and will
+plot each list seperately, e.g. if you have dates from more than one
+template it will overlay them in different colours.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{dates}} (\emph{list of lists of datetime.datetime}) -- Must be a list of lists of datetime.datetime objects
+
+\item {} 
+\textbf{\texttt{template\_names}} (\emph{list of strings}) -- List of the template names in order of the dates
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{detection\_timeseries() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.detection_timeseries}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{detection\_timeseries}}{\emph{stream}, \emph{detector}, \emph{detections}}{}
+Function to plot the data and detector with detections labelled in red,
+will downsample if too many data points.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{detections}} (\emph{np.array}) -- array of positions of detections in samples
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{peaks\_plot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.peaks_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{peaks\_plot}}{\emph{data, starttime, samp\_rate, save=False, peaks={[}(0, 0){]}, savefile='`}}{}
+Simple utility code to plot the correlation peaks to check that the peak
+finding routine is running correctly, used in debugging for the EQcorrscan
+module.
+\begin{quote}\begin{description}
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{threeD\_gridplot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.threeD_gridplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{threeD\_gridplot}}{\emph{nodes}}{}
+Function to plot in 3D a series of grid points.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{nodes}} (\emph{List of tuples}) -- List of tuples of the form (lat, long, depth)
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{threeD\_seismplot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.threeD_seismplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{threeD\_seismplot}}{\emph{stations}, \emph{nodes}}{}
+Function to plot seismicity and stations in a 3D, movable, zoomable space
+using matplotlibs Axes3D package.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stations}} (\emph{list of tuple}) -- list of one tuple per station of (lat, long, elevation),
+with up positive
+
+\item {} 
+\textbf{\texttt{nodes}} (\emph{list of tuple}) -- list of one tuple per event of (lat, long, depth) with down
+positive
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{triple\_plot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.triple_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{triple\_plot}}{\emph{cccsum}, \emph{trace}, \emph{threshold}, \emph{save=False}, \emph{savefile='`}}{}
+Main function to make a triple plot with a day-long seismogram, day-long
+correlation sum trace and histogram of the correlation sum to show normality
+\begin{quote}\begin{description}
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+
+\section{mag\_calc}
+\label{modules:module-mag_calc}\label{modules:mag-calc}\index{mag\_calc (module)}
+Functions to simulate Wood Anderson traces, pick maximum peak-to-peak amplitudes
+write these amplitudes and periods to SEISAN s-files and to calculate magnitudes
+from this and the informaiton within SEISAN s-files.
+
+Written as part of the EQcorrscan package by Calum Chamberlain - first written
+to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up
+by Warren-Smith {[}2014/15{]}.
+\index{Amp\_pick\_sfile() (in module mag\_calc)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:mag_calc.Amp_pick_sfile}\pysiglinewithargsret{\code{mag\_calc.}\bfcode{Amp\_pick\_sfile}}{\emph{sfile, datapath, respdir, chans={[}'Z'{]}, var\_wintype=True, winlen=0.9, pre\_pick=1.0, pre\_filt=True, lowcut=1.0, highcut=20.0, corners=4}}{}
+Function to read information from a SEISAN s-file, load the data and the
+picks, cut the data for the channels given around the S-window, simulate
+a Wood Anderson seismometer, then pick the maximum peak-to-trough
+amplitude.
+
+Output will be put into a mag\_calc.out file which will be in full S-file
+format and can be copied to a REA database.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{datapath}} (\emph{String}) -- Path to the waveform files - usually the path to the WAV directory
+
+\item {} 
+\textbf{\texttt{respdir}} (\emph{String}) -- Path to the response information directory
+
+\item {} 
+\textbf{\texttt{chans}} (\emph{List of strings}) -- List of the channels to pick on, defaults to {[}'Z'{]} - should
+just be the orientations, e.g. Z,1,2,N,E
+
+\item {} 
+\textbf{\texttt{var\_wintype}} (\emph{Bool}) -- If True, the winlen will be
+multiplied by the P-S time if both P and S picks are
+available, otherwise it will be multiplied by the hypocentral
+distance*0.34 - dervided using a p-s ratio of 1.68 and
+S-velocity of 1.5km/s to give a large window, defaults to True
+
+\item {} 
+\textbf{\texttt{winlen}} (\emph{Float}) -- Length of window, see above parameter, if var\_wintype is False
+Then this will be in seconds, otherwise it is the multiplier
+to the p-s time, defaults to 0.5
+
+\item {} 
+\textbf{\texttt{pre\_pick}} (\emph{Float}) -- Time before the s-pick to start the cut window, defaults
+to 1.0
+
+\item {} 
+\textbf{\texttt{pre\_filt}} (\emph{Bool}) -- To apply a pre-filter or not, defaults to True
+
+\item {} 
+\textbf{\texttt{lowcut}} (\emph{Float}) -- Lowcut in Hz for the pre-filter, defaults to 1.0
+
+\item {} 
+\textbf{\texttt{highcut}} (\emph{Float}) -- Highcut in Hz for the pre-filter, defaults to 20.0
+
+\item {} 
+\textbf{\texttt{corners}} (\emph{Int}) -- Number of corners to use in the pre-filter
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GSE2\_PAZ\_read() (in module mag\_calc)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:mag_calc._GSE2_PAZ_read}\pysiglinewithargsret{\code{mag\_calc.}\bfcode{\_GSE2\_PAZ\_read}}{\emph{GSEfile}}{}
+Function to read the instrument response information from a GSE Poles and
+Zeros file as generated by the SEISAN program RESP.
+
+Format must be CAL2, not coded for any other format at the moment, contact
+the author to add others in.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+Dict of poles, zeros, gain and sensitivity
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_find\_resp() (in module mag\_calc)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:mag_calc._find_resp}\pysiglinewithargsret{\code{mag\_calc.}\bfcode{\_find\_resp}}{\emph{station}, \emph{channel}, \emph{network}, \emph{time}, \emph{delta}, \emph{directory}}{}
+Helper function to find the response information for a given station and
+channel at a given time and return a dictionary of poles and zeros, gain
+and sensitivity.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{station}} (\emph{String}) -- Station name (as in the response files)
+
+\item {} 
+\textbf{\texttt{channel}} (\emph{String}) -- Channel name (as in the response files)
+
+\item {} 
+\textbf{\texttt{network}} (\emph{String}) -- Network to scan for, can be a wildcard
+
+\item {} 
+\textbf{\texttt{time}} (\href{https://docs.python.org/library/datetime.html\#datetime.datetime}{\emph{datetime.datetime}}) -- Date-time to look for repsonse information
+
+\item {} 
+\textbf{\texttt{delta}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sample interval in seconds
+
+\item {} 
+\textbf{\texttt{direcotry}} -- Directory to scan for response information
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+Dictionary
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_max\_p2t() (in module mag\_calc)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:mag_calc._max_p2t}\pysiglinewithargsret{\code{mag\_calc.}\bfcode{\_max\_p2t}}{\emph{data}, \emph{delta}}{}
+Function to find the maximum peak to trough amplitude and period of this
+amplitude.  Originally designed to be used to calculate magnitudes (by
+taking half of the peak-to-trough amplitude as the peak amplitude).
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{data}} (\emph{ndarray}) -- waveform trace to find the peak-to-trough in.
+
+\item {} 
+\textbf{\texttt{delta}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sampling interval in seconds
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+tuple of (amplitude, period, time) with amplitude in the same scale as
+given in the input data, and period in seconds, and time in seconds
+from the start of the data window.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_sim\_WA() (in module mag\_calc)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:mag_calc._sim_WA}\pysiglinewithargsret{\code{mag\_calc.}\bfcode{\_sim\_WA}}{\emph{trace}, \emph{PAZ}, \emph{seedresp}, \emph{water\_level}}{}
+Function to remove the insturment response from a trace and return a
+de-meaned, de-trended, Wood Anderson simulated trace in it's place.
+
+Works in-place on data and will destroy your original data, copy the
+trace before giving it to this function!
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{trace}} (\emph{obspy.Trace}) -- A standard obspy trace, generally should be given without
+pre-filtering, if given with pre-filtering for use with
+amplitude determiniation for magnitudes you will need to
+worry about how you cope with the response of this filter
+yourself.
+
+\item {} 
+\textbf{\texttt{PAZ}} (\href{https://docs.python.org/library/stdtypes.html\#dict}{\emph{dict}}) -- Dictionary containing lists of poles and zeros, the gain and
+the sensitivity.
+
+\item {} 
+\textbf{\texttt{water\_level}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Water level for the simulation.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+obspy.Trace
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+
+\section{stacking}
+\label{modules:stacking}\label{modules:module-stacking}\index{stacking (module)}
+Utility module of the EQcorrscan package to allow for different methods of
+stacking of seismic signal in one place.
+
+In alpha stages and only with linear stacking implimented thusfar
+
+Calum Chamberlain 24/06/2015
+\index{PWS\_stack() (in module stacking)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:stacking.PWS_stack}\pysiglinewithargsret{\code{stacking.}\bfcode{PWS\_stack}}{\emph{streams}, \emph{weight}}{}
+Function to compute the phase weighted stack of a series of streams
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{weight}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Exponent to the phase stack used for weighting.
+
+\item[{Returns}] \leavevmode
+obspy.Stream
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{linstack() (in module stacking)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:stacking.linstack}\pysiglinewithargsret{\code{stacking.}\bfcode{linstack}}{\emph{streams}}{}
+Function to compute the linear stack of a series of seismic streams of
+multiplexed data
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+stack - Stream
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+
 \chapter{Par}
 \label{modules:par}
 User-editable codes to input parameters for \emph{core} files.
@@ -730,11 +1160,11 @@ detections as class DETECTION
 \index{\_node\_loop() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{node}, \emph{lags}, \emph{stream}}{}
+\phantomsection\label{modules:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{lags}, \emph{stream}, \emph{i=0}}{}
 Internal function to allow for parallelisation of brightness
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
-energy (np.array), node (tuple), realstations (list of stations actaully used)
+(i, energy (np.array))
 
 \end{description}\end{quote}
 
@@ -775,7 +1205,7 @@ list stations, list of lists of tuples nodes,     :class: `numpy.array' lags sta
 \index{\_resample\_grid() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:bright_lights._resample_grid}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_resample\_grid}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{volume}, \emph{resolution}}{}
+\phantomsection\label{modules:bright_lights._resample_grid}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_resample\_grid}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{mindepth}, \emph{maxdepth}, \emph{corners}, \emph{resolution}}{}
 Function to resample the lagtime grid to a given volume.  For use if the
 grid from Grid2Time is too large or you want to run a faster, downsampled
 scan.
@@ -788,13 +1218,23 @@ scan.
 \textbf{\texttt{nodes}} (\emph{list, tuple}) -- List of node points where nodes{[}i{]} referes to stations{[}i{]} and    nodes{[}:{]}{[}:{]}{[}0{]} is latitude in degrees, nodes{[}:{]}{[}:{]}{[}1{]} is longitude in    degrees, nodes{[}:{]}{[}:{]}{[}2{]} is depth in km.
 
 \item {} 
-\textbf{\texttt{lags}} -- Array of arrays where lags{[}i{]}{[}:{]} refers to stations{[}i{]}.    lags{[}i{]}{[}j{]} should be the delay to the nodes{[}i{]}{[}j{]} for stations{[}i{]} in seconds    :type volume: tuple
+\textbf{\texttt{lags}} -- Array of arrays where lags{[}i{]}{[}:{]} refers to stations{[}i{]}.    lags{[}i{]}{[}j{]} should be the delay to the nodes{[}i{]}{[}j{]} for stations{[}i{]} in seconds    :type mindepth: float
 
 \item {} 
-\textbf{\texttt{volume}} -- list of tuples: {[}(mindepth, maxdepth),(minlat, maxlat),(minlong,    maxlong){]}.  This will be interpreted as a cuboid.
+\textbf{\texttt{mindepth}} -- Upper limit of volume
+
+\item {} 
+\textbf{\texttt{maxdepth}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Lower limit of volume
+
+\item {} 
+\textbf{\texttt{corners}} (\emph{matplotlib.Path}) -- matplotlib path of the corners for the 2D polygon to cut to
 
 \end{itemize}
 
+\end{description}\end{quote}
+
+in lat and long
+\begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
 list stations, list of lists of tuples nodes, :class:     `numpy.array' lags station{[}1{]} refers to nodes{[}1{]} and lags{[}1{]}    nodes{[}1{]}{[}1{]} refers to station{[}1{]} and lags{[}1{]}{[}1{]}    nodes{[}n{]}{[}n{]} is a tuple of latitude, longitude and depth.
 
@@ -1250,15 +1690,26 @@ correaltion of the image with the template.
 \bigletter{b}
 \item {\texttt{bright\_lights}}, \pageref{modules:module-bright_lights}
 \indexspace
+\bigletter{c}
+\item {\texttt{clustering}}, \pageref{modules:module-clustering}
+\indexspace
+\bigletter{e}
+\item {\texttt{EQcorrscan\_plotting}}, \pageref{modules:module-EQcorrscan_plotting}
+\indexspace
 \bigletter{f}
 \item {\texttt{findpeaks}}, \pageref{modules:module-findpeaks}
 \indexspace
 \bigletter{m}
+\item {\texttt{mag\_calc}}, \pageref{modules:module-mag_calc}
 \item {\texttt{match\_filter}}, \pageref{modules:module-match_filter}
 \item {\texttt{match\_filter\_par}}, \pageref{modules:module-match_filter_par}
 \indexspace
+\bigletter{p}
+\item {\texttt{pre\_processing}}, \pageref{modules:module-pre_processing}
+\indexspace
 \bigletter{s}
 \item {\texttt{Sfile\_util}}, \pageref{modules:module-Sfile_util}
+\item {\texttt{stacking}}, \pageref{modules:module-stacking}
 \indexspace
 \bigletter{t}
 \item {\texttt{template\_gen}}, \pageref{modules:module-template_gen}

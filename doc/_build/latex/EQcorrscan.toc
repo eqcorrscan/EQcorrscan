@@ -6,10 +6,15 @@
 \contentsline {chapter}{\numberline {3}Utils}{11}{chapter.3}
 \contentsline {section}{\numberline {3.1}Sfile\_util}{11}{section.3.1}
 \contentsline {section}{\numberline {3.2}findpeaks}{12}{section.3.2}
-\contentsline {chapter}{\numberline {4}Par}{13}{chapter.4}
-\contentsline {chapter}{\numberline {5}Core}{15}{chapter.5}
-\contentsline {section}{\numberline {5.1}bright\_lights}{15}{section.5.1}
-\contentsline {section}{\numberline {5.2}template\_gen}{17}{section.5.2}
-\contentsline {section}{\numberline {5.3}match\_filter}{18}{section.5.3}
-\contentsline {chapter}{Python Module Index}{21}{section*.28}
-\contentsline {chapter}{Index}{23}{section*.29}
+\contentsline {section}{\numberline {3.3}clustering}{12}{section.3.3}
+\contentsline {section}{\numberline {3.4}per\_processing}{13}{section.3.4}
+\contentsline {section}{\numberline {3.5}EQcorrscan\_plotting}{13}{section.3.5}
+\contentsline {section}{\numberline {3.6}mag\_calc}{14}{section.3.6}
+\contentsline {section}{\numberline {3.7}stacking}{15}{section.3.7}
+\contentsline {chapter}{\numberline {4}Par}{17}{chapter.4}
+\contentsline {chapter}{\numberline {5}Core}{19}{chapter.5}
+\contentsline {section}{\numberline {5.1}bright\_lights}{19}{section.5.1}
+\contentsline {section}{\numberline {5.2}template\_gen}{21}{section.5.2}
+\contentsline {section}{\numberline {5.3}match\_filter}{22}{section.5.3}
+\contentsline {chapter}{Python Module Index}{25}{section*.47}
+\contentsline {chapter}{Index}{27}{section*.48}

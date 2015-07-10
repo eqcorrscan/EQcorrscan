@@ -7,23 +7,47 @@
 \indexentry{findpeaks (module)|hyperpage}{12}
 \indexentry{find\_peaks() (in module findpeaks)|hyperpage}{12}
 \indexentry{find\_peaks2() (in module findpeaks)|hyperpage}{12}
-\indexentry{match\_filter\_par (module)|hyperpage}{13}
-\indexentry{template\_gen\_par (module)|hyperpage}{13}
-\indexentry{bright\_lights (module)|hyperpage}{15}
-\indexentry{\_find\_detections() (in module bright\_lights)|hyperpage}{15}
-\indexentry{\_node\_loop() (in module bright\_lights)|hyperpage}{15}
-\indexentry{\_read\_tt() (in module bright\_lights)|hyperpage}{15}
-\indexentry{\_resample\_grid() (in module bright\_lights)|hyperpage}{16}
-\indexentry{\_rm\_similarlags() (in module bright\_lights)|hyperpage}{16}
-\indexentry{brightness() (in module bright\_lights)|hyperpage}{16}
-\indexentry{coherance() (in module bright\_lights)|hyperpage}{17}
-\indexentry{template\_gen (module)|hyperpage}{17}
-\indexentry{\_template\_gen() (in module template\_gen)|hyperpage}{17}
-\indexentry{from\_contbase() (in module template\_gen)|hyperpage}{18}
-\indexentry{from\_sfile() (in module template\_gen)|hyperpage}{18}
-\indexentry{match\_filter (module)|hyperpage}{18}
-\indexentry{DETECTION (class in match\_filter)|hyperpage}{18}
-\indexentry{\_channel\_loop() (in module match\_filter)|hyperpage}{19}
-\indexentry{\_template\_loop() (in module match\_filter)|hyperpage}{19}
-\indexentry{match\_filter() (in module match\_filter)|hyperpage}{19}
-\indexentry{normxcorr2() (in module match\_filter)|hyperpage}{20}
+\indexentry{clustering (module)|hyperpage}{12}
+\indexentry{cluster() (in module clustering)|hyperpage}{12}
+\indexentry{cross\_chan\_coherance() (in module clustering)|hyperpage}{12}
+\indexentry{distance\_matrix() (in module clustering)|hyperpage}{12}
+\indexentry{pre\_processing (module)|hyperpage}{13}
+\indexentry{\_check\_daylong() (in module pre\_processing)|hyperpage}{13}
+\indexentry{dayproc() (in module pre\_processing)|hyperpage}{13}
+\indexentry{shortproc() (in module pre\_processing)|hyperpage}{13}
+\indexentry{EQcorrscan\_plotting (module)|hyperpage}{13}
+\indexentry{cumulative\_detections() (in module EQcorrscan\_plotting)|hyperpage}{13}
+\indexentry{detection\_timeseries() (in module EQcorrscan\_plotting)|hyperpage}{13}
+\indexentry{peaks\_plot() (in module EQcorrscan\_plotting)|hyperpage}{13}
+\indexentry{threeD\_gridplot() (in module EQcorrscan\_plotting)|hyperpage}{13}
+\indexentry{threeD\_seismplot() (in module EQcorrscan\_plotting)|hyperpage}{13}
+\indexentry{triple\_plot() (in module EQcorrscan\_plotting)|hyperpage}{14}
+\indexentry{mag\_calc (module)|hyperpage}{14}
+\indexentry{Amp\_pick\_sfile() (in module mag\_calc)|hyperpage}{14}
+\indexentry{\_GSE2\_PAZ\_read() (in module mag\_calc)|hyperpage}{14}
+\indexentry{\_find\_resp() (in module mag\_calc)|hyperpage}{14}
+\indexentry{\_max\_p2t() (in module mag\_calc)|hyperpage}{15}
+\indexentry{\_sim\_WA() (in module mag\_calc)|hyperpage}{15}
+\indexentry{stacking (module)|hyperpage}{15}
+\indexentry{PWS\_stack() (in module stacking)|hyperpage}{15}
+\indexentry{linstack() (in module stacking)|hyperpage}{15}
+\indexentry{match\_filter\_par (module)|hyperpage}{17}
+\indexentry{template\_gen\_par (module)|hyperpage}{17}
+\indexentry{bright\_lights (module)|hyperpage}{19}
+\indexentry{\_find\_detections() (in module bright\_lights)|hyperpage}{19}
+\indexentry{\_node\_loop() (in module bright\_lights)|hyperpage}{19}
+\indexentry{\_read\_tt() (in module bright\_lights)|hyperpage}{19}
+\indexentry{\_resample\_grid() (in module bright\_lights)|hyperpage}{20}
+\indexentry{\_rm\_similarlags() (in module bright\_lights)|hyperpage}{20}
+\indexentry{brightness() (in module bright\_lights)|hyperpage}{21}
+\indexentry{coherance() (in module bright\_lights)|hyperpage}{21}
+\indexentry{template\_gen (module)|hyperpage}{21}
+\indexentry{\_template\_gen() (in module template\_gen)|hyperpage}{22}
+\indexentry{from\_contbase() (in module template\_gen)|hyperpage}{22}
+\indexentry{from\_sfile() (in module template\_gen)|hyperpage}{22}
+\indexentry{match\_filter (module)|hyperpage}{22}
+\indexentry{DETECTION (class in match\_filter)|hyperpage}{22}
+\indexentry{\_channel\_loop() (in module match\_filter)|hyperpage}{23}
+\indexentry{\_template\_loop() (in module match\_filter)|hyperpage}{23}
+\indexentry{match\_filter() (in module match\_filter)|hyperpage}{23}
+\indexentry{normxcorr2() (in module match\_filter)|hyperpage}{24}
