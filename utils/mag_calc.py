@@ -271,8 +271,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     picktimes=[] # List of pick times
     picktypes=[] # List of pick types
     distances=[] # List of hypocentral distances
+    picks_out=[]
     for pick in picks:
         if pick.phase in ['P','S']:
+            picks_out.append(pick)
             stations.append(pick.station)
             channels.append(pick.channel)
             picktimes.append(pick.time)
@@ -423,7 +425,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
             # Generate a PICK type object for this pick
-            picks.append(Sfile_util.PICK(station=tr.stats.station,
+            picks_out.append(Sfile_util.PICK(station=tr.stats.station,
                                          channel=tr.stats.channel,
                                          impulsivity=' ',
                                          phase='IAML',
@@ -447,7 +449,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     fin.close()
     fout.close()
     # Write picks out to new s-file
-    Sfile_util.populateSfile('mag_calc.out',picks)
+    Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
 
 if __name__ == '__main__':
@@ -461,7 +463,7 @@ if __name__ == '__main__':
         msg='Insufficient arguments, needs the database to calculate over, and'+\
             ' the ouptut database, paths to REA dir (not year/mm dirs) for both'+\
             ' please, and the path to the CAL directory, and the start and'+\
-            ' stop dates as yyyy/mm/dd'
+            ' stop dates as yyyymmddhhmmss'
         raise IOError(msg)
     indir=str(sys.argv[1])
     outdir=str(sys.argv[2])
@@ -475,13 +477,13 @@ if __name__ == '__main__':
     import glob, shutil
     import datetime as dt
     try:
-        startdate=dt.datetime.strptime(startdate, '%Y/%m/%d')
+        startdate=dt.datetime.strptime(startdate.zfill(14), '%Y%m%d%H%M%S')
     except:
-        raise IOError('start date is not yyyy/mm/dd form')
+        raise IOError('start date is not yyyymmddhhmmss form')
     try:
-        stopdate=dt.datetime.strptime(enddate, '%Y/%m/%d')
+        stopdate=dt.datetime.strptime(enddate.zfill(14), '%Y%m%d%H%M%S')
     except:
-        raise IOError('end date is not yyyy/mm/dd form')
+        raise IOError('end date is not yyyymmddhhmmss form')
     kdays=((stopdate+dt.timedelta(1))-startdate).days
     for i in xrange(kdays):
         day=startdate+dt.timedelta(i)
@@ -495,6 +497,7 @@ if __name__ == '__main__':
         else:
         	wavedir=wavepath+'/'+str(day.year)+'/'+\
                 	str(day.month).zfill(2)
+        sfiles.sort()
         for sfile in sfiles:
             # Make the picks!
             print '				Working on Sfile: '+sfile
