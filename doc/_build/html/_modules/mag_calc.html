@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>mag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>mag_calc &mdash; EQcorrscan 0.1.1-alpha documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -162,7 +162,7 @@
                 <span class="s">&#39;zeros&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">0j</span><span class="p">],</span> <span class="s">&#39;gain&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="mi">2080</span><span class="p">}</span>
     <span class="kn">from</span> <span class="nn">obspy.signal</span> <span class="kn">import</span> <span class="n">seisSim</span>
     <span class="c"># De-trend data</span>
-    <span class="n">trace</span><span class="o">=</span><span class="n">trace</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
+    <span class="n">trace</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
     <span class="c"># Simulate Wood Anderson</span>
     <span class="k">if</span> <span class="n">PAZ</span><span class="p">:</span>
         <span class="n">trace</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">seisSim</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">paz_remove</span><span class="o">=</span><span class="n">PAZ</span><span class="p">,</span>\
@@ -382,7 +382,10 @@
     <span class="c"># Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of</span>
     <span class="c"># 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow</span>
     <span class="n">ps_multiplier</span><span class="o">=</span><span class="mf">0.34</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">Sfile_util</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
     <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">iirfilter</span>
     <span class="kn">from</span> <span class="nn">obspy.signal.invsim</span> <span class="kn">import</span> <span class="n">paz2AmpValueOfFreqResp</span>
@@ -394,8 +397,10 @@
     <span class="n">picktimes</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of pick times</span>
     <span class="n">picktypes</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of pick types</span>
     <span class="n">distances</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of hypocentral distances</span>
+    <span class="n">picks_out</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
+            <span class="n">picks_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
             <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
             <span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
             <span class="n">picktimes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
@@ -413,15 +418,17 @@
         <span class="k">for</span> <span class="n">chan</span> <span class="ow">in</span> <span class="n">chans</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&#39;Working on &#39;</span><span class="o">+</span><span class="n">sta</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">chan</span>
             <span class="n">tr</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">sta</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="p">:</span>
+            	<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;There is no station and channel match in the wavefile!&#39;</span><span class="p">)</span>
             <span class="c"># Apply the pre-filter</span>
             <span class="k">if</span> <span class="n">pre_filt</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
                 <span class="k">except</span><span class="p">:</span>
                     <span class="n">dummy</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-                    <span class="n">dummy</span><span class="o">=</span><span class="n">dummy</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
+                    <span class="n">dummy</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
                     <span class="n">tr</span><span class="o">=</span><span class="n">dummy</span><span class="o">.</span><span class="n">merge</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span><span class="n">freqmin</span><span class="o">=</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">highcut</span><span class="p">,</span>\
+                <span class="n">tr</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span><span class="n">freqmin</span><span class="o">=</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">highcut</span><span class="p">,</span>\
                              <span class="n">corners</span><span class="o">=</span><span class="n">corners</span><span class="p">)</span>
             <span class="n">sta_picks</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span> \
                            <span class="k">if</span> <span class="n">stations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">sta</span><span class="p">]</span>
@@ -437,23 +444,32 @@
                     <span class="n">P_pick</span><span class="o">=</span><span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span> \
                             <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">]</span>
                     <span class="n">P_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">P_pick</span><span class="p">)</span>
-                    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> \
+                    <span class="k">try</span><span class="p">:</span>
+                    	<span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> \
                                <span class="n">endtime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">+</span><span class="p">(</span><span class="n">S_pick</span><span class="o">-</span><span class="n">P_pick</span><span class="p">)</span><span class="o">*</span><span class="n">winlen</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                    	<span class="k">break</span>
                 <span class="k">elif</span> <span class="s">&#39;S&#39;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span><span class="p">]:</span>
                     <span class="n">S_pick</span><span class="o">=</span><span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span> \
                             <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">]</span>
                     <span class="n">S_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">S_pick</span><span class="p">)</span>
                     <span class="n">P_modelled</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">hypo_dist</span><span class="o">*</span><span class="n">ps_multiplier</span>
-                    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
+                    <span class="k">try</span><span class="p">:</span>
+                    	<span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
                             <span class="n">endtime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">+</span><span class="p">(</span><span class="n">S_pick</span><span class="o">-</span><span class="n">P_modelled</span><span class="p">)</span><span class="o">*</span><span class="n">winlen</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                    	<span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c"># In this case we only have a P pick</span>
                     <span class="n">P_pick</span><span class="o">=</span><span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span> \
                             <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">]</span>
                     <span class="n">P_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">P_pick</span><span class="p">)</span>
                     <span class="n">S_modelled</span><span class="o">=</span><span class="n">P_pick</span><span class="o">+</span><span class="n">hypo_dist</span><span class="o">*</span><span class="n">ps_multiplier</span>
-                    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
-                            <span class="n">endtime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">+</span><span class="p">(</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">P_pick</span><span class="p">)</span><span class="o">*</span><span class="n">winlen</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                    	<span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
+                        	    <span class="n">endtime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">+</span><span class="p">(</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">P_pick</span><span class="p">)</span><span class="o">*</span><span class="n">winlen</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                    	<span class="k">break</span>
                 <span class="c"># Work out the window length based on p-s time or distance</span>
             <span class="k">elif</span> <span class="s">&#39;S&#39;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span><span class="p">]:</span>
                 <span class="c"># If the window is fixed we still need to find the start time,</span>
@@ -464,7 +480,10 @@
                 <span class="n">S_pick</span><span class="o">=</span><span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span> \
                            <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">]</span>
                 <span class="n">S_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">S_pick</span><span class="p">)</span>
-                <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">+</span><span class="n">winlen</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                	<span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">S_pick</span><span class="o">+</span><span class="n">winlen</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                	<span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c"># In this case, there is no S-pick and the window length is fixed</span>
                 <span class="c"># We need to calculate an expected S_pick based on the hypocentral</span>
@@ -476,8 +495,11 @@
                 <span class="n">hypo_dist</span><span class="o">=</span><span class="p">[</span><span class="n">distances</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span>\
                            <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">S_modelled</span><span class="o">=</span><span class="n">P_pick</span><span class="o">+</span><span class="n">hypo_dist</span><span class="o">*</span><span class="n">ps_multiplier</span>
-                <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
-                           <span class="n">endtime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">+</span><span class="n">winlen</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                	<span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
+                    	       <span class="n">endtime</span><span class="o">=</span><span class="n">S_modelled</span><span class="o">+</span><span class="n">winlen</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+        	       <span class="k">break</span>
             <span class="c"># Find the response information</span>
             <span class="n">resp_info</span><span class="o">=</span><span class="n">_find_resp</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>\
                            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>\
@@ -489,14 +511,16 @@
             <span class="k">elif</span> <span class="n">resp_info</span><span class="p">:</span>
                 <span class="n">seedresp</span><span class="o">=</span><span class="n">resp_info</span>
             <span class="c"># Simulate a Wood Anderson Seismograph</span>
-            <span class="k">if</span> <span class="n">PAZ</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">PAZ</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">tr</span><span class="o">=</span><span class="n">_sim_WA</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">seedresp</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">seedresp</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">tr</span><span class="o">=</span><span class="n">_sim_WA</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;No PAZ for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
                                  <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; at time: &#39;</span><span class="o">+</span>\
                                  <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            	<span class="k">break</span>
             <span class="c"># Get the amplitude</span>
             <span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span> <span class="n">_max_p2t</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
             <span class="k">print</span> <span class="s">&#39;Amplitude picked: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
@@ -518,7 +542,7 @@
             <span class="c"># Convert amplitude to mm</span>
             <span class="k">if</span> <span class="n">PAZ</span><span class="p">:</span> <span class="c"># Divide by Gain to get to nm (returns pm? 10^-12)</span>
                 <span class="c"># amplitude *=PAZ[&#39;gain&#39;]</span>
-                <span class="n">amplitude</span> <span class="o">/=</span> <span class="mi">1000</span> <span class="c"># I don&#39;t understand these scaling factors!!!!</span>
+                <span class="n">amplitude</span> <span class="o">/=</span> <span class="mi">1000</span>
             <span class="k">if</span> <span class="n">seedresp</span><span class="p">:</span> <span class="c"># Seedresp method returns mm</span>
                 <span class="n">amplitude</span> <span class="o">*=</span> <span class="mi">1000000</span>
             <span class="c"># Write out the half amplitude, approximately the peak amplitude as</span>
@@ -527,7 +551,7 @@
             <span class="c">#   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts</span>
             <span class="n">amplitude</span> <span class="o">*=</span> <span class="mf">0.5</span>
             <span class="c"># Generate a PICK type object for this pick</span>
-            <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">PICK</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
+            <span class="n">picks_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">PICK</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
                                          <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
                                          <span class="n">impulsivity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
                                          <span class="n">phase</span><span class="o">=</span><span class="s">&#39;IAML&#39;</span><span class="p">,</span>
@@ -551,7 +575,7 @@
     <span class="n">fin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="c"># Write picks out to new s-file</span>
-    <span class="n">Sfile_util</span><span class="o">.</span><span class="n">populateSfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span><span class="n">picks</span><span class="p">)</span>
+    <span class="n">Sfile_util</span><span class="o">.</span><span class="n">populateSfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span><span class="n">picks_out</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">picks</span>
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
@@ -561,43 +585,52 @@
 <span class="sd">    Coded to run through SEISAN databases.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">sys</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">6</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="p">:</span>
         <span class="n">msg</span><span class="o">=</span><span class="s">&#39;Insufficient arguments, needs the database to calculate over, and&#39;</span><span class="o">+</span>\
             <span class="s">&#39; the ouptut database, paths to REA dir (not year/mm dirs) for both&#39;</span><span class="o">+</span>\
             <span class="s">&#39; please, and the path to the CAL directory, and the start and&#39;</span><span class="o">+</span>\
-            <span class="s">&#39; stop dates as yyyy/mm/dd&#39;</span>
+            <span class="s">&#39; stop dates as yyyymmddhhmmss&#39;</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
     <span class="n">indir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">outdir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
     <span class="n">calpath</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
     <span class="n">startdate</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
     <span class="n">enddate</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+    	<span class="n">wavepath</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+    	<span class="n">wavepath</span><span class="o">=</span><span class="bp">None</span>
     <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">shutil</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="p">,</span> <span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">14</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;start date is not yyyy/mm/dd form&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;start date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">stopdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">enddate</span><span class="p">,</span> <span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">stopdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">enddate</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">14</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;end date is not yyyy/mm/dd form&#39;</span><span class="p">)</span>
-    <span class="n">kdays</span><span class="o">=</span><span class="p">(</span><span class="n">stopdate</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">-</span><span class="n">startdate</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;end date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
+    <span class="n">kdays</span><span class="o">=</span><span class="p">((</span><span class="n">stopdate</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">-</span><span class="n">startdate</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
         <span class="n">day</span><span class="o">=</span><span class="n">startdate</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="n">sfiles</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">indir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
                          <span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-*L.S&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
                          <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-        <span class="n">wavedir</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;/WAV/&#39;</span><span class="o">+</span>\
-                <span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
-                <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">wavepath</span><span class="p">:</span>
+        	<span class="n">wavedir</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;/WAV/&#39;</span><span class="o">+</span>\
+            	    <span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                	<span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+        	<span class="n">wavedir</span><span class="o">=</span><span class="n">wavepath</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                	<span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">sfiles</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">:</span>
             <span class="c"># Make the picks!</span>
+            <span class="k">print</span> <span class="s">&#39;				Working on Sfile: &#39;</span><span class="o">+</span><span class="n">sfile</span>
             <span class="n">picks</span><span class="o">=</span><span class="n">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">wavedir</span><span class="p">,</span> <span class="n">calpath</span><span class="p">)</span>
             <span class="c"># Copy the mag_calc.out file to the correct place</span>
             <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span> <span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
-                            <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
-                            <span class="s">&#39;-*L.S&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+                            <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 
           </div>
@@ -629,7 +662,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.1.1-alpha',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

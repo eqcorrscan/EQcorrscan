@@ -19,8 +19,8 @@
 
 
 \title{EQcorrscan Documentation}
-\date{July 10, 2015}
-\release{0.0.5}
+\date{July 13, 2015}
+\release{0.1.1-alpha}
 \author{Calum John Chamberlain}
 \newcommand{\sphinxlogo}{\includegraphics{EQcorrscan_logo.pdf}\par}
 \renewcommand{\releasename}{Release}
@@ -652,7 +652,7 @@ As such this code is designed to work only for templates with the same channels
 \index{cluster() (in module clustering)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:clustering.cluster}\pysiglinewithargsret{\code{clustering.}\bfcode{cluster}}{\emph{templates}}{}
+\phantomsection\label{modules:clustering.cluster}\pysiglinewithargsret{\code{clustering.}\bfcode{cluster}}{\emph{templates}, \emph{show=True}}{}
 Function to take a set of templates and cluster them, will return clustered
 templates
 \begin{quote}\begin{description}
@@ -689,6 +689,41 @@ have the same distance as apositively correlated image - this is an issue
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
 ndarray - distance matrix
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{generate\_families() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.generate_families}\pysiglinewithargsret{\code{clustering.}\bfcode{generate\_families}}{\emph{templates}}{}
+Function to take a load of templates, group them according to their
+delays, then within these groups group them according to similarity
+and stack the results into tempates
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{templates}} (\emph{List of obspy.Stream}) -- List of all possible templates to use
+
+\item[{Returns}] \leavevmode
+List of templates (stacked)
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{group\_delays() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.group_delays}\pysiglinewithargsret{\code{clustering.}\bfcode{group\_delays}}{\emph{templates}}{}
+Function to group template waveforms according to their delays
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{templates}} (\emph{List of obspy.Stream}) -- List of the waveforms you want to group
+
+\item[{Returns}] \leavevmode
+List of List of obspy.Streams where each initial list is a group
+with the same delays
 
 \end{description}\end{quote}
 
@@ -752,6 +787,41 @@ obspy.Stream
 \section{EQcorrscan\_plotting}
 \label{modules:module-EQcorrscan_plotting}\label{modules:eqcorrscan-plotting}\index{EQcorrscan\_plotting (module)}
 Utility code for most of the plots used as part of the EQcorrscan package.
+\index{Noise\_plotting() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.Noise_plotting}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{Noise\_plotting}}{\emph{station}, \emph{channel}, \emph{PAZ}, \emph{datasource}}{}
+Function to make use of obspy's PPSD functionality to read in data from
+a single station and the poles-and-zeros for that station before plotting
+the PPSD for this station.  See McNamara(2004) for more details.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{station}} (\emph{String}) -- Station name as it is in the filenames in the database
+
+\item {} 
+\textbf{\texttt{channel}} (\emph{String}) -- Channel name as it is in the filenames in the database
+
+\item {} 
+\textbf{\texttt{PAZ}} (\emph{Dict}) -- Must contain, Poles, Zeros, Sensitivity, Gain
+:type Poles: List of Complex
+:type Zeros: List of Complex
+:type Sensitivity: Float
+:type Gain: Float
+
+\item {} 
+\textbf{\texttt{datasource}} (\emph{String}) -- The directory in which data can be found, can contain
+wildcards.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+PPSD object
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{cumulative\_detections() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
@@ -767,6 +837,31 @@ template it will overlay them in different colours.
 
 \item {} 
 \textbf{\texttt{template\_names}} (\emph{list of strings}) -- List of the template names in order of the dates
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{detection\_multiplot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:EQcorrscan_plotting.detection_multiplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{detection\_multiplot}}{\emph{stream}, \emph{template}, \emph{times}, \emph{streamcolour='k'}, \emph{templatecolour='r'}}{}
+Function to plot the stream of data that has been detected in, with the
+template on top of it timed according to a list of given times, just a
+pretty way to show a detection!
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stream}} (\emph{obspy.Stream}) -- Stream of data to be plotted as the base (black)
+
+\item {} 
+\textbf{\texttt{template}} (\emph{obspy.Stream}) -- Template to be plotted on top of the base stream (red)
+
+\item {} 
+\textbf{\texttt{times}} (\emph{List of datetime.datetime}) -- list of times of detections in the order of the channels in
+template.
 
 \end{itemize}
 
@@ -803,7 +898,7 @@ module.
 \index{threeD\_gridplot() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
-\phantomsection\label{modules:EQcorrscan_plotting.threeD_gridplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{threeD\_gridplot}}{\emph{nodes}}{}
+\phantomsection\label{modules:EQcorrscan_plotting.threeD_gridplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{threeD\_gridplot}}{\emph{nodes}, \emph{save=False}, \emph{savefile='`}}{}
 Function to plot in 3D a series of grid points.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode

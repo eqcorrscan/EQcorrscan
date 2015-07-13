@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Utils &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>Utils &mdash; EQcorrscan 0.1.1-alpha documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
         <link rel="prev" title="EQcorrscan tutorial" href="tutorial.html"/> 
 
   
@@ -276,7 +276,7 @@ methods, employed by implimentation of Frank et al. code.</p>
 <p>As such this code is designed to work only for templates with the same channels</p>
 <dl class="function">
 <dt id="clustering.cluster">
-<code class="descclassname">clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cluster" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>templates</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cluster" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to take a set of templates and cluster them, will return clustered
 templates</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -317,6 +317,41 @@ have the same distance as apositively correlated image - this is an issue</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">ndarray - distance matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.generate_families">
+<code class="descclassname">clustering.</code><code class="descname">generate_families</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#generate_families"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.generate_families" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to take a load of templates, group them according to their
+delays, then within these groups group them according to similarity
+and stack the results into tempates</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of obspy.Stream</em>) &#8211; List of all possible templates to use</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of templates (stacked)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.group_delays">
+<code class="descclassname">clustering.</code><code class="descname">group_delays</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#group_delays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.group_delays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to group template waveforms according to their delays</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of obspy.Stream</em>) &#8211; List of the waveforms you want to group</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of List of obspy.Streams where each initial list is a group
+with the same delays</td>
 </tr>
 </tbody>
 </table>
@@ -382,6 +417,36 @@ in the same way.</p>
 <span id="eqcorrscan-plotting"></span><h2>EQcorrscan_plotting<a class="headerlink" href="#module-EQcorrscan_plotting" title="Permalink to this headline">¶</a></h2>
 <p>Utility code for most of the plots used as part of the EQcorrscan package.</p>
 <dl class="function">
+<dt id="EQcorrscan_plotting.Noise_plotting">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">Noise_plotting</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>PAZ</em>, <em>datasource</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#Noise_plotting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.Noise_plotting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make use of obspy&#8217;s PPSD functionality to read in data from
+a single station and the poles-and-zeros for that station before plotting
+the PPSD for this station.  See McNamara(2004) for more details.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>station</strong> (<em>String</em>) &#8211; Station name as it is in the filenames in the database</li>
+<li><strong>channel</strong> (<em>String</em>) &#8211; Channel name as it is in the filenames in the database</li>
+<li><strong>PAZ</strong> (<em>Dict</em>) &#8211; Must contain, Poles, Zeros, Sensitivity, Gain
+:type Poles: List of Complex
+:type Zeros: List of Complex
+:type Sensitivity: Float
+:type Gain: Float</li>
+<li><strong>datasource</strong> (<em>String</em>) &#8211; The directory in which data can be found, can contain
+wildcards.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">PPSD object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="EQcorrscan_plotting.cumulative_detections">
 <code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple plotting function to take a list of UTCDateTime objects and plot
@@ -395,6 +460,28 @@ template it will overlay them in different colours.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dates</strong> (<em>list of lists of datetime.datetime</em>) &#8211; Must be a list of lists of datetime.datetime objects</li>
 <li><strong>template_names</strong> (<em>list of strings</em>) &#8211; List of the template names in order of the dates</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.detection_multiplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">detection_multiplot</code><span class="sig-paren">(</span><em>stream</em>, <em>template</em>, <em>times</em>, <em>streamcolour='k'</em>, <em>templatecolour='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#detection_multiplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.detection_multiplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the stream of data that has been detected in, with the
+template on top of it timed according to a list of given times, just a
+pretty way to show a detection!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; Stream of data to be plotted as the base (black)</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Template to be plotted on top of the base stream (red)</li>
+<li><strong>times</strong> (<em>List of datetime.datetime</em>) &#8211; list of times of detections in the order of the channels in
+template.</li>
 </ul>
 </td>
 </tr>
@@ -433,7 +520,7 @@ module.</p>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.threeD_gridplot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to plot in 3D a series of grid points.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1290,7 +1377,7 @@ after the imag you will get a reversed correaltion matrix</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.0.5',
+            VERSION:'0.1.1-alpha',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

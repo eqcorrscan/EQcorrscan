@@ -10,11 +10,11 @@
 \contentsline {section}{\numberline {3.4}per\_processing}{13}{section.3.4}
 \contentsline {section}{\numberline {3.5}EQcorrscan\_plotting}{13}{section.3.5}
 \contentsline {section}{\numberline {3.6}mag\_calc}{14}{section.3.6}
-\contentsline {section}{\numberline {3.7}stacking}{15}{section.3.7}
+\contentsline {section}{\numberline {3.7}stacking}{16}{section.3.7}
 \contentsline {chapter}{\numberline {4}Par}{17}{chapter.4}
 \contentsline {chapter}{\numberline {5}Core}{19}{chapter.5}
 \contentsline {section}{\numberline {5.1}bright\_lights}{19}{section.5.1}
 \contentsline {section}{\numberline {5.2}template\_gen}{21}{section.5.2}
 \contentsline {section}{\numberline {5.3}match\_filter}{22}{section.5.3}
-\contentsline {chapter}{Python Module Index}{25}{section*.47}
-\contentsline {chapter}{Index}{27}{section*.48}
+\contentsline {chapter}{Python Module Index}{25}{section*.51}
+\contentsline {chapter}{Index}{27}{section*.52}

@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>EQcorrscan_plotting &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>EQcorrscan_plotting &mdash; EQcorrscan 0.1.1-alpha documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -256,7 +256,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="threeD_gridplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.threeD_gridplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">):</span>
+<div class="viewcode-block" id="threeD_gridplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.threeD_gridplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to plot in 3D a series of grid points.</span>
 
@@ -279,7 +279,10 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="s">&quot;Depth(km)&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">get_major_formatter</span><span class="p">()</span><span class="o">.</span><span class="n">set_scientific</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">get_major_formatter</span><span class="p">()</span><span class="o">.</span><span class="n">set_scientific</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
 <div class="viewcode-block" id="detection_timeseries"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.detection_timeseries">[docs]</a><span class="k">def</span> <span class="nf">detection_timeseries</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">detections</span><span class="p">):</span>
@@ -312,6 +315,57 @@
     <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">detector</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
     <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
     <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Detector&#39;</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="detection_multiplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.detection_multiplot">[docs]</a><span class="k">def</span> <span class="nf">detection_multiplot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">streamcolour</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>\
+        <span class="n">templatecolour</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to plot the stream of data that has been detected in, with the</span>
+<span class="sd">    template on top of it timed according to a list of given times, just a</span>
+<span class="sd">    pretty way to show a detection!</span>
+
+<span class="sd">    :type stream: obspy.Stream</span>
+<span class="sd">    :param stream: Stream of data to be plotted as the base (black)</span>
+<span class="sd">    :type template: obspy.Stream</span>
+<span class="sd">    :param template: Template to be plotted on top of the base stream (red)</span>
+<span class="sd">    :type times: List of datetime.datetime</span>
+<span class="sd">    :param times: list of times of detections in the order of the channels in</span>
+<span class="sd">                template.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&#39;Template has &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; channels&#39;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)):</span>
+        <span class="n">template_tr</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">print</span> <span class="s">&#39;Working on: &#39;</span><span class="o">+</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                <span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
+        <span class="n">image</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                            <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">image</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                    <span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">continue</span>
+        <span class="n">image</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">merge</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">t_start</span><span class="o">=</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span> <span class="c"># Gives a timedelta</span>
+        <span class="k">print</span> <span class="n">t_start</span>
+        <span class="c"># Downsample if needed</span>
+        <span class="k">if</span> <span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
+            <span class="n">image</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
+            <span class="n">template_tr</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span>
+        <span class="n">image_times</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">((</span><span class="n">j</span><span class="o">*</span><span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span><span class="o">/</span><span class="mi">86400</span><span class="p">)</span>\
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="p">))]</span> <span class="c"># Give list of datetime objects</span>
+        <span class="n">t_start</span><span class="o">=</span><span class="n">t_start</span><span class="o">+</span><span class="n">image</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span>
+        <span class="n">template_times</span><span class="o">=</span><span class="p">[</span><span class="n">t_start</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">((</span><span class="n">j</span><span class="o">*</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span><span class="o">/</span><span class="mi">86400</span><span class="p">)</span>\
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template_tr</span><span class="o">.</span><span class="n">data</span><span class="p">))]</span>
+        <span class="k">print</span> <span class="n">image_times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">print</span> <span class="n">template_times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">image_times</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">template_times</span><span class="p">,</span> <span class="n">template_tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">template_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
 <div class="viewcode-block" id="threeD_seismplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.threeD_seismplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_seismplot</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
@@ -352,7 +406,47 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">get_major_formatter</span><span class="p">()</span><span class="o">.</span><span class="n">set_scientific</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
-</pre></div></div>
+</div>
+<div class="viewcode-block" id="Noise_plotting"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.Noise_plotting">[docs]</a><span class="k">def</span> <span class="nf">Noise_plotting</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">datasource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to make use of obspy&#39;s PPSD functionality to read in data from</span>
+<span class="sd">    a single station and the poles-and-zeros for that station before plotting</span>
+<span class="sd">    the PPSD for this station.  See McNamara(2004) for more details.</span>
+
+<span class="sd">    :type station: String</span>
+<span class="sd">    :param station: Station name as it is in the filenames in the database</span>
+<span class="sd">    :type channel: String</span>
+<span class="sd">    :param channel: Channel name as it is in the filenames in the database</span>
+<span class="sd">    :type PAZ: Dict</span>
+<span class="sd">    :param PAZ: Must contain, Poles, Zeros, Sensitivity, Gain</span>
+<span class="sd">        :type Poles: List of Complex</span>
+<span class="sd">        :type Zeros: List of Complex</span>
+<span class="sd">        :type Sensitivity: Float</span>
+<span class="sd">        :type Gain: Float</span>
+<span class="sd">    :type datasource: String</span>
+<span class="sd">    :param datasource: The directory in which data can be found, can contain</span>
+<span class="sd">                        wildcards.</span>
+
+<span class="sd">    :returns: PPSD object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal</span> <span class="kn">import</span> <span class="n">PPSD</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+
+    <span class="n">stafiles</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">datasource</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="p">)</span>
+    <span class="n">stafiles</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="c"># Initialize PPSD</span>
+    <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">stafiles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ppsd</span> <span class="o">=</span> <span class="n">PPSD</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">stafile</span> <span class="ow">in</span> <span class="n">stafiles</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">print</span> <span class="s">&#39;Adding waveform from: &#39;</span><span class="o">+</span><span class="n">stafile</span>
+        <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">stafile</span><span class="p">)</span>
+        <span class="c"># Add after read to conserve memory</span>
+        <span class="n">ppsd</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="c"># Plot the PPSD</span>
+    <span class="n">ppsd</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ppsd</span></div>
+</pre></div>
 
           </div>
           <footer>
@@ -383,7 +477,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.1.1-alpha',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
