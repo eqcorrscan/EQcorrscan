@@ -74,6 +74,11 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="">Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sfile-util">Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pre_processing">per_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-stacking">stacking</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#par">Par</a></li>
@@ -262,6 +267,404 @@ if multiple peaks within this window this code will find the highest.
 </dd></dl>
 
 </div>
+<div class="section" id="module-clustering">
+<span id="clustering"></span><h2>clustering<a class="headerlink" href="#module-clustering" title="Permalink to this headline">¶</a></h2>
+<p>Code to compute the linkage between seismograms and cluster them accordingly</p>
+<p>Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015</p>
+<p>Implimented to streamline templates after template detection in beamforming
+methods, employed by implimentation of Frank et al. code.</p>
+<p>As such this code is designed to work only for templates with the same channels</p>
+<dl class="function">
+<dt id="clustering.cluster">
+<code class="descclassname">clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to take a set of templates and cluster them, will return clustered
+templates</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of cluster groups, array of length len(templates), with
+each number relating to a cluster</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.cross_chan_coherance">
+<code class="descclassname">clustering.</code><code class="descname">cross_chan_coherance</code><span class="sig-paren">(</span><em>st1</em>, <em>st2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cross_chan_coherance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cross_chan_coherance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine the cross-channel coherancy between two streams of
+multichannel seismic data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">cross channel coherance, float - normalized by number of channels</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.distance_matrix">
+<code class="descclassname">clustering.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the distance matrix for all templates - will give
+distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
+have small distances, and an equally well correlated reverse image will
+have the same distance as apositively correlated image - this is an issue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">ndarray - distance matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-pre_processing">
+<span id="per-processing"></span><h2>per_processing<a class="headerlink" href="#module-pre_processing" title="Permalink to this headline">¶</a></h2>
+<p>Utilities module for the EQcorrscan package written by Calum Chamberlain of
+Victoria University Wlelington.  These functions are designed to do the basic
+processing of the data using obspy modules (which also rely on scipy and numpy).</p>
+<dl class="function">
+<dt id="pre_processing._check_daylong">
+<code class="descclassname">pre_processing.</code><code class="descname">_check_daylong</code><span class="sig-paren">(</span><em>tr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#_check_daylong"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._check_daylong" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to check the data quality of the daylong file - check to see that
+the day isn&#8217;t just zeros, with large steps, if it is then the resampling will
+hate it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return qual:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.dayproc">
+<code class="descclassname">pre_processing.</code><code class="descname">dayproc</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug</em>, <em>starttime</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#dayproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass, downsample and check headers and length of trace
+to ensure files start at the start of a day and are daylong.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">obspy.Stream</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.shortproc">
+<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass, downsample.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">obspy.Stream</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-EQcorrscan_plotting">
+<span id="eqcorrscan-plotting"></span><h2>EQcorrscan_plotting<a class="headerlink" href="#module-EQcorrscan_plotting" title="Permalink to this headline">¶</a></h2>
+<p>Utility code for most of the plots used as part of the EQcorrscan package.</p>
+<dl class="function">
+<dt id="EQcorrscan_plotting.cumulative_detections">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple plotting function to take a list of UTCDateTime objects and plot
+a cumulative detections list.  Can take dates as a list of lists and will
+plot each list seperately, e.g. if you have dates from more than one
+template it will overlay them in different colours.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dates</strong> (<em>list of lists of datetime.datetime</em>) &#8211; Must be a list of lists of datetime.datetime objects</li>
+<li><strong>template_names</strong> (<em>list of strings</em>) &#8211; List of the template names in order of the dates</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.detection_timeseries">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">detection_timeseries</code><span class="sig-paren">(</span><em>stream</em>, <em>detector</em>, <em>detections</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#detection_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.detection_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the data and detector with detections labelled in red,
+will downsample if too many data points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>detections</strong> (<em>np.array</em>) &#8211; array of positions of detections in samples</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.peaks_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">peaks_plot</code><span class="sig-paren">(</span><em>data, starttime, samp_rate, save=False, peaks=[(0, 0)], savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#peaks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.peaks_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple utility code to plot the correlation peaks to check that the peak
+finding routine is running correctly, used in debugging for the EQcorrscan
+module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.threeD_gridplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot in 3D a series of grid points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> (<em>List of tuples</em>) &#8211; List of tuples of the form (lat, long, depth)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.threeD_seismplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_seismplot</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_seismplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_seismplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot seismicity and stations in a 3D, movable, zoomable space
+using matplotlibs Axes3D package.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stations</strong> (<em>list of tuple</em>) &#8211; list of one tuple per station of (lat, long, elevation),
+with up positive</li>
+<li><strong>nodes</strong> (<em>list of tuple</em>) &#8211; list of one tuple per event of (lat, long, depth) with down
+positive</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.triple_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to make a triple plot with a day-long seismogram, day-long
+correlation sum trace and histogram of the correlation sum to show normality</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-mag_calc">
+<span id="mag-calc"></span><h2>mag_calc<a class="headerlink" href="#module-mag_calc" title="Permalink to this headline">¶</a></h2>
+<p>Functions to simulate Wood Anderson traces, pick maximum peak-to-peak amplitudes
+write these amplitudes and periods to SEISAN s-files and to calculate magnitudes
+from this and the informaiton within SEISAN s-files.</p>
+<p>Written as part of the EQcorrscan package by Calum Chamberlain - first written
+to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up
+by Warren-Smith [2014/15].</p>
+<dl class="function">
+<dt id="mag_calc.Amp_pick_sfile">
+<code class="descclassname">mag_calc.</code><code class="descname">Amp_pick_sfile</code><span class="sig-paren">(</span><em>sfile, datapath, respdir, chans=['Z'], var_wintype=True, winlen=0.9, pre_pick=1.0, pre_filt=True, lowcut=1.0, highcut=20.0, corners=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#Amp_pick_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.Amp_pick_sfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read information from a SEISAN s-file, load the data and the
+picks, cut the data for the channels given around the S-window, simulate
+a Wood Anderson seismometer, then pick the maximum peak-to-trough
+amplitude.</p>
+<p>Output will be put into a mag_calc.out file which will be in full S-file
+format and can be copied to a REA database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>datapath</strong> (<em>String</em>) &#8211; Path to the waveform files - usually the path to the WAV directory</li>
+<li><strong>respdir</strong> (<em>String</em>) &#8211; Path to the response information directory</li>
+<li><strong>chans</strong> (<em>List of strings</em>) &#8211; List of the channels to pick on, defaults to [&#8216;Z&#8217;] - should
+just be the orientations, e.g. Z,1,2,N,E</li>
+<li><strong>var_wintype</strong> (<em>Bool</em>) &#8211; If True, the winlen will be
+multiplied by the P-S time if both P and S picks are
+available, otherwise it will be multiplied by the hypocentral
+distance*0.34 - dervided using a p-s ratio of 1.68 and
+S-velocity of 1.5km/s to give a large window, defaults to True</li>
+<li><strong>winlen</strong> (<em>Float</em>) &#8211; Length of window, see above parameter, if var_wintype is False
+Then this will be in seconds, otherwise it is the multiplier
+to the p-s time, defaults to 0.5</li>
+<li><strong>pre_pick</strong> (<em>Float</em>) &#8211; Time before the s-pick to start the cut window, defaults
+to 1.0</li>
+<li><strong>pre_filt</strong> (<em>Bool</em>) &#8211; To apply a pre-filter or not, defaults to True</li>
+<li><strong>lowcut</strong> (<em>Float</em>) &#8211; Lowcut in Hz for the pre-filter, defaults to 1.0</li>
+<li><strong>highcut</strong> (<em>Float</em>) &#8211; Highcut in Hz for the pre-filter, defaults to 20.0</li>
+<li><strong>corners</strong> (<em>Int</em>) &#8211; Number of corners to use in the pre-filter</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._GSE2_PAZ_read">
+<code class="descclassname">mag_calc.</code><code class="descname">_GSE2_PAZ_read</code><span class="sig-paren">(</span><em>GSEfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_GSE2_PAZ_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._GSE2_PAZ_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the instrument response information from a GSE Poles and
+Zeros file as generated by the SEISAN program RESP.</p>
+<p>Format must be CAL2, not coded for any other format at the moment, contact
+the author to add others in.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Dict of poles, zeros, gain and sensitivity</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._find_resp">
+<code class="descclassname">mag_calc.</code><code class="descname">_find_resp</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>network</em>, <em>time</em>, <em>delta</em>, <em>directory</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_find_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._find_resp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to find the response information for a given station and
+channel at a given time and return a dictionary of poles and zeros, gain
+and sensitivity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>station</strong> (<em>String</em>) &#8211; Station name (as in the response files)</li>
+<li><strong>channel</strong> (<em>String</em>) &#8211; Channel name (as in the response files)</li>
+<li><strong>network</strong> (<em>String</em>) &#8211; Network to scan for, can be a wildcard</li>
+<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/library/datetime.html#datetime.datetime" title="(in Python v2.7)"><em>datetime.datetime</em></a>) &#8211; Date-time to look for repsonse information</li>
+<li><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sample interval in seconds</li>
+<li><strong>direcotry</strong> &#8211; Directory to scan for response information</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Dictionary</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._max_p2t">
+<code class="descclassname">mag_calc.</code><code class="descname">_max_p2t</code><span class="sig-paren">(</span><em>data</em>, <em>delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_max_p2t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._max_p2t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to find the maximum peak to trough amplitude and period of this
+amplitude.  Originally designed to be used to calculate magnitudes (by
+taking half of the peak-to-trough amplitude as the peak amplitude).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>ndarray</em>) &#8211; waveform trace to find the peak-to-trough in.</li>
+<li><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling interval in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of (amplitude, period, time) with amplitude in the same scale as
+given in the input data, and period in seconds, and time in seconds
+from the start of the data window.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._sim_WA">
+<code class="descclassname">mag_calc.</code><code class="descname">_sim_WA</code><span class="sig-paren">(</span><em>trace</em>, <em>PAZ</em>, <em>seedresp</em>, <em>water_level</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_sim_WA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._sim_WA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to remove the insturment response from a trace and return a
+de-meaned, de-trended, Wood Anderson simulated trace in it&#8217;s place.</p>
+<p>Works in-place on data and will destroy your original data, copy the
+trace before giving it to this function!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A standard obspy trace, generally should be given without
+pre-filtering, if given with pre-filtering for use with
+amplitude determiniation for magnitudes you will need to
+worry about how you cope with the response of this filter
+yourself.</li>
+<li><strong>PAZ</strong> (<a class="reference external" href="https://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; Dictionary containing lists of poles and zeros, the gain and
+the sensitivity.</li>
+<li><strong>water_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Water level for the simulation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Trace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-stacking">
+<span id="stacking"></span><h2>stacking<a class="headerlink" href="#module-stacking" title="Permalink to this headline">¶</a></h2>
+<p>Utility module of the EQcorrscan package to allow for different methods of
+stacking of seismic signal in one place.</p>
+<p>In alpha stages and only with linear stacking implimented thusfar</p>
+<p>Calum Chamberlain 24/06/2015</p>
+<dl class="function">
+<dt id="stacking.PWS_stack">
+<code class="descclassname">stacking.</code><code class="descname">PWS_stack</code><span class="sig-paren">(</span><em>streams</em>, <em>weight</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stacking.html#PWS_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.PWS_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the phase weighted stack of a series of streams</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>weight</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Exponent to the phase stack used for weighting.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">obspy.Stream</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="stacking.linstack">
+<code class="descclassname">stacking.</code><code class="descname">linstack</code><span class="sig-paren">(</span><em>streams</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stacking.html#linstack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.linstack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the linear stack of a series of seismic streams of
+multiplexed data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">stack - Stream</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
 </div>
 <div class="section" id="par">
 <h1>Par<a class="headerlink" href="#par" title="Permalink to this headline">¶</a></h1>
@@ -342,13 +745,13 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._node_loop">
-<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>node</em>, <em>lags</em>, <em>stream</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to allow for parallelisation of brightness</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">energy (np.array), node (tuple), realstations (list of stations actaully used)</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(i, energy (np.array))</td>
 </tr>
 </tbody>
 </table>
@@ -382,7 +785,7 @@ both at the moment.</p>
 
 <dl class="function">
 <dt id="bright_lights._resample_grid">
-<code class="descclassname">bright_lights.</code><code class="descname">_resample_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>volume</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_resample_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._resample_grid" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_resample_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>mindepth</em>, <em>maxdepth</em>, <em>corners</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_resample_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._resample_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to resample the lagtime grid to a given volume.  For use if the
 grid from Grid2Time is too large or you want to run a faster, downsampled
 scan.</p>
@@ -390,16 +793,24 @@ scan.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]    refers to nodes[i][:] and lags[i][:]</li>
 <li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in    degrees, nodes[:][:][2] is depth in km.</li>
-<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds    :type volume: tuple</li>
-<li><strong>volume</strong> &#8211; list of tuples: [(mindepth, maxdepth),(minlat, maxlat),(minlong,    maxlong)].  This will be interpreted as a cuboid.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds    :type mindepth: float</li>
+<li><strong>mindepth</strong> &#8211; Upper limit of volume</li>
+<li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lower limit of volume</li>
+<li><strong>corners</strong> (<em>matplotlib.Path</em>) &#8211; matplotlib path of the corners for the 2D polygon to cut to</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</p>
-</td>
+</tbody>
+</table>
+<p>in lat and long</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</td>
 </tr>
 </tbody>
 </table>

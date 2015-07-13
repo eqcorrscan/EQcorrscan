@@ -15,6 +15,36 @@ findpeaks
     :members:
     :private-members:
 
+clustering
+----------
+.. automodule:: clustering
+    :members:
+    :private-members:
+
+per_processing
+--------------
+.. automodule:: pre_processing
+    :members:
+    :private-members:
+
+EQcorrscan_plotting
+-------------------
+.. automodule:: EQcorrscan_plotting
+    :members:
+    :private-members:
+
+mag_calc
+--------
+.. automodule:: mag_calc
+    :members:
+    :private-members:
+
+stacking
+--------
+.. automodule:: stacking
+    :members:
+    :private-members:
+
 
 Par
 ===

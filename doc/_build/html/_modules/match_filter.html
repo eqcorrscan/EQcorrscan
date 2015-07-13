@@ -74,6 +74,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
@@ -400,7 +405,6 @@
             <span class="k">print</span> <span class="s">&quot;--------- TIMER:    Trace loop took &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">toc</span><span class="o">-</span><span class="n">tic</span><span class="p">)</span><span class="o">+</span><span class="s">&quot; s&quot;</span>
     <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&#39;cccs_matrix is shaped: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">))</span>
-    <span class="c">########################## SLOW CONVERSION TO NUMPY ARRAY, DO IT BETTER!</span>
     <span class="n">cccsums</span><span class="o">=</span><span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
 </div>
