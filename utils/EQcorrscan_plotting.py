@@ -130,7 +130,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
         plt.show()
     return
 
-def threeD_gridplot(nodes):
+def threeD_gridplot(nodes, save=False, savefile=''):
     """
     Function to plot in 3D a series of grid points.
 
@@ -153,7 +153,10 @@ def threeD_gridplot(nodes):
     ax.set_zlabel("Depth(km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
     return
 
 def detection_timeseries(stream, detector, detections):
