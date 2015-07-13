@@ -8,13 +8,15 @@
 """
 Outline definitions for template generation
 """
+import glob
 
 sfilebase='.'                       # Location of nordic s-files, string
 
-sfiles=[] # Names of s-files to use, list of strings,
-                                    # or list of already generated templates
+sfiles=[]                           # List of s-files
 
-samp_rate=20.0                     # Desired sampling rate, will be carried
+tfiles=glob.glob('templates/*.ms')  # List of pre-existing template files
+
+samp_rate=20.0                      # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
 
 lowcut=2.0                          # Lowcut for bandpass filter in Hz, float
