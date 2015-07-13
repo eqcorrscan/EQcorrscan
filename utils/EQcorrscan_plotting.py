@@ -281,3 +281,42 @@ def threeD_seismplot(stations, nodes):
     plt.show()
     return
 
+def Noise_plotting(station, channel, PAZ, datasource):
+    """
+    Function to make use of obspy's PPSD functionality to read in data from
+    a single station and the poles-and-zeros for that station before plotting
+    the PPSD for this station.  See McNamara(2004) for more details.
+
+    :type station: String
+    :param station: Station name as it is in the filenames in the database
+    :type channel: String
+    :param channel: Channel name as it is in the filenames in the database
+    :type PAZ: Dict
+    :param PAZ: Must contain, Poles, Zeros, Sensitivity, Gain
+        :type Poles: List of Complex
+        :type Zeros: List of Complex
+        :type Sensitivity: Float
+        :type Gain: Float
+    :type datasource: String
+    :param datasource: The directory in which data can be found, can contain
+                        wildcards.
+
+    :returns: PPSD object
+    """
+    from obspy.signal import PPSD
+    from obspy import read as obsread
+    import glob
+
+    stafiles=glob.glob(datasource+'/*'+station+'*'+channel+'*')
+    stafiles.sort()
+    # Initialize PPSD
+    st=obsread(stafiles[0])
+    ppsd = PPSD(st[0].stats, PAZ)
+    for stafile in stafiles[1:]:
+        print 'Adding waveform from: '+stafile
+        st=obsread(stafile)
+        # Add after read to conserve memory
+        ppsd.add(st)
+    # Plot the PPSD
+    ppsd.plot()
+    return ppsd
