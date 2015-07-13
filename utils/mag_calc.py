@@ -36,7 +36,7 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
                 'zeros': [0 + 0j], 'gain': 1.0, 'sensitivity': 2080}
     from obspy.signal import seisSim
     # De-trend data
-    trace=trace.detrend('simple')
+    trace.detrend('simple')
     # Simulate Wood Anderson
     if PAZ:
         trace.data=seisSim(trace.data, trace.stats.sampling_rate, paz_remove=PAZ,\
@@ -256,7 +256,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
     ps_multiplier=0.34
-    from utils import Sfile_util
+    try:
+        from utils import Sfile_util
+    except:
+        import Sfile_util
     from obspy import read
     from scipy.signal import iirfilter
     from obspy.signal.invsim import paz2AmpValueOfFreqResp
@@ -268,8 +271,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     picktimes=[] # List of pick times
     picktypes=[] # List of pick types
     distances=[] # List of hypocentral distances
+    picks_out=[]
     for pick in picks:
         if pick.phase in ['P','S']:
+            picks_out.append(pick)
             stations.append(pick.station)
             channels.append(pick.channel)
             picktimes.append(pick.time)
@@ -287,15 +292,17 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
         for chan in chans:
             print 'Working on '+sta+' '+chan
             tr=stream.select(station=sta, channel='*'+chan)[0]
+            if not tr:
+            	raise ValueError('There is no station and channel match in the wavefile!')
             # Apply the pre-filter
             if pre_filt:
                 try:
-                    tr=tr.detrend('simple')
+                    tr.detrend('simple')
                 except:
                     dummy=tr.split()
-                    dummy=dummy.detrend('simple')
+                    dummy.detrend('simple')
                     tr=dummy.merge()[0]
-                tr=tr.filter('bandpass',freqmin=lowcut, freqmax=highcut,\
+                tr.filter('bandpass',freqmin=lowcut, freqmax=highcut,\
                              corners=corners)
             sta_picks=[i for i in xrange(len(stations)) \
                            if stations[i]==sta]
@@ -311,23 +318,32 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                     P_pick=[picktimes[i] for i in sta_picks \
                             if picktypes[i]=='P']
                     P_pick=min(P_pick)
-                    tr=tr.trim(starttime=S_pick-pre_pick, \
+                    try:
+                    	tr.trim(starttime=S_pick-pre_pick, \
                                endtime=S_pick+(S_pick-P_pick)*winlen)
+                    except:
+                    	break
                 elif 'S' in [picktypes[i] for i in sta_picks]:
                     S_pick=[picktimes[i] for i in sta_picks \
                             if picktypes[i]=='S']
                     S_pick=min(S_pick)
                     P_modelled=S_pick-hypo_dist*ps_multiplier
-                    tr=tr.trim(starttime=S_pick-pre_pick,\
+                    try:
+                    	tr.trim(starttime=S_pick-pre_pick,\
                             endtime=S_pick+(S_pick-P_modelled)*winlen)
+                    except:
+                    	break
                 else:
                     # In this case we only have a P pick
                     P_pick=[picktimes[i] for i in sta_picks \
                             if picktypes[i]=='P']
                     P_pick=min(P_pick)
                     S_modelled=P_pick+hypo_dist*ps_multiplier
-                    tr=tr.trim(starttime=S_modelled-pre_pick,\
-                            endtime=S_modelled+(S_modelled-P_pick)*winlen)
+                    try:
+                    	tr.trim(starttime=S_modelled-pre_pick,\
+                        	    endtime=S_modelled+(S_modelled-P_pick)*winlen)
+                    except:
+                    	break
                 # Work out the window length based on p-s time or distance
             elif 'S' in [picktypes[i] for i in sta_picks]:
                 # If the window is fixed we still need to find the start time,
@@ -338,7 +354,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                 S_pick=[picktimes[i] for i in sta_picks \
                            if picktypes[i]=='S']
                 S_pick=min(S_pick)
-                tr=tr.trim(starttime=S_pick-pre_pick, endtime=S_pick+winlen)
+                try:
+                	tr.trim(starttime=S_pick-pre_pick, endtime=S_pick+winlen)
+                except:
+                	break
             else:
                 # In this case, there is no S-pick and the window length is fixed
                 # We need to calculate an expected S_pick based on the hypocentral
@@ -350,8 +369,11 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                 hypo_dist=[distances[i] for i in sta_picks\
                            if picktypes[i]=='P'][0]
                 S_modelled=P_pick+hypo_dist*ps_multiplier
-                tr=tr.trim(starttime=S_modelled-pre_pick,\
-                           endtime=S_modelled+winlen)
+                try:
+                	tr.trim(starttime=S_modelled-pre_pick,\
+                    	       endtime=S_modelled+winlen)
+                except:
+        	       break
             # Find the response information
             resp_info=_find_resp(tr.stats.station, tr.stats.channel,\
                            tr.stats.network, tr.stats.starttime, tr.stats.delta,\
@@ -363,14 +385,16 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             elif resp_info:
                 seedresp=resp_info
             # Simulate a Wood Anderson Seismograph
-            if PAZ:
+            if PAZ and len(tr) != 0:
                 tr=_sim_WA(tr, PAZ, None, 10)
-            elif seedresp:
+            elif seedresp and len(tr) != 0:
                 tr=_sim_WA(tr, None, seedresp, 10)
-            else:
+            elif len(tr) != 0:
                 raise IOError('No PAZ for '+tr.stats.station+' '+\
                                  tr.stats.channel+' at time: '+\
                                  str(tr.stats.starttime))
+            if len(tr) == 0:
+            	break
             # Get the amplitude
             amplitude, period, delay= _max_p2t(tr.data, tr.stats.delta)
             print 'Amplitude picked: '+str(amplitude)
@@ -392,7 +416,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             # Convert amplitude to mm
             if PAZ: # Divide by Gain to get to nm (returns pm? 10^-12)
                 # amplitude *=PAZ['gain']
-                amplitude /= 1000 # I don't understand these scaling factors!!!!
+                amplitude /= 1000
             if seedresp: # Seedresp method returns mm
                 amplitude *= 1000000
             # Write out the half amplitude, approximately the peak amplitude as
@@ -401,7 +425,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
             # Generate a PICK type object for this pick
-            picks.append(Sfile_util.PICK(station=tr.stats.station,
+            picks_out.append(Sfile_util.PICK(station=tr.stats.station,
                                          channel=tr.stats.channel,
                                          impulsivity=' ',
                                          phase='IAML',
@@ -425,7 +449,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     fin.close()
     fout.close()
     # Write picks out to new s-file
-    Sfile_util.populateSfile('mag_calc.out',picks)
+    Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
 
 if __name__ == '__main__':
@@ -435,40 +459,49 @@ if __name__ == '__main__':
     Coded to run through SEISAN databases.
     """
     import sys
-    if not len(sys.argv) == 6:
+    if len(sys.argv) < 6 or len(sys.argv) > 7:
         msg='Insufficient arguments, needs the database to calculate over, and'+\
             ' the ouptut database, paths to REA dir (not year/mm dirs) for both'+\
             ' please, and the path to the CAL directory, and the start and'+\
-            ' stop dates as yyyy/mm/dd'
+            ' stop dates as yyyymmddhhmmss'
         raise IOError(msg)
     indir=str(sys.argv[1])
     outdir=str(sys.argv[2])
     calpath=str(sys.argv[3])
     startdate=str(sys.argv[4])
     enddate=str(sys.argv[5])
+    if len(sys.argv) == 7:
+    	wavepath=sys.argv[6]
+    elif len(sys.argv) == 6:
+    	wavepath=None
     import glob, shutil
     import datetime as dt
     try:
-        startdate=dt.datetime.strptime(startdate, '%Y/%m/%d')
+        startdate=dt.datetime.strptime(startdate.zfill(14), '%Y%m%d%H%M%S')
     except:
-        raise IOError('start date is not yyyy/mm/dd form')
+        raise IOError('start date is not yyyymmddhhmmss form')
     try:
-        stopdate=dt.datetime.strptime(enddate, '%Y/%m/%d')
+        stopdate=dt.datetime.strptime(enddate.zfill(14), '%Y%m%d%H%M%S')
     except:
-        raise IOError('end date is not yyyy/mm/dd form')
-    kdays=(stopdate+dt.timedelta(1))-startdate
+        raise IOError('end date is not yyyymmddhhmmss form')
+    kdays=((stopdate+dt.timedelta(1))-startdate).days
     for i in xrange(kdays):
         day=startdate+dt.timedelta(i)
         sfiles=glob.glob(indir+'/'+str(day.year)+'/'+str(day.month).zfill(2)+\
                          '/'+str(day.day).zfill(2)+'-*L.S'+str(day.year)+\
                          str(day.month).zfill(2))
-        wavedir="/".join(indir.split('/')[:-2])+'/WAV/'+\
-                indir.split('/')[-1]+'/'+str(day.year)+'/'+\
-                str(day.month).zfill(2)
+        if not wavepath:
+        	wavedir="/".join(indir.split('/')[:-2])+'/WAV/'+\
+            	    indir.split('/')[-1]+'/'+str(day.year)+'/'+\
+                	str(day.month).zfill(2)
+        else:
+        	wavedir=wavepath+'/'+str(day.year)+'/'+\
+                	str(day.month).zfill(2)
+        sfiles.sort()
         for sfile in sfiles:
             # Make the picks!
+            print '				Working on Sfile: '+sfile
             picks=Amp_pick_sfile(sfile, wavedir, calpath)
             # Copy the mag_calc.out file to the correct place
             shutil.copyfile('mag_calc.out', outdir+'/'+str(day.year)+'/'+\
-                            str(day.month).zfill(2)+'/'+str(day.day).zfill(2)+\
-                            '-*L.S'+str(day.year)+str(day.month).zfill(2))
+                            str(day.month).zfill(2)+'/'+sfile.split('/')[-1])

@@ -191,6 +191,57 @@ def detection_timeseries(stream, detector, detections):
     axes[len(axes)].set_ylabel('Detector')
     return
 
+def detection_multiplot(stream, template, times, streamcolour='k',\
+        templatecolour='r'):
+    """
+    Function to plot the stream of data that has been detected in, with the
+    template on top of it timed according to a list of given times, just a
+    pretty way to show a detection!
+
+    :type stream: obspy.Stream
+    :param stream: Stream of data to be plotted as the base (black)
+    :type template: obspy.Stream
+    :param template: Template to be plotted on top of the base stream (red)
+    :type times: List of datetime.datetime
+    :param times: list of times of detections in the order of the channels in
+                template.
+    """
+    import datetime as dt
+    fig, axes = plt.subplots(len(template), 1, sharex=True)
+    axes = axes.ravel()
+    print 'Template has '+str(len(template))+' channels'
+    for i in xrange(len(template)):
+        template_tr=template[i]
+        print 'Working on: '+template_tr.stats.station+' '+\
+                template_tr.stats.channel
+        image=stream.select(station=template_tr.stats.station,\
+                            channel='*'+template_tr.stats.channel[-1])
+        if not image:
+            print 'No data for '+template_tr.stats.station+' '+\
+                    template_tr.stats.channel
+            continue
+        image=image.merge()[0]
+        t_start=(times[i]-image.stats.starttime.datetime) # Gives a timedelta
+        print t_start
+        # Downsample if needed
+        if image.stats.sampling_rate > 20:
+            image.decimate(int(image.stats.sampling_rate/20))
+        if template_tr.stats.sampling_rate > 20:
+            template_tr.decimate(int(template_tr.stats.sampling_rate/20))
+        image_times=[image.stats.starttime.datetime+dt.timedelta((j*image.stats.delta)/86400)\
+                for j in xrange(len(image.data))] # Give list of datetime objects
+        t_start=t_start+image.stats.starttime.datetime
+        template_times=[t_start+dt.timedelta((j*template_tr.stats.delta)/86400)\
+                for j in xrange(len(template_tr.data))]
+        print image_times[0]
+        print template_times[0]
+        axes[i].plot(image_times, image.data,'k')
+        axes[i].plot(template_times, template_tr.data,'r')
+        axes[i].set_ylabel(template_tr.stats.station+'.'+template_tr.stats.channel)
+    axes[len(axes)-1].set_xlabel('Time')
+    plt.show()
+    return
+
 def threeD_seismplot(stations, nodes):
     """
     Function to plot seismicity and stations in a 3D, movable, zoomable space
