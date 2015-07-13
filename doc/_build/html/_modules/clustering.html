@@ -259,22 +259,102 @@
                     <span class="n">group_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chans</span><span class="p">)</span>
                     <span class="n">match</span><span class="o">=</span><span class="bp">True</span> <span class="c"># Use this to break the loop</span>
     <span class="k">return</span> <span class="n">groups</span>
+
+<span class="c"># def generate_families(templates):</span>
+    <span class="c"># &quot;&quot;&quot;</span>
+    <span class="c"># Function to take a load of templates, group them according to their</span>
+    <span class="c"># delays, then within these groups group them according to similarity</span>
+    <span class="c"># and stack the results into tempates</span>
+
+    <span class="c"># :type templates: List of obspy.Stream</span>
+    <span class="c"># :param templates: List of all possible templates to use</span>
+
+    <span class="c"># :returns: List of templates (stacked)</span>
+    <span class="c"># &quot;&quot;&quot;</span>
+    <span class="c"># import stacking</span>
+    <span class="c"># groups=group_delays(templates)</span>
+    <span class="c"># for group in groups:</span>
+        <span class="c"># Z=cluster(group, show=False)</span>
+    <span class="c"># #### UNFINISHED!!!</span>
+    <span class="c"># return stacked_templates</span>
 </div>
-<div class="viewcode-block" id="generate_families"><a class="viewcode-back" href="../modules.html#clustering.generate_families">[docs]</a><span class="k">def</span> <span class="nf">generate_families</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="SVD_tetsing"><a class="viewcode-back" href="../modules.html#clustering.SVD_tetsing">[docs]</a><span class="k">def</span> <span class="nf">SVD_tetsing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to take a load of templates, group them according to their</span>
-<span class="sd">    delays, then within these groups group them according to similarity</span>
-<span class="sd">    and stack the results into tempates</span>
+<span class="sd">    Function to compute the SVD of a number of templates and return the singular</span>
+<span class="sd">    vectors and singular values of the templates.</span>
 
-<span class="sd">    :type templates: List of obspy.Stream</span>
-<span class="sd">    :param templates: List of all possible templates to use</span>
+<span class="sd">    :type templates: List of Obspy.Stream</span>
+<span class="sd">    :param templates: List of the templates to be analysed</span>
 
-<span class="sd">    :returns: List of templates (stacked)</span>
+<span class="sd">    :return: SVector(ndarray), SValues(ndarray) for each channel, stachans, List</span>
+<span class="sd">            of String (station.channel)</span>
+
+<span class="sd">    .. rubric:: Note</span>
+
+<span class="sd">    **IN ALPHA, not working as expected**</span>
+
+<span class="sd">    It is recommended that you align the data before computing the SVD, .e.g.,</span>
+<span class="sd">    the P-arrival on all templates for the same channel should appear at the same</span>
+<span class="sd">    time in the trace.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">groups</span><span class="o">=</span><span class="n">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
-        <span class="n">Z</span><span class="o">=</span><span class="n">cluster</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">stacked_templates</span></div>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="c"># Convert templates into ndarrays for each channel</span>
+    <span class="c"># First find all unique channels:</span>
+    <span class="n">stachans</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+            <span class="n">stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="n">stachans</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stachans</span><span class="p">))</span>
+    <span class="c"># Initialize a list for the output matrices, one matrix per-channel</span>
+    <span class="n">SValues</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">SVectors</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="p">[</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
+                                  <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> \
+                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))</span> <span class="k">if</span> \
+                  <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
+                                  <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="p">[</span><span class="n">chan_mat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">))]</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">print</span> <span class="n">chan_mat</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span> <span class="n">stachan</span>
+        <span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">SValues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">SVectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">SVectors</span><span class="p">,</span> <span class="n">SValues</span><span class="p">,</span> <span class="n">stachans</span>
+</div>
+<div class="viewcode-block" id="SVD_2_stream_testing"><a class="viewcode-back" href="../modules.html#clustering.SVD_2_stream_testing">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream_testing</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to convert the singular vectors output by SVD to streams, one for</span>
+<span class="sd">    each singular vector level, for all channels.</span>
+
+<span class="sd">    :type SVectors: ndarray</span>
+<span class="sd">    :param SVectors: Singular vectors</span>
+<span class="sd">    :type stachans: List of Strings</span>
+<span class="sd">    :param stachans: List of station.channel Strings</span>
+<span class="sd">    :type k: Int</span>
+<span class="sd">    :param k: Number of streams to return = number of SV&#39;s to include</span>
+<span class="sd">    :sampling_rate: Float</span>
+
+<span class="sd">    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being</span>
+<span class="sd">            composed of the highest rank singular vectors.</span>
+
+<span class="sd">    .. rubric:: Note</span>
+
+<span class="sd">    **IN ALPHA, not working as expected**</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="n">SVstreams</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+        <span class="n">SVstream</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">SVectors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">SVstream</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trace</span><span class="p">(</span><span class="n">SVectors</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> \
+                                        <span class="n">header</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;station&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                                                <span class="s">&#39;channel&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                                                <span class="s">&#39;sampling_rate&#39;</span><span class="p">:</span> <span class="n">sampling_rate</span><span class="p">}))</span>
+        <span class="n">SVstreams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">SVstream</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">SVstreams</span></div>
 </pre></div>
 
           </div>

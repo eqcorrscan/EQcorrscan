@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2014.9.15)  13 JUL 2015 02:46
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2014.9.15)  13 JUL 2015 04:57
 entering extended mode
  %&-line parsing enabled.
 **EQcorrscan.tex
@@ -957,25 +957,28 @@ Underfull \vbox (badness 10000) detected at line 479
 Chapter 3.
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
 (Font)              Font shape `T1/pcr/b/n' tried instead on input line 503.
-[11] [12] [13] [14] [15] [16]
-Chapter 4.
-[17
+[11]
+LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <9> not available
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 679.
+ [12] [13] [14] [15] [16] [17] [18
 
-] [18
+]
+Chapter 4.
+[19] [20
 
 ]
 Chapter 5.
-[19] [20] [21] [22] [23]
-Overfull \hbox (72.8867pt too wide) in paragraph at lines 1760--1761
+[21] [22] [23] [24] [25]
+Overfull \hbox (72.8867pt too wide) in paragraph at lines 1800--1801
 [][][]\T1/ptm/m/n/10 http://docs.opencv.org/modules/imgproc/doc/object_detectio
 n.html?highlight=matchtemplate#cv2.matchTemplate[][] 
  []
 
-[24] [25
+[26] [27
 
 
 
-] (./EQcorrscan.ind [26
+] (./EQcorrscan.ind [28
 
 
 ]
@@ -988,17 +991,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 42--43
 []\T1/ptm/m/n/10 detection_timeseries() (in mod-ule EQ-
  []
 
-[27
+[29
 
 ]) (./EQcorrscan.aux) ) 
 Here is how much of TeX's memory you used:
- 8299 strings out of 495061
- 113173 string characters out of 1182621
- 249669 words of memory out of 3000000
- 11101 multiletter control sequences out of 15000+50000
- 57720 words of font info for 69 fonts, out of 3000000 for 9000
+ 8316 strings out of 495061
+ 113412 string characters out of 1182621
+ 249708 words of memory out of 3000000
+ 11110 multiletter control sequences out of 15000+50000
+ 62186 words of font info for 72 fonts, out of 3000000 for 9000
  29 hyphenation exceptions out of 8191
- 45i,11n,45p,754b,535s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 45i,12n,45p,754b,484s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</
 usr/share/texmf-texlive/fonts/type1/urw/courier/ucrb8a.pfb></usr/share/texmf-te
 xlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texmf-texlive/fonts/type1/
@@ -1007,9 +1010,9 @@ urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/helvetic/uhvb
 re/texmf-texlive/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texmf-texlive/
 fonts/type1/urw/times/utmb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/time
 s/utmr8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmri8a.pfb>
-Output written on EQcorrscan.pdf (31 pages, 245150 bytes).
+Output written on EQcorrscan.pdf (33 pages, 249249 bytes).
 PDF statistics:
- 464 PDF objects out of 1000 (max. 8388607)
- 101 named destinations out of 1000 (max. 500000)
+ 477 PDF objects out of 1000 (max. 8388607)
+ 106 named destinations out of 1000 (max. 500000)
  178 words of extra memory for PDF output out of 10000 (max. 10000000)
 

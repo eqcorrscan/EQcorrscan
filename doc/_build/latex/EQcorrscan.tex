@@ -649,6 +649,64 @@ Implimented to streamline templates after template detection in beamforming
 methods, employed by implimentation of Frank et al. code.
 
 As such this code is designed to work only for templates with the same channels
+\index{SVD\_2\_stream\_testing() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.SVD_2_stream_testing}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD\_2\_stream\_testing}}{\emph{SVectors}, \emph{stachans}, \emph{k}, \emph{sampling\_rate}}{}
+Function to convert the singular vectors output by SVD to streams, one for
+each singular vector level, for all channels.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{SVectors}} (\emph{ndarray}) -- Singular vectors
+
+\item {} 
+\textbf{\texttt{stachans}} (\emph{List of Strings}) -- List of station.channel Strings
+
+\item {} 
+\textbf{\texttt{k}} (\emph{Int}) -- Number of streams to return = number of SV's to include
+
+\end{itemize}
+
+\item[{Sampling\_rate}] \leavevmode
+Float
+
+\item[{Returns}] \leavevmode
+SVstreams, List of Obspy.Stream, with SVStreams{[}0{]} being
+composed of the highest rank singular vectors.
+
+\end{description}\end{quote}
+\paragraph{Note}
+
+\textbf{IN ALPHA, not working as expected}
+
+\end{fulllineitems}
+
+\index{SVD\_tetsing() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{modules:clustering.SVD_tetsing}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD\_tetsing}}{\emph{templates}}{}
+Function to compute the SVD of a number of templates and return the singular
+vectors and singular values of the templates.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{templates}} (\emph{List of Obspy.Stream}) -- List of the templates to be analysed
+
+\item[{Returns}] \leavevmode
+SVector(ndarray), SValues(ndarray) for each channel, stachans, List
+of String (station.channel)
+
+\end{description}\end{quote}
+\paragraph{Note}
+
+\textbf{IN ALPHA, not working as expected}
+
+It is recommended that you align the data before computing the SVD, .e.g.,
+the P-arrival on all templates for the same channel should appear at the same
+time in the trace.
+
+\end{fulllineitems}
+
 \index{cluster() (in module clustering)}
 
 \begin{fulllineitems}
@@ -689,24 +747,6 @@ have the same distance as apositively correlated image - this is an issue
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
 ndarray - distance matrix
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{generate\_families() (in module clustering)}
-
-\begin{fulllineitems}
-\phantomsection\label{modules:clustering.generate_families}\pysiglinewithargsret{\code{clustering.}\bfcode{generate\_families}}{\emph{templates}}{}
-Function to take a load of templates, group them according to their
-delays, then within these groups group them according to similarity
-and stack the results into tempates
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\textbf{\texttt{templates}} (\emph{List of obspy.Stream}) -- List of all possible templates to use
-
-\item[{Returns}] \leavevmode
-List of templates (stacked)
 
 \end{description}\end{quote}
 

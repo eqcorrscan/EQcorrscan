@@ -275,6 +275,58 @@ if multiple peaks within this window this code will find the highest.
 methods, employed by implimentation of Frank et al. code.</p>
 <p>As such this code is designed to work only for templates with the same channels</p>
 <dl class="function">
+<dt id="clustering.SVD_2_stream_testing">
+<code class="descclassname">clustering.</code><code class="descname">SVD_2_stream_testing</code><span class="sig-paren">(</span><em>SVectors</em>, <em>stachans</em>, <em>k</em>, <em>sampling_rate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD_2_stream_testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD_2_stream_testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to convert the singular vectors output by SVD to streams, one for
+each singular vector level, for all channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>SVectors</strong> (<em>ndarray</em>) &#8211; Singular vectors</li>
+<li><strong>stachans</strong> (<em>List of Strings</em>) &#8211; List of station.channel Strings</li>
+<li><strong>k</strong> (<em>Int</em>) &#8211; Number of streams to return = number of SV&#8217;s to include</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Sampling_rate:</th><td class="field-body"><p class="first">Float</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">SVstreams, List of Obspy.Stream, with SVStreams[0] being
+composed of the highest rank singular vectors.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Note</p>
+<p><strong>IN ALPHA, not working as expected</strong></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.SVD_tetsing">
+<code class="descclassname">clustering.</code><code class="descname">SVD_tetsing</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD_tetsing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD_tetsing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the SVD of a number of templates and return the singular
+vectors and singular values of the templates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of Obspy.Stream</em>) &#8211; List of the templates to be analysed</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">SVector(ndarray), SValues(ndarray) for each channel, stachans, List
+of String (station.channel)</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Note</p>
+<p><strong>IN ALPHA, not working as expected</strong></p>
+<p>It is recommended that you align the data before computing the SVD, .e.g.,
+the P-arrival on all templates for the same channel should appear at the same
+time in the trace.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="clustering.cluster">
 <code class="descclassname">clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>templates</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cluster" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to take a set of templates and cluster them, will return clustered
@@ -317,24 +369,6 @@ have the same distance as apositively correlated image - this is an issue</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">ndarray - distance matrix</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="clustering.generate_families">
-<code class="descclassname">clustering.</code><code class="descname">generate_families</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#generate_families"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.generate_families" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to take a load of templates, group them according to their
-delays, then within these groups group them according to similarity
-and stack the results into tempates</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of obspy.Stream</em>) &#8211; List of all possible templates to use</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of templates (stacked)</td>
 </tr>
 </tbody>
 </table>
