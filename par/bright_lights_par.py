@@ -19,10 +19,10 @@ stations=['EORO','WHYM','COSA','FOZ',
 
 nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
                                         # travel times
-corners=mplPath.Path(np.array([[169.6, -44],\
-                           [170.5, -43.5],\
-                           [170.5, -43.25],\
-                           [169.6, -43.65]]))
+corners=mplPath.Path(np.array([[169.7, -44.0519],\
+                           [170.3, -43.7],\
+                           [170.3, -43.3],\
+                           [169.4, -43.75]]))
                                         # Numpy array to be converted into a
                                         # matplotlib path - should descirbe
                                         # the horizontal polygon to search within
@@ -34,12 +34,19 @@ resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # for resampled grid in decimal
                                         # degrees and km respectively.
                                         # with depth increasing down
-# startdate=UTCDateTime('2013-03-28')     # obspy UTCDateTime object giving
-startdate=UTCDateTime('2010-08-31')     # obspy UTCDateTime object giving
-                                        # date to start looking for templates
-                                        # beyond
-# enddate=UTCDateTime('2013-03-29')       # As above, but the end date
-enddate=UTCDateTime('2010-09-01')       # As above, but the end date
+# dates=[UTCDateTime('2010-08-31')+i \
+ # for i in xrange(0, int(UTCDateTime('2010-09-01') - UTCDateTime('2010-08-31')),\
+                 # 86400)] # Example of a generator expression for one day
+dates=[UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
+       UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
+       UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
+       UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
+       UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
+       UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
+       UTCDateTime('2013-03-28')] #tremor days
+                                        # List of dates to run through, can be
+                                        # made in any pythonic way, but must be
+                                        # a list of obspy.UTCDateTime objects
 threshold=10                            # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
@@ -49,7 +56,7 @@ phase='P'                               # Can be either P or S, will use this
                                         # when reading in the travel-time
                                         # grids.
 ps_ratio=1.68                           # P to S ratio if only one grid type
-                                        # provided, P is S*ps_ratio
+                                        # provided, P(vel) is S(vel)*ps_ratio
 nodesimthresh=0.0625                    # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
@@ -60,4 +67,5 @@ coherance=0.10                          # Coherance threshold to remove
 plotsave=True                           # Save plots, set to True to not show
                                         # any plots
 clip_level=8                            # Level to clip energy amplitudes to as
-                                        # a multiplier of the mean energy amplitdue
+                                        # a multiplier of the mean energy amplitude
+cores=40                                # Number of cores to use for brightness search

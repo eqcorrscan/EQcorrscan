@@ -28,6 +28,7 @@ from obspy import UTCDateTime, read as obsread
 # First generate the templates
 from core import template_gen
 
+Split=False
 if len(sys.argv) == 2:
     flag=str(sys.argv[1])
     if flag == '--debug':
@@ -85,7 +86,13 @@ for sfile in templatedef.sfiles:
     # returned name will be the template name, used for parsing to the later
     # functions
 
+for tfile in templatedef.tfiles:
+    # Loop through pre-existing template files
+    sys.stdout.write("\rReading in pre-existing template: "+tfile+"\r")
+    sys.stdout.flush()
+    templates.append(obsread(tfile))
 
+for template in templates:
     # Calculate the delays for each template, do this only once so that we
     # don't have to do it heaps!
     # Check that all templates are the correct length
@@ -108,7 +115,7 @@ for sfile in templatedef.sfiles:
     # Generate list of stations in templates
     for tr in template:
         # Correct FOZ channels
-        if tr.stats.station=='FOZ':
+        if tr.stats.station=='FOZ' and len(tr.stats.channel)==3:
             tr.stats.channel='HH'+tr.stats.channel[2]
         if len(tr.stats.channel)==3:
             stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
@@ -119,6 +126,7 @@ for sfile in templatedef.sfiles:
                             '*'+tr.stats.channel[1]+'.'+tr.stats.network)
         else:
             raise ValueError('Channels are not named with either three or two charectars')
+
 
 # Template generation and processing is over, now to the match-filtering
 
@@ -136,7 +144,7 @@ from utils import pre_processing
 from joblib import Parallel, delayed
 
 # Loop over days
-ndays=int((matchdef.enddate-matchdef.startdate)/86400)+1
+ndays=len(matchdef.dates)
 newsfiles=[]
 f=open('detections/run_start_'+str(UTCDateTime().year)+\
        str(UTCDateTime().month).zfill(2)+\
@@ -147,21 +155,19 @@ print 'Will loop through '+str(ndays)+' days'
 if Split:
     if instance==splits:
         ndays=ndays-(ndays/splits)*(splits-1)
+        dates=matchdef.dates[-ndays:]
     else:
         ndays=ndays/splits
+        dates=matchdef.dates[ndays*instance:(ndays*instance)+ndays]
     print 'This instance will run for '+str(ndays)+' days'
-    startdate=matchdef.startdate+(86400*((instance-1)*ndays))
     print 'This instance will run from '+str(startdate)
 else:
-    startdate=matchdef.startdate
-for i in range(0,ndays):
+    dates=matchdef.dates
+
+
+for day in dates:
     if 'st' in locals():
         del st
-
-
-    # Set up where data are going to be read in from
-    day=startdate+(i*86400)
-
     # Read in data using obspy's reading routines, data format will be worked
     # out by the obspy module
     # Note you might have to change this bit to match your naming structure
