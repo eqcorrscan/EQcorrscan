@@ -102,16 +102,6 @@ for template in templates:
                              tr.stats.channel+' is not the correct length, recut.'+\
                              ' It is: '+str(tr.stats.npts)+' and should be '+
                              str(templatedef.samp_rate*templatedef.length))
-    # Get minimum start time
-    mintime=UTCDateTime(3000,1,1,0,0)
-    for tr in template:
-        if tr.stats.starttime < mintime:
-            mintime=tr.stats.starttime
-    delay=[]
-    # Generate list of delays
-    for tr in template:
-        delay.append(tr.stats.starttime-mintime)
-    delays.append(delay)
     # Generate list of stations in templates
     for tr in template:
         # Correct FOZ channels
@@ -241,7 +231,9 @@ for day in dates:
             # containted within the detection class with elements, time, template,
             # number of channels used and cross-channel correlation sum.
             print 'Running the detection routine'
-            detections=match_filter.match_filter(templatedef.sfiles, templates, delays, st,
+            template_names=[tfile.split('/')[-1] for tfile in templatedef.tfiles]
+            template_names.append(templatedef.sfiles)
+            detections=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot)
 
