@@ -21,6 +21,41 @@ must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 """
 from utils import Sfile_util
+
+def _cc_round(num, dp):
+    """
+    Convenience function to take a float and round it to dp padding with zeros
+    to return a string
+
+    :type num: float
+    :type dp: int
+
+    :returns: string
+    """
+    num=round(num, dp)
+    num='{0:.{1}f}'.format(num, dp)
+    return num
+
+def _av_weight(W1, W2):
+    """
+    Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)
+
+    :type W1: str
+    :type W2: str
+
+    :returns: str
+    """
+    if W1==' ':
+        W1=1
+    else:
+        W1=1-int(W1)/4.0
+    if W2==' ':
+        W2=1
+    else:
+        W2=1-int(W2)/4.0
+    W=(W1+W2)/2
+    return _cc_round(W,4)
+
 def readSTATION0(path):
     """
     Function to read the STATION0.HYP file on the path given.
@@ -49,7 +84,137 @@ def write_event(sfile_list):
     f=open('event.dat','w')
     for sfile in sfile_list:
         i+=1
-        event_list.append(i, sfile)
-        ev_info=Sfile_util.readheader(sfile)
-        f.write(ev_info.time+'\n')
+        event_list.append((i, sfile))
+        evinfo=Sfile_util.readheader(sfile)
+        f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2)+\
+                str(evinfo.time.day).zfill(2)+'  '+\
+                str(evinfo.time.hour).rjust(2)+str(evinfo.time.minute).zfill(2)+\
+                str(evinfo.time.second).zfill(2)+\
+                str(evinfo.time.microsecond).zfill(2)+'  '+\
+                str(evinfo.latitude).ljust(8,'0')+'   '+\
+                str(evinfo.longitude).ljust(8,'0')+'  '+\
+                str(evinfo.depth).rjust(7).ljust(9,'0')+'   '+\
+                str(evinfo.Mag_1)+'    0.00    0.00   '+\
+                str(evinfo.t_RMS).ljust(4,'0')+\
+                str(i).rjust(11)+'\n')
+    f.close()
     return event_list
+
+def write_catalogue(event_list):
+    """
+    Function to write the dt.ct file needed by hypoDD - takes input event list
+    from write_event as a list of tuples of event id and sfile.  It will read
+    the pick information from the seisan formated s-file using the Sfile_util
+    utilities.
+
+    :type event_list: List of tuple
+    :param event_list: List of tuples of event_id (int) and sfile (String)
+    """
+    f=open('dt.ct','w')
+    for i in xrange(len(event_list)):
+        master_sfile=event_list[i][1]
+        master_event_id=event_list[i][0]
+        master_picks=Sfile_util.readpicks(master_sfile)
+        master_ori_time=Sfile_util.readheader(master_sfile).time
+        for j in xrange(i+1,len(event_list)):
+            # Use this tactic to only output unique event pairings
+            slave_sfile=event_list[j][1]
+            slave_event_id=event_list[j][0]
+            # Write out the header line
+            f.write('#'+str(master_event_id).rjust(10)+\
+                    str(slave_event_id).rjust(10)+'\n')
+            slave_picks=Sfile_util.readpicks(slave_sfile)
+            slave_ori_time=Sfile_util.readheader(slave_sfile).time
+            for pick in master_picks:
+                if pick.phase not in ['P','S']:
+                    continue # Only use P and S picks, not amplitude or 'other'
+                # Find station, phase pairs
+                slave_matches=[p for p in slave_picks if p.station==pick.station\
+                               and p.phase==pick.phase]
+                # Loop through the matches
+                for slave_pick in slave_matches:
+                    f.write(pick.station.rjust(4)+\
+                            _cc_round(pick.time-master_ori_time,3).rjust(11)+\
+                            _cc_round(slave_pick.time-slave_ori_time,3).rjust(8)+\
+                            _av_weight(pick.weight, slave_pick.weight)+' '+\
+                            pick.phase+'\n')
+    f.close()
+
+def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
+                       lowcut=1.0, highcut=10.0):
+    """
+    Function to write a dt.cc file for hypoDD input - takes an input list of
+    events and computes pick refienements by correlation
+
+    :type event_list: List of tuple
+    :param event_list: List of tuples of event_id (int) and sfile (String)
+    :type wavbase: string
+    :param wavbase: Path to the seisan wave directory that the wavefiles in the
+                    S-files are stored
+    :type extract_len: float
+    :param extract_len: Length in seconds to extract around the pick
+    :type pre_pick: float
+    :param pre_pick: Time before the pick to start the correclation window
+    :type shift_len: float
+    :param shift_len: Time to allow pick to vary
+    :type lowcut: float
+    :param lowcut: Lowcut in Hz - default=1.0
+    :type highcut: float
+    :param highcut: Highcut in Hz - deafult=10.0
+    """
+    from obspy.signal.cross_correlation import xcorrPickCorrection
+    from obspy import read
+    f=open('dt.cc','w')
+    for i in xrange(len(event_list)):
+        master_sfile=event_list[i][1]
+        master_event_id=event_list[i][0]
+        master_picks=Sfile_util.readpicks(master_sfile)
+        master_ori_time=Sfile_util.readheader(master_sfile).time
+        master_wavefiles=Sfile_util.readwavename(master_sfile)
+        masterstream=read(wavbase+'/*/*/'+master_wavefiles[0])
+        if len(master_wavefiles)>1:
+            for wavefile in master_wavefiles:
+                masterstream+=read(wavbase+'/*/*/'+wavefile)
+        for j in xrange(i+1,len(event_list)):
+            # Use this tactic to only output unique event pairings
+            slave_sfile=event_list[j][1]
+            slave_event_id=event_list[j][0]
+            slave_wavefiles=Sfile_util.readwavename(slave_sfile)
+            slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
+            if len(slave_wavefiles)>1:
+                for wavefile in slave_wavefiles:
+                    slavestream+=read(wavbase+'/*/*/'+wavefile)
+            # Write out the header line
+            f.write('#'+str(master_event_id).rjust(10)+\
+                    str(slave_event_id).rjust(10)+' 0.0   \n')
+            slave_picks=Sfile_util.readpicks(slave_sfile)
+            slave_ori_time=Sfile_util.readheader(slave_sfile).time
+            for pick in master_picks:
+                if pick.phase not in ['P','S']:
+                    continue # Only use P and S picks, not amplitude or 'other'
+                # Find station, phase pairs
+                slave_matches=[p for p in slave_picks if p.station==pick.station\
+                               and p.phase==pick.phase]
+                print pick.station+'.'+pick.channel
+                mastertr=masterstream.select(station=pick.station, \
+                                             channel='*'+pick.channel[-1])[0]
+                # Loop through the matches
+                for slave_pick in slave_matches:
+                    slavetr=slavestream.select(station=slave_pick.station,\
+                                               channel='*'+slave_pick.channel[-1])[0]
+                    # Correct the picks
+                    try:
+                        correction, cc = xcorrPickCorrection(slave_pick.time,\
+                                                             slavetr, pick.time,\
+                                                             mastertr,pre_pick,\
+                                                             extract_len-pre_pick, shift_len,\
+                                                             filter="bandpass",\
+                                                             filter_options={'freqmin':lowcut,
+                                                                             'freqmax':highcut},plot=False)
+                        f.write(pick.station.rjust(4)+\
+                                _cc_round(correction,3).rjust(11)+\
+                                _cc_round(cc*cc,3).rjust(8)+\
+                                ' '+pick.phase+'\n')
+                    except:
+                        continue
+    f.close()
