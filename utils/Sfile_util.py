@@ -13,9 +13,9 @@ All rights reserved.
 
 """
 
-# Import PICK class definition from makeSfile
 
 from obspy import UTCDateTime
+import numpy as np
 class PICK:
     """
     Pick information for seisan implimentation
@@ -93,6 +93,17 @@ def _float_conv(string):
     except:
         floatstring=float('NaN')
     return floatstring
+
+def _str_conv(number):
+    """
+    Convenience tool to convert a number, either float or into into a string,
+    if the int is 999, or the float is NaN, returns empty string.
+    """
+    if (type(number)==float and np.isnan(number)) or number==999:
+        string=' '
+    else:
+        string=str(number)
+    return string
 
 def readheader(sfilename):
     f=open(sfilename,'r')
@@ -184,9 +195,9 @@ def readpicks(sfilename):
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if line[79]==' ':
+            if len(line)==81 and line[79]==' ':
                 pickline+=[line]
-        if line[79]=='7':
+        elif line[79]=='7':
             header=line
             headerend=lineno
         lineno+=1
@@ -204,11 +215,11 @@ def readpicks(sfilename):
             polarity=''
         else:
             phase=line[10:14].strip()
-            polarity=line[6]
+            polarity=line[15]
         try:
             time=UTCDateTime(evtime.year,evtime.month,evtime.day,
                              int(line[18:20]),int(line[20:22]),int(line[23:25]),
-                             int(line[26:28]))
+                             int(line[26:28])*10000)
         except (ValueError):
             time=UTCDateTime(evtime.year,evtime.month,evtime.day,
                              int(line[18:20]),int(line[20:22]),0,0)
@@ -250,7 +261,7 @@ def readwavename(sfilename):
     return wavename
 
 
-def blanksfile(wavefile,evtype,userID,outdir,overwrite,evtime=0):
+def blanksfile(wavefile,evtype,userID,outdir,overwrite):
     """
     Module to generate an empty s-file with a populated header for a given
     waveform.
@@ -271,15 +282,11 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite,evtime=0):
 
     from obspy import read as obsread
     import sys,os, datetime
-    if evtime == 0:
-        try:
-            st=obsread(wavefile)
-            starttime=st[0].stats.starttime
-        except:
-            print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
-            sys.exit()
-    else:
-        starttime=evtime
+    try:
+        st=obsread(wavefile)
+    except:
+        print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
+        sys.exit()
     # Check that user ID is the correct length
     if len(userID) != 4:
         print 'User ID must be 4 characters long'
@@ -294,22 +301,22 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite,evtime=0):
         sys.exit()
 
     # Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm
-    sfilename=outdir+'/'+str(starttime.day).zfill(2)+'-'+\
-            str(starttime.hour).zfill(2)+\
-            str(starttime.minute).zfill(2)+'-'+\
-            str(starttime.second).zfill(2)+evtype+'.S'+\
-            str(starttime.year)+\
-            str(starttime.month).zfill(2)
+    sfilename=outdir+'/'+str(st[0].stats.starttime.day).zfill(2)+'-'+\
+            str(st[0].stats.starttime.hour).zfill(2)+\
+            str(st[0].stats.starttime.minute).zfill(2)+'-'+\
+            str(st[0].stats.starttime.second).zfill(2)+evtype+'.S'+\
+            str(st[0].stats.starttime.year)+\
+            str(st[0].stats.starttime.month).zfill(2)
     # Check is sfilename exists
     if os.path.isfile(sfilename) and overwrite=='False':
         print 'Desired sfilename: '+sfilename+' exists, will not overwrite'
         for i in range(1,10):
-            sfilename=outdir+'/'+str(starttime.day).zfill(2)+'-'+\
-                    str(starttime.hour).zfill(2)+\
-                    str(starttime.minute).zfill(2)+'-'+\
-                    str(starttime.second+i).zfill(2)+evtype+'.S'+\
-                    str(starttime.year)+\
-                    str(starttime.month).zfill(2)
+            sfilename=outdir+'/'+str(st[0].stats.starttime.day).zfill(2)+'-'+\
+                    str(st[0].stats.starttime.hour).zfill(2)+\
+                    str(st[0].stats.starttime.minute).zfill(2)+'-'+\
+                    str(st[0].stats.starttime.second+i).zfill(2)+evtype+'.S'+\
+                    str(st[0].stats.starttime.year)+\
+                    str(st[0].stats.starttime.month).zfill(2)
             if not os.path.isfile(sfilename):
                 break
         else:
@@ -319,12 +326,12 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite,evtime=0):
         # sys.exit()
     f=open(sfilename,'w')
     # Write line 1 of s-file
-    f.write(' '+str(starttime.year)+' '+\
-            str(starttime.month).zfill(2)+\
-            str(starttime.day).zfill(2)+' '+\
-            str(starttime.hour).zfill(2)+\
-            str(starttime.minute).zfill(2)+' '+\
-            str(starttime.second).rjust(4)+' '+\
+    f.write(' '+str(st[0].stats.starttime.year)+' '+\
+            str(st[0].stats.starttime.month).rjust(2)+\
+            str(st[0].stats.starttime.day).rjust(2)+' '+\
+            str(st[0].stats.starttime.hour).rjust(2)+\
+            str(st[0].stats.starttime.minute).rjust(2)+' '+\
+            str(st[0].stats.starttime.second).rjust(4)+' '+\
             evtype+'1'.rjust(58)+'\n')
     # Write line 2 of s-file
     f.write(' ACTION:ARG '+str(datetime.datetime.now().year)[2:4]+'-'+\
@@ -333,12 +340,12 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite,evtime=0):
             str(datetime.datetime.now().hour).zfill(2)+':'+\
             str(datetime.datetime.now().minute).zfill(2)+' OP:'+\
             userID.ljust(4)+' STATUS:'+'ID:'.rjust(18)+\
-            str(starttime.year)+\
-            str(starttime.month).zfill(2)+\
-            str(starttime.day).zfill(2)+\
-            str(starttime.hour).zfill(2)+\
-            str(starttime.minute).zfill(2)+\
-            str(starttime.second).zfill(2)+\
+            str(st[0].stats.starttime.year)+\
+            str(st[0].stats.starttime.month).zfill(2)+\
+            str(st[0].stats.starttime.day).zfill(2)+\
+            str(st[0].stats.starttime.hour).zfill(2)+\
+            str(st[0].stats.starttime.minute).zfill(2)+\
+            str(st[0].stats.starttime.second).zfill(2)+\
             'I'.rjust(6)+'\n')
     # Write line 3 of s-file
     f.write(' '+wavefile+'6'.rjust(79-len(wavefile))+'\n')
@@ -383,23 +390,36 @@ def populateSfile(sfilename, picks):
     # Now generate lines for the new picks
     newpicks=''
     for pick in picks:
-        newpicks+=' '+pick.station.ljust(5)+pick.channel[0]+\
-                pick.channel[-1]+' '+pick.impulsivity.rjust(1)+\
-                pick.phase.ljust(4)+str(pick.weight).rjust(1)+' '+\
-                pick.polarity.rjust(1)+' '+str(pick.time.hour).rjust(2)+\
-                str(pick.time.minute).rjust(2)+str(pick.time.second).rjust(3)+\
-                '.'+str(pick.time.microsecond)[0:2].ljust(2)+\
-                str(pick.coda).rjust(5)+str(pick.amplitude).rjust(7)+\
-                str(pick.peri).rjust(5)+str(pick.azimuth).rjust(6)+\
-                str(pick.velocity).rjust(5)+str(pick.AIN).rjust(4)+\
-                str(pick.azimuthres).rjust(3)+str(pick.timeres).rjust(5)+\
-                str(pick.finalweight).rjust(2)+str(pick.distance).rjust(4)+\
-                str(pick.CAZ).rjust(4)+' \n'
+        if pick.distance >= 100.0:
+            pick.distance=int(pick.distance)
+        else:
+            pick.distance=round(pick.distance,1)
+        newpicks+=' '+pick.station.ljust(5)+\
+                pick.channel[0]+pick.channel[len(pick.channel)-1]+\
+                ' '+pick.impulsivity+\
+                pick.phase.ljust(4)+\
+                _str_conv(pick.weight).rjust(1)+' '+\
+                pick.polarity+' '+\
+                str(pick.time.hour).rjust(2)+\
+                str(pick.time.minute).rjust(2)+\
+                str(pick.time.second).rjust(3)+'.'+str(pick.time.microsecond).ljust(2)[0:2]+\
+                _str_conv(pick.coda).rjust(5)[0:5]+\
+                _str_conv(round(pick.amplitude,1)).rjust(7)[0:7]+\
+                _str_conv(pick.peri).rjust(5)+\
+                _str_conv(pick.azimuth).rjust(6)+\
+                _str_conv(pick.velocity).rjust(5)+\
+                _str_conv(pick.AIN).rjust(4)+\
+                _str_conv(pick.azimuthres).rjust(3)+\
+                _str_conv(pick.timeres).rjust(6)+\
+                _str_conv(pick.finalweight).rjust(2)+\
+                _str_conv(pick.distance).rjust(4)+\
+                _str_conv(pick.CAZ).rjust(4)+' \n'
     # Write all new and old info back in
     f=open(sfilename, 'w')
     f.write(header)
     f.write(newpicks)
     f.write(body)
+    f.write('\n'.rjust(81))
     f.close()
 
 if __name__=='__main__':
