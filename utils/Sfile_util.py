@@ -255,7 +255,7 @@ def readwavename(sfilename):
     f=open(sfilename)
     wavename=[]
     for line in f:
-        if line[79]=='6':
+        if len(line)==81 and line[79]=='6':
             wavename.append(line[1:79].strip())
     f.close()
     return wavename
