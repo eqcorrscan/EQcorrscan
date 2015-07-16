@@ -195,9 +195,9 @@ def readpicks(sfilename):
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if line[79]==' ':
+            if len(line)==81 and line[79]==' ':
                 pickline+=[line]
-        if line[79]=='7':
+        elif line[79]=='7':
             header=line
             headerend=lineno
         lineno+=1
@@ -255,7 +255,7 @@ def readwavename(sfilename):
     f=open(sfilename)
     wavename=[]
     for line in f:
-        if line[79]=='6':
+        if len(line)==81 and line[79]=='6':
             wavename.append(line[1:79].strip())
     f.close()
     return wavename
@@ -419,7 +419,7 @@ def populateSfile(sfilename, picks):
     f.write(header)
     f.write(newpicks)
     f.write(body)
-    f.write('\n')
+    f.write('\n'.rjust(81))
     f.close()
 
 if __name__=='__main__':
