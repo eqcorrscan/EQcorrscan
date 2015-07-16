@@ -20,7 +20,7 @@ Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 """
-from utils import Sfile_util
+import Sfile_util
 
 def _cc_round(num, dp):
     """

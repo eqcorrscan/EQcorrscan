@@ -261,22 +261,26 @@ def readwavename(sfilename):
     return wavename
 
 
-def blanksfile(wavefile,evtype,userID,outdir,overwrite, evtime=False):
+def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     """
     Module to generate an empty s-file with a populated header for a given
     waveform.
 
     :type wavefile: String
+    :param wavefile: Wavefile to associate with this S-file, the timing of the
+                    S-file will be taken from this file if evtime is not set
     :type evtype: String
+    :param evtype: L,R,D
+    :type userID: String
+    :param userID: 4-charectar SEISAN USER ID
+    :type outdir: String
+    :param outdir: Location to write S-file
+    :type overwrite: Bool
+    :param overwrite: Overwrite an existing S-file, default=False
+    :type evtime: UTCDateTime
+    :param evtime: If given this will set the timing of the S-file
 
-    # Arguments are the path of a wavefile (multiplexed miniseed file required)
-    # Event type (L,R,D) and user ID (four characters as used in seisan)
-
-    # Example s-file format:
-    # 2014  719  617 50.2 R                                                         1
-    # ACTION:ARG 14-11-11 10:53 OP:CALU STATUS:               ID:20140719061750     I
-    # 2014/07/2014-07-19-0617-50.SAMBA_030_00                                       6
-    # STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+    :returns: String, S-file name
     """
 
     from obspy import read as obsread
@@ -310,7 +314,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite, evtime=False):
             str(st[0].stats.starttime.year)+\
             str(st[0].stats.starttime.month).zfill(2)
     # Check is sfilename exists
-    if os.path.isfile(sfilename) and overwrite=='False':
+    if os.path.isfile(sfilename) and not overwrite:
         print 'Desired sfilename: '+sfilename+' exists, will not overwrite'
         for i in range(1,10):
             sfilename=outdir+'/'+str(st[0].stats.starttime.day).zfill(2)+'-'+\
