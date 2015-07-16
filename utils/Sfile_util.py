@@ -46,7 +46,7 @@ class PICK:
         self.pickcount+=1
 
 class EVENTINFO:
-    def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
+    def __init__(self, time, loc_miod_ind, dist_ind, ev_id, latitude, longitude,
                  depth, depth_ind, loc_ind, agency, nsta, t_RMS, Mag_1,
                  Mag_1_type, Mag_1_agency, Mag_2, Mag_2_type, Mag_2_agency,
                  Mag_3, Mag_3_type, Mag_3_agency):
@@ -261,17 +261,16 @@ def readwavename(sfilename):
     return wavename
 
 
-def blanksfile(wavefile,evtype,userID,outdir,overwrite):
+def blanksfile(wavefile,evtype,userID,outdir,overwrite, evtime=False):
     """
     Module to generate an empty s-file with a populated header for a given
     waveform.
 
-###############################################################################
+    :type wavefile: String
+    :type evtype: String
 
     # Arguments are the path of a wavefile (multiplexed miniseed file required)
     # Event type (L,R,D) and user ID (four characters as used in seisan)
-
-###############################################################################
 
     # Example s-file format:
     # 2014  719  617 50.2 R                                                         1
@@ -282,11 +281,14 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite):
 
     from obspy import read as obsread
     import sys,os, datetime
-    try:
-        st=obsread(wavefile)
-    except:
-        print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
-        sys.exit()
+    if not evtime:
+        try:
+            st=obsread(wavefile)
+        except:
+            print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
+            sys.exit()
+    else:
+        starttime=evtime
     # Check that user ID is the correct length
     if len(userID) != 4:
         print 'User ID must be 4 characters long'
