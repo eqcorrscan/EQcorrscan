@@ -491,10 +491,10 @@ if __name__ == '__main__':
         sfiles=glob.glob(indir+'/'+str(day.year)+'/'+str(day.month).zfill(2)+\
                          '/'+str(day.day).zfill(2)+'-*L.S'+str(day.year)+\
                          str(day.month).zfill(2))
-        datetimes=[dt.datetime.strptime(sfile[i].split('/')[-1], '%d-%H%M-%SL.S%Y%m')\
-                   for i in xrange(len(sfile))]
+        datetimes=[dt.datetime.strptime(sfiles[i].split('/')[-1], '%d-%H%M-%SL.S%Y%m')\
+                   for i in xrange(len(sfiles))]
         sfiles=[sfiles[i] for i in xrange(len(sfiles)) if datetimes[i] > startdate and
-                    datetimes[i] < enddate]
+                    datetimes[i] < stopdate]
         if not wavepath:
         	wavedir="/".join(indir.split('/')[:-2])+'/WAV/'+\
             	    indir.split('/')[-1]+'/'+str(day.year)+'/'+\
