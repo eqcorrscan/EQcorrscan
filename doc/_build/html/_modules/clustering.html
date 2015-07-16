@@ -71,23 +71,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -140,7 +142,7 @@
 <span class="c"># as making sure that they are similarly correlated - will cluster based on</span>
 <span class="c"># cross-channel correlation sum</span>
 
-<div class="viewcode-block" id="cross_chan_coherance"><a class="viewcode-back" href="../modules.html#clustering.cross_chan_coherance">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherance</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
+<div class="viewcode-block" id="cross_chan_coherance"><a class="viewcode-back" href="../utils.html#clustering.cross_chan_coherance">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherance</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to determine the cross-channel coherancy between two streams of</span>
 <span class="sd">    multichannel seismic data.</span>
@@ -164,7 +166,7 @@
     <span class="n">cccoh</span><span class="o">=</span><span class="n">cccoh</span><span class="o">/</span><span class="n">kchan</span>
     <span class="k">return</span> <span class="n">cccoh</span>
 </div>
-<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../modules.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../utils.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the distance matrix for all templates - will give</span>
 <span class="sd">    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will</span>
@@ -189,7 +191,7 @@
             <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">dist_mat</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">dist_mat</span>
 </div>
-<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../modules.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../utils.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to take a set of templates and cluster them, will return clustered</span>
 <span class="sd">    templates</span>
@@ -211,7 +213,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">Z</span>
 </div>
-<div class="viewcode-block" id="group_delays"><a class="viewcode-back" href="../modules.html#clustering.group_delays">[docs]</a><span class="k">def</span> <span class="nf">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="group_delays"><a class="viewcode-back" href="../utils.html#clustering.group_delays">[docs]</a><span class="k">def</span> <span class="nf">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to group template waveforms according to their delays</span>
 
@@ -278,7 +280,7 @@
     <span class="c"># #### UNFINISHED!!!</span>
     <span class="c"># return stacked_templates</span>
 </div>
-<div class="viewcode-block" id="SVD_tetsing"><a class="viewcode-back" href="../modules.html#clustering.SVD_tetsing">[docs]</a><span class="k">def</span> <span class="nf">SVD_tetsing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="SVD_tetsing"><a class="viewcode-back" href="../utils.html#clustering.SVD_tetsing">[docs]</a><span class="k">def</span> <span class="nf">SVD_tetsing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the SVD of a number of templates and return the singular</span>
 <span class="sd">    vectors and singular values of the templates.</span>
@@ -323,7 +325,7 @@
         <span class="n">SVectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">SVectors</span><span class="p">,</span> <span class="n">SValues</span><span class="p">,</span> <span class="n">stachans</span>
 </div>
-<div class="viewcode-block" id="SVD_2_stream_testing"><a class="viewcode-back" href="../modules.html#clustering.SVD_2_stream_testing">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream_testing</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
+<div class="viewcode-block" id="SVD_2_stream_testing"><a class="viewcode-back" href="../utils.html#clustering.SVD_2_stream_testing">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream_testing</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to convert the singular vectors output by SVD to streams, one for</span>
 <span class="sd">    each singular vector level, for all channels.</span>

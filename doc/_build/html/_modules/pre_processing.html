@@ -71,23 +71,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -144,7 +146,7 @@
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">bandpass</span>
 
-<div class="viewcode-block" id="_check_daylong"><a class="viewcode-back" href="../modules.html#pre_processing._check_daylong">[docs]</a><span class="k">def</span> <span class="nf">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">):</span>
+<div class="viewcode-block" id="_check_daylong"><a class="viewcode-back" href="../utils.html#pre_processing._check_daylong">[docs]</a><span class="k">def</span> <span class="nf">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to check the data quality of the daylong file - check to see that</span>
 <span class="sd">    the day isn&#39;t just zeros, with large steps, if it is then the resampling will</span>
@@ -161,7 +163,7 @@
         <span class="n">qual</span><span class="o">=</span><span class="bp">True</span>
     <span class="k">return</span> <span class="n">qual</span>
 </div>
-<div class="viewcode-block" id="shortproc"><a class="viewcode-back" href="../modules.html#pre_processing.shortproc">[docs]</a><span class="k">def</span> <span class="nf">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="shortproc"><a class="viewcode-back" href="../utils.html#pre_processing.shortproc">[docs]</a><span class="k">def</span> <span class="nf">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Basic function to bandpass, downsample.  Works in place</span>
 <span class="sd">    on data.  This is employed to ensure all parts of the data are processed</span>
@@ -210,7 +212,7 @@
             <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">st</span>
 </div>
-<div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../modules.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">):</span>
+<div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../utils.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Basic function to bandpass, downsample and check headers and length of trace</span>
 <span class="sd">    to ensure files start at the start of a day and are daylong.  Works in place</span>

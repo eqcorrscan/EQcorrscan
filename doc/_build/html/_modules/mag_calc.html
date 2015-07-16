@@ -71,23 +71,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -135,7 +137,7 @@
 <span class="sd">by Warren-Smith [2014/15].</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../modules.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
+<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove the insturment response from a trace and return a</span>
 <span class="sd">    de-meaned, de-trended, Wood Anderson simulated trace in it&#39;s place.</span>
@@ -178,7 +180,7 @@
                             <span class="n">water_level</span><span class="o">=</span><span class="n">water_level</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">trace</span>
 </div>
-<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../modules.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../utils.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to find the maximum peak to trough amplitude and period of this</span>
 <span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by</span>
@@ -200,8 +202,15 @@
         <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span>\
            <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]):</span>
             <span class="n">turning_points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">))</span>
-    <span class="n">amplitudes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">],)</span>
-    <span class="n">half_periods</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">],)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)</span> <span class="o">&gt;=</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">amplitudes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">],)</span>
+        <span class="n">half_periods</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">],)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;Turning points has length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">))</span><span class="o">+</span>\
+                         <span class="s">&#39; data have length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
         <span class="n">half_periods</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="n">delta</span><span class="o">*</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
         <span class="n">amplitudes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
@@ -216,7 +225,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delta</span><span class="o">*</span><span class="n">turning_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)][</span><span class="mi">1</span><span class="p">])</span>
 </div>
-<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../modules.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
+<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../utils.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the instrument response information from a GSE Poles and</span>
 <span class="sd">    Zeros file as generated by the SEISAN program RESP.</span>
@@ -262,7 +271,7 @@
          <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="n">sensitivity</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sensor</span>
 </div>
-<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../modules.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
+<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../utils.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to find the response information for a given station and</span>
 <span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
@@ -337,7 +346,7 @@
     <span class="k">elif</span> <span class="n">seedresp</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">seedresp</span>
 </div>
-<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../modules.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../utils.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
                    <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -400,7 +409,8 @@
     <span class="n">picks_out</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
-            <span class="n">picks_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+            <span class="n">picks_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span> <span class="c"># Need to be able to remove this if there</span>
+                                   <span class="c"># isn&#39;t data for a station!</span>
             <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
             <span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
             <span class="n">picktimes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
@@ -417,9 +427,16 @@
     <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">uniq_stas</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">chan</span> <span class="ow">in</span> <span class="n">chans</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&#39;Working on &#39;</span><span class="o">+</span><span class="n">sta</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">chan</span>
-            <span class="n">tr</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">sta</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tr</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">sta</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="p">:</span>
-            	<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;There is no station and channel match in the wavefile!&#39;</span><span class="p">)</span>
+                <span class="c"># Remove picks from file</span>
+                <span class="n">picks_out</span><span class="o">=</span><span class="p">[</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">))</span>\
+                           <span class="k">if</span> <span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span> <span class="o">!=</span> \
+                           <span class="n">sta</span><span class="o">+</span><span class="n">chan</span><span class="p">]</span>
+            	<span class="k">print</span> <span class="s">&#39;There is no station and channel match in the wavefile! Removing picks&#39;</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="c"># Apply the pre-filter</span>
             <span class="k">if</span> <span class="n">pre_filt</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -511,18 +528,25 @@
             <span class="k">elif</span> <span class="n">resp_info</span><span class="p">:</span>
                 <span class="n">seedresp</span><span class="o">=</span><span class="n">resp_info</span>
             <span class="c"># Simulate a Wood Anderson Seismograph</span>
-            <span class="k">if</span> <span class="n">PAZ</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">PAZ</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span> <span class="c"># Set ten data points to be the minimum to pass</span>
                 <span class="n">tr</span><span class="o">=</span><span class="n">_sim_WA</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">seedresp</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">seedresp</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                 <span class="n">tr</span><span class="o">=</span><span class="n">_sim_WA</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;No PAZ for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
                                  <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; at time: &#39;</span><span class="o">+</span>\
                                  <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+                <span class="c"># Should remove the P and S picks if len(tr.data)==0</span>
+                <span class="k">print</span> <span class="s">&#39;No data in miniseed file for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
+                              <span class="s">&#39; removing picks&#39;</span>
+                <span class="n">picks_out</span><span class="o">=</span><span class="p">[</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">picks_out</span><span class="p">))</span>\
+                           <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sta_picks</span><span class="p">]</span>
             	<span class="k">break</span>
             <span class="c"># Get the amplitude</span>
             <span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span> <span class="n">_max_p2t</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">amplitude</span><span class="o">==</span><span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">break</span>
             <span class="k">print</span> <span class="s">&#39;Amplitude picked: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
             <span class="c"># Note, amplitude should be in meters at the moment!</span>
             <span class="c"># Remove the pre-filter response</span>
@@ -603,19 +627,24 @@
     <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">shutil</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">14</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
+        <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;start date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">stopdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">enddate</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">14</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
+        <span class="n">stopdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">enddate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;end date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
     <span class="n">kdays</span><span class="o">=</span><span class="p">((</span><span class="n">stopdate</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">-</span><span class="n">startdate</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
         <span class="n">day</span><span class="o">=</span><span class="n">startdate</span><span class="o">+</span><span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;Working on &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
         <span class="n">sfiles</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">indir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
                          <span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-*L.S&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
                          <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">datetimes</span><span class="o">=</span><span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">sfiles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">-%H%M-%SL.S%Y%m&#39;</span><span class="p">)</span>\
+                   <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sfiles</span><span class="p">))]</span>
+        <span class="n">sfiles</span><span class="o">=</span><span class="p">[</span><span class="n">sfiles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sfiles</span><span class="p">))</span> <span class="k">if</span> <span class="n">datetimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">startdate</span> <span class="ow">and</span>
+                    <span class="n">datetimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">stopdate</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">wavepath</span><span class="p">:</span>
         	<span class="n">wavedir</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;/WAV/&#39;</span><span class="o">+</span>\
             	    <span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\

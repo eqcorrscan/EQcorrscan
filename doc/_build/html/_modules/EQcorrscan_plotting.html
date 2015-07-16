@@ -71,23 +71,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -130,7 +132,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
-<div class="viewcode-block" id="triple_plot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.triple_plot">[docs]</a><span class="k">def</span> <span class="nf">triple_plot</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="triple_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.triple_plot">[docs]</a><span class="k">def</span> <span class="nf">triple_plot</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main function to make a triple plot with a day-long seismogram, day-long</span>
 <span class="sd">    correlation sum trace and histogram of the correlation sum to show normality</span>
@@ -176,7 +178,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="peaks_plot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.peaks_plot">[docs]</a><span class="k">def</span> <span class="nf">peaks_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">peaks</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)],</span> \
+<div class="viewcode-block" id="peaks_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.peaks_plot">[docs]</a><span class="k">def</span> <span class="nf">peaks_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">peaks</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)],</span> \
                <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple utility code to plot the correlation peaks to check that the peak</span>
@@ -208,7 +210,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="cumulative_detections"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.cumulative_detections">[docs]</a><span class="k">def</span> <span class="nf">cumulative_detections</span><span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">template_names</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="cumulative_detections"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.cumulative_detections">[docs]</a><span class="k">def</span> <span class="nf">cumulative_detections</span><span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">template_names</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple plotting function to take a list of UTCDateTime objects and plot</span>
 <span class="sd">    a cumulative detections list.  Can take dates as a list of lists and will</span>
@@ -256,7 +258,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="threeD_gridplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.threeD_gridplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="threeD_gridplot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.threeD_gridplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to plot in 3D a series of grid points.</span>
 
@@ -285,7 +287,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="detection_timeseries"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.detection_timeseries">[docs]</a><span class="k">def</span> <span class="nf">detection_timeseries</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">detections</span><span class="p">):</span>
+<div class="viewcode-block" id="detection_timeseries"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.detection_timeseries">[docs]</a><span class="k">def</span> <span class="nf">detection_timeseries</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">detections</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to plot the data and detector with detections labelled in red,</span>
 <span class="sd">    will downsample if too many data points.</span>
@@ -317,7 +319,7 @@
     <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Detector&#39;</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="detection_multiplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.detection_multiplot">[docs]</a><span class="k">def</span> <span class="nf">detection_multiplot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">streamcolour</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>\
+<div class="viewcode-block" id="detection_multiplot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.detection_multiplot">[docs]</a><span class="k">def</span> <span class="nf">detection_multiplot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">streamcolour</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>\
         <span class="n">templatecolour</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to plot the stream of data that has been detected in, with the</span>
@@ -368,7 +370,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="threeD_seismplot"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.threeD_seismplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_seismplot</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+<div class="viewcode-block" id="threeD_seismplot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.threeD_seismplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_seismplot</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to plot seismicity and stations in a 3D, movable, zoomable space</span>
 <span class="sd">    using matplotlibs Axes3D package.</span>
@@ -407,7 +409,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="Noise_plotting"><a class="viewcode-back" href="../modules.html#EQcorrscan_plotting.Noise_plotting">[docs]</a><span class="k">def</span> <span class="nf">Noise_plotting</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">datasource</span><span class="p">):</span>
+<div class="viewcode-block" id="Noise_plotting"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.Noise_plotting">[docs]</a><span class="k">def</span> <span class="nf">Noise_plotting</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">datasource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to make use of obspy&#39;s PPSD functionality to read in data from</span>
 <span class="sd">    a single station and the poles-and-zeros for that station before plotting</span>

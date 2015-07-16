@@ -2,18 +2,20 @@
 \BOOKMARK [1][-]{section.1.1}{Installation}{chapter.1}
 \BOOKMARK [1][-]{section.1.2}{Functions}{chapter.1}
 \BOOKMARK [0][-]{chapter.2}{EQcorrscan tutorial}{}
-\BOOKMARK [0][-]{chapter.3}{Utils}{}
-\BOOKMARK [1][-]{section.3.1}{Sfile\137util}{chapter.3}
-\BOOKMARK [1][-]{section.3.2}{findpeaks}{chapter.3}
-\BOOKMARK [1][-]{section.3.3}{clustering}{chapter.3}
-\BOOKMARK [1][-]{section.3.4}{per\137processing}{chapter.3}
-\BOOKMARK [1][-]{section.3.5}{EQcorrscan\137plotting}{chapter.3}
-\BOOKMARK [1][-]{section.3.6}{mag\137calc}{chapter.3}
-\BOOKMARK [1][-]{section.3.7}{stacking}{chapter.3}
-\BOOKMARK [0][-]{chapter.4}{Par}{}
-\BOOKMARK [0][-]{chapter.5}{Core}{}
-\BOOKMARK [1][-]{section.5.1}{bright\137lights}{chapter.5}
-\BOOKMARK [1][-]{section.5.2}{template\137gen}{chapter.5}
-\BOOKMARK [1][-]{section.5.3}{match\137filter}{chapter.5}
-\BOOKMARK [0][-]{section*.54}{Python Module Index}{}
-\BOOKMARK [0][-]{section*.55}{Index}{}
+\BOOKMARK [0][-]{chapter.3}{Core}{}
+\BOOKMARK [1][-]{section.3.1}{bright\137lights}{chapter.3}
+\BOOKMARK [1][-]{section.3.2}{template\137gen}{chapter.3}
+\BOOKMARK [1][-]{section.3.3}{match\137filter}{chapter.3}
+\BOOKMARK [1][-]{section.3.4}{lag\137calc}{chapter.3}
+\BOOKMARK [0][-]{chapter.4}{Utils}{}
+\BOOKMARK [1][-]{section.4.1}{Sfile\137util}{chapter.4}
+\BOOKMARK [1][-]{section.4.2}{findpeaks}{chapter.4}
+\BOOKMARK [1][-]{section.4.3}{clustering}{chapter.4}
+\BOOKMARK [1][-]{section.4.4}{pre\137processing}{chapter.4}
+\BOOKMARK [1][-]{section.4.5}{EQcorrscan\137plotting}{chapter.4}
+\BOOKMARK [1][-]{section.4.6}{mag\137calc}{chapter.4}
+\BOOKMARK [1][-]{section.4.7}{stacking}{chapter.4}
+\BOOKMARK [1][-]{section.4.8}{catalogue2DD}{chapter.4}
+\BOOKMARK [0][-]{chapter.5}{Par}{}
+\BOOKMARK [0][-]{section*.66}{Python Module Index}{}
+\BOOKMARK [0][-]{section*.67}{Index}{}

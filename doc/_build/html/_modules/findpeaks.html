@@ -71,23 +71,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -132,7 +134,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<div class="viewcode-block" id="find_peaks2"><a class="viewcode-back" href="../modules.html#findpeaks.find_peaks2">[docs]</a><span class="k">def</span> <span class="nf">find_peaks2</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="n">thresh</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> \
+<div class="viewcode-block" id="find_peaks2"><a class="viewcode-back" href="../utils.html#findpeaks.find_peaks2">[docs]</a><span class="k">def</span> <span class="nf">find_peaks2</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="n">thresh</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> \
                 <span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&#39;1970-01-01&#39;</span><span class="p">),</span> <span class="n">samp_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to determine peaks in an array of data above a certain threshold.</span>
@@ -141,15 +143,16 @@
 <span class="sd">    :type arr: ndarray</span>
 <span class="sd">    :param arr: 1-D numpy array is required</span>
 <span class="sd">    :type thresh: float</span>
-<span class="sd">    :param thresh: The threshold below which will be considered noise and peaks</span>
+<span class="sd">    :param thresh: The threshold below which will be considered noise and peaks\</span>
 <span class="sd">    will not be found in.</span>
 <span class="sd">    :type trig_int: int</span>
-<span class="sd">    :param trig_int: The minimum difference in samples between triggers,</span>
+<span class="sd">    :param trig_int: The minimum difference in samples between triggers,\</span>
 <span class="sd">    if multiple peaks within this window this code will find the highest.</span>
 <span class="sd">    :type debug: int</span>
 <span class="sd">    :param debug: Optional, debug level 0-5</span>
 
-<span class="sd">    :return peaks, locs: Lists of peak values and locations.</span>
+<span class="sd">    :return: peaks, locs: Lists of peak values and locations.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
     <span class="c"># Set everything below the threshold to zero</span>
@@ -227,7 +230,7 @@
         <span class="k">return</span> <span class="n">peaks</span>
 
 </div>
-<div class="viewcode-block" id="find_peaks"><a class="viewcode-back" href="../modules.html#findpeaks.find_peaks">[docs]</a><span class="k">def</span> <span class="nf">find_peaks</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">):</span>
+<div class="viewcode-block" id="find_peaks"><a class="viewcode-back" href="../utils.html#findpeaks.find_peaks">[docs]</a><span class="k">def</span> <span class="nf">find_peaks</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to determine peaks in an array of data above a certain threshold.</span>
 
@@ -236,13 +239,13 @@
 <span class="sd">    :type arr: ndarray</span>
 <span class="sd">    :param arr: 1-D numpy array is required</span>
 <span class="sd">    :type thresh: float</span>
-<span class="sd">    :param thresh: The threshold below which will be considered noise and peaks</span>
+<span class="sd">    :param thresh: The threshold below which will be considered noise and peaks\</span>
 <span class="sd">    will not be found in.</span>
 <span class="sd">    :type trig_int: int</span>
-<span class="sd">    :param trig_int: The minimum difference in samples between triggers,</span>
+<span class="sd">    :param trig_int: The minimum difference in samples between triggers,\</span>
 <span class="sd">    if multiple peaks within this window this code will find the highest.</span>
 
-<span class="sd">    :return peaks, locs: Lists of peak values and locations.</span>
+<span class="sd">    :return: peaks, locs: Lists of peak values and locations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c"># Perform some checks</span>

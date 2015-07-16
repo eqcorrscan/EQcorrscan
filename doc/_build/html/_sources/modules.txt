@@ -2,10 +2,10 @@ Utils
 =====
 
 Codes to run basic utility functions for integration with seisan and to 
-find peaks in noisey data.
+find peaks in noisy data.
 
 Sfile_util
----------
+----------
 .. automodule:: Sfile_util
     :members:
 
@@ -21,7 +21,7 @@ clustering
     :members:
     :private-members:
 
-per_processing
+pre_processing
 --------------
 .. automodule:: pre_processing
     :members:
@@ -45,6 +45,11 @@ stacking
     :members:
     :private-members:
 
+catalogue2DD
+------------
+.. automodule:: catalogue2DD
+    :members:
+    :private-members:
 
 Par
 ===
@@ -82,4 +87,8 @@ match_filter
     :members:
     :private-members:
 
-
+lag_calc
+--------
+.. automodule:: lag_calc
+    :members:
+    :private-members:

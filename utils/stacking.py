@@ -49,7 +49,7 @@ def PWS_stack(streams, weight):
     Linstack=linstack(streams)
     # Compute the instantaneous phase
     instaphases=[]
-    print "Computing intsantaneous phase"
+    print "Computing instantaneous phase"
     for stream in streams:
         instaphase=stream.copy()
         for tr in instaphase:

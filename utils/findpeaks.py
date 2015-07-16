@@ -15,15 +15,16 @@ def find_peaks2(arr,thresh, trig_int, debug=0, \
     :type arr: ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and peaks
+    :param thresh: The threshold below which will be considered noise and peaks\
     will not be found in.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,
+    :param trig_int: The minimum difference in samples between triggers,\
     if multiple peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
 
-    :return peaks, locs: Lists of peak values and locations.
+    :return: peaks, locs: Lists of peak values and locations.
+
     """
     from scipy import ndimage
     # Set everything below the threshold to zero
@@ -110,13 +111,13 @@ def find_peaks(arr, thresh, trig_int):
     :type arr: ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and peaks
+    :param thresh: The threshold below which will be considered noise and peaks\
     will not be found in.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,
+    :param trig_int: The minimum difference in samples between triggers,\
     if multiple peaks within this window this code will find the highest.
 
-    :return peaks, locs: Lists of peak values and locations.
+    :return: peaks, locs: Lists of peak values and locations.
     """
 
     # Perform some checks
