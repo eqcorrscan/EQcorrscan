@@ -74,8 +74,15 @@ def _max_p2t(data, delta):
         if (data[i] < data[i-1] and data[i] < data[i+1]) or\
            (data[i] > data[i-1] and data[i] > data[i+1]):
             turning_points.append((data[i], i))
-    amplitudes=np.empty([len(turning_points)-1],)
-    half_periods= np.empty([len(turning_points)-1],)
+    if len(turning_points) >=1:
+        amplitudes=np.empty([len(turning_points)-1],)
+        half_periods= np.empty([len(turning_points)-1],)
+    else:
+        plt.plot(data)
+        plt.show()
+        print 'Turning points has length: '+str(len(turning_points))+\
+                         ' data have length: '+str(len(data))
+        return (0.0, 0.0, 0.0)
     for i in xrange(1,len(turning_points)):
         half_periods[i-1]=(delta*(turning_points[i][1]-turning_points[i-1][1]))
         amplitudes[i-1]=np.abs(turning_points[i][0]-turning_points[i-1][0])
@@ -274,7 +281,8 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     picks_out=[]
     for pick in picks:
         if pick.phase in ['P','S']:
-            picks_out.append(pick)
+            picks_out.append(pick) # Need to be able to remove this if there
+                                   # isn't data for a station!
             stations.append(pick.station)
             channels.append(pick.channel)
             picktimes.append(pick.time)
@@ -291,9 +299,16 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     for sta in uniq_stas:
         for chan in chans:
             print 'Working on '+sta+' '+chan
-            tr=stream.select(station=sta, channel='*'+chan)[0]
+            tr=stream.select(station=sta, channel='*'+chan)
             if not tr:
-            	raise ValueError('There is no station and channel match in the wavefile!')
+                # Remove picks from file
+                picks_out=[picks_out[i] for i in xrange(len(picks))\
+                           if picks_out[i].station+picks_out[i].channel != \
+                           sta+chan]
+            	print 'There is no station and channel match in the wavefile! Removing picks'
+                break
+            else:
+                tr=tr[0]
             # Apply the pre-filter
             if pre_filt:
                 try:
@@ -385,18 +400,25 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             elif resp_info:
                 seedresp=resp_info
             # Simulate a Wood Anderson Seismograph
-            if PAZ and len(tr) != 0:
+            if PAZ and len(tr.data) > 10: # Set ten data points to be the minimum to pass
                 tr=_sim_WA(tr, PAZ, None, 10)
-            elif seedresp and len(tr) != 0:
+            elif seedresp and len(tr.data) > 10:
                 tr=_sim_WA(tr, None, seedresp, 10)
-            elif len(tr) != 0:
+            elif len(tr.data) > 10:
                 raise IOError('No PAZ for '+tr.stats.station+' '+\
                                  tr.stats.channel+' at time: '+\
                                  str(tr.stats.starttime))
-            if len(tr) == 0:
+            if len(tr.data) <= 10:
+                # Should remove the P and S picks if len(tr.data)==0
+                print 'No data in miniseed file for '+tr.stats.station+\
+                              ' removing picks'
+                picks_out=[picks_out[i] for i in xrange(len(picks_out))\
+                           if i not in sta_picks]
             	break
             # Get the amplitude
             amplitude, period, delay= _max_p2t(tr.data, tr.stats.delta)
+            if amplitude==0.0:
+                break
             print 'Amplitude picked: '+str(amplitude)
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
