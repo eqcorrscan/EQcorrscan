@@ -477,11 +477,11 @@ if __name__ == '__main__':
     import glob, shutil
     import datetime as dt
     try:
-        startdate=dt.datetime.strptime(startdate.zfill(14), '%Y%m%d%H%M%S')
+        startdate=dt.datetime.strptime(startdate.ljust(14,'0'), '%Y%m%d%H%M%S')
     except:
         raise IOError('start date is not yyyymmddhhmmss form')
     try:
-        stopdate=dt.datetime.strptime(enddate.zfill(14), '%Y%m%d%H%M%S')
+        stopdate=dt.datetime.strptime(enddate.ljust(14,'0'), '%Y%m%d%H%M%S')
     except:
         raise IOError('end date is not yyyymmddhhmmss form')
     kdays=((stopdate+dt.timedelta(1))-startdate).days
