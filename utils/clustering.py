@@ -152,7 +152,56 @@ def group_delays(templates):
     # #### UNFINISHED!!!
     # return stacked_templates
 
-def SVD_tetsing(templates):
+def allign_traces(traces):
+    """
+    Function to allign all traces in a stream based on their cross-correlations
+
+    :type traces: List of :class: obspy.Trace
+    :param traces: List of of single channels unalligned - should contain\
+            data from multiple earthquakes for a single site, channel and phase\
+            I will compute the linear stack of all traces and allign the traces\
+            relative to this.
+
+    :returns: List of ndarray
+    """
+    # Set the master trace as the linear stack of all traces in the stream
+    from stacking import linstack
+    from obspy import Stream, Trace
+    from obspy.signal.cross_correlation import xcorr
+    import numpy as np
+    import warnings, scipy
+    # Check the type, linstack needs a list of streams
+    for i in xrange(len(traces)):
+        if type(traces[i])==Trace:
+            traces[i]=Stream(traces[i])
+        elif type(traces[i]) != Stream:
+            raise IOError('You have not passed me an obspy stream')
+    master=linstack(traces)
+    alligned_data=[]
+    for trace in traces:
+        shift_len=int(0.25*trace[0].stats.npts)
+        # Mostly copied from xcorrPickCorrection
+        _cc_shift, cc_max, cc = xcorr(master[0].data, trace[0].data, shift_len,\
+                                      full_xcorr=True)
+        print cc_max, _cc_shift
+        # make array with time shifts in seconds corresponding to cc function
+        correction = _cc_shift
+        print correction
+        if not abs(correction) < 1.0:
+            continue
+        pad=np.zeros(abs(correction)*trace[0].stats.sampling_rate)
+        if len(pad) < len(trace[0].data):
+            if correction > 0:
+                alligned_data.append(np.append(pad, trace[0].data[0:-len(pad)]))
+            elif correction < 0:
+                alligned_data.append(np.append(trace[0].data[len(pad),:], pad))
+            else:
+                alligned_data.append(trace[0].data)
+        else:
+            alligned_data.append(trace[0].data)
+    return alligned_data
+
+def SVD_testing(templates):
     """
     Function to compute the SVD of a number of templates and return the singular
     vectors and singular values of the templates.
