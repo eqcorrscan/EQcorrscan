@@ -46,7 +46,7 @@ class PICK:
         self.pickcount+=1
 
 class EVENTINFO:
-    def __init__(self, time, loc_miod_ind, dist_ind, ev_id, latitude, longitude,
+    def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
                  depth, depth_ind, loc_ind, agency, nsta, t_RMS, Mag_1,
                  Mag_1_type, Mag_1_agency, Mag_2, Mag_2_type, Mag_2_agency,
                  Mag_3, Mag_3_type, Mag_3_agency):
