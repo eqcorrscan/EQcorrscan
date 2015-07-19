@@ -21,6 +21,7 @@ must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 """
 import Sfile_util
+import numpy as np
 
 def _cc_round(num, dp):
     """
@@ -55,6 +56,26 @@ def _av_weight(W1, W2):
         W2=1-int(W2)/4.0
     W=(W1+W2)/2
     return _cc_round(W,4)
+
+def _separation(loc1, loc2):
+    """
+    Function to calculate the distance between two points in the earth
+
+    :type loc1: tuple (float, float, float)
+    :param loc1: First point location as lat, long, depth in deg, deg, km
+    :type loc2: tuple (float, float, float)
+    :param loc2: First point location as lat, long, depth in deg, deg, km
+
+    :returns: distance in km (float)
+    """
+    R=6371.009  # Radius of the Earth in km
+    dlat=np.radians(abs(loc1[0]-loc2[0]))
+    dlong=np.radians(abs(loc1[1]-loc2[1]))
+    ddepth=abs(loc1[2]-loc2[2])
+    mean_lat=np.radians((loc1[0]+loc2[0])/2)
+    dist=R*np.sqrt(dlat**2+(np.cos(mean_lat)*dlong)**2)
+    dist=np.sqrt(dist**2+ddepth**2)
+    return dist
 
 def readSTATION0(path):
     """
@@ -100,7 +121,7 @@ def write_event(sfile_list):
     f.close()
     return event_list
 
-def write_catalogue(event_list):
+def write_catalogue(event_list, max_sep=10, min_link=8):
     """
     Function to write the dt.ct file needed by hypoDD - takes input event list
     from write_event as a list of tuples of event id and sfile.  It will read
@@ -109,6 +130,10 @@ def write_catalogue(event_list):
 
     :type event_list: List of tuple
     :param event_list: List of tuples of event_id (int) and sfile (String)
+    :type max_sep: float
+    :param max_sep: Maximum seperation between event pairs in km
+    :type min_link: int
+    :param min_link: Minimum links for an event to be paired
     """
     f=open('dt.ct','w')
     for i in xrange(len(event_list)):
@@ -116,15 +141,24 @@ def write_catalogue(event_list):
         master_event_id=event_list[i][0]
         master_picks=Sfile_util.readpicks(master_sfile)
         master_ori_time=Sfile_util.readheader(master_sfile).time
+        master_location=(Sfile_util.readheader(master_sfile).latitude,\
+                         Sfile_util.readheader(master_sfile).longitude,\
+                         Sfile_util.readheader(master_sfile).depth)
         for j in xrange(i+1,len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile=event_list[j][1]
             slave_event_id=event_list[j][0]
             # Write out the header line
-            f.write('#'+str(master_event_id).rjust(10)+\
-                    str(slave_event_id).rjust(10)+'\n')
+            event_text='#'+str(master_event_id).rjust(10)+\
+                    str(slave_event_id).rjust(10)+'\n'
             slave_picks=Sfile_util.readpicks(slave_sfile)
             slave_ori_time=Sfile_util.readheader(slave_sfile).time
+            slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
+                         Sfile_util.readheader(slave_sfile).longitude,\
+                         Sfile_util.readheader(slave_sfile).depth)
+            if _separation(master_location, slave_location) > max_sep:
+                break
+            links=0 # Count the number of linkages
             for pick in master_picks:
                 if pick.phase not in ['P','S']:
                     continue # Only use P and S picks, not amplitude or 'other'
@@ -133,15 +167,18 @@ def write_catalogue(event_list):
                                and p.phase==pick.phase]
                 # Loop through the matches
                 for slave_pick in slave_matches:
-                    f.write(pick.station.rjust(4)+\
+                    links+=1
+                    event_text+=pick.station.rjust(4)+\
                             _cc_round(pick.time-master_ori_time,3).rjust(11)+\
                             _cc_round(slave_pick.time-slave_ori_time,3).rjust(8)+\
                             _av_weight(pick.weight, slave_pick.weight)+' '+\
-                            pick.phase+'\n')
+                            pick.phase+'\n'
+            if links >= min_link:
+                f.write(event_text)
     f.close()
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
-                       lowcut=1.0, highcut=10.0):
+                       lowcut=1.0, highcut=10.0, max_sep=10, min_link=8):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation
@@ -161,6 +198,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
     :param lowcut: Lowcut in Hz - default=1.0
     :type highcut: float
     :param highcut: Highcut in Hz - deafult=10.0
+    :type max_sep: float
+    :param max_sep: Maximum seperation between event pairs in km
+    :type min_link: int
+    :param min_link: Minimum links for an event to be paired
     """
     from obspy.signal.cross_correlation import xcorrPickCorrection
     from obspy import read
@@ -170,6 +211,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
         master_event_id=event_list[i][0]
         master_picks=Sfile_util.readpicks(master_sfile)
         master_ori_time=Sfile_util.readheader(master_sfile).time
+        master_location=(Sfile_util.readheader(master_sfile).latitude,\
+                         Sfile_util.readheader(master_sfile).longitude,\
+                         Sfile_util.readheader(master_sfile).depth)
         master_wavefiles=Sfile_util.readwavename(master_sfile)
         masterstream=read(wavbase+'/*/*/'+master_wavefiles[0])
         if len(master_wavefiles)>1:
@@ -185,10 +229,16 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                 for wavefile in slave_wavefiles:
                     slavestream+=read(wavbase+'/*/*/'+wavefile)
             # Write out the header line
-            f.write('#'+str(master_event_id).rjust(10)+\
-                    str(slave_event_id).rjust(10)+' 0.0   \n')
+            event_text='#'+str(master_event_id).rjust(10)+\
+                    str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_picks=Sfile_util.readpicks(slave_sfile)
             slave_ori_time=Sfile_util.readheader(slave_sfile).time
+            slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
+                         Sfile_util.readheader(slave_sfile).longitude,\
+                         Sfile_util.readheader(slave_sfile).depth)
+            if _separation(master_location, slave_location) > max_sep:
+                break
+            links=0
             for pick in master_picks:
                 if pick.phase not in ['P','S']:
                     continue # Only use P and S picks, not amplitude or 'other'
@@ -204,17 +254,24 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                                                channel='*'+slave_pick.channel[-1])[0]
                     # Correct the picks
                     try:
-                        correction, cc = xcorrPickCorrection(slave_pick.time,\
-                                                             slavetr, pick.time,\
-                                                             mastertr,pre_pick,\
+                        correction, cc = xcorrPickCorrection(pick.time, mastertr,\
+                                                             slave_pick.time,\
+                                                             slavetr,pre_pick,\
                                                              extract_len-pre_pick, shift_len,\
                                                              filter="bandpass",\
                                                              filter_options={'freqmin':lowcut,
                                                                              'freqmax':highcut},plot=False)
-                        f.write(pick.station.rjust(4)+\
-                                _cc_round(correction,3).rjust(11)+\
+                        # Get the differntial travel time using the corrected time.
+
+                        dt=(pick.time-master_ori_time)-\
+                                (slave_pick.time+correction-slave_ori_time)
+                        event_text+=pick.station.rjust(4)+\
+                                _cc_round(dt,3).rjust(11)+\
                                 _cc_round(cc*cc,3).rjust(8)+\
-                                ' '+pick.phase+'\n')
+                                ' '+pick.phase+'\n'
+                        links+=1
                     except:
                         continue
+            if links >= min_link:
+                f.write(event_text)
     f.close()
