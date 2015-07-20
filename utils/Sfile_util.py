@@ -208,14 +208,14 @@ def readpicks(sfilename):
         station=line[1:6].strip()
         channel=line[6:8].strip()
         impulsivity=line[9]
-        weight=line[15]
+        weight=line[14]
         if weight=='_':
             phase=line[10:17]
             weight=''
             polarity=''
         else:
             phase=line[10:14].strip()
-            polarity=line[15]
+            polarity=line[16]
         try:
             time=UTCDateTime(evtime.year,evtime.month,evtime.day,
                              int(line[18:20]),int(line[20:22]),int(line[23:25]),
