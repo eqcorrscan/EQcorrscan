@@ -280,7 +280,56 @@
     <span class="c"># #### UNFINISHED!!!</span>
     <span class="c"># return stacked_templates</span>
 </div>
-<div class="viewcode-block" id="SVD_tetsing"><a class="viewcode-back" href="../utils.html#clustering.SVD_tetsing">[docs]</a><span class="k">def</span> <span class="nf">SVD_tetsing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="allign_traces"><a class="viewcode-back" href="../utils.html#clustering.allign_traces">[docs]</a><span class="k">def</span> <span class="nf">allign_traces</span><span class="p">(</span><span class="n">traces</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to allign all traces in a stream based on their cross-correlations</span>
+
+<span class="sd">    :type traces: List of :class: obspy.Trace</span>
+<span class="sd">    :param traces: List of of single channels unalligned - should contain\</span>
+<span class="sd">            data from multiple earthquakes for a single site, channel and phase\</span>
+<span class="sd">            I will compute the linear stack of all traces and allign the traces\</span>
+<span class="sd">            relative to this.</span>
+
+<span class="sd">    :returns: List of ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Set the master trace as the linear stack of all traces in the stream</span>
+    <span class="kn">from</span> <span class="nn">stacking</span> <span class="kn">import</span> <span class="n">linstack</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorr</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="kn">import</span> <span class="nn">warnings</span><span class="o">,</span> <span class="nn">scipy</span>
+    <span class="c"># Check the type, linstack needs a list of streams</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">==</span><span class="n">Trace</span><span class="p">:</span>
+            <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">!=</span> <span class="n">Stream</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;You have not passed me an obspy stream&#39;</span><span class="p">)</span>
+    <span class="n">master</span><span class="o">=</span><span class="n">linstack</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+    <span class="n">alligned_data</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+        <span class="n">shift_len</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.25</span><span class="o">*</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span>
+        <span class="c"># Mostly copied from xcorrPickCorrection</span>
+        <span class="n">_cc_shift</span><span class="p">,</span> <span class="n">cc_max</span><span class="p">,</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
+                                      <span class="n">full_xcorr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">print</span> <span class="n">cc_max</span><span class="p">,</span> <span class="n">_cc_shift</span>
+        <span class="c"># make array with time shifts in seconds corresponding to cc function</span>
+        <span class="n">correction</span> <span class="o">=</span> <span class="n">_cc_shift</span>
+        <span class="k">print</span> <span class="n">correction</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">abs</span><span class="p">(</span><span class="n">correction</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">pad</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">correction</span><span class="p">)</span><span class="o">*</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">correction</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">alligned_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pad</span><span class="p">,</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">)]))</span>
+            <span class="k">elif</span> <span class="n">correction</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">alligned_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">),:],</span> <span class="n">pad</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">alligned_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">alligned_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">alligned_data</span>
+</div>
+<div class="viewcode-block" id="SVD_testing"><a class="viewcode-back" href="../utils.html#clustering.SVD_testing">[docs]</a><span class="k">def</span> <span class="nf">SVD_testing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the SVD of a number of templates and return the singular</span>
 <span class="sd">    vectors and singular values of the templates.</span>

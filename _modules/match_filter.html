@@ -172,7 +172,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../core.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../modules.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Information required for a full detection based on cross-channel</span>
 <span class="sd">    correlation sums.</span>
@@ -212,7 +212,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">typeofdet</span><span class="o">=</span><span class="n">typeofdet</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">detectioncount</span><span class="o">+=</span><span class="mi">1</span>
 </div>
-<div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../core.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+<div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../modules.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base function to call the c++ correlation routine from the openCV image</span>
 <span class="sd">    processing suite.  Requires you to have installed the openCV python</span>
@@ -245,7 +245,7 @@
     <span class="n">ccc</span><span class="o">=</span><span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">ccc</span>
 </div>
-<div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../core.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../modules.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sister loop to handle the correlation of a single template (of multiple</span>
 <span class="sd">    channels) with a single channel of data.</span>
@@ -296,7 +296,7 @@
         <span class="k">print</span> <span class="s">&quot;Parallel worker &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&quot; complete&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ccc</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../core.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+<div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../modules.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loop to generate cross channel correaltion sums for a series of templates</span>
 <span class="sd">    hands off the actual correlations to a sister function which can be run in</span>
@@ -412,7 +412,7 @@
     <span class="n">cccsums</span><span class="o">=</span><span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
 </div>
-<div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../core.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
+<div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../modules.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
                  <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Over-arching code to run the correlations of given templates with a day of</span>

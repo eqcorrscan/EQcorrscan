@@ -170,7 +170,7 @@
 <span class="sd">    - NonLinLoc       - used outside of all codes for travel-time generation</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<div class="viewcode-block" id="_read_tt"><a class="viewcode-back" href="../core.html#bright_lights._read_tt">[docs]</a><span class="k">def</span> <span class="nf">_read_tt</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="s">&#39;S&#39;</span><span class="p">,</span> <span class="n">ps_ratio</span><span class="o">=</span><span class="mf">1.68</span><span class="p">):</span>
+<div class="viewcode-block" id="_read_tt"><a class="viewcode-back" href="../modules.html#bright_lights._read_tt">[docs]</a><span class="k">def</span> <span class="nf">_read_tt</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="s">&#39;S&#39;</span><span class="p">,</span> <span class="n">ps_ratio</span><span class="o">=</span><span class="mf">1.68</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in .csv files of slowness generated from Grid2Time (part</span>
 <span class="sd">    of NonLinLoc by Anthony Lomax) and convert this to a useful format here.</span>
@@ -233,7 +233,7 @@
         <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">stations_out</span><span class="p">,</span> <span class="n">allnodes</span><span class="p">,</span> <span class="n">alllags</span>
 </div>
-<div class="viewcode-block" id="_resample_grid"><a class="viewcode-back" href="../core.html#bright_lights._resample_grid">[docs]</a><span class="k">def</span> <span class="nf">_resample_grid</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">mindepth</span><span class="p">,</span> <span class="n">maxdepth</span><span class="p">,</span> <span class="n">corners</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+<div class="viewcode-block" id="_resample_grid"><a class="viewcode-back" href="../modules.html#bright_lights._resample_grid">[docs]</a><span class="k">def</span> <span class="nf">_resample_grid</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">mindepth</span><span class="p">,</span> <span class="n">maxdepth</span><span class="p">,</span> <span class="n">corners</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to resample the lagtime grid to a given volume.  For use if the</span>
 <span class="sd">    grid from Grid2Time is too large or you want to run a faster, downsampled</span>
@@ -279,7 +279,7 @@
     <span class="k">print</span> <span class="s">&#39;Grid now has &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">resamp_nodes</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; nodes&#39;</span>
     <span class="k">return</span> <span class="n">stations</span><span class="p">,</span> <span class="n">resamp_nodes</span><span class="p">,</span> <span class="n">resamp_lags</span>
 </div>
-<div class="viewcode-block" id="_rm_similarlags"><a class="viewcode-back" href="../core.html#bright_lights._rm_similarlags">[docs]</a><span class="k">def</span> <span class="nf">_rm_similarlags</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+<div class="viewcode-block" id="_rm_similarlags"><a class="viewcode-back" href="../modules.html#bright_lights._rm_similarlags">[docs]</a><span class="k">def</span> <span class="nf">_rm_similarlags</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove those nodes that have a very similar network moveout</span>
 <span class="sd">    to another lag.</span>
@@ -328,7 +328,7 @@
     <span class="k">return</span> <span class="n">stations</span><span class="p">,</span> <span class="n">nodes_out</span><span class="p">,</span> <span class="n">lags_out</span>
 
 </div>
-<div class="viewcode-block" id="_node_loop"><a class="viewcode-back" href="../core.html#bright_lights._node_loop">[docs]</a><span class="k">def</span> <span class="nf">_node_loop</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="_node_loop"><a class="viewcode-back" href="../modules.html#bright_lights._node_loop">[docs]</a><span class="k">def</span> <span class="nf">_node_loop</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Internal function to allow for parallelisation of brightness</span>
 
@@ -360,7 +360,7 @@
             <span class="n">energy</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">lagged_energy</span><span class="p">))</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="_find_detections"><a class="viewcode-back" href="../core.html#bright_lights._find_detections">[docs]</a><span class="k">def</span> <span class="nf">_find_detections</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">realstations</span><span class="p">):</span>
+<div class="viewcode-block" id="_find_detections"><a class="viewcode-back" href="../modules.html#bright_lights._find_detections">[docs]</a><span class="k">def</span> <span class="nf">_find_detections</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">realstations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to find detections within the cumulative network response according</span>
 <span class="sd">    to Frank et al. (2014).</span>
@@ -408,7 +408,7 @@
     <span class="k">print</span> <span class="s">&#39;I have found &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; possible detections&#39;</span>
     <span class="k">return</span> <span class="n">detections</span>
 </div>
-<div class="viewcode-block" id="coherance"><a class="viewcode-back" href="../core.html#bright_lights.coherance">[docs]</a><span class="k">def</span> <span class="nf">coherance</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
+<div class="viewcode-block" id="coherance"><a class="viewcode-back" href="../modules.html#bright_lights.coherance">[docs]</a><span class="k">def</span> <span class="nf">coherance</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to determine the average network coherance of a given template or</span>
 <span class="sd">    detection.  You will want your stream to contain only signal as noise</span>
@@ -430,7 +430,7 @@
     <span class="n">coherance</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">coherance</span><span class="o">/</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">coherance</span>
 </div>
-<div class="viewcode-block" id="brightness"><a class="viewcode-back" href="../core.html#bright_lights.brightness">[docs]</a><span class="k">def</span> <span class="nf">brightness</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span>
+<div class="viewcode-block" id="brightness"><a class="viewcode-back" href="../modules.html#bright_lights.brightness">[docs]</a><span class="k">def</span> <span class="nf">brightness</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span>
         <span class="n">coherance_thresh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to calculate the brightness function in terms of energy for a day</span>
