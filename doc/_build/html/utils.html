@@ -298,8 +298,8 @@ composed of the highest rank singular vectors.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="clustering.SVD_tetsing">
-<code class="descclassname">clustering.</code><code class="descname">SVD_tetsing</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD_tetsing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD_tetsing" title="Permalink to this definition">¶</a></dt>
+<dt id="clustering.SVD_testing">
+<code class="descclassname">clustering.</code><code class="descname">SVD_testing</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD_testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD_testing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to compute the SVD of a number of templates and return the singular
 vectors and singular values of the templates.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -318,6 +318,22 @@ of String (station.channel)</td>
 <p>It is recommended that you align the data before computing the SVD, .e.g.,
 the P-arrival on all templates for the same channel should appear at the same
 time in the trace.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.allign_traces">
+<code class="descclassname">clustering.</code><code class="descname">allign_traces</code><span class="sig-paren">(</span><em>traces</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#allign_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.allign_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to allign all traces in a stream based on their cross-correlations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>traces</strong> (<em>List of :class: obspy.Trace</em>) &#8211; List of of single channels unalligned - should contain            data from multiple earthquakes for a single site, channel and phase            I will compute the linear stack of all traces and allign the traces            relative to this.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -827,6 +843,27 @@ to return a string</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="catalogue2DD._separation">
+<code class="descclassname">catalogue2DD.</code><code class="descname">_separation</code><span class="sig-paren">(</span><em>loc1</em>, <em>loc2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#_separation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD._separation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate the distance between two points in the earth</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>loc1</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
+<li><strong>loc2</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">distance in km (float)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="catalogue2DD.readSTATION0">
 <code class="descclassname">catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read the STATION0.HYP file on the path given.</p>
@@ -844,7 +881,7 @@ to return a string</p>
 
 <dl class="function">
 <dt id="catalogue2DD.write_catalogue">
-<code class="descclassname">catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=10</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to write the dt.ct file needed by hypoDD - takes input event list
 from write_event as a list of tuples of event id and sfile.  It will read
 the pick information from the seisan formated s-file using the Sfile_util
@@ -853,7 +890,12 @@ utilities.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -861,7 +903,7 @@ utilities.</p>
 
 <dl class="function">
 <dt id="catalogue2DD.write_correlations">
-<code class="descclassname">catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em>, <em>max_sep=10</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to write a dt.cc file for hypoDD input - takes an input list of
 events and computes pick refienements by correlation</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -877,6 +919,8 @@ S-files are stored</li>
 <li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time to allow pick to vary</li>
 <li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lowcut in Hz - default=1.0</li>
 <li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Highcut in Hz - deafult=10.0</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
 </ul>
 </td>
 </tr>
