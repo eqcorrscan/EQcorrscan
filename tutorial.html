@@ -1,0 +1,468 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
+        <link rel="next" title="Utils" href="modules.html"/>
+        <link rel="prev" title="Introduction to the EQcorrscan package" href="intro.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#sfile-util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-pre_processing">per_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-stacking">stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html#par">Par</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html#core">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-match_filter">match_filter</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>EQcorrscan tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="eqcorrscan-tutorial">
+<h1>EQcorrscan tutorial<a class="headerlink" href="#eqcorrscan-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>THIS TUTOTIAL IS NOT REALLY WRITTEN YET!</p>
+<p>You must first set-up your parameter files in the <em>par</em> directory.  You can
+leave these as the default settings for now, but study the parameters so that
+you understand what each one is doing.</p>
+<p>Then run the <em>LFE_search.py</em> routine in this top directory, running this will
+run all the <em>core</em> routines to search for templates, generate templates and
+compute the cross-channel cross-correlation values for the templates.  Finally
+it will output detections from these templates.</p>
+<p>The following is verbatim the LFEserach.py routine which outlines usage of this
+package:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/python</span>
+
+<span class="c">#------------------------------------------------------------------------------</span>
+<span class="c">#   Purpose:    Script to call all elements of EQcorrscan module to search</span>
+<span class="c">#               continuous data for likely LFE repeats</span>
+<span class="c">#   Author:     Calum John Chamberlain</span>
+<span class="c">#------------------------------------------------------------------------------</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">LFEsearch - Script to generate templates from previously picked LFE&#39;s and then</span>
+<span class="sd">serach for repeats of them in contnuous data.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">glob</span>
+<span class="n">bob</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span>
+<span class="n">bob</span><span class="o">=</span><span class="n">bob</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+<span class="n">path</span><span class="o">=</span><span class="s">&#39;/&#39;</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bob</span><span class="p">)):</span>
+    <span class="n">path</span><span class="o">+=</span><span class="n">bob</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
+<span class="k">print</span> <span class="n">path</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">path</span><span class="p">)</span>
+
+
+<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
+<span class="c">#from par import lagcalc as lagdef</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+<span class="c"># First generate the templates</span>
+<span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">template_gen</span>
+
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="n">flag</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;--debug&#39;</span><span class="p">:</span>
+        <span class="n">Test</span><span class="o">=</span><span class="bp">True</span>
+        <span class="n">Prep</span><span class="o">=</span><span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;--debug-prep&#39;</span><span class="p">:</span>
+        <span class="n">Test</span><span class="o">=</span><span class="bp">False</span>
+        <span class="n">Prep</span><span class="o">=</span><span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;I don&#39;t recognise the argument, I only know --debug and --debug-prep&quot;</span><span class="p">)</span>
+<span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+    <span class="c"># Arguments to allow the code to be run in multiple instances</span>
+    <span class="n">Split</span><span class="o">=</span><span class="bp">True</span>
+    <span class="n">Test</span><span class="o">=</span><span class="bp">False</span>
+    <span class="n">Prep</span><span class="o">=</span><span class="bp">False</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;--instance&#39;</span><span class="p">:</span>
+            <span class="n">instance</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">print</span> <span class="s">&#39;I will run this for instance &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;--splits&#39;</span><span class="p">:</span>
+            <span class="n">splits</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">print</span> <span class="s">&#39;I will divide the days into &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">splits</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; chunks&#39;</span>
+
+<span class="k">elif</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;I only take one argument, no arguments, or two flags with arguments&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">Test</span><span class="o">=</span><span class="bp">False</span>
+    <span class="n">Prep</span><span class="o">=</span><span class="bp">False</span>
+    <span class="n">Split</span><span class="o">=</span><span class="bp">False</span>
+
+<span class="n">templates</span><span class="o">=</span><span class="p">[]</span>
+<span class="n">delays</span><span class="o">=</span><span class="p">[]</span>
+<span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
+<span class="k">print</span> <span class="s">&#39;Template generation parameters are:&#39;</span>
+<span class="k">print</span> <span class="s">&#39;sfilebase: &#39;</span><span class="o">+</span><span class="n">templatedef</span><span class="o">.</span><span class="n">sfilebase</span>
+<span class="k">print</span> <span class="s">&#39;samp_rate: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; Hz&#39;</span>
+<span class="k">print</span> <span class="s">&#39;lowcut: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; Hz&#39;</span>
+<span class="k">print</span> <span class="s">&#39;highcut: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">highcut</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; Hz&#39;</span>
+<span class="k">print</span> <span class="s">&#39;length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">length</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; s&#39;</span>
+<span class="k">print</span> <span class="s">&#39;swin: &#39;</span><span class="o">+</span><span class="n">templatedef</span><span class="o">.</span><span class="n">swin</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+<span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">sfiles</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;Working on: &#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">saveloc</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">+</span><span class="s">&#39;_template.ms&#39;</span><span class="p">):</span>
+        <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">from_contbase</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">sfilebase</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="s">&#39;saving template as: &#39;</span><span class="o">+</span><span class="n">templatedef</span><span class="o">.</span><span class="n">saveloc</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.ms&#39;</span>
+        <span class="n">template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">saveloc</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                   <span class="n">sfile</span><span class="o">+</span><span class="s">&#39;_template.ms&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;MSEED&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">template</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">saveloc</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">+</span><span class="s">&#39;_template.ms&#39;</span><span class="p">)</span>
+    <span class="n">templates</span><span class="o">+=</span><span class="p">[</span><span class="n">template</span><span class="p">]</span>
+    <span class="c"># Will read in seisan s-file and generate a template from this,</span>
+    <span class="c"># returned name will be the template name, used for parsing to the later</span>
+    <span class="c"># functions</span>
+
+
+    <span class="c"># Calculate the delays for each template, do this only once so that we</span>
+    <span class="c"># don&#39;t have to do it heaps!</span>
+    <span class="c"># Check that all templates are the correct length</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="o">*</span><span class="n">templatedef</span><span class="o">.</span><span class="n">length</span> <span class="o">==</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Template for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
+                             <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; is not the correct length, recut.&#39;</span><span class="o">+</span>\
+                             <span class="s">&#39; It is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; and should be &#39;</span><span class="o">+</span>
+                             <span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="o">*</span><span class="n">templatedef</span><span class="o">.</span><span class="n">length</span><span class="p">))</span>
+    <span class="c"># Get minimum start time</span>
+    <span class="n">mintime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&lt;</span> <span class="n">mintime</span><span class="p">:</span>
+            <span class="n">mintime</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="n">delay</span><span class="o">=</span><span class="p">[]</span>
+    <span class="c"># Generate list of delays</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="n">delay</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span><span class="p">)</span>
+    <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+    <span class="c"># Generate list of stations in templates</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="c"># Correct FOZ channels</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FOZ&#39;</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
+                            <span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
+                            <span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Channels are not named with either three or two charectars&#39;</span><span class="p">)</span>
+
+<span class="c"># Template generation and processing is over, now to the match-filtering</span>
+
+<span class="c"># Sort stations into a unique list - this list will ensure we only read in data</span>
+<span class="c"># we need, which is VERY important as I/O is very costly and will eat memory</span>
+<span class="n">stations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
+
+<span class="c"># Now run the match filter routine</span>
+<span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">match_filter</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+<span class="c"># from obspy.signal.filter import bandpass</span>
+<span class="c"># from obspy import Stream, Trace</span>
+<span class="c"># import numpy as np</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+<span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+
+<span class="c"># Loop over days</span>
+<span class="n">ndays</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="n">matchdef</span><span class="o">.</span><span class="n">enddate</span><span class="o">-</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span><span class="p">)</span><span class="o">/</span><span class="mi">86400</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">newsfiles</span><span class="o">=</span><span class="p">[]</span>
+<span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;detections/run_start_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;T&#39;</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;template, detect-time, cccsum, threshold, number of channels</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;Will loop through &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ndays</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; days&#39;</span>
+<span class="k">if</span> <span class="n">Split</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">instance</span><span class="o">==</span><span class="n">splits</span><span class="p">:</span>
+        <span class="n">ndays</span><span class="o">=</span><span class="n">ndays</span><span class="o">-</span><span class="p">(</span><span class="n">ndays</span><span class="o">/</span><span class="n">splits</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">splits</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ndays</span><span class="o">=</span><span class="n">ndays</span><span class="o">/</span><span class="n">splits</span>
+    <span class="k">print</span> <span class="s">&#39;This instance will run for &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ndays</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; days&#39;</span>
+    <span class="n">startdate</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span><span class="o">+</span><span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="p">((</span><span class="n">instance</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ndays</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;This instance will run from &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">startdate</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">startdate</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ndays</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="k">del</span> <span class="n">st</span>
+
+
+    <span class="c"># Set up where data are going to be read in from</span>
+    <span class="n">day</span><span class="o">=</span><span class="n">startdate</span><span class="o">+</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">86400</span><span class="p">)</span>
+
+    <span class="c"># Read in data using obspy&#39;s reading routines, data format will be worked</span>
+    <span class="c"># out by the obspy module</span>
+    <span class="c"># Note you might have to change this bit to match your naming structure</span>
+    <span class="n">actual_stations</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of the actual stations used</span>
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+        <span class="c"># station is of the form STA.CHAN, to allow these to be in an odd</span>
+        <span class="c"># arrangements we can seperate them</span>
+        <span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">netcode</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Test</span><span class="p">:</span>
+            <span class="c"># Set up the base directory format</span>
+            <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">base</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">netcode</span><span class="p">:</span>
+                    <span class="n">contbase</span><span class="o">=</span><span class="n">base</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;contbase&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s">&#39;contbase is not defined for &#39;</span><span class="o">+</span><span class="n">netcode</span><span class="p">)</span>
+            <span class="n">baseformat</span><span class="o">=</span><span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">baseformat</span><span class="o">==</span><span class="s">&#39;yyyy/mm/dd&#39;</span><span class="p">:</span>
+                <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                        <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">baseformat</span><span class="o">==</span><span class="s">&#39;Yyyyy/Rjjj.01&#39;</span><span class="p">:</span>
+                <span class="n">daydir</span><span class="o">=</span><span class="s">&#39;Y&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/R&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">julday</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.01&#39;</span>
+            <span class="k">elif</span> <span class="n">baseformat</span><span class="o">==</span><span class="s">&#39;yyyymmdd&#39;</span><span class="p">:</span>
+                <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="c"># Try and find the appropriate files</span>
+            <span class="k">if</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*.&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*.&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">st</span><span class="o">+=</span><span class="n">obsread</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*.&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+                <span class="n">actual_stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">station</span><span class="p">)</span> <span class="c"># Add to this list only if we have the data</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">stachan</span><span class="o">+</span><span class="s">&#39; for day &#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39; in &#39;</span>\
+                        <span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fname</span><span class="o">=</span><span class="s">&#39;test_data/&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+                           <span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                           <span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-processed.ms&#39;</span>
+            <span class="k">if</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">st</span><span class="o">+=</span><span class="n">obsread</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+                <span class="n">actual_stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">station</span><span class="p">)</span>
+    <span class="n">actual_stations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">actual_stations</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&#39;No data found for day: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_stations</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">minsta</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Data from fewer than &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">matchdef</span><span class="o">.</span><span class="n">minsta</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; stations found, will not detect&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Test</span><span class="p">:</span>
+            <span class="c"># Process data</span>
+            <span class="k">print</span> <span class="s">&#39;Processing the data for day &#39;</span><span class="o">+</span><span class="n">daydir</span>
+            <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">highcut</span><span class="p">,</span>\
+                                            <span class="n">templatedef</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">,</span>\
+                                            <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">st</span><span class="o">=</span><span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">))(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)(</span><span class="n">tr</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">,</span>\
+                                                                   <span class="n">templatedef</span><span class="o">.</span><span class="n">highcut</span><span class="p">,</span>\
+                                                                   <span class="n">templatedef</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span>\
+                                                                   <span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">,</span>\
+                                                                   <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>\
+                                <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Prep</span><span class="p">:</span>
+            <span class="c"># Call the match_filter module - returns detections, a list of detections</span>
+            <span class="c"># containted within the detection class with elements, time, template,</span>
+            <span class="c"># number of channels used and cross-channel correlation sum.</span>
+            <span class="k">print</span> <span class="s">&#39;Running the detection routine&#39;</span>
+            <span class="n">detections</span><span class="o">=</span><span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">sfiles</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">delays</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span>
+                                                 <span class="n">matchdef</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">threshtype</span><span class="p">,</span>
+                                                 <span class="n">matchdef</span><span class="o">.</span><span class="n">trig_int</span><span class="p">,</span>  <span class="n">matchdef</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+                <span class="c"># output detections to file</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">+</span>\
+                        <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span><span class="o">+</span>\
+                        <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">no_chans</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                <span class="k">print</span> <span class="s">&#39;template: &#39;</span><span class="o">+</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&#39; detection at: &#39;</span>\
+                    <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; with a cccsum of: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">detections</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;test_data/&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span>\
+                         <span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+                         <span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                         <span class="s">&#39;-&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                         <span class="s">&#39;-processed.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modules.html" class="btn btn-neutral float-right" title="Utils">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="intro.html" class="btn btn-neutral" title="Introduction to the EQcorrscan package"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.1-alpha',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

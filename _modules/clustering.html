@@ -1,0 +1,419 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>clustering &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>clustering</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for clustering</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Code to compute the linkage between seismograms and cluster them accordingly</span>
+
+<span class="sd">Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015</span>
+
+<span class="sd">Implimented to streamline templates after template detection in beamforming</span>
+<span class="sd">methods, employed by implimentation of Frank et al. code.</span>
+
+<span class="sd">As such this code is designed to work only for templates with the same channels</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c"># I want to make sure that the lags for those that I cluster are similar as well</span>
+<span class="c"># as making sure that they are similarly correlated - will cluster based on</span>
+<span class="c"># cross-channel correlation sum</span>
+
+<div class="viewcode-block" id="cross_chan_coherance"><a class="viewcode-back" href="../utils.html#clustering.cross_chan_coherance">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherance</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to determine the cross-channel coherancy between two streams of</span>
+<span class="sd">    multichannel seismic data.</span>
+
+<span class="sd">    :type st1: obspy Stream</span>
+<span class="sd">    :type st2: obspy Stream</span>
+
+<span class="sd">    :returns: cross channel coherance, float - normalized by number of channels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
+    <span class="n">cccoh</span><span class="o">=</span><span class="mf">0.0</span>
+    <span class="n">kchan</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st1</span><span class="p">:</span>
+        <span class="n">tr1</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+        <span class="c"># Assume you only have one waveform for each channel</span>
+        <span class="n">tr2</span><span class="o">=</span><span class="n">st2</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                       <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tr2</span><span class="p">:</span>
+            <span class="n">cccoh</span><span class="o">+=</span><span class="n">normxcorr2</span><span class="p">(</span><span class="n">tr1</span><span class="p">,</span><span class="n">tr2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">kchan</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="n">cccoh</span><span class="o">=</span><span class="n">cccoh</span><span class="o">/</span><span class="n">kchan</span>
+    <span class="k">return</span> <span class="n">cccoh</span>
+</div>
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../utils.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to compute the distance matrix for all templates - will give</span>
+<span class="sd">    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will</span>
+<span class="sd">    have small distances, and an equally well correlated reverse image will</span>
+<span class="sd">    have the same distance as apositively correlated image - this is an issue</span>
+
+<span class="sd">    :type templates: List of obspy.Streams</span>
+
+<span class="sd">    :returns: ndarray - distance matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="c"># Initialize square matrix</span>
+    <span class="n">dist_mat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="n">j</span><span class="p">:</span>
+                <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cross_chan_coherance</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">templates</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">dist_mat</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dist_mat</span>
+</div>
+<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../utils.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to take a set of templates and cluster them, will return clustered</span>
+<span class="sd">    templates</span>
+
+<span class="sd">    :type template: List of Obspy.Stream</span>
+
+<span class="sd">    :returns: List of cluster groups, array of length len(templates), with</span>
+<span class="sd">                each number relating to a cluster</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">squareform</span>
+    <span class="kn">from</span> <span class="nn">scipy.cluster.hierarchy</span> <span class="kn">import</span> <span class="n">linkage</span><span class="p">,</span> <span class="n">dendrogram</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="n">dist_mat</span><span class="o">=</span><span class="n">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
+    <span class="n">dist_vec</span><span class="o">=</span><span class="n">squareform</span><span class="p">(</span><span class="n">dist_mat</span><span class="p">)</span>
+    <span class="c"># plt.matshow(dist_mat, aspect=&#39;auto&#39;, origin=&#39;lower&#39;, cmap=pylab.cm.YlGnB)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">linkage</span><span class="p">(</span><span class="n">dist_vec</span><span class="p">)</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">dendrogram</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Z</span>
+</div>
+<div class="viewcode-block" id="group_delays"><a class="viewcode-back" href="../utils.html#clustering.group_delays">[docs]</a><span class="k">def</span> <span class="nf">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to group template waveforms according to their delays</span>
+
+<span class="sd">    :type templates: List of obspy.Stream</span>
+<span class="sd">    :param templates: List of the waveforms you want to group</span>
+
+<span class="sd">    :returns: List of List of obspy.Streams where each initial list is a group</span>
+<span class="sd">            with the same delays</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">groups</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">group_delays</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">group_chans</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
+        <span class="k">print</span> <span class="s">&#39;Working on waveform &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; of &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))</span>
+        <span class="c"># Calculate the delays</span>
+        <span class="n">starttimes</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">chans</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="n">starttimes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span>
+            <span class="n">chans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+        <span class="n">delays</span><span class="o">=</span><span class="p">[</span><span class="n">starttimes</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="n">starttimes</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">starttimes</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+            <span class="n">group_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">)</span>
+            <span class="n">group_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chans</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
+            <span class="n">match</span><span class="o">=</span><span class="bp">False</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">kmatch</span><span class="o">=</span><span class="mi">0</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chans</span><span class="p">)):</span>
+                    <span class="c"># Check if the channel and delay match another group</span>
+                    <span class="k">if</span> <span class="n">chans</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">in</span> <span class="n">group_chans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="ow">and</span> \
+                       <span class="n">delays</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">==</span><span class="n">group_delays</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">group_chans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">chans</span><span class="p">[</span><span class="n">k</span><span class="p">])]:</span>
+                        <span class="n">kmatch</span><span class="o">+=</span><span class="mi">1</span> <span class="c"># increase the match index</span>
+                <span class="k">if</span> <span class="n">kmatch</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">chans</span><span class="p">):</span> <span class="c"># If all the channels match, add it to the group</span>
+                    <span class="n">groups</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">match</span><span class="o">=</span><span class="bp">True</span>
+                <span class="k">elif</span> <span class="n">j</span><span class="o">&lt;</span><span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># Create a new group and break the loop</span>
+                    <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+                    <span class="n">group_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">)</span>
+                    <span class="n">group_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chans</span><span class="p">)</span>
+                    <span class="n">match</span><span class="o">=</span><span class="bp">True</span> <span class="c"># Use this to break the loop</span>
+    <span class="k">return</span> <span class="n">groups</span>
+
+<span class="c"># def generate_families(templates):</span>
+    <span class="c"># &quot;&quot;&quot;</span>
+    <span class="c"># Function to take a load of templates, group them according to their</span>
+    <span class="c"># delays, then within these groups group them according to similarity</span>
+    <span class="c"># and stack the results into tempates</span>
+
+    <span class="c"># :type templates: List of obspy.Stream</span>
+    <span class="c"># :param templates: List of all possible templates to use</span>
+
+    <span class="c"># :returns: List of templates (stacked)</span>
+    <span class="c"># &quot;&quot;&quot;</span>
+    <span class="c"># import stacking</span>
+    <span class="c"># groups=group_delays(templates)</span>
+    <span class="c"># for group in groups:</span>
+        <span class="c"># Z=cluster(group, show=False)</span>
+    <span class="c"># #### UNFINISHED!!!</span>
+    <span class="c"># return stacked_templates</span>
+</div>
+<div class="viewcode-block" id="SVD_tetsing"><a class="viewcode-back" href="../utils.html#clustering.SVD_tetsing">[docs]</a><span class="k">def</span> <span class="nf">SVD_tetsing</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to compute the SVD of a number of templates and return the singular</span>
+<span class="sd">    vectors and singular values of the templates.</span>
+
+<span class="sd">    :type templates: List of Obspy.Stream</span>
+<span class="sd">    :param templates: List of the templates to be analysed</span>
+
+<span class="sd">    :return: SVector(ndarray), SValues(ndarray) for each channel, stachans, List</span>
+<span class="sd">            of String (station.channel)</span>
+
+<span class="sd">    .. rubric:: Note</span>
+
+<span class="sd">    **IN ALPHA, not working as expected**</span>
+
+<span class="sd">    It is recommended that you align the data before computing the SVD, .e.g.,</span>
+<span class="sd">    the P-arrival on all templates for the same channel should appear at the same</span>
+<span class="sd">    time in the trace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="c"># Convert templates into ndarrays for each channel</span>
+    <span class="c"># First find all unique channels:</span>
+    <span class="n">stachans</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+            <span class="n">stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="n">stachans</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stachans</span><span class="p">))</span>
+    <span class="c"># Initialize a list for the output matrices, one matrix per-channel</span>
+    <span class="n">SValues</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">SVectors</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="p">[</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
+                                  <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> \
+                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))</span> <span class="k">if</span> \
+                  <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
+                                  <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="p">[</span><span class="n">chan_mat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">))]</span>
+        <span class="n">chan_mat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">print</span> <span class="n">chan_mat</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span> <span class="n">stachan</span>
+        <span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">SValues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">SVectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">SVectors</span><span class="p">,</span> <span class="n">SValues</span><span class="p">,</span> <span class="n">stachans</span>
+</div>
+<div class="viewcode-block" id="SVD_2_stream_testing"><a class="viewcode-back" href="../utils.html#clustering.SVD_2_stream_testing">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream_testing</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to convert the singular vectors output by SVD to streams, one for</span>
+<span class="sd">    each singular vector level, for all channels.</span>
+
+<span class="sd">    :type SVectors: ndarray</span>
+<span class="sd">    :param SVectors: Singular vectors</span>
+<span class="sd">    :type stachans: List of Strings</span>
+<span class="sd">    :param stachans: List of station.channel Strings</span>
+<span class="sd">    :type k: Int</span>
+<span class="sd">    :param k: Number of streams to return = number of SV&#39;s to include</span>
+<span class="sd">    :sampling_rate: Float</span>
+
+<span class="sd">    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being</span>
+<span class="sd">            composed of the highest rank singular vectors.</span>
+
+<span class="sd">    .. rubric:: Note</span>
+
+<span class="sd">    **IN ALPHA, not working as expected**</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="n">SVstreams</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+        <span class="n">SVstream</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">SVectors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">SVstream</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trace</span><span class="p">(</span><span class="n">SVectors</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> \
+                                        <span class="n">header</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;station&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                                                <span class="s">&#39;channel&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                                                <span class="s">&#39;sampling_rate&#39;</span><span class="p">:</span> <span class="n">sampling_rate</span><span class="p">}))</span>
+        <span class="n">SVstreams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">SVstream</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">SVstreams</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.1-alpha',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
