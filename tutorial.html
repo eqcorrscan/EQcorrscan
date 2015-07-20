@@ -33,7 +33,7 @@
 
   
     <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
-        <link rel="next" title="Utils" href="modules.html"/>
+        <link rel="next" title="Core" href="core.html"/>
         <link rel="prev" title="Introduction to the EQcorrscan package" href="intro.html"/> 
 
   
@@ -72,23 +72,25 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">EQcorrscan tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#sfile-util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-pre_processing">per_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-stacking">stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-lag_calc">lag_calc</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html#par">Par</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html#core">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-catalogue2DD">catalogue2DD</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="par.html">Par</a></li>
 </ul>
 
           
@@ -162,10 +164,11 @@ package:</p>
 <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
 <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
 <span class="c">#from par import lagcalc as lagdef</span>
-<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
 <span class="c"># First generate the templates</span>
 <span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">template_gen</span>
 
+<span class="n">Split</span><span class="o">=</span><span class="bp">False</span>
 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
     <span class="n">flag</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;--debug&#39;</span><span class="p">:</span>
@@ -223,7 +226,13 @@ package:</p>
     <span class="c"># returned name will be the template name, used for parsing to the later</span>
     <span class="c"># functions</span>
 
+<span class="k">for</span> <span class="n">tfile</span> <span class="ow">in</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">tfiles</span><span class="p">:</span>
+    <span class="c"># Loop through pre-existing template files</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">Reading in pre-existing template: &quot;</span><span class="o">+</span><span class="n">tfile</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">templates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obsread</span><span class="p">(</span><span class="n">tfile</span><span class="p">))</span>
 
+<span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
     <span class="c"># Calculate the delays for each template, do this only once so that we</span>
     <span class="c"># don&#39;t have to do it heaps!</span>
     <span class="c"># Check that all templates are the correct length</span>
@@ -233,20 +242,10 @@ package:</p>
                              <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; is not the correct length, recut.&#39;</span><span class="o">+</span>\
                              <span class="s">&#39; It is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; and should be &#39;</span><span class="o">+</span>
                              <span class="nb">str</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="o">*</span><span class="n">templatedef</span><span class="o">.</span><span class="n">length</span><span class="p">))</span>
-    <span class="c"># Get minimum start time</span>
-    <span class="n">mintime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&lt;</span> <span class="n">mintime</span><span class="p">:</span>
-            <span class="n">mintime</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
-    <span class="n">delay</span><span class="o">=</span><span class="p">[]</span>
-    <span class="c"># Generate list of delays</span>
-    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
-        <span class="n">delay</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span><span class="p">)</span>
-    <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
     <span class="c"># Generate list of stations in templates</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
         <span class="c"># Correct FOZ channels</span>
-        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FOZ&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FOZ&#39;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
             <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
@@ -257,6 +256,7 @@ package:</p>
                             <span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Channels are not named with either three or two charectars&#39;</span><span class="p">)</span>
+
 
 <span class="c"># Template generation and processing is over, now to the match-filtering</span>
 
@@ -274,32 +274,35 @@ package:</p>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 
 <span class="c"># Loop over days</span>
-<span class="n">ndays</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="n">matchdef</span><span class="o">.</span><span class="n">enddate</span><span class="o">-</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span><span class="p">)</span><span class="o">/</span><span class="mi">86400</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">ndays</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">matchdef</span><span class="o">.</span><span class="n">dates</span><span class="p">)</span>
 <span class="n">newsfiles</span><span class="o">=</span><span class="p">[]</span>
-<span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;detections/run_start_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
-       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
-       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;T&#39;</span><span class="o">+</span>\
-       <span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
-<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;template, detect-time, cccsum, threshold, number of channels</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+<span class="c"># f=open(&#39;detections/run_start_&#39;+str(UTCDateTime().year)+\</span>
+       <span class="c">#str(UTCDateTime().month).zfill(2)+\</span>
+       <span class="c">#str(UTCDateTime().day).zfill(2)+&#39;T&#39;+\</span>
+       <span class="c">#str(UTCDateTime().hour).zfill(2)+str(UTCDateTime().minute).zfill(2),&#39;w&#39;)</span>
 <span class="k">print</span> <span class="s">&#39;Will loop through &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ndays</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; days&#39;</span>
 <span class="k">if</span> <span class="n">Split</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">instance</span><span class="o">==</span><span class="n">splits</span><span class="p">:</span>
         <span class="n">ndays</span><span class="o">=</span><span class="n">ndays</span><span class="o">-</span><span class="p">(</span><span class="n">ndays</span><span class="o">/</span><span class="n">splits</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">splits</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">dates</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">dates</span><span class="p">[</span><span class="o">-</span><span class="n">ndays</span><span class="p">:]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">ndays</span><span class="o">=</span><span class="n">ndays</span><span class="o">/</span><span class="n">splits</span>
+        <span class="n">dates</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">dates</span><span class="p">[</span><span class="n">ndays</span><span class="o">*</span><span class="n">instance</span><span class="p">:(</span><span class="n">ndays</span><span class="o">*</span><span class="n">instance</span><span class="p">)</span><span class="o">+</span><span class="n">ndays</span><span class="p">]</span>
     <span class="k">print</span> <span class="s">&#39;This instance will run for &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ndays</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; days&#39;</span>
-    <span class="n">startdate</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span><span class="o">+</span><span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="p">((</span><span class="n">instance</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ndays</span><span class="p">))</span>
-    <span class="k">print</span> <span class="s">&#39;This instance will run from &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">startdate</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;This instance will run from &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">dates</span><span class="p">))</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="n">startdate</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">startdate</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ndays</span><span class="p">):</span>
+    <span class="n">dates</span><span class="o">=</span><span class="n">matchdef</span><span class="o">.</span><span class="n">dates</span>
+
+<span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;detections/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+       <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;template, detect-time, cccsum, threshold, number of channels</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">dates</span><span class="p">:</span>
     <span class="k">if</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
         <span class="k">del</span> <span class="n">st</span>
-
-
-    <span class="c"># Set up where data are going to be read in from</span>
-    <span class="n">day</span><span class="o">=</span><span class="n">startdate</span><span class="o">+</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">86400</span><span class="p">)</span>
-
     <span class="c"># Read in data using obspy&#39;s reading routines, data format will be worked</span>
     <span class="c"># out by the obspy module</span>
     <span class="c"># Note you might have to change this bit to match your naming structure</span>
@@ -369,11 +372,22 @@ package:</p>
                                                                    <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>\
                                 <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">Prep</span><span class="p">:</span>
+            <span class="c"># For some reason st is now a list rather than a stream</span>
+            <span class="k">if</span> <span class="s">&#39;stream_st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                <span class="k">del</span> <span class="n">stream_st</span>
+            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s">&#39;stream_st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">stream_st</span><span class="o">+=</span><span class="n">tr</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">stream_st</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+            <span class="n">st</span><span class="o">=</span><span class="n">stream_st</span>
             <span class="c"># Call the match_filter module - returns detections, a list of detections</span>
             <span class="c"># containted within the detection class with elements, time, template,</span>
             <span class="c"># number of channels used and cross-channel correlation sum.</span>
             <span class="k">print</span> <span class="s">&#39;Running the detection routine&#39;</span>
-            <span class="n">detections</span><span class="o">=</span><span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">sfiles</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">delays</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span>
+            <span class="n">template_names</span><span class="o">=</span><span class="p">[</span><span class="n">tfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">tfile</span> <span class="ow">in</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">tfiles</span><span class="p">]</span>
+            <span class="n">template_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">templatedef</span><span class="o">.</span><span class="n">sfiles</span><span class="p">)</span>
+            <span class="n">detections</span><span class="o">=</span><span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span>
                                                  <span class="n">matchdef</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">threshtype</span><span class="p">,</span>
                                                  <span class="n">matchdef</span><span class="o">.</span><span class="n">trig_int</span><span class="p">,</span>  <span class="n">matchdef</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span>
 
@@ -404,7 +418,7 @@ package:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="modules.html" class="btn btn-neutral float-right" title="Utils">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="core.html" class="btn btn-neutral float-right" title="Core">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="intro.html" class="btn btn-neutral" title="Introduction to the EQcorrscan package"><span class="fa fa-arrow-circle-left"></span> Previous</a>

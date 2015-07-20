@@ -165,7 +165,7 @@
 <span class="sd">    - NonLinLoc       - used outside of all codes for travel-time generation</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../core.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
+<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../modules.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
 <span class="sd">    picks within this and the wavefile found in the pick file.</span>
@@ -221,7 +221,7 @@
     <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
 </div>
-<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../core.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
+<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../modules.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
 <span class="sd">    picks within this and the wavefiles from the continous database of day-long</span>
@@ -295,7 +295,7 @@
     <span class="k">return</span> <span class="n">st1</span>
 
 </div>
-<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../core.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">):</span>
+<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../modules.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to generate a cut template in the obspy</span>
 <span class="sd">    Stream class from a given set of picks and data, also in an obspy stream</span>
