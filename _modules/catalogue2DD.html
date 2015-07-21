@@ -205,17 +205,50 @@
     <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
-<div class="viewcode-block" id="readSTATION0"><a class="viewcode-back" href="../utils.html#catalogue2DD.readSTATION0">[docs]</a><span class="k">def</span> <span class="nf">readSTATION0</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="readSTATION0"><a class="viewcode-back" href="../utils.html#catalogue2DD.readSTATION0">[docs]</a><span class="k">def</span> <span class="nf">readSTATION0</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to read the STATION0.HYP file on the path given.</span>
+<span class="sd">    Function to read the STATION0.HYP file on the path given.  Outputs written</span>
+<span class="sd">    in station.dat file.</span>
 
 <span class="sd">    :type path: String</span>
 <span class="sd">    :param path: Path to the STATION0.HYP file</span>
+<span class="sd">    :type station: List</span>
+<span class="sd">    :param station: Stations to look for</span>
 
 <span class="sd">    :returns: List of tuples of station, lat, long, elevation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stalist</span><span class="o">=</span><span class="p">[]</span>
-    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s">&#39;/STATION0.HYP&#39;</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+            <span class="n">station</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">print</span> <span class="n">station</span>
+            <span class="n">lat</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">14</span><span class="p">]</span> <span class="c"># Format is either ddmm.mmS/N or ddmm(.)mmmS/N</span>
+            <span class="k">if</span> <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">:</span>
+                <span class="n">NS</span><span class="o">=-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">NS</span><span class="o">=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">lat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;.&#39;</span><span class="p">:</span>
+                <span class="n">lat</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">NS</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lat</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">lat</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">NS</span>
+            <span class="n">lon</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">14</span><span class="p">:</span><span class="mi">23</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">:</span>
+                <span class="n">EW</span><span class="o">=-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">EW</span><span class="o">=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">lon</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;.&#39;</span><span class="p">:</span>
+                <span class="n">lon</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">EW</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lon</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">lon</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">EW</span>
+            <span class="n">elev</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">23</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">stalist</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">station</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">elev</span><span class="p">))</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;station.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">stalist</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">stalist</span>
 </div>
 <div class="viewcode-block" id="write_event"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_event">[docs]</a><span class="k">def</span> <span class="nf">write_event</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
@@ -262,8 +295,11 @@
 <span class="sd">    :param max_sep: Maximum seperation between event pairs in km</span>
 <span class="sd">    :type min_link: int</span>
 <span class="sd">    :param min_link: Minimum links for an event to be paired</span>
+
+<span class="sd">    :returns: List stations</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;dt.ct&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
         <span class="n">master_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">master_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -301,9 +337,11 @@
                             <span class="n">_cc_round</span><span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
                             <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
                             <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+                    <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
 </div>
 <div class="viewcode-block" id="write_correlations"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_correlations">[docs]</a><span class="k">def</span> <span class="nf">write_correlations</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">wavbase</span><span class="p">,</span> <span class="n">extract_len</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
                        <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
