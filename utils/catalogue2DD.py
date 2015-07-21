@@ -55,7 +55,7 @@ def _av_weight(W1, W2):
     else:
         W2=1-int(W2)/4.0
     W=(W1+W2)/2
-    return _cc_round(W,4)
+    return _cc_round(W,2)
 
 def _separation(loc1, loc2):
     """
