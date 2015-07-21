@@ -270,6 +270,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     from obspy import read
     from scipy.signal import iirfilter
     from obspy.signal.invsim import paz2AmpValueOfFreqResp
+    import warnings
     # First we need to work out what stations have what picks
     picks=Sfile_util.readpicks(sfile)
     # Convert these picks into a lists
@@ -405,9 +406,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             elif seedresp and len(tr.data) > 10:
                 tr=_sim_WA(tr, None, seedresp, 10)
             elif len(tr.data) > 10:
-                raise IOError('No PAZ for '+tr.stats.station+' '+\
+                warnings.warn('No PAZ for '+tr.stats.station+' '+\
                                  tr.stats.channel+' at time: '+\
                                  str(tr.stats.starttime))
+                continue
             if len(tr.data) <= 10:
                 # Should remove the P and S picks if len(tr.data)==0
                 print 'No data in miniseed file for '+tr.stats.station+\
