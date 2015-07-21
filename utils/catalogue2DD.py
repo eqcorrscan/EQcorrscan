@@ -77,17 +77,50 @@ def _separation(loc1, loc2):
     dist=np.sqrt(dist**2+ddepth**2)
     return dist
 
-def readSTATION0(path):
+def readSTATION0(path, stations):
     """
-    Function to read the STATION0.HYP file on the path given.
+    Function to read the STATION0.HYP file on the path given.  Outputs written
+    in station.dat file.
 
     :type path: String
     :param path: Path to the STATION0.HYP file
+    :type station: List
+    :param station: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
     """
     stalist=[]
-    f=open(path,'r')
+    f=open(path+'/STATION0.HYP','r')
+    for line in f:
+        if line[2:6].strip() in stations:
+            station=line[2:6].strip()
+            print station
+            lat=line[6:14] # Format is either ddmm.mmS/N or ddmm(.)mmmS/N
+            if lat[-1]=='S':
+                NS=-1
+            else:
+                NS=1
+            if lat[4]=='.':
+                lat=(int(lat[0:2])+float(lat[2:-1])/60)*NS
+            else:
+                lat=(int(lat[0:2])+float(lat[2:4]+'.'+lat[4:-1])/60)*NS
+            lon=line[14:23]
+            if lon[-1]=='S':
+                EW=-1
+            else:
+                EW=1
+            if lon[5]=='.':
+                lon=(int(lon[0:3])+float(lon[3:-1])/60)*EW
+            else:
+                lon=(int(lon[0:3])+float(lon[3:5]+'.'+lon[5:-1])/60)*EW
+            elev=float(line[23:-1].strip())
+            stalist.append((station, lat, lon, elev))
+    f.close()
+    f=open('station.dat','w')
+    for sta in stalist:
+        f.write(sta[0]+'   '+_cc_round(sta[1],4)+'   '+_cc_round(sta[2],4)+\
+                '   '+_cc_round(sta[3],4)+'\n')
+    f.close()
     return stalist
 
 def write_event(sfile_list):
@@ -134,8 +167,11 @@ def write_catalogue(event_list, max_sep=10, min_link=8):
     :param max_sep: Maximum seperation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
+
+    :returns: List stations
     """
     f=open('dt.ct','w')
+    stations=[]
     for i in xrange(len(event_list)):
         master_sfile=event_list[i][1]
         master_event_id=event_list[i][0]
@@ -173,9 +209,11 @@ def write_catalogue(event_list, max_sep=10, min_link=8):
                             _cc_round(slave_pick.time-slave_ori_time,3).rjust(8)+\
                             _av_weight(pick.weight, slave_pick.weight)+' '+\
                             pick.phase+'\n'
+                    stations.append(pick.station)
             if links >= min_link:
                 f.write(event_text)
     f.close()
+    return list(set(stations))
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                        lowcut=1.0, highcut=10.0, max_sep=10, min_link=8):
