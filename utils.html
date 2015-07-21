@@ -865,15 +865,21 @@ to return a string</p>
 
 <dl class="function">
 <dt id="catalogue2DD.readSTATION0">
-<code class="descclassname">catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to read the STATION0.HYP file on the path given.</p>
+<code class="descclassname">catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the STATION0.HYP file on the path given.  Outputs written
+in station.dat file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>String</em>) &#8211; Path to the STATION0.HYP file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>String</em>) &#8211; Path to the STATION0.HYP file</li>
+<li><strong>station</strong> (<em>List</em>) &#8211; Stations to look for</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of tuples of station, lat, long, elevation</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of tuples of station, lat, long, elevation</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -890,11 +896,14 @@ utilities.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
 <li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
 <li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List stations</p>
 </td>
 </tr>
 </tbody>
