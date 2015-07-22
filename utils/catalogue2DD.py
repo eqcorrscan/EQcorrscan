@@ -207,7 +207,7 @@ def write_catalogue(event_list, max_sep=10, min_link=8):
                     event_text+=pick.station.rjust(4)+\
                             _cc_round(pick.time-master_ori_time,3).rjust(11)+\
                             _cc_round(slave_pick.time-slave_ori_time,3).rjust(8)+\
-                            _av_weight(pick.weight, slave_pick.weight)+' '+\
+                            _av_weight(pick.weight, slave_pick.weight).rjust(5)+' '+\
                             pick.phase+'\n'
                     stations.append(pick.station)
             if links >= min_link:
