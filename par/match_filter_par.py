@@ -11,16 +11,16 @@ Outline definitions for match filter python code
 
 from obspy import UTCDateTime
 
-# dates=[UTCDateTime('2010-08-31')+i \
- # for i in xrange(0, int(UTCDateTime('2010-09-01') - UTCDateTime('2010-08-31')),\
-                 # 86400)] # Example of a generator expression for one day
-dates=[#UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
+dates=[UTCDateTime('2009-03-26')+i \
+ for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2009-03-26')),\
+                 86400)] # Example of a generator expression for one day
+# dates=[#UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
        # UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
        # UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
        # UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
        # UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
        # UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
-       UTCDateTime('2013-03-28')] #tremor days
+       # UTCDateTime('2013-03-28')] #tremor days
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
@@ -52,10 +52,13 @@ minsta=3                            # Minimum number of stations to run the
                                     # detection routine for
 contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
           'Yyyyy/Rjjj.01','AF'),
+          ('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
+          'Yyyyy/Rjjj.01','NZ')]
+
 	# ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
 	# 'yyyymmdd','AF'),
-        ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
-         'yyyymmdd','NZ')]
+        # ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
+         # 'yyyymmdd','NZ')]
                                     # Full path for the waveform database
                                     # Files must be in daylong format
                                     # To allow for data from multiple directories
@@ -65,6 +68,6 @@ contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes
 
 plot=False                          # boolean, True for plotting the daily
                                     # cccsum values for each template.
-cores=40                            # Value for number of parallel jobs to run
+cores=10                            # Value for number of parallel jobs to run
                                     # must be int
 debug=1                             # Debug level, 0-5 with 0 being less verbose

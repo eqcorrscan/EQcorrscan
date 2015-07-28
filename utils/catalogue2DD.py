@@ -119,7 +119,7 @@ def readSTATION0(path, stations):
     f=open('station.dat','w')
     for sta in stalist:
         f.write(sta[0]+'   '+_cc_round(sta[1],4)+'   '+_cc_round(sta[2],4)+\
-                '   '+_cc_round(sta[3],4)+'\n')
+                '   '+_cc_round(sta[3]/1000,4)+'\n')
     f.close()
     return stalist
 
@@ -154,7 +154,7 @@ def write_event(sfile_list):
     f.close()
     return event_list
 
-def write_catalogue(event_list, max_sep=10, min_link=8):
+def write_catalogue(event_list, max_sep=1, min_link=8):
     """
     Function to write the dt.ct file needed by hypoDD - takes input event list
     from write_event as a list of tuples of event id and sfile.  It will read
@@ -212,11 +212,12 @@ def write_catalogue(event_list, max_sep=10, min_link=8):
                     stations.append(pick.station)
             if links >= min_link:
                 f.write(event_text)
+    f.write('\n')
     f.close()
     return list(set(stations))
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
-                       lowcut=1.0, highcut=10.0, max_sep=10, min_link=8):
+                       lowcut=1.0, highcut=10.0, max_sep=4, min_link=8):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation
@@ -312,4 +313,5 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                         continue
             if links >= min_link:
                 f.write(event_text)
+    f.write('\n')
     f.close()

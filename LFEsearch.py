@@ -24,7 +24,7 @@ sys.path.insert(0,path)
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 #from par import lagcalc as lagdef
-from obspy import UTCDateTime, read as obsread
+from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
 from core import template_gen
 
@@ -136,24 +136,29 @@ from joblib import Parallel, delayed
 # Loop over days
 ndays=len(matchdef.dates)
 newsfiles=[]
-f=open('detections/run_start_'+str(UTCDateTime().year)+\
-       str(UTCDateTime().month).zfill(2)+\
-       str(UTCDateTime().day).zfill(2)+'T'+\
-       str(UTCDateTime().hour).zfill(2)+str(UTCDateTime().minute).zfill(2),'w')
-f.write('template, detect-time, cccsum, threshold, number of channels\n')
+# f=open('detections/run_start_'+str(UTCDateTime().year)+\
+       #str(UTCDateTime().month).zfill(2)+\
+       #str(UTCDateTime().day).zfill(2)+'T'+\
+       #str(UTCDateTime().hour).zfill(2)+str(UTCDateTime().minute).zfill(2),'w')
 print 'Will loop through '+str(ndays)+' days'
 if Split:
-    if instance==splits:
+    if instance==splits-1:
         ndays=ndays-(ndays/splits)*(splits-1)
         dates=matchdef.dates[-ndays:]
     else:
         ndays=ndays/splits
         dates=matchdef.dates[ndays*instance:(ndays*instance)+ndays]
     print 'This instance will run for '+str(ndays)+' days'
-    print 'This instance will run from '+str(startdate)
+    print 'This instance will run from '+str(min(dates))
 else:
     dates=matchdef.dates
 
+f=open('detections/'+str(min(dates).year)+\
+       str(min(dates).month).zfill(2)+\
+       str(min(dates).day).zfill(2)+'_'+\
+       str(max(dates).year)+str(max(dates).month).zfill(2)+\
+       str(max(dates).day).zfill(2),'w')
+f.write('template, detect-time, cccsum, threshold, number of channels\n')
 
 for day in dates:
     if 'st' in locals():
@@ -187,9 +192,21 @@ for day in dates:
             # Try and find the appropriate files
             if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*.'+channel+'.*'):
                 if not 'st' in locals():
-                    st=obsread(contbase[0]+'/'+daydir+'/*'+station+'*.'+channel+'.*')
+                    if baseformat=='Yyyyy/Rjjj.01':
+                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                   channel+'.'+str(day.year)+'.'+\
+                                   str(day.day).zfill(3))
+                    else:
+                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                   channel+'.*')
                 else:
-                    st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*.'+channel+'.*')
+                    if baseformat=='Yyyyy/Rjjj.01':
+                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                    channel+'.'+str(day.year)+'.'+\
+                                    str(day.day).zfill(3))
+                    else:
+                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                    channel+'.*')
                 actual_stations.append(station) # Add to this list only if we have the data
             else:
                 print 'No data for '+stachan+' for day '+daydir+' in '\
@@ -227,6 +244,15 @@ for day in dates:
                                                                    matchdef.debug, day)\
                                 for tr in st)
         if not Prep:
+            # For some reason st is now a list rather than a stream
+            if 'stream_st' in locals():
+                del stream_st
+            for tr in st:
+                if 'stream_st' in locals():
+                    stream_st+=tr
+                else:
+                    stream_st=Stream(tr)
+            st=stream_st
             # Call the match_filter module - returns detections, a list of detections
             # containted within the detection class with elements, time, template,
             # number of channels used and cross-channel correlation sum.

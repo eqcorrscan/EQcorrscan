@@ -84,6 +84,39 @@ class DETECTION(object):
         self.typeofdet=typeofdet
         self.detectioncount+=1
 
+def run_channel_loop(templates, stream, tempdir):
+    """
+    Python helper function to run the Cythonised channel_loop function
+
+    :type templates: List of :class: obspy.Stream
+    :param templates: List of all the templates
+    :type stream: :class: obspy.Stream
+    :param stream: The image stream to scan through
+    :type tempdir: String or False
+    :param tempdir: location to put temporary files
+
+    :returns: cccsums (np.ndarray), no_chans (np.ndarray)
+    """
+    import match_filter_internal_testing as match_filter_internal
+    from EQcorrscan.utils.timer import Timer
+    print "Converting streams to numpy arrays"
+    ktemplates=len(templates)
+    delays=np.array([tr.stats.starttime - template.sort(['starttime'])[0].stats.starttime\
+                     for template in templates for tr in template])
+    # match_internal uses a simpler integration as a predescessor to c++
+    template_data=np.array([tr.data.astype(np.float32) \
+                   for template in templates \
+                    for tr in template])
+    stream_data=np.array([tr.data.astype(np.float32) for tr in stream])
+    print "Sending data off to external func"
+    with Timer() as t:
+        cccsums, no_chans=match_filter_internal._channel_loop(template_data, \
+                                                              stream_data, \
+                                                              delays, \
+                                                              ktemplates, tempdir)
+    print "Correlation loops in C took: %s s" % t.secs
+    return cccsums, no_chans
+
 def normxcorr2(template, image):
     """
     Base function to call the c++ correlation routine from the openCV image
@@ -132,8 +165,8 @@ def _template_loop(template, chan, station, channel, i=0):
 
     :returns: tuple of (i,ccc) with ccc as an ndarray
     """
-    from utils.timer import Timer
-    from par import match_filter_par as matchdef
+    from EQcorrscan.utils.timer import Timer
+    from EQcorrscan.par import match_filter_par as matchdef
     ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float32)
     ccc=ccc.reshape((1,len(ccc)))           # Set default value for
                                             # cross-channel correlation in
@@ -187,8 +220,8 @@ def _channel_loop(templates, stream):
     """
     import time, cv2
     from multiprocessing import Pool
-    from par import match_filter_par as matchdef
-    from utils.timer import Timer
+    from EQcorrscan.par import match_filter_par as matchdef
+    from EQcorrscan.utils.timer import Timer
     num_cores=matchdef.cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -226,6 +259,7 @@ def _channel_loop(templates, stream):
             print " I have "+str(len(results))+" results"
         with Timer() as t:
             cccs_list=[p.get() for p in results]
+            pool.join()
         if matchdef.debug >=1:
             print "--------- TIMER:    Getting results took: %s s" % t.secs
         with Timer() as t:
@@ -285,7 +319,7 @@ def _channel_loop(templates, stream):
     return cccsums, no_chans
 
 def match_filter(template_names, templates, stream, threshold,
-                 threshold_type, trig_int, plotvar):
+                 threshold_type, trig_int, plotvar, tempdir=False):
     """
     Over-arching code to run the correlations of given templates with a day of
     seismic data and output the detections based on a given threshold.
@@ -312,15 +346,20 @@ def match_filter(template_names, templates, stream, threshold,
     template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\
     template is a single template from the input and the length is the number\
     of channels within this template.
+    :type tempdir: String or False
+    :param tempdir: Direcotry to put temporary files, or False
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
 
     """
-    from utils import findpeaks, EQcorrscan_plotting
+    from EQcorrscan.utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
-    from par import match_filter_par as matchdef
+    from EQcorrscan.par import match_filter_par as matchdef
+    match_internal=False # Set to True if memory is an issue, if True, will only
+                          # use about the same amount of memory as the seismic dat
+                          # take up.  If False, it will use 20-100GB per instance
     # Debug option to confirm that the channel names match those in the templates
     if matchdef.debug>=2:
         template_stachan=[]
@@ -348,6 +387,8 @@ def match_filter(template_names, templates, stream, threshold,
     # Would be worth testing without an if statement, but with every station in
     # the possible template stations having data, but for those without real
     # data make the data NaN to return NaN ccc_sum
+    if matchdef.debug >=2:
+        print 'Ensuring all template channels have matches in daylong data'
     template_stachan=[]
     for template in templates:
         for tr in template:
@@ -375,7 +416,13 @@ def match_filter(template_names, templates, stream, threshold,
                 nulltrace.stats.starttime=template[0].stats.starttime
                 nulltrace.data=np.array([np.NaN]*len(template[0].data), dtype=np.float32)
                 template+=nulltrace
-    [cccsums, no_chans]=_channel_loop(templates, stream)
+
+    if matchdef.debug >= 2:
+        print 'Starting the correlation run for this day'
+    if match_internal:
+        [cccsums, no_chans] = run_channel_loop(templates, stream, tempdir)
+    else:
+        [cccsums, no_chans]=_channel_loop(templates, stream)
     if len(cccsums[0])==0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc=time.clock()
@@ -418,6 +465,9 @@ def match_filter(template_names, templates, stream, threshold,
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
                                         str(stream[0].stats.starttime.day)+'.pdf')
+            np.save(template_names[i]+\
+                        stream[0].stats.starttime.datetime.strftime('%Y%j'),\
+                    cccsum)
         tic=time.clock()
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
             peaks=findpeaks.find_peaks2(cccsum, rawthresh, \

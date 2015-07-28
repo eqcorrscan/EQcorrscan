@@ -70,12 +70,12 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
         tr.data=bandpass(tr.data, lowcut, highcut,
                     tr.stats.sampling_rate, filt_order, True)
         # Correct FRAN N,E channels to 1,2 as this is correct
-        if tr.stats.station=='FRAN' and tr.stats.channel=='SHN':
-            print 'Correcting FRAN SHN to SH1'
-            tr.stats.channel='SH1'
-        if tr.stats.station=='FRAN' and tr.stats.channel=='SHE':
-            print 'Correcting FRAN SHE to SH2'
-            tr.stats.channel='SH2'
+        # if tr.stats.station=='FRAN' and tr.stats.channel=='SHN':
+            # print 'Correcting FRAN SHN to SH1'
+            # tr.stats.channel='SH1'
+        # if tr.stats.station=='FRAN' and tr.stats.channel=='SHE':
+            # print 'Correcting FRAN SHE to SH2'
+            # tr.stats.channel='SH2'
         # Account for two letter channel names in s-files and therefore templates
         tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
 
@@ -121,7 +121,8 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     # Not real sample generated during data download
     if len(tr.data)==(86400*tr.stats.sampling_rate)+1:
         tr.data=tr.data[1:len(tr.data)]
-    print len(tr.data)
+    print 'I have '+str(len(tr.data))+' data points for '+tr.stats.station+'.'\
+            +tr.stats.channel+' before processing'
 
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts/tr.stats.sampling_rate) != 86400.0:
@@ -144,7 +145,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
                 raise ValueError ('Data are not daylong for '+tr.stats.station+\
                                   '.'+tr.stats.channel)
 
-    print len(tr.data)
+    print 'I now have '+str(len(tr.data))+' data points after enforcing day length'
 
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
@@ -171,7 +172,8 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     if tr.stats.station=='FOZ':
         tr.stats.channel='HH'+tr.stats.channel[2]
     # Account for two letter channel names in s-files and therefore templates
-    tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
+    if len(tr.stats.channel)==3:
+        tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
 
     # Sanity check the time header
     if str(tr.stats.starttime.year)+str(tr.stats.starttime.month).zfill(2)+\
