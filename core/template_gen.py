@@ -200,6 +200,7 @@ def _template_gen(picks, st, length, swin):
                 elif len(tr.stats.channel)==2:
                     temp_channel=tr.stats.channel
                 if temp_channel in channels:
+                    tr.stats.channel=temp_channel
                     if 'st1' in locals():
                         st1+=tr
                     else:
