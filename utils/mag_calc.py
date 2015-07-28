@@ -171,6 +171,8 @@ def _find_resp(station, channel, network, time, delta, directory):
                                  channel) # GeoNet RESP naming
     possible_respfiles+=glob.glob(directory+'/RESP.'+network+'.'+channel+'.'+\
                                  station) # RDseed RESP naming
+    possible_respfiles+=glob.glob(directory+'/RESP.'+station+'.'+network)
+                                    # WIZARD resp naming
     # GSE format, station needs to be 5 charectars padded with _, channel is 4
     # characters padded with _
     possible_respfiles+=glob.glob(directory+'/'+station.ljust(5,'_')+\
@@ -219,7 +221,7 @@ def _find_resp(station, channel, network, time, delta, directory):
         return seedresp
 
 def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
-                   winlen=0.9, pre_pick=1.0, pre_filt=True, lowcut=1.0,\
+                   winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,\
                    highcut=20.0, corners=4):
     """
     Function to read information from a SEISAN s-file, load the data and the
@@ -303,10 +305,10 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
             tr=stream.select(station=sta, channel='*'+chan)
             if not tr:
                 # Remove picks from file
-                picks_out=[picks_out[i] for i in xrange(len(picks))\
-                           if picks_out[i].station+picks_out[i].channel != \
-                           sta+chan]
-            	print 'There is no station and channel match in the wavefile! Removing picks'
+                # picks_out=[picks_out[i] for i in xrange(len(picks))\
+                           # if picks_out[i].station+picks_out[i].channel != \
+                           # sta+chan]
+            	warnings.warn('There is no station and channel match in the wavefile!')
                 break
             else:
                 tr=tr[0]
@@ -412,10 +414,11 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                 continue
             if len(tr.data) <= 10:
                 # Should remove the P and S picks if len(tr.data)==0
-                print 'No data in miniseed file for '+tr.stats.station+\
-                              ' removing picks'
-                picks_out=[picks_out[i] for i in xrange(len(picks_out))\
-                           if i not in sta_picks]
+                warnings.warn('No data found for: '+tr.stats.station)
+                # print 'No data in miniseed file for '+tr.stats.station+\
+                              # ' removing picks'
+                # picks_out=[picks_out[i] for i in xrange(len(picks_out))\
+                           # if i not in sta_picks]
             	break
             # Get the amplitude
             amplitude, period, delay= _max_p2t(tr.data, tr.stats.delta)
