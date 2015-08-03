@@ -98,7 +98,7 @@ def run_channel_loop(templates, stream, tempdir):
     :returns: cccsums (np.ndarray), no_chans (np.ndarray)
     """
     import match_filter_internal_testing as match_filter_internal
-    from EQcorrscan.utils.timer import Timer
+    from utils.timer import Timer
     print "Converting streams to numpy arrays"
     ktemplates=len(templates)
     delays=np.array([tr.stats.starttime - template.sort(['starttime'])[0].stats.starttime\
@@ -165,8 +165,8 @@ def _template_loop(template, chan, station, channel, i=0):
 
     :returns: tuple of (i,ccc) with ccc as an ndarray
     """
-    from EQcorrscan.utils.timer import Timer
-    from EQcorrscan.par import match_filter_par as matchdef
+    from utils.timer import Timer
+    from par import match_filter_par as matchdef
     ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float32)
     ccc=ccc.reshape((1,len(ccc)))           # Set default value for
                                             # cross-channel correlation in
@@ -220,8 +220,8 @@ def _channel_loop(templates, stream):
     """
     import time, cv2
     from multiprocessing import Pool
-    from EQcorrscan.par import match_filter_par as matchdef
-    from EQcorrscan.utils.timer import Timer
+    from par import match_filter_par as matchdef
+    from utils.timer import Timer
     num_cores=matchdef.cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -353,10 +353,10 @@ def match_filter(template_names, templates, stream, threshold,
     :class: 'obspy.UTCDateTime' objects.
 
     """
-    from EQcorrscan.utils import findpeaks, EQcorrscan_plotting
+    from utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
-    from EQcorrscan.par import match_filter_par as matchdef
+    from par import match_filter_par as matchdef
     match_internal=False # Set to True if memory is an issue, if True, will only
                           # use about the same amount of memory as the seismic dat
                           # take up.  If False, it will use 20-100GB per instance
