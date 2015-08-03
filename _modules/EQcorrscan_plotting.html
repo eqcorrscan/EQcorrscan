@@ -212,7 +212,7 @@
 </div>
 <div class="viewcode-block" id="cumulative_detections"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.cumulative_detections">[docs]</a><span class="k">def</span> <span class="nf">cumulative_detections</span><span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">template_names</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Simple plotting function to take a list of UTCDateTime objects and plot</span>
+<span class="sd">    Simple plotting function to take a list of datetime objects and plot</span>
 <span class="sd">    a cumulative detections list.  Can take dates as a list of lists and will</span>
 <span class="sd">    plot each list seperately, e.g. if you have dates from more than one</span>
 <span class="sd">    template it will overlay them in different colours.</span>
@@ -238,20 +238,24 @@
     <span class="k">for</span> <span class="n">template_dates</span> <span class="ow">in</span> <span class="n">dates</span><span class="p">:</span>
         <span class="n">template_dates</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
         <span class="n">counts</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">template_dates</span><span class="p">))</span>
+        <span class="k">print</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
         <span class="n">filename</span><span class="p">,</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">template_dates</span><span class="p">,</span><span class="n">counts</span><span class="p">,</span> <span class="n">linestyles</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> \
                            <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">template_names</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>\
                            <span class="n">linewidth</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
         <span class="n">k</span><span class="o">+=</span><span class="mi">1</span>
         <span class="n">plothandles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
             <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
-            <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">linestyles</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Date&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Cumulative detections&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Cumulative detections for all templates&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span><span class="c">#handles=plothandles)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span><span class="mi">8</span><span class="p">},</span><span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="c">#handles=plothandles)</span>
     <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
