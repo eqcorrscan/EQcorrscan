@@ -84,7 +84,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
 
 def cumulative_detections(dates, template_names, save=False, savefile=''):
     """
-    Simple plotting function to take a list of UTCDateTime objects and plot
+    Simple plotting function to take a list of datetime objects and plot
     a cumulative detections list.  Can take dates as a list of lists and will
     plot each list seperately, e.g. if you have dates from more than one
     template it will overlay them in different colours.
@@ -115,15 +115,18 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
                            linewidth=3.0)
         k+=1
         plothandles.append(filename)
-        if i < len(colors):
+        if i < len(colors)-1:
             i+=1
         else:
             i=0
-            j+=1
+            if j < len(linestyles)-1:
+                j+=1
+            else:
+                j=0
     plt.xlabel('Date')
     plt.ylabel('Cumulative detections')
     plt.title('Cumulative detections for all templates')
-    plt.legend()#handles=plothandles)
+    plt.legend(loc=2,prop={'size':8},ncol=2)#handles=plothandles)
     if save:
         plt.savefig(savefile)
     else:
