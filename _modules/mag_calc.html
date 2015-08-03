@@ -137,6 +137,25 @@
 <span class="sd">by Warren-Smith [2014/15].</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../utils.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
+<span class="sd">    Earth approximation</span>
+
+<span class="sd">    :type loc1: Tuple</span>
+<span class="sd">    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)</span>
+<span class="sd">    :type loc2: Tuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">R</span><span class="o">=</span><span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
+    <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">dlong</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">ddepth</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">mean_lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">((</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dlat</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">mean_lat</span><span class="p">)</span><span class="o">*</span><span class="n">dlong</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dist</span>
+</div>
 <div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove the insturment response from a trace and return a</span>
@@ -299,6 +318,8 @@
                                  <span class="n">channel</span><span class="p">)</span> <span class="c"># GeoNet RESP naming</span>
     <span class="n">possible_respfiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">directory</span><span class="o">+</span><span class="s">&#39;/RESP.&#39;</span><span class="o">+</span><span class="n">network</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
                                  <span class="n">station</span><span class="p">)</span> <span class="c"># RDseed RESP naming</span>
+    <span class="n">possible_respfiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">directory</span><span class="o">+</span><span class="s">&#39;/RESP.&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">network</span><span class="p">)</span>
+                                    <span class="c"># WIZARD resp naming</span>
     <span class="c"># GSE format, station needs to be 5 charectars padded with _, channel is 4</span>
     <span class="c"># characters padded with _</span>
     <span class="n">possible_respfiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">directory</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">)</span><span class="o">+</span>\
@@ -347,7 +368,7 @@
         <span class="k">return</span> <span class="n">seedresp</span>
 </div>
 <div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../utils.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
-                   <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
+                   <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read information from a SEISAN s-file, load the data and the</span>
@@ -431,10 +452,10 @@
             <span class="n">tr</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">sta</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="p">:</span>
                 <span class="c"># Remove picks from file</span>
-                <span class="n">picks_out</span><span class="o">=</span><span class="p">[</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">))</span>\
-                           <span class="k">if</span> <span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span> <span class="o">!=</span> \
-                           <span class="n">sta</span><span class="o">+</span><span class="n">chan</span><span class="p">]</span>
-            	<span class="k">print</span> <span class="s">&#39;There is no station and channel match in the wavefile! Removing picks&#39;</span>
+                <span class="c"># picks_out=[picks_out[i] for i in xrange(len(picks))\</span>
+                           <span class="c"># if picks_out[i].station+picks_out[i].channel != \</span>
+                           <span class="c"># sta+chan]</span>
+            	<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;There is no station and channel match in the wavefile!&#39;</span><span class="p">)</span>
                 <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -540,10 +561,11 @@
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
                 <span class="c"># Should remove the P and S picks if len(tr.data)==0</span>
-                <span class="k">print</span> <span class="s">&#39;No data in miniseed file for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
-                              <span class="s">&#39; removing picks&#39;</span>
-                <span class="n">picks_out</span><span class="o">=</span><span class="p">[</span><span class="n">picks_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">picks_out</span><span class="p">))</span>\
-                           <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sta_picks</span><span class="p">]</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;No data found for: &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
+                <span class="c"># print &#39;No data in miniseed file for &#39;+tr.stats.station+\</span>
+                              <span class="c"># &#39; removing picks&#39;</span>
+                <span class="c"># picks_out=[picks_out[i] for i in xrange(len(picks_out))\</span>
+                           <span class="c"># if i not in sta_picks]</span>
             	<span class="k">break</span>
             <span class="c"># Get the amplitude</span>
             <span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span> <span class="n">_max_p2t</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>

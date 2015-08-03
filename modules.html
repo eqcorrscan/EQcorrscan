@@ -383,6 +383,33 @@ have the same distance as apositively correlated image - this is an issue</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="clustering.extract_detections">
+<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>template</em>, <em>extract_len=90.0</em>, <em>outdir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to extract the waveforms associated with each detection in a list
+of detections for the template, template.  Waveforms will be returned as
+a list of obspy.Streams containing segments of extract_len.  They will also
+be saved if outdir is set.  The default is unset.  The default extract_len
+is 90 seconds per channel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detections</strong> (<em>List of :class: datetime.datetime</em>) &#8211; List of datetime objects</li>
+<li><strong>template</strong> &#8211; The template Stream used to detect detections</li>
+<li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length to extract around the detection (will be equally            cut around the detection time) in seconds.  Default is 90.0.</li>
+<li><strong>outdir</strong> (<em>Bool or String</em>) &#8211; Default is None, with None set, no files will be saved,            if set each detection will be saved into this directory with files            named according to the detection time, NOT than the waveform            start time.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of :class: obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="clustering.group_delays">
 <code class="descclassname">clustering.</code><code class="descname">group_delays</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#group_delays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.group_delays" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to group template waveforms according to their delays</p>
@@ -491,7 +518,7 @@ wildcards.</li>
 <dl class="function">
 <dt id="EQcorrscan_plotting.cumulative_detections">
 <code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simple plotting function to take a list of UTCDateTime objects and plot
+<dd><p>Simple plotting function to take a list of datetime objects and plot
 a cumulative detections list.  Can take dates as a list of lists and will
 plot each list seperately, e.g. if you have dates from more than one
 template it will overlay them in different colours.</p>
@@ -619,7 +646,7 @@ to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up
 by Warren-Smith [2014/15].</p>
 <dl class="function">
 <dt id="mag_calc.Amp_pick_sfile">
-<code class="descclassname">mag_calc.</code><code class="descname">Amp_pick_sfile</code><span class="sig-paren">(</span><em>sfile, datapath, respdir, chans=['Z'], var_wintype=True, winlen=0.9, pre_pick=1.0, pre_filt=True, lowcut=1.0, highcut=20.0, corners=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#Amp_pick_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.Amp_pick_sfile" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">mag_calc.</code><code class="descname">Amp_pick_sfile</code><span class="sig-paren">(</span><em>sfile, datapath, respdir, chans=['Z'], var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0, highcut=20.0, corners=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#Amp_pick_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.Amp_pick_sfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read information from a SEISAN s-file, load the data and the
 picks, cut the data for the channels given around the S-window, simulate
 a Wood Anderson seismometer, then pick the maximum peak-to-trough
@@ -755,6 +782,21 @@ the sensitivity.</li>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="mag_calc.dist_calc">
+<code class="descclassname">mag_calc.</code><code class="descname">dist_calc</code><span class="sig-paren">(</span><em>loc1</em>, <em>loc2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#dist_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.dist_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calcualte the distance in km between two points, uses the flat
+Earth approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>loc1</strong> (<em>Tuple</em>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="module-stacking">
 <span id="stacking"></span><h2>stacking<a class="headerlink" href="#module-stacking" title="Permalink to this headline">¶</a></h2>
@@ -885,7 +927,7 @@ in station.dat file.</p>
 
 <dl class="function">
 <dt id="catalogue2DD.write_catalogue">
-<code class="descclassname">catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=10</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=1</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to write the dt.ct file needed by hypoDD - takes input event list
 from write_event as a list of tuples of event id and sfile.  It will read
 the pick information from the seisan formated s-file using the Sfile_util
@@ -910,7 +952,7 @@ utilities.</p>
 
 <dl class="function">
 <dt id="catalogue2DD.write_correlations">
-<code class="descclassname">catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em>, <em>max_sep=10</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em>, <em>max_sep=4</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to write a dt.cc file for hypoDD input - takes an input list of
 events and computes pick refienements by correlation</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1426,7 +1468,7 @@ channels) with a single channel of data.</p>
 
 <dl class="function">
 <dt id="match_filter.match_filter">
-<code class="descclassname">match_filter.</code><code class="descname">match_filter</code><span class="sig-paren">(</span><em>template_names</em>, <em>templates</em>, <em>stream</em>, <em>threshold</em>, <em>threshold_type</em>, <em>trig_int</em>, <em>plotvar</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#match_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.match_filter" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">match_filter.</code><code class="descname">match_filter</code><span class="sig-paren">(</span><em>template_names</em>, <em>templates</em>, <em>stream</em>, <em>threshold</em>, <em>threshold_type</em>, <em>trig_int</em>, <em>plotvar</em>, <em>tempdir=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#match_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.match_filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Over-arching code to run the correlations of given templates with a day of
 seismic data and output the detections based on a given threshold.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1438,6 +1480,7 @@ seismic data and output the detections based on a given threshold.</p>
 <li><strong>stream</strong> &#8211; An obspy.Stream object containing all the data available and    required for the correlations with templates given.  For efficiency this    should contain no excess traces which are not in one or more of the    templates.</li>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; A threshold value set based on the threshold_type    :type threshold_type: str</li>
 <li><strong>threshold_type</strong> &#8211; The type of threshold to be used, can be MAD,    absolute or av_chan_corr.    MAD threshold is calculated as the    threshold*(mean(abs(cccsum))) where cccsum is the cross-correlation sum    for a given template.    absolute threhsold is a true absolute threshold based on the cccsum value    av_chan_corr is based on the mean values of single-channel    cross-correlations assuming all data are present as required for the    template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where    template is a single template from the input and the length is the number    of channels within this template.</li>
+<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Direcotry to put temporary files, or False</li>
 </ul>
 </td>
 </tr>
@@ -1482,6 +1525,28 @@ found here:</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image</strong> &#8211; Requires two numpy arrays, the template and the image to scan    the template through.  The order of these matters, if you put the template    after the imag you will get a reversed correaltion matrix</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">New :class: &#8216;numpy.array&#8217; object of the correlation values for the    correlation of the image with the template.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter.run_channel_loop">
+<code class="descclassname">match_filter.</code><code class="descname">run_channel_loop</code><span class="sig-paren">(</span><em>templates</em>, <em>stream</em>, <em>tempdir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#run_channel_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.run_channel_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Python helper function to run the Cythonised channel_loop function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates</strong> (<em>List of :class: obspy.Stream</em>) &#8211; List of all the templates</li>
+<li><strong>stream</strong> &#8211; The image stream to scan through</li>
+<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; location to put temporary files</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">cccsums (np.ndarray), no_chans (np.ndarray)</p>
+</td>
 </tr>
 </tbody>
 </table>
