@@ -89,9 +89,10 @@ plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png'
 # Call the main function!
 templates=[]
 nodesout=[]
-for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop through dates
+for day in brightdef.dates: #Loop through dates
     # Set up where data are going to be read in from
-    day=brightdef.startdate+i
+    if 'stream' in locals():
+        del stream
     print 'Working on day '+str(day)
     if not Test:
                 # Read in the data
@@ -147,7 +148,7 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
                         nodes, lags, stream_copy,
                         brightdef.threshold, brightdef.thresh_type,\
                         brightdef.coherance)
-        templates+=detect_templates
+        del detect_templates, stream # Delete templates from memory to conserve RAM!
         nodesout+=detect_nodes
         plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
                                  savefile='Detected_nodes.png')
@@ -167,27 +168,27 @@ for i in xrange(0,int(brightdef.enddate-brightdef.startdate),86400): #Loop throu
 
 import numpy as np
 # Now do the detections with these templates!
-station=[]
-print np.shape(templates)
-for template in templates:
-    # Calculate the delays for each template, do this only once so that we
-    # don't have to do it heaps!
-    # Get minimum start time
-    mintime=UTCDateTime(3000,1,1,0,0)
-    for tr in template:
-        if tr.stats.starttime < mintime:
-            mintime=tr.stats.starttime
-    delay=[]
-    # Generate list of delays
-    for tr in template:
-        delay.append(tr.stats.starttime-mintime)
-    delays.append(delay)
-    # Generate list of stations in templates
-    for tr in template:
-        station.append(tr.stats.station+'.'+tr.stats.channel[0]+\
-                        '*'+tr.stats.channel[1])
-        stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
-                        '*'+tr.stats.channel[1])
+# station=[]
+# print np.shape(templates)
+# for template in templates:
+    # # Calculate the delays for each template, do this only once so that we
+    # # don't have to do it heaps!
+    # # Get minimum start time
+    # mintime=UTCDateTime(3000,1,1,0,0)
+    # for tr in template:
+        # if tr.stats.starttime < mintime:
+            # mintime=tr.stats.starttime
+    # delay=[]
+    # # Generate list of delays
+    # for tr in template:
+        # delay.append(tr.stats.starttime-mintime)
+    # delays.append(delay)
+    # # Generate list of stations in templates
+    # for tr in template:
+        # station.append(tr.stats.station+'.'+tr.stats.channel[0]+\
+                        # '*'+tr.stats.channel[1])
+        # stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
+                        # '*'+tr.stats.channel[1])
     # Save a miniseed copy of the templates
     #print 'Writing template as: '+str(template[0].stats.starttime)+'.ms'
     #template.write(templatedef.saveloc+'/'+str(template[0].stats.starttime)+'.ms',format="MSEED")

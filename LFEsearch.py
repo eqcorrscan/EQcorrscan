@@ -86,11 +86,15 @@ for sfile in templatedef.sfiles:
     # returned name will be the template name, used for parsing to the later
     # functions
 
-for tfile in templatedef.tfiles:
-    # Loop through pre-existing template files
-    sys.stdout.write("\rReading in pre-existing template: "+tfile+"\r")
-    sys.stdout.flush()
-    templates.append(obsread(tfile))
+# for tfile in templatedef.tfiles:
+    # # Loop through pre-existing template files
+    # sys.stdout.write("\rReading in pre-existing template: "+tfile+"\r")
+    # sys.stdout.flush()
+    # templates.append(obsread(tfile))
+
+templates=[obsread(tfile) for tfile in templatedef.tfiles]
+
+print 'Read in '+str(len(templates))+' templates'
 
 for template in templates:
     # Calculate the delays for each template, do this only once so that we
@@ -190,22 +194,33 @@ for day in dates:
                 daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
 
             # Try and find the appropriate files
-            if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*.'+channel+'.*'):
+            if baseformat=='Yyyyy/Rjjj.01':
+                if glob.glob(contbase[0]+'/'+daydir+'/'+station+'.*.'+channel+\
+                             '.'+str(day.year)+'.'+str(day.julday).zfill(3)):
+                    chan_available=True
+                else:
+                    chan_available=False
+            else:
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'.'+channel+'.*'):
+                    chan_available=True
+                else:
+                    chan_available=False
+            if chan_available:
                 if not 'st' in locals():
                     if baseformat=='Yyyyy/Rjjj.01':
                         st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
                                    channel+'.'+str(day.year)+'.'+\
-                                   str(day.day).zfill(3))
+                                   str(day.julday).zfill(3))
                     else:
-                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.'+\
                                    channel+'.*')
                 else:
                     if baseformat=='Yyyyy/Rjjj.01':
                         st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
                                     channel+'.'+str(day.year)+'.'+\
-                                    str(day.day).zfill(3))
+                                    str(day.julday).zfill(3))
                     else:
-                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.'+\
                                     channel+'.*')
                 actual_stations.append(station) # Add to this list only if we have the data
             else:
@@ -223,6 +238,7 @@ for day in dates:
                 actual_stations.append(station)
     actual_stations=list(set(actual_stations))
 
+    st=st.merge(fill_value='interpolate') # Enforce trace continuity
     if not 'st' in locals():
         print 'No data found for day: '+str(day)
     elif len(actual_stations) < matchdef.minsta:
@@ -237,7 +253,7 @@ for day in dates:
                                             templatedef.filter_order, templatedef.samp_rate,\
                                             matchdef.debug, day)
             else:
-                st=Parallel(n_jobs=len(st))(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+                st=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
                                                                    templatedef.highcut,\
                                                                    templatedef.filter_order,\
                                                                    templatedef.samp_rate,\
@@ -259,9 +275,12 @@ for day in dates:
             print 'Running the detection routine'
             template_names=[tfile.split('/')[-1] for tfile in templatedef.tfiles]
             template_names.append(templatedef.sfiles)
+            if not os.path.isdir('temp_'+str(instance)):
+                os.makedirs('temp_'+str(instance))
             detections=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
-                                                 matchdef.trig_int,  matchdef.plot)
+                                                 matchdef.trig_int,  matchdef.plot,
+                                                 'temp_'+str(instance))
 
             for detection in detections:
                 # output detections to file
