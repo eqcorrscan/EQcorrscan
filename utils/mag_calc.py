@@ -9,6 +9,25 @@ to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up
 by Warren-Smith [2014/15].
 """
 import numpy as np
+
+def dist_calc(loc1, loc2):
+    """
+    Function to calcualte the distance in km between two points, uses the flat
+    Earth approximation
+
+    :type loc1: Tuple
+    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
+    :type loc2: Tuple
+    """
+    R=6371.009  # Radius of the Earth in km
+    dlat=np.radians(abs(loc1[0]-loc2[0]))
+    dlong=np.radians(abs(loc1[1]-loc2[1]))
+    ddepth=abs(loc1[2]-loc2[2])
+    mean_lat=np.radians((loc1[0]+loc2[0])/2)
+    dist=R*np.sqrt(dlat**2+(np.cos(mean_lat)*dlong)**2)
+    dist=np.sqrt(dist**2+ddepth**2)
+    return dist
+
 def _sim_WA(trace, PAZ, seedresp, water_level):
     """
     Function to remove the insturment response from a trace and return a
