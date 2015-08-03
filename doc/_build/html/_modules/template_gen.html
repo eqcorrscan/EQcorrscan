@@ -328,6 +328,7 @@
                 <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
                     <span class="n">temp_channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
                 <span class="k">if</span> <span class="n">temp_channel</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">temp_channel</span>
                     <span class="k">if</span> <span class="s">&#39;st1&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
                         <span class="n">st1</span><span class="o">+=</span><span class="n">tr</span>
                     <span class="k">else</span><span class="p">:</span>

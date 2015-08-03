@@ -183,7 +183,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">W2</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mf">4.0</span>
     <span class="n">W</span><span class="o">=</span><span class="p">(</span><span class="n">W1</span><span class="o">+</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-    <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="_separation"><a class="viewcode-back" href="../utils.html#catalogue2DD._separation">[docs]</a><span class="k">def</span> <span class="nf">_separation</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -247,7 +247,7 @@
     <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;station.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">stalist</span><span class="p">:</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
-                <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">stalist</span>
 </div>
@@ -282,7 +282,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">event_list</span>
 </div>
-<div class="viewcode-block" id="write_catalogue"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_catalogue">[docs]</a><span class="k">def</span> <span class="nf">write_catalogue</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<div class="viewcode-block" id="write_catalogue"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_catalogue">[docs]</a><span class="k">def</span> <span class="nf">write_catalogue</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to write the dt.ct file needed by hypoDD - takes input event list</span>
 <span class="sd">    from write_event as a list of tuples of event id and sfile.  It will read</span>
@@ -335,16 +335,17 @@
                     <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
                             <span class="n">_cc_round</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span>\
                             <span class="n">_cc_round</span><span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
-                            <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                            <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
                             <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
                     <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
 </div>
 <div class="viewcode-block" id="write_correlations"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_correlations">[docs]</a><span class="k">def</span> <span class="nf">write_correlations</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">wavbase</span><span class="p">,</span> <span class="n">extract_len</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
-                       <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+                       <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to write a dt.cc file for hypoDD input - takes an input list of</span>
 <span class="sd">    events and computes pick refienements by correlation</span>
@@ -440,6 +441,7 @@
                         <span class="k">continue</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 </pre></div>
 

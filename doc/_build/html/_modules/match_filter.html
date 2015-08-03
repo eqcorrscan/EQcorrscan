@@ -212,6 +212,39 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">typeofdet</span><span class="o">=</span><span class="n">typeofdet</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">detectioncount</span><span class="o">+=</span><span class="mi">1</span>
 </div>
+<div class="viewcode-block" id="run_channel_loop"><a class="viewcode-back" href="../modules.html#match_filter.run_channel_loop">[docs]</a><span class="k">def</span> <span class="nf">run_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">tempdir</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Python helper function to run the Cythonised channel_loop function</span>
+
+<span class="sd">    :type templates: List of :class: obspy.Stream</span>
+<span class="sd">    :param templates: List of all the templates</span>
+<span class="sd">    :type stream: :class: obspy.Stream</span>
+<span class="sd">    :param stream: The image stream to scan through</span>
+<span class="sd">    :type tempdir: String or False</span>
+<span class="sd">    :param tempdir: location to put temporary files</span>
+
+<span class="sd">    :returns: cccsums (np.ndarray), no_chans (np.ndarray)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">match_filter_internal</span>
+    <span class="kn">from</span> <span class="nn">utils.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
+    <span class="k">print</span> <span class="s">&quot;Converting streams to numpy arrays&quot;</span>
+    <span class="n">ktemplates</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
+    <span class="n">delays</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>\
+                     <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
+    <span class="c"># match_internal uses a simpler integration as a predescessor to c++</span>
+    <span class="n">template_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> \
+                   <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span> \
+                    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
+    <span class="n">stream_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="k">print</span> <span class="s">&quot;Sending data off to external func&quot;</span>
+    <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+        <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="o">=</span><span class="n">match_filter_internal</span><span class="o">.</span><span class="n">_channel_loop</span><span class="p">(</span><span class="n">template_data</span><span class="p">,</span> \
+                                                              <span class="n">stream_data</span><span class="p">,</span> \
+                                                              <span class="n">delays</span><span class="p">,</span> \
+                                                              <span class="n">ktemplates</span><span class="p">,</span> <span class="n">tempdir</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Correlation loops in C took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
+    <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
+</div>
 <div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../modules.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base function to call the c++ correlation routine from the openCV image</span>
@@ -354,6 +387,7 @@
             <span class="k">print</span> <span class="s">&quot; I have &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))</span><span class="o">+</span><span class="s">&quot; results&quot;</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">cccs_list</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">1</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&quot;--------- TIMER:    Getting results took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
@@ -413,7 +447,7 @@
     <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
 </div>
 <div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../modules.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
-                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">):</span>
+                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Over-arching code to run the correlations of given templates with a day of</span>
 <span class="sd">    seismic data and output the detections based on a given threshold.</span>
@@ -440,6 +474,8 @@
 <span class="sd">    template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\</span>
 <span class="sd">    template is a single template from the input and the length is the number\</span>
 <span class="sd">    of channels within this template.</span>
+<span class="sd">    :type tempdir: String or False</span>
+<span class="sd">    :param tempdir: Direcotry to put temporary files, or False</span>
 
 <span class="sd">    :return: :class: &#39;DETECTIONS&#39; detections for each channel formatted as\</span>
 <span class="sd">    :class: &#39;obspy.UTCDateTime&#39; objects.</span>
@@ -449,6 +485,9 @@
     <span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">copy</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Trace</span>
     <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
+    <span class="n">match_internal</span><span class="o">=</span><span class="bp">False</span> <span class="c"># Set to True if memory is an issue, if True, will only</span>
+                          <span class="c"># use about the same amount of memory as the seismic dat</span>
+                          <span class="c"># take up.  If False, it will use 20-100GB per instance</span>
     <span class="c"># Debug option to confirm that the channel names match those in the templates</span>
     <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
         <span class="n">template_stachan</span><span class="o">=</span><span class="p">[]</span>
@@ -476,6 +515,8 @@
     <span class="c"># Would be worth testing without an if statement, but with every station in</span>
     <span class="c"># the possible template stations having data, but for those without real</span>
     <span class="c"># data make the data NaN to return NaN ccc_sum</span>
+    <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Ensuring all template channels have matches in daylong data&#39;</span>
     <span class="n">template_stachan</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
@@ -503,7 +544,13 @@
                 <span class="n">nulltrace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
                 <span class="n">nulltrace</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
                 <span class="n">template</span><span class="o">+=</span><span class="n">nulltrace</span>
-    <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">]</span><span class="o">=</span><span class="n">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Starting the correlation run for this day&#39;</span>
+    <span class="k">if</span> <span class="n">match_internal</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">tempdir</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">]</span><span class="o">=</span><span class="n">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cccsums</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Correlation has not run, zero length cccsum&#39;</span><span class="p">)</span>
     <span class="n">outtoc</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
@@ -546,6 +593,9 @@
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>\
+                        <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">),</span>\
+                    <span class="n">cccsum</span><span class="p">)</span>
         <span class="n">tic</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="o">&gt;=</span><span class="mi">3</span> <span class="ow">and</span> <span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span><span class="o">&gt;</span><span class="n">rawthresh</span><span class="p">:</span>
             <span class="n">peaks</span><span class="o">=</span><span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> \
