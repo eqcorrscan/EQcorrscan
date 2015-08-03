@@ -116,18 +116,18 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
                            linewidth=3.0)
         k+=1
         plothandles.append(filename)
-        if i < len(colors):
+        if i < len(colors)-1:
             i+=1
         else:
             i=0
-        if j < len(linestyles):
-            j+=1
-        else:
-            j=0
+            if j < len(linestyles)-1:
+                j+=1
+            else:
+                j=0
     plt.xlabel('Date')
     plt.ylabel('Cumulative detections')
     plt.title('Cumulative detections for all templates')
-    plt.legend()#handles=plothandles)
+    plt.legend(loc=2,prop={'size':8},ncol=2)#handles=plothandles)
     if save:
         plt.savefig(savefile)
     else:
