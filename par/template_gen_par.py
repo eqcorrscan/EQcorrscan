@@ -14,7 +14,7 @@ sfilebase='.'                       # Location of nordic s-files, string
 
 sfiles=[]                           # List of s-files
 
-tfiles=glob.glob('templates/*.ms')  # List of pre-existing template files
+tfiles=glob.glob('stack_templates/brightness_group_*')  # List of pre-existing template files
 
 samp_rate=20.0                      # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
