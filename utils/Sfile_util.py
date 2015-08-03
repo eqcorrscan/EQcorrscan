@@ -106,7 +106,9 @@ def _str_conv(number):
     return string
 
 def readheader(sfilename):
+    import warnings
     f=open(sfilename,'r')
+    # Base populate to allow for empty parts of file
     sfilename_header=EVENTINFO(UTCDateTime(), '', '', '',  float('NaN'),
                                float('NaN'), float('NaN'), '', '', '', 0,
                                float('NaN'), float('NaN'), '', '', float('NaN'),
@@ -115,11 +117,18 @@ def readheader(sfilename):
     if topline[79]==' ' or topline[79]=='1':
         # Topline contains event information
         try:
+            sfile_seconds=int(topline[16:18])
+            if sfile_seconds==60:
+                sfile_seconds=0
+                add_seconds=60
+            else:
+                add_seconds=0
             sfilename_header.time=UTCDateTime(int(topline[1:5]),int(topline[6:8]),
                                         int(topline[8:10]),int(topline[11:13]),
-                                        int(topline[13:15]),int(topline[16:18])
-                                        ,int(topline[19:20])*10)
+                                        int(topline[13:15]),sfile_seconds
+                                        ,int(topline[19:20])*10)+add_seconds
         except:
+            warnings.warn("Couldn't read a date from sfile: "+sfilename)
             sfilename_header.time=UTCDateTime(0)
         sfilename_header.loc_mod_ind=topline[20]
         sfilename_header.dist_ind=topline[21]
@@ -133,14 +142,14 @@ def readheader(sfilename):
         sfilename_header.nsta=_int_conv(topline[49:51])
         sfilename_header.t_RMS=_float_conv(topline[52:55])
         sfilename_header.Mag_1=_float_conv(topline[56:59])
-        sfilename_header.Mag_1_type=topline[60]
-        sfilename_header.Mag_1_agency=topline[61:63].strip()
+        sfilename_header.Mag_1_type=topline[59]
+        sfilename_header.Mag_1_agency=topline[60:63].strip()
         sfilename_header.Mag_2=_float_conv(topline[64:67])
-        sfilename_header.Mag_2_type=topline[68]
-        sfilename_header.Mag_2_agency=topline[69:71].strip()
+        sfilename_header.Mag_2_type=topline[67]
+        sfilename_header.Mag_2_agency=topline[68:71].strip()
         sfilename_header.Mag_3=_float_conv(topline[72:75])
-        sfilename_header.Mag_3_type=topline[76].strip()
-        sfilename_header.Mag_3_agency=topline[77:79].strip()
+        sfilename_header.Mag_3_type=topline[75].strip()
+        sfilename_header.Mag_3_agency=topline[76:79].strip()
     else:
         for line in f:
             if line[79]=='1':
