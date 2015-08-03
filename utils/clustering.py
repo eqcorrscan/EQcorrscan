@@ -278,3 +278,94 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
                                                 'sampling_rate': sampling_rate}))
         SVstreams.append(Stream(SVstream))
     return SVstreams
+
+def extract_detections(detections, template, extract_len=90.0, outdir=None):
+    """
+    Function to extract the waveforms associated with each detection in a list
+    of detections for the template, template.  Waveforms will be returned as
+    a list of obspy.Streams containing segments of extract_len.  They will also
+    be saved if outdir is set.  The default is unset.  The default extract_len
+    is 90 seconds per channel.
+
+    :type detections: List of :class: datetime.datetime
+    :param detections: List of datetime objects
+    :type template: :class: obspy.Stream
+    :param template: The template Stream used to detect detections
+    :type extract_len: float
+    :param extract_len: Length to extract around the detection (will be equally\
+            cut around the detection time) in seconds.  Default is 90.0.
+    :type outdir: Bool or String
+    :param outdir: Default is None, with None set, no files will be saved,\
+            if set each detection will be saved into this directory with files\
+            named according to the detection time, NOT than the waveform\
+            start time.
+
+    :returns: List of :class: obspy.Stream
+    """
+    from obspy import read
+    from utils import pre_processing
+    import datetime as dt
+    from par import match_filter_par as matchdef
+    from par import template_gen_par as templatedef
+    # Sort the template according to starttimes, needed so that stachan[i]
+    # corresponds to delays[i]
+    template=template.sort(['starttime'])
+    stachans=[(tr.stats.station,tr.stats.channel,tr.stats.network) \
+              for tr in template]
+    mintime=template[0].stats.starttime
+    delays=[tr.stats.starttime-mintime for tr in template]
+
+    # Sort the detections and group by day
+    detections.sort()
+    detection_days=[detection.date for detection in detections]
+    detection_days=list(set(detection_days))
+    detection_days.sort()
+
+    # Initialize output list
+    detection_wavefiles=[]
+
+    # Loop through the days
+    for detection_day in detection_days:
+        for stachan in stachans:
+            contbase=[base for base in matchdef.contbase\
+                      if base[2]==stachan[2]][0]
+            if contbase[1]=='yyyymmdd':
+                dayfile=detection_day.strftime('%Y%m%d')+'/*'+stachan[0]+\
+                        '.'+stachan[1]+'.*'
+            elif contbase[1]=='Yyyyy/Rjjj.01':
+                dayfile=detection_day.strftime('Y%Y/R%j.01')+'/'+stachan[0]+\
+                        '.*.'+stachan[1]+'.'+detection_day.strftime('%Y.%j')
+            if not 'st' in locals():
+                try:
+                    st=read(contbase[0]+'/'+dayfile)
+                except:
+                    print 'No data for '+stachan[0]+' '+stachan[1]
+            else:
+                try:
+                    st+=read(contbase[0]+'/'+dayfile)
+                except:
+                    print 'No data for '+stachan[0]+' '+stachan[1]
+        # We now have a stream of day long data, we should process it!
+        for tr in st:
+            tr=pre_processing.dayproc(tr, templatedef.lowcut,\
+                                        templatedef.highcut,\
+                                        templatedef.filter_order,\
+                                        templatedef.samp_rate,\
+                                        matchdef.debug, detection_day)
+        day_detections=[detection for detection in detections\
+                        if detection.date == detection_day]
+        for detection in day_detections:
+            detect_wav=st.copy()
+            for tr in detect_wav:
+                delay=[delays[i] for i in len(stachans) if stachans[i][0:1] ==\
+                       (tr.stats.station,tr.stats.channel)][0]
+                tr.trim(starttime=detection+delay-dt.timedelta(seconds=extract_len/2),\
+                            endtime=detection+delay+dt.timedelta(seconds=extract_len/2))
+            detection_wavefiles.append(detect_wav)
+            if outdir:
+                detect_wave.write(outdir+'/'+\
+                                  detection.strftime('%Y-%m-%d_%H-%M-%S')+\
+                                  '.ms', format='MSEED')
+                print 'Written file: '+outdir+'/'+\
+                         detection.strftime('%Y-%m-%d_%H-%M-%S')+'.ms'
+    return detection_wavefiles
