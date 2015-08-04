@@ -324,3 +324,27 @@ def Noise_plotting(station, channel, PAZ, datasource):
     # Plot the PPSD
     ppsd.plot()
     return ppsd
+
+def pretty_template_plot(template):
+    """
+    Function to make a pretty plot of a single template, designed to work better
+    than the default obspy plotting routine for short data lengths.
+
+    :type template: :class: obspy.Stream
+    """
+    fig, axes = plt.subplots(len(template), 1, sharex=True)
+    axes = axes.ravel()
+    mintime=template.sort(['starttime'])[0].stats.starttime
+    i=0
+    for tr in template:
+        delay=tr.stats.starttime-mintime
+        y=tr.data
+        x=np.arange(delay, (len(y)*tr.stats.delta)+delay,\
+                    tr.stats.delta)
+        axes[i].plot(x, y, 'k', linewidth=2)
+        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+        axes[i].yaxis.set_ticks([])
+        i+=1
+    axes[i-1].set_xlabel('Time (s) from start of template')
+    plt.subplots_adjust(hspace=0)
+    plt.show()
