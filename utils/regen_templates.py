@@ -3,8 +3,9 @@
 Script to re-gernate templates from the originally defined templates of varying
 lengths, and enable stacking.
 """
-import glob, os
-templates=glob.glob('templates/*.ms')
+import glob, os, sys
+sys.path.append('/home/calumch/my_programs/Building/EQcorrscan')
+templates=glob.glob('templates/12sec_templates/*.ms')
 datasource='/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S/'
 GeoNet='/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled/'
 length1=3.0
@@ -152,8 +153,9 @@ groups=clustering.group_delays(template_streams)
 ID=1
 for group in groups:
     print 'Group '+str(ID)+' of '+str(len(groups))
-    template_stack=stacking.PWS_stack(group, 2)
-    template_stack.filter('bandpass', freqmin=defaults.lowcut, freqmax=defaults.highcut)
+    # template_stack=stacking.PWS_stack(group, 2)
+    template_stack=stacking.linstack(group)
+    # template_stack.filter('bandpass', freqmin=defaults.lowcut, freqmax=defaults.highcut)
     template_stack.plot(size=(800,600), equal_scale=False)
-    template_stack.write('stack_templates/brightness_group_'+str(ID), format='mseed')
+    template_stack.write('stack_templates/12sec_templates/brightness_group_'+str(ID), format='mseed')
     ID+=1
