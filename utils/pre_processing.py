@@ -170,7 +170,10 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
 
     # Correct FOZ channels
     if tr.stats.station=='FOZ':
-        tr.stats.channel='HH'+tr.stats.channel[2]
+        if len(tr.stats.channel)==3:
+            tr.stats.channel='HH'+tr.stats.channel[2]
+        else:
+            tr.stats.channel='HH'+tr.stats.channel[1]
     # Account for two letter channel names in s-files and therefore templates
     if len(tr.stats.channel)==3:
         tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
