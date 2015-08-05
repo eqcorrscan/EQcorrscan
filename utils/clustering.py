@@ -279,7 +279,8 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def extract_detections(detections, template, extract_len=90.0, outdir=None):
+def extract_detections(detections, template, extract_len=90.0, outdir=None, \
+                       extract_Z=True):
     """
     Function to extract the waveforms associated with each detection in a list
     of detections for the template, template.  Waveforms will be returned as
@@ -299,10 +300,14 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None):
             if set each detection will be saved into this directory with files\
             named according to the detection time, NOT than the waveform\
             start time.
+    :type extract_Z: Bool
+    :param extract_Z: Set to True to also extract Z channels for detections\
+            delays will be the same as horizontal channels, only applies if\
+            only horizontal channels were used in the template.
 
     :returns: List of :class: obspy.Stream
     """
-    from obspy import read
+    from obspy import read, UTCDateTime
     from utils import pre_processing
     import datetime as dt
     from par import match_filter_par as matchdef
@@ -314,32 +319,53 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None):
               for tr in template]
     mintime=template[0].stats.starttime
     delays=[tr.stats.starttime-mintime for tr in template]
-
     # Sort the detections and group by day
     detections.sort()
-    detection_days=[detection.date for detection in detections]
+    detection_days=[detection.date() for detection in detections]
     detection_days=list(set(detection_days))
     detection_days.sort()
 
     # Initialize output list
     detection_wavefiles=[]
 
+    # Also include Z channels when extracting detections
+    if extract_Z:
+        new_stachans=[]
+        new_delays=[]
+        j=0
+        for i in xrange(len(stachans)):
+            if j==1:
+                new_stachans.append((stachans[i][0], stachans[i][1][0]+'Z',\
+                                     stachans[i][2]))
+                new_delays.append(delays[i])
+                new_stachans.append(stachans[i])
+                new_delays.append(delays[i])
+                j=0
+            else:
+                new_stachans.append(stachans[i])
+                new_delays.append(delays[i])
+                j+=1
+        stachans=new_stachans
+        delays=new_delays
+
+
     # Loop through the days
     for detection_day in detection_days:
+        print 'Working on detections for day: '+str(detection_day)
         for stachan in stachans:
             contbase=[base for base in matchdef.contbase\
                       if base[2]==stachan[2]][0]
             if contbase[1]=='yyyymmdd':
                 dayfile=detection_day.strftime('%Y%m%d')+'/*'+stachan[0]+\
-                        '.'+stachan[1]+'.*'
+                        '.'+stachan[1][0]+'?'+stachan[1][1]+'.*'
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 dayfile=detection_day.strftime('Y%Y/R%j.01')+'/'+stachan[0]+\
-                        '.*.'+stachan[1]+'.'+detection_day.strftime('%Y.%j')
+                        '.*.'+stachan[1][0]+'?'+stachan[1][1]+'.'+detection_day.strftime('%Y.%j')
             if not 'st' in locals():
                 try:
                     st=read(contbase[0]+'/'+dayfile)
                 except:
-                    print 'No data for '+stachan[0]+' '+stachan[1]
+                    print 'No data for '+contbase[0]+'/'+dayfile
             else:
                 try:
                     st+=read(contbase[0]+'/'+dayfile)
@@ -353,17 +379,19 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None):
                                         templatedef.samp_rate,\
                                         matchdef.debug, detection_day)
         day_detections=[detection for detection in detections\
-                        if detection.date == detection_day]
+                        if detection.date() == detection_day]
         for detection in day_detections:
+            print 'Cutting for detections at: '+detection.strftime('%Y/%m/%d %H:%M:%S')
             detect_wav=st.copy()
             for tr in detect_wav:
-                delay=[delays[i] for i in len(stachans) if stachans[i][0:1] ==\
-                       (tr.stats.station,tr.stats.channel)][0]
-                tr.trim(starttime=detection+delay-dt.timedelta(seconds=extract_len/2),\
-                            endtime=detection+delay+dt.timedelta(seconds=extract_len/2))
+                delay=[delays[i] for i in xrange(len(delays)) if stachans[i][0:2] ==\
+                       (tr.stats.station,tr.stats.channel[0]+\
+                        tr.stats.channel[1])][0]
+                tr.trim(starttime=UTCDateTime(detection)+delay-extract_len/2,\
+                            endtime=UTCDateTime(detection)+delay+extract_len/2)
             detection_wavefiles.append(detect_wav)
             if outdir:
-                detect_wave.write(outdir+'/'+\
+                detect_wav.write(outdir+'/'+\
                                   detection.strftime('%Y-%m-%d_%H-%M-%S')+\
                                   '.ms', format='MSEED')
                 print 'Written file: '+outdir+'/'+\
