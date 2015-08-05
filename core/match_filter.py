@@ -97,7 +97,7 @@ def run_channel_loop(templates, stream, tempdir):
 
     :returns: cccsums (np.ndarray), no_chans (np.ndarray)
     """
-    import match_filter_internal_testing as match_filter_internal
+    import match_filter_internal
     from utils.timer import Timer
     print "Converting streams to numpy arrays"
     ktemplates=len(templates)
@@ -338,7 +338,7 @@ def match_filter(template_names, templates, stream, threshold,
     :param threshold_type: The type of threshold to be used, can be MAD,\
     absolute or av_chan_corr.\
     MAD threshold is calculated as the\
-    threshold*(mean(abs(cccsum))) where cccsum is the cross-correlation sum\
+    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum\
     for a given template.\
     absolute threhsold is a true absolute threshold based on the cccsum value\
     av_chan_corr is based on the mean values of single-channel\
