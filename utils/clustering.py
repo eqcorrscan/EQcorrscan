@@ -13,6 +13,7 @@ As such this code is designed to work only for templates with the same channels
 # I want to make sure that the lags for those that I cluster are similar as well
 # as making sure that they are similarly correlated - will cluster based on
 # cross-channel correlation sum
+import numpy as np
 
 def cross_chan_coherance(st1, st2):
     """
@@ -49,7 +50,6 @@ def distance_matrix(templates):
 
     :returns: ndarray - distance matrix
     """
-    import numpy as np
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(templates))]*len(templates))
     for i in xrange(len(templates)):
@@ -168,7 +168,6 @@ def allign_traces(traces):
     from stacking import linstack
     from obspy import Stream, Trace
     from obspy.signal.cross_correlation import xcorr
-    import numpy as np
     import warnings, scipy
     # Check the type, linstack needs a list of streams
     for i in xrange(len(traces)):
@@ -220,7 +219,6 @@ def SVD_testing(templates):
     the P-arrival on all templates for the same channel should appear at the same
     time in the trace.
     """
-    import numpy as np
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
     stachans=[]
@@ -280,7 +278,7 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
     return SVstreams
 
 def extract_detections(detections, template, extract_len=90.0, outdir=None, \
-                       extract_Z=True):
+                       extract_Z=True, additional_stations=[]):
     """
     Function to extract the waveforms associated with each detection in a list
     of detections for the template, template.  Waveforms will be returned as
@@ -304,6 +302,9 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None, \
     :param extract_Z: Set to True to also extract Z channels for detections\
             delays will be the same as horizontal channels, only applies if\
             only horizontal channels were used in the template.
+    :type additional_stations: List of tuple
+    :param additional_stations: List of stations, chanels and networks to also\
+            extract data for using an average delay.
 
     :returns: List of :class: obspy.Stream
     """
@@ -348,6 +349,11 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None, \
         stachans=new_stachans
         delays=new_delays
 
+    if not len(additional_stations)==0:
+        av_delay=np.mean(delays)
+        for sta in additional_stations:
+            stachans.append(sta)
+            delays.append(av_delay)
 
     # Loop through the days
     for detection_day in detection_days:
@@ -371,6 +377,7 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None, \
                     st+=read(contbase[0]+'/'+dayfile)
                 except:
                     print 'No data for '+stachan[0]+' '+stachan[1]
+        st.merge(fill_value='interpolate')
         # We now have a stream of day long data, we should process it!
         for tr in st:
             tr=pre_processing.dayproc(tr, templatedef.lowcut,\
@@ -396,4 +403,10 @@ def extract_detections(detections, template, extract_len=90.0, outdir=None, \
                                   '.ms', format='MSEED')
                 print 'Written file: '+outdir+'/'+\
                          detection.strftime('%Y-%m-%d_%H-%M-%S')+'.ms'
-    return detection_wavefiles
+        del st, detect_wav
+        if outdir:
+            detection_wavefiles=[]
+    if not outdir:
+        return detection_wavefiles
+    else:
+        return

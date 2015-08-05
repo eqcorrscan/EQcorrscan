@@ -386,7 +386,7 @@ have the same distance as apositively correlated image - this is an issue</p>
 
 <dl class="function">
 <dt id="clustering.extract_detections">
-<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>template</em>, <em>extract_len=90.0</em>, <em>outdir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>template</em>, <em>extract_len=90.0</em>, <em>outdir=None</em>, <em>extract_Z=True</em>, <em>additional_stations=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to extract the waveforms associated with each detection in a list
 of detections for the template, template.  Waveforms will be returned as
 a list of obspy.Streams containing segments of extract_len.  They will also
@@ -401,6 +401,8 @@ is 90 seconds per channel.</p>
 <li><strong>template</strong> &#8211; The template Stream used to detect detections</li>
 <li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length to extract around the detection (will be equally            cut around the detection time) in seconds.  Default is 90.0.</li>
 <li><strong>outdir</strong> (<em>Bool or String</em>) &#8211; Default is None, with None set, no files will be saved,            if set each detection will be saved into this directory with files            named according to the detection time, NOT than the waveform            start time.</li>
+<li><strong>extract_Z</strong> (<em>Bool</em>) &#8211; Set to True to also extract Z channels for detections            delays will be the same as horizontal channels, only applies if            only horizontal channels were used in the template.</li>
+<li><strong>additional_stations</strong> (<em>List of tuple</em>) &#8211; List of stations, chanels and networks to also            extract data for using an average delay.</li>
 </ul>
 </td>
 </tr>
@@ -581,6 +583,19 @@ will downsample if too many data points.</p>
 <dd><p>Simple utility code to plot the correlation peaks to check that the peak
 finding routine is running correctly, used in debugging for the EQcorrscan
 module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.pretty_template_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">pretty_template_plot</code><span class="sig-paren">(</span><em>template</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#pretty_template_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.pretty_template_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make a pretty plot of a single template, designed to work better
+than the default obspy plotting routine for short data lengths.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
