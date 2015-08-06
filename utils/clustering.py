@@ -310,7 +310,7 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
 
     :returns: List of :class: obspy.Stream
     """
-    from obspy import read, UTCDateTime
+    from obspy import read, UTCDateTime, Stream
     from utils import pre_processing
     import datetime as dt
     from par import match_filter_par as matchdef
