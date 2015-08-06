@@ -310,12 +310,13 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
 
     :returns: List of :class: obspy.Stream
     """
-    from obspy import read, UTCDateTime
+    from obspy import read, UTCDateTime, Stream
     from utils import pre_processing
     import datetime as dt
     from par import match_filter_par as matchdef
     from par import template_gen_par as templatedef
     import os
+    from joblib import Parallel, delayed
     # Sort the template according to starttimes, needed so that stachan[i]
     # corresponds to delays[i]
     all_delays=[] # List of tuples of template name, delays
@@ -401,12 +402,20 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
                     print 'No data for '+stachan[0]+' '+stachan[1]
         st.merge(fill_value='interpolate')
         # We now have a stream of day long data, we should process it!
-        for tr in st:
-            tr=pre_processing.dayproc(tr, templatedef.lowcut,\
-                                        templatedef.highcut,\
-                                        templatedef.filter_order,\
-                                        templatedef.samp_rate,\
-                                        matchdef.debug, detection_day)
+        st=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+                                                               templatedef.highcut,\
+                                                               templatedef.filter_order,\
+                                                               templatedef.samp_rate,\
+                                                               matchdef.debug, detection_day)\
+                                for tr in st)
+        st=Stream(st)
+
+        # for tr in st:
+            # tr=pre_processing.dayproc(tr, templatedef.lowcut,\
+                                        # templatedef.highcut,\
+                                        # templatedef.filter_order,\
+                                        # templatedef.samp_rate,\
+                                        # matchdef.debug, detection_day)
         day_detections=[detection for detection in detections\
                         if detection[0].date() == detection_day]
         for detection in day_detections:
