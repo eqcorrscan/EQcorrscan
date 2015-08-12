@@ -37,7 +37,8 @@ Pre-requisites:
     - NonLinLoc       - used outside of all codes for travel-time generation
 """
 
-def from_sfile(sfile):
+def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
+               filt_order=None):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefile found in the pick file.
@@ -46,6 +47,18 @@ def from_sfile(sfile):
     :param sfile: sfilename must be the\
     path to a seisan nordic type s-file containing waveform and pick\
     information.
+    :type lowcut: float
+    :param lowcut: Low cut (Hz), if set to None will look in template\
+            defaults file
+    :type highcut: float
+    :param lowcut: High cut (Hz), if set to None will look in template\
+            defaults file
+    :type samp_rate: float
+    :param samp_rate: New sampling rate in Hz, if set to None will look in\
+            template defaults file
+    :type filt_order: int
+    :param filt_order: Filter level, if set to None will look in\
+            template defaults file
     """
     # Perform some checks first
     import os, sys
@@ -86,14 +99,23 @@ def from_sfile(sfile):
     for pick in picks:
         print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
 
+    if not lowcut:
+        lowcut=tempdef.lowcut
+    if not highcut:
+        highcut=tempdef.highcut
+    if not samp_rate:
+        samp_rate=tempdef.samp_rate
+    if not filt_order:
+        filt_order=tempdef.filt_order
     # Process waveform data
-    st=pre_processing.shortproc(st, tempdef.lowcut, tempdef.highcut, tempdef.filter_order,\
-                      tempdef.samp_rate, matchdef.debug)
+    st=pre_processing.shortproc(st, lowcut, highcut, filter_order,\
+                      samp_rate, matchdef.debug)
 
     st1=_template_gen(picks, st, tempdef.length, tempdef.swin)
     return st1
 
-def from_contbase(sfile):
+def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
+                  filt_order=None):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefiles from the continous database of day-long
@@ -107,6 +129,18 @@ def from_contbase(sfile):
             containing waveform and pick information, all other arguments can \
             be numbers save for swin which must be either P, S or all \
             (case-sensitive).
+    :type lowcut: float
+    :param lowcut: Low cut (Hz), if set to None will look in template\
+            defaults file
+    :type highcut: float
+    :param lowcut: High cut (Hz), if set to None will look in template\
+            defaults file
+    :type samp_rate: float
+    :param samp_rate: New sampling rate in Hz, if set to None will look in\
+            template defaults file
+    :type filt_order: int
+    :param filt_order: Filter level, if set to None will look in\
+            template defaults file
     """
     # Perform some checks first
     import os, sys
@@ -156,11 +190,18 @@ def from_contbase(sfile):
             st+=obsread(wavefile)
         else:
             st=obsread(wavefile)
-
+    if not lowcut:
+        lowcut=tempdef.lowcut
+    if not highcut:
+        highcut=tempdef.highcut
+    if not samp_rate:
+        samp_rate=tempdef.samp_rate
+    if not filt_order:
+        filt_order=tempdef.filt_order
     # Porcess waveform data
     for tr in st:
-        tr=pre_processing.dayproc(tr, tempdef.lowcut, tempdef.highcut, tempdef.filter_order,\
-                                tempdef.samp_rate, matchdef.debug, day)
+        tr=pre_processing.dayproc(tr, lowcut, highcut, filter_order,\
+                                samp_rate, matchdef.debug, day)
 
     # Cut the templates
     st1=_template_gen(picks, st, tempdef.length, tempdef.swin)
