@@ -24,6 +24,19 @@ if len(sys.argv) == 2:
         Prep=True
     else:
         raise ValueError("I don't recognise the argument, I only know --debug and --debug-prep")
+elif len(sys.argv) == 5:
+    # Arguments to allow the code to be run in multiple instances
+    Split=True
+    Test=False
+    Prep=False
+    args=sys.argv[1:len(sys.argv)]
+    for i in xrange(len(args)):
+        if args[i] == '--instance':
+            instance=int(args[i+1])
+            print 'I will run this for instance '+str(instance)
+        elif args[i] == '--splits':
+            splits=int(args[i+1])
+            print 'I will divide the days into '+str(splits)+' chunks'
 elif not len(sys.argv) == 1:
     raise ValueError("I only take one argument, no arguments, or two flags with arguments")
 else:
@@ -89,7 +102,24 @@ plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png'
 # Call the main function!
 templates=[]
 nodesout=[]
-for day in brightdef.dates: #Loop through dates
+
+ndays=len(brightdef.dates)
+print 'Will loop through '+str(ndays)+' days'
+if Split:
+    if instance==splits-1:
+        ndays=ndays-(ndays/splits)*(splits-1)
+        dates=brightdef.dates[-ndays:]
+    else:
+        ndays=ndays/splits
+        dates=brightdef.dates[ndays*instance:(ndays*instance)+ndays]
+    print 'This instance will run for '+str(ndays)+' days'
+    print 'This instance will run from '+str(min(dates))
+else:
+    dates=brightdef.dates
+
+
+
+for day in dates: #Loop through dates
     # Set up where data are going to be read in from
     if 'stream' in locals():
         del stream
@@ -144,14 +174,20 @@ for day in brightdef.dates: #Loop through dates
     if not Prep:
         stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
         print "Running the detection routine"
+        print stations
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream_copy,
                         brightdef.threshold, brightdef.thresh_type,\
                         brightdef.coherance)
         del detect_templates, stream # Delete templates from memory to conserve RAM!
         nodesout+=detect_nodes
-        plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
+        if Split:
+            plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
+                                 savefile='Detected_nodes_'+str(instance)+'.png')
+        else:
+            plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
                                  savefile='Detected_nodes.png')
+
     else:
         for tr in stream:
             print "Writing data as: test_data/"+tr.stats.station+'-'+tr.stats.channel+\
@@ -197,7 +233,10 @@ import numpy as np
 # we need, which is VERY important as I/O is very costly and will eat memory
 stations=list(set(stations))
 
-node_file=open('Nodes_detected.csv','w')
+if split:
+    node_file=open('Nodes_detected_'+str(instance)+'.csv','w')
+else:
+    node_file=open('Nodes_detected.csv','w')
 for node in nodesout:
     node_file.write(node[0]+','+node[1]+','+node[2]+'\n')
 node_file.close()
