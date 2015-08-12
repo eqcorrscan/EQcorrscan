@@ -19,7 +19,7 @@ def linstack(streams):
     :returns: stack - Stream
     """
     # import matplotlib.pyplot as plt
-    stack=streams[0]
+    stack=streams[np.argmax([len(stream) for stream in streams])]
     for tr in stack:
         tr.data=tr.data/np.sqrt(np.mean(np.square(tr.data)))
     for i in xrange(1,len(streams)):

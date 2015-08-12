@@ -65,8 +65,8 @@ def distance_matrix(templates):
 
 def cluster(templates, show=True):
     """
-    Function to take a set of templates and cluster them, will return clustered
-    templates
+    Function to take a set of templates and cluster them, will return distance\
+            matrix of grouped templates
 
     :type template: List of Obspy.Stream
 
