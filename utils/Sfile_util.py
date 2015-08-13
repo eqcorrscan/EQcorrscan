@@ -297,6 +297,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     if not evtime:
         try:
             st=obsread(wavefile)
+            evtime=st[0].stats.starttime
         except:
             print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
             sys.exit()
@@ -316,22 +317,22 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         sys.exit()
 
     # Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm
-    sfilename=outdir+'/'+str(st[0].stats.starttime.day).zfill(2)+'-'+\
-            str(st[0].stats.starttime.hour).zfill(2)+\
-            str(st[0].stats.starttime.minute).zfill(2)+'-'+\
-            str(st[0].stats.starttime.second).zfill(2)+evtype+'.S'+\
-            str(st[0].stats.starttime.year)+\
-            str(st[0].stats.starttime.month).zfill(2)
+    sfilename=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
+            str(evtime.hour).zfill(2)+\
+            str(evtime.minute).zfill(2)+'-'+\
+            str(evtime.second).zfill(2)+evtype+'.S'+\
+            str(evtime.year)+\
+            str(evtime.month).zfill(2)
     # Check is sfilename exists
     if os.path.isfile(sfilename) and not overwrite:
         print 'Desired sfilename: '+sfilename+' exists, will not overwrite'
         for i in range(1,10):
-            sfilename=outdir+'/'+str(st[0].stats.starttime.day).zfill(2)+'-'+\
-                    str(st[0].stats.starttime.hour).zfill(2)+\
-                    str(st[0].stats.starttime.minute).zfill(2)+'-'+\
-                    str(st[0].stats.starttime.second+i).zfill(2)+evtype+'.S'+\
-                    str(st[0].stats.starttime.year)+\
-                    str(st[0].stats.starttime.month).zfill(2)
+            sfilename=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
+                    str(evtime.hour).zfill(2)+\
+                    str(evtime.minute).zfill(2)+'-'+\
+                    str(evtime.second+i).zfill(2)+evtype+'.S'+\
+                    str(evtime.year)+\
+                    str(evtime.month).zfill(2)
             if not os.path.isfile(sfilename):
                 break
         else:
@@ -341,12 +342,12 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         # sys.exit()
     f=open(sfilename,'w')
     # Write line 1 of s-file
-    f.write(' '+str(st[0].stats.starttime.year)+' '+\
-            str(st[0].stats.starttime.month).rjust(2)+\
-            str(st[0].stats.starttime.day).rjust(2)+' '+\
-            str(st[0].stats.starttime.hour).rjust(2)+\
-            str(st[0].stats.starttime.minute).rjust(2)+' '+\
-            str(st[0].stats.starttime.second).rjust(4)+' '+\
+    f.write(' '+str(evime.year)+' '+\
+            str(evtime.month).rjust(2)+\
+            str(evtime.day).rjust(2)+' '+\
+            str(evtime.hour).rjust(2)+\
+            str(evtime.minute).rjust(2)+' '+\
+            str(evtime.second).rjust(4)+' '+\
             evtype+'1'.rjust(58)+'\n')
     # Write line 2 of s-file
     f.write(' ACTION:ARG '+str(datetime.datetime.now().year)[2:4]+'-'+\
@@ -355,12 +356,12 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
             str(datetime.datetime.now().hour).zfill(2)+':'+\
             str(datetime.datetime.now().minute).zfill(2)+' OP:'+\
             userID.ljust(4)+' STATUS:'+'ID:'.rjust(18)+\
-            str(st[0].stats.starttime.year)+\
-            str(st[0].stats.starttime.month).zfill(2)+\
-            str(st[0].stats.starttime.day).zfill(2)+\
-            str(st[0].stats.starttime.hour).zfill(2)+\
-            str(st[0].stats.starttime.minute).zfill(2)+\
-            str(st[0].stats.starttime.second).zfill(2)+\
+            str(evtime.year)+\
+            str(evtime.month).zfill(2)+\
+            str(evtime.day).zfill(2)+\
+            str(evtime.hour).zfill(2)+\
+            str(evtime.minute).zfill(2)+\
+            str(evtime.second).zfill(2)+\
             'I'.rjust(6)+'\n')
     # Write line 3 of s-file
     f.write(' '+wavefile+'6'.rjust(79-len(wavefile))+'\n')
