@@ -201,7 +201,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     return stations, nodes_out, lags_out
 
 
-def _node_loop(stations, lags, stream, i=0):
+def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0):
     """
     Internal function to allow for parallelisation of brightness
 
@@ -214,7 +214,7 @@ def _node_loop(stations, lags, stream, i=0):
     from par import bright_lights_par as brightdef
     import warnings
     for tr in stream:
-        j = [i for i in xrange(len(stations)) if stations[i]==tr.stats.station]
+        j = [k for k in xrange(len(stations)) if stations[k]==tr.stats.station]
         # Check that there is only one matching station
         if len(j)>1:
             warnings.warn('Too many stations')
@@ -234,7 +234,11 @@ def _node_loop(stations, lags, stream, i=0):
             # Apply lag to data and add it to energy - normalize the data here
             energy=np.concatenate((energy,norm_energy), axis=0)
     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
-    return (i, energy)
+    if not mem_issue:
+        return (i, energy)
+    else:
+        np.save('tmp'+str(instance)+'/node_'+str(i), energy)
+        return (i, 'tmp'+str(instance)+'/node_'+str(i))
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
     """
@@ -307,7 +311,7 @@ def coherance(stream):
     return coherance
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
-        coherance_thresh):
+        coherance_thresh, instance=0):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -331,7 +335,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :param threshold: Threshold value for detection of template within the\
     brightness function
     :type thresh_type: str
-    :param thresh_type: Either MAD or abs where MAD is the Mean Absolute\
+    :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
     Deviation and abs is an absoulte brightness.
     :type coherance_thresh: float
     :param coherance_thresh: Threshold for removing incoherant peaks in the\
@@ -367,16 +371,21 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     stream_copy=stream.copy()
     for i in xrange(len(stream)):
         stream[i].data=stream[i].data.astype(np.float16)
+    print stream
     detections=[]
     detect_lags=[]
     parallel=True
-    plotvar=True
+    plotvar=False
+    mem_issue=True
     # Loop through each node in the input
     # Linear run
     if not parallel:
         for i in xrange(0,len(nodes)):
-            energy[i]=_node_loop(stations, nodes[i], lags[:,i],
-                                  stream)
+            print i
+            if not mem_issue:
+                energy[i], j=_node_loop(stations, lags[:,i], stream)
+            else:
+                j, filename=_node_loop(stations, lags[:,i], stream, i, mem_issue)
     else:
         # Parallel run
         num_cores=brightdef.cores
@@ -386,24 +395,45 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             num_cores=cpu_count()
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_node_loop, args=(stations,\
-                                                    lags[:,i], stream, i))\
+                                                    lags[:,i], stream, i,\
+                                                    mem_issue, instance))\
                                   for i in xrange(len(nodes))]
         pool.close()
-        energy=[p.get() for p in results]
-        pool.join()
-        energy.sort(key=lambda tup: tup[0])
-        energy = [node[1] for node in energy]
-        energy=np.concatenate(energy, axis=0)
-        print energy.shape
+        if not mem_issue:
+            energy=[p.get() for p in results]
+            pool.join()
+            energy.sort(key=lambda tup: tup[0])
+            energy = [node[1] for node in energy]
+            energy=np.concatenate(energy, axis=0)
+            print energy.shape
+        else:
+            pool.join()
     # Now compute the cumulative network response and then detect possible events
-    indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
-    cum_net_resp=np.array([np.nan]*len(indeces))
-    cum_net_resp[0]=energy[indeces[0]][0]
-    peak_nodes=[nodes[indeces[0]]]
-    for i in xrange(1, len(indeces)):
-        cum_net_resp[i]=energy[indeces[i]][i]
-        peak_nodes.append(nodes[indeces[i]])
-    del energy, indeces
+    if not mem_issue:
+        indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
+        cum_net_resp=np.array([np.nan]*len(indeces))
+        cum_net_resp[0]=energy[indeces[0]][0]
+        peak_nodes=[nodes[indeces[0]]]
+        for i in xrange(1, len(indeces)):
+            cum_net_resp[i]=energy[indeces[i]][i]
+            peak_nodes.append(nodes[indeces[i]])
+        del energy, indeces
+    else:
+        cum_net_resp=np.load('tmp'+instance+'/node_0.npy')
+        os.remove('tmp'+instance+'/node_0.npy')
+        indeces=np.zeros(len(cum_net_resp))
+        for i in xrange(nodes):
+            node_energy=np.load('tmp'+str(instance)+'/node_'+str(i)+'.npy')
+            updated_indeces=np.argmax([cum_net_resp, node_energy], axis=0)
+            temp=np.array([cum_net_resp, node_energy])
+            cum_net_resp=np.array([temp[updated_indeces[j]][j] \
+                                   for j in xrange(len(updated_indeces))])
+            del temp, node_energy
+            updated_indeces[updated_indeces==1]=i
+            indeces=updated_indeces
+            os.remove('tmp'+str(instance)+'/node_'+str(i)+'.npy')
+        peak_nodes=[nodes[indeces[i]] for i in xrange(len(indeces))]
+        del indeces
     if plotvar:
         cum_net_trace=deepcopy(stream[0])
         cum_net_trace.data=cum_net_resp
