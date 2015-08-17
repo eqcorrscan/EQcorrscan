@@ -223,12 +223,8 @@ def _node_loop(stations, lags, stream, i=0):
             warnings.warn('No station match')
             continue
         lag=lags[j[0]]
-        if not int(round(lag*tr.stats.sampling_rate)) == 0:
-            lagged_data=tr.data[0:-int(round(lag*tr.stats.sampling_rate))]
-        else:
-            lagged_data=tr.data
         pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
-        lagged_energy=np.square(np.concatenate((pad,lagged_data)))
+        lagged_energy=np.square(np.concatenate((tr.data, pad)))[len(pad):]
         # Clip energy
         lagged_energy=np.clip(lagged_energy, 0, brightdef.clip_level*np.mean(lagged_energy))
         if not 'energy' in locals():
