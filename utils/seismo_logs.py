@@ -30,14 +30,22 @@ def Read_RT_log(logfile, startdate):
     import datetime as dt
     f=open(logfile,'r')
     phase_err=[]
+    lock=[]
     # Extract all the phase errors
     for line in f:
         if line[13:39]=="INTERNAL CLOCK PHASE ERROR":
             phase_err.append((dt.datetime.strptime(str(startdate.year)+\
                                                             ':'+line[0:12],\
                                                             '%Y:%j:%H:%M:%S'),\
-                             float(line[43:45].strip())*\
+                             float(line.split(' ')[-2])*\
                              0.000001))
+        elif line[13:-1].strip()=="EXTERNAL CLOCK POWER IS TURNED OFF":
+            lock.append((dt.datetime.strptime(str(startdate.year)+\
+                                                            ':'+line[0:12],\
+                                                            '%Y:%j:%H:%M:%S'),\
+                             999))
+    if len(phase_err) == 0 and len(lock) > 0:
+        phase_err=lock
     return phase_err
 
 def Flag_time_err(phase_err, time_thresh=0.02):
@@ -71,7 +79,7 @@ def check_all_logs(directory, time_thresh):
     """
     import glob, sys
     import datetime as dt
-    log_files=glob.glob(directory+'/*/*/0/000000000_00000000')
+    log_files=glob.glob(directory+'/*/0/000000000_00000000')
     print 'I have '+str(len(log_files))+' log files to scan'
     total_phase_errs=[]
     i=0
