@@ -47,19 +47,21 @@ else:
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
+from utils import seismo_logs
 if brightdef.plotsave:
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     plt.ioff()
 #from par import lagcalc as lagdef
-from obspy import UTCDateTime, read as obsread
+from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
 from core import bright_lights, match_filter
 from utils import pre_processing
 from utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
+import warnings
 
 templates=[]
 delays=[]
@@ -136,7 +138,10 @@ for day in dates: #Loop through dates
             errors, full = seismo_logs.check_all_logs(rawdir, \
                                                       1.0/templatedef.samp_rate)
             if len(errors) > 1:
+                warnings.warn('Found GPS errors exceeding one sample for station '+station)
                 continue
+            else:
+                print 'No GPS errors found, continuing'
             if len(station) == 3:
                 netcode='NZ'
             else:
@@ -181,23 +186,25 @@ for day in dates: #Loop through dates
                                             templatedef.filter_order, templatedef.samp_rate,\
                                             templatedef.debug, day)
         else:
-            st=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
                                                                    templatedef.highcut,\
                                                                    templatedef.filter_order,\
                                                                    templatedef.samp_rate,\
                                                                    templatedef.debug, day)\
-                                for tr in st)
-
+                                for tr in stream)
+            stream=Stream(stream)
+            print stream
     if not Prep:
         stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
         print "Running the detection routine"
         print stations
         # Check that the data are okay
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
-                        nodes, lags, stream_copy,
+                        nodes, lags, stream,
                         brightdef.threshold, brightdef.thresh_type,\
-                        brightdef.coherance)
+                        brightdef.coherance, instance)
         del detect_templates, stream # Delete templates from memory to conserve RAM!
+        stream=stream_copy
         nodesout+=detect_nodes
         if Split:
             plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
