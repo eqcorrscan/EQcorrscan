@@ -355,7 +355,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # from joblib import Parallel, delayed
     from multiprocessing import Pool, cpu_count
     from utils.Sfile_util import PICK
-    import sys
+    import sys, os
     from copy import deepcopy
     from obspy import read as obsread, Stream
     import matplotlib.pyplot as plt
@@ -371,7 +371,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     stream_copy=stream.copy()
     for i in xrange(len(stream)):
         stream[i].data=stream[i].data.astype(np.float16)
-    print stream
     detections=[]
     detect_lags=[]
     parallel=True
@@ -419,11 +418,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             peak_nodes.append(nodes[indeces[i]])
         del energy, indeces
     else:
-        cum_net_resp=np.load('tmp'+instance+'/node_0.npy')
-        os.remove('tmp'+instance+'/node_0.npy')
+        cum_net_resp=np.load('tmp'+str(instance)+'/node_0.npy')[0]
+        os.remove('tmp'+str(instance)+'/node_0.npy')
         indeces=np.zeros(len(cum_net_resp))
-        for i in xrange(nodes):
-            node_energy=np.load('tmp'+str(instance)+'/node_'+str(i)+'.npy')
+        for i in xrange(1,len(nodes)):
+            node_energy=np.load('tmp'+str(instance)+'/node_'+str(i)+'.npy')[0]
             updated_indeces=np.argmax([cum_net_resp, node_energy], axis=0)
             temp=np.array([cum_net_resp, node_energy])
             cum_net_resp=np.array([temp[updated_indeces[j]][j] \

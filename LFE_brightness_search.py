@@ -12,6 +12,7 @@ then seaach for repeats of them in contnuous data.
 """
 
 import sys, glob
+instance=0
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
 if len(sys.argv) == 2:
