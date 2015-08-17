@@ -71,7 +71,7 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     gridfiles=[]
     stations_out=[]
     for station in stations:
-        gridfiles+=(glob.glob(path+'*.'+phase+'.'+station+'*.csv'))
+        gridfiles+=(glob.glob(path+'*.'+phase+'.'+station+'.time.csv'))
         if glob.glob(path+'*.'+phase+'.'+station+'*.csv'):
             stations_out+=[station]
     if not stations_out:
@@ -145,6 +145,7 @@ def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners, resolutio
                 resamp_nodes.append(nodes[i])
                 resamp_lags.append([lags[:,i]])
     # Reshape the lags
+    print np.shape(resamp_lags)
     resamp_lags=np.reshape(resamp_lags,(len(resamp_lags),len(stations))).T
     # Resample the nodes - they are sorted in order of size with largest long
     # then largest lat, then depth.
@@ -211,13 +212,21 @@ def _node_loop(stations, lags, stream, i=0):
     :return: (i, energy (np.array))
     """
     from par import bright_lights_par as brightdef
+    import warnings
     for tr in stream:
-        j = [n for n, x in enumerate(stations) if x ==tr.stats.station]
+        j = [i for i in xrange(len(stations)) if stations[i]==tr.stats.station]
         # Check that there is only one matching station
-        if not len(j)==1:
-            raise IOError('Too many stations')
+        if len(j)>1:
+            warnings.warn('Too many stations')
+            j=[j[0]]
+        if len(j)==0:
+            warnings.warn('No station match')
+            continue
         lag=lags[j[0]]
-        lagged_data=tr.data[int(round(lag*tr.stats.sampling_rate)):]
+        if not int(round(lag*tr.stats.sampling_rate)) == 0:
+            lagged_data=tr.data[0:-int(round(lag*tr.stats.sampling_rate))]
+        else:
+            lagged_data=tr.data
         pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
         lagged_energy=np.square(np.concatenate((pad,lagged_data)))
         # Clip energy
@@ -225,11 +234,10 @@ def _node_loop(stations, lags, stream, i=0):
         if not 'energy' in locals():
             energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
         else:
+            norm_energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
             # Apply lag to data and add it to energy - normalize the data here
-            energy=np.concatenate((energy,\
-                                    (lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))),\
-                                    axis=0)
-            energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
+            energy=np.concatenate((energy,norm_energy), axis=0)
+    energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
     return (i, energy)
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
@@ -386,6 +394,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                   for i in xrange(len(nodes))]
         pool.close()
         energy=[p.get() for p in results]
+        pool.join()
         energy.sort(key=lambda tup: tup[0])
         energy = [node[1] for node in energy]
         energy=np.concatenate(energy, axis=0)
