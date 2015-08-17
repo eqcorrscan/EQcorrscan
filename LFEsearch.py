@@ -27,6 +27,7 @@ from par import match_filter_par as matchdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
 from core import template_gen
+from utils import seismo_logs
 
 Split=False
 if len(sys.argv) == 2:
@@ -177,6 +178,12 @@ for day in dates:
         station=stachan.split('.')[0]
         channel=stachan.split('.')[1]
         netcode=stachan.split('.')[2]
+        rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+                    str(day.year)+str(day.julday).zfill(3)
+        errors, full = seismo_logs.check_all_logs(rawdir, \
+                                                  1.0/templatedef.samp_rate)
+        if len(errors) > 1:
+            continue
         if not Test:
             # Set up the base directory format
             for base in matchdef.contbase:
