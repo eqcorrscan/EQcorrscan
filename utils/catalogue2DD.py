@@ -19,6 +19,24 @@ Information for the station.dat file is read from SEISAN's STATION0.HYP file
 Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
+
+Copyright 2015 Calum Chamberlain
+
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 import Sfile_util
 import numpy as np
@@ -55,7 +73,7 @@ def _av_weight(W1, W2):
     else:
         W2=1-int(W2)/4.0
     W=(W1+W2)/2
-    return _cc_round(W,2)
+    return _cc_round(W,4)
 
 def _separation(loc1, loc2):
     """
@@ -204,15 +222,15 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
                 # Loop through the matches
                 for slave_pick in slave_matches:
                     links+=1
-                    event_text+=pick.station.rjust(4)+\
+                    event_text+=pick.station.ljust(4)+\
                             _cc_round(pick.time-master_ori_time,3).rjust(11)+\
                             _cc_round(slave_pick.time-slave_ori_time,3).rjust(8)+\
-                            _av_weight(pick.weight, slave_pick.weight).rjust(5)+' '+\
+                            _av_weight(pick.weight, slave_pick.weight).rjust(7)+' '+\
                             pick.phase+'\n'
                     stations.append(pick.station)
             if links >= min_link:
                 f.write(event_text)
-    f.write('\n')
+    # f.write('\n')
     f.close()
     return list(set(stations))
 
@@ -304,7 +322,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
 
                         dt=(pick.time-master_ori_time)-\
                                 (slave_pick.time+correction-slave_ori_time)
-                        event_text+=pick.station.rjust(4)+\
+                        event_text+=pick.station.ljust(4)+\
                                 _cc_round(dt,3).rjust(11)+\
                                 _cc_round(cc*cc,3).rjust(8)+\
                                 ' '+pick.phase+'\n'
@@ -313,5 +331,5 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                         continue
             if links >= min_link:
                 f.write(event_text)
-    f.write('\n')
+    # f.write('\n')
     f.close()
