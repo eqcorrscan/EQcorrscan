@@ -1,6 +1,8 @@
 #!/usr/bin/python
 """
 Useful timer for performance testing
+
+Not licenced as part of EQcorrscan
 """
 
 import time
