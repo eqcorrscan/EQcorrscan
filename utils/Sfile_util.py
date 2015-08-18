@@ -342,7 +342,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         # sys.exit()
     f=open(sfilename,'w')
     # Write line 1 of s-file
-    f.write(' '+str(evime.year)+' '+\
+    f.write(' '+str(evtime.year)+' '+\
             str(evtime.month).rjust(2)+\
             str(evtime.day).rjust(2)+' '+\
             str(evtime.hour).rjust(2)+\

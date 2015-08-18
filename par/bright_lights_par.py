@@ -44,7 +44,7 @@ trem_dates=[UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
        UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
        UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
        UTCDateTime('2013-03-28')] #tremor days
-date=trem_dates+dates
+dates=trem_dates+dates
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
