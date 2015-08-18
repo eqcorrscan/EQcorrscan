@@ -70,7 +70,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
@@ -147,6 +151,24 @@
 <span class="sd">Earthquake picks and locations are taken from the catalogued s-files - these</span>
 <span class="sd">must be pre-located before entering this routine as origin times and hypocentre</span>
 <span class="sd">locations are needed for event.dat files.</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">Sfile_util</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -183,7 +205,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">W2</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mf">4.0</span>
     <span class="n">W</span><span class="o">=</span><span class="p">(</span><span class="n">W1</span><span class="o">+</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-    <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="_separation"><a class="viewcode-back" href="../utils.html#catalogue2DD._separation">[docs]</a><span class="k">def</span> <span class="nf">_separation</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -332,15 +354,15 @@
                 <span class="c"># Loop through the matches</span>
                 <span class="k">for</span> <span class="n">slave_pick</span> <span class="ow">in</span> <span class="n">slave_matches</span><span class="p">:</span>
                     <span class="n">links</span><span class="o">+=</span><span class="mi">1</span>
-                    <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                    <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
                             <span class="n">_cc_round</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span>\
                             <span class="n">_cc_round</span><span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
-                            <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                            <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
                             <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
                     <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="c"># f.write(&#39;\n&#39;)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
 </div>
@@ -432,7 +454,7 @@
 
                         <span class="n">dt</span><span class="o">=</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">)</span><span class="o">-</span>\
                                 <span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">correction</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">)</span>
-                        <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                        <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
                                 <span class="n">_cc_round</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span>\
                                 <span class="n">_cc_round</span><span class="p">(</span><span class="n">cc</span><span class="o">*</span><span class="n">cc</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
                                 <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
@@ -441,7 +463,7 @@
                         <span class="k">continue</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="c"># f.write(&#39;\n&#39;)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 </pre></div>
 

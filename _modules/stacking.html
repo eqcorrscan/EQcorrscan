@@ -70,7 +70,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
@@ -134,6 +138,24 @@
 <span class="sd">In alpha stages and only with linear stacking implimented thusfar</span>
 
 <span class="sd">Calum Chamberlain 24/06/2015</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -147,7 +169,7 @@
 <span class="sd">    :returns: stack - Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># import matplotlib.pyplot as plt</span>
-    <span class="n">stack</span><span class="o">=</span><span class="n">streams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">stack</span><span class="o">=</span><span class="n">streams</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">])]</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">streams</span><span class="p">)):</span>
@@ -162,7 +184,7 @@
                                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">stack</span>
 </div>
-<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../utils.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="p">):</span>
+<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../utils.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the phase weighted stack of a series of streams</span>
 
@@ -193,7 +215,7 @@
     <span class="c"># Compute the phase-weighted stack</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">Phasestack</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">Linstack</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">*</span>\
-                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="n">weight</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Phasestack</span></div>
 </pre></div>
 

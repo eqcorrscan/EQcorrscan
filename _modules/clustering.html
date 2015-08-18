@@ -70,7 +70,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
@@ -136,6 +140,24 @@
 <span class="sd">methods, employed by implimentation of Frank et al. code.</span>
 
 <span class="sd">As such this code is designed to work only for templates with the same channels</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c"># I want to make sure that the lags for those that I cluster are similar as well</span>
@@ -193,8 +215,8 @@
 </div>
 <div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../utils.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to take a set of templates and cluster them, will return clustered</span>
-<span class="sd">    templates</span>
+<span class="sd">    Function to take a set of templates and cluster them, will return distance\</span>
+<span class="sd">            matrix of grouped templates</span>
 
 <span class="sd">    :type template: List of Obspy.Stream</span>
 
@@ -405,7 +427,7 @@
         <span class="n">SVstreams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">SVstream</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">SVstreams</span>
 </div>
-<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../utils.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> \
+<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../utils.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> \
                        <span class="n">extract_Z</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">additional_stations</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to extract the waveforms associated with each detection in a list</span>
@@ -414,10 +436,12 @@
 <span class="sd">    be saved if outdir is set.  The default is unset.  The default extract_len</span>
 <span class="sd">    is 90 seconds per channel.</span>
 
-<span class="sd">    :type detections: List of :class: datetime.datetime</span>
-<span class="sd">    :param detections: List of datetime objects</span>
-<span class="sd">    :type template: :class: obspy.Stream</span>
-<span class="sd">    :param template: The template Stream used to detect detections</span>
+<span class="sd">    :type detections: List tuple of of :class: datetime.datetime, string</span>
+<span class="sd">    :param detections: List of datetime objects, and their associated template\</span>
+<span class="sd">            name</span>
+<span class="sd">    :type templates: List of tuple of string and :class: obspy.Stream</span>
+<span class="sd">    :param templates: A list of the tuples of the template name and the template\</span>
+<span class="sd">            Stream used to detect detections.</span>
 <span class="sd">    :type extract_len: float</span>
 <span class="sd">    :param extract_len: Length to extract around the detection (will be equally\</span>
 <span class="sd">            cut around the detection time) in seconds.  Default is 90.0.</span>
@@ -425,7 +449,7 @@
 <span class="sd">    :param outdir: Default is None, with None set, no files will be saved,\</span>
 <span class="sd">            if set each detection will be saved into this directory with files\</span>
 <span class="sd">            named according to the detection time, NOT than the waveform\</span>
-<span class="sd">            start time.</span>
+<span class="sd">            start time. Detections will be saved into template subdirectories.</span>
 <span class="sd">    :type extract_Z: Bool</span>
 <span class="sd">    :param extract_Z: Set to True to also extract Z channels for detections\</span>
 <span class="sd">            delays will be the same as horizontal channels, only applies if\</span>
@@ -436,21 +460,28 @@
 
 <span class="sd">    :returns: List of :class: obspy.Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">UTCDateTime</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span>
     <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
     <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
     <span class="c"># Sort the template according to starttimes, needed so that stachan[i]</span>
     <span class="c"># corresponds to delays[i]</span>
-    <span class="n">template</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])</span>
-    <span class="n">stachans</span><span class="o">=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">)</span> \
-              <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">]</span>
-    <span class="n">mintime</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
-    <span class="n">delays</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">]</span>
+    <span class="n">all_delays</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of tuples of template name, delays</span>
+    <span class="n">all_stachans</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="n">templatestream</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])</span>
+        <span class="n">stachans</span><span class="o">=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">)</span> \
+                  <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">templatestream</span><span class="p">]</span>
+        <span class="n">mintime</span><span class="o">=</span><span class="n">templatestream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+        <span class="n">delays</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">templatestream</span><span class="p">]</span>
+        <span class="n">all_delays</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">delays</span><span class="p">))</span>
+        <span class="n">all_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stachans</span><span class="p">))</span>
     <span class="c"># Sort the detections and group by day</span>
     <span class="n">detections</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-    <span class="n">detection_days</span><span class="o">=</span><span class="p">[</span><span class="n">detection</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">]</span>
+    <span class="n">detection_days</span><span class="o">=</span><span class="p">[</span><span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">]</span>
     <span class="n">detection_days</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">detection_days</span><span class="p">))</span>
     <span class="n">detection_days</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
 
@@ -459,33 +490,47 @@
 
     <span class="c"># Also include Z channels when extracting detections</span>
     <span class="k">if</span> <span class="n">extract_Z</span><span class="p">:</span>
-        <span class="n">new_stachans</span><span class="o">=</span><span class="p">[]</span>
-        <span class="n">new_delays</span><span class="o">=</span><span class="p">[]</span>
-        <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="n">j</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
-                <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;Z&#39;</span><span class="p">,</span>\
-                                     <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]))</span>
-                <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
-        <span class="n">stachans</span><span class="o">=</span><span class="n">new_stachans</span>
-        <span class="n">delays</span><span class="o">=</span><span class="n">new_delays</span>
-
+        <span class="n">new_all_stachans</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">new_all_delays</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">t</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">all_stachans</span><span class="p">:</span>
+            <span class="n">stachans</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">delays</span><span class="o">=</span><span class="n">all_delays</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">new_stachans</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">new_delays</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">j</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;Z&#39;</span><span class="p">,</span>\
+                                         <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]))</span>
+                    <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="n">new_all_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_stachans</span><span class="p">))</span>
+            <span class="n">new_all_delays</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_delays</span><span class="p">))</span>
+            <span class="n">t</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">all_delays</span><span class="o">=</span><span class="n">new_all_delays</span>
+        <span class="n">all_stachans</span><span class="o">=</span><span class="n">new_all_stachans</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">additional_stations</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-        <span class="n">av_delay</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">delays</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">additional_stations</span><span class="p">:</span>
-            <span class="n">stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sta</span><span class="p">)</span>
-            <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">av_delay</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">all_stachans</span><span class="p">:</span>
+            <span class="n">av_delay</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">all_delays</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">additional_stations</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">template</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">template</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sta</span><span class="p">)</span>
+                    <span class="n">all_delays</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">av_delay</span><span class="p">)</span>
+            <span class="n">t</span><span class="o">+=</span><span class="mi">1</span>
 
     <span class="c"># Loop through the days</span>
     <span class="k">for</span> <span class="n">detection_day</span> <span class="ow">in</span> <span class="n">detection_days</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&#39;Working on detections for day: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection_day</span><span class="p">)</span>
+        <span class="n">stachans</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">stachans</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">stachans</span> <span class="ow">in</span> <span class="n">all_stachans</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="c"># List of all unique stachans - read in all data</span>
         <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
             <span class="n">contbase</span><span class="o">=</span><span class="p">[</span><span class="n">base</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span>\
                       <span class="k">if</span> <span class="n">base</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">stachan</span><span class="p">[</span><span class="mi">2</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
@@ -507,30 +552,45 @@
                     <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
         <span class="c"># We now have a stream of day long data, we should process it!</span>
-        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
-            <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">,</span>\
-                                        <span class="n">templatedef</span><span class="o">.</span><span class="n">highcut</span><span class="p">,</span>\
-                                        <span class="n">templatedef</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span>\
-                                        <span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">,</span>\
-                                        <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">detection_day</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">=</span><span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)(</span><span class="n">tr</span><span class="p">,</span> <span class="n">templatedef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">,</span>\
+                                                               <span class="n">templatedef</span><span class="o">.</span><span class="n">highcut</span><span class="p">,</span>\
+                                                               <span class="n">templatedef</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span>\
+                                                               <span class="n">templatedef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">,</span>\
+                                                               <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">detection_day</span><span class="p">)</span>\
+                                <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+        <span class="n">st</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
+        <span class="c"># for tr in st:</span>
+            <span class="c"># tr=pre_processing.dayproc(tr, templatedef.lowcut,\</span>
+                                        <span class="c"># templatedef.highcut,\</span>
+                                        <span class="c"># templatedef.filter_order,\</span>
+                                        <span class="c"># templatedef.samp_rate,\</span>
+                                        <span class="c"># matchdef.debug, detection_day)</span>
         <span class="n">day_detections</span><span class="o">=</span><span class="p">[</span><span class="n">detection</span> <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span>\
-                        <span class="k">if</span> <span class="n">detection</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">==</span> <span class="n">detection_day</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">==</span> <span class="n">detection_day</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">day_detections</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Cutting for detections at: &#39;</span><span class="o">+</span><span class="n">detection</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+            <span class="n">template</span><span class="o">=</span><span class="n">detection</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">t_stachans</span><span class="o">=</span><span class="p">[</span><span class="n">stachans</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">stachans</span> <span class="ow">in</span> <span class="n">all_stachans</span> \
+                      <span class="k">if</span> <span class="n">stachans</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">template</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">t_delays</span><span class="o">=</span><span class="p">[</span><span class="n">delays</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">delays</span> <span class="ow">in</span> <span class="n">all_delays</span>\
+                    <span class="k">if</span> <span class="n">delays</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">template</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">print</span> <span class="s">&#39;Cutting for detections at: &#39;</span><span class="o">+</span><span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
             <span class="n">detect_wav</span><span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">detect_wav</span><span class="p">:</span>
-                <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">delays</span><span class="p">))</span> <span class="k">if</span> <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span>\
+                <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">t_delays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_delays</span><span class="p">))</span> <span class="k">if</span> <span class="n">t_stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span>\
                        <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
                         <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">1</span><span class="p">])][</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">detection</span><span class="p">)</span><span class="o">+</span><span class="n">delay</span><span class="o">-</span><span class="n">extract_len</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>\
-                            <span class="n">endtime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">detection</span><span class="p">)</span><span class="o">+</span><span class="n">delay</span><span class="o">+</span><span class="n">extract_len</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="n">delay</span><span class="o">-</span><span class="n">extract_len</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>\
+                            <span class="n">endtime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="n">delay</span><span class="o">+</span><span class="n">extract_len</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
             <span class="n">detection_wavefiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">detect_wav</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">outdir</span><span class="p">:</span>
-                <span class="n">detect_wav</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
-                                  <span class="n">detection</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span>\
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="p">):</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="p">)</span>
+                <span class="n">detect_wav</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                                  <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span>\
                                   <span class="s">&#39;.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
-                <span class="k">print</span> <span class="s">&#39;Written file: &#39;</span><span class="o">+</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
-                         <span class="n">detection</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.ms&#39;</span>
+                <span class="k">print</span> <span class="s">&#39;Written file: &#39;</span><span class="o">+</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                         <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.ms&#39;</span>
         <span class="k">del</span> <span class="n">st</span><span class="p">,</span> <span class="n">detect_wav</span>
         <span class="k">if</span> <span class="n">outdir</span><span class="p">:</span>
             <span class="n">detection_wavefiles</span><span class="o">=</span><span class="p">[]</span>
