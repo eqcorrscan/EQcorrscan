@@ -9,10 +9,29 @@
 """
 LFE_brightness_search - Script to generate templates using the birghtness function
 then seaach for repeats of them in contnuous data.
+
+Copyright 2015 Calum Chamberlain
+
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 import sys, glob
 instance=0
+Split=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
 if len(sys.argv) == 2:
@@ -198,7 +217,6 @@ for day in dates: #Loop through dates
     if not Prep:
         stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
         print "Running the detection routine"
-        print stations
         # Check that the data are okay
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream,
@@ -259,7 +277,7 @@ import numpy as np
 # we need, which is VERY important as I/O is very costly and will eat memory
 stations=list(set(stations))
 
-if split:
+if Split:
     node_file=open('Nodes_detected_'+str(instance)+'.csv','w')
 else:
     node_file=open('Nodes_detected.csv','w')
