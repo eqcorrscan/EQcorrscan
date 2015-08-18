@@ -1,6 +1,19 @@
 # EQcorrscan
 A python package to conduct match-filter earthquake detections.
 
+If you are looking for a (relatively) stable release, please download the latest
+[release](https://github.com/calum-chamberlain/EQcorrscan/releases/tag/v0.0-alpha.1).
+This is currently the first alpha release and things will change rapidly, however
+changes will be implimented first to the master branch, then pushed to the release
+and the release number updated.  Please raise issues on this repository, preferably
+with helpful comments, like line numbers, the command run and the error messages.
+Alternatively, fork the master and help me develop this!
+
+The full documentation for this package can be found here:
+[EQcorrscan](http://calum-chamberlain.github.io/EQcorrscan/) - you are also
+welcome to suggest documentation updates or update the doc in the master branch, please
+do not work on the documentation in the gh-pages branch!
+
 This package contains routines to enable the user to conduct match-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
 and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
