@@ -10,6 +10,7 @@ Welcome to EQcorrscan's documentation
     :width: 300px
     :align: left
     :alt: EQcorrscan_logo.png
+    :target: https://github.com/calum-chamberlain/EQcorrscan/releases
 
 EQcorrscan
 ----------
