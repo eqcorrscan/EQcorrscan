@@ -1,6 +1,24 @@
 #!/usr/bin/python
 """
 Utility code for most of the plots used as part of the EQcorrscan package.
+
+Copyright 2015 Calum Chamberlain
+
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 import numpy as np
 import matplotlib.pylab as plt
@@ -325,26 +343,31 @@ def Noise_plotting(station, channel, PAZ, datasource):
     ppsd.plot()
     return ppsd
 
-def pretty_template_plot(template):
+def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False):
     """
     Function to make a pretty plot of a single template, designed to work better
     than the default obspy plotting routine for short data lengths.
 
     :type template: :class: obspy.Stream
     """
-    fig, axes = plt.subplots(len(template), 1, sharex=True)
+    fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     axes = axes.ravel()
     mintime=template.sort(['starttime'])[0].stats.starttime
     i=0
     for tr in template:
         delay=tr.stats.starttime-mintime
         y=tr.data
-        x=np.arange(delay, (len(y)*tr.stats.delta)+delay,\
-                    tr.stats.delta)
+        x=np.arange(delay, len(y)+delay)
+        x=x*tr.stats.delta
         axes[i].plot(x, y, 'k', linewidth=2)
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
         axes[i].yaxis.set_ticks([])
         i+=1
     axes[i-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0)
-    plt.show()
+    if title:
+        axes[0].set_title(title)
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(save)

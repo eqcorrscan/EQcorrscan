@@ -6,6 +6,24 @@ stacking of seismic signal in one place.
 In alpha stages and only with linear stacking implimented thusfar
 
 Calum Chamberlain 24/06/2015
+
+Copyright 2015 Calum Chamberlain
+
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 import numpy as np
@@ -34,7 +52,7 @@ def linstack(streams):
                                tr.data), axis=0)
     return stack
 
-def PWS_stack(streams, weight):
+def PWS_stack(streams, weight=2):
     """
     Function to compute the phase weighted stack of a series of streams
 
@@ -65,5 +83,5 @@ def PWS_stack(streams, weight):
     # Compute the phase-weighted stack
     for tr in Phasestack:
         tr.data=Linstack.select(station=tr.stats.station)[0].data*\
-                np.abs(np.square(tr.data))
+                np.abs(tr.data**weight)
     return Phasestack
