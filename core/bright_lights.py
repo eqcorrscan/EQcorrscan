@@ -345,6 +345,17 @@ def coherance(stream):
 
     :return: float - coherance
     """
+    # First check that all channels in stream have data of the same length
+    maxlen=np.max([len(tr.data) for tr in stream])
+    for tr in steam:
+        if not len(tr.data) == maxlen:
+            warnings.warn(tr.statsstation+'.'+tr.stats.channel+\
+                          ' is not the same length, padding')
+            pad=np.zeros(maxlen-len(tr.data))
+            if tr.stats.starttime.hour == 0:
+                tr.data=np.concatenate(pad, tr.data)
+            else:
+                tr.data=np.concatenate(tr.data, pad)
     coherance=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
