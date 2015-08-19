@@ -30,6 +30,7 @@ This file is part of EQcorrscan.
 """
 
 import sys, glob
+import datetime as dt
 instance=0
 Split=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
@@ -43,20 +44,34 @@ if len(sys.argv) == 2:
         Test=False
         Prep=True
     else:
-        raise ValueError("I don't recognise the argument, I only know --debug and --debug-prep")
+        raise IOError("I don't recognise your arguments I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
 elif len(sys.argv) == 5:
-    # Arguments to allow the code to be run in multiple instances
-    Split=True
-    Test=False
-    Prep=False
     args=sys.argv[1:len(sys.argv)]
-    for i in xrange(len(args)):
-        if args[i] == '--instance':
-            instance=int(args[i+1])
-            print 'I will run this for instance '+str(instance)
-        elif args[i] == '--splits':
-            splits=int(args[i+1])
-            print 'I will divide the days into '+str(splits)+' chunks'
+    if args[0] == '--instance' or args[2]=='--instance':
+        # Arguments to allow the code to be run in multiple instances
+        Split=True
+        Test=False
+        Prep=False
+        for i in xrange(len(args)):
+            if args[i] == '--instance':
+                instance=int(args[i+1])
+                print 'I will run this for instance '+str(instance)
+            elif args[i] == '--splits':
+                splits=int(args[i+1])
+                print 'I will divide the days into '+str(splits)+' chunks'
+    elif args[0] == '--startdate' or args[2] == '--startdate':
+        Split=False
+        Test=False
+        Prep=False
+        for i in xrange(len(args)):
+            if args[i]== '--startdate':
+                startdate=dt.datetime.strptime(str(args[i+1]),'%Y/%m/%d')
+                print 'Start date is: '+dt.datetime.strftime(startdate, '%Y/%m/%d')
+            elif args[i] == '--enddate':
+                enddate=dt.datetime.strptime(str(args[i+1]), '%Y/%m/%d')
+                print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
+    else:
+        raise IOError("I don't recognise your arguments,  I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
 elif not len(sys.argv) == 1:
     raise ValueError("I only take one argument, no arguments, or two flags with arguments")
 else:
@@ -126,20 +141,24 @@ plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png'
 templates=[]
 nodesout=[]
 
-ndays=len(brightdef.dates)
+if startdate:
+    dates=[UTCDateTime(startdate)+i for i in xrange(0, int(UTCDateTime(enddate) -\
+                                                           UTCDateTime(startdate)),\
+                                                    86400)]
+else:
+    dates=brightdef.dates
+
+ndays=len(dates)
 print 'Will loop through '+str(ndays)+' days'
 if Split:
     if instance==splits-1:
         ndays=ndays-(ndays/splits)*(splits-1)
-        dates=brightdef.dates[-ndays:]
+        dates=dates[-ndays:]
     else:
         ndays=ndays/splits
-        dates=brightdef.dates[ndays*instance:(ndays*instance)+ndays]
+        dates=dates[ndays*instance:(ndays*instance)+ndays]
     print 'This instance will run for '+str(ndays)+' days'
     print 'This instance will run from '+str(min(dates))
-else:
-    dates=brightdef.dates
-
 
 
 for day in dates: #Loop through dates
