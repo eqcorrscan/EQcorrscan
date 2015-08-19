@@ -10,11 +10,14 @@ Welcome to EQcorrscan's documentation
     :width: 300px
     :align: left
     :alt: EQcorrscan_logo.png
+    :target: https://github.com/calum-chamberlain/EQcorrscan/releases
 
 EQcorrscan
 ----------
 
-A python package to conduct match-filter earthquake detections.
+A python package to conduct match-filter earthquake detections.  Codes are stored
+on github, the bleeding edge master is `here <https://github.com/calum-chamberlain/EQcorrscan>`_, or the latest stable(ish) release
+can be found `here <https://github.com/calum-chamberlain/EQcorrscan/releases>`_
 
 This package contains routines to enable the user to conduct match-filter earthquake
 detections using `Obspy <https://github.com/obspy/obspy/wiki>`_ bindings when reading

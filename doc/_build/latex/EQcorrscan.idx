@@ -1,69 +1,76 @@
-\indexentry{bright\_lights (module)|hyperpage}{11}
-\indexentry{\_find\_detections() (in module bright\_lights)|hyperpage}{11}
-\indexentry{\_node\_loop() (in module bright\_lights)|hyperpage}{12}
-\indexentry{\_read\_tt() (in module bright\_lights)|hyperpage}{12}
-\indexentry{\_resample\_grid() (in module bright\_lights)|hyperpage}{12}
-\indexentry{\_rm\_similarlags() (in module bright\_lights)|hyperpage}{12}
-\indexentry{brightness() (in module bright\_lights)|hyperpage}{13}
-\indexentry{coherance() (in module bright\_lights)|hyperpage}{13}
-\indexentry{template\_gen (module)|hyperpage}{13}
-\indexentry{\_template\_gen() (in module template\_gen)|hyperpage}{14}
-\indexentry{from\_contbase() (in module template\_gen)|hyperpage}{14}
-\indexentry{from\_sfile() (in module template\_gen)|hyperpage}{14}
-\indexentry{match\_filter (module)|hyperpage}{15}
-\indexentry{DETECTION (class in match\_filter)|hyperpage}{15}
-\indexentry{\_channel\_loop() (in module match\_filter)|hyperpage}{16}
-\indexentry{\_template\_loop() (in module match\_filter)|hyperpage}{16}
-\indexentry{match\_filter() (in module match\_filter)|hyperpage}{16}
-\indexentry{normxcorr2() (in module match\_filter)|hyperpage}{16}
-\indexentry{lag\_calc (module)|hyperpage}{17}
-\indexentry{\_channel\_loop() (in module lag\_calc)|hyperpage}{17}
-\indexentry{day\_loop() (in module lag\_calc)|hyperpage}{17}
-\indexentry{lag\_calc() (in module lag\_calc)|hyperpage}{18}
-\indexentry{Sfile\_util (module)|hyperpage}{19}
-\indexentry{PICK (class in Sfile\_util)|hyperpage}{19}
-\indexentry{blanksfile() (in module Sfile\_util)|hyperpage}{19}
-\indexentry{populateSfile() (in module Sfile\_util)|hyperpage}{19}
-\indexentry{readpicks() (in module Sfile\_util)|hyperpage}{19}
-\indexentry{readwavename() (in module Sfile\_util)|hyperpage}{19}
-\indexentry{findpeaks (module)|hyperpage}{20}
-\indexentry{find\_peaks() (in module findpeaks)|hyperpage}{20}
-\indexentry{find\_peaks2() (in module findpeaks)|hyperpage}{20}
-\indexentry{clustering (module)|hyperpage}{20}
-\indexentry{SVD\_2\_stream\_testing() (in module clustering)|hyperpage}{20}
-\indexentry{SVD\_tetsing() (in module clustering)|hyperpage}{21}
-\indexentry{cluster() (in module clustering)|hyperpage}{21}
-\indexentry{cross\_chan\_coherance() (in module clustering)|hyperpage}{21}
-\indexentry{distance\_matrix() (in module clustering)|hyperpage}{21}
-\indexentry{group\_delays() (in module clustering)|hyperpage}{21}
-\indexentry{pre\_processing (module)|hyperpage}{21}
-\indexentry{\_check\_daylong() (in module pre\_processing)|hyperpage}{21}
-\indexentry{dayproc() (in module pre\_processing)|hyperpage}{21}
-\indexentry{shortproc() (in module pre\_processing)|hyperpage}{22}
-\indexentry{EQcorrscan\_plotting (module)|hyperpage}{22}
-\indexentry{Noise\_plotting() (in module EQcorrscan\_plotting)|hyperpage}{22}
-\indexentry{cumulative\_detections() (in module EQcorrscan\_plotting)|hyperpage}{22}
-\indexentry{detection\_multiplot() (in module EQcorrscan\_plotting)|hyperpage}{22}
-\indexentry{detection\_timeseries() (in module EQcorrscan\_plotting)|hyperpage}{22}
-\indexentry{peaks\_plot() (in module EQcorrscan\_plotting)|hyperpage}{22}
-\indexentry{threeD\_gridplot() (in module EQcorrscan\_plotting)|hyperpage}{23}
-\indexentry{threeD\_seismplot() (in module EQcorrscan\_plotting)|hyperpage}{23}
-\indexentry{triple\_plot() (in module EQcorrscan\_plotting)|hyperpage}{23}
-\indexentry{mag\_calc (module)|hyperpage}{23}
-\indexentry{Amp\_pick\_sfile() (in module mag\_calc)|hyperpage}{23}
-\indexentry{\_GSE2\_PAZ\_read() (in module mag\_calc)|hyperpage}{24}
-\indexentry{\_find\_resp() (in module mag\_calc)|hyperpage}{24}
-\indexentry{\_max\_p2t() (in module mag\_calc)|hyperpage}{24}
-\indexentry{\_sim\_WA() (in module mag\_calc)|hyperpage}{24}
-\indexentry{stacking (module)|hyperpage}{24}
-\indexentry{PWS\_stack() (in module stacking)|hyperpage}{25}
-\indexentry{linstack() (in module stacking)|hyperpage}{25}
-\indexentry{catalogue2DD (module)|hyperpage}{25}
-\indexentry{\_av\_weight() (in module catalogue2DD)|hyperpage}{25}
-\indexentry{\_cc\_round() (in module catalogue2DD)|hyperpage}{25}
-\indexentry{readSTATION0() (in module catalogue2DD)|hyperpage}{25}
-\indexentry{write\_catalogue() (in module catalogue2DD)|hyperpage}{25}
-\indexentry{write\_correlations() (in module catalogue2DD)|hyperpage}{25}
-\indexentry{write\_event() (in module catalogue2DD)|hyperpage}{26}
-\indexentry{match\_filter\_par (module)|hyperpage}{27}
-\indexentry{template\_gen\_par (module)|hyperpage}{27}
+\indexentry{bright\_lights (module)|hyperpage}{12}
+\indexentry{\_cum\_net\_resp() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_find\_detections() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_node\_loop() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_read\_tt() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_resample\_grid() (in module bright\_lights)|hyperpage}{13}
+\indexentry{\_rm\_similarlags() (in module bright\_lights)|hyperpage}{14}
+\indexentry{brightness() (in module bright\_lights)|hyperpage}{14}
+\indexentry{coherance() (in module bright\_lights)|hyperpage}{14}
+\indexentry{template\_gen (module)|hyperpage}{15}
+\indexentry{\_template\_gen() (in module template\_gen)|hyperpage}{15}
+\indexentry{from\_contbase() (in module template\_gen)|hyperpage}{15}
+\indexentry{from\_sfile() (in module template\_gen)|hyperpage}{16}
+\indexentry{match\_filter (module)|hyperpage}{16}
+\indexentry{DETECTION (class in match\_filter)|hyperpage}{17}
+\indexentry{\_channel\_loop() (in module match\_filter)|hyperpage}{18}
+\indexentry{\_template\_loop() (in module match\_filter)|hyperpage}{18}
+\indexentry{match\_filter() (in module match\_filter)|hyperpage}{18}
+\indexentry{normxcorr2() (in module match\_filter)|hyperpage}{18}
+\indexentry{run\_channel\_loop() (in module match\_filter)|hyperpage}{19}
+\indexentry{lag\_calc (module)|hyperpage}{19}
+\indexentry{\_channel\_loop() (in module lag\_calc)|hyperpage}{20}
+\indexentry{day\_loop() (in module lag\_calc)|hyperpage}{20}
+\indexentry{lag\_calc() (in module lag\_calc)|hyperpage}{20}
+\indexentry{Sfile\_util (module)|hyperpage}{20}
+\indexentry{PICK (class in Sfile\_util)|hyperpage}{21}
+\indexentry{blanksfile() (in module Sfile\_util)|hyperpage}{21}
+\indexentry{populateSfile() (in module Sfile\_util)|hyperpage}{21}
+\indexentry{readpicks() (in module Sfile\_util)|hyperpage}{21}
+\indexentry{readwavename() (in module Sfile\_util)|hyperpage}{21}
+\indexentry{findpeaks (module)|hyperpage}{21}
+\indexentry{find\_peaks() (in module findpeaks)|hyperpage}{22}
+\indexentry{find\_peaks2() (in module findpeaks)|hyperpage}{22}
+\indexentry{clustering (module)|hyperpage}{22}
+\indexentry{SVD\_2\_stream\_testing() (in module clustering)|hyperpage}{23}
+\indexentry{SVD\_testing() (in module clustering)|hyperpage}{23}
+\indexentry{allign\_traces() (in module clustering)|hyperpage}{23}
+\indexentry{cluster() (in module clustering)|hyperpage}{23}
+\indexentry{cross\_chan\_coherance() (in module clustering)|hyperpage}{23}
+\indexentry{distance\_matrix() (in module clustering)|hyperpage}{23}
+\indexentry{extract\_detections() (in module clustering)|hyperpage}{23}
+\indexentry{group\_delays() (in module clustering)|hyperpage}{24}
+\indexentry{pre\_processing (module)|hyperpage}{24}
+\indexentry{\_check\_daylong() (in module pre\_processing)|hyperpage}{24}
+\indexentry{dayproc() (in module pre\_processing)|hyperpage}{24}
+\indexentry{shortproc() (in module pre\_processing)|hyperpage}{25}
+\indexentry{EQcorrscan\_plotting (module)|hyperpage}{25}
+\indexentry{Noise\_plotting() (in module EQcorrscan\_plotting)|hyperpage}{25}
+\indexentry{cumulative\_detections() (in module EQcorrscan\_plotting)|hyperpage}{25}
+\indexentry{detection\_multiplot() (in module EQcorrscan\_plotting)|hyperpage}{25}
+\indexentry{detection\_timeseries() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{peaks\_plot() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{pretty\_template\_plot() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{threeD\_gridplot() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{threeD\_seismplot() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{triple\_plot() (in module EQcorrscan\_plotting)|hyperpage}{26}
+\indexentry{mag\_calc (module)|hyperpage}{26}
+\indexentry{Amp\_pick\_sfile() (in module mag\_calc)|hyperpage}{27}
+\indexentry{\_GSE2\_PAZ\_read() (in module mag\_calc)|hyperpage}{27}
+\indexentry{\_find\_resp() (in module mag\_calc)|hyperpage}{27}
+\indexentry{\_max\_p2t() (in module mag\_calc)|hyperpage}{27}
+\indexentry{\_sim\_WA() (in module mag\_calc)|hyperpage}{28}
+\indexentry{dist\_calc() (in module mag\_calc)|hyperpage}{28}
+\indexentry{stacking (module)|hyperpage}{28}
+\indexentry{PWS\_stack() (in module stacking)|hyperpage}{28}
+\indexentry{linstack() (in module stacking)|hyperpage}{28}
+\indexentry{catalogue2DD (module)|hyperpage}{29}
+\indexentry{\_av\_weight() (in module catalogue2DD)|hyperpage}{29}
+\indexentry{\_cc\_round() (in module catalogue2DD)|hyperpage}{29}
+\indexentry{\_separation() (in module catalogue2DD)|hyperpage}{29}
+\indexentry{readSTATION0() (in module catalogue2DD)|hyperpage}{29}
+\indexentry{write\_catalogue() (in module catalogue2DD)|hyperpage}{29}
+\indexentry{write\_correlations() (in module catalogue2DD)|hyperpage}{30}
+\indexentry{write\_event() (in module catalogue2DD)|hyperpage}{30}
+\indexentry{match\_filter\_par (module)|hyperpage}{30}
+\indexentry{template\_gen\_par (module)|hyperpage}{31}
