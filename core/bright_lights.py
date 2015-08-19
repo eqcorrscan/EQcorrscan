@@ -419,7 +419,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     detections=[]
     detect_lags=[]
     parallel=True
-    plotvar=True
+    plotvar=False
     mem_issue=True
     # Loop through each node in the input
     # Linear run
