@@ -72,6 +72,21 @@ elif len(sys.argv) == 5:
                 print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
     else:
         raise IOError("I don't recognise your arguments,  I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
+elif len(sys.argv) == 7:
+    args=sys.argv[1:len(sys.argv)]
+    Split=False
+    Test=False
+    Prep=False
+    for i in xrange(len(args)):
+        if args[i]== '--startdate':
+            startdate=dt.datetime.strptime(str(args[i+1]),'%Y/%m/%d')
+            print 'Start date is: '+dt.datetime.strftime(startdate, '%Y/%m/%d')
+        elif args[i] == '--enddate':
+            enddate=dt.datetime.strptime(str(args[i+1]), '%Y/%m/%d')
+            print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
+        elif args[i] == '--instance':
+            instance=int(args[i+1])
+            print 'This instance is given the flag '+str(instance)
 elif not len(sys.argv) == 1:
     raise ValueError("I only take one argument, no arguments, or two flags with arguments")
 else:
