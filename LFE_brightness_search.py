@@ -33,6 +33,7 @@ import sys, glob
 import datetime as dt
 instance=0
 Split=False
+startdate=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
 if len(sys.argv) == 2:
