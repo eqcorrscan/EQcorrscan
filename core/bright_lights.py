@@ -347,7 +347,7 @@ def coherance(stream):
     """
     # First check that all channels in stream have data of the same length
     maxlen=np.max([len(tr.data) for tr in stream])
-    for tr in steam:
+    for tr in stream:
         if not len(tr.data) == maxlen:
             warnings.warn(tr.statsstation+'.'+tr.stats.channel+\
                           ' is not the same length, padding')
