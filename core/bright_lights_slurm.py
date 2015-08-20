@@ -68,7 +68,7 @@ This file is part of EQcorrscan.
 #SBATCH --mem=16G
 #SBATCH --ntasks=20
 
-import sys, os
+import sys, os, warnings
 sys.path.append(os.getcwd())
 
 import numpy as np
