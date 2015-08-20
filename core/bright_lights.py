@@ -58,6 +58,7 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+import warnings
 import numpy as np
 def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     """
@@ -349,7 +350,7 @@ def coherance(stream):
     maxlen=np.max([len(tr.data) for tr in stream])
     for tr in stream:
         if not len(tr.data) == maxlen:
-            warnings.warn(tr.statsstation+'.'+tr.stats.channel+\
+            warnings.warn(tr.stats.station+'.'+tr.stats.channel+\
                           ' is not the same length, padding')
             pad=np.zeros(maxlen-len(tr.data))
             if tr.stats.starttime.hour == 0:
