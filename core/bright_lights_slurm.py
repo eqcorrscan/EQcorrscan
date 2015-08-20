@@ -464,8 +464,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         num_cores=brightdef.cores
         if num_cores > len(nodes):
             num_cores=len(nodes)
-        if num_cores > ncpus():
-            num_cores=ncpus()
+        if num_cores > ncpus:
+            num_cores=ncpus
+        print 'Starting parallel run with '+str(num_cores)+' cores'
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_node_loop, args=(stations,\
                                                     lags[:,i], stream, i,\
