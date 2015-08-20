@@ -65,7 +65,7 @@ This file is part of EQcorrscan.
 #SBATCH -A nesi00186
 #SBATCH --nodes=1
 #SBATCH --exclusive
-#SBATCH --mem=16G
+#SBATCH --mem=40G
 #SBATCH --ntasks=20
 
 import sys, os, warnings
