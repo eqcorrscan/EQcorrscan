@@ -250,7 +250,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0):
             warnings.warn('Too many stations')
             j=[j[0]]
         if len(j)==0:
-            warnings.warn('No station match')
+            warnings.warn('No station match for '+tr.stats.station)
             continue
         lag=lags[j[0]]
         pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
