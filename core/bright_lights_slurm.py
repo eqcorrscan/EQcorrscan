@@ -362,7 +362,7 @@ def coherance(stream):
     maxlen=np.max([len(tr.data) for tr in stream])
     for tr in stream:
         if not len(tr.data) == maxlen:
-            warnings.warn(tr.statsstation+'.'+tr.stats.channel+\
+            warnings.warn(tr.stats.station+'.'+tr.stats.channel+\
                           ' is not the same length, padding')
             pad=np.zeros(maxlen-len(tr.data))
             if tr.stats.starttime.hour == 0:
