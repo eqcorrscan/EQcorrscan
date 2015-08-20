@@ -457,10 +457,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 j, filename=_node_loop(stations, lags[:,i], stream, i, mem_issue)
     else:
         # Parallel run
-	try:
-	    ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
-	except KeyError:
-	    ncpus = cpu_count()
+        try:
+            ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
+        except KeyError:
+            ncpus = cpu_count()
         num_cores=brightdef.cores
         if num_cores > len(nodes):
             num_cores=len(nodes)
