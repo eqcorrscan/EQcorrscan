@@ -48,6 +48,7 @@ from core import template_gen
 from utils import seismo_logs
 
 Split=False
+instance=False
 if len(sys.argv) == 2:
     flag=str(sys.argv[1])
     if flag == '--debug':

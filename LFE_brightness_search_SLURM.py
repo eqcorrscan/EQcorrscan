@@ -35,13 +35,14 @@ This file is part of EQcorrscan.
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --ntasks=20
+#SBATCH --mem=80G
 
 import sys,os
 sys.path.append(os.getcwd())
-
 import glob
 import datetime as dt
 instance=0
+startdate=False
 Split=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
