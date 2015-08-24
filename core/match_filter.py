@@ -469,6 +469,10 @@ def match_filter(template_names, templates, stream, threshold,
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintins timeing
         if plotvar:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            plt.ioff()
             stream_plot=copy.deepcopy(stream[0])
             # Downsample for plotting
             stream_plot.decimate(int(stream[0].stats.sampling_rate/20))
