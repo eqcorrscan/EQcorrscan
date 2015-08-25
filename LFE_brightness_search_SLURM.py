@@ -28,12 +28,22 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+#SBATCH --job-name=LFE_brightness_search
+#SBATCH --output=logs/LFE_brightness_search.out
+#SBATCH --time=02:00:00
+#SBATCH --account=nesi00186
+#SBATCH --nodes=1
+#SBATCH --exclusive
+#SBATCH --ntasks=20
+#SBATCH --mem=80G
 
-import sys, glob
+import sys,os
+sys.path.append(os.getcwd())
+import glob
 import datetime as dt
 instance=0
-Split=False
 startdate=False
+Split=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
 if len(sys.argv) == 2:
@@ -107,12 +117,17 @@ if brightdef.plotsave:
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import bright_lights, match_filter
+from core import bright_lights_slurm as bright_lights, match_filter
 from utils import pre_processing
 from utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
 import warnings
+from multiprocessing import cpu_count
+try:
+    ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
+except KeyError:
+    ncpus =cpu_count()
 
 templates=[]
 delays=[]
@@ -241,7 +256,7 @@ for day in dates: #Loop through dates
                                             templatedef.filter_order, templatedef.samp_rate,\
                                             templatedef.debug, day)
         else:
-            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+            stream=Parallel(n_jobs=ncpus)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
                                                                    templatedef.highcut,\
                                                                    templatedef.filter_order,\
                                                                    templatedef.samp_rate,\
