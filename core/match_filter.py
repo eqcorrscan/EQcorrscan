@@ -214,7 +214,9 @@ def _template_loop(template, chan, station, channel, i=0):
         print "If statement without correlation took %s s" % t.secs
     if matchdef.debug >= 3:
         print '********* DEBUG:  '+station+'.'+\
-                channel+' ccc: '+str(max(ccc[0]))
+                channel+' ccc MAX: '+str(max(ccc[0]))
+        print '********* DEBUG:  '+station+'.'+\
+                channel+' ccc MEAN: '+str(np.mean(ccc[0]))
     if matchdef.debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
@@ -471,6 +473,7 @@ def match_filter(template_names, templates, stream, threshold,
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
         print 'Threshold is set at: '+str(rawthresh)
         print 'Max of data is: '+str(max(cccsum))
+        print 'Mean of data is: '+str(np.mean(cccsum))
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintins timeing
         if plotvar:
@@ -489,9 +492,9 @@ def match_filter(template_names, templates, stream, threshold,
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
                                         str(stream[0].stats.starttime.day)+'.pdf')
-            np.save(template_names[i]+\
-                        stream[0].stats.starttime.datetime.strftime('%Y%j'),\
-                    cccsum)
+            # np.save(template_names[i]+\
+                        # stream[0].stats.starttime.datetime.strftime('%Y%j'),\
+                    # cccsum)
         tic=time.clock()
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
             peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
