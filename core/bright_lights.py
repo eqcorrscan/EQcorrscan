@@ -537,7 +537,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     detection.template_name.split('_')[1],\
                     detection.template_name.split('_')[2])
             print node
-            nodesout+=[node]
             # Look up node in nodes and find the associated lags
             index=nodes.index(node)
             detect_lags=lags[:,index]
@@ -575,6 +574,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             del copy_of_stream, tr, template
             if coherant:
                 templates.append(obsread(template_name))
+                nodesout+=[node]
             else:
                 print 'No templates for you'
     nodesout=list(set(nodesout))
