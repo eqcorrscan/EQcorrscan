@@ -141,7 +141,7 @@ def readheader(sfilename):
             sfilename_header.time=UTCDateTime(int(topline[1:5]),int(topline[6:8]),
                                         int(topline[8:10]),int(topline[11:13]),
                                         int(topline[13:15]),sfile_seconds
-                                        ,int(topline[19:20])*10)+add_seconds
+                                        ,int(topline[19:20])*100000)+add_seconds
         except:
             warnings.warn("Couldn't read a date from sfile: "+sfilename)
             sfilename_header.time=UTCDateTime(0)
