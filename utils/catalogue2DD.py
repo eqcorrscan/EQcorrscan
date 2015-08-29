@@ -38,7 +38,7 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import Sfile_util
+import Sfile_util, os
 import numpy as np
 
 def _cc_round(num, dp):
@@ -66,10 +66,14 @@ def _av_weight(W1, W2):
     """
     if W1==' ':
         W1=1
+    elif W1=='9':
+        W1=0
     else:
         W1=1-int(W1)/4.0
     if W2==' ':
         W2=1
+    elif W2=='9':
+        W2=0
     else:
         W2=1-int(W2)/4.0
     W=(W1+W2)/2
@@ -151,7 +155,9 @@ def write_event(sfile_list):
     :returns: List of tuples of event ID (int) and Sfile name
     """
     event_list=[]
-    sfile_list.sort()
+    sort_list=[(Sfile_util.readheader(sfile).time, sfile) for sfile in sfile_list]
+    sort_list.sort(key=lambda tup:tup[0])
+    sfile_list=[sfile[1] for sfile in sort_list]
     i=0
     f=open('event.dat','w')
     for sfile in sfile_list:
@@ -162,7 +168,7 @@ def write_event(sfile_list):
                 str(evinfo.time.day).zfill(2)+'  '+\
                 str(evinfo.time.hour).rjust(2)+str(evinfo.time.minute).zfill(2)+\
                 str(evinfo.time.second).zfill(2)+\
-                str(evinfo.time.microsecond).zfill(2)+'  '+\
+                str(evinfo.time.microsecond)[0:2].zfill(2)+'  '+\
                 str(evinfo.latitude).ljust(8,'0')+'   '+\
                 str(evinfo.longitude).ljust(8,'0')+'  '+\
                 str(evinfo.depth).rjust(7).ljust(9,'0')+'   '+\
@@ -189,15 +195,23 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
     :returns: List stations
     """
     f=open('dt.ct','w')
+    fphase=open('phase.dat','w')
     stations=[]
+    evcount=0
     for i in xrange(len(event_list)):
         master_sfile=event_list[i][1]
         master_event_id=event_list[i][0]
         master_picks=Sfile_util.readpicks(master_sfile)
         master_ori_time=Sfile_util.readheader(master_sfile).time
+        # print 'Master origin time: '+str(master_ori_time)
         master_location=(Sfile_util.readheader(master_sfile).latitude,\
                          Sfile_util.readheader(master_sfile).longitude,\
                          Sfile_util.readheader(master_sfile).depth)
+        header='#  '+str(master_ori_time.year)
+        fphase.write(header+'\n')
+        for pick in master_picks:
+            fphase.write(pick.station+'  '+_cc_round(pick.time-master_ori_time,3)+\
+                         '   '+'\n')
         for j in xrange(i+1,len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile=event_list[j][1]
@@ -230,12 +244,16 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
                     stations.append(pick.station)
             if links >= min_link:
                 f.write(event_text)
+                evcount+=1
+    print 'You have '+str(evcount)+' links'
     # f.write('\n')
     f.close()
+    fphase.close()
     return list(set(stations))
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
-                       lowcut=1.0, highcut=10.0, max_sep=4, min_link=8):
+                       lowcut=1.0, highcut=10.0, max_sep=4, min_link=8, \
+                       coh_thresh=0.0):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation
@@ -261,8 +279,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
     :param min_link: Minimum links for an event to be paired
     """
     from obspy.signal.cross_correlation import xcorrPickCorrection
+    import matplotlib.pyplot as plt
     from obspy import read
+    import glob
+    corr_list=[]
     f=open('dt.cc','w')
+    #added by Caro
+    f2=open('dt_comp.cc','w')
     for i in xrange(len(event_list)):
         master_sfile=event_list[i][1]
         master_event_id=event_list[i][0]
@@ -272,16 +295,25 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                          Sfile_util.readheader(master_sfile).longitude,\
                          Sfile_util.readheader(master_sfile).depth)
         master_wavefiles=Sfile_util.readwavename(master_sfile)
-        masterstream=read(wavbase+'/*/*/'+master_wavefiles[0])
+        masterpath=glob.glob(wavbase+os.sep+'????'+os.sep+'??'+os.sep+master_wavefiles[0])
+        if masterpath:
+            masterstream=read(masterpath[0])
         if len(master_wavefiles)>1:
             for wavefile in master_wavefiles:
-                masterstream+=read(wavbase+'/*/*/'+wavefile)
+                wavepath=glob.glob(wavbase+os.sep+'*'+os.sep+'*'+os.sep+wavefile)
+                if wavepath:
+                    masterstream+=read(wavepath[0])
+                else:
+                    raise IOError("Couldn't find wavefile")
         for j in xrange(i+1,len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile=event_list[j][1]
             slave_event_id=event_list[j][0]
             slave_wavefiles=Sfile_util.readwavename(slave_sfile)
-            slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
+            try:
+                slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
+            except:
+                raise IOError('No wavefile found: '+slave_wavefiles[0]+' '+slave_sfile)
             if len(slave_wavefiles)>1:
                 for wavefile in slave_wavefiles:
                     slavestream+=read(wavbase+'/*/*/'+wavefile)
@@ -289,6 +321,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
             event_text='#'+str(master_event_id).rjust(10)+\
                     str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_picks=Sfile_util.readpicks(slave_sfile)
+            event_text2='#'+str(master_event_id).rjust(10)+\
+                    str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_ori_time=Sfile_util.readheader(slave_sfile).time
             slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
                          Sfile_util.readheader(slave_sfile).longitude,\
@@ -296,19 +330,32 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
             if _separation(master_location, slave_location) > max_sep:
                 break
             links=0
+            phases=0
             for pick in master_picks:
                 if pick.phase not in ['P','S']:
                     continue # Only use P and S picks, not amplitude or 'other'
                 # Find station, phase pairs
                 slave_matches=[p for p in slave_picks if p.station==pick.station\
                                and p.phase==pick.phase]
-                print pick.station+'.'+pick.channel
-                mastertr=masterstream.select(station=pick.station, \
-                                             channel='*'+pick.channel[-1])[0]
+                if masterstream.select(station=pick.station, \
+                                       channel='*'+pick.channel[-1]):
+                    mastertr=masterstream.select(station=pick.station, \
+                                                 channel='*'+pick.channel[-1])[0]
+                else:
+                    print 'No waveform data for '+pick.station+'.'+pick.channel
+                    print pick.station+'.'+pick.channel+' '+slave_sfile+' '+master_sfile
+                    break
                 # Loop through the matches
                 for slave_pick in slave_matches:
-                    slavetr=slavestream.select(station=slave_pick.station,\
+                    if slavestream.select(station=slave_pick.station,\
+                                          channel='*'+slave_pick.channel[-1]):
+                        slavetr=slavestream.select(station=slave_pick.station,\
                                                channel='*'+slave_pick.channel[-1])[0]
+                    else:
+                        print 'No slave data for '+slave_pick.station+'.'+\
+                                slave_pick.channel
+                        print pick.station+'.'+pick.channel+' '+slave_sfile+' '+master_sfile
+                        break
                     # Correct the picks
                     try:
                         correction, cc = xcorrPickCorrection(pick.time, mastertr,\
@@ -322,14 +369,29 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
 
                         dt=(pick.time-master_ori_time)-\
                                 (slave_pick.time+correction-slave_ori_time)
-                        event_text+=pick.station.ljust(4)+\
-                                _cc_round(dt,3).rjust(11)+\
-                                _cc_round(cc*cc,3).rjust(8)+\
-                                ' '+pick.phase+'\n'
                         links+=1
+                        if cc*cc >= coh_thresh:
+                            event_text+=pick.station.ljust(4)+\
+                                    _cc_round(dt,3).rjust(11)+\
+                                    _cc_round(cc*cc,3).rjust(8)+\
+                                    ' '+pick.phase+'\n'
+                            phases+=1
+                            #added by Caro
+                            event_text2+=pick.station.ljust(4)+\
+                                    _cc_round(correction,3).rjust(11)+\
+                                    _cc_round(cc,3).rjust(8)+\
+                                    ' '+pick.phase+'\n'
+                            # links+=1
+                        corr_list.append(cc*cc)
                     except:
                         continue
-            if links >= min_link:
+            if links >= min_link and phases > 0:
                 f.write(event_text)
+                #added by Caro
+                f2.write(event_text2)
+    plt.hist(corr_list, 150)
+    plt.show()
     # f.write('\n')
     f.close()
+    f2.close()
+    return
