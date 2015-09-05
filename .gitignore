@@ -5,3 +5,5 @@
 .Trashes
 .DS_Store
 *.ms
+*.buf
+*.hdr
