@@ -36,7 +36,9 @@ is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015.
 # Parameter files
 To use this package you will need to set up default parameters in the parameter
 file. Currently these are located in the source directory, this will change in
-the future, hopefully.
+the future, hopefully. It is recommended that you copy these default parameter
+files before adding your own to allow you to easily transfer back to other
+parameter set ups.
 
 # Contributing
 Please fork this project and work on it there then create a pull request to
