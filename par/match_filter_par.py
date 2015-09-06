@@ -29,14 +29,6 @@ This file is part of EQcorrscan.
 
 from obspy import UTCDateTime
 
-# dates=[UTCDateTime('2010-12-03')+i\
-       # for i in xrange(0,int(UTCDateTime('2011-03-15') - UTCDateTime('2010-12-03')),\
-                       # 86400)]
-# dates+=[UTCDateTime('2013-09-05')+i\
-       # for i in xrange(0,int(UTCDateTime('2013-12-17') - UTCDateTime('2013-09-05')),\
-                       # 86400)]
-
-
 dates=[UTCDateTime('2009-03-26')+i \
  for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2009-03-26')),\
                  86400)] # Example of a generator expression for all-time
@@ -80,9 +72,6 @@ contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes
           'Yyyyy/Rjjj.01','AF'),
           # ('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
           # 'Yyyyy/Rjjj.01','NZ')]
-
-	# ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
-	# 'yyyymmdd','AF'),
         ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
          'yyyymmdd','NZ')]
                                     # Full path for the waveform database

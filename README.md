@@ -33,12 +33,21 @@ Also within this package are:
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
 is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015.
 
+# Parameter files
+To use this package you will need to set up default parameters in the parameter
+file. Currently these are located in the source directory, this will change in
+the future, hopefully.
+
 # Contributing
-Please fork this project and work on it there then create a pull request to merge back into the master.
+Please fork this project and work on it there then create a pull request to
+merge back into the master.
 
-When you make changes please run the tests in the test directory to ensure everything merges with minimum effort.
+When you make changes please run the tests in the test directory to ensure
+everything merges with minimum effort.
 
-Please document your functions following the other documentation within the functions, these doc-scripts will then be built into the main documentation using Sphinx.
+Please document your functions following the other documentation within the
+functions, these doc-scripts will then be built into the main documentation
+using Sphinx.
 
 # References
 * CJ Chamberlain, DR Shelly, J Townend, TA Stern (2014) [Low‐frequency earthquakes reveal punctuated slow slip on the deep extent of the Alpine Fault, New Zealand](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005436/full), __G-cubed__,doi:10.1002/2014GC005436
