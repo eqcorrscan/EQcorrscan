@@ -37,9 +37,16 @@ def test_import():
         print("You have not properly installed: obspy")
         i+=1
     if not i == 0:
-        raise ImportError("Failed to import modules, please install them!")
-    return
+        return False
+    return True
+
+# Utilities tests
+import utils
+head=utils.Sfile_util.test_rw()
+
+
+def tests():
+    assert test_import == True
 
 if __name__ == '__main__':
-    test_import()
-    print("All modules imported without error")
+    tests()

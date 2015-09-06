@@ -284,8 +284,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
     import glob
     corr_list=[]
     f=open('dt.cc','w')
-    #added by Caro
-    f2=open('dt_comp.cc','w')
     for i in xrange(len(event_list)):
         master_sfile=event_list[i][1]
         master_event_id=event_list[i][0]
@@ -321,8 +319,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
             event_text='#'+str(master_event_id).rjust(10)+\
                     str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_picks=Sfile_util.readpicks(slave_sfile)
-            event_text2='#'+str(master_event_id).rjust(10)+\
-                    str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_ori_time=Sfile_util.readheader(slave_sfile).time
             slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
                          Sfile_util.readheader(slave_sfile).longitude,\
@@ -371,13 +367,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                                 (slave_pick.time+correction-slave_ori_time)
                         links+=1
                         if cc*cc >= coh_thresh:
-                            event_text+=pick.station.ljust(4)+\
-                                    _cc_round(dt,3).rjust(11)+\
-                                    _cc_round(cc*cc,3).rjust(8)+\
-                                    ' '+pick.phase+'\n'
                             phases+=1
                             #added by Caro
-                            event_text2+=pick.station.ljust(4)+\
+                            event_text+=pick.station.ljust(4)+\
                                     _cc_round(correction,3).rjust(11)+\
                                     _cc_round(cc,3).rjust(8)+\
                                     ' '+pick.phase+'\n'
@@ -387,8 +379,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                         continue
             if links >= min_link and phases > 0:
                 f.write(event_text)
-                #added by Caro
-                f2.write(event_text2)
     plt.hist(corr_list, 150)
     plt.show()
     # f.write('\n')
