@@ -4,7 +4,7 @@ A python package to conduct match-filter earthquake detections.
 If you are looking for a (relatively) stable release, please download the latest
 [release](https://github.com/calum-chamberlain/EQcorrscan/releases/tag/v0.0-alpha.1).
 This is currently the first alpha release and things will change rapidly, however
-changes will be implimented first to the master branch, then pushed to the release
+changes will be implemented first to the master branch, then pushed to the release
 and the release number updated.  Please raise issues on this repository, preferably
 with helpful comments, like line numbers, the command run and the error messages.
 Alternatively, fork the master and help me develop this!
@@ -18,8 +18,8 @@ This package contains routines to enable the user to conduct match-filter earthq
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
 and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
 Neither of these packages are installed by this software, due to a range of
-licences being implimented.  However, both are open-source and should be installed
-before using this package.  This package was written to impliment the matlab routines
+licenses being implemented.  However, both are open-source and should be installed
+before using this package.  This package was written to implement the Matlab routines
 used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
 
 Also within this package are:
@@ -31,7 +31,25 @@ Also within this package are:
 * Brightness based template creation based on the work of Frank et al. (2014)
 
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
-is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain 2015.
+is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015.
+
+# Parameter files
+To use this package you will need to set up default parameters in the parameter
+file. Currently these are located in the source directory, this will change in
+the future, hopefully. It is recommended that you copy these default parameter
+files before adding your own to allow you to easily transfer back to other
+parameter set ups.
+
+# Contributing
+Please fork this project and work on it there then create a pull request to
+merge back into the master.
+
+When you make changes please run the tests in the test directory to ensure
+everything merges with minimum effort.
+
+Please document your functions following the other documentation within the
+functions, these doc-scripts will then be built into the main documentation
+using Sphinx.
 
 # References
 * CJ Chamberlain, DR Shelly, J Townend, TA Stern (2014) [Low‐frequency earthquakes reveal punctuated slow slip on the deep extent of the Alpine Fault, New Zealand](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005436/full), __G-cubed__,doi:10.1002/2014GC005436
