@@ -39,6 +39,7 @@ from obspy import UTCDateTime
 
 dates=[UTCDateTime('2012-02-01')+i \
  for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2012-02-01')),\
+
                  86400)] # Example of a generator expression for all-time
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
@@ -73,11 +74,9 @@ contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes
           'Yyyyy/Rjjj.01','AF')]#,
           # ('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
           # 'Yyyyy/Rjjj.01','NZ')]
+        ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
+         'yyyymmdd','NZ')]
 
-	# ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
-	# 'yyyymmdd','AF'),
-#        ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
- #        'yyyymmdd','NZ')]
                                     # Full path for the waveform database
                                     # Files must be in daylong format
                                     # To allow for data from multiple directories

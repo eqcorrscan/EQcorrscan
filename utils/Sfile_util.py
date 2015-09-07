@@ -59,6 +59,35 @@ class PICK:
         self.distance=distance
         self.CAZ=CAZ
         self.pickcount+=1
+    def __repr__(self):
+        return "PICK()"
+    def __str__(self):
+        if self.distance >= 100.0:
+            self.distance=_int_conv(self.distance)
+        else:
+            self.distance=int(round(self.distance,1))
+        print_str=' '+self.station.ljust(5)+\
+                self.channel[0]+self.channel[len(self.channel)-1]+\
+                ' '+self.impulsivity+\
+                self.phase.ljust(4)+\
+                _str_conv(self.weight).rjust(1)+' '+\
+                self.polarity+' '+\
+                str(self.time.hour).rjust(2)+\
+                str(self.time.minute).rjust(2)+\
+                str(self.time.second).rjust(3)+'.'+str(self.time.microsecond).ljust(2)[0:2]+\
+                _str_conv(int(self.coda)).rjust(5)[0:5]+\
+                _str_conv(round(self.amplitude,1)).rjust(7)[0:7]+\
+                _str_conv(self.peri).rjust(5)+\
+                _str_conv(self.azimuth).rjust(6)+\
+                _str_conv(self.velocity).rjust(5)+\
+                _str_conv(self.AIN).rjust(4)+\
+                _str_conv(self.SNR).rjust(4)+\
+                _str_conv(int(self.azimuthres)).rjust(3)+\
+                _str_conv(self.timeres).rjust(5)+\
+                _str_conv(int(self.finalweight)).rjust(2)+\
+                _str_conv(self.distance).rjust(5)+\
+                _str_conv(int(self.CAZ)).rjust(4)
+        return print_str
 
 class EVENTINFO:
     def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
@@ -86,6 +115,14 @@ class EVENTINFO:
         self.Mag_3=Mag_3
         self.Mag_3_type=Mag_3_type
         self.Mag_3_agency=Mag_3_agency
+    def __repr__(self):
+        return "PICK()"
+    def __str__(self):
+        print_str=str(self.time)+' '+str(self.latitude)+','+str(self.longitude)\
+        +' '+str(self.depth)+' '+self.Mag_1_type+':'+str(self.Mag_1)+\
+        self.Mag_2_type+':'+str(self.Mag_2)+\
+        self.Mag_3_type+':'+str(self.Mag_3)+'  '+self.agency
+        return print_str
 
 def _int_conv(string):
     """
@@ -116,6 +153,8 @@ def _str_conv(number):
     """
     if (type(number)==float and np.isnan(number)) or number==999:
         string=' '
+    elif type(number)==str:
+        return number
     else:
         string=str(number)
     return string
@@ -141,7 +180,7 @@ def readheader(sfilename):
             sfilename_header.time=UTCDateTime(int(topline[1:5]),int(topline[6:8]),
                                         int(topline[8:10]),int(topline[11:13]),
                                         int(topline[13:15]),sfile_seconds
-                                        ,int(topline[19:20])*10)+add_seconds
+                                        ,int(topline[19:20])*100000)+add_seconds
         except:
             warnings.warn("Couldn't read a date from sfile: "+sfilename)
             sfilename_header.time=UTCDateTime(0)
@@ -203,11 +242,11 @@ def readheader(sfilename):
 
 def readpicks(sfilename):
     """
-    Function to read pick informaiton from the s-file
+    Function to read pick information from the s-file
 
     :type sfilename: String
 
-    :return: Sfile_tile.PICK
+    :return: Sfile_util.PICK
     """
     # First we need to read the header to get the timing info
     sfilename_header=readheader(sfilename)
@@ -219,7 +258,7 @@ def readpicks(sfilename):
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if len(line)==81 and line[79]==' ':
+            if len(line)==81 and (line[79]==' ' or line[79]=='4'):
                 pickline+=[line]
         elif line[79]=='7':
             header=line
@@ -255,14 +294,14 @@ def readpicks(sfilename):
         velocity=_float_conv(line[52:56])
         if header[57:60]=='AIN':
             SNR=''
-            AIN=_int_conv(line[57:60])
+            AIN=_float_conv(line[57:60])
         elif header[57:60]=='SNR':
             AIN=''
             SNR=_float_conv(line[57:60])
         azimuthres=_int_conv(line[60:63])
-        timeres=_float_conv(line[63:70])
-        finalweight=_int_conv(line[70])
-        distance=_float_conv(line[71:75])
+        timeres=_float_conv(line[63:68])
+        finalweight=_int_conv(line[68:70])
+        distance=_float_conv(line[70:75])
         CAZ=_int_conv(line[76:79])
         picks+=[PICK(station, channel, impulsivity, phase, weight, polarity,
                  time, coda, amplitude, peri, azimuth, velocity, AIN, SNR,
@@ -283,7 +322,6 @@ def readwavename(sfilename):
             wavename.append(line[1:79].strip())
     f.close()
     return wavename
-
 
 def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     """
@@ -357,12 +395,12 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         # sys.exit()
     f=open(sfilename,'w')
     # Write line 1 of s-file
-    f.write(' '+str(evime.year)+' '+\
+    f.write(' '+str(evtime.year)+' '+\
             str(evtime.month).rjust(2)+\
             str(evtime.day).rjust(2)+' '+\
             str(evtime.hour).rjust(2)+\
             str(evtime.minute).rjust(2)+' '+\
-            str(evtime.second).rjust(4)+' '+\
+            str(float(evtime.second)).rjust(4)+' '+\
             evtype+'1'.rjust(58)+'\n')
     # Write line 2 of s-file
     f.write(' ACTION:ARG '+str(datetime.datetime.now().year)[2:4]+'-'+\
@@ -422,9 +460,9 @@ def populateSfile(sfilename, picks):
     newpicks=''
     for pick in picks:
         if pick.distance >= 100.0:
-            pick.distance=int(pick.distance)
+            pick.distance=_int_conv(pick.distance)
         else:
-            pick.distance=round(pick.distance,1)
+            pick.distance=int(round(pick.distance,1))
         newpicks+=' '+pick.station.ljust(5)+\
                 pick.channel[0]+pick.channel[len(pick.channel)-1]+\
                 ' '+pick.impulsivity+\
@@ -434,17 +472,17 @@ def populateSfile(sfilename, picks):
                 str(pick.time.hour).rjust(2)+\
                 str(pick.time.minute).rjust(2)+\
                 str(pick.time.second).rjust(3)+'.'+str(pick.time.microsecond).ljust(2)[0:2]+\
-                _str_conv(pick.coda).rjust(5)[0:5]+\
+                _str_conv(int(pick.coda)).rjust(5)[0:5]+\
                 _str_conv(round(pick.amplitude,1)).rjust(7)[0:7]+\
                 _str_conv(pick.peri).rjust(5)+\
                 _str_conv(pick.azimuth).rjust(6)+\
                 _str_conv(pick.velocity).rjust(5)+\
                 _str_conv(pick.AIN).rjust(4)+\
-                _str_conv(pick.azimuthres).rjust(3)+\
-                _str_conv(pick.timeres).rjust(6)+\
-                _str_conv(pick.finalweight).rjust(2)+\
-                _str_conv(pick.distance).rjust(4)+\
-                _str_conv(pick.CAZ).rjust(4)+' \n'
+                _str_conv(int(pick.azimuthres)).rjust(3)+\
+                _str_conv(pick.timeres).rjust(5)+\
+                _str_conv(int(pick.finalweight)).rjust(2)+\
+                _str_conv(pick.distance).rjust(5)+\
+                _str_conv(int(pick.CAZ)).rjust(4)+' \n'
     # Write all new and old info back in
     f=open(sfilename, 'w')
     f.write(header)
@@ -452,6 +490,45 @@ def populateSfile(sfilename, picks):
     f.write(body)
     f.write('\n'.rjust(81))
     f.close()
+
+def test_rw():
+    """
+    Function to test the functions herein.
+    """
+    import os
+    test_pick=PICK('FOZ', 'SZ', 'I', 'P', '1', 'C', UTCDateTime("2012-03-26")+1,
+                 coda=10, amplitude=0.2, peri=0.1,
+                 azimuth=10.0, velocity=20.0, AIN=0.1, SNR='',
+                 azimuthres=1, timeres=0.1,
+                 finalweight=4, distance=10.0,
+                 CAZ=2)
+    print test_pick
+    sfilename=blanksfile('test', 'L', 'TEST', '.', overwrite=True,\
+     evtime=UTCDateTime("2012-03-26")+1)
+    populateSfile(sfilename, [test_pick])
+    assert readwavename(sfilename) == ['test']
+    assert readpicks(sfilename)[0].station == test_pick.station
+    assert readpicks(sfilename)[0].channel == test_pick.channel
+    assert readpicks(sfilename)[0].impulsivity == test_pick.impulsivity
+    assert readpicks(sfilename)[0].phase == test_pick.phase
+    assert readpicks(sfilename)[0].weight == test_pick.weight
+    assert readpicks(sfilename)[0].polarity== test_pick.polarity
+    assert readpicks(sfilename)[0].time == test_pick.time
+    assert readpicks(sfilename)[0].coda == test_pick.coda
+    assert readpicks(sfilename)[0].amplitude == test_pick.amplitude
+    assert readpicks(sfilename)[0].peri == test_pick.peri
+    assert readpicks(sfilename)[0].azimuth == test_pick.azimuth
+    assert readpicks(sfilename)[0].velocity == test_pick.velocity
+    assert readpicks(sfilename)[0].AIN == test_pick.AIN
+    assert readpicks(sfilename)[0].SNR == test_pick.SNR
+    assert readpicks(sfilename)[0].azimuthres == test_pick.azimuthres
+    assert readpicks(sfilename)[0].timeres == test_pick.timeres
+    assert readpicks(sfilename)[0].finalweight == test_pick.finalweight
+    assert readpicks(sfilename)[0].distance == test_pick.distance
+    assert readpicks(sfilename)[0].CAZ == test_pick.CAZ
+    header = readheader(sfilename)
+    os.remove(sfilename)
+    return header
 
 if __name__=='__main__':
     # Read arguments
