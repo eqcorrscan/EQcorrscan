@@ -106,6 +106,11 @@ class DETECTION(object):
         self.threshold=threshold
         self.typeofdet=typeofdet
         self.detectioncount+=1
+    def __repr__(self):
+        return "DETECTION()"
+    def __str__(self):
+        print_str="Detection on "+self.template_name+" at "+str(self.detect_time)
+        return print_str
 
 def run_channel_loop(templates, stream, tempdir):
     """
