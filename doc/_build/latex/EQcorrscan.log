@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2014.9.15)  18 AUG 2015 23:34
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2014.9.15)  4 SEP 2015 02:38
 entering extended mode
  %&-line parsing enabled.
 **EQcorrscan.tex
@@ -853,7 +853,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 128--128
 
  []
 
-<EQcorrscan_logo.pdf, id=88, 555.85443pt x 284.51573pt>
+<EQcorrscan_logo.pdf, id=44, 555.85443pt x 284.51573pt>
 File: EQcorrscan_logo.pdf Graphic file (type pdf)
 
 <use EQcorrscan_logo.pdf>
@@ -891,7 +891,7 @@ LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <10> not available
 (Font)              Font shape `T1/phv/b/n' tried instead on input line 128.
 [1
 
-] [2] <EQcorrscan_logo.png, id=161, 704.6325pt x 356.33125pt>
+] [2] <EQcorrscan_logo.png, id=107, 704.6325pt x 356.33125pt>
 File: EQcorrscan_logo.png Graphic file (type png)
 
 <use EQcorrscan_logo.png>
@@ -903,12 +903,12 @@ File: EQcorrscan_logo.png Graphic file (type png)
 ]
 Chapter 1.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <14.4> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 135.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 133.
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <14.4> not available
-(Font)              Font shape `T1/ptm/b/n' tried instead on input line 135.
+(Font)              Font shape `T1/ptm/b/n' tried instead on input line 133.
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <24.88> not available
-(Font)              Font shape `T1/ptm/b/n' tried instead on input line 135.
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 151.
+(Font)              Font shape `T1/ptm/b/n' tried instead on input line 133.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 149.
 
 (/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
@@ -923,7 +923,7 @@ See the inputenc package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.178 ... extent of the Alpine Fault, New Zealand}
+l.176 ... extent of the Alpine Fault, New Zealand}
                                                   , \emph{G-cubed}, doi:10.1...
 
 ? 
@@ -934,7 +934,7 @@ See the inputenc package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.181 ...g Applied to Low‐Frequency Earthquakes}
+l.179 ...g Applied to Low‐Frequency Earthquakes}
                                                   , \emph{BSSA}, doi:10.1785...
 
 ? 
@@ -945,7 +945,7 @@ See the inputenc package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.181 ...g Applied to Low‐Frequency Earthquakes}
+l.179 ...g Applied to Low‐Frequency Earthquakes}
                                                   , \emph{BSSA}, doi:10.1785...
 
 ? 
@@ -954,65 +954,65 @@ l.181 ...g Applied to Low‐Frequency Earthquakes}
 ]
 Chapter 3.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <12> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 198.
-[7] <processing_flow.png, id=210, 1317.92375pt x 1364.09625pt>
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 196.
+[7] <processing_flow.png, id=156, 1317.92375pt x 1364.09625pt>
 File: processing_flow.png Graphic file (type png)
 
 <use processing_flow.png>
 File: processing_flow.png Graphic file (type png)
  <use processing_flow.png> [8]
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 352.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 350.
 
 (/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
 LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <9> not available
-(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 353.
+(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 351.
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <9> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 392.
-LaTeX Font Info:    Try loading font information for TS1+pcr on input line 400.
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 390.
+LaTeX Font Info:    Try loading font information for TS1+pcr on input line 398.
 
 
 (/usr/share/texmf-texlive/tex/latex/psnfss/ts1pcr.fd
 File: ts1pcr.fd 2001/06/04 font definitions for TS1/pcr.
 ) [9 <./processing_flow.png>]
-Underfull \vbox (badness 10000) detected at line 493
+Underfull \vbox (badness 10000) detected at line 491
  []
 
 
-Underfull \vbox (badness 10000) detected at line 493
+Underfull \vbox (badness 10000) detected at line 491
  []
 
 [10]
-Underfull \vbox (badness 10000) detected at line 493
+Underfull \vbox (badness 10000) detected at line 491
  []
 
 
-Underfull \vbox (badness 10000) detected at line 493
+Underfull \vbox (badness 10000) detected at line 491
  []
 
 [11]
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <9> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 513.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 511.
  [12]
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 574.
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 572.
  [13] [14]
-Underfull \hbox (badness 10000) in paragraph at lines 892--892
+Underfull \hbox (badness 10000) in paragraph at lines 890--890
 []\T1/ptm/m/it/10 sfile\T1/ptm/m/n/10 , \T1/ptm/m/it/10 low-cut=None\T1/ptm/m/n
 /10 , \T1/ptm/m/it/10 high-cut=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 samp_rate=N
 one\T1/ptm/m/n/10 ,
  []
 
 [15]
-Underfull \hbox (badness 10000) in paragraph at lines 928--928
+Underfull \hbox (badness 10000) in paragraph at lines 926--926
 []\T1/ptm/m/it/10 sfile\T1/ptm/m/n/10 , \T1/ptm/m/it/10 low-cut=None\T1/ptm/m/n
 /10 , \T1/ptm/m/it/10 high-cut=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 samp_rate=N
 one\T1/ptm/m/n/10 ,
  []
 
 [16] [17]
-Overfull \hbox (50.8867pt too wide) in paragraph at lines 1186--1187
+Overfull \hbox (50.8867pt too wide) in paragraph at lines 1184--1185
 [][][]\T1/ptm/m/n/10 http://docs.opencv.org/modules/imgproc/doc/object_detectio
 n.html?highlight=matchtemplate#cv2.matchTemplate[][] 
  []
@@ -1040,66 +1040,26 @@ Underfull \hbox (badness 10000) in paragraph at lines 47--48
 
 ] [36
 
-]) (./EQcorrscan.aux)
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
- ) 
+]) (./EQcorrscan.aux) ) 
 Here is how much of TeX's memory you used:
- 8409 strings out of 495061
- 114973 string characters out of 1182621
- 205973 words of memory out of 3000000
- 11154 multiletter control sequences out of 15000+50000
+ 8384 strings out of 495061
+ 114631 string characters out of 1182621
+ 206771 words of memory out of 3000000
+ 11141 multiletter control sequences out of 15000+50000
  66340 words of font info for 74 fonts, out of 3000000 for 9000
  29 hyphenation exceptions out of 8191
  45i,12n,45p,695b,527s stack positions out of 5000i,500n,10000p,200000b,50000s
-pdfTeX warning (dest): name{chapter.5} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.8} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.7} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.6} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.5} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.4} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.3} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.2} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.4.1} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{chapter.4} has been referenced but does not exist, 
-replaced by a fixed one
-
-pdfTeX warning (dest): name{section.1.2} has been referenced but does not exist
-, replaced by a fixed one
-
-pdfTeX warning (dest): name{section.1.1} has been referenced but does not exist
-, replaced by a fixed one
-
-{/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive
-/fonts/type1/urw/courier/ucrb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/c
-ourier/ucrr8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb
-></usr/share/texmf-texlive/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texm
-f-texlive/fonts/type1/urw/helvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/
-type1/urw/helvetic/uhvr8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/u
-tmb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb></usr/shar
-e/texmf-texlive/fonts/type1/urw/times/utmri8a.pfb>
-Output written on EQcorrscan.pdf (40 pages, 454080 bytes).
+{/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</
+usr/share/texmf-texlive/fonts/type1/urw/courier/ucrb8a.pfb></usr/share/texmf-te
+xlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texmf-texlive/fonts/type1/
+urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/helvetic/uhvb
+8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/helvetic/uhvbo8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/times/utmb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/time
+s/utmr8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmri8a.pfb>
+Output written on EQcorrscan.pdf (40 pages, 445625 bytes).
 PDF statistics:
- 636 PDF objects out of 1000 (max. 8388607)
- 151 named destinations out of 1000 (max. 500000)
- 204 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 570 PDF objects out of 1000 (max. 8388607)
+ 139 named destinations out of 1000 (max. 500000)
+ 116 words of extra memory for PDF output out of 10000 (max. 10000000)
 

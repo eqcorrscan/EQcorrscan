@@ -110,7 +110,7 @@ def group_delays(templates):
     :type templates: List of obspy.Stream
     :param templates: List of the waveforms you want to group
 
-    :returns: List of List of obspy.Streams where each initial list is a group
+    :returns: List of List of obspy.Streams where each initial list is a group\
             with the same delays
     """
     groups=[]
@@ -226,8 +226,8 @@ def SVD_testing(templates):
     :type templates: List of Obspy.Stream
     :param templates: List of the templates to be analysed
 
-    :return: SVector(ndarray), SValues(ndarray) for each channel, stachans, List
-            of String (station.channel)
+    :return: SVector(list of ndarray), SValues(list) for each channel, \
+            stachans, List of String (station.channel)
 
     .. rubric:: Note
 
@@ -262,12 +262,33 @@ def SVD_testing(templates):
         SVectors.append(U.T)
     return SVectors, SValues, stachans
 
+def empirical_SVD(templates):
+    """
+    Empirical subspace detector generation function.  Takes a list of templates
+    and computes the stack as the first order subspace detector, and the
+    differential of this as the second order subspace detector following
+    the emprical subspace method of Barrett & Beroza, 2014 - SRL.
+
+    :type templates: list of stream
+    :param templates: list of template streams to compute the subspace detectors\
+        from
+
+    :returns: list of two streams
+    """
+    import stacking
+    first_subspace=stacking.linstack(templates)
+    second_subspace=first_subspace.copy()
+    for i in xrange(len(second_subspace)):
+        second_subspace[i].data=np.diff(second_subspace[i].data)
+        second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
+    return [first_subspace, second_subspace]
+
 def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
     """
     Function to convert the singular vectors output by SVD to streams, one for
     each singular vector level, for all channels.
 
-    :type SVectors: ndarray
+    :type SVectors: List of np.ndarray
     :param SVectors: Singular vectors
     :type stachans: List of Strings
     :param stachans: List of station.channel Strings
@@ -288,7 +309,7 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
         SVstream=[]
         for j in xrange(len(stachans)):
             if len(SVectors[i]) > j:
-                SVstream.append(Trace(SVectors[i][j], \
+                SVstream.append(Trace(SVectors[i].T[j], \
                                         header={'station': stachans[j].split('.')[0],
                                                 'channel': stachans[j].split('.')[1],
                                                 'sampling_rate': sampling_rate}))
