@@ -192,20 +192,30 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     # Read in pick info
     picks=Sfile_util.readpicks(sfile)
     print "I have found the following picks"
+    pick_chans=[]
+    used_picks=[]
     for pick in picks:
-        print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
-        for contbase in matchdef.contbase:
-            if contbase[1] == 'yyyy/mm/dd':
-                daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
-                        str(day.day).zfill(2)
-            elif contbase[1]=='Yyyyy/Rjjj.01':
-                daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-            elif contbase[1]=='yyyymmdd':
-                daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
-            if 'wavefiles' in locals():
-                wavefiles+=glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*')
-            else:
-                wavefiles=(glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*'))
+        if not pick.station+pick.channel in pick_chans and pick.phase in ['P','S']:
+            pick_chans.append(pick.station+pick.channel)
+            used_picks.append(pick)
+            print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
+            for contbase in matchdef.contbase:
+                if contbase[1] == 'yyyy/mm/dd':
+                    daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
+                            str(day.day).zfill(2)
+                elif contbase[1]=='Yyyyy/Rjjj.01':
+                    daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
+                elif contbase[1]=='yyyymmdd':
+                    daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
+                if 'wavefiles' in locals():
+                    wavefiles+=glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'.*'+pick.channel[0]+'?'+pick.channel[1]+'*')
+                else:
+                    wavefiles=(glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'.*'+pick.channel[0]+'?'+pick.channel[1]+'*'))
+        elif pick.phase in ['P','S']:
+            print 'Duplicate pick '+pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
+        elif pick.phase =='IAML':
+            print 'Amplitude pick '+pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
+    picks=used_picks
     wavefiles=list(set(wavefiles))
 
     # Read in waveform file
@@ -225,6 +235,7 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     if not filt_order:
         filt_order=tempdef.filter_order
     # Porcess waveform data
+    st.merge(fill_value='interpolate')
     for tr in st:
         tr=pre_processing.dayproc(tr, lowcut, highcut, filt_order,\
                                 samp_rate, matchdef.debug, day)
