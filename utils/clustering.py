@@ -295,8 +295,8 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
-                       extract_Z=True, additional_stations=[]):
+def extract_detections(detections, templates, extract_len=90.0, \
+                        outdir=None, extract_Z=True, additional_stations=[]):
     """
     Function to extract the waveforms associated with each detection in a list
     of detections for the template, template.  Waveforms will be returned as
@@ -428,12 +428,6 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
                                 for tr in st)
         st=Stream(st)
 
-        # for tr in st:
-            # tr=pre_processing.dayproc(tr, templatedef.lowcut,\
-                                        # templatedef.highcut,\
-                                        # templatedef.filter_order,\
-                                        # templatedef.samp_rate,\
-                                        # matchdef.debug, detection_day)
         day_detections=[detection for detection in detections\
                         if detection[0].date() == detection_day]
         for detection in day_detections:
