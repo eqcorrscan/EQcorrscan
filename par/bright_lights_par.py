@@ -58,17 +58,16 @@ resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # degrees and km respectively.
                                         # with depth increasing down
 dates=[UTCDateTime('2013-03-28')+i \
- for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2013-03-28')),\
+ for i in xrange(0, int(UTCDateTime('2013-05-09') - UTCDateTime('2013-03-28')),\
                  86400)] # Example of a generator expression for all-time
-trem_dates=[UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
-       UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
-       UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
+trem_dates=[#UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
+       #UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
+       #UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
        UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
        UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
        UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
        UTCDateTime('2013-03-28')] #tremor days
 dates=trem_dates+dates
-dates=[dates[0]]
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
