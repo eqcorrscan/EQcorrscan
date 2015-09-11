@@ -259,10 +259,10 @@ def SVD_testing(templates):
         print stachan
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
-        SVectors.append(U.T)
+        SVectors.append(U)
     return SVectors, SValues, stachans
 
-def empirical_SVD(templates):
+def empirical_SVD(templates, linear=True):
     """
     Empirical subspace detector generation function.  Takes a list of templates
     and computes the stack as the first order subspace detector, and the
@@ -272,11 +272,16 @@ def empirical_SVD(templates):
     :type templates: list of stream
     :param templates: list of template streams to compute the subspace detectors\
         from
+    :type linear: Bool
+    :param linear: Set to true by default to compute the linear stack as the\
+        first subspace vector, False will use the phase-weighted stack as the\
+        first subspace vector.
 
     :returns: list of two streams
     """
     import stacking
-    first_subspace=stacking.linstack(templates)
+    if linear:
+        first_subspace=stacking.linstack(templates)
     second_subspace=first_subspace.copy()
     for i in xrange(len(second_subspace)):
         second_subspace[i].data=np.diff(second_subspace[i].data)
@@ -309,7 +314,7 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
         SVstream=[]
         for j in xrange(len(stachans)):
             if len(SVectors[i]) > j:
-                SVstream.append(Trace(SVectors[i].T[j], \
+                SVstream.append(Trace(SVectors[i][j], \
                                         header={'station': stachans[j].split('.')[0],
                                                 'channel': stachans[j].split('.')[1],
                                                 'sampling_rate': sampling_rate}))
