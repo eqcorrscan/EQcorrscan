@@ -299,7 +299,9 @@ def _template_gen(picks, st, length, swin):
             del starttime
         if swin=='all':
             for pick in picks:
-                if pick.station==tr.stats.station and pick.channel==tr.stats.channel:
+                if pick.station==tr.stats.station and \
+                    pick.channel==tr.stats.channel and\
+                    pick.phase!='IAML':
                     starttime=pick.time
         else:
             for pick in picks:
