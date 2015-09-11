@@ -278,12 +278,12 @@ def _template_gen(picks, st, length, swin):
                     temp_channel=tr.stats.channel[0]+tr.stats.channel[2]
                 elif len(tr.stats.channel)==2:
                     temp_channel=tr.stats.channel
-                if temp_channel in channels:
-                    tr.stats.channel=temp_channel
-                    if 'st1' in locals():
-                        st1+=tr
-                    else:
-                        st1=Stream(tr)
+                # if temp_channel in channels:
+                tr.stats.channel=temp_channel
+                if 'st1' in locals():
+                    st1+=tr
+                else:
+                    st1=Stream(tr)
             else:
                 if 'st1' in locals():
                     st1+=tr
@@ -301,7 +301,11 @@ def _template_gen(picks, st, length, swin):
             for pick in picks:
                 if pick.station==tr.stats.station and \
                     pick.channel==tr.stats.channel and\
-                    pick.phase!='IAML':
+                    pick.phase=='P':
+                    starttime=pick.time
+                elif pick.station==tr.stats.station and\
+                    tr.stats.channel[-1] in ['1','2','N','E'] and\
+                    pick.phase=='S':
                     starttime=pick.time
         else:
             for pick in picks:
@@ -316,6 +320,8 @@ def _template_gen(picks, st, length, swin):
                 st1+=tr
             else:
                 st1=Stream(tr)
+        else:
+            print 'No pick for '+tr.stats.station+'.'+tr.stats.channel
         # Ensure that the template is the correct length
         if len(tr.data) == (tr.stats.sampling_rate*length)+1:
             tr.data=tr.data[0:-1]
