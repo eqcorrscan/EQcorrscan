@@ -37,12 +37,11 @@ def linstack(streams):
     :returns: stack - Stream
     """
     # import matplotlib.pyplot as plt
-    stack=streams[np.argmax([len(stream) for stream in streams])]
+    stack=streams[np.argmax([len(stream) for stream in streams])].copy()
     for tr in stack:
         tr.data=tr.data/np.sqrt(np.mean(np.square(tr.data)))
     for i in xrange(1,len(streams)):
         # print "Stacking stream "+str(i)
-        j=0
         for tr in stack:
             # print tr.stats.station+'.'+tr.stats.channel
             matchtr=streams[i].select(station=tr.stats.station,\
