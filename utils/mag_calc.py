@@ -289,7 +289,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                     to the p-s time, defaults to 0.5
     :type pre_pick: Float
     :param pre_pick: Time before the s-pick to start the cut window, defaults
-                    to 1.0
+                    to 0.2
     :type pre_filt: Bool
     :param pre_filt: To apply a pre-filter or not, defaults to True
     :type lowcut: Float
