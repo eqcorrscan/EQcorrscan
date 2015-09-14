@@ -200,8 +200,13 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
     fig, axes = plt.subplots(len(picks), 1, sharex=True)
     axes = axes.ravel()
     for i in xrange(len(picks)):
-        tr=streams[i].select(station=picks[i].station, \
-            channel=picks[i].channel)[0]
+        if streams[i].select(station=picks[i].station, \
+            channel=picks[i].channel):
+            tr=streams[i].select(station=picks[i].station, \
+                channel=picks[i].channel)[0]
+        else:
+            print 'No data for '+picks[i].station+'.'+picks[i].channel
+            break
         tr.trim(picks[i].time-pre_pick, picks[i].time-pre_pick+clip)
         y = tr.data
         x = np.arange(len(y))
