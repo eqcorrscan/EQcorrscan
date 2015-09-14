@@ -28,10 +28,10 @@ This file is part of EQcorrscan.
 """
 import glob
 
-sfilebase='/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQ_correl_codes/templates/EQcorrscan/template_sfiles'
+sfilebase='/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQ_correl_codes/templates/WHATV'
                 # Location of nordic s-files, string
 
-sfiles=glob.glob(sfilebase+'/*L.S*')# List of s-files
+sfiles=glob.glob(sfilebase+'/????/??/*L.S*')# List of s-files
 # sfiles=[sfile.split('/')[-1] for sfile in sfiles]
 #sfiles=[]
 
