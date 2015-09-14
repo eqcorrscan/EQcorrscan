@@ -93,4 +93,4 @@ plotsave=True                           # Save plots, set to True to not show
                                         # any plots
 clip_level=1.5                          # Level to clip energy amplitudes to as
                                         # a multiplier of the mean energy amplitude
-cores=10                                # Number of cores to use for brightness search
+cores=4                                 # Number of cores to use for brightness search

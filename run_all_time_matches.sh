@@ -20,7 +20,7 @@
 set -o nounset                              # Treat unset variables as an error
 
 # python LFEsearch.py > all_detections.log 2>&1 &
-splits=15 # Number of instances
+splits=10 # Number of instances
 i=0 # Beginning iterator
 while ((i<$splits)); do
     python LFEsearch.py --splits $splits --instance $i > instance_$i.log 2>&1 &
