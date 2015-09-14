@@ -206,7 +206,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
                 channel='*'+picks[i].channel[-1])[0]
         else:
             print 'No data for '+picks[i].station+'.'+picks[i].channel
-            break
+            continue
         tr.trim(picks[i].time-pre_pick, picks[i].time-pre_pick+clip)
         y = tr.data
         x = np.arange(len(y))
