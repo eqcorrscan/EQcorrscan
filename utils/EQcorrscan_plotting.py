@@ -362,6 +362,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
     else:
         mintime=background.sort(['starttime'])[0].stats.starttime
     i=0
+    template.sort(['station', 'starttime'])
     for tr in template:
         delay=tr.stats.starttime-mintime
         delay*=tr.stats.sampling_rate

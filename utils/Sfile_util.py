@@ -64,7 +64,7 @@ class PICK:
     def __str__(self):
         if self.distance >= 100.0:
             self.distance=_int_conv(self.distance)
-        else:
+        elif self.distance < 100.0:
             self.distance=int(round(self.distance,1))
         print_str=' '+self.station.ljust(5)+\
                 self.channel[0]+self.channel[len(self.channel)-1]+\
@@ -74,7 +74,8 @@ class PICK:
                 self.polarity+' '+\
                 str(self.time.hour).rjust(2)+\
                 str(self.time.minute).rjust(2)+\
-                str(self.time.second).rjust(3)+'.'+str(self.time.microsecond).ljust(2)[0:2]+\
+                str(self.time.second).rjust(3)+'.'+\
+                str(float(self.time.microsecond)/(10**4)).split('.')[0].zfill(2)+\
                 _str_conv(int(self.coda)).rjust(5)[0:5]+\
                 _str_conv(round(self.amplitude,1)).rjust(7)[0:7]+\
                 _str_conv(self.peri).rjust(5)+\
@@ -116,7 +117,7 @@ class EVENTINFO:
         self.Mag_3_type=Mag_3_type
         self.Mag_3_agency=Mag_3_agency
     def __repr__(self):
-        return "PICK()"
+        return "HEADER()"
     def __str__(self):
         print_str=str(self.time)+' '+str(self.latitude)+','+str(self.longitude)\
         +' '+str(self.depth)+' '+self.Mag_1_type+':'+str(self.Mag_1)+\
@@ -294,7 +295,7 @@ def readpicks(sfilename):
         velocity=_float_conv(line[52:56])
         if header[57:60]=='AIN':
             SNR=''
-            AIN=_float_conv(line[57:60])
+            AIN=_int_conv(line[57:60])
         elif header[57:60]=='SNR':
             AIN=''
             SNR=_float_conv(line[57:60])
@@ -461,7 +462,7 @@ def populateSfile(sfilename, picks):
     for pick in picks:
         if pick.distance >= 100.0:
             pick.distance=_int_conv(pick.distance)
-        else:
+        elif pick.distance < 100.0:
             pick.distance=int(round(pick.distance,1))
         newpicks+=' '+pick.station.ljust(5)+\
                 pick.channel[0]+pick.channel[len(pick.channel)-1]+\
@@ -471,7 +472,8 @@ def populateSfile(sfilename, picks):
                 pick.polarity+' '+\
                 str(pick.time.hour).rjust(2)+\
                 str(pick.time.minute).rjust(2)+\
-                str(pick.time.second).rjust(3)+'.'+str(pick.time.microsecond).ljust(2)[0:2]+\
+                str(pick.time.second).rjust(3)+'.'+\
+                str(float(pick.time.microsecond)/(10**4)).split('.')[0].zfill(2)+\
                 _str_conv(int(pick.coda)).rjust(5)[0:5]+\
                 _str_conv(round(pick.amplitude,1)).rjust(7)[0:7]+\
                 _str_conv(pick.peri).rjust(5)+\
