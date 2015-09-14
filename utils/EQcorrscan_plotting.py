@@ -181,6 +181,40 @@ def threeD_gridplot(nodes, save=False, savefile=''):
         plt.savefig(savefile)
     return
 
+def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
+    """
+    Function to plot data from a single channel at a single station for multiple
+    events - data will be alligned by their pick-time given in the picks
+
+    :type streams: List of :class:obspy.stream
+    :param streams: List of the streams to use, can contain more traces than\
+        you plan on plotting
+    :type picks: List of :class:PICK
+    :param picks: List of picks, one for each stream
+    :type clip: Float
+    :param clip: Length in seconds to plot, defaults to 10.0
+    :type pre_pick: Float
+    :param pre_pick: Length in seconds to extract and plot before the pick,\
+        defaults to 2.0
+    """
+    fig, axes = plt.subplots(len(picks), 1, sharex=True)
+    axes = axes.ravel()
+    for i in xrange(len(picks)):
+        tr=streams[i].select(station=picks[i].station, \
+            channel=picks[i].channel)[0]
+        tr.trim(picks[i].time-pre_pick, picks[i].time-pre_pick+clip)
+        y = tr.data
+        x = np.arange(len(y))
+        x = x/tr.stats.sampling_rate # convert to seconds
+        axes[i].plot(x, y, 'k', linewidth=1.1)
+        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+        axes[i].yaxis.set_ticks([])
+        i+=1
+    axes[i-1].set_xlabel('Time (s) from start of template')
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+    return
+
 def detection_timeseries(stream, detector, detections):
     """
     Function to plot the data and detector with detections labelled in red,
