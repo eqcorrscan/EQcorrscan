@@ -110,7 +110,7 @@ def group_delays(templates):
     :type templates: List of obspy.Stream
     :param templates: List of the waveforms you want to group
 
-    :returns: List of List of obspy.Streams where each initial list is a group
+    :returns: List of List of obspy.Streams where each initial list is a group\
             with the same delays
     """
     groups=[]
@@ -226,8 +226,8 @@ def SVD_testing(templates):
     :type templates: List of Obspy.Stream
     :param templates: List of the templates to be analysed
 
-    :return: SVector(ndarray), SValues(ndarray) for each channel, stachans, List
-            of String (station.channel)
+    :return: SVector(list of ndarray), SValues(list) for each channel, \
+            stachans, List of String (station.channel)
 
     .. rubric:: Note
 
@@ -259,15 +259,41 @@ def SVD_testing(templates):
         print stachan
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
-        SVectors.append(U.T)
+        SVectors.append(U)
     return SVectors, SValues, stachans
+
+def empirical_SVD(templates, linear=True):
+    """
+    Empirical subspace detector generation function.  Takes a list of templates
+    and computes the stack as the first order subspace detector, and the
+    differential of this as the second order subspace detector following
+    the emprical subspace method of Barrett & Beroza, 2014 - SRL.
+
+    :type templates: list of stream
+    :param templates: list of template streams to compute the subspace detectors\
+        from
+    :type linear: Bool
+    :param linear: Set to true by default to compute the linear stack as the\
+        first subspace vector, False will use the phase-weighted stack as the\
+        first subspace vector.
+
+    :returns: list of two streams
+    """
+    import stacking
+    if linear:
+        first_subspace=stacking.linstack(templates)
+    second_subspace=first_subspace.copy()
+    for i in xrange(len(second_subspace)):
+        second_subspace[i].data=np.diff(second_subspace[i].data)
+        second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
+    return [first_subspace, second_subspace]
 
 def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
     """
     Function to convert the singular vectors output by SVD to streams, one for
     each singular vector level, for all channels.
 
-    :type SVectors: ndarray
+    :type SVectors: List of np.ndarray
     :param SVectors: Singular vectors
     :type stachans: List of Strings
     :param stachans: List of station.channel Strings
@@ -295,8 +321,8 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
-                       extract_Z=True, additional_stations=[]):
+def extract_detections(detections, templates, extract_len=90.0, \
+                        outdir=None, extract_Z=True, additional_stations=[]):
     """
     Function to extract the waveforms associated with each detection in a list
     of detections for the template, template.  Waveforms will be returned as
@@ -428,12 +454,6 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
                                 for tr in st)
         st=Stream(st)
 
-        # for tr in st:
-            # tr=pre_processing.dayproc(tr, templatedef.lowcut,\
-                                        # templatedef.highcut,\
-                                        # templatedef.filter_order,\
-                                        # templatedef.samp_rate,\
-                                        # matchdef.debug, detection_day)
         day_detections=[detection for detection in detections\
                         if detection[0].date() == detection_day]
         for detection in day_detections:
