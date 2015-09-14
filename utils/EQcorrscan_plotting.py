@@ -203,7 +203,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
         if streams[i].select(station=picks[i].station, \
             channel=picks[i].channel):
             tr=streams[i].select(station=picks[i].station, \
-                channel=picks[i].channel)[0]
+                channel='*'+picks[i].channel[-1])[0]
         else:
             print 'No data for '+picks[i].station+'.'+picks[i].channel
             break
