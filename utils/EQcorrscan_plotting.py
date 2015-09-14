@@ -343,23 +343,46 @@ def Noise_plotting(station, channel, PAZ, datasource):
     ppsd.plot()
     return ppsd
 
-def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False):
+def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
+                        background=False):
     """
     Function to make a pretty plot of a single template, designed to work better
     than the default obspy plotting routine for short data lengths.
 
     :type template: :class: obspy.Stream
+    :type size: tuple
+    :type save: Boolean
+    :type title: Boolean
+    :type backrgound: :class: obspy.stream
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     axes = axes.ravel()
-    mintime=template.sort(['starttime'])[0].stats.starttime
+    if not background:
+        mintime=template.sort(['starttime'])[0].stats.starttime
+    else:
+        mintime=background.sort(['starttime'])[0].stats.starttime
     i=0
     for tr in template:
         delay=tr.stats.starttime-mintime
+        delay*=tr.stats.sampling_rate
         y=tr.data
-        x=np.arange(delay, len(y)+delay)
-        x=x*tr.stats.delta
-        axes[i].plot(x, y, 'k', linewidth=2)
+        x=np.arange(len(y))
+        x+=delay
+        x=x/tr.stats.sampling_rate
+        # x=np.arange(delay, (len(y)*tr.stats.sampling_rate)+delay,\
+            # tr.stats.sampling_rate)
+        if background:
+            btr=background.select(station=tr.stats.station, \
+                                channel=tr.stats.channel)[0]
+            bdelay=btr.stats.starttime-mintime
+            bdelay*=btr.stats.sampling_rate
+            by=btr.data
+            bx=np.arange(len(by))
+            bx+=bdelay
+            bx=bx/btr.stats.sampling_rate
+            axes[i].plot(bx,by,'k',linewidth=1)
+        print tr.stats.station+' '+str(len(x))+' '+str(len(y))
+        axes[i].plot(x, y, 'r', linewidth=1.1)
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
         axes[i].yaxis.set_ticks([])
         i+=1
