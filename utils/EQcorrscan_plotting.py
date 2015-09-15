@@ -181,7 +181,8 @@ def threeD_gridplot(nodes, save=False, savefile=''):
         plt.savefig(savefile)
     return
 
-def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
+def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
+                           freqmin=False, freqmax=False, reallign=False):
     """
     Function to plot data from a single channel at a single station for multiple
     events - data will be alligned by their pick-time given in the picks
@@ -196,26 +197,63 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0):
     :type pre_pick: Float
     :param pre_pick: Length in seconds to extract and plot before the pick,\
         defaults to 2.0
+    :type freqmin: float
+    :type freqmax: float
+    :type reallign: Bool
     """
-    fig, axes = plt.subplots(len(picks), 1, sharex=True)
+    import stacking, copy
+    from core.match_filter import normxcorr2
+    from obspy import Stream
+    fig, axes = plt.subplots(len(picks)+1, 1, sharex=True)
     axes = axes.ravel()
+    traces=[]
+    st_list=copy.deepcopy(streams)
     for i in xrange(len(picks)):
-        if streams[i].select(station=picks[i].station, \
-            channel=picks[i].channel):
-            tr=streams[i].select(station=picks[i].station, \
+        if st_list[i].select(station=picks[i].station, \
+            channel='*'+picks[i].channel[-1]):
+            tr=st_list[i].select(station=picks[i].station, \
                 channel='*'+picks[i].channel[-1])[0]
         else:
             print 'No data for '+picks[i].station+'.'+picks[i].channel
             continue
-        tr.trim(picks[i].time-pre_pick, picks[i].time-pre_pick+clip)
+        tr.detrend('linear')
+        if freqmin:
+            tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
+        if reallign:
+            tr.trim(picks[i].time-3.0, picks[i].time+5.0)
+        else:
+            tr.trim(picks[i].time-pre_pick, picks[i].time+clip-pre_pick)
+        traces.append(tr)
+    if reallign:
+        shifts=stacking.allign_traces(traces, 50)
+        for i in xrange(len(shifts)):
+            print 'Shifting by '+str(shifts[i])+' seconds'
+            picks[i].time-=shifts[i]
+            traces[i].trim(picks[i].time-pre_pick, picks[i].time+clip-pre_pick)
+    for i in xrange(len(traces)):
+        tr=traces[i]
         y = tr.data
         x = np.arange(len(y))
         x = x/tr.stats.sampling_rate # convert to seconds
-        axes[i].plot(x, y, 'k', linewidth=1.1)
-        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
-        axes[i].yaxis.set_ticks([])
+        axes[i+1].plot(x, y, 'k', linewidth=1.1)
+        # axes[i+1].set_ylabel(tr.stats.starttime.datetime.strftime('%Y/%m/%d %H:%M'),\
+                             # rotation=0)
+        axes[i+1].yaxis.set_ticks([])
         i+=1
-    axes[i-1].set_xlabel('Time (s) from start of template')
+    traces=[Stream(trace) for trace in traces]
+    linstack=stacking.linstack(traces)
+    tr=linstack.select(station=picks[0].station, \
+            channel='*'+picks[0].channel[-1])[0]
+    y = tr.data
+    x = np.arange(len(y))
+    x = x/tr.stats.sampling_rate
+    axes[0].plot(x, y, 'k', linewidth=1.1)
+    axes[0].set_ylabel('Stack', rotation=0)
+    axes[0].yaxis.set_ticks([])
+    for i in xrange(len(traces)):
+        cc=normxcorr2(tr.data, traces[i][0].data)
+        axes[i+1].set_ylabel('cc='+str(round(np.max(cc),2)), rotation=0)
+    axes[-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0)
     plt.show()
     return
