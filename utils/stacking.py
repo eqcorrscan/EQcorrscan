@@ -27,12 +27,13 @@ This file is part of EQcorrscan.
 """
 
 import numpy as np
-def linstack(streams):
+def linstack(streams, allign=False):
     """
     Function to compute the linear stack of a series of seismic streams of
     multiplexed data
 
     :type streams: List of Streams
+    :type allign: Bool
 
     :returns: stack - Stream
     """
@@ -51,13 +52,14 @@ def linstack(streams):
                                tr.data), axis=0)
     return stack
 
-def PWS_stack(streams, weight=2):
+def PWS_stack(streams, weight=2, allign=False):
     """
     Function to compute the phase weighted stack of a series of streams
 
     :type streams: list of obspy.Stream
     :type weight: float
     :param weight: Exponent to the phase stack used for weighting.
+    :type allign: Bool
 
     :return: obspy.Stream
     """
@@ -84,3 +86,35 @@ def PWS_stack(streams, weight=2):
         tr.data=Linstack.select(station=tr.stats.station)[0].data*\
                 np.abs(tr.data**weight)
     return Phasestack
+
+def allign_traces(trace_list, shift_len):
+    """
+    Function to allign traces relative to each other based on their
+    cross-correlation value
+
+    :type trace_list: List of Traces
+    :param trace_list: List of traces to allign
+    :type shift_len: int
+    :param shift_len: Length to allow shifting within
+
+    :returns: list of shifts for best allignment in seconds
+    """
+    from obspy.signal.cross_correlation import xcorr
+    from copy import deepcopy
+    traces=deepcopy(trace_list)
+    # Use trace with largest MAD amplitude as master
+    master=traces[0]
+    MAD_master=np.median(np.abs(master.data))
+    master_no=0
+    for i in xrange(1,len(traces)):
+        if np.median(np.abs(traces[i])) > MAD_master:
+            master=traces[i]
+            MAD_master=np.median(np.abs(master.data))
+            master_no=i
+    shifts=[]
+    for i in xrange(len(traces)):
+        if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
+            raise ValueError('Sampling rates not the same')
+        shift, cc=xcorr(master, traces[i], shift_len)
+        shifts.append(shift/master.stats.sampling_rate)
+    return shifts
