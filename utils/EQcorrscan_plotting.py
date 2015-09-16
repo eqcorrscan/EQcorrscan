@@ -531,7 +531,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
     else:
         plt.savefig(save)
 
-def SVD_plot(SVStreams, stachans, title=False):
+def SVD_plot(SVStreams, SValues, stachans, title=False):
     """
     Function to plot the singular vectors from the clustering routines, one
     plot for each stachan
@@ -539,6 +539,8 @@ def SVD_plot(SVStreams, stachans, title=False):
     :type SVStreams: List of :class:Obspy.Stream
     :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
             ordered by power, e.g. first singular vector in the first stream
+    :type SValues: List of float
+    :param SValues: List of the singular values corresponding to the SVStreams
     :type stachans: List
     :param stachans: List of station.channel
     """
@@ -555,7 +557,8 @@ def SVD_plot(SVStreams, stachans, title=False):
             x = np.arange(len(y))
             x = x*tr.stats.delta
             axes[i].plot(x,y,'k', linewidth=1.1)
-            axes[i].set_ylabel('SV '+str(i+1), rotation=0)
+            axes[i].set_ylabel('SV '+str(i+1)+'='+\
+                str(round(SValues[i]/len(SValues),2)), rotation=0)
             axes[i].yaxis.set_ticks([])
             print i
             i+=1
