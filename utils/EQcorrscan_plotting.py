@@ -433,7 +433,10 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
     :type backrgound: :class: obspy.stream
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
-    axes = axes.ravel()
+    if len(template) > 1:
+        axes = axes.ravel()
+    else:
+        return
     if not background:
         mintime=template.sort(['starttime'])[0].stats.starttime
     else:
