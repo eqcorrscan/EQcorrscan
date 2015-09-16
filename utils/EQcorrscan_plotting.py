@@ -182,7 +182,8 @@ def threeD_gridplot(nodes, save=False, savefile=''):
     return
 
 def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
-                           freqmin=False, freqmax=False, reallign=False):
+                           freqmin=False, freqmax=False, reallign=False, \
+                           cut=(-3.0,5.0), PWS=False, title=False):
     """
     Function to plot data from a single channel at a single station for multiple
     events - data will be alligned by their pick-time given in the picks
@@ -200,36 +201,46 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     :type freqmin: float
     :type freqmax: float
     :type reallign: Bool
+
+    :returns: Alligned and cut traces, and new picks
     """
     import stacking, copy
     from core.match_filter import normxcorr2
     from obspy import Stream
-    fig, axes = plt.subplots(len(picks)+1, 1, sharex=True)
+    fig, axes = plt.subplots(len(picks)+1, 1, sharex=True, figsize=(7, 12))
     axes = axes.ravel()
     traces=[]
+    al_traces=[]
+    # Keep input safe
+    plist=copy.deepcopy(picks)
     st_list=copy.deepcopy(streams)
-    for i in xrange(len(picks)):
-        if st_list[i].select(station=picks[i].station, \
-            channel='*'+picks[i].channel[-1]):
-            tr=st_list[i].select(station=picks[i].station, \
-                channel='*'+picks[i].channel[-1])[0]
+    for i in xrange(len(plist)):
+        if st_list[i].select(station=plist[i].station, \
+            channel='*'+plist[i].channel[-1]):
+            tr=st_list[i].select(station=plist[i].station, \
+                channel='*'+plist[i].channel[-1])[0]
         else:
-            print 'No data for '+picks[i].station+'.'+picks[i].channel
+            print 'No data for '+plist[i].station+'.'+plist[i].channel
             continue
         tr.detrend('linear')
         if freqmin:
             tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
         if reallign:
-            tr.trim(picks[i].time-3.0, picks[i].time+5.0)
+            tr_cut=tr.copy()
+            tr_cut.trim(plist[i].time+cut[0], plist[i].time+cut[1],\
+                        nearest_sample=False)
+            al_traces.append(tr_cut)
         else:
-            tr.trim(picks[i].time-pre_pick, picks[i].time+clip-pre_pick)
+            tr.trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
+                    nearest_sample=False)
         traces.append(tr)
     if reallign:
-        shifts=stacking.allign_traces(traces, 50)
+        shifts=stacking.allign_traces(al_traces, 50)
         for i in xrange(len(shifts)):
             print 'Shifting by '+str(shifts[i])+' seconds'
-            picks[i].time-=shifts[i]
-            traces[i].trim(picks[i].time-pre_pick, picks[i].time+clip-pre_pick)
+            plist[i].time-=shifts[i]
+            traces[i].trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
+                           nearest_sample=False)
     for i in xrange(len(traces)):
         tr=traces[i]
         y = tr.data
@@ -241,7 +252,10 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
         axes[i+1].yaxis.set_ticks([])
         i+=1
     traces=[Stream(trace) for trace in traces]
-    linstack=stacking.linstack(traces)
+    if PWS:
+        linstack=stacking.PWS_stack(traces)
+    else:
+        linstack=stacking.linstack(traces)
     tr=linstack.select(station=picks[0].station, \
             channel='*'+picks[0].channel[-1])[0]
     y = tr.data
@@ -253,10 +267,15 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     for i in xrange(len(traces)):
         cc=normxcorr2(tr.data, traces[i][0].data)
         axes[i+1].set_ylabel('cc='+str(round(np.max(cc),2)), rotation=0)
-    axes[-1].set_xlabel('Time (s) from start of template')
+        axes[i+1].text(0.9, 0.25, str(round(np.max(traces[i][0].data))), \
+                       bbox=dict(facecolor='white', alpha=0.95),\
+                       transform=axes[i+1].transAxes)
+    axes[-1].set_xlabel('Time (s)')
+    if title:
+        axes[0].set_title(title)
     plt.subplots_adjust(hspace=0)
     plt.show()
-    return
+    return traces, plist
 
 def detection_timeseries(stream, detector, detections):
     """
@@ -340,6 +359,42 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
     axes[len(axes)-1].set_xlabel('Time')
     plt.show()
     return
+
+def interev_mag(sfiles):
+    """
+    Function to plot interevent-time versus magnitude for series of events.
+
+    :type sfiles: List
+    :param sfiles: List of sfiles to read from
+    """
+    import Sfile_util
+    times=[Sfile_util.readheader(sfile).time for sfile in sfiles]
+    mags=[Sfile_util.readheader(sfile).Mag_1 for sfile in sfiles]
+    l = [(times[i], mags[i]) for i in xrange(len(times))]
+    l.sort(key=lambda tup:tup[0])
+    times=[x[0] for x in l]
+    mags=[x[1] for x in l]
+    # Make two subplots next to each other of time before and time after
+    fig, axes = plt.subplots(1,2, sharey=True)
+    axes = axes.ravel()
+    pre_times=[]
+    post_times=[]
+    for i in xrange(len(times)):
+        if i > 0:
+            pre_times.append((times[i]-times[i-1])/60)
+        if i < len(times)-1:
+            post_times.append((times[i+1]-times[i])/60)
+    axes[0].scatter(pre_times, mags[1:])
+    axes[0].set_title('Pre-event times')
+    axes[0].set_ylabel('Magnitude')
+    axes[0].set_xlabel('Time (Minutes)')
+    axes[0].set_xlim([0, max(pre_times)+(0.1*(max(pre_times)-min(pre_times)))])
+    axes[1].scatter(pre_times, mags[:-1])
+    axes[1].set_title('Post-event times')
+    axes[1].set_xlabel('Time (Minutes)')
+    axes[1].set_xlim([0, max(post_times)+(0.1*(max(post_times)-min(post_times)))])
+    plt.show()
+
 
 def threeD_seismplot(stations, nodes):
     """
@@ -472,3 +527,40 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         plt.show()
     else:
         plt.savefig(save)
+
+def SVD_plot(SVStreams, stachans, title=False):
+    """
+    Function to plot the singular vectors from the clustering routines, one
+    plot for each stachan
+
+    :type SVStreams: List of :class:Obspy.Stream
+    :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
+            ordered by power, e.g. first singular vector in the first stream
+    :type stachans: List
+    :param stachans: List of station.channel
+    """
+    for stachan in stachans:
+        print stachan
+        plot_traces=[SVStream.select(station=stachan.split('.')[0],\
+                                     channel=stachan.split('.')[1])[0]\
+                     for SVStream in SVStreams]
+        fig, axes = plt.subplots(len(plot_traces), 1, sharex=True)
+        axes = axes.ravel()
+        i=0
+        for tr in plot_traces:
+            y = tr.data
+            x = np.arange(len(y))
+            x = x*tr.stats.delta
+            axes[i].plot(x,y,'k', linewidth=1.1)
+            axes[i].set_ylabel('SV '+str(i+1), rotation=0)
+            axes[i].yaxis.set_ticks([])
+            print i
+            i+=1
+        axes[-1].set_xlabel('Time (s)')
+        plt.subplots_adjust(hspace=0)
+        if title:
+            axes[0].set_title(title)
+        else:
+            axes[0].set_title(stachan)
+        plt.show()
+    return
