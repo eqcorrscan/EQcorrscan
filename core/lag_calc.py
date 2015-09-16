@@ -65,7 +65,7 @@ def _channel_loop(detection, template, i=0):
     :type i: int, optional
     :param i: Used to track which process has occured when running in parallel
 
-    :returns: lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)
+    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)
     """
     from utils.Sfile_util import PICK
     picks=[]
