@@ -254,7 +254,7 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     return st1
 
 
-def _template_gen(picks, st, length, swin, prepick=0.05, plot=True):
+def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     """
     Function to generate a cut template in the obspy
     Stream class from a given set of picks and data, also in an obspy stream
