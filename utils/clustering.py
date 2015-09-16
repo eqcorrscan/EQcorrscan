@@ -218,7 +218,7 @@ def allign_traces(traces):
             alligned_data.append(trace[0].data)
     return alligned_data
 
-def SVD_testing(templates):
+def SVD(templates):
     """
     Function to compute the SVD of a number of templates and return the singular
     vectors and singular values of the templates.
@@ -230,8 +230,6 @@ def SVD_testing(templates):
             stachans, List of String (station.channel)
 
     .. rubric:: Note
-
-    **IN ALPHA, not working as expected**
 
     It is recommended that you align the data before computing the SVD, .e.g.,
     the P-arrival on all templates for the same channel should appear at the same
@@ -288,7 +286,7 @@ def empirical_SVD(templates, linear=True):
         second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
     return [first_subspace, second_subspace]
 
-def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
+def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
     Function to convert the singular vectors output by SVD to streams, one for
     each singular vector level, for all channels.
@@ -303,10 +301,6 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
 
     :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being
             composed of the highest rank singular vectors.
-
-    .. rubric:: Note
-
-    **IN ALPHA, not working as expected**
     """
     import matplotlib.pyplot as plt
     from obspy import Stream, Trace
@@ -321,6 +315,32 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
 
         SVstreams.append(Stream(SVstream))
     return SVstreams
+
+def corr_clister(traces, thresh=0.9):
+    """
+    Group traces based on correlations above threshold with the stack - will
+    run twice, once with a lower threshold, then again with your threshold to
+    remove large outliers
+
+    :type traces: List of :class:obspy.Trace
+    :type thresh: Float
+
+    :returns: List of :class:obspy.traces
+    """
+    import stacking
+    from obspy import Stream
+    from core.match_filter import normxcorr2
+    stack=stacking.linstack([Stream(tr) for tr in traces])[0]
+    group1=[]
+    for tr in traces:
+        if normxcorr2(tr.data,stack.data)[0][0] > 0.6:
+            group1.append(tr)
+    stack=stacking.linstack([Stream(tr) for tr in traces])[0]
+    group2=[]
+    for tr in traces:
+        if normxcorr2(tr.data,stack.data)[0][0] > thresh:
+            group2.append(tr)
+    return group2
 
 def extract_detections(detections, templates, extract_len=90.0, \
                         outdir=None, extract_Z=True, additional_stations=[]):
