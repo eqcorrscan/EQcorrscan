@@ -289,7 +289,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                     to the p-s time, defaults to 0.5
     :type pre_pick: Float
     :param pre_pick: Time before the s-pick to start the cut window, defaults
-                    to 1.0
+                    to 0.2
     :type pre_filt: Bool
     :param pre_filt: To apply a pre-filter or not, defaults to True
     :type lowcut: Float
@@ -515,6 +515,50 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     # Write picks out to new s-file
     Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
+
+def _channel_SVD_amp(traces):
+    """
+    Function to compute the relative amplitude of a series of traces from the
+    same station and channel based on their amplitude relative to the first
+    singular basis vector according to the method of Rubenstein and Ellsworth.
+
+    :type traces: List of :class:obspy.Trace
+
+    :returns: List of Float of relative amplitudes
+    """
+    import clustering
+    from obspy import Stream
+    import matplotlib.pyplot as plt
+    SVectors, SValues, stachans = clustering.SVD([Stream(tr) for tr in traces])
+    SVStreams = clustering.SVD_2_stream(SVectors, stachans, 1,\
+     traces[0].stats.sampling_rate)
+    SVtrace=SVStreams[0][0]
+    print len(SVtrace.data)
+    amplitudes=[]
+    i=0
+    for tr in traces:
+        amplitudes.append((max(tr.data)/max(SVtrace.data),max(tr.data)))
+        x=np.arange(len(tr.data))
+        plt.plot(x,tr.data,'k')
+        plt.plot(x,SVtrace.data*amplitudes[i][0],'r')
+        plt.show()
+        i+=1
+    return amplitudes
+
+
+def SVD_picker(sfiles):
+    """
+    Function to compute the SVD derived amplitude variations according to the
+    method of Rubenstein & Ellsworth 2010 - needs to be a sequence of
+    repeating or near-repeating earthquakes.
+
+    :type sfile: List
+    :param sfiles: List of sfiles to pick from.
+
+    :returns: picks List of list of :class:PICK
+    """
+    import clustering
+
 
 if __name__ == '__main__':
     """

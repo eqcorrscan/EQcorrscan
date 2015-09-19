@@ -110,7 +110,7 @@ def group_delays(templates):
     :type templates: List of obspy.Stream
     :param templates: List of the waveforms you want to group
 
-    :returns: List of List of obspy.Streams where each initial list is a group
+    :returns: List of List of obspy.Streams where each initial list is a group\
             with the same delays
     """
     groups=[]
@@ -218,7 +218,7 @@ def allign_traces(traces):
             alligned_data.append(trace[0].data)
     return alligned_data
 
-def SVD_testing(templates):
+def SVD(templates):
     """
     Function to compute the SVD of a number of templates and return the singular
     vectors and singular values of the templates.
@@ -226,12 +226,10 @@ def SVD_testing(templates):
     :type templates: List of Obspy.Stream
     :param templates: List of the templates to be analysed
 
-    :return: SVector(ndarray), SValues(ndarray) for each channel, stachans, List
-            of String (station.channel)
+    :return: SVector(list of ndarray), SValues(list) for each channel, \
+            stachans, List of String (station.channel)
 
     .. rubric:: Note
-
-    **IN ALPHA, not working as expected**
 
     It is recommended that you align the data before computing the SVD, .e.g.,
     the P-arrival on all templates for the same channel should appear at the same
@@ -262,12 +260,38 @@ def SVD_testing(templates):
         SVectors.append(U.T)
     return SVectors, SValues, stachans
 
-def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
+def empirical_SVD(templates, linear=True):
+    """
+    Empirical subspace detector generation function.  Takes a list of templates
+    and computes the stack as the first order subspace detector, and the
+    differential of this as the second order subspace detector following
+    the emprical subspace method of Barrett & Beroza, 2014 - SRL.
+
+    :type templates: list of stream
+    :param templates: list of template streams to compute the subspace detectors\
+        from
+    :type linear: Bool
+    :param linear: Set to true by default to compute the linear stack as the\
+        first subspace vector, False will use the phase-weighted stack as the\
+        first subspace vector.
+
+    :returns: list of two streams
+    """
+    import stacking
+    if linear:
+        first_subspace=stacking.linstack(templates)
+    second_subspace=first_subspace.copy()
+    for i in xrange(len(second_subspace)):
+        second_subspace[i].data=np.diff(second_subspace[i].data)
+        second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
+    return [first_subspace, second_subspace]
+
+def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
     Function to convert the singular vectors output by SVD to streams, one for
     each singular vector level, for all channels.
 
-    :type SVectors: ndarray
+    :type SVectors: List of np.ndarray
     :param SVectors: Singular vectors
     :type stachans: List of Strings
     :param stachans: List of station.channel Strings
@@ -277,26 +301,49 @@ def SVD_2_stream_testing(SVectors, stachans, k, sampling_rate):
 
     :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being
             composed of the highest rank singular vectors.
-
-    .. rubric:: Note
-
-    **IN ALPHA, not working as expected**
     """
+    import matplotlib.pyplot as plt
     from obspy import Stream, Trace
     SVstreams=[]
     for i in xrange(k):
         SVstream=[]
         for j in xrange(len(stachans)):
-            if len(SVectors[i]) > j:
-                SVstream.append(Trace(SVectors[i][j], \
-                                        header={'station': stachans[j].split('.')[0],
-                                                'channel': stachans[j].split('.')[1],
-                                                'sampling_rate': sampling_rate}))
+            SVstream.append(Trace(SVectors[j][i], \
+                                    header={'station': stachans[j].split('.')[0],
+                                            'channel': stachans[j].split('.')[1],
+                                            'sampling_rate': sampling_rate}))
+
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
-                       extract_Z=True, additional_stations=[]):
+def corr_clister(traces, thresh=0.9):
+    """
+    Group traces based on correlations above threshold with the stack - will
+    run twice, once with a lower threshold, then again with your threshold to
+    remove large outliers
+
+    :type traces: List of :class:obspy.Trace
+    :type thresh: Float
+
+    :returns: List of :class:obspy.traces
+    """
+    import stacking
+    from obspy import Stream
+    from core.match_filter import normxcorr2
+    stack=stacking.linstack([Stream(tr) for tr in traces])[0]
+    group1=[]
+    for tr in traces:
+        if normxcorr2(tr.data,stack.data)[0][0] > 0.6:
+            group1.append(tr)
+    stack=stacking.linstack([Stream(tr) for tr in traces])[0]
+    group2=[]
+    for tr in traces:
+        if normxcorr2(tr.data,stack.data)[0][0] > thresh:
+            group2.append(tr)
+    return group2
+
+def extract_detections(detections, templates, extract_len=90.0, \
+                        outdir=None, extract_Z=True, additional_stations=[]):
     """
     Function to extract the waveforms associated with each detection in a list
     of detections for the template, template.  Waveforms will be returned as
@@ -428,12 +475,6 @@ def extract_detections(detections, templates, extract_len=90.0, outdir=None, \
                                 for tr in st)
         st=Stream(st)
 
-        # for tr in st:
-            # tr=pre_processing.dayproc(tr, templatedef.lowcut,\
-                                        # templatedef.highcut,\
-                                        # templatedef.filter_order,\
-                                        # templatedef.samp_rate,\
-                                        # matchdef.debug, detection_day)
         day_detections=[detection for detection in detections\
                         if detection[0].date() == detection_day]
         for detection in day_detections:
