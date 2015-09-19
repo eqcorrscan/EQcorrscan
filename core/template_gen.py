@@ -88,8 +88,7 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     # Perform some checks first
     import os, sys
     if not os.path.isfile(sfile):
-        print 'sfile does not exist'
-        sys.exit()
+        raise IOError('sfile does not exist')
 
     from utils import Sfile_util
     # Read in the header of the sfile
@@ -140,7 +139,7 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     return st1
 
 def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
-                  filt_order=None, length=None):
+                  filt_order=None, length=None, prepick=None):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefiles from the continous database of day-long
@@ -169,12 +168,13 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     :type length: float
     :param length: Extract length in seconds, if None will look in template\
             defaults file.
+    :type prepick: Float
+    :param prepick: Pre-pick time in seconds
     """
     # Perform some checks first
     import os, sys
     if not os.path.isfile(sfile):
-        print 'sfile does not exist'
-        sys.exit()
+        raise IOError('sfile does not exist')
 
     # import some things
     from utils import Sfile_util
@@ -192,24 +192,39 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     # Read in pick info
     picks=Sfile_util.readpicks(sfile)
     print "I have found the following picks"
+    pick_chans=[]
+    used_picks=[]
     for pick in picks:
-        print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
-        for contbase in matchdef.contbase:
-            if contbase[1] == 'yyyy/mm/dd':
-                daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
-                        str(day.day).zfill(2)
-            elif contbase[1]=='Yyyyy/Rjjj.01':
-                daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-            elif contbase[1]=='yyyymmdd':
-                daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
-            if 'wavefiles' in locals():
-                wavefiles+=glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*')
-            else:
-                wavefiles=(glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+'*'))
+        if not pick.station+pick.channel in pick_chans and pick.phase in ['P','S']:
+            pick_chans.append(pick.station+pick.channel)
+            used_picks.append(pick)
+            print pick
+            for contbase in matchdef.contbase:
+                if contbase[1] == 'yyyy/mm/dd':
+                    daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
+                            str(day.day).zfill(2)
+                elif contbase[1]=='Yyyyy/Rjjj.01':
+                    daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
+                elif contbase[1]=='yyyymmdd':
+                    daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
+                if 'wavefiles' in locals():
+                    wavefiles+=glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+\
+                    '.*')
+                else:
+                    wavefiles=(glob.glob(contbase[0]+'/'+daydir+'/*'+pick.station+\
+                    '.*'))
+        elif pick.phase in ['P','S']:
+            print 'Duplicate pick '+pick.station+' '+pick.channel+' '+pick.phase+\
+            ' '+str(pick.time)
+        elif pick.phase =='IAML':
+            print 'Amplitude pick '+pick.station+' '+pick.channel+' '+pick.phase+\
+            ' '+str(pick.time)
+    picks=used_picks
     wavefiles=list(set(wavefiles))
 
     # Read in waveform file
     from obspy import read as obsread
+    wavefiles.sort()
     for wavefile in wavefiles:
         print "I am going to read waveform data from: "+wavefile
         if 'st' in locals():
@@ -225,17 +240,21 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     if not filt_order:
         filt_order=tempdef.filter_order
     # Porcess waveform data
+    st.merge(fill_value='interpolate')
     for tr in st:
         tr=pre_processing.dayproc(tr, lowcut, highcut, filt_order,\
                                 samp_rate, matchdef.debug, day)
     if not length:
         length=tempdef.length
     # Cut the templates
-    st1=_template_gen(picks, st, length, tempdef.swin)
+    if not prepick:
+        st1=_template_gen(picks, st, length, tempdef.swin)
+    else:
+        st1=_template_gen(picks, st, length, tempdef.swin, prepick=prepick)
     return st1
 
 
-def _template_gen(picks, st, length, swin):
+def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     """
     Function to generate a cut template in the obspy
     Stream class from a given set of picks and data, also in an obspy stream
@@ -249,16 +268,28 @@ def _template_gen(picks, st, length, swin):
     :param length: Length of template in seconds
     :type swin: string
     :param swin: P, S or all
+    :type prepick: Float
+    :param prepick: Length in seconds to extract before the pick time\
+            default is 0.05 seconds
+    :type plot: Boolean
+    :param plot: To plot the template or not, default is True
     """
     from utils.Sfile_util import PICK
+    from utils.EQcorrscan_plotting import pretty_template_plot as tplot
     from obspy import Stream
     from par import template_gen_par as tempdef
-    import copy
+    import copy, warnings
     stations=[]
     channels=[]
+    st_stachans=[]
     for pick in picks:
         stations.append(pick.station)
         channels.append(pick.channel)
+    for tr in st:
+        st_stachans.append(tr.stats.station+'.'+tr.stats.channel)
+    for i in xrange(len(stations)):
+        if not stations[i]+'.'+channels[i] in st_stachans:
+            warnings.warn('No data provided for '+stations[i]+'.'+channels[i])
     # Select which channels we actually have picks for
     for tr in st:
         if tr.stats.station in stations:
@@ -267,12 +298,12 @@ def _template_gen(picks, st, length, swin):
                     temp_channel=tr.stats.channel[0]+tr.stats.channel[2]
                 elif len(tr.stats.channel)==2:
                     temp_channel=tr.stats.channel
-                if temp_channel in channels:
-                    tr.stats.channel=temp_channel
-                    if 'st1' in locals():
-                        st1+=tr
-                    else:
-                        st1=Stream(tr)
+                # if temp_channel in channels:
+                tr.stats.channel=temp_channel
+                if 'st1' in locals():
+                    st1+=tr
+                else:
+                    st1=Stream(tr)
             else:
                 if 'st1' in locals():
                     st1+=tr
@@ -280,7 +311,8 @@ def _template_gen(picks, st, length, swin):
                     st1=Stream(tr)
     st=copy.deepcopy(st1)
     del st1
-
+    if plot:
+        stplot=st.copy()
     from obspy.core.trace import Trace
     # Cut the data
     for tr in st:
@@ -288,12 +320,18 @@ def _template_gen(picks, st, length, swin):
             del starttime
         if swin=='all':
             for pick in picks:
-                if pick.station==tr.stats.station and pick.channel==tr.stats.channel:
-                    starttime=pick.time
+                if pick.station==tr.stats.station and \
+                    pick.channel==tr.stats.channel and\
+                    pick.phase=='P':
+                    starttime=pick.time-prepick
+                elif pick.station==tr.stats.station and\
+                    tr.stats.channel[-1] in ['1','2','N','E'] and\
+                    pick.phase=='S':
+                    starttime=pick.time-prepick
         else:
             for pick in picks:
                 if pick.station==tr.stats.station and pick.phase==swin:
-                    starttime=pick.time
+                    starttime=pick.time-prepick
         if 'starttime' in locals():
             print "Cutting "+tr.stats.station+'.'+tr.stats.channel
             tr.trim(starttime=starttime,endtime=starttime+length, nearest_sample=False)
@@ -303,9 +341,15 @@ def _template_gen(picks, st, length, swin):
                 st1+=tr
             else:
                 st1=Stream(tr)
+        else:
+            print 'No pick for '+tr.stats.station+'.'+tr.stats.channel
         # Ensure that the template is the correct length
         if len(tr.data) == (tr.stats.sampling_rate*length)+1:
             tr.data=tr.data[0:-1]
+    if plot:
+        tplot(st1, background=stplot.trim(st1.sort(['starttime'])[0].stats.starttime-10,\
+                                        st1.sort(['starttime'])[-1].stats.endtime+10))
+        del stplot
     del st
     # st1.plot(size=(800,600))
     return st1
