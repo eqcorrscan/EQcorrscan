@@ -65,27 +65,32 @@ def _channel_loop(detection, template, i=0):
     :type i: int, optional
     :param i: Used to track which process has occured when running in parallel
 
-    :returns: lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)
+    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)
     """
-    lagtimes=[]
+    from utils.Sfile_util import PICK
+    picks=[]
     for i in xrange(len(template)):
         image=detection.select(station=template[i].stats.station,\
                                 channel=template[i].stats.channel)
         if image: #Ideally this if statement would be removed.
             ccc = normxcorr2(template[i].data, image[0].data)
-            lagtimes.append((np.argmax(ccc)*image[0].stats.delat, np.max(ccc), \
-                    template[i].stats.station, template[i].stats.channel))
-    return (i, lagtimes)
+            shiftlen = len(ccc)*image[0].stats.sample_rate
+            # Convert the maximum cross-correlation time to an actual time
+            picktime = image[0].stats.starttime+(np.argmax(ccc)*image[0].stats.delta)
+            picks.append(PICK())
+            ((lag, np.max(ccc), template[i].stats.station, \
+                template[i].stats.channel))
+    return (i, picks)
 
-def day_loop(detections, template):
+def day_loop(detection_streams, template):
     """
     Function to loop through multiple detections for one template - ostensibly
     designed to run for the same day of data for I/O simplicity, but as you
     are passing stream objects it could run for all the detections ever, as long
     as you have the RAM!
 
-    :type detections: List of obspy.Stream
-    :param detections: List of all the detections for this template that you
+    :type detection_streams: List of obspy.Stream
+    :param detection_streams: List of all the detections for this template that you
                     want to compute the optimum pick for.
     :type template: obspy.Stream
     :param template: The original template used to detect the detections passed
@@ -98,14 +103,21 @@ def day_loop(detections, template):
     from multiprocessing import Pool, cpu_count # Used to run detections in parallel
     lags=[]
     num_cores=cpu_count()
-    if num_cores > len(detections):
-        num_cores=len(detections)
+    if num_cores > len(detection_streams):
+        num_cores=len(detection_streams)
     pool=Pool(processes=num_cores, maxtasksperchild=None)
-    results=[pool.apply_async(_channel_loop, args=(detections[i], template, i))\
-                        for i in xrange(len(detections))]
+    results=[pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))\
+                        for i in xrange(len(detection_streams))]
     pool.close()
     lags=[p.get() for p in results]
     lags.sort(key=lambda tup: tup[0]) # Sort based on i
+    lags=[lag[1] for lag in lags]
+    # Convert lag time to moveout time
+    mintime=template.sort(['starttime'])[0].stats.starttime
+    for lag in lags:
+        delay=template.select(station=lag[2], channel=lag[3])[0].stats.starttime-\
+            mintime
+        lag[0]+=delay
     return lags
 
 def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4):
