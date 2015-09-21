@@ -7,3 +7,8 @@
 *.ms
 *.buf
 *.hdr
+templates
+stdout_*
+matchout_*
+stderr_*
+matcherr_*
