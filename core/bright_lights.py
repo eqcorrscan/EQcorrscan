@@ -286,7 +286,8 @@ def _cum_net_resp(node_lis, instance):
 
 
 
-def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, realstations):
+def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate,\
+                     realstations, length):
     """
     Function to find detections within the cumulative network response according
     to Frank et al. (2014).
@@ -303,7 +304,6 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     :return: detections as class DETECTION
     """
     from utils import findpeaks
-    from par import template_gen_par as defaults
     from core.match_filter import DETECTION
     cum_net_resp = np.nan_to_num(cum_net_resp) # Force no NaNs
     if np.isnan(cum_net_resp).any():
@@ -320,7 +320,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate, rea
     print 'Threshold is set to: '+str(thresh)
     print 'Max of data is: '+str(max(cum_net_resp))
     peaks=findpeaks.find_peaks2(cum_net_resp, thresh,
-                    defaults.length*samp_rate, debug=0)
+                    length*samp_rate, debug=0)
     detections=[]
     if peaks:
         for peak in peaks:
@@ -368,7 +368,7 @@ def coherance(stream):
     return coherance
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
-        coherance_thresh, instance=0):
+        coherance_thresh, instance=0, matchdef=False, defaults=False):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -401,8 +401,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :return: list of templates as :class: `obspy.Stream` objects
     """
     from core.template_gen import _template_gen
-    from par import template_gen_par as defaults
-    from par import match_filter_par as matchdef
+    if not defaults:
+        from par import template_gen_par as defaults
+    if not matchdef:
+        from par import match_filter_par as matchdef
     from par import bright_lights_par as brightdef
     if brightdef.plotsave:
         import matplotlib
@@ -431,8 +433,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     detections=[]
     detect_lags=[]
     parallel=True
-    plotvar=False
-    mem_issue=True
+    plotvar=True
+    mem_issue=False
     # Loop through each node in the input
     # Linear run
     print 'Computing the energy stacks'
@@ -520,7 +522,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # Find detection within this network response
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
-                     stream[0].stats.sampling_rate, realstations)
+                     stream[0].stats.sampling_rate, realstations, defaults.length)
     del cum_net_resp
     templates=[]
     nodesout=[]

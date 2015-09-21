@@ -78,13 +78,15 @@ minsta=3                            # Minimum number of stations to run the
                                     # detection routine for
 contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
           'Yyyyy/Rjjj.01','AF'),
+          ('/Volumes/GeoPhysics_09/users-data/chambeca/GeoNet_archive/day_volumes_S',\
+         'Yyyyy/Rjjj.01','NZ')]
           # ('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S',\
           # 'Yyyyy/Rjjj.01','NZ')]
 
 	# ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
 	# 'yyyymmdd','AF'),
-        ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
-         'yyyymmdd','NZ')]
+        # ('/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled',\
+         # 'yyyymmdd','NZ')]
                                     # Full path for the waveform database
                                     # Files must be in daylong format
                                     # To allow for data from multiple directories

@@ -86,7 +86,7 @@ contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes
                                     # of tuples of the form
                                     # [(path, directory format, netcode)]
 
-plot=True                           # boolean, True for plotting the daily
+plot=False                          # boolean, True for plotting the daily
                                     # cccsum values for each template.
 cores=10                            # Value for number of parallel jobs to run
                                     # must be int

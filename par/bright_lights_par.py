@@ -29,22 +29,27 @@ This file is part of EQcorrscan.
 from obspy import UTCDateTime
 import numpy as np
 import matplotlib.path as mplPath
-stations=['EORO','WHYM','COSA','FOZ','LBZ','JCZ',
+stations=['EORO','WHYM','COSA','FOZ','LBZ','JCZ','WVZ',
           'GOVA','LABE','MTFO','RPZ',
           'COVA','FRAN','POCR','SOLU',
           'WHAT','POCR2','WHAT2']   # List of stations to use for template
                                         # generation
 
-nllpath='./grid/3D'                       # Path to nonlinloc .csv grid files of
+nllpath='./grid/Caro_larger_grid/3D'    # Path to nonlinloc .csv grid files of
                                         # travel times
 # corners=mplPath.Path(np.array([[170., -44.],\
                           # [170.1, -44.],\
                           # [170.1, -43.8],\
                           # [170, -43.8]]))
-corners=mplPath.Path(np.array([[169.7, -44.0519],\
-                          [170.3, -43.7],\
-                          [170.3, -43.3],\
-                          [169.4, -43.75]]))
+# corners=mplPath.Path(np.array([[169.7, -44.0519],\
+                          # [170.3, -43.7],\
+                          # [170.3, -43.3],\
+                          # [169.4, -43.75]]))
+corners=mplPath.Path(np.array([[169.55, -44.2],\
+                               [170.8, -43.6],\
+                               [170.5, -43.16],\
+                               [169.2, -43.76]]))
+
                                         # Numpy array to be converted into a
                                         # matplotlib path - should descirbe
                                         # the horizontal polygon to search within
@@ -60,18 +65,19 @@ resolution=(0.02,2)                     # Horizontal and vertical resolution
 dates=[UTCDateTime('2013-03-28')+i \
  for i in xrange(0, int(UTCDateTime('2013-05-09') - UTCDateTime('2013-03-28')),\
                  86400)] # Example of a generator expression for all-time
-trem_dates=[#UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
-       #UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
-       #UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
-       UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
-       UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
-       UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
-       UTCDateTime('2013-03-28')] #tremor days
-dates=trem_dates+dates
+trem_dates=[UTCDateTime('2009-05-12')]#, UTCDateTime('2009-07-14'),\
+       # UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
+       # UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
+       # UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
+       # UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
+       # UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
+       # UTCDateTime('2013-03-28')] #tremor days
+# dates=trem_dates+dates
+dates=trem_dates
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
-threshold=2.5                           # Threshold value, if threshtype is
+threshold=1.5                           # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
 thresh_type='RMS'                       # Threshold type, can be either MAD
@@ -86,11 +92,11 @@ nodesimthresh=0.5                       # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
-coherance=0.20                          # Coherance threshold to remove
+coherance=0.12                          # Coherance threshold to remove
                                         # incoherant peaks in the network
                                         # response.
 plotsave=True                           # Save plots, set to True to not show
                                         # any plots
 clip_level=1.5                          # Level to clip energy amplitudes to as
                                         # a multiplier of the mean energy amplitude
-cores=4                                 # Number of cores to use for brightness search
+cores=20                                 # Number of cores to use for brightness search
