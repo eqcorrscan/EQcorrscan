@@ -84,7 +84,7 @@ class PICK:
                 _str_conv(self.AIN).rjust(4)+\
                 _str_conv(self.SNR).rjust(4)+\
                 _str_conv(int(self.azimuthres)).rjust(3)+\
-                _str_conv(self.timeres).rjust(5)+\
+                _str_conv(self.timeres, rounded=2).rjust(5)+\
                 _str_conv(int(self.finalweight)).rjust(2)+\
                 _str_conv(self.distance).rjust(5)+\
                 _str_conv(int(self.CAZ)).rjust(4)
@@ -147,7 +147,7 @@ def _float_conv(string):
         floatstring=float('NaN')
     return floatstring
 
-def _str_conv(number):
+def _str_conv(number, rounded=False):
     """
     Convenience tool to convert a number, either float or into into a string,
     if the int is 999, or the float is NaN, returns empty string.
@@ -156,8 +156,10 @@ def _str_conv(number):
         string=' '
     elif type(number)==str:
         return number
-    else:
+    elif not rounded:
         string=str(number)
+    elif rounded==2:
+        string='{0:.2f}'.format(number)
     return string
 
 def readheader(sfilename):
@@ -481,7 +483,7 @@ def populateSfile(sfilename, picks):
                 _str_conv(pick.velocity).rjust(5)+\
                 _str_conv(pick.AIN).rjust(4)+\
                 _str_conv(int(pick.azimuthres)).rjust(3)+\
-                _str_conv(pick.timeres).rjust(5)+\
+                _str_conv(pick.timeres, rounded=2).rjust(5)+\
                 _str_conv(int(pick.finalweight)).rjust(2)+\
                 _str_conv(pick.distance).rjust(5)+\
                 _str_conv(int(pick.CAZ)).rjust(4)+' \n'
