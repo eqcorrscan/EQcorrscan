@@ -49,7 +49,7 @@ swin='all'                          # Boolean, use s-picks or not, if True the
                                     # templates will include only channels with
                                     # picks, if False, all channels will be
                                     # used for stations with p-picks.
-saveloc='./templates/brightness_alltime'               # Location to save the templates to in
+saveloc='./templates/brightness_tremor'               # Location to save the templates to in
                                     # miniseed format
 debug=3                             # Debugging level from 0-5 with 5 being most
                                     # verbose

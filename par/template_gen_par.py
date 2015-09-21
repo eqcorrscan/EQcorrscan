@@ -31,12 +31,12 @@ import glob
 sfilebase='/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQ_correl_codes/templates/EQcorrscan/template_sfiles'
                 # Location of nordic s-files, string
 
-sfiles=glob.glob(sfilebase+'/*L.S*')# List of s-files
+# sfiles=glob.glob(sfilebase+'/*L.S*')# List of s-files
 # sfiles=[sfile.split('/')[-1] for sfile in sfiles]
-#sfiles=[]
+sfiles=[]
 
 # tfiles=glob.glob('templates/pan_templates/brightness_group_*')  # List of pre-existing template files
-tfiles=[]
+tfiles=glob.glob('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQ_correl_codes/templates/EQcorrscan/*_template.ms')
 samp_rate=100.0                      # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
 
