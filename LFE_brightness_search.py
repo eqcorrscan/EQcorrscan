@@ -247,7 +247,13 @@ for day in dates: #Loop through dates
             # del stream
         for station in stations:
             # Check logs for this day
-            rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+            if station == 'WHAT2':
+                sta='WHAT'
+            elif station == 'POCR2':
+                sta='POCR'
+            else:
+                sta=station
+            rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+sta+'/'+\
                     str(day.year)+str(day.julday).zfill(3)
             errors, full = seismo_logs.check_all_logs(rawdir, \
                                                       1.0/templatedef.samp_rate)
@@ -296,14 +302,14 @@ for day in dates: #Loop through dates
         if not parallel:
             for tr in stream:
                 # tr.plot()
-                tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
-                                            templatedef.filter_order, templatedef.samp_rate,\
+                tr=pre_processing.dayproc(tr, brightedef.lowcut, brightdef.highcut,\
+                                            brightdef.filter_order, brightdef.samp_rate,\
                                             templatedef.debug, day)
         else:
-            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
-                                                                   templatedef.highcut,\
-                                                                   templatedef.filter_order,\
-                                                                   templatedef.samp_rate,\
+            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, brightdef.lowcut,\
+                                                                   brightdef.highcut,\
+                                                                   brightdef.filter_order,\
+                                                                   brightdef.samp_rate,\
                                                                    templatedef.debug, day)\
                                 for tr in stream)
             stream=Stream(stream)
