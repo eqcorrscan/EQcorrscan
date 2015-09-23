@@ -24,7 +24,103 @@ This file is part of EQcorrscan.
 """
 from obspy import UTCDateTime
 import numpy as np
-def find_peaks2(arr,thresh, trig_int, debug=0, \
+
+def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
+                starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
+    """
+    Function to determine peaks in an array of data above a certain threshold.
+    Improvement on find_peaks, speed-up of approx 250x.
+
+    :type arr: ndarray
+    :param arr: 1-D numpy array is required
+    :type thresh: float
+    :param thresh: The threshold below which will be considered noise and peaks\
+    will not be found in.
+    :type trig_int: int
+    :param trig_int: The minimum difference in samples between triggers,\
+    if multiple peaks within this window this code will find the highest.
+    :type debug: int
+    :param debug: Optional, debug level 0-5
+    :type maxwidth: int
+    :param maxwidth: Maximum peak width to look for in samples
+
+    :return: peaks, locs: Lists of peak values and locations.
+
+    """
+    from scipy.signal import find_peaks_cwt
+    # Set everything below the threshold to zero
+    image=np.copy(arr)
+    image=np.abs(image)
+    image[image<thresh]=thresh
+    if len(image[image>thresh])==0:
+        print 'No values over threshold found'
+        return []
+    if debug > 0:
+        print 'Found '+str(len(image[image>thresh]))+' samples above the threshold'
+    initial_peaks=[]
+    peaks=[]
+    # Find the peaks
+    peakinds = find_peaks_cwt(image, np.arange(1,maxwidth))
+    initial_peaks=[(image[peakind], peakind) for peakind in peakinds]
+    # Sort initial peaks according to amplitude
+    peaks_sort=sorted(initial_peaks, key=lambda amplitude:amplitude[0],\
+                      reverse=True)
+    # Debugging
+    if debug>=4:
+        for peak in initial_peaks:
+            print peak
+    if initial_peaks:
+        peaks.append(peaks_sort[0]) # Definitely take the biggest peak
+        if debug > 3:
+            print 'Added the biggest peak of '+str(peaks[0][0])+' at sample '+\
+                    str(peaks[0][1])
+        if len(initial_peaks) > 1:
+            if debug>3:
+                print 'Multiple peaks found, checking them now to see if they overlap'
+            for next_peak in peaks_sort:#i in xrange(1,len(peaks_sort)): # Loop through the amplitude sorted peaks
+                # if the next highest amplitude peak is within trig_int of any
+                # peak already in peaks then we don't want it, else, add it
+                #next_peak=peaks_sort[i]
+                if debug>3:
+                    print next_peak
+                for peak in peaks:
+                    add=False # Use add as a switch for whether or not to append
+                    # next peak to peaks, if once gone through all the peaks
+                    # it is True, then we will add it, otherwise we won't!
+                    if abs(next_peak[1]-peak[1]) < trig_int:
+                        if debug>3:
+                            print 'Difference in time is '+str(next_peak[1]-peak[1])
+                            print 'Which is less than '+str(trig_int)
+                        add=False
+                        # Need to exit the loop here if false
+                        break
+                    else:
+                        add=True
+                if add:
+                    if debug>3:
+                        print 'Adding peak of '+str(next_peak[0])+' at sample '+\
+                                str(next_peak[1])
+                    peaks.append(next_peak)
+                elif debug >3:
+                    print 'I did not add peak of '+str(next_peak[0])+\
+                            ' at sample '+str(next_peak[1])
+
+        if debug >= 3:
+            from utils import EQcorrscan_plotting
+            EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True, peaks,
+                                            'debug_output/peaks_'+\
+                                              str(starttime.year)+'-'+\
+                                              str(starttime.month)+'-'+\
+                                              str(starttime.day)+'.pdf')
+        peaks=sorted(peaks, key=lambda time:time[1], reverse=False)
+        return peaks
+    else:
+        print 'No peaks for you!'
+        return peaks
+
+
+
+def find_peaks2_depreciated(arr,thresh, trig_int, debug=0, \
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
     Function to determine peaks in an array of data above a certain threshold.
@@ -120,7 +216,8 @@ def find_peaks2(arr,thresh, trig_int, debug=0, \
         return peaks
 
 
-def find_peaks(arr, thresh, trig_int):
+def find_peaks_dep(arr, thresh, trig_int, debug=0,\
+               starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
     Function to determine peaks in an array of data above a certain threshold.
 
@@ -176,4 +273,11 @@ def find_peaks(arr, thresh, trig_int):
             else:
                 peaks[i-1]=peaks[i]
     peaks=sorted(list(set(peaks)), key=lambda loc: loc[1])
+    if debug >= 3:
+        from utils import EQcorrscan_plotting
+        EQcorrscan_plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
+                                        'debug_output/peaks_'+\
+                                        str(starttime.year)+'-'+\
+                                        str(starttime.month)+'-'+\
+                                        str(starttime.day)+'.pdf')
     return peaks
