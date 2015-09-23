@@ -470,11 +470,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         if st:
             realstations+=station
     del st
-    # Convert the data to float 16 to reduce memory consumption, shouldn't be
-    # too detrimental
     stream_copy=stream.copy()
-    for i in xrange(len(stream)):
-        stream[i].data=stream[i].data.astype(np.float16)
+    # Force convert to int32
+    for tr in stream_copy:
+	tr.data=tr.data.astype(np.int32)
     detections=[]
     detect_lags=[]
     parallel=True
@@ -657,7 +656,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]), \
                              detections=good_detections,\
                              false_detections=all_detections,\
-                             size=(18.5, 10), save='NR_timeseries.pdf',\
+                             size=(18.5, 10), save='plots/'+\
+				cum_net_trace[0].stats.starttime.datetime.strftime('%Y%m%d')+\
+				'_NR_timeseries.pdf',\
                              title='Network response')
 
     nodesout=list(set(nodesout))

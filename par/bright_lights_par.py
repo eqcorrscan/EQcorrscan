@@ -65,13 +65,13 @@ resolution=(0.02,2)                     # Horizontal and vertical resolution
 dates=[UTCDateTime('2013-03-28')+i \
  for i in xrange(0, int(UTCDateTime('2013-05-09') - UTCDateTime('2013-03-28')),\
                  86400)] # Example of a generator expression for all-time
-trem_dates=[UTCDateTime('2009-05-12')]#, UTCDateTime('2009-07-14'),\
-       # UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
-       # UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
-       # UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
-       # UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
-       # UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
-       # UTCDateTime('2013-03-28')] #tremor days
+trem_dates=[UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
+       UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\
+       UTCDateTime('2010-07-05'), UTCDateTime('2010-07-14'),\
+       UTCDateTime('2010-08-20'), UTCDateTime('2010-08-31'),\
+       UTCDateTime('2010-10-05'), UTCDateTime('2011-08-03'),\
+       UTCDateTime('2011-09-02'), UTCDateTime('2011-09-04'),\
+       UTCDateTime('2013-03-28')] #tremor days
 # dates=trem_dates+dates
 dates=trem_dates
                                         # List of dates to run through, can be
@@ -92,16 +92,16 @@ nodesimthresh=0.5                       # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
-coherance=0.12                          # Coherance threshold to remove
+coherance=0.20                          # Coherance threshold to remove
                                         # incoherant peaks in the network
                                         # response.
 plotsave=True                           # Save plots, set to True to not show
                                         # any plots
 clip_level=20.0                         # Level to clip energy amplitudes to as
                                         # a multiplier of the mean energy amplitude
-cores=20                                 # Number of cores to use for brightness search
-lowcut=1.0
-highcut=2.0
-filter_roder=3
-samp_rate=4.0
+cores=16                                 # Number of cores to use for brightness search
+lowcut=4.0
+highcut=8.0
+filter_order=3
+samp_rate=20.0
 gap=2.0                                 # Minimum gap between detections in seconds
