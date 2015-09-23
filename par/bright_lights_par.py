@@ -29,10 +29,11 @@ This file is part of EQcorrscan.
 from obspy import UTCDateTime
 import numpy as np
 import matplotlib.path as mplPath
-stations=['EORO','WHYM','COSA','FOZ','LBZ','JCZ','WVZ',
+stations=['EORO','WHYM','COSA','FOZ','LBZ','JCZ','WVZ','GCSZ',
           'GOVA','LABE','MTFO','RPZ',
           'COVA','FRAN','POCR','SOLU',
-          'WHAT','POCR2','WHAT2']   # List of stations to use for template
+          'WHAT','POCR2','WHAT2','MTBA',
+          'LARB']   # List of stations to use for template
                                         # generation
 
 nllpath='./grid/Caro_larger_grid/3D'    # Path to nonlinloc .csv grid files of
@@ -92,9 +93,19 @@ nodesimthresh=0.5                       # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
-coherance=0.20                          # Coherance threshold to remove
+coherance=0.225                         # Coherance threshold to remove
                                         # incoherant peaks in the network
                                         # response.
+coherance_stations=['GOVA', 'FRAN',\
+                    'WHAT2', 'GOVA',\
+                    'WHYM','MTFO',\
+                    'SOLU','EORO',\
+                    'COSA','LARB',\
+                    'LABE','COVA',\
+                    'MTBA']             # List of stations to use when
+                                        # computing coherance
+coherance_clip=(0.0,3.0)                # Clip window for computiong the coherance
+                                        # in seconds from start of template trace
 plotsave=True                           # Save plots, set to True to not show
                                         # any plots
 clip_level=20.0                         # Level to clip energy amplitudes to as
