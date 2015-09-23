@@ -256,9 +256,22 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
             energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
             # Cope with zeros enountered
             energy=np.nan_to_num(energy)
+            # This is now an array of floats - we can convert this to int16
+            # normalize to have max at max of int16 range
+            if not max(energy[0])==0.0:
+                scalor=1/max(energy[0])
+                energy=(32767*(energy*scalor)).astype(np.int16)
+            else:
+                energy=energy.astype(np.int16)
         else:
             norm_energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
             norm_energy=np.nan_to_num(norm_energy)
+            # Convert to int16
+            if not max(norm_energy[0])==0.0:
+                scalor=1/max(norm_energy[0])
+                norm_energy=(32767*(norm_energy*scalor)).astype(np.int16)
+            else:
+                norm_energy=norm_energy.astype(np.int16)
             # Apply lag to data and add it to energy - normalize the data here
             energy=np.concatenate((energy,norm_energy), axis=0)
         if plot:
@@ -369,23 +382,33 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate,\
     print 'I have found '+str(len(peaks))+' possible detections'
     return detections
 
-def coherance(stream):
+def coherance(stream_in, stations=['all'], clip=False):
     """
     Function to determine the average network coherance of a given template or
     detection.  You will want your stream to contain only signal as noise
     will reduce the coherance (assuming it is incoherant random noise).
 
     :type stream: obspy.Stream
-    :param stream: The stream of seismic data you want to calculate the
-                    coherance for.
+    :param stream: The stream of seismic data you want to calculate the\
+            coherance for.
+    :type stations: List of String
+    :param stations: List of stations to use for coherance, default is all
+    :type length: Tuple of Float
+    :param length: Default is to use all the data given - \
+            tuple of start and end in seconds from start of trace
 
     :return: float - coherance
     """
+    stream=stream_in.copy() # Copy the data before we remove stations
     # First check that all channels in stream have data of the same length
     maxlen=np.max([len(tr.data) for tr in stream])
     if maxlen==0:
         warnings.warn('template without data')
         return 0.0
+    if not stations[0]=='all':
+        for tr in stream:
+            if not tr.stats.station in stations:
+                stream.remove(tr) # Remove stations we don't want to use
     for tr in stream:
         if not len(tr.data) == maxlen and not len(tr.data)==0:
             warnings.warn(tr.stats.station+'.'+tr.stats.channel+\
@@ -398,6 +421,10 @@ def coherance(stream):
                 tr.data=np.concatenate((tr.data, pad), axis=0)
         elif len(tr.data)==0:
             tr.data=np.zeros(maxlen)
+    # Clip the data to the set length
+    if clip:
+        for tr in stream:
+            tr.trim(tr.stats.starttime+clip[0], tr.stats.starttime+clip[1])
     coherance=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
@@ -471,9 +498,13 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             realstations+=station
     del st
     stream_copy=stream.copy()
-    # Force convert to int32
+    # Force convert to int16
     for tr in stream_copy:
-	tr.data=tr.data.astype(np.int32)
+        # int16 max range is +/- 32767
+        if max(abs(tr.data)) > 32767:
+            tr.data=32767*(tr.data/max(abs(tr.data)))
+            # Make sure that the data aren't clipped it they are high gain - scale the data
+        tr.data=tr.data.astype(np.int16)
     detections=[]
     detect_lags=[]
     parallel=True
@@ -621,15 +652,17 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            if coherance(template) > coherance_thresh:
+            temp_coher=coherance(template, brightdef.coherance_stations,\
+                                 brightdef.coherance_clip)
+            if temp_coher > coherance_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
                 print '---------------------------------COHERANCE LEVEL: '+\
-                        str(coherance(template))
+                        str(temp_coher)
                 coherant=True
             else:
                 print 'Template was incoherant, coherance level: '+\
-                        str(coherance(template))
+                        str(temp_coher)
                 coherant=False
             del copy_of_stream, tr, template
             if coherant:
@@ -648,14 +681,14 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         if not brightdef.plotsave:
             plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]),\
                              detections=good_detections,\
-                             false_detections=all_detections,\
+                             # false_detections=all_detections,\
                              size=(18.5, 10),\
                              title='Network response')
             # cum_net_trace.plot(size=(800,600), equal_scale=False)
         else:
             plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]), \
                              detections=good_detections,\
-                             false_detections=all_detections,\
+                             # false_detections=all_detections,\
                              size=(18.5, 10), save='plots/'+\
 				cum_net_trace[0].stats.starttime.datetime.strftime('%Y%m%d')+\
 				'_NR_timeseries.pdf',\

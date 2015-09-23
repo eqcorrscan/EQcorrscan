@@ -591,10 +591,10 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
     if false_detections:
         for detection in false_detections:
             xd=mdates.date2num(detection)
-            axes[-1].plot((xd, xd), (ymin, ymax), 'k--', linewidth=1, alpha=0.5)
+            axes[-1].plot((xd, xd), (ymin, ymax), 'k--', linewidth=0.5, alpha=0.5)
     for detection in detections:
         xd=mdates.date2num(detection)
-        axes[-1].plot((xd, xd), (ymin, ymax), 'r--', linewidth=2)
+        axes[-1].plot((xd, xd), (ymin, ymax), 'r--', linewidth=0.75)
     # Set formatters for x-labels
     mins=mdates.MinuteLocator()
     if (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() >= 10800\
