@@ -289,37 +289,37 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     plt.show()
     return traces, plist
 
-def detection_timeseries(stream, detector, detections):
-    """
-    Function to plot the data and detector with detections labelled in red,
-    will downsample if too many data points.
+# def detection_timeseries(stream, detector, detections):
+    # """
+    # Function to plot the data and detector with detections labelled in red,
+    # will downsample if too many data points.
 
-    :type stream: obspy.Stream
-    :type detector: np.array
-    :type detections: np.array
-    :param detections: array of positions of detections in samples
-    """
-    from obspy import Trace
-    fig, axes = plt.subplots((len(stream)+1), 1, sharex=True)
-    axes=axes.ravel()
-    samp_rate=stream[0].stats.sampling_rate
-    for i in xrange(len(stream)):
-        tr=stream[i]
-        if tr.stats.sampling_rate > 10:
-            tr.decimate(int(tr.stats.sampling_rate/10))
-        time=np.arange(0, tr.stats.npts)/float(tr.stats.delta)
-        axes[i].plot(tr.data, time)
-        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel)
-    detector=Trace(detector)
-    detector.stats.sampling_rate=samp_rate
-    if detector.stats.sampling_rate > 10:
-        detector.decimate(int(detector.stats.sampling_rate/10))
-    time=np.arange(0, detector.stats.npts)/float(detector.stats.delta)
-    detector=detector.data
-    axes[len(axes)].plot(detector, time)
-    axes[len(axes)].set_xlabel('Time')
-    axes[len(axes)].set_ylabel('Detector')
-    return
+    # :type stream: obspy.Stream
+    # :type detector: np.array
+    # :type detections: np.array
+    # :param detections: array of positions of detections in samples
+    # """
+    # from obspy import Trace
+    # fig, axes = plt.subplots((len(stream)+1), 1, sharex=True)
+    # axes=axes.ravel()
+    # samp_rate=stream[0].stats.sampling_rate
+    # for i in xrange(len(stream)):
+        # tr=stream[i]
+        # if tr.stats.sampling_rate > 10:
+            # tr.decimate(int(tr.stats.sampling_rate/10))
+        # time=np.arange(0, tr.stats.npts)/float(tr.stats.delta)
+        # axes[i].plot(tr.data, time)
+        # axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel)
+    # detector=Trace(detector)
+    # detector.stats.sampling_rate=samp_rate
+    # if detector.stats.sampling_rate > 10:
+        # detector.decimate(int(detector.stats.sampling_rate/10))
+    # time=np.arange(0, detector.stats.npts)/float(detector.stats.delta)
+    # detector=detector.data
+    # axes[len(axes)].plot(detector, time)
+    # axes[len(axes)].set_xlabel('Time')
+    # axes[len(axes)].set_ylabel('Detector')
+    # return
 
 def detection_multiplot(stream, template, times, streamcolour='k',\
         templatecolour='r'):
@@ -509,7 +509,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
     else:
         mintime=background.sort(['starttime'])[0].stats.starttime
     i=0
-    template.sort(['station', 'starttime'])
+    template.sort(['network','station', 'starttime'])
     for tr in template:
         delay=tr.stats.starttime-mintime
         delay*=tr.stats.sampling_rate
@@ -529,8 +529,10 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
             bx+=bdelay
             bx=bx/btr.stats.sampling_rate
             axes[i].plot(bx,by,'k',linewidth=1)
+            axes[i].plot(x, y, 'r', linewidth=1.1)
+        else:
+            axes[i].plot(x, y, 'k', linewidth=1.1)
         print tr.stats.station+' '+str(len(x))+' '+str(len(y))
-        axes[i].plot(x, y, 'r', linewidth=1.1)
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
         axes[i].yaxis.set_ticks([])
         i+=1
@@ -542,6 +544,80 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         plt.show()
     else:
         plt.savefig(save)
+
+def NR_plot(stream, NR_stream, detections, false_detections=False,\
+            size=(18.5,10), save=False, title=False):
+    """
+    Function to plot the Network response alongside the streams used - highlights
+    detection times in the network response
+    """
+    import datetime as dt
+    import matplotlib.dates as mdates
+    fig, axes = plt.subplots(len(stream)+1, 1, sharex=True, figsize=size)
+    if len(stream) > 1:
+        axes = axes.ravel()
+    else:
+        return
+    mintime=stream.sort(['starttime'])[0].stats.starttime
+    i=0
+    stream.sort(['network','station', 'starttime'])
+    for tr in stream:
+        delay=tr.stats.starttime-mintime
+        delay*=tr.stats.sampling_rate
+        y=tr.data
+        x=[tr.stats.starttime + dt.timedelta(seconds=s/tr.stats.sampling_rate)\
+           for s in xrange(len(y))]
+        x=mdates.date2num(x)
+        axes[i].plot(x, y, 'k', linewidth=1.1)
+        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+        axes[i].yaxis.set_ticks([])
+        axes[i].set_xlim(x[0], x[-1])
+        i+=1
+    # Plot the network response
+    tr=NR_stream[0]
+    delay=tr.stats.starttime-mintime
+    delay*=tr.stats.sampling_rate
+    y=tr.data
+    x=[tr.stats.starttime + dt.timedelta(seconds=s/tr.stats.sampling_rate)\
+        for s in xrange(len(y))]
+    x=mdates.date2num(x)
+    axes[i].plot(x, y, 'k', linewidth=1.1)
+    axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+    axes[i].yaxis.set_ticks([])
+    axes[-1].set_xlabel('Time')
+    axes[-1].set_xlim(x[0], x[-1])
+    # Plot the detections!
+    ymin, ymax = axes[-1].get_ylim()
+    if false_detections:
+        for detection in false_detections:
+            xd=mdates.date2num(detection)
+            axes[-1].plot((xd, xd), (ymin, ymax), 'k--', linewidth=1, alpha=0.5)
+    for detection in detections:
+        xd=mdates.date2num(detection)
+        axes[-1].plot((xd, xd), (ymin, ymax), 'r--', linewidth=2)
+    # Set formatters for x-labels
+    mins=mdates.MinuteLocator()
+    if (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() > 10800:
+        hours=mdates.MinuteLocator(byminute=[0,15,30,45])
+    elif(tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() < 1200:
+        hours=mdates.MinuteLocator(byminute=range(0,60,2))
+    else:
+        hours=mdates.MinuteLocator(byminute=range(0,60,5))
+    hrFMT=mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
+    axes[-1].xaxis.set_major_locator(hours)
+    axes[-1].xaxis.set_major_formatter(hrFMT)
+    axes[-1].xaxis.set_minor_locator(mins)
+    plt.gcf().autofmt_xdate()
+    axes[-1].fmt_xdata=mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
+    plt.subplots_adjust(hspace=0)
+    if title:
+        axes[0].set_title(title)
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(save)
+
+
 
 def SVD_plot(SVStreams, SValues, stachans, title=False):
     """
