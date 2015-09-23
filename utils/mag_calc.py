@@ -493,13 +493,13 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                                          channel=tr.stats.channel,
                                          impulsivity=' ',
                                          phase='IAML',
-                                         weight=' ', polarity=' ',
+                                         weight='', polarity=' ',
                                          time=tr.stats.starttime+delay,
-                                         coda=' ', amplitude=amplitude,
-                                         peri=period, azimuth=' ',
-                                         velocity=' ', AIN='', SNR='',
-                                         azimuthres=' ', timeres=' ',
-                                         finalweight=' ', distance=hypo_dist,
+                                         coda=999, amplitude=amplitude,
+                                         peri=period, azimuth=float('NaN'),
+                                         velocity=float('NaN'), AIN=999, SNR='',
+                                         azimuthres=999, timeres=float('NaN'),
+                                         finalweight=999, distance=hypo_dist,
                                          CAZ=CAZ))
     # Copy the header from the sfile to a new local S-file
     fin=open(sfile,'r')
@@ -513,6 +513,8 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     fin.close()
     fout.close()
     # Write picks out to new s-file
+    for pick in picks_out:
+        print pick
     Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
 
