@@ -597,10 +597,16 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
         axes[-1].plot((xd, xd), (ymin, ymax), 'r--', linewidth=2)
     # Set formatters for x-labels
     mins=mdates.MinuteLocator()
-    if (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() > 10800:
+    if (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() >= 10800\
+       and (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() <= 25200:
         hours=mdates.MinuteLocator(byminute=[0,15,30,45])
-    elif(tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() < 1200:
+    elif(tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() <= 1200:
         hours=mdates.MinuteLocator(byminute=range(0,60,2))
+    elif (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() > 25200\
+        and (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() <= 172800:
+        hours=mdates.HourLocator(byhour=range(0,24,3))
+    elif (tr.stats.endtime.datetime-tr.stats.starttime.datetime).total_seconds() > 172800:
+        hours=mdates.DayLocator()
     else:
         hours=mdates.MinuteLocator(byminute=range(0,60,5))
     hrFMT=mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
