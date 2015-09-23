@@ -229,13 +229,22 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
             tr_cut=tr.copy()
             tr_cut.trim(plist[i].time+cut[0], plist[i].time+cut[1],\
                         nearest_sample=False)
-            al_traces.append(tr_cut)
+            if len(tr_cut.data)<=0.5*(cut[1]-cut[0])*tr_cut.stats.sampling_rate:
+                print 'Not enough in the trace for '+plist[i].station+'.'+plist[i].channel
+                print 'Suggest removing pick from sfile at time '+str(plist[i].time)
+            else:
+                al_traces.append(tr_cut)
         else:
             tr.trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
                     nearest_sample=False)
+        if len(tr.data)==0:
+            print 'No data in the trace for '+plist[i].station+'.'+plist[i].channel
+            print 'Suggest removing pick from sfile at time '+str(plist[i].time)
+            continue
         traces.append(tr)
     if reallign:
-        shifts=stacking.allign_traces(al_traces, 50)
+        shift_len=int(0.25*(cut[1]-cut[0])*al_traces[0].stats.sampling_rate)
+        shifts=stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print 'Shifting by '+str(shifts[i])+' seconds'
             plist[i].time-=shifts[i]
@@ -267,7 +276,10 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     for i in xrange(len(traces)):
         cc=normxcorr2(tr.data, traces[i][0].data)
         axes[i+1].set_ylabel('cc='+str(round(np.max(cc),2)), rotation=0)
-        axes[i+1].text(0.9, 0.25, str(round(np.max(traces[i][0].data))), \
+        axes[i+1].text(0.9, 0.15, str(round(np.max(traces[i][0].data))), \
+                       bbox=dict(facecolor='white', alpha=0.95),\
+                       transform=axes[i+1].transAxes)
+        axes[i+1].text(0.7, 0.85, plist[i].time.datetime.strftime('%Y/%m/%d %H:%M:%S'), \
                        bbox=dict(facecolor='white', alpha=0.95),\
                        transform=axes[i+1].transAxes)
     axes[-1].set_xlabel('Time (s)')
