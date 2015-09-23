@@ -219,7 +219,8 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     return stations, nodes_out, lags_out
 
 
-def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0):
+def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
+               plot=False):
     """
     Internal function to allow for parallelisation of brightness
 
@@ -231,6 +232,12 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0):
     """
     from par import bright_lights_par as brightdef
     import warnings
+    if plot:
+        from obspy import Trace, Stream
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(len(stream)+1, 1, sharex=True)
+        axes=axes.ravel()
+    l=0
     for tr in stream:
         j = [k for k in xrange(len(stations)) if stations[k]==tr.stats.station]
         # Check that there is only one matching station
@@ -247,11 +254,39 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0):
         lagged_energy=np.clip(lagged_energy, 0, brightdef.clip_level*np.mean(lagged_energy))
         if not 'energy' in locals():
             energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
+            # Cope with zeros enountered
+            energy=np.nan_to_num(energy)
         else:
             norm_energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
+            norm_energy=np.nan_to_num(norm_energy)
             # Apply lag to data and add it to energy - normalize the data here
             energy=np.concatenate((energy,norm_energy), axis=0)
+        if plot:
+            axes[l].plot(lagged_energy*200, 'r')
+            axes[l].plot(tr.data, 'k')
+            # energy_tr=Trace(energy[l])
+            energy_tr=Trace(lagged_energy)
+            # energy_tr=Trace(tr.data)
+            energy_tr.stats.station=tr.stats.station
+            energy_tr.stats.sampling_rate=tr.stats.sampling_rate
+            if not 'energy_stream' in locals():
+                energy_stream=Stream(energy_tr)
+            else:
+                energy_stream+=energy_tr
+        l+=1
     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
+    # Convert any nans to zeros
+    energy=np.nan_to_num(energy)
+    if plot:
+        energy_tr=Trace(energy[0])
+        energy_tr.stats.station='Stack'
+        energy_tr.stats.sampling_rate=tr.stats.sampling_rate
+        energy_tr.stats.network='Energy'
+        energy_stream+=energy_tr
+        axes[-1].plot(energy[0])
+        plt.subplots_adjust(hspace=0)
+        plt.show()
+        # energy_stream.plot(equal_scale=False, size=(800,600))
     if not mem_issue:
         return (i, energy)
     else:
@@ -320,7 +355,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate,\
     print 'Threshold is set to: '+str(thresh)
     print 'Max of data is: '+str(max(cum_net_resp))
     peaks=findpeaks.find_peaks2(cum_net_resp, thresh,
-                    length*samp_rate, debug=0)
+                    length*samp_rate, debug=0, maxwidth=10)
     detections=[]
     if peaks:
         for peak in peaks:
@@ -348,15 +383,21 @@ def coherance(stream):
     """
     # First check that all channels in stream have data of the same length
     maxlen=np.max([len(tr.data) for tr in stream])
+    if maxlen==0:
+        warnings.warn('template without data')
+        return 0.0
     for tr in stream:
-        if not len(tr.data) == maxlen:
+        if not len(tr.data) == maxlen and not len(tr.data)==0:
             warnings.warn(tr.stats.station+'.'+tr.stats.channel+\
-                          ' is not the same length, padding')
+                          ' is not the same length, padding \n'+\
+                          'Length is '+str(len(tr.data))+' samples')
             pad=np.zeros(maxlen-len(tr.data))
             if tr.stats.starttime.hour == 0:
-                tr.data=np.concatenate(pad, tr.data)
+                tr.data=np.concatenate((pad, tr.data), axis=0)
             else:
-                tr.data=np.concatenate(tr.data, pad)
+                tr.data=np.concatenate((tr.data, pad), axis=0)
+        elif len(tr.data)==0:
+            tr.data=np.zeros(maxlen)
     coherance=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
@@ -368,7 +409,8 @@ def coherance(stream):
     return coherance
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
-        coherance_thresh, instance=0, matchdef=False, defaults=False):
+        coherance_thresh, instance=0, matchdef=False, defaults=False,\
+               pre_pick=0.2):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -397,6 +439,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :type coherance_thresh: float
     :param coherance_thresh: Threshold for removing incoherant peaks in the\
             network response, those below this will not be used as templates.
+    :type pre_pick: float
+    :param pre_pick: Seconds before the detection time to include in template
 
     :return: list of templates as :class: `obspy.Stream` objects
     """
@@ -418,6 +462,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     from copy import deepcopy
     from obspy import read as obsread, Stream
     import matplotlib.pyplot as plt
+    from utils import EQcorrscan_plotting as plotting
     # Check that we actually have the correct stations
     realstations=[]
     for station in stations:
@@ -442,9 +487,16 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         for i in xrange(0,len(nodes)):
             print i
             if not mem_issue:
-                energy[i], j=_node_loop(stations, lags[:,i], stream)
+                j, a=_node_loop(stations, lags[:,i], stream, plot=True)
+                if not 'energy' in locals():
+                    energy=a
+                else:
+                    energy=np.concatenate((energy,a), axis=0)
+                print 'energy: '+str(np.shape(energy))
             else:
                 j, filename=_node_loop(stations, lags[:,i], stream, i, mem_issue)
+        energy=np.array(energy)
+        print np.shape(energy)
     else:
         # Parallel run
         num_cores=brightdef.cores
@@ -470,7 +522,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             pool.join()
     # Now compute the cumulative network response and then detect possible events
     if not mem_issue:
+        print energy.shape
         indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
+        print indeces.shape
         cum_net_resp=np.array([np.nan]*len(indeces))
         cum_net_resp[0]=energy[indeces[0]][0]
         peak_nodes=[nodes[indeces[0]]]
@@ -508,24 +562,25 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_trace.data=cum_net_resp
         cum_net_trace.stats.station='NR'
         cum_net_trace.stats.channel=''
-        cum_net_trace.stats.network=''
+        cum_net_trace.stats.network='Z'
         cum_net_trace.stats.location=''
+        cum_net_trace.stats.starttime=stream[0].stats.starttime
         cum_net_trace=Stream(cum_net_trace)
         cum_net_trace+=stream.select(channel='*N')
         cum_net_trace+=stream.select(channel='*1')
-        if not brightdef.plotsave:
-            cum_net_trace.plot(size=(800,600), equal_scale=False)
-        else:
-            cum_net_trace.plot(size=(800,600), equal_scale=False,\
-                               outfile='NR_timeseries.png')
+        cum_net_trace.sort(['network','station','channel'])
+        # np.save('cum_net_resp.npy',cum_net_resp)
+            # cum_net_trace.plot(size=(800,600), equal_scale=False,\
+                               # outfile='NR_timeseries.eps')
 
     # Find detection within this network response
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
-                     stream[0].stats.sampling_rate, realstations, defaults.length)
+                     stream[0].stats.sampling_rate, realstations, brightdef.gap)
     del cum_net_resp
     templates=[]
     nodesout=[]
+    good_detections=[]
     j=0
     if detections:
         print 'Converting detections in to templates'
@@ -553,7 +608,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                           channel=tr.stats.channel,
                                           impulsivity='E', phase='S',
                                           weight='3', polarity='',
-                                          time=tr.stats.starttime+detect_lag+detection.detect_time,
+                                          time=tr.stats.starttime+detect_lag+\
+                                          detection.detect_time-pre_pick,
                                           coda='', amplitude='', peri='',
                                           azimuth='', velocity='', AIN='', SNR='',
                                           azimuthres='', timeres='',
@@ -569,16 +625,41 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             if coherance(template) > coherance_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
+                print '---------------------------------COHERANCE LEVEL: '+\
+                        str(coherance(template))
                 coherant=True
             else:
-                print 'Template was incoherant'
+                print 'Template was incoherant, coherance level: '+\
+                        str(coherance(template))
                 coherant=False
             del copy_of_stream, tr, template
             if coherant:
                 templates.append(obsread(template_name))
                 nodesout+=[node]
+                good_detections.append(detection)
             else:
-                print 'No templates for you'
+                print 'No template for you'
+    if plotvar:
+        all_detections=[(cum_net_trace[-1].stats.starttime+\
+                         detection.detect_time).datetime \
+                        for detection in detections]
+        good_detections=[(cum_net_trace[-1].stats.starttime+\
+                          detection.detect_time).datetime \
+                         for detection in good_detections]
+        if not brightdef.plotsave:
+            plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]),\
+                             detections=good_detections,\
+                             false_detections=all_detections,\
+                             size=(18.5, 10),\
+                             title='Network response')
+            # cum_net_trace.plot(size=(800,600), equal_scale=False)
+        else:
+            plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]), \
+                             detections=good_detections,\
+                             false_detections=all_detections,\
+                             size=(18.5, 10), save='NR_timeseries.pdf',\
+                             title='Network response')
+
     nodesout=list(set(nodesout))
     return templates, nodesout
 
