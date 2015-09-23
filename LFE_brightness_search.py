@@ -253,7 +253,7 @@ for day in dates: #Loop through dates
                 sta='POCR'
             else:
                 sta=station
-            rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+sta+'/'+\
+            rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+sta+'/'+\
                     str(day.year)+str(day.julday).zfill(3)
             errors, full = seismo_logs.check_all_logs(rawdir, \
                                                       1.0/templatedef.samp_rate)
@@ -277,7 +277,7 @@ for day in dates: #Loop through dates
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
             print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'*'
-            for chan in ['N','E','1','2']: # only take horizontal components
+            for chan in ['N','1']: # only take N horizontal components
                 if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*'):
                     if not 'stream' in locals():
                         stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
@@ -315,15 +315,15 @@ for day in dates: #Loop through dates
             stream=Stream(stream)
             print stream
     if not Prep:
-        stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
+        #stream_copy=stream.copy() # Keep the stream safe
         print "Running the detection routine"
         # Check that the data are okay
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream,
                         brightdef.threshold, brightdef.thresh_type,\
                         brightdef.coherance, instance, matchdef, templatedef)
-        del detect_templates, stream # Delete templates from memory to conserve RAM!
-        stream=stream_copy
+        del detect_templates#, stream # Delete templates from memory to conserve RAM!
+        #stream=stream_copy
         nodesout+=detect_nodes
         if Split:
             plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\
