@@ -77,7 +77,7 @@ dates=trem_dates
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
-threshold=1.5                           # Threshold value, if threshtype is
+threshold=0.5                           # Threshold value, if threshtype is
                                         # set to MAD then this will by the
                                         # MAD to the power of this value
 thresh_type='RMS'                       # Threshold type, can be either MAD
@@ -97,6 +97,11 @@ coherance=0.12                          # Coherance threshold to remove
                                         # response.
 plotsave=True                           # Save plots, set to True to not show
                                         # any plots
-clip_level=1.5                          # Level to clip energy amplitudes to as
+clip_level=20.0                         # Level to clip energy amplitudes to as
                                         # a multiplier of the mean energy amplitude
 cores=20                                 # Number of cores to use for brightness search
+lowcut=1.0
+highcut=2.0
+filter_roder=3
+samp_rate=4.0
+gap=2.0                                 # Minimum gap between detections in seconds
