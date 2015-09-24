@@ -238,6 +238,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
         fig, axes = plt.subplots(len(stream)+1, 1, sharex=True)
         axes=axes.ravel()
     l=0
+    warnings.warn
     for tr in stream:
         j = [k for k in xrange(len(stations)) if stations[k]==tr.stats.station]
         # Check that there is only one matching station
@@ -260,7 +261,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
             # normalize to have max at max of int16 range
             if not max(energy[0])==0.0:
                 scalor=1/max(energy[0])
-                energy=(32767*(energy*scalor)).astype(np.int16)
+                energy=(500*(energy*scalor)).astype(np.int16)
             else:
                 energy=energy.astype(np.int16)
         else:
@@ -269,7 +270,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
             # Convert to int16
             if not max(norm_energy[0])==0.0:
                 scalor=1/max(norm_energy[0])
-                norm_energy=(32767*(norm_energy*scalor)).astype(np.int16)
+                norm_energy=(500*(norm_energy*scalor)).astype(np.int16)
             else:
                 norm_energy=norm_energy.astype(np.int16)
             # Apply lag to data and add it to energy - normalize the data here
@@ -288,6 +289,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
                 energy_stream+=energy_tr
         l+=1
     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
+    energy=energy.astype(np.int16)
     # Convert any nans to zeros
     energy=np.nan_to_num(energy)
     if plot:
@@ -505,6 +507,14 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             tr.data=32767*(tr.data/max(abs(tr.data)))
             # Make sure that the data aren't clipped it they are high gain - scale the data
         tr.data=tr.data.astype(np.int16)
+    # The internal _node_loop converts energy to int16 too to converse memory,
+    # to do this it forces the maximum of a single energy trace to be 500 and
+    # normalises to this level - this only works for fewer than 65 channels of
+    # data
+    if len(stream_copy) > 65:
+        raise OverflowError('Too many streams, either re-code and cope with'+\
+                            'either more memory usage, or less precision, or'+\
+                            'reduce data volume')
     detections=[]
     detect_lags=[]
     parallel=True
