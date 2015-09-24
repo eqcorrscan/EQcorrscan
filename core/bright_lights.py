@@ -289,7 +289,7 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
                 energy_stream+=energy_tr
         l+=1
     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
-    energy=energy.astype(np.int16)
+    energy=energy.astype(np.uint16)
     # Convert any nans to zeros
     energy=np.nan_to_num(energy)
     if plot:
@@ -511,7 +511,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # to do this it forces the maximum of a single energy trace to be 500 and
     # normalises to this level - this only works for fewer than 65 channels of
     # data
-    if len(stream_copy) > 65:
+    if len(stream_copy) > 130:
         raise OverflowError('Too many streams, either re-code and cope with'+\
                             'either more memory usage, or less precision, or'+\
                             'reduce data volume')
