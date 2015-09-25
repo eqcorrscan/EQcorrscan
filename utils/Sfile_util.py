@@ -261,7 +261,8 @@ def readpicks(sfilename):
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if len(line)==81 and (line[79]==' ' or line[79]=='4'):
+            print repr(line.rstrip('\n').rstrip('\r'))
+            if len(line.rstrip('\n').rstrip('\r'))==80 and (line[79]==' ' or line[79]=='4'):
                 pickline+=[line]
         elif line[79]=='7':
             header=line
