@@ -87,7 +87,7 @@ def PWS_stack(streams, weight=2, allign=False):
                 np.abs(tr.data**weight)
     return Phasestack
 
-def allign_traces(trace_list, shift_len):
+def align_traces(trace_list, shift_len):
     """
     Function to allign traces relative to each other based on their
     cross-correlation value
@@ -95,7 +95,7 @@ def allign_traces(trace_list, shift_len):
     :type trace_list: List of Traces
     :param trace_list: List of traces to allign
     :type shift_len: int
-    :param shift_len: Length to allow shifting within
+    :param shift_len: Length to allow shifting within in samples
 
     :returns: list of shifts for best allignment in seconds
     """
