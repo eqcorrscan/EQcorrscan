@@ -134,12 +134,20 @@ def group_delays(templates):
             match=False
             while not match:
                 kmatch=0
-                for k in xrange(len(chans)):
+                # Find the set of shared stations and channels
+                shared_chans=[]
+                shared_delays=[]
+                k=0
+                for chan in chans:
+                    if chan in group_chans[j]:
+                        shared_chans.append(chan)
+                        shared_delays.append(delays[k])
+                    k+=1
+                for k in xrange(len(shared_chans)):
                     # Check if the channel and delay match another group
-                    if chans[k] in group_chans[j] and \
-                       delays[k]==group_delays[j][group_chans[j].index(chans[k])]:
+                    if shared_delays[k]==group_delays[j][group_chans[j].index(shared_chans[k])]:
                         kmatch+=1 # increase the match index
-                if kmatch==len(chans): # If all the channels match, add it to the group
+                if kmatch==len(shared_chans): # If all the channels match, add it to the group
                     groups[j].append(templates[i])
                     match=True
                 elif j<len(groups)-1:
