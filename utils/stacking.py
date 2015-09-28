@@ -41,6 +41,7 @@ def linstack(streams, allign=False):
     stack=streams[np.argmax([len(stream) for stream in streams])].copy()
     for tr in stack:
         tr.data=tr.data/np.sqrt(np.mean(np.square(tr.data)))
+        tr.data=np.nan_to_num(tr.data)
     for i in xrange(1,len(streams)):
         # print "Stacking stream "+str(i)
         for tr in stack:
@@ -48,7 +49,9 @@ def linstack(streams, allign=False):
             matchtr=streams[i].select(station=tr.stats.station,\
                                        channel=tr.stats.channel)
             if matchtr:
-                tr.data=np.sum((matchtr[0].data/np.sqrt(np.mean(np.square(matchtr[0].data))),\
+                norm=matchtr[0].data/np.sqrt(np.mean(np.square(matchtr[0].data)))
+                norm=np.nan_to_num(norm)
+                tr.data=np.sum((norm,\
                                tr.data), axis=0)
     return stack
 
