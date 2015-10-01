@@ -253,6 +253,9 @@ for day in dates: #Loop through dates
             elif station == 'POCR2':
                 sta='POCR'
                 useful_chans=['2']
+            elif station == 'FRAN':
+                sta=station
+                useful_chans=['2']
             else:
                 sta=station
                 useful_chans=['N','2']
