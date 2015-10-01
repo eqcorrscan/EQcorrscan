@@ -195,7 +195,7 @@ def _template_loop(template, chan, station, channel, i=0):
     """
     from utils.timer import Timer
     from par import match_filter_par as matchdef
-    ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float32)
+    ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float16)
     ccc=ccc.reshape((1,len(ccc)))           # Set default value for
                                             # cross-channel correlation in
                                             # case there are no data that
@@ -210,6 +210,9 @@ def _template_loop(template, chan, station, channel, i=0):
         pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
         image=np.append(chan,pad)[len(pad):]
         ccc=(normxcorr2(template_data.data, image))
+        ccc=ccc.astype(np.float16)
+        # Convert to float16 to save memory for large problems - lose some
+        # accuracy which will affect detections very close to threshold
     if matchdef.debug >= 2 and t.secs > 4:
         print "Single if statement took %s s" % t.secs
         if not template_data:
@@ -332,9 +335,8 @@ def _channel_loop(templates, stream):
                 no_chans[i]+=1
         # Now sum along the channel axis for each template to give the cccsum values
         # for each template for each day
-        # This loop is disappointingly slow - due to layout in memory - axis=1 is fast
         with Timer() as t:
-            cccsums=cccs_matrix.sum(axis=0)
+            cccsums=cccs_matrix.sum(axis=0).astype(np.float32)
         if matchdef.debug >=1:
             print "--------- TIMER:    Summing took %s s" % t.secs
         if matchdef.debug>=2:
