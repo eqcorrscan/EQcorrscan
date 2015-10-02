@@ -140,8 +140,11 @@ def normxcorr2(templates, image):
         return 'NaN'
     # Convert numpy arrays to float 32
     cv_template=templates.astype(np.float32)
+    print cv_template.shape
     cv_image=image.astype(np.float32)
-    ccc=cv2.matchTemplate(cv_image,cv_template,cv2.TM_CCOEFF_NORMED)
+    print cv_image.shape
+    ccc=cv2.matchTemplate(cv_image.T,cv_template,cv2.TM_CCOEFF_NORMED)
+    # ccc=cv2.matchTemplate(cv_template.T,cv_image,cv2.TM_CCOEFF_NORMED)
     # Reshape ccc to be a 1D vector as is useful for seismic data
     ccc=ccc.reshape((len(templates),len(ccc)))
     return ccc
@@ -164,8 +167,12 @@ def _chanpar_loop(templates, trace, i=0):
     # a numpy array
     t_array=np.array([np.empty(len(templates[0][0]))]*len(templates))
     for i in xrange(len(templates)):
-        t_array[i]=templates[i].select(station=trace.stats.station,\
-                                        channel=trace.stats.channel).data
+        stachan=templates[i].select(station=trace.stats.station,\
+                                        channel=trace.stats.channel)
+        if len(stachan) > 1:
+            warnings.warn('More than one template found for one channel, only'+\
+                          'coded to use the first one at the moment')
+        t_array[i]=stachan[0].data
     cccs=normxcorr2(t_array, trace.data)
     return (i, cccs)
 
@@ -192,7 +199,7 @@ def _channel_loop(templates, stream):
     from utils.timer import Timer
     num_cores=matchdef.cores
     if len(templates) < num_cores:
-        num_cores = len(templates)
+        num_cores = len(stream)
     if 'cccs_matrix' in locals():
         del cccs_matrix
     # Initialize cccs_matrix, which will be two arrays of len(templates) arrays,
@@ -206,9 +213,11 @@ def _channel_loop(templates, stream):
                           len(templates)).astype(np.float16)
     # Initialize number of channels array as an array of unsigned integers up to 255
     no_chans=np.array([0]*len(templates)).astype(np.uint8)
+    # Open a pool of parallel workers
+    pool=Pool(processes=num_cores, maxtasksperchild=None)
     # Send templates and stream to parallel loop over traces
-    results=[pool.apply_async(_chanpar_loop, args=(templates, stream[i], i)\
-                            for i in xrange(len(stream)))]
+    results=[pool.apply_async(_chanpar_loop, args=(templates, stream[i], i))\
+             for i in xrange(len(stream))]
     pool.close() # Close multiprocessing pool and get results
     cccs_list=[p.get() for p in results]
     pool.join()
@@ -382,12 +391,12 @@ def match_filter(template_names, templates, stream, threshold,
                     # cccsum)
         tic=time.clock()
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug, stream[0].stats.starttime,
                                         stream[0].stats.sampling_rate)
         elif max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug)
         else:

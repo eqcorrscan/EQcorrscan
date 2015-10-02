@@ -22,8 +22,9 @@ This file is part of EQcorrscan.
 
 """
 import glob, os, sys
-sys.path.append('/home/calumch/my_programs/Building/EQcorrscan')
-templates=glob.glob('templates/pan_templates/*.ms')
+# sys.path.append('/home/calumch/my_programs/Building/EQcorrscan')
+sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
+templates=glob.glob('templates/brightness_tremor/*.ms')
 datasource='/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S/'
 GeoNet='/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled/'
 length1=3.0
@@ -37,6 +38,7 @@ out3='templates/12sec_templates'
 
 from obspy import read, Stream
 from utils import clustering, stacking
+from utils import EQcorrscan_plotting as plotting
 from par import template_gen_par as defaults
 from core import template_gen
 from utils.Sfile_util import PICK
@@ -57,7 +59,7 @@ templates.sort()
         # del original_data
     # i=0
     # for tr in template:
-        # # Perform check on channel and staiton names
+        # # Perform check on channel and station names
         # if tr.stats.station=='COSA' and tr.stats.channel=='S2':
             # tr.stats.chanel='SE'
         # if tr.stats.station=='COSA' and tr.stats.channel=='S1':
@@ -165,15 +167,74 @@ templates.sort()
 # f.close()
 
 # Compute the stacks of the original templates
-template_streams=[read(tfile) for tfile in templates]
+template_streams=[]
+templates=[read(tfile) for tfile in templates]
+good_templates=[]
+print 'Read in '+str(len(templates))+' templates'
+for template in templates:
+    nanin=False
+    for tr in template:
+        if np.any(np.isnan(tr.data)):
+            tr.data=np.nan_to_num(tr.data)
+        if np.all(tr.data==0):
+            template.remove(tr)
+            # Remove empty traces
+    if not nanin:
+        good_templates.append(template)
+print 'I have '+str(len(good_templates))+' without nans'
+
+
+for template in good_templates:
+    correct_length=True
+    for tr in template:
+        if not len(tr.data)==120:
+            correct_length=False
+    if correct_length:
+        template_streams.append(template)
+print 'I have '+str(len(template_streams))+' templates of 120s length'
+
+fivesta_templates=[]
+# Extract five stations with highest amplitude
+for template in template_streams:
+    stations=list(set([tr.stats.station for tr in template]))
+    if len(stations) < 5:
+        continue
+    amps=[]
+    for station in stations:
+        st=template.select(station=station)
+        amp=0
+        for tr in st:
+            amp+=np.max(np.abs(tr.data))
+        amps.append((station, amp))
+    amps.sort(key=lambda tup:tup[1])
+    stations=[a[0] for a in amps[-5:]]
+    avamp=np.mean([a[1] for a in amps[-5:]])
+    for sta in stations:
+        if not 'fivesta_template' in locals():
+            fivesta_template=template.select(station=sta)
+        else:
+            fivesta_template+=template.select(station=sta)
+    fivesta_templates.append((fivesta_template, avamp))
+    del fivesta_template
+
+fivesta_templates.sort(key=lambda tup:tup[1])
+template_streams=[t[0] for t in fivesta_templates]
+# # Extract the highest 100 amplitude events
+# template_streams=[t[0] for t in fivesta_templates[-100:]]
+
+# for template in template_streams:
+    # template.write('templates/top_100/'+str(template[0].stats.starttime)+'.ms', format='MSEED')
 
 groups=clustering.group_delays(template_streams)
 ID=1
+from collections import Counter
+
 for group in groups:
-    print 'Group '+str(ID)+' of '+str(len(groups))
-    # template_stack=stacking.PWS_stack(group, 2)
-    template_stack=stacking.linstack(group)
-    # template_stack.filter('bandpass', freqmin=defaults.lowcut, freqmax=defaults.highcut)
-    # template_stack.plot(size=(800,600), equal_scale=False)
-    template_stack.write('templates/pan_templates/brightness_group_'+str(ID), format='mseed')
-    ID+=1
+   if len(group) >1:
+       print 'Group '+str(ID)+' of '+str(len(groups))+' has '+str(len(group))+' templates'
+       # template_stack=stacking.PWS_stack(group, 1.2)
+       template_stack=stacking.linstack(group)
+        # template_stack.filter('bandpass', freqmin=defaults.lowcut, freqmax=defaults.highcut)
+        # template_stack.plot(size=(800,600), equal_scale=False)
+       template_stack.write('templates/pan_templates/brightness_group'+str(ID), format='mseed')
+   ID+=1
