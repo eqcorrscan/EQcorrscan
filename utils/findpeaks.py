@@ -25,6 +25,36 @@ This file is part of EQcorrscan.
 from obspy import UTCDateTime
 import numpy as np
 
+def is_prime(number):
+    """
+    Function to test primality of a number. Function lifted from online resource:
+        http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w
+
+    This function is distributed under a seperate licence:
+        This article, along with any associated source code and files, is
+        licensed under The Code Project Open License (CPOL)
+
+    :type number: int
+    :param number: Integer to test for primality
+
+    :returns: bool
+    """
+    import random
+    ''' if number != 1 '''
+    if (number > 1):
+        ''' repeat the test few times '''
+        for time in range(3):
+            ''' Draw a RANDOM number in range of number ( Z_number )  '''
+            randomNumber = random.randint(2, number)-1
+            ''' Test if a^(n-1) = 1 mod n '''
+            if ( pow(randomNumber, number-1, number) != 1 ):
+                return False
+        return True
+    else:
+        ''' case number == 1 '''
+        return False
+
+
 def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
@@ -52,6 +82,13 @@ def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
     image=np.copy(arr)
     image=np.abs(image)
     image[image<thresh]=thresh
+    # We need to check if the number of samples in the image is prime, if it
+    # is this method will be really slow, so we add a pad to the end to make
+    # it not of prime length!
+    if is_prime(len(image)):
+        image=np.append(image, 0.0)
+        print 'Input array has a prime number of samples, appending a zero'
+        print len(image)
     if len(image[image>thresh])==0:
         print 'No values over threshold found'
         return []
@@ -60,9 +97,11 @@ def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
     initial_peaks=[]
     peaks=[]
     # Find the peaks
+    print 'Finding peaks'
     peakinds = find_peaks_cwt(image, np.arange(1,maxwidth))
     initial_peaks=[(image[peakind], peakind) for peakind in peakinds]
     # Sort initial peaks according to amplitude
+    print 'sorting peaks'
     peaks_sort=sorted(initial_peaks, key=lambda amplitude:amplitude[0],\
                       reverse=True)
     # Debugging
@@ -120,7 +159,7 @@ def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
 
 
 
-def find_peaks2_depreciated(arr,thresh, trig_int, debug=0, \
+def find_peaks2_short(arr,thresh, trig_int, debug=0, \
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
     Function to determine peaks in an array of data above a certain threshold.

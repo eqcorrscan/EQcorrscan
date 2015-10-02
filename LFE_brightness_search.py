@@ -282,13 +282,13 @@ for day in dates: #Loop through dates
                         str(day.day).zfill(2)
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-            print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'*'
+            print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'
             for chan in useful_chans: # only take N horizontal components
-                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'.*'):
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'):
                     if not 'stream' in locals():
-                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'.*')
+                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
                     else:
-                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'.*')
+                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
     else:
         for station in stations:
             fname='test_data/'+station+'-*-'+str(day.year)+\
