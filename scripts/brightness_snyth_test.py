@@ -69,9 +69,12 @@ if realstr:
     # stream.resample(samp_rate)
     # stream.write('scripts/brightness_test_daylong.ms',format='MSEED')
     stream=obsread('scripts/brightness_test_daylong.ms')
-    # stream.trim(starttime=UTCDateTime('2011-09-04 17:05:00'),\
-                # endtime=UTCDateTime('2011-09-04 17:15:00'))#, pad=True,\
-                # fill_value=0)
+    stream.trim(starttime=UTCDateTime('2011-09-04 17:05:00'),\
+                endtime=UTCDateTime('2011-09-04 17:15:00'))#, pad=True,\
+               # fill_value=0)
+    # for tr in stream:
+        # if tr.stats.station=='WVZ':
+            # stream.remove(tr)
 stream.filter('bandpass',freqmin=4.0, freqmax=8.0)
 # stream.trim(stream[0].stats.starttime+90, stream[0].stats.endtime)
 stream.trim(stream[0].stats.starttime, stream[0].stats.endtime, pad=True, fill_value=0)

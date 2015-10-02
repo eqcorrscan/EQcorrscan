@@ -160,7 +160,7 @@ def normxcorr2(template, image):
     :type image: :class: 'numpy.array'
     :param image: Requires two numpy arrays, the template and the image to scan\
     the template through.  The order of these matters, if you put the template\
-    after the imag you will get a reversed correaltion matrix
+    after the image you will get a reversed correaltion matrix
 
     :return: New :class: 'numpy.array' object of the correlation values for the\
     correlation of the image with the template.
@@ -503,13 +503,14 @@ def match_filter(template_names, templates, stream, threshold,
                         # stream[0].stats.starttime.datetime.strftime('%Y%j'),\
                     # cccsum)
         tic=time.clock()
+        np.save('cccsum_'+str(i)+'.npy', cccsum)
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug, stream[0].stats.starttime,
                                         stream[0].stats.sampling_rate)
         elif max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug)
         else:

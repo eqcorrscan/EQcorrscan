@@ -93,16 +93,19 @@ nodesimthresh=0.5                       # Minimum cumulative difference in
                                         # network moveout, should be about the
                                         # period of twice the maximum frequency
                                         # of the signal you want to detect
-coherance=0.225                         # Coherance threshold to remove
+coherance=(0.5, 50.0)                   # Coherance threshold to remove
                                         # incoherant peaks in the network
-                                        # response.
+                                        # response. In the form (a,b) where the
+                                        # actual threshold is given by a-kchan/b
+                                        # where kchan is the number of channels
+                                        # used to compute the coherance
 coherance_stations=['GOVA', 'FRAN',\
                     'WHAT2', 'GOVA',\
                     'WHYM','MTFO',\
                     'SOLU','EORO',\
                     'COSA','LARB',\
                     'LABE','COVA',\
-                    'MTBA']             # List of stations to use when
+                    'MTBA', 'POCR2']    # List of stations to use when
                                         # computing coherance
 coherance_clip=(0.0,3.0)                # Clip window for computiong the coherance
                                         # in seconds from start of template trace
