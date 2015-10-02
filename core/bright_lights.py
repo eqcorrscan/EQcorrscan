@@ -667,7 +667,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             # Check coherancy here!
             temp_coher, kchan=coherance(template, brightdef.coherance_stations,\
                                  brightdef.coherance_clip)
-            cohe_thresh=float(coherance_thresh[0])-kchan/float(coherance_thresh[1])
+            coh_thresh=float(coherance_thresh[0])-kchan/float(coherance_thresh[1])
             if temp_coher > coh_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
