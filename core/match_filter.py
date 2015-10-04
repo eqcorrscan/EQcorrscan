@@ -472,7 +472,8 @@ def match_filter(template_names, templates, stream, threshold,
                         # stream[0].stats.starttime.datetime.strftime('%Y%j'),\
                     # cccsum)
         tic=time.clock()
-        np.save('cccsum_'+str(i)+'.npy', cccsum)
+        if matchdef.debug>=4:
+            np.save('cccsum_'+str(i)+'.npy', cccsum)
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
             peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
