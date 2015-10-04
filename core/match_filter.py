@@ -192,6 +192,8 @@ def _template_loop(template, chan, station, channel, i=0):
                 channel+' ccc MAX: '+str(max(ccc[0]))
         print '********* DEBUG:  '+station+'.'+\
                 channel+' ccc MEAN: '+str(np.mean(ccc[0]))
+    if np.mean(ccc[0])==inf:
+        warnings.warn('Mean of ccc is infinite, check!')
     if matchdef.debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
