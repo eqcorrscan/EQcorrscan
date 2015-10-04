@@ -189,11 +189,15 @@ def _template_loop(template, chan, station, channel, i=0):
         print "If statement without correlation took %s s" % t.secs
     if matchdef.debug >= 3:
         print '********* DEBUG:  '+station+'.'+\
-                channel+' ccc MAX: '+str(max(ccc[0]))
+                channel+' ccc MAX: '+str(np.max(ccc[0]))
         print '********* DEBUG:  '+station+'.'+\
                 channel+' ccc MEAN: '+str(np.mean(ccc[0]))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
+        if matchdef.debug >=3:
+            np.save('inf_cccmean_ccc.npy', ccc[0])
+            np.save('inf_cccmean_template.npy', template_data.data)
+            np.save('inf_cccmean_image.npy', image)
     if matchdef.debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
