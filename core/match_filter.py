@@ -141,6 +141,8 @@ def normxcorr2(template, image):
     cv_template=template.astype(np.float32)
     cv_image=image.astype(np.float32)
     ccc=cv2.matchTemplate(cv_image,cv_template,cv2.TM_CCOEFF_NORMED)
+    if np.all(np.isnan(cv_image) and np.all(np.isnan(cv_template)):
+        ccc=np.zeros(len(ccc))
     # Reshape ccc to be a 1D vector as is useful for seismic data
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
