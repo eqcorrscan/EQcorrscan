@@ -399,7 +399,7 @@ def coherance(stream_in, stations=['all'], clip=False):
     :param length: Default is to use all the data given - \
             tuple of start and end in seconds from start of trace
 
-    :return: float - coherance
+    :return: float - coherance, int number of channels used
     """
     stream=stream_in.copy() # Copy the data before we remove stations
     # First check that all channels in stream have data of the same length
@@ -435,7 +435,7 @@ def coherance(stream_in, stations=['all'], clip=False):
         for j in xrange(i+1,len(stream)):
             coherance+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
     coherance=2*coherance/(len(stream)*(len(stream)-1))
-    return coherance
+    return coherance, len(stream)
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         coherance_thresh, instance=0, matchdef=False, defaults=False,\
@@ -465,9 +465,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :type thresh_type: str
     :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
     Deviation and abs is an absoulte brightness.
-    :type coherance_thresh: float
+    :type coherance_thresh: tuple of floats
     :param coherance_thresh: Threshold for removing incoherant peaks in the\
-            network response, those below this will not be used as templates.
+            network response, those below this will not be used as templates.\
+            Must be in the form of (a,b) where the coherance is given by:\
+            a-kchan/b where kchan is the number of channels used to compute\
+            the coherance
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
 
@@ -662,9 +665,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            temp_coher=coherance(template, brightdef.coherance_stations,\
+            temp_coher, kchan=coherance(template, brightdef.coherance_stations,\
                                  brightdef.coherance_clip)
-            if temp_coher > coherance_thresh:
+            coh_thresh=float(coherance_thresh[0])-kchan/float(coherance_thresh[1])
+            if temp_coher > coh_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
                 print '---------------------------------COHERANCE LEVEL: '+\

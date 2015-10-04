@@ -249,10 +249,16 @@ for day in dates: #Loop through dates
             # Check logs for this day
             if station == 'WHAT2':
                 sta='WHAT'
+                useful_chans=['2']
             elif station == 'POCR2':
                 sta='POCR'
+                useful_chans=['2']
+            elif station == 'FRAN':
+                sta=station
+                useful_chans=['2']
             else:
                 sta=station
+                useful_chans=['N','2']
             rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+sta+'/'+\
                     str(day.year)+str(day.julday).zfill(3)
             errors, full = seismo_logs.check_all_logs(rawdir, \
@@ -276,13 +282,14 @@ for day in dates: #Loop through dates
                         str(day.day).zfill(2)
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-            print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'*'
-            for chan in ['N','1']: # only take N horizontal components
-                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*'):
+            print '     Reading data from: '
+            for chan in useful_chans: # only take N horizontal components
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'):
+                    print contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'
                     if not 'stream' in locals():
-                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
+                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
                     else:
-                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
+                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
     else:
         for station in stations:
             fname='test_data/'+station+'-*-'+str(day.year)+\

@@ -116,6 +116,10 @@ def group_delays(templates):
     groups=[]
     group_delays=[]
     group_chans=[]
+    # Sort templates by number of channels
+    templates=[(template, len(template)) for template in templates]
+    templates.sort(key=lambda tup:tup[1])
+    templates=[template[0] for template in templates]
     for i in xrange(1,len(templates)):
         print 'Working on waveform '+str(i)+' of '+str(len(templates))
         # Calculate the delays
@@ -124,7 +128,9 @@ def group_delays(templates):
         for tr in templates[i]:
             starttimes.append(tr.stats.starttime)
             chans.append((tr.stats.station, tr.stats.channel))
+        # This delays calculation will be an issue if we have changes in channels
         delays=[starttimes[m]-min(starttimes) for m in xrange(len(starttimes))]
+        delays=[round(d,2) for d in delays]
         if len(groups)==0:
             groups.append([templates[i]])
             group_delays.append(delays)
@@ -136,16 +142,23 @@ def group_delays(templates):
                 kmatch=0
                 # Find the set of shared stations and channels
                 shared_chans=[]
-                shared_delays=[]
+                shared_delays_slave=[]
+                shared_delays_master=[]
                 k=0
                 for chan in chans:
                     if chan in group_chans[j]:
                         shared_chans.append(chan)
-                        shared_delays.append(delays[k])
+                        shared_delays_slave.append(delays[k])
+                        shared_delays_master.append(group_delays[j][group_chans[j].index(chan)])
                     k+=1
+                # Normalize master and slave delay times
+                shared_delays_slave=[delay-min(shared_delays_slave)\
+                                     for delay in shared_delays_slave]
+                shared_delays_master=[delay-min(shared_delays_master)\
+                                      for delay in shared_delays_master]
                 for k in xrange(len(shared_chans)):
                     # Check if the channel and delay match another group
-                    if shared_delays[k]==group_delays[j][group_chans[j].index(shared_chans[k])]:
+                    if shared_delays_slave[k]==shared_delays_master[k]:
                         kmatch+=1 # increase the match index
                 if kmatch==len(shared_chans): # If all the channels match, add it to the group
                     groups[j].append(templates[i])
