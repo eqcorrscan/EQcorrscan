@@ -61,7 +61,7 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
-import matplotlib
+import matplotlib, warnings
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
@@ -111,39 +111,6 @@ class DETECTION(object):
     def __str__(self):
         print_str="Detection on "+self.template_name+" at "+str(self.detect_time)
         return print_str
-
-def run_channel_loop(templates, stream, tempdir):
-    """
-    Python helper function to run the Cythonised channel_loop function
-
-    :type templates: List of :class: obspy.Stream
-    :param templates: List of all the templates
-    :type stream: :class: obspy.Stream
-    :param stream: The image stream to scan through
-    :type tempdir: String or False
-    :param tempdir: location to put temporary files
-
-    :returns: cccsums (np.ndarray), no_chans (np.ndarray)
-    """
-    import match_filter_internal
-    from utils.timer import Timer
-    print "Converting streams to numpy arrays"
-    ktemplates=len(templates)
-    delays=np.array([tr.stats.starttime - template.sort(['starttime'])[0].stats.starttime\
-                     for template in templates for tr in template])
-    # match_internal uses a simpler integration as a predescessor to c++
-    template_data=np.array([tr.data.astype(np.float32) \
-                   for template in templates \
-                    for tr in template])
-    stream_data=np.array([tr.data.astype(np.float32) for tr in stream])
-    print "Sending data off to external func"
-    with Timer() as t:
-        cccsums, no_chans=match_filter_internal._channel_loop(template_data, \
-                                                              stream_data, \
-                                                              delays, \
-                                                              ktemplates, tempdir)
-    print "Correlation loops in C took: %s s" % t.secs
-    return cccsums, no_chans
 
 def normxcorr2(template, image):
     """
@@ -380,7 +347,7 @@ def match_filter(template_names, templates, stream, threshold,
     template is a single template from the input and the length is the number\
     of channels within this template.
     :type tempdir: String or False
-    :param tempdir: Direcotry to put temporary files, or False
+    :param tempdir: Directory to put temporary files, or False
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
@@ -481,6 +448,8 @@ def match_filter(template_names, templates, stream, threshold,
         print 'Threshold is set at: '+str(rawthresh)
         print 'Max of data is: '+str(max(cccsum))
         print 'Mean of data is: '+str(np.mean(cccsum))
+        if np.abs(np.mean(cccsum)) > 0.05:
+            warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintins timeing
         if plotvar:
