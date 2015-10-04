@@ -37,7 +37,7 @@ for i in xrange(len(bob)):
     path+=bob[i]+'/'
 print path
 sys.path.insert(0,path)
-
+startdate=False
 
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
@@ -46,6 +46,7 @@ from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
 from core import template_gen
 from utils import seismo_logs
+import datetime as dt
 
 Split=False
 instance=False
@@ -60,18 +61,31 @@ if len(sys.argv) == 2:
     else:
         raise ValueError("I don't recognise the argument, I only know --debug and --debug-prep")
 elif len(sys.argv) == 5:
-    # Arguments to allow the code to be run in multiple instances
-    Split=True
-    Test=False
-    Prep=False
     args=sys.argv[1:len(sys.argv)]
-    for i in xrange(len(args)):
-        if args[i] == '--instance':
-            instance=int(args[i+1])
-            print 'I will run this for instance '+str(instance)
-        elif args[i] == '--splits':
-            splits=int(args[i+1])
-            print 'I will divide the days into '+str(splits)+' chunks'
+    if args[0] == '--instance' or args[1]=='--instance' or args[2]=='--instance':
+        # Arguments to allow the code to be run in multiple instances
+        Split=True
+        Test=False
+        Prep=False
+        args=sys.argv[1:len(sys.argv)]
+        for i in xrange(len(args)):
+            if args[i] == '--instance':
+                instance=int(args[i+1])
+                print 'I will run this for instance '+str(instance)
+            elif args[i] == '--splits':
+                splits=int(args[i+1])
+                print 'I will divide the days into '+str(splits)+' chunks'
+    elif args[0] == '--startdate' or argc[1] == '--startdate' or args[2] == '--startdate':
+        Split=False
+        Test=False
+        Prep=False
+        for i in xrange(len(args)):
+            if args[i]== '--startdate':
+                startdate=dt.datetime.strptime(str(args[i+1]),'%Y/%m/%d')
+                print 'Start date is: '+dt.datetime.strftime(startdate, '%Y/%m/%d')
+            elif args[i] == '--enddate':
+                enddate=dt.datetime.strptime(str(args[i+1]), '%Y/%m/%d')
+                print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
 
 elif not len(sys.argv) == 1:
     raise ValueError("I only take one argument, no arguments, or two flags with arguments")
@@ -140,7 +154,7 @@ for template in templates:
             stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
                             '*'+tr.stats.channel[1]+'.'+tr.stats.network)
         else:
-            raise ValueError('Channels are not named with either three or two charectars')
+            raise ValueError('Chanels are not named with either three or two charectars')
 
 
 # Template generation and processing is over, now to the match-filtering
@@ -158,8 +172,16 @@ from obspy import read as obsread
 from utils import pre_processing
 from joblib import Parallel, delayed
 
+if startdate:
+    dates=[UTCDateTime(startdate)+i for i in xrange(0, int(UTCDateTime(enddate) -\
+                                                           UTCDateTime(startdate)),\
+                                                    86400)]
+else:
+    dates=matchdef.dates
+
+
 # Loop over days
-ndays=len(matchdef.dates)
+ndays=len(dates)
 newsfiles=[]
 # f=open('detections/run_start_'+str(UTCDateTime().year)+\
        #str(UTCDateTime().month).zfill(2)+\
@@ -169,14 +191,14 @@ print 'Will loop through '+str(ndays)+' days'
 if Split:
     if instance==splits-1:
         ndays=ndays-(ndays/splits)*(splits-1)
-        dates=matchdef.dates[-ndays:]
+        dates=dates[-ndays:]
     else:
         ndays=ndays/splits
-        dates=matchdef.dates[ndays*instance:(ndays*instance)+ndays]
+        dates=dates[ndays*instance:(ndays*instance)+ndays]
     print 'This instance will run for '+str(ndays)+' days'
     print 'This instance will run from '+str(min(dates))
 else:
-    dates=matchdef.dates
+    dates=dates
 
 f=open('detections/'+str(min(dates).year)+\
        str(min(dates).month).zfill(2)+\

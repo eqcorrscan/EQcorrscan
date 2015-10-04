@@ -64,6 +64,7 @@ def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
     fig.canvas.draw()
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(savefile)
     return
@@ -96,6 +97,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
     fig.suptitle('Peaks')
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(savefile)
     return
@@ -148,6 +150,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     plt.legend(loc=2,prop={'size':8},ncol=2)#handles=plothandles)
     if save:
         plt.savefig(savefile)
+        plt.close()
     else:
         plt.show()
     return
@@ -177,6 +180,7 @@ def threeD_gridplot(nodes, save=False, savefile=''):
     ax.get_yaxis().get_major_formatter().set_scientific(False)
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(savefile)
     return
@@ -547,6 +551,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         axes[0].set_title(title)
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(save)
 
@@ -625,6 +630,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
         axes[0].set_title(title)
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(save)
 

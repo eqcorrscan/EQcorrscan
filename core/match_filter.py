@@ -61,7 +61,7 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
-import matplotlib
+import matplotlib, warnings
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
@@ -112,39 +112,6 @@ class DETECTION(object):
         print_str="Detection on "+self.template_name+" at "+str(self.detect_time)
         return print_str
 
-def run_channel_loop(templates, stream, tempdir):
-    """
-    Python helper function to run the Cythonised channel_loop function
-
-    :type templates: List of :class: obspy.Stream
-    :param templates: List of all the templates
-    :type stream: :class: obspy.Stream
-    :param stream: The image stream to scan through
-    :type tempdir: String or False
-    :param tempdir: location to put temporary files
-
-    :returns: cccsums (np.ndarray), no_chans (np.ndarray)
-    """
-    import match_filter_internal
-    from utils.timer import Timer
-    print "Converting streams to numpy arrays"
-    ktemplates=len(templates)
-    delays=np.array([tr.stats.starttime - template.sort(['starttime'])[0].stats.starttime\
-                     for template in templates for tr in template])
-    # match_internal uses a simpler integration as a predescessor to c++
-    template_data=np.array([tr.data.astype(np.float32) \
-                   for template in templates \
-                    for tr in template])
-    stream_data=np.array([tr.data.astype(np.float32) for tr in stream])
-    print "Sending data off to external func"
-    with Timer() as t:
-        cccsums, no_chans=match_filter_internal._channel_loop(template_data, \
-                                                              stream_data, \
-                                                              delays, \
-                                                              ktemplates, tempdir)
-    print "Correlation loops in C took: %s s" % t.secs
-    return cccsums, no_chans
-
 def normxcorr2(template, image):
     """
     Base function to call the c++ correlation routine from the openCV image
@@ -160,7 +127,7 @@ def normxcorr2(template, image):
     :type image: :class: 'numpy.array'
     :param image: Requires two numpy arrays, the template and the image to scan\
     the template through.  The order of these matters, if you put the template\
-    after the imag you will get a reversed correaltion matrix
+    after the image you will get a reversed correaltion matrix
 
     :return: New :class: 'numpy.array' object of the correlation values for the\
     correlation of the image with the template.
@@ -174,6 +141,12 @@ def normxcorr2(template, image):
     cv_template=template.astype(np.float32)
     cv_image=image.astype(np.float32)
     ccc=cv2.matchTemplate(cv_image,cv_template,cv2.TM_CCOEFF_NORMED)
+    if np.all(np.isnan(cv_image)) and np.all(np.isnan(cv_template)):
+        ccc=np.zeros(len(ccc))
+    if np.all(ccc==1.0) and (np.all(np.isnan(cv_template))\
+                            or np.all(np.isnan(cv_image))):
+        ccc=np.zeros(len(ccc))
+        # Convert an array of perfect correlations to zero cross-correlations
     # Reshape ccc to be a 1D vector as is useful for seismic data
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
@@ -195,7 +168,7 @@ def _template_loop(template, chan, station, channel, i=0):
     """
     from utils.timer import Timer
     from par import match_filter_par as matchdef
-    ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float32)
+    ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float16)
     ccc=ccc.reshape((1,len(ccc)))           # Set default value for
                                             # cross-channel correlation in
                                             # case there are no data that
@@ -210,6 +183,9 @@ def _template_loop(template, chan, station, channel, i=0):
         pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
         image=np.append(chan,pad)[len(pad):]
         ccc=(normxcorr2(template_data.data, image))
+        ccc=ccc.astype(np.float16)
+        # Convert to float16 to save memory for large problems - lose some
+        # accuracy which will affect detections very close to threshold
     if matchdef.debug >= 2 and t.secs > 4:
         print "Single if statement took %s s" % t.secs
         if not template_data:
@@ -219,9 +195,15 @@ def _template_loop(template, chan, station, channel, i=0):
         print "If statement without correlation took %s s" % t.secs
     if matchdef.debug >= 3:
         print '********* DEBUG:  '+station+'.'+\
-                channel+' ccc MAX: '+str(max(ccc[0]))
+                channel+' ccc MAX: '+str(np.max(ccc[0]))
         print '********* DEBUG:  '+station+'.'+\
                 channel+' ccc MEAN: '+str(np.mean(ccc[0]))
+    if np.isinf(np.mean(ccc[0])):
+        warnings.warn('Mean of ccc is infinite, check!')
+        if matchdef.debug >=3:
+            np.save('inf_cccmean_ccc.npy', ccc[0])
+            np.save('inf_cccmean_template.npy', template_data.data)
+            np.save('inf_cccmean_image.npy', image)
     if matchdef.debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
@@ -332,9 +314,8 @@ def _channel_loop(templates, stream):
                 no_chans[i]+=1
         # Now sum along the channel axis for each template to give the cccsum values
         # for each template for each day
-        # This loop is disappointingly slow - due to layout in memory - axis=1 is fast
         with Timer() as t:
-            cccsums=cccs_matrix.sum(axis=0)
+            cccsums=cccs_matrix.sum(axis=0).astype(np.float32)
         if matchdef.debug >=1:
             print "--------- TIMER:    Summing took %s s" % t.secs
         if matchdef.debug>=2:
@@ -378,7 +359,7 @@ def match_filter(template_names, templates, stream, threshold,
     template is a single template from the input and the length is the number\
     of channels within this template.
     :type tempdir: String or False
-    :param tempdir: Direcotry to put temporary files, or False
+    :param tempdir: Directory to put temporary files, or False
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
@@ -479,6 +460,8 @@ def match_filter(template_names, templates, stream, threshold,
         print 'Threshold is set at: '+str(rawthresh)
         print 'Max of data is: '+str(max(cccsum))
         print 'Mean of data is: '+str(np.mean(cccsum))
+        if np.abs(np.mean(cccsum)) > 0.05:
+            warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintins timeing
         if plotvar:
@@ -501,13 +484,15 @@ def match_filter(template_names, templates, stream, threshold,
                         # stream[0].stats.starttime.datetime.strftime('%Y%j'),\
                     # cccsum)
         tic=time.clock()
+        if matchdef.debug>=4:
+            np.save('cccsum_'+str(i)+'.npy', cccsum)
         if matchdef.debug>=3 and max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug, stream[0].stats.starttime,
                                         stream[0].stats.sampling_rate)
         elif max(cccsum)>rawthresh:
-            peaks=findpeaks.find_peaks2(cccsum, rawthresh, \
+            peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
                                         matchdef.debug)
         else:
