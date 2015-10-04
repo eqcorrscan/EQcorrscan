@@ -143,6 +143,10 @@ def normxcorr2(template, image):
     ccc=cv2.matchTemplate(cv_image,cv_template,cv2.TM_CCOEFF_NORMED)
     if np.all(np.isnan(cv_image)) and np.all(np.isnan(cv_template)):
         ccc=np.zeros(len(ccc))
+    if np.all(ccc==1.0) and (np.all(np.isnan(cv_template))\
+                            or np.all(np.isnan(cv_image))):
+        ccc=np.zeros(len(ccc))
+        # Convert an array of perfect correlations to zero cross-correlations
     # Reshape ccc to be a 1D vector as is useful for seismic data
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
