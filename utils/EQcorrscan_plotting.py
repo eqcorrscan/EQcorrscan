@@ -250,6 +250,11 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
             plist[i].time-=shifts[i]
             traces[i].trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
                            nearest_sample=False)
+    # We now have a list of traces
+    traces=[(trace, trace.stats.starttime.datetime) for trace in traces]
+    traces.sort(key=lambda tup:tup[1])
+    traces=[trace[0] for trace in traces]
+    # Plot the traces
     for i in xrange(len(traces)):
         tr=traces[i]
         y = tr.data
@@ -279,7 +284,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
         axes[i+1].text(0.9, 0.15, str(round(np.max(traces[i][0].data))), \
                        bbox=dict(facecolor='white', alpha=0.95),\
                        transform=axes[i+1].transAxes)
-        axes[i+1].text(0.7, 0.85, plist[i].time.datetime.strftime('%Y/%m/%d %H:%M:%S'), \
+        axes[i+1].text(0.7, 0.85, traces[i][0].stats.starttime.datetime.strftime('%Y/%m/%d %H:%M:%S'), \
                        bbox=dict(facecolor='white', alpha=0.95),\
                        transform=axes[i+1].transAxes)
     axes[-1].set_xlabel('Time (s)')
