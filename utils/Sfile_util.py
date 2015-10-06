@@ -66,6 +66,10 @@ class PICK:
             self.distance=_int_conv(self.distance)
         elif self.distance < 100.0:
             self.distance=int(round(self.distance,1))
+        if not self.AIN=='':
+            dummy=self.AIN
+        else:
+            dummy=self.SNR
         print_str=' '+self.station.ljust(5)+\
                 self.channel[0]+self.channel[len(self.channel)-1]+\
                 ' '+self.impulsivity+\
@@ -81,8 +85,7 @@ class PICK:
                 _str_conv(self.peri).rjust(5)+\
                 _str_conv(self.azimuth).rjust(6)+\
                 _str_conv(self.velocity).rjust(5)+\
-                _str_conv(self.AIN).rjust(4)+\
-                _str_conv(self.SNR).rjust(4)+\
+                _str_conv(dummy).rjust(4)+\
                 _str_conv(int(self.azimuthres)).rjust(3)+\
                 _str_conv(self.timeres, rounded=2).rjust(5)+\
                 _str_conv(int(self.finalweight)).rjust(2)+\
