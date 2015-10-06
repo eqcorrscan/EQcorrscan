@@ -467,6 +467,7 @@ def populateSfile(sfilename, picks):
         elif pick.distance < 100.0:
             pick.distance=int(round(pick.distance,1))
         newpicks+=pick.__str__()
+        newpicks+='\n'
     # Write all new and old info back in
     f=open(sfilename, 'w')
     f.write(header)
