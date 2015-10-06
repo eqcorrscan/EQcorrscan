@@ -71,7 +71,7 @@ class PICK:
                 ' '+self.impulsivity+\
                 self.phase.ljust(4)+\
                 _str_conv(self.weight).rjust(1)+' '+\
-                self.polarity+' '+\
+                self.polarity.rjust(1)+' '+\
                 str(self.time.hour).rjust(2)+\
                 str(self.time.minute).rjust(2)+\
                 str(self.time.second).rjust(3)+'.'+\
@@ -466,27 +466,7 @@ def populateSfile(sfilename, picks):
             pick.distance=_int_conv(pick.distance)
         elif pick.distance < 100.0:
             pick.distance=int(round(pick.distance,1))
-        newpicks+=' '+pick.station.ljust(5)+\
-                pick.channel[0]+pick.channel[len(pick.channel)-1]+\
-                ' '+pick.impulsivity+\
-                pick.phase.ljust(4)+\
-                _str_conv(pick.weight).rjust(1)+' '+\
-                pick.polarity+' '+\
-                str(pick.time.hour).rjust(2)+\
-                str(pick.time.minute).rjust(2)+\
-                str(pick.time.second).rjust(3)+'.'+\
-                str(float(pick.time.microsecond)/(10**4)).split('.')[0].zfill(2)+\
-                _str_conv(int(pick.coda)).rjust(5)[0:5]+\
-                _str_conv(round(pick.amplitude,1)).rjust(7)[0:7]+\
-                _str_conv(pick.peri).rjust(5)+\
-                _str_conv(pick.azimuth).rjust(6)+\
-                _str_conv(pick.velocity).rjust(5)+\
-                _str_conv(pick.AIN).rjust(4)+\
-                _str_conv(int(pick.azimuthres)).rjust(3)+\
-                _str_conv(pick.timeres, rounded=2).rjust(5)+\
-                _str_conv(int(pick.finalweight)).rjust(2)+\
-                _str_conv(pick.distance).rjust(5)+\
-                _str_conv(int(pick.CAZ)).rjust(4)+' \n'
+        newpicks+=pick.__str__()
     # Write all new and old info back in
     f=open(sfilename, 'w')
     f.write(header)
