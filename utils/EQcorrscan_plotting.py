@@ -279,7 +279,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     y = tr.data
     x = np.arange(len(y))
     x = x/tr.stats.sampling_rate
-    axes[0].plot(x, y, 'k', linewidth=1.1)
+    axes[0].plot(x, y, 'r', linewidth=2.0)
     axes[0].set_ylabel('Stack', rotation=0)
     axes[0].yaxis.set_ticks([])
     for i in xrange(len(traces)):
@@ -381,7 +381,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
     plt.show()
     return
 
-def interev_mag(sfiles):
+def interev_mag_sfiles(sfiles):
     """
     Function to plot interevent-time versus magnitude for series of events.
 
@@ -391,6 +391,13 @@ def interev_mag(sfiles):
     import Sfile_util
     times=[Sfile_util.readheader(sfile).time for sfile in sfiles]
     mags=[Sfile_util.readheader(sfile).Mag_1 for sfile in sfiles]
+    interev_mag(times, mags)
+
+def interev_mag(times, mags):
+    """
+    Function to plot interevent times against magnitude for given times
+    and magnitudes
+    """
     l = [(times[i], mags[i]) for i in xrange(len(times))]
     l.sort(key=lambda tup:tup[0])
     times=[x[0] for x in l]
@@ -409,11 +416,13 @@ def interev_mag(sfiles):
     axes[0].set_title('Pre-event times')
     axes[0].set_ylabel('Magnitude')
     axes[0].set_xlabel('Time (Minutes)')
-    axes[0].set_xlim([0, max(pre_times)+(0.1*(max(pre_times)-min(pre_times)))])
+    # axes[0].set_xlim([0, max(pre_times)+(0.1*(max(pre_times)-min(pre_times)))])
+    plt.setp(axes[0].xaxis.get_majorticklabels(), rotation=30 )
     axes[1].scatter(pre_times, mags[:-1])
     axes[1].set_title('Post-event times')
     axes[1].set_xlabel('Time (Minutes)')
-    axes[1].set_xlim([0, max(post_times)+(0.1*(max(post_times)-min(post_times)))])
+    # axes[1].set_xlim([0, max(post_times)+(0.1*(max(post_times)-min(post_times)))])
+    plt.setp(axes[1].xaxis.get_majorticklabels(), rotation=30 )
     plt.show()
 
 

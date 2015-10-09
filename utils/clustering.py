@@ -248,6 +248,7 @@ def SVD(templates):
     :param templates: List of the templates to be analysed
 
     :return: SVector(list of ndarray), SValues(list) for each channel, \
+            Uvalues(list of ndarray) for each channel, \
             stachans, List of String (station.channel)
 
     .. rubric:: Note
@@ -266,20 +267,22 @@ def SVD(templates):
     # Initialize a list for the output matrices, one matrix per-channel
     SValues=[]
     SVectors=[]
+    Uvectors=[]
     for stachan in stachans:
         chan_mat=[templates[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])[0].data \
                   for i in xrange(len(templates)) if \
                   len(templates[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])) != 0]
-        chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
-        chan_mat=np.asarray(chan_mat).T
+        # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
+        chan_mat=np.asarray(chan_mat)
         print chan_mat.shape
         print stachan
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
-        SVectors.append(U.T)
-    return SVectors, SValues, stachans
+        SVectors.append(V)
+        Uvectors.append(U)
+    return SVectors, SValues, Uvectors, stachans
 
 def empirical_SVD(templates, linear=True):
     """
@@ -337,7 +340,7 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def corr_clister(traces, thresh=0.9):
+def corr_cluster(traces, thresh=0.9):
     """
     Group traces based on correlations above threshold with the stack - will
     run twice, once with a lower threshold, then again with your threshold to
@@ -490,16 +493,19 @@ def extract_detections(detections, templates, extract_len=90.0, \
                 try:
                     st+=read(contbase[0]+'/'+dayfile)
                 except:
-                    print 'No data for '+stachan[0]+' '+stachan[1]
+                    print 'No data for '+contbase[0]+'/'+dayfile
         st.merge(fill_value='interpolate')
         # We now have a stream of day long data, we should process it!
-        st=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
-                                                               templatedef.highcut,\
-                                                               templatedef.filter_order,\
-                                                               templatedef.samp_rate,\
-                                                               matchdef.debug, detection_day)\
-                                for tr in st)
-        st=Stream(st)
+        # st=Parallel(n_jobs=3)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+                                                               # templatedef.highcut,\
+                                                               # templatedef.filter_order,\
+                                                               # templatedef.samp_rate,\
+                                                               # matchdef.debug, detection_day)\
+                                # for tr in st)
+        # st=Stream(st)
+        # for tr in st:
+            # Convert to int32 for STEIM2 format
+            # tr.data=tr.data.astype(np.int32)
 
         day_detections=[detection for detection in detections\
                         if detection[0].date() == detection_day]
@@ -512,21 +518,21 @@ def extract_detections(detections, templates, extract_len=90.0, \
             print 'Cutting for detections at: '+detection[0].strftime('%Y/%m/%d %H:%M:%S')
             detect_wav=st.copy()
             for tr in detect_wav:
-                delay=[t_delays[i] for i in xrange(len(t_delays)) if t_stachans[i][0:2] ==\
-                       (tr.stats.station,tr.stats.channel[0]+\
-                        tr.stats.channel[1])][0]
-                tr.trim(starttime=UTCDateTime(detection[0])+delay-extract_len/2,\
-                            endtime=UTCDateTime(detection[0])+delay+extract_len/2)
-            detection_wavefiles.append(detect_wav)
+                tr.trim(starttime=UTCDateTime(detection[0])-extract_len/2,\
+                            endtime=UTCDateTime(detection[0])+extract_len/2)
             if outdir:
                 if not os.path.isdir(outdir+'/'+template):
                     os.makedirs(outdir+'/'+template)
                 detect_wav.write(outdir+'/'+template+'/'+\
                                   detection[0].strftime('%Y-%m-%d_%H-%M-%S')+\
-                                  '.ms', format='MSEED')
+                                  '.ms', format='MSEED', encoding='STEIM2')
+                                  # '.ms', format='MSEED', encoding='STEIM2')
                 print 'Written file: '+outdir+'/'+template+'/'+\
                          detection[0].strftime('%Y-%m-%d_%H-%M-%S')+'.ms'
-        del st, detect_wav
+            if not outdir:
+                detection_wavefiles.append(detect_wav)
+            del detect_wav
+        del st
         if outdir:
             detection_wavefiles=[]
     if not outdir:
