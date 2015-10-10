@@ -146,6 +146,24 @@ for synth in synth_templates:
         tr.filter('bandpass', freqmin=templatedef.lowcut,\
                     freqmax=templatedef.lowcut)
         tr.data=(tr.data*1000).astype(np.int32)
+        # Name the channels so that they can be found!
+        if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
+            tr.stats.channel='HHN'
+            tr.stats.network='NZ'
+        elif tr.stats.station == 'GCSZ':
+            tr.stats.channel='EH1'
+            tr.stats.network='NZ'
+        elif tr.stats.station == 'RPZ':
+            tr.stats.channel='HH1'
+            tr.stats.network='NZ'
+        elif tr.stats.station in ['EORO','WHYM','COSA','GOVA','LABE','MTFO',\
+                                    'COVA','POCR','SOLU','WHAT',\
+                                    'MTBA','SOLU']:
+            tr.stats.channel='SHN'
+            tr.stats.network='AF'
+        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
+            tr.stats.channel='SH2'
+            tr.stats.network='AF'
     synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
                 '_'+str(nodes[i][2])+'_template.ms', format='MSEED',\
                 encoding='STEIM2', reclen=512)
@@ -154,6 +172,32 @@ for synth in synth_templates:
     i+=1
 
 del nodes, travel_times
+
+templates=synth_templates
+for template in templates:
+    # Calculate the delays for each template, do this only once so that we
+    # don't have to do it heaps!
+    # Check that all templates are the correct length
+    for tr in template:
+        if not templatedef.samp_rate*templatedef.length == tr.stats.npts:
+            raise ValueError('Template for '+tr.stats.station+'.'+\
+                             tr.stats.channel+' is not the correct length, recut.'+\
+                             ' It is: '+str(tr.stats.npts)+' and should be '+
+                             str(templatedef.samp_rate*templatedef.length))
+    # Generate list of stations in templates
+    for tr in template:
+        # Correct FOZ channels
+        if tr.stats.station=='FOZ' and len(tr.stats.channel)==3:
+            tr.stats.channel='HH'+tr.stats.channel[2]
+        if len(tr.stats.channel)==3:
+            stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
+                            '*'+tr.stats.channel[2]+'.'+tr.stats.network)
+            tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
+        elif len(tr.stats.channel)==2:
+            stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
+                            '*'+tr.stats.channel[1]+'.'+tr.stats.network)
+        else:
+            raise ValueError('Channels are not named with either three or two characters')
 
 # Use the templates to scan through the datas!
 # Work out what days are to be scanned through
