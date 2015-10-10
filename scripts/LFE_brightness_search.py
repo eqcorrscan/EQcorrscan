@@ -45,7 +45,8 @@ if len(sys.argv) == 2:
         Test=False
         Prep=True
     else:
-        raise IOError("I don't recognise your arguments I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
+        raise IOError("I don't recognise your arguments I know --debug and "+\
+        "--debug-prep, and --instance, --splits, --startdate, --enddate")
 elif len(sys.argv) == 5:
     args=sys.argv[1:len(sys.argv)]
     if args[0] == '--instance' or args[2]=='--instance':

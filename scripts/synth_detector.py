@@ -74,6 +74,8 @@ else:
     Prep=False
     Split=False
 
+######### END of arguments section #######
+
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
@@ -134,8 +136,10 @@ if len(nodes) == 0:
 synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
         PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate)
 
+
 # Write out the synthetics!
 i=0
+template_names=[] # List of the template names, which will be the node location
 for synth in synth_templates:
     # We need the data to be in int32
     for tr in synth:
@@ -145,4 +149,178 @@ for synth in synth_templates:
     synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
                 '_'+str(nodes[i][2])+'_template.ms', format='MSEED',\
                 encoding='STEIM2', reclen=512)
+    template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
+                '_'+str(nodes[i][2]))
     i+=1
+
+del nodes, travel_times
+
+# Use the templates to scan through the datas!
+# Work out what days are to be scanned through
+if startdate:
+    dates=[UTCDateTime(startdate)+i for i in xrange(0, int(UTCDateTime(enddate) -\
+                                                           UTCDateTime(startdate)),\
+                                                    86400)]
+else:
+    dates=matchdef.dates
+
+ndays=len(dates)
+print 'Will loop through '+str(ndays)+' days'
+if Split:
+    if instance==splits-1:
+        ndays=ndays-(ndays/splits)*(splits-1)
+        dates=dates[-ndays:]
+    else:
+        ndays=ndays/splits
+        dates=dates[ndays*instance:(ndays*instance)+ndays]
+    print 'This instance will run for '+str(ndays)+' days'
+    print 'This instance will run from '+str(min(dates))
+
+
+f=open('detections/'+str(min(dates).year)+\
+       str(min(dates).month).zfill(2)+\
+       str(min(dates).day).zfill(2)+'_'+\
+       str(max(dates).year)+str(max(dates).month).zfill(2)+\
+       str(max(dates).day).zfill(2),'w')
+f.write('template, detect-time, cccsum, threshold, number of channels\n')
+
+# Loop taken from LFEsearch.py script
+for day in dates:
+    if 'st' in locals():
+        del st
+    # Read in data using obspy's reading routines, data format will be worked
+    # out by the obspy module
+    # Note you might have to change this bit to match your naming structure
+    actual_stations=[] # List of the actual stations used
+    for stachan in stations:
+        # station is of the form STA.CHAN, to allow these to be in an odd
+        # arrangements we can seperate them
+        station=stachan.split('.')[0]
+        channel=stachan.split('.')[1]
+        netcode=stachan.split('.')[2]
+        rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+                    str(day.year)+str(day.julday).zfill(3)
+        errors, full = seismo_logs.check_all_logs(rawdir, \
+                                                  1.0/templatedef.samp_rate)
+        if len(errors) > 1:
+            continue
+        if not Test:
+            # Set up the base directory format
+            for base in matchdef.contbase:
+                if base[2]==netcode:
+                    contbase=base
+            if not 'contbase' in locals():
+                raise NameError('contbase is not defined for '+netcode)
+            baseformat=contbase[1]
+            if baseformat=='yyyy/mm/dd':
+                daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
+                        str(day.day).zfill(2)
+            elif baseformat=='Yyyyy/Rjjj.01':
+                daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
+            elif baseformat=='yyyymmdd':
+                daydir=str(day.year)+str(day.month).zfill(2)+str(day.day).zfill(2)
+
+            # Try and find the appropriate files
+            if baseformat=='Yyyyy/Rjjj.01':
+                if glob.glob(contbase[0]+'/'+daydir+'/'+station+'.*.'+channel+\
+                             '.'+str(day.year)+'.'+str(day.julday).zfill(3)):
+                    chan_available=True
+                else:
+                    chan_available=False
+            else:
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'.'+channel+'.*'):
+                    chan_available=True
+                else:
+                    chan_available=False
+            if chan_available:
+                if not 'st' in locals():
+                    if baseformat=='Yyyyy/Rjjj.01':
+                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                   channel+'.'+str(day.year)+'.'+\
+                                   str(day.julday).zfill(3))
+                    else:
+                        st=obsread(contbase[0]+'/'+daydir+'/*'+station+'.'+\
+                                   channel+'.*')
+                else:
+                    if baseformat=='Yyyyy/Rjjj.01':
+                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*.'+\
+                                    channel+'.'+str(day.year)+'.'+\
+                                    str(day.julday).zfill(3))
+                    else:
+                        st+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.'+\
+                                    channel+'.*')
+                actual_stations.append(station) # Add to this list only if we have the data
+            else:
+                print 'No data for '+stachan+' for day '+daydir+' in '\
+                        +contbase[0]
+        else:
+            fname='test_data/'+station+'-'+channel+'-'+str(day.year)+\
+                           '-'+str(day.month).zfill(2)+\
+                           '-'+str(day.day).zfill(2)+'-processed.ms'
+            if glob.glob(fname):
+                if not 'st' in locals():
+                    st=obsread(fname)
+                else:
+                    st+=obsread(fname)
+                actual_stations.append(station)
+    actual_stations=list(set(actual_stations))
+
+    st=st.merge(fill_value='interpolate') # Enforce trace continuity
+    if not 'st' in locals():
+        print 'No data found for day: '+str(day)
+    elif len(actual_stations) < matchdef.minsta:
+        print 'Data from fewer than '+str(matchdef.minsta)+' stations found, will not detect'
+    else:
+        if not Test:
+            # Process data
+            print 'Processing the data for day '+daydir
+            if matchdef.debug >= 4:
+                for tr in st:
+                    tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
+                                            templatedef.filter_order, templatedef.samp_rate,\
+                                            matchdef.debug, day)
+            else:
+                st=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
+                                                                   templatedef.highcut,\
+                                                                   templatedef.filter_order,\
+                                                                   templatedef.samp_rate,\
+                                                                   matchdef.debug, day)\
+                                for tr in st)
+        if not Prep:
+            # For some reason st is now a list rather than a stream
+            if 'stream_st' in locals():
+                del stream_st
+            for tr in st:
+                if 'stream_st' in locals():
+                    stream_st+=tr
+                else:
+                    stream_st=Stream(tr)
+            st=stream_st
+            # Call the match_filter module - returns detections, a list of detections
+            # containted within the detection class with elements, time, template,
+            # number of channels used and cross-channel correlation sum.
+            print 'Running the detection routine'
+            if not os.path.isdir('temp_'+str(instance)):
+                os.makedirs('temp_'+str(instance))
+            detections=match_filter.match_filter(template_names, templates, st,
+                                                 matchdef.threshold, matchdef.threshtype,
+                                                 matchdef.trig_int,  matchdef.plot,
+                                                 'temp_'+str(instance))
+
+            for detection in detections:
+                # output detections to file
+                f.write(detection.template_name+', '+str(detection.detect_time)+\
+                        ', '+str(detection.detect_val)+', '+str(detection.threshold)+\
+                        ', '+str(detection.no_chans)+'\n')
+                print 'template: '+detection.template_name+' detection at: '\
+                    +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
+            if detections:
+                f.write('\n')
+        else:
+            for tr in st:
+                tr.write('test_data/'+tr.stats.station+'-'+tr.stats.channel+\
+                         '-'+str(tr.stats.starttime.year)+\
+                         '-'+str(tr.stats.starttime.month).zfill(2)+\
+                         '-'+str(tr.stats.starttime.day).zfill(2)+\
+                         '-processed.ms', format='MSEED')
+f.close()
