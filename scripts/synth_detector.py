@@ -77,8 +77,8 @@ else:
 
 ######### END of arguments section #######
 
-from par import template_gen_par as templatedef
-from par import match_filter_par as matchdef
+from par import LFE_template_gen_par as templatedef
+from par import match_filter_par_LFEs as matchdef
 from par import bright_lights_par as brightdef
 from utils import seismo_logs
 if brightdef.plotsave:
