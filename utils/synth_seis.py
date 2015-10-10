@@ -34,6 +34,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False):
         additional_length=2.5*SP
     else:
         additional_length=flength-10
+    print additional_length
     synth=np.zeros(SP+10+additional_length) # Make the array begin 10 samples before the P\
             # and at least 2.5 times the S-P samples after the S arrival
     synth[10]=1.0
@@ -42,6 +43,10 @@ def seis_sim(SP, amp_ratio=1.5, flength=False):
             # and that the coda should be about 1/10 of the SP time
     S_length=int(10+SP/3.0)
     S_spikes=np.arange(amp_ratio, 0, -(amp_ratio/S_length))
+    print len(S_spikes)
+    print (10+SP+len(S_spikes))-(10+SP)
+    print len(synth[10+SP:10+SP+len(S_spikes)])
+    print len(synth[10+SP:])
     synth[10+SP:10+SP+len(S_spikes)] = S_spikes
     # What we actually want, or what appears better is to have a series of\
             # individual spikes, of alternating polarity...
