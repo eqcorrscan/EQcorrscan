@@ -125,6 +125,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
 
     :returns: List of :class:obspy.Stream
     """
+    import warnings
     if not phase in ['S','P']:
         raise IOError('Phase is neither P nor S')
     from obspy import Stream, Trace
@@ -149,6 +150,10 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 SP_time=tt-(tt/PS_ratio)
                 tr.stats.starttime+=(tt/PS_ratio)
             # Set start-time of trace to be travel-time for P-wave
+            # Check that the template length is long enough to include the SP
+            if SP_time*samp_rate < flength-11:
+                warnings.warn('Cannot make this template, SP-time '+str(SP_time)+\
+                                ' longer than length: '+str(flength/samp_rate))
             tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                             flength=flength)
             st.append(tr)
