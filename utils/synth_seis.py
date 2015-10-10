@@ -151,7 +151,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 tr.stats.starttime+=(tt/PS_ratio)
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
-            if SP_time*samp_rate < flength-11:
+            if SP_time*samp_rate > flength-11:
                 warnings.warn('Cannot make this template, SP-time '+str(SP_time)+\
                                 ' longer than length: '+str(flength/samp_rate))
             else:
