@@ -150,7 +150,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 tr.stats.starttime+=(tt/PS_ratio)
             # Set start-time of trace to be travel-time for P-wave
             tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
-                            flength=600)
+                            flength=flength)
             st.append(tr)
             j+=1
         templates.append(Stream(st))
