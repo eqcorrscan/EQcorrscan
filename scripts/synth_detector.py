@@ -142,6 +142,7 @@ synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
 # Write out the synthetics!
 i=0
 template_names=[] # List of the template names, which will be the node location
+templates=[]
 for synth in synth_templates:
     # We need the data to be in int32
     stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
@@ -181,7 +182,8 @@ for synth in synth_templates:
 
 del nodes, travel_times
 
-templates=synth_templates
+print 'Working out what stations we have'
+
 for template in templates:
     # Calculate the delays for each template, do this only once so that we
     # don't have to do it heaps!
