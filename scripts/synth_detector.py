@@ -144,6 +144,11 @@ i=0
 template_names=[] # List of the template names, which will be the node location
 for synth in synth_templates:
     # We need the data to be in int32
+    stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
+    if len(list(set(stations))) < 5:
+        # Only write and use templates with at least five stations
+        i+=1
+        continue
     for tr in synth:
         tr.filter('bandpass', freqmin=templatedef.lowcut,\
                     freqmax=templatedef.lowcut)
@@ -171,6 +176,7 @@ for synth in synth_templates:
                 encoding='STEIM2', reclen=512)
     template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
                 '_'+str(nodes[i][2]))
+    templates.append(synth)
     i+=1
 
 del nodes, travel_times
