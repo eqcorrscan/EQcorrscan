@@ -94,7 +94,8 @@ def SVD_sim(SP, lowcut, highcut, samp_rate, amp_range=np.arange(-10,10,0.01)):
     V,s,U,stachans = clustering.SVD(synthetics)
     return V, s, U, stachans
 
-def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, samp_rate=100):
+def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
+                samp_rate=100, flength=False):
     """
     Function to generate a group of synthetic seismograms to simulate phase
     arrivals from a grid of known sources in a three-dimensional model.  Lags
@@ -119,6 +120,10 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, samp_rate
     :param PS_ratio: P/S velocity ratio, defaults to 1.68
     :type samp_rate: float
     :param samp_rate: Desired sample rate in Hz, defaults to 100.0
+    :type flength: int
+    :param flength: Length of template in samples, defaults to False
+
+    :returns: List of :class:obspy.Stream
     """
     if not phase in ['S','P']:
         raise IOError('Phase is neither P nor S')
@@ -139,8 +144,11 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, samp_rate
             tt=travel_times[j][i]
             if phase=='P':
                 SP_time=(tt*PS_ratio)-tt
+                tr.stats.starttime+=tt
             else:
                 SP_time=tt-(tt/PS_ratio)
+                tr.stats.starttime+=(tt/PS_ratio)
+            # Set start-time of trace to be travel-time for P-wave
             tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                             flength=600)
             st.append(tr)
