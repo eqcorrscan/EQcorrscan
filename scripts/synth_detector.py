@@ -10,6 +10,7 @@ ad infinitium...
 """
 
 import sys, glob, datetime as dt, numpy as np
+sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
 instance=0
 Split=False
 startdate=False
@@ -134,7 +135,8 @@ if len(nodes) == 0:
 
 # Call the template generation function
 synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
-        PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate)
+        PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
+        flength=int(templatedef.samp_rate*templatedef.length))
 
 
 # Write out the synthetics!
