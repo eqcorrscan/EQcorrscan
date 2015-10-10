@@ -26,7 +26,6 @@ def seis_sim(SP, amp_ratio=1.5):
 
     :returns: np.ndarray
     """
-    print amp_ratio
     synth=np.zeros(SP+10+100) # Make the array begin 10 samples before the P\
             # and at least 100 samples after the S arrival
     synth[10]=1.0
@@ -34,7 +33,8 @@ def seis_sim(SP, amp_ratio=1.5):
             # Some basic estimations suggest this should be atleast 10 samples\
             # and that the coda should be about 1/10 of the SP time
     S_length=int(10+SP/3.0)
-    synth[10+SP:10+SP+S_length]=np.arange(amp_ratio,0, -(amp_ratio/S_length))
+    S_spikes=np.arange(amp_ratio, 0, -(amp_ratio/S_length))
+    synth[10+SP:10+SP+len(S_spikes)] = S_spikes
     # What we actually want, or what appears better is to have a series of\
             # individual spikes, of alternating polarity...
     for i in xrange(10+SP+1, 10+SP+S_length, 2):
@@ -50,21 +50,36 @@ def seis_sim(SP, amp_ratio=1.5):
     synth=synth/np.max(synth)
     return synth
 
-def SVD_sim(SP):
+def SVD_sim(SP, lowcut, highcut, samp_rate):
     """
     Function to generate a basis vectors of a set of simulated seismograms with
     a range of S-P amplitude ratios.
 
     :type SP: int
-    :param SP: S-P time in samples
+    :param SP: S-P time in seconds - will be converted to samples according to\
+            samp_rate
+    :type lowcut: float
+    :param lowcut: Low-cut for bandpass filter in Hz
+    :type highcut: float
+    :param highcut: High-cut for bandpass filter in Hz
+    :type samp_rate: float
+    :param samp_rate: Sampling rate in Hz
 
     :returns: nd.ndarray, set of output basis vectors
     """
     from obspy import Stream, Trace
+    # Convert SP to samples
+    SP=int(SP*samp_rate)
     # Scan through a range of amplitude ratios
-    synthetics=[Stream(Trace(seis_sim(SP, a))) for a in np.arange(-10, 10, 0.1)]
+    synthetics=[Stream(Trace(seis_sim(SP, a))) for a in np.arange(-10, 10, 0.01)]
+    for st in synthetics:
+        for tr in st:
+            tr.stats.station='SYNTH'
+            tr.stats.channel='SH1'
+            tr.stats.sampling_rate=samp_rate
+            tr.filter('bandpass', freqmin=lowcut, freqmax=highcut)
     # We have a list of obspy Trace objects, we can pass this to EQcorrscan's\
             # SVD functions
     from utils import clustering
-    S,u,V = clustering.SVD(synthetics)
-    return S, u, V
+    V,s,U,stachans = clustering.SVD(synthetics)
+    return V, s, U, stachans

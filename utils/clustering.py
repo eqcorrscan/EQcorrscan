@@ -326,7 +326,6 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being
             composed of the highest rank singular vectors.
     """
-    import matplotlib.pyplot as plt
     from obspy import Stream, Trace
     SVstreams=[]
     for i in xrange(k):
