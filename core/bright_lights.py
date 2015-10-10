@@ -60,7 +60,8 @@ This file is part of EQcorrscan.
 """
 import warnings
 import numpy as np
-def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
+def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,\
+            lags_switch=True):
     """
     Function to read in .csv files of slowness generated from Grid2Time (part
     of NonLinLoc by Anthony Lomax) and convert this to a useful format here.
@@ -76,6 +77,8 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
     :param phaseout: What phase to return the lagtimes in
     :type ps_ratio: float
     :param ps_ratio: p to s ratio for coversion
+    :type lags_switch: Bool
+    :param lags_switch: Return lags or raw travel-times, if set to true will return lags.
 
     :return: list stations, list of lists of tuples nodes, \
     :class: 'numpy.array' lags station[1] refers to nodes[1] and \
@@ -112,7 +115,10 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68):
                 traveltime=traveltime/1.68
             else:
                 traveltime=traveltime*1.68
-        lags=traveltime-min(traveltime)
+        if lags_switch:
+            lags=traveltime-min(traveltime)
+        else:
+            lags=traveltime
         if not 'alllags' in locals():
             alllags=[lags]
         else:
@@ -710,4 +716,3 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
 
     nodesout=list(set(nodesout))
     return templates, nodesout
-
