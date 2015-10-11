@@ -153,7 +153,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
             # Check that the template length is long enough to include the SP
             if SP_time*samp_rate > flength-11:
                 #warnings.warn('Cannot make this template, SP-time '+str(SP_time)+\
-                                ' longer than length: '+str(flength/samp_rate))
+                                # ' longer than length: '+str(flength/samp_rate))
                 continue
             else:
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
