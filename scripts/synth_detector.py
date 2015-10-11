@@ -9,7 +9,7 @@ These detected events can then be stacked and used as further templates...
 ad infinitium...
 """
 
-import sys, glob, datetime as dt, numpy as np
+import os, sys, glob, datetime as dt, numpy as np
 sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
 instance=0
 Split=False
