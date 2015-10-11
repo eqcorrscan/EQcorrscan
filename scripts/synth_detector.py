@@ -184,6 +184,7 @@ del nodes, travel_times
 print 'We have '+str(len(templates))+' templates with at least five stations'
 print 'Working out what stations we have'
 
+stations=[]
 for template in templates:
     # Calculate the delays for each template, do this only once so that we
     # don't have to do it heaps!
