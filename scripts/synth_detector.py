@@ -137,7 +137,7 @@ if len(nodes) == 0:
 synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
         PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
         flength=int(templatedef.samp_rate*templatedef.length))
-
+print 'We have '+str(len(synth_templates))+' synthetic templates'
 
 # Write out the synthetics!
 i=0
@@ -181,7 +181,7 @@ for synth in synth_templates:
     i+=1
 
 del nodes, travel_times
-
+print 'We have '+str(len(templates))+' templates with at least five stations'
 print 'Working out what stations we have'
 
 for template in templates:
