@@ -209,7 +209,7 @@ for template in templates:
                             '*'+tr.stats.channel[1]+'.'+tr.stats.network)
         else:
             raise ValueError('Channels are not named with either three or two characters')
-
+stations=list(set(stations))
 # Use the templates to scan through the datas!
 # Work out what days are to be scanned through
 if startdate:
