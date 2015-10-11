@@ -8,9 +8,9 @@ routine to detect similar, real-earthquakes in coninuous seismic data.
 These detected events can then be stacked and used as further templates...
 ad infinitium...
 """
-
 import os, sys, glob, datetime as dt, numpy as np
 sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
+sys.path.append('/Users/goride42/Desktop/EQcorrscan')
 instance=0
 Split=False
 startdate=False
@@ -151,9 +151,9 @@ for synth in synth_templates:
         i+=1
         continue
     for tr in synth:
-        tr.filter('bandpass', freqmin=templatedef.lowcut,\
-                    freqmax=templatedef.lowcut)
         tr.data=(tr.data*1000).astype(np.int32)
+        tr.filter('bandpass', freqmin=templatedef.lowcut,\
+                    freqmax=templatedef.highcut)
         # Name the channels so that they can be found!
         if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
             tr.stats.channel='HHN'
@@ -173,8 +173,8 @@ for synth in synth_templates:
             tr.stats.channel='SH2'
             tr.stats.network='AF'
     synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
-                '_'+str(nodes[i][2])+'_template.ms', format='MSEED',\
-                encoding='STEIM2', reclen=512)
+                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
+                #encoding='STEIM2', reclen=512)
     template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
                 '_'+str(nodes[i][2]))
     templates.append(synth)
