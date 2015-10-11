@@ -56,6 +56,8 @@ def seis_sim(SP, amp_ratio=1.5, flength=False):
     synth=np.convolve(synth,damped_sine)
     # Normalize snyth
     synth=synth/np.max(synth)
+    if flength and len(synth) > flength:
+        synth=synth[0:flength]
     return synth
 
 def SVD_sim(SP, lowcut, highcut, samp_rate, amp_range=np.arange(-10,10,0.01)):
