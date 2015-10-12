@@ -231,10 +231,21 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
     Internal function to allow for parallelisation of brightness
 
     :type stations: list
-    :type lags: list
+    :param stations: List of stations to use
+    :type lags: np.ndarray
+    :param lags: List of lags where lags[i[:]] are the lags for stations[i]
     :type stream: :class: `obspy.Stream`
+    :param stream: Data stream to find the brightness for
+    :type i: int
+    :param i: Index of loop for parallelisation
+    :type mem_issue: bool
+    :param mem_issue: If True will write to disk rather than storing data in RAM
+    :type instance: int
+    :param instance: instance for bulk parallelisation, only used if mem_issue=true
+    :type plot: bool
+    :param plot: Turn plotting on or off, defaults to False
 
-    :return: (i, energy (np.array))
+    :return: (i, energy (np.ndarray))
     """
     from par import bright_lights_par as brightdef
     import warnings
@@ -314,15 +325,17 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
         np.save('tmp'+str(instance)+'/node_'+str(i), energy)
         return (i, 'tmp'+str(instance)+'/node_'+str(i))
 
-def _cum_net_resp(node_lis, instance):
+def _cum_net_resp(node_lis, instance=0):
     """
     Function to compute the cumulative network response by reading the saved
     energy .npy files
 
     :type node_lis: np.ndarray
     :param node_lis: List of nodes (ints) to read from
+    :type instance: Int
+    :param instance: Instance flag for parallelisation, defaults to 0.
 
-    :returns: :class: np.ndarray cum_net_resp, list of indeces used
+    :returns: np.ndarray cum_net_resp, list of indeces used
     """
     import os
     cum_net_resp=np.load('tmp'+str(instance)+'/node_'+str(node_lis[0])+'.npy')[0]
@@ -342,22 +355,30 @@ def _cum_net_resp(node_lis, instance):
 
 
 
-def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate,\
-                     realstations, length):
+def _find_detections(cum_net_resp, nodes, threshold, thresh_type,\
+                    samp_rate, realstations, length):
     """
     Function to find detections within the cumulative network response according
     to Frank et al. (2014).
 
-    :type cum_net_resp: np.array
+    :type cum_net_resp: np.ndarray
     :param cum_net_resp: Array of cumulative network response for nodes
     :type nodes: list of tuples
     :param nodes: Nodes associated with the source of energy in the cum_net_resp
     :type threshold: float
+    :param threshold: Threshold value
     :type thresh_type: str
+    :param thresh_type: Either MAD (Median Absolute Deviation) or abs (absolute)\
+    or RMS (Root Mean Squared)
     :type samp_rate: float
+    :param samp_rate: Sampling rate in Hz
     :type realstations: list of str
+    :param realstations: List of stations used to make the cumulative network\
+    response, will be reported in the DETECTION
+    :type length: float
+    :param length: Maximum length of peak to look for in seconds
 
-    :return: detections as class DETECTION
+    :return: detections as :class: DETECTION
     """
     from utils import findpeaks
     from core.match_filter import DETECTION
@@ -390,22 +411,22 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type, samp_rate,\
     print 'I have found '+str(len(peaks))+' possible detections'
     return detections
 
-def coherance(stream_in, stations=['all'], clip=False):
+def coherence(stream_in, stations=['all'], clip=False):
     """
-    Function to determine the average network coherance of a given template or
+    Function to determine the average network coherence of a given template or
     detection.  You will want your stream to contain only signal as noise
-    will reduce the coherance (assuming it is incoherant random noise).
+    will reduce the coherence (assuming it is incoherant random noise).
 
     :type stream: obspy.Stream
     :param stream: The stream of seismic data you want to calculate the\
-            coherance for.
+            coherence for.
     :type stations: List of String
-    :param stations: List of stations to use for coherance, default is all
-    :type length: Tuple of Float
-    :param length: Default is to use all the data given - \
+    :param stations: List of stations to use for coherence, default is all
+    :type clip: Tuple of Float
+    :param clip: Default is to use all the data given - \
             tuple of start and end in seconds from start of trace
 
-    :return: float - coherance, int number of channels used
+    :return: float - coherence, int number of channels used
     """
     stream=stream_in.copy() # Copy the data before we remove stations
     # First check that all channels in stream have data of the same length
@@ -433,18 +454,18 @@ def coherance(stream_in, stations=['all'], clip=False):
     if clip:
         for tr in stream:
             tr.trim(tr.stats.starttime+clip[0], tr.stats.starttime+clip[1])
-    coherance=0.0
+    coherence=0.0
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
     # unique cross-channel pairing
     for i in xrange(len(stream)):
         for j in xrange(i+1,len(stream)):
-            coherance+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
-    coherance=2*coherance/(len(stream)*(len(stream)-1))
-    return coherance, len(stream)
+            coherence+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
+    coherence=2*coherence/(len(stream)*(len(stream)-1))
+    return coherence, len(stream)
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
-        coherance_thresh, instance=0, matchdef=False, defaults=False,\
+        coherence_thresh, instance=0, matchdef=False, defaults=False,\
                pre_pick=0.2):
     """
     Function to calculate the brightness function in terms of energy for a day
@@ -471,12 +492,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :type thresh_type: str
     :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
     Deviation and abs is an absoulte brightness.
-    :type coherance_thresh: tuple of floats
-    :param coherance_thresh: Threshold for removing incoherant peaks in the\
+    :type coherence_thresh: tuple of floats
+    :param coherence_thresh: Threshold for removing incoherant peaks in the\
             network response, those below this will not be used as templates.\
-            Must be in the form of (a,b) where the coherance is given by:\
+            Must be in the form of (a,b) where the coherence is given by:\
             a-kchan/b where kchan is the number of channels used to compute\
-            the coherance
+            the coherence
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
 
@@ -671,17 +692,17 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            temp_coher, kchan=coherance(template, brightdef.coherance_stations,\
-                                 brightdef.coherance_clip)
-            coh_thresh=float(coherance_thresh[0])-kchan/float(coherance_thresh[1])
+            temp_coher, kchan=coherence(template, brightdef.coherence_stations,\
+                                 brightdef.coherence_clip)
+            coh_thresh=float(coherence_thresh[0])-kchan/float(coherence_thresh[1])
             if temp_coher > coh_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
-                print '---------------------------------COHERANCE LEVEL: '+\
+                print '---------------------------------coherence LEVEL: '+\
                         str(temp_coher)
                 coherant=True
             else:
-                print 'Template was incoherant, coherance level: '+\
+                print 'Template was incoherant, coherence level: '+\
                         str(temp_coher)
                 coherant=False
             del copy_of_stream, tr, template

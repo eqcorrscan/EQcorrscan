@@ -58,8 +58,10 @@ def is_prime(number):
 def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
-    Function to determine peaks in an array of data above a certain threshold.
-    Improvement on find_peaks, speed-up of approx 250x.
+    Function to determine peaks in an array of data using scipy find_peaks_cwt,
+    works fast in certain cases, but for match_filter cccsum peak finding,
+    find_peaks2_short works better.  Test it out and see which works best for
+    your application.
 
     :type arr: ndarray
     :param arr: 1-D numpy array is required
@@ -163,7 +165,7 @@ def find_peaks2_short(arr,thresh, trig_int, debug=0, \
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
     Function to determine peaks in an array of data above a certain threshold.
-    Improvement on find_peaks, speed-up of approx 250x.
+    Uses a mask to remove data below threshold and finds peaks in what is left.
 
     :type arr: ndarray
     :param arr: 1-D numpy array is required
@@ -260,7 +262,8 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0,\
     """
     Function to determine peaks in an array of data above a certain threshold.
 
-    EXPERIMENTAL CODE, DOES NOT WORK EFFICIENTLY, RECOMEND USING find_peaks2
+    Depreciated peak-finding routine, very slow, but accurate.  If all else fails
+    this one should work.
 
     :type arr: ndarray
     :param arr: 1-D numpy array is required

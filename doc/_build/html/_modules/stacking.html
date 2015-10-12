@@ -165,30 +165,35 @@
 <span class="sd">    multiplexed data</span>
 
 <span class="sd">    :type streams: List of Streams</span>
+<span class="sd">    :param stream: List of streams to stack</span>
 
 <span class="sd">    :returns: stack - Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># import matplotlib.pyplot as plt</span>
-    <span class="n">stack</span><span class="o">=</span><span class="n">streams</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">])]</span>
+    <span class="n">stack</span><span class="o">=</span><span class="n">streams</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">])]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">streams</span><span class="p">)):</span>
         <span class="c"># print &quot;Stacking stream &quot;+str(i)</span>
-        <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
             <span class="c"># print tr.stats.station+&#39;.&#39;+tr.stats.channel</span>
             <span class="n">matchtr</span><span class="o">=</span><span class="n">streams</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
                                        <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">matchtr</span><span class="p">:</span>
-                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">matchtr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">matchtr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))),</span>\
+                <span class="n">norm</span><span class="o">=</span><span class="n">matchtr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">matchtr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
+                <span class="n">norm</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">norm</span><span class="p">,</span>\
                                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">stack</span>
 </div>
 <div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../utils.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to compute the phase weighted stack of a series of streams</span>
+<span class="sd">    Function to compute the phase weighted stack of a series of streams.</span>
+<span class="sd">    Recommend aligning the traces before stacking.</span>
 
 <span class="sd">    :type streams: list of obspy.Stream</span>
+<span class="sd">    :param streams: List of Stream to stack</span>
 <span class="sd">    :type weight: float</span>
 <span class="sd">    :param weight: Exponent to the phase stack used for weighting.</span>
 
@@ -216,7 +221,39 @@
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">Phasestack</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">Linstack</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">*</span>\
                 <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="n">weight</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Phasestack</span></div>
+    <span class="k">return</span> <span class="n">Phasestack</span>
+</div>
+<div class="viewcode-block" id="align_traces"><a class="viewcode-back" href="../utils.html#stacking.align_traces">[docs]</a><span class="k">def</span> <span class="nf">align_traces</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to allign traces relative to each other based on their</span>
+<span class="sd">    cross-correlation value</span>
+
+<span class="sd">    :type trace_list: List of Traces</span>
+<span class="sd">    :param trace_list: List of traces to allign</span>
+<span class="sd">    :type shift_len: int</span>
+<span class="sd">    :param shift_len: Length to allow shifting within in samples</span>
+
+<span class="sd">    :returns: list of shifts for best allignment in seconds</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorr</span>
+    <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+    <span class="n">traces</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)</span>
+    <span class="c"># Use trace with largest MAD amplitude as master</span>
+    <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">master_no</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="n">MAD_master</span><span class="p">:</span>
+            <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+            <span class="n">master_no</span><span class="o">=</span><span class="n">i</span>
+    <span class="n">shifts</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">==</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Sampling rates not the same&#39;</span><span class="p">)</span>
+        <span class="n">shift</span><span class="p">,</span> <span class="n">cc</span><span class="o">=</span><span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">shift_len</span><span class="p">)</span>
+        <span class="n">shifts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shift</span><span class="o">/</span><span class="n">master</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">shifts</span></div>
 </pre></div>
 
           </div>

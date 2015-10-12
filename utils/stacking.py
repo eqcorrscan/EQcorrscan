@@ -27,13 +27,13 @@ This file is part of EQcorrscan.
 """
 
 import numpy as np
-def linstack(streams, allign=False):
+def linstack(streams):
     """
     Function to compute the linear stack of a series of seismic streams of
     multiplexed data
 
     :type streams: List of Streams
-    :type allign: Bool
+    :param stream: List of streams to stack
 
     :returns: stack - Stream
     """
@@ -55,14 +55,15 @@ def linstack(streams, allign=False):
                                tr.data), axis=0)
     return stack
 
-def PWS_stack(streams, weight=2, allign=False):
+def PWS_stack(streams, weight=2):
     """
-    Function to compute the phase weighted stack of a series of streams
+    Function to compute the phase weighted stack of a series of streams.
+    Recommend aligning the traces before stacking.
 
     :type streams: list of obspy.Stream
+    :param streams: List of Stream to stack
     :type weight: float
     :param weight: Exponent to the phase stack used for weighting.
-    :type allign: Bool
 
     :return: obspy.Stream
     """

@@ -23,16 +23,6 @@ This file is part of EQcorrscan.
 
 """
 
-# There is a problem with Aaron's processing of FRAN, whereby channels
-# are not named consistently, horizontal channels are intermitently
-# referred to as N,E and 1,2 after the borehole sensor has been deployed
-# and these come from the borehole.  This was worked around in matlab,
-# and while Laura-May is working on the matlab codes I will impliment
-# a work aroudn here, but this should be corrected by a bulk process
-# of the raw data to miniseed, which will then serve as the go-to
-# resource.
-
-
 from obspy import UTCDateTime
 from obspy.signal.filter import bandpass
 
@@ -43,6 +33,7 @@ def _check_daylong(tr):
     hate it.
 
     :type tr: obspy.Trace
+    :param tr: Trace to check if the data are daylong.
 
     :return qual: bool
     """
@@ -60,12 +51,17 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     in the same way.
 
     :type st: obspy.Stream
+    :param st: Stream to process
     :type highcut: float
+    :param highcut: High cut for bandpass in Hz
     :type lowcut: float
+    :param lowcut: Low cut for bandpass in Hz
     :type filt_order: int
+    :param filt_order: Number of corners for bandpass filter
     :type samp_rate: float
+    :param samp_rate: Sampling rate desired in Hz
     :type debug: int
-    :type starttime: obspy.UTCDateTime
+    :param debug: Debug flag from 0-5, higher numbers = more output
 
     :return: obspy.Stream
     """
@@ -110,12 +106,19 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     in the same way.
 
     :type tr: obspy.Trace
+    :param tr: Trace to process
     :type highcut: float
+    :param highcut: High cut in Hz for bandpass
     :type lowcut: float
+    :type lowcut: Low cut in Hz for bandpass
     :type filt_order: int
+    :param filt_order: Corners for bandpass
     :type samp_rate: float
+    :param samp_rate: Desired sampling rate in Hz
     :type debug: int
+    :param debug: Debug output level from 0-5, higher numbers = more output
     :type starttime: obspy.UTCDateTime
+    :param starttime: Desired start of trace
 
     :return: obspy.Stream
     """
@@ -178,6 +181,8 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
         print 'Bandpassing'
     tr.data=bandpass(tr.data, lowcut, highcut,
                 tr.stats.sampling_rate, filt_order, True)
+
+    ################### CHANNEL renaming, does not need to be in the main codes!
     # Correct FRAN N,E channels to 1,2 as this is correct
     if tr.stats.station=='FRAN' and tr.stats.channel=='SHN':
         print 'Correcting FRAN SHN to SH1'
@@ -228,5 +233,3 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     if debug >= 4:
         tr.plot()
     return tr
-
-

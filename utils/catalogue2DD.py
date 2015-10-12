@@ -47,7 +47,9 @@ def _cc_round(num, dp):
     to return a string
 
     :type num: float
+    :param num: Number to round
     :type dp: int
+    :param dp: Number of decimal places to round to.
 
     :returns: string
     """
@@ -60,7 +62,9 @@ def _av_weight(W1, W2):
     Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)
 
     :type W1: str
+    :param W1: Seisan input weight (0-4)
     :type W2: str
+    :param W2: Seisan input weight (0-4)
 
     :returns: str
     """
@@ -256,7 +260,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                        coh_thresh=0.0):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
-    events and computes pick refienements by correlation
+    events and computes pick refienements by correlation.
+
+    Note that this is **NOT** fast.
 
     :type event_list: List of tuple
     :param event_list: List of tuples of event_id (int) and sfile (String)
