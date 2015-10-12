@@ -124,8 +124,9 @@ def normxcorr2(template, image):
         - http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate
 
     :type template: :class: 'numpy.array'
+    :param template: Template array
     :type image: :class: 'numpy.array'
-    :param image: Requires two numpy arrays, the template and the image to scan\
+    :param image: image to scan\
     the template through.  The order of these matters, if you put the template\
     after the image you will get a reversed correaltion matrix
 

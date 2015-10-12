@@ -168,7 +168,7 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     :type length: float
     :param length: Extract length in seconds, if None will look in template\
             defaults file.
-    :type prepick: Float
+    :type prepick: float
     :param prepick: Pre-pick time in seconds
     """
     # Perform some checks first
@@ -268,10 +268,10 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     :param length: Length of template in seconds
     :type swin: string
     :param swin: P, S or all
-    :type prepick: Float
+    :type prepick: float
     :param prepick: Length in seconds to extract before the pick time\
             default is 0.05 seconds
-    :type plot: Boolean
+    :type plot: bool
     :param plot: To plot the template or not, default is True
     """
     from utils.Sfile_util import PICK

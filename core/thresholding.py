@@ -29,9 +29,9 @@ This file is part of EQcorrscan.
 import numpy as np
 from obspy import read
 
-def coherance_test(stream, stations, nodes, lags, wlen):
+def coherence_test(stream, stations, nodes, lags, wlen):
     """
-    Function to determine how the coherance of a day of contious multi-channel,
+    Function to determine how the coherence of a day of contious multi-channel,
     multi-station seismic data varies with varying grid nodes.  It would be
     wise to apply this to a day of seismic data thought to be quiet from within
     the grid given, and to a day thought to be loud with energy sources within
@@ -48,19 +48,19 @@ def coherance_test(stream, stations, nodes, lags, wlen):
                 nodes and lags[i][j] refers to the lag for station[i] at node[j]
                 should be in seconds.
     :type wlen: int
-    :param wlen: Length of window to determine coherance for - should be the
+    :param wlen: Length of window to determine coherence for - should be the
                 same as your determined template length - in seconds
 
-    :return: Coherance, array of arrays where coherance[i][:] refers to the
-            running daily coherance at node[i]
+    :return: coherence, array of arrays where coherence[i][:] refers to the
+            running daily coherence at node[i]
     """
-    from core.bright_lights import coherance
+    from core.bright_lights import coherence
     from copy import deepcopy
     import sys
     # Convert wlen to samples
     wlen = int(wlen * stream[0].stats.sampling_rate)
-    #Set up coherance array
-    dailycoherance=np.array([np.array([np.nan]*(len(stream[0].data)-wlen))]\
+    #Set up coherence array
+    dailycoherence=np.array([np.array([np.nan]*(len(stream[0].data)-wlen))]\
             *len(nodes), dtype=np.float32) # Use half precision as we don't need
                                         # true doubles
     # Keep a sacred copy of the stream, as we will be applying the lags
@@ -76,22 +76,22 @@ def coherance_test(stream, stations, nodes, lags, wlen):
                 tr.data = tr.data[int(lags[j][i]*tr.stats.sampling_rate):]
                 pad = np.zeros(int(lags[j][i]*tr.stats.sampling_rate))
                 tr.data = np.concatenate((pad, tr.data))
-        for j in xrange(len(dailycoherance[i])):
-            # Compute the coherance for each window
+        for j in xrange(len(dailycoherence[i])):
+            # Compute the coherence for each window
             window = deepcopy(copyof_stream)
             for tr in window:
                 tr.data = tr.data[j:j+wlen]
-            sys.stdout.write("\r"+str((float(i+1)*float(j+1))/(len(nodes)*len(dailycoherance[i]))*100)+"% \r")
+            sys.stdout.write("\r"+str((float(i+1)*float(j+1))/(len(nodes)*len(dailycoherence[i]))*100)+"% \r")
             sys.stdout.flush()
-            dailycoherance[i][j] = coherance(window)
-    return dailycoherance
+            dailycoherence[i][j] = coherence(window)
+    return dailycoherence
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) == 1:
-        raise IOError("Needs arguments, e.g. --coherance 2009/07/14")
+        raise IOError("Needs arguments, e.g. --coherence 2009/07/14")
     else:
-        if sys.argv[1] == "--coherance":
+        if sys.argv[1] == "--coherence":
             date = sys.argv[2]
             import glob
             from obspy import read
@@ -124,9 +124,9 @@ if __name__ == '__main__':
                                                       brightdef.nodesimthresh)
                 print "Plotting new grid"
                 plotting.threeD_gridplot(nodes)
-                dailycoherance = coherance_test(stream, stations, nodes, lags, \
+                dailycoherence = coherence_test(stream, stations, nodes, lags, \
                                 templatedef.length)
             else:
                 raise IOError("No traces read in for this day, are they processed?")
         else:
-            raise IOError("I only know --coherance at the moment")
+            raise IOError("I only know --coherence at the moment")
