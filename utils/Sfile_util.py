@@ -94,6 +94,9 @@ class PICK:
         return print_str
 
 class EVENTINFO:
+    """
+    Header information for seisan events
+    """
     def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
                  depth, depth_ind, loc_ind, agency, nsta, t_RMS, Mag_1,
                  Mag_1_type, Mag_1_agency, Mag_2, Mag_2_type, Mag_2_agency,
@@ -166,6 +169,14 @@ def _str_conv(number, rounded=False):
     return string
 
 def readheader(sfilename):
+    """
+    Fucntion to read the header information from a seisan nordic format S-file.
+
+    :type sfilename: str
+    :param sfilename: Path to the s-file
+
+    :returns: :class: EVENTINFO
+    """
     import warnings
     f=open(sfilename,'r')
     # Base populate to allow for empty parts of file
@@ -251,8 +262,9 @@ def readpicks(sfilename):
     Function to read pick information from the s-file
 
     :type sfilename: String
+    :param sfilename: Path to sfile
 
-    :return: Sfile_util.PICK
+    :return: List of :class: PICK
     """
     # First we need to read the header to get the timing info
     sfilename_header=readheader(sfilename)
@@ -320,6 +332,11 @@ def readwavename(sfilename):
     Convenience function to extract the waveform filename from the s-file,
     returns a list of waveform names found in the s-file as multiples can
     be present.
+
+    :type sfilename: str
+    :param sfilename: Path to the sfile
+
+    :returns: List of str
     """
     f=open(sfilename)
     wavename=[]
@@ -441,6 +458,11 @@ def populateSfile(sfilename, picks):
     epicentral distance & azimuth from event to station.
 
     This is a full pick line information from the seisan manual, P. 341
+
+    :type sfilename: str
+    :param sfilename: Path to S-file to populate, must have a header already
+    :type picks: List of :class: PICK
+    :param picks: List of the picks to be written out
     """
 
     f=open(sfilename, 'r')
@@ -478,6 +500,7 @@ def populateSfile(sfilename, picks):
     f.write(body)
     f.write('\n'.rjust(81))
     f.close()
+    return
 
 def test_rw():
     """

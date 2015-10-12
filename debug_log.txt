@@ -1,0 +1,172 @@
+//home/calumch/my_programs/Building/EQcorrscan/LFEsearch.py/
+Template generation parameters are:
+sfilebase: .
+samp_rate: 20.0 Hz
+lowcut: 2.0 Hz
+highcut: 8.0 Hz
+length: 3.0 s
+swin: all
+
+Read in 1 templates
+Will loop through 1 days
+I have 0 log files to scan
+I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 0 log files to scan
+I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 1 log files to scan
+0.0% I have 0 log files to scan
+I have 0 log files to scan
+Processing the data for day 20090512
+I have 8640000 data points for FOZ.HHZ before processing
+I now have 8640000 data points after enforcing day length
+I have 17280000 data points for WHYM.SHZ before processing
+I now have 17280000 data points after enforcing day length
+I have 17280000 data points for WHYM.SHN before processing
+I now have 17280000 data points after enforcing day length
+I have 17194770 data points for GOVA.SHZ before processing
+I now have 17280000 data points after enforcing day length
+I have 17194770 data points for GOVA.SHN before processing
+I now have 17280000 data points after enforcing day length
+I have 8640000 data points for RPZ.HHZ before processing
+I now have 8640000 data points after enforcing day length
+I have 17280000 data points for MTFO.SHZ before processing
+I now have 17280000 data points after enforcing day length
+I have 8640000 data points for FOZ.HHN before processing
+I now have 8640000 data points after enforcing day length
+I have 17280000 data points for WHYM.SHE before processing
+I now have 17280000 data points after enforcing day length
+I have 8640000 data points for FOZ.HHE before processing
+I now have 8640000 data points after enforcing day length
+I have 17194770 data points for GOVA.SHE before processing
+I now have 17280000 data points after enforcing day length
+Running the detection routine
+Starting parallel run for station MTFO channel SN
+--------- TIMER:    Correlation loop took: 0.00428700447083 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405205011368 s
+--------- TIMER:    Sorting took: 9.05990600586e-06 s
+--------- TIMER:    Extracting arrays took: 1.90734863281e-06 s
+--------- TIMER:    cccs_list conversion: 0.00157594680786 s
+--------- TIMER:    Summing took 0.00781297683716 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station RPZ channel HZ
+--------- TIMER:    Correlation loop took: 0.00378894805908 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405592918396 s
+--------- TIMER:    Sorting took: 1.00135803223e-05 s
+--------- TIMER:    Extracting arrays took: 0.000433921813965 s
+--------- TIMER:    cccs_list conversion: 0.00157308578491 s
+--------- TIMER:    Summing took 0.00773501396179 s
+--------- TIMER:    Trace loop took 0.05 s
+Starting parallel run for station FOZ channel HN
+--------- TIMER:    Correlation loop took: 0.0041389465332 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405254840851 s
+--------- TIMER:    Sorting took: 1.00135803223e-05 s
+--------- TIMER:    Extracting arrays took: 9.77516174316e-06 s
+--------- TIMER:    cccs_list conversion: 0.00155901908875 s
+--------- TIMER:    Summing took 0.00774502754211 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station GOVA channel SZ
+--------- TIMER:    Correlation loop took: 0.0041389465332 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405933141708 s
+--------- TIMER:    Sorting took: 1.00135803223e-05 s
+--------- TIMER:    Extracting arrays took: 0.000436782836914 s
+--------- TIMER:    cccs_list conversion: 0.00156307220459 s
+--------- TIMER:    Summing took 0.00777006149292 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station WHYM channel SZ
+--------- TIMER:    Correlation loop took: 0.00404095649719 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.395611047745 s
+--------- TIMER:    Sorting took: 1.00135803223e-05 s
+--------- TIMER:    Extracting arrays took: 9.77516174316e-06 s
+--------- TIMER:    cccs_list conversion: 0.00159406661987 s
+--------- TIMER:    Summing took 0.00779795646667 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station MTFO channel SE
+--------- TIMER:    Correlation loop took: 0.00405406951904 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405655860901 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000183820724487 s
+--------- TIMER:    cccs_list conversion: 0.00163197517395 s
+--------- TIMER:    Summing took 0.00781893730164 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station FOZ channel HE
+--------- TIMER:    Correlation loop took: 0.00417900085449 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.392971038818 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 7.86781311035e-06 s
+--------- TIMER:    cccs_list conversion: 0.00159692764282 s
+--------- TIMER:    Summing took 0.00784516334534 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station FOZ channel HZ
+--------- TIMER:    Correlation loop took: 0.0040111541748 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405609130859 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000159978866577 s
+--------- TIMER:    cccs_list conversion: 0.0015709400177 s
+--------- TIMER:    Summing took 0.00778579711914 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station GOVA channel SN
+--------- TIMER:    Correlation loop took: 0.00421619415283 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405471086502 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000188827514648 s
+--------- TIMER:    cccs_list conversion: 0.00154805183411 s
+--------- TIMER:    Summing took 0.00777721405029 s
+--------- TIMER:    Trace loop took 0.05 s
+Starting parallel run for station WHYM channel SN
+--------- TIMER:    Correlation loop took: 0.00412201881409 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405681848526 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000165939331055 s
+--------- TIMER:    cccs_list conversion: 0.00158786773682 s
+--------- TIMER:    Summing took 0.00781393051147 s
+--------- TIMER:    Trace loop took 0.04 s
+Starting parallel run for station MTFO channel SZ
+--------- TIMER:    Correlation loop took: 0.00373697280884 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.405673980713 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000166177749634 s
+--------- TIMER:    cccs_list conversion: 0.0015549659729 s
+--------- TIMER:    Summing took 0.00778007507324 s
+--------- TIMER:    Trace loop took 0.05 s
+Starting parallel run for station WHYM channel SE
+--------- TIMER:    Correlation loop took: 0.00420594215393 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.395097970963 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000180959701538 s
+--------- TIMER:    cccs_list conversion: 0.00153398513794 s
+--------- TIMER:    Summing took 0.0077600479126 s
+--------- TIMER:    Trace loop took 0.03 s
+Starting parallel run for station GOVA channel SE
+--------- TIMER:    Correlation loop took: 0.00410604476929 s
+ I have 1 results
+--------- TIMER:    Getting results took: 0.394354820251 s
+--------- TIMER:    Sorting took: 1.09672546387e-05 s
+--------- TIMER:    Extracting arrays took: 0.000171899795532 s
+--------- TIMER:    cccs_list conversion: 0.00158905982971 s
+--------- TIMER:    Summing took 0.00778102874756 s
+--------- TIMER:    Trace loop took 0.06 s
+Looping over templates and streams took: 2.65 s
+Threshold is set at: 3.52316607535
+Max of data is: 10.2474736571
+Mean of data is: -1.5627221171e-06
+Found 3 samples above the threshold
+Finding peaks took: 0.16 s
+template: 2009-05-12T00:09:50.300000Z.ms detection at: 2009-05-12T00:09:50.300000Z with a cccsum of: 10.2474736571
