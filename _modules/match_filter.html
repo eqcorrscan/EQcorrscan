@@ -193,6 +193,11 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span><span class="o">,</span> <span class="nn">warnings</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>
+
 
 <div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../modules.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -233,39 +238,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">typeofdet</span><span class="o">=</span><span class="n">typeofdet</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">detectioncount</span><span class="o">+=</span><span class="mi">1</span>
-</div>
-<div class="viewcode-block" id="run_channel_loop"><a class="viewcode-back" href="../modules.html#match_filter.run_channel_loop">[docs]</a><span class="k">def</span> <span class="nf">run_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">tempdir</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Python helper function to run the Cythonised channel_loop function</span>
-
-<span class="sd">    :type templates: List of :class: obspy.Stream</span>
-<span class="sd">    :param templates: List of all the templates</span>
-<span class="sd">    :type stream: :class: obspy.Stream</span>
-<span class="sd">    :param stream: The image stream to scan through</span>
-<span class="sd">    :type tempdir: String or False</span>
-<span class="sd">    :param tempdir: location to put temporary files</span>
-
-<span class="sd">    :returns: cccsums (np.ndarray), no_chans (np.ndarray)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">match_filter_internal</span>
-    <span class="kn">from</span> <span class="nn">utils.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
-    <span class="k">print</span> <span class="s">&quot;Converting streams to numpy arrays&quot;</span>
-    <span class="n">ktemplates</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
-    <span class="n">delays</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>\
-                     <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
-    <span class="c"># match_internal uses a simpler integration as a predescessor to c++</span>
-    <span class="n">template_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> \
-                   <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span> \
-                    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
-    <span class="n">stream_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
-    <span class="k">print</span> <span class="s">&quot;Sending data off to external func&quot;</span>
-    <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-        <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="o">=</span><span class="n">match_filter_internal</span><span class="o">.</span><span class="n">_channel_loop</span><span class="p">(</span><span class="n">template_data</span><span class="p">,</span> \
-                                                              <span class="n">stream_data</span><span class="p">,</span> \
-                                                              <span class="n">delays</span><span class="p">,</span> \
-                                                              <span class="n">ktemplates</span><span class="p">,</span> <span class="n">tempdir</span><span class="p">)</span>
-    <span class="k">print</span> <span class="s">&quot;Correlation loops in C took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
-    <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;DETECTION()&quot;</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_str</span><span class="o">=</span><span class="s">&quot;Detection on &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&quot; at &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">print_str</span>
 </div>
 <div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../modules.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -279,10 +256,11 @@
 <span class="sd">        - http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate</span>
 
 <span class="sd">    :type template: :class: &#39;numpy.array&#39;</span>
+<span class="sd">    :param template: Template array</span>
 <span class="sd">    :type image: :class: &#39;numpy.array&#39;</span>
-<span class="sd">    :param image: Requires two numpy arrays, the template and the image to scan\</span>
+<span class="sd">    :param image: image to scan\</span>
 <span class="sd">    the template through.  The order of these matters, if you put the template\</span>
-<span class="sd">    after the imag you will get a reversed correaltion matrix</span>
+<span class="sd">    after the image you will get a reversed correaltion matrix</span>
 
 <span class="sd">    :return: New :class: &#39;numpy.array&#39; object of the correlation values for the\</span>
 <span class="sd">    correlation of the image with the template.</span>
@@ -296,6 +274,12 @@
     <span class="n">cv_template</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">cv_image</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">ccc</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">matchTemplate</span><span class="p">(</span><span class="n">cv_image</span><span class="p">,</span><span class="n">cv_template</span><span class="p">,</span><span class="n">cv2</span><span class="o">.</span><span class="n">TM_CCOEFF_NORMED</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_image</span><span class="p">))</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_template</span><span class="p">)):</span>
+        <span class="n">ccc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">ccc</span><span class="o">==</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_template</span><span class="p">))</span>\
+                            <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_image</span><span class="p">))):</span>
+        <span class="n">ccc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">))</span>
+        <span class="c"># Convert an array of perfect correlations to zero cross-correlations</span>
     <span class="c"># Reshape ccc to be a 1D vector as is useful for seismic data</span>
     <span class="n">ccc</span><span class="o">=</span><span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">ccc</span>
@@ -317,7 +301,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">utils.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
     <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-    <span class="n">ccc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chan</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">ccc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chan</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
     <span class="n">ccc</span><span class="o">=</span><span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>           <span class="c"># Set default value for</span>
                                             <span class="c"># cross-channel correlation in</span>
                                             <span class="c"># case there are no data that</span>
@@ -332,6 +316,9 @@
         <span class="n">pad</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">delay</span><span class="o">*</span><span class="n">template_data</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)))</span>
         <span class="n">image</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chan</span><span class="p">,</span><span class="n">pad</span><span class="p">)[</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">):]</span>
         <span class="n">ccc</span><span class="o">=</span><span class="p">(</span><span class="n">normxcorr2</span><span class="p">(</span><span class="n">template_data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">image</span><span class="p">))</span>
+        <span class="n">ccc</span><span class="o">=</span><span class="n">ccc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+        <span class="c"># Convert to float16 to save memory for large problems - lose some</span>
+        <span class="c"># accuracy which will affect detections very close to threshold</span>
     <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&quot;Single if statement took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">template_data</span><span class="p">:</span>
@@ -341,7 +328,15 @@
         <span class="k">print</span> <span class="s">&quot;If statement without correlation took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
     <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&#39;********* DEBUG:  &#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
-                <span class="n">channel</span><span class="o">+</span><span class="s">&#39; ccc: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="n">channel</span><span class="o">+</span><span class="s">&#39; ccc MAX: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">print</span> <span class="s">&#39;********* DEBUG:  &#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
+                <span class="n">channel</span><span class="o">+</span><span class="s">&#39; ccc MEAN: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Mean of ccc is infinite, check!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">3</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_ccc.npy&#39;</span><span class="p">,</span> <span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_template.npy&#39;</span><span class="p">,</span> <span class="n">template_data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_image.npy&#39;</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">3</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&#39;shape of ccc: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">ccc</span><span class="p">))</span>
         <span class="k">print</span> <span class="s">&#39;A single ccc is using: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ccc</span><span class="o">.</span><span class="n">nbytes</span><span class="o">/</span><span class="mi">1000000</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;MB&#39;</span>
@@ -452,9 +447,8 @@
                 <span class="n">no_chans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+=</span><span class="mi">1</span>
         <span class="c"># Now sum along the channel axis for each template to give the cccsum values</span>
         <span class="c"># for each template for each day</span>
-        <span class="c"># This loop is disappointingly slow - due to layout in memory - axis=1 is fast</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-            <span class="n">cccsums</span><span class="o">=</span><span class="n">cccs_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">cccsums</span><span class="o">=</span><span class="n">cccs_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span> <span class="o">&gt;=</span><span class="mi">1</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&quot;--------- TIMER:    Summing took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
         <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
@@ -498,7 +492,7 @@
 <span class="sd">    template is a single template from the input and the length is the number\</span>
 <span class="sd">    of channels within this template.</span>
 <span class="sd">    :type tempdir: String or False</span>
-<span class="sd">    :param tempdir: Direcotry to put temporary files, or False</span>
+<span class="sd">    :param tempdir: Directory to put temporary files, or False</span>
 
 <span class="sd">    :return: :class: &#39;DETECTIONS&#39; detections for each channel formatted as\</span>
 <span class="sd">    :class: &#39;obspy.UTCDateTime&#39; objects.</span>
@@ -598,6 +592,9 @@
         <span class="c"># Findpeaks returns a list of tuples in the form [(cccsum, sample)]</span>
         <span class="k">print</span> <span class="s">&#39;Threshold is set at: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rawthresh</span><span class="p">)</span>
         <span class="k">print</span> <span class="s">&#39;Max of data is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
+        <span class="k">print</span> <span class="s">&#39;Mean of data is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Mean is not zero!  Check this!&#39;</span><span class="p">)</span>
         <span class="c"># Set up a trace object for the cccsum as this is easier to plot and</span>
         <span class="c"># maintins timeing</span>
         <span class="k">if</span> <span class="n">plotvar</span><span class="p">:</span>
@@ -616,17 +613,19 @@
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.pdf&#39;</span><span class="p">)</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>\
-                        <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">),</span>\
-                    <span class="n">cccsum</span><span class="p">)</span>
+            <span class="c"># np.save(template_names[i]+\</span>
+                        <span class="c"># stream[0].stats.starttime.datetime.strftime(&#39;%Y%j&#39;),\</span>
+                    <span class="c"># cccsum)</span>
         <span class="n">tic</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="o">&gt;=</span><span class="mi">4</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;cccsum_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.npy&#39;</span><span class="p">,</span> <span class="n">cccsum</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="o">&gt;=</span><span class="mi">3</span> <span class="ow">and</span> <span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span><span class="o">&gt;</span><span class="n">rawthresh</span><span class="p">:</span>
-            <span class="n">peaks</span><span class="o">=</span><span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> \
+            <span class="n">peaks</span><span class="o">=</span><span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2_short</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> \
                                         <span class="n">trig_int</span><span class="o">*</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span>\
                                         <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span>
                                         <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span><span class="o">&gt;</span><span class="n">rawthresh</span><span class="p">:</span>
-            <span class="n">peaks</span><span class="o">=</span><span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> \
+            <span class="n">peaks</span><span class="o">=</span><span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2_short</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> \
                                         <span class="n">trig_int</span><span class="o">*</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span>\
                                         <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

@@ -168,6 +168,7 @@
 <span class="sd">    :type loc1: Tuple</span>
 <span class="sd">    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    :type loc2: Tuple</span>
+<span class="sd">    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">R</span><span class="o">=</span><span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
     <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
@@ -275,6 +276,7 @@
 <span class="sd">    the author to add others in.</span>
 
 <span class="sd">    :type GSEfile: Str</span>
+<span class="sd">    :param GSEfile: Path to GSE file</span>
 
 <span class="sd">    :returns: Dict of poles, zeros, gain and sensitivity</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -329,7 +331,7 @@
 <span class="sd">    :type delta: float</span>
 <span class="sd">    :param delta: Sample interval in seconds</span>
 <span class="sd">    :type directory: String</span>
-<span class="sd">    :param direcotry: Directory to scan for response information</span>
+<span class="sd">    :param directory: Directory to scan for response information</span>
 
 <span class="sd">    :returns: Dictionary</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -421,7 +423,7 @@
 <span class="sd">                    to the p-s time, defaults to 0.5</span>
 <span class="sd">    :type pre_pick: Float</span>
 <span class="sd">    :param pre_pick: Time before the s-pick to start the cut window, defaults</span>
-<span class="sd">                    to 1.0</span>
+<span class="sd">                    to 0.2</span>
 <span class="sd">    :type pre_filt: Bool</span>
 <span class="sd">    :param pre_filt: To apply a pre-filter or not, defaults to True</span>
 <span class="sd">    :type lowcut: Float</span>
@@ -625,13 +627,13 @@
                                          <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
                                          <span class="n">impulsivity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
                                          <span class="n">phase</span><span class="o">=</span><span class="s">&#39;IAML&#39;</span><span class="p">,</span>
-                                         <span class="n">weight</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">polarity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
+                                         <span class="n">weight</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">polarity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
                                          <span class="n">time</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">+</span><span class="n">delay</span><span class="p">,</span>
-                                         <span class="n">coda</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span>
-                                         <span class="n">peri</span><span class="o">=</span><span class="n">period</span><span class="p">,</span> <span class="n">azimuth</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
-                                         <span class="n">velocity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">AIN</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
-                                         <span class="n">azimuthres</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">timeres</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
-                                         <span class="n">finalweight</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="n">hypo_dist</span><span class="p">,</span>
+                                         <span class="n">coda</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span>
+                                         <span class="n">peri</span><span class="o">=</span><span class="n">period</span><span class="p">,</span> <span class="n">azimuth</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
+                                         <span class="n">velocity</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="n">AIN</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                                         <span class="n">azimuthres</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">timeres</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
+                                         <span class="n">finalweight</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="n">hypo_dist</span><span class="p">,</span>
                                          <span class="n">CAZ</span><span class="o">=</span><span class="n">CAZ</span><span class="p">))</span>
     <span class="c"># Copy the header from the sfile to a new local S-file</span>
     <span class="n">fin</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
@@ -645,6 +647,8 @@
     <span class="n">fin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="c"># Write picks out to new s-file</span>
+    <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks_out</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">pick</span>
     <span class="n">Sfile_util</span><span class="o">.</span><span class="n">populateSfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span><span class="n">picks_out</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">picks</span>
 </div>

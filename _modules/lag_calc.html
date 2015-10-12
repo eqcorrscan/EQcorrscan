@@ -193,31 +193,38 @@
 <span class="sd">    the correct data to lag_gen</span>
 
 <span class="sd">    :type detection: obspy.Stream</span>
+<span class="sd">    :param detection: Stream of data for the slave event detected using template</span>
 <span class="sd">    :type template: obspy.Stream</span>
+<span class="sd">    :param template: Stream of data as the template for the detection.</span>
 <span class="sd">    :type i: int, optional</span>
 <span class="sd">    :param i: Used to track which process has occured when running in parallel</span>
 
-<span class="sd">    :returns: lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)</span>
+<span class="sd">    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">lagtimes</span><span class="o">=</span><span class="p">[]</span>
+    <span class="kn">from</span> <span class="nn">utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="n">picks</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)):</span>
         <span class="n">image</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
                                 <span class="n">channel</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">image</span><span class="p">:</span> <span class="c">#Ideally this if statement would be removed.</span>
             <span class="n">ccc</span> <span class="o">=</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">lagtimes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ccc</span><span class="p">)</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delat</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">),</span> \
-                    <span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">lagtimes</span><span class="p">)</span>
+            <span class="n">shiftlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sample_rate</span>
+            <span class="c"># Convert the maximum cross-correlation time to an actual time</span>
+            <span class="n">picktime</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">+</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ccc</span><span class="p">)</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+            <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PICK</span><span class="p">())</span>
+            <span class="p">((</span><span class="n">lag</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">),</span> <span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                <span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">picks</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="day_loop"><a class="viewcode-back" href="../modules.html#lag_calc.day_loop">[docs]</a><span class="k">def</span> <span class="nf">day_loop</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">template</span><span class="p">):</span>
+<div class="viewcode-block" id="day_loop"><a class="viewcode-back" href="../modules.html#lag_calc.day_loop">[docs]</a><span class="k">def</span> <span class="nf">day_loop</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">,</span> <span class="n">template</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to loop through multiple detections for one template - ostensibly</span>
 <span class="sd">    designed to run for the same day of data for I/O simplicity, but as you</span>
 <span class="sd">    are passing stream objects it could run for all the detections ever, as long</span>
 <span class="sd">    as you have the RAM!</span>
 
-<span class="sd">    :type detections: List of obspy.Stream</span>
-<span class="sd">    :param detections: List of all the detections for this template that you</span>
+<span class="sd">    :type detection_streams: List of obspy.Stream</span>
+<span class="sd">    :param detection_streams: List of all the detections for this template that you</span>
 <span class="sd">                    want to compute the optimum pick for.</span>
 <span class="sd">    :type template: obspy.Stream</span>
 <span class="sd">    :param template: The original template used to detect the detections passed</span>
@@ -230,14 +237,21 @@
     <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">cpu_count</span> <span class="c"># Used to run detections in parallel</span>
     <span class="n">lags</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">num_cores</span><span class="o">=</span><span class="n">cpu_count</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">num_cores</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">):</span>
-        <span class="n">num_cores</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_cores</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">):</span>
+        <span class="n">num_cores</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">)</span>
     <span class="n">pool</span><span class="o">=</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
-    <span class="n">results</span><span class="o">=</span><span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_channel_loop</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">detections</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">template</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>\
-                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">))]</span>
+    <span class="n">results</span><span class="o">=</span><span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_channel_loop</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">template</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>\
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">))]</span>
     <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
     <span class="n">lags</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c"># Sort based on i</span>
+    <span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="n">lag</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">]</span>
+    <span class="c"># Convert lag time to moveout time</span>
+    <span class="n">mintime</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">:</span>
+        <span class="n">delay</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">lag</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">lag</span><span class="p">[</span><span class="mi">3</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span>\
+            <span class="n">mintime</span>
+        <span class="n">lag</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+=</span><span class="n">delay</span>
     <span class="k">return</span> <span class="n">lags</span>
 </div>
 <div class="viewcode-block" id="lag_calc"><a class="viewcode-back" href="../modules.html#lag_calc.lag_calc">[docs]</a><span class="k">def</span> <span class="nf">lag_calc</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">detect_data</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">shift_len</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">min_cc</span><span class="o">=</span><span class="mf">0.4</span><span class="p">):</span>
