@@ -39,7 +39,6 @@ This file is part of EQcorrscan.
 # First we import the required modules:
 from obspy import read, Stream
 from core import template_gen, match_filter
-from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from utils import pre_processing, Sfile_util
 import glob
