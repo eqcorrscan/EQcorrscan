@@ -51,6 +51,14 @@ Please document your functions following the other documentation within the
 functions, these doc-scripts will then be built into the main documentation
 using Sphinx.
 
+We are trying to impliment a better branching model, following that found here:
+http://nvie.com/posts/a-successful-git-branching-model/
+To this end, please fork the development branch if you want to develop
+things, and flag issues in the master for us to bugfix.
+I fyou have a feature you want to develop please create a new branch
+of the development branch for this and work in there, we can then merge
+it back in to the development branch when it is stable enough.
+
 # References
 * CJ Chamberlain, DR Shelly, J Townend, TA Stern (2014) [Low‐frequency earthquakes reveal punctuated slow slip on the deep extent of the Alpine Fault, New Zealand](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005436/full), __G-cubed__,doi:10.1002/2014GC005436
 * Thurber, C. H., Zeng, X., Thomas, A. M., & Audet, P. (2014). [Phase‐Weighted Stacking Applied to Low‐Frequency Earthquakes](http://www.bssaonline.org/content/early/2014/08/12/0120140077.abstract), __BSSA__, doi:10.1785/0120140077.
