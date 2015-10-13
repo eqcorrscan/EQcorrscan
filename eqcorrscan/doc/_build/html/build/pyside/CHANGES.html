@@ -1,0 +1,594 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Changes &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="changes">
+<h1>Changes<a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2>1.2.2 (2014-04-24)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="complete-list-of-changes-and-bug-fixes">
+<h3>Complete list of changes and bug fixes<a class="headerlink" href="#complete-list-of-changes-and-bug-fixes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="pyside">
+<h4>PySide<a class="headerlink" href="#pyside" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Fix PYSIDE-190: QCoreApplication would deadlock on exit if the global
+QThreadPool.globalInstance() is running a QRunnable with python code</li>
+<li>Change GlobalReceiver to explicitly &#8216;use&#8217; [dis]connectNotify of the base
+class in order to avoid hiding these with its own overloads.</li>
+<li>Add explicit casts when initializing an int[] using {}&#8217;s, as required
+by C++11 to be &#8220;well formed&#8221;</li>
+<li>Fix PYSIDE-172: multiple rules for file</li>
+<li>Use file system encoding instead of assumed &#8216;ascii&#8217; when registering
+qt.conf in Qt resource system</li>
+</ul>
+</div>
+<div class="section" id="shiboken">
+<h4>Shiboken<a class="headerlink" href="#shiboken" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Remove rejection lines that cause the sample_list test to fail</li>
+<li>Remove protected from samblebinding test</li>
+<li>Add parsing of &#8216;noexcept&#8217; keyword</li>
+<li>Fix function rejections (i.e. support overloads)</li>
+<li>Fix building with python 3.3 and 3.4</li>
+<li>Doc: Stop requiring sphinx.ext.refcounting with Sphinx 1.2+</li>
+<li>Fix for containers with &#8216;const&#8217; values</li>
+<li>Fix compilation issue on OS X 10.9</li>
+<li>Only use fields in PyTypeObject when defining types</li>
+<li>Fix buffer overrun processing macro definitions</li>
+<li>Fix &#8216;special&#8217; include handling</li>
+<li>Fix finding container base classes</li>
+<li>Refactor and improve added function resolving</li>
+<li>Work around MSVC&#8217;s deficient &lt;cmath&gt; in libsample/transform.cpp</li>
+<li>Fix description of sample/transform unit test</li>
+<li>Change wrapping and indent of some code in Handler::startElement to
+improve consistency</li>
+<li>Fix &#8216;%#&#8217; substitution for # &gt; 9</li>
+<li>Improve dependencies for tests</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="id2">
+<h2>1.2.1 (2013-08-16)<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="major-changes">
+<h3>Major changes<a class="headerlink" href="#major-changes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h4>PySide<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>In memory qt.conf generation and registration</li>
+</ul>
+</div>
+<div class="section" id="id4">
+<h4>Shiboken<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Better support for more than 9 arguments to methods</li>
+<li>Avoiding a segfault when getting the .name attribute on an enum value with no name</li>
+</ul>
+</div>
+<div class="section" id="pyside-setup">
+<h4>PySide-setup<a class="headerlink" href="#pyside-setup" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Switched to the new setuptools (v0.9.8) which has been merged with Distribute again and works for Python 2 and 3 with one codebase</li>
+<li>Support for building windows binaries with only Windows SDK installed (Visual Studio is no more required)</li>
+<li>Removed &#8211;msvc-version option. Required msvc compiler version is now resolved from python interpreter version</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="id5">
+<h2>1.2.0 (2013-07-02)<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id6">
+<h3>Major changes<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id7">
+<h4>PySide<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Fix multiple segfaults and better track the life time of Qt objects</li>
+<li>Fix multiple memory leaks</li>
+</ul>
+</div>
+<div class="section" id="id8">
+<h4>Shiboken<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Install the shiboken module to site-packages</li>
+<li>Fix multiple segfaults</li>
+</ul>
+</div>
+<div class="section" id="id9">
+<h4>PySide-setup<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>On Windows system, when installing PySide binary distribution via easy_install,
+there is no more need to call the post-install script</li>
+<li>Support for building windows binaries outside of Visual Studio command prompt</li>
+<li>Build and package the shiboken docs when sphinx is installed</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id10">
+<h3>Complete list of changes and bug fixes<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id11">
+<h4>PySide<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Set up PYTHONPATH for tests correctly</li>
+<li>Fix potential segfault at shutdown</li>
+<li>Fix PYSIDE-61</li>
+<li>Tell Qt to look for qml imports in the PySide package</li>
+<li>fix build in C++11 mode</li>
+<li>Fix QByteArray memory leak</li>
+<li>Ignore QtCore import errors when initializing plugins folder</li>
+<li>Preload OpenSSL DLLs on Windows.</li>
+<li>Look first in the PySide package for Qt&#8217;s plugins folder, instead of just in Qt&#8217;s install or build folder</li>
+<li>Add explicit type conversion to fix mingw compile error</li>
+<li>Use QObject property to invalidate wrapper before deletion</li>
+<li>Invalidate metaObject wrapper before deletion</li>
+<li>Fix reference leak on convertion from a C++ map type to Python dict</li>
+<li>Change the order of pysitetest and signals directories because signals/disconnect_test.py depends on pysidetest module</li>
+</ul>
+</div>
+<div class="section" id="id12">
+<h4>Shiboken<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Removed old logos from html docs</li>
+<li>Add missing return on module init error</li>
+<li>Don&#8217;t break -Werror=non-virtual-dtor</li>
+<li>Fixing shiboken test for minimal binding test</li>
+<li>Decref reference to type object</li>
+<li>Fix segfault when using shiboken.delete</li>
+<li>Use non-static method def for instance methods</li>
+<li>Fix bug introduced when recursive_invalidate was added</li>
+<li>fix build in C++11 mode</li>
+<li>Prevent infinite recursion in invalidate</li>
+<li>Fix possible conflict with garbage collector</li>
+<li>Fix possible crash at exit</li>
+<li>Fix handling of unsigned long long and provide unittests</li>
+<li>Add test to illustrate issue on typedef enum</li>
+<li>Use getWrapperForQObject to convert if generating for PySide</li>
+<li>Allow compilation without a python shared library</li>
+<li>Use parent class&#8217;s metaObject if wrapper is NULL</li>
+<li>Optionally assert on free&#8217;d pointer with a valid wrapper</li>
+<li>Find python3 libraries when built with pydebug enabled</li>
+<li>Fix PYSIDE-108 bug and add example</li>
+<li>PYSIDE-83 Fix segfault calling shiboken.dump</li>
+<li>Fix and test case for bug PYSIDE-72</li>
+<li>Override all functions with the same name, not just one</li>
+<li>Update vector conversion</li>
+<li>Add typedef examples to minimal</li>
+<li>Add test files back to cmake</li>
+<li>Don&#8217;t use it-&gt;second after erasing it</li>
+<li>Find function modifications defined in the 2nd+ base class. Fixes bug PYSIDE-54.</li>
+<li>Set a default hash function for all ObjectTypes. Fix bug PYSIDE-42.</li>
+<li>Fix compilation when there is no libxslt installed on the system.</li>
+<li>Fixed resolving of SOABI. SOABI is implemented on Linux, but not on Windows</li>
+<li>Don&#8217;t use inline methods in dllexported classes to keep VC++ happy</li>
+<li>Use SpooledTemporaryFile in 2.6+ os.tmpfile() fails on win32 if process doesn&#8217;t have admin permissions</li>
+</ul>
+</div>
+<div class="section" id="id13">
+<h4>PySide-setup<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Support for building windows binaries outside of Visual Studio command prompt</li>
+<li>Build and package the shiboken docs when sphinx is installed</li>
+<li>Support Ubuntu 13.04 and Fedora 18</li>
+<li>Fixed &#8220;develop&#8221; setuptools command</li>
+<li>Documentation updates</li>
+<li>Add &#8211;build-tests option to enable building the tests</li>
+<li>Add &#8211;jom and &#8211;jobs options</li>
+<li>Add &#8211;no-examples option to exclude the examples</li>
+<li>Add &#8211;relwithdebinfo option to enable a release-with-debug-info build mode</li>
+<li>Add &#8211;ignore-git option</li>
+<li>Add &#8211;make-spec option to specify make generator</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="id14">
+<h2>1.1.2 (2012-08-28)<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="bug-fixes">
+<h3>Bug fixes<a class="headerlink" href="#bug-fixes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>During signal emission don&#8217;t get return type after callback</li>
+<li>Invalidate QStandardModel::invisibleRootItem in clear() method</li>
+<li>QAbstractItemModel has wrong ownership policy for selectionModel()</li>
+<li>Improved QVector to python conversion</li>
+<li>Disable docstring generation if tools aren&#8217;t found.</li>
+<li>Fixed some issues compiling PySide using VC++</li>
+<li>Install the shiboken module to site-packages</li>
+<li>Fix compilation when there is no libxslt installed on the system.</li>
+<li>Set a default hash function for all ObjectTypes.</li>
+<li>Fix segfault calling shiboken.dump</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id15">
+<h2>1.1.1 (2012-04-19)<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id16">
+<h3>Major changes<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Unified toolchain! No more GeneratorRunner and ApiExtractor, now you just need Shiboken to compile PySide.</li>
+</ul>
+</div>
+<div class="section" id="id17">
+<h3>Bug fixes<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>1105 Spyder fails with HEAD</li>
+<li>1126 Segfault when exception is raised in signalInstanceDisconnect</li>
+<li>1135 SIGSEGV when loading custom widget using QUiLoader when overriding createWidget()</li>
+<li>1041 QAbstractItemModel has wrong ownership policy for selectionModel()</li>
+<li>1086 generatorrunner segfault processing #include</li>
+<li>1110 Concurrency error causes GC heap corruption</li>
+<li>1113 Instantiating QObject in user-defined QML element&#8217;s constructor crashes if instantiated from QML</li>
+<li>1129 Segmentation fault on close by QStandardItem/QStandardItemModel</li>
+<li>1104 QSettings has problems with long integers</li>
+<li>1108 tests/QtGui/pyside_reload_test.py fails when bytecode writing is disabled</li>
+<li>1138 Subclassing of QUiLoader leads to &#8220;Internal C++ object already deleted&#8221; exception (again)</li>
+<li>1124 QPainter.drawPixmapFragments should take a list as first argument</li>
+<li>1065 Invalid example in QFileDialog documentation</li>
+<li>1092 shiboken names itself a &#8216;generator&#8217;</li>
+<li>1094 shiboken doesn&#8217;t complain about invalid options</li>
+<li>1044 Incorrect call to parent constructor in example</li>
+<li>1139 Crash at exit due to thread state (tstate) being NULL</li>
+<li>PYSIDE-41 QModelIndex unhashable</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id18">
+<h2>1.1.0 (2012-01-02)<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id19">
+<h3>Major changes<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>New type converter scheme</li>
+</ul>
+</div>
+<div class="section" id="id20">
+<h3>Bug fixes<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>1010 Shiboken Cygwin patch</li>
+<li>1034 Error compiling PySide with Python 3.2.2 32bit on Windows</li>
+<li>1040 pyside-uic overwriting attributes before they are being used</li>
+<li>1053 pyside-lupdate used with .pro files can&#8217;t handle Windows paths that contain spaces</li>
+<li>1060 Subclassing of QUiLoader leads to &#8220;Internal C++ object already deleted&#8221; exception</li>
+<li>1063 Bug writing to files using &#8220;QTextStream + QFile + QTextEdit&#8221; on Linux</li>
+<li>1069 QtCore.QDataStream silently fails on writing Python string</li>
+<li>1077 Application exit crash when call QSyntaxHighlighter.document()</li>
+<li>1082 OSX binary links are broken</li>
+<li>1083 winId returns a PyCObject making it impossible to compare two winIds</li>
+<li>1084 Crash (segfault) when writing unicode string on socket</li>
+<li>1091 PixmapFragment and drawPixmapFragments are not bound</li>
+<li>1095 No examples for shiboken tutorial</li>
+<li>1097 QtGui.QShortcut.setKey requires QKeySequence</li>
+<li>1101 Report invalid function signatures in typesystem</li>
+<li>902 Expose Shiboken functionality through a Python module</li>
+<li>969 viewOptions of QAbstractItemView error</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id21">
+<h2>1.0.9 (2011-11-29)<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id22">
+<h3>Bug fixes<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>1058 Strange code in PySide/QtUiTools/glue/plugins.h</li>
+<li>1057 valgrind detected &#8220;Conditional jump or move depends on uninitialised value&#8221;</li>
+<li>1052 PySideConfig.cmake contains an infinite loop due to missing default for SHIBOKEN_PYTHON_SUFFIX</li>
+<li>1048 QGridLayout.itemAtPosition() crashes when it should return None</li>
+<li>1037 shiboken fails to build against python 3.2 (both normal and -dbg) on i386 (and others)</li>
+<li>1036 Qt.KeyboardModifiers always evaluates to zero</li>
+<li>1033 QDialog.DialogCode instances and return value from QDialog.exec_ hash to different values</li>
+<li>1031 QState.parentState() or QState.machine() causes python crash at exit</li>
+<li>1029 qmlRegisterType Fails to Increase the Ref Count</li>
+<li>1028 QWidget winId missing</li>
+<li>1016 Calling of Q_INVOKABLE method returning not QVariant is impossible...</li>
+<li>1013 connect to QSqlTableModel.primeInsert() causes crash</li>
+<li>1012 FTBFS with hardening flags enabled</li>
+<li>1011 PySide Cygwin patch</li>
+<li>1010 Shiboken Cygwin patch</li>
+<li>1009 GeneratorRunner Cygwin patch</li>
+<li>1008 ApiExtractor Cygwin patch</li>
+<li>891 ApiExtractor doesn&#8217;t support doxygen as backend to doc generation.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id23">
+<h2>1.0.8 (2011-10-21)<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id24">
+<h3>Major changes<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Experimental Python3.2 support</li>
+<li>Qt4.8 beta support</li>
+</ul>
+</div>
+<div class="section" id="id25">
+<h3>Bug fixes<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>1022 RuntimeError: maximum recursion depth exceeded while getting the str of an object</li>
+<li>1019 Overriding QWidget.show or QWidget.hide do not work</li>
+<li>944 Segfault on QIcon(None).pixmap()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id26">
+<h2>1.0.7 (2011-09-21)<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id27">
+<h3>Bug fixes<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>996 Missing dependencies for QtWebKit in buildscripts for Fedora</li>
+<li>986 Documentation links</li>
+<li>985 Provide versioned pyside-docs zip file to help packagers</li>
+<li>981 QSettings docs should empathize the behavior changes of value() on different platforms</li>
+<li>902 Expose Shiboken functionality through a Python module</li>
+<li>997 QDeclarativePropertyMap doesn&#8217;t work.</li>
+<li>994 QIODevice.readData must use qmemcpy instead of qstrncpy</li>
+<li>989 Pickling QColor fails</li>
+<li>987 Disconnecting a signal that has not been connected</li>
+<li>973 shouldInterruptJavaScript slot override is never called</li>
+<li>966 QX11Info.display() missing</li>
+<li>959 can&#8217;t pass QVariant to the QtWebkit bridge</li>
+<li>1006 Segfault in QLabel init</li>
+<li>1002 Segmentation fault on PySide/Spyder exit</li>
+<li>998 Segfault with Spyder after switching to another app</li>
+<li>995 QDeclarativeView.itemAt returns faulty reference. (leading to SEGFAULT)</li>
+<li>990 Segfault when trying to disconnect a signal that is not connected</li>
+<li>975 Possible memory leak</li>
+<li>991 The __repr__ of various types is broken</li>
+<li>988 The type supplied with currentChanged signal in QTabWidget has changed in 1.0.6</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id28">
+<h2>1.0.6 (2011-08-22)<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id29">
+<h3>Major changes<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>New documentation layout;</li>
+<li>Fixed some regressions from the last release (1.0.5);</li>
+<li>Optimizations during anonymous connection;</li>
+</ul>
+</div>
+<div class="section" id="id30">
+<h3>Bug fixes<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>972 anchorlayout.py of graphicsview example raised a unwriteable memory exception when exits</li>
+<li>953 Segfault when QObject is garbage collected after QTimer.singeShot</li>
+<li>951 ComponentComplete not called on QDeclarativeItem subclass</li>
+<li>965 Segfault in QtUiTools.QUiLoader.load</li>
+<li>958 Segmentation fault with resource files</li>
+<li>944 Segfault on QIcon(None).pixmap()</li>
+<li>941 Signals with QtCore.Qt types as arguments has invalid signatures</li>
+<li>964 QAbstractItemView.moveCursor() method is missing</li>
+<li>963 What&#8217;s This not displaying QTableWidget column header information as in Qt Designer</li>
+<li>961 QColor.__repr__/__str__ should be more pythonic</li>
+<li>960 QColor.__reduce__ is incorrect for HSL colors</li>
+<li>950 implement Q_INVOKABLE</li>
+<li>940 setAttributeArray/setUniformValueArray do not take arrays</li>
+<li>931 isinstance() fails with Signal instances</li>
+<li>928 100&#8217;s of QGraphicItems with signal connections causes slowdown</li>
+<li>930 Documentation mixes signals and functions.</li>
+<li>923 Make QScriptValue (or QScriptValueIterator) implement the Python iterator protocol</li>
+<li>922 QScriptValue&#8217;s repr() should give some information about its data</li>
+<li>900 QtCore.Property as decorator</li>
+<li>895 jQuery version is outdated, distribution code de-duplication breaks documentation search</li>
+<li>731 Can&#8217;t specify more than a single &#8216;since&#8217; argument</li>
+<li>983 copy.deepcopy raises SystemError with QColor</li>
+<li>947 NETWORK_ERR during interaction QtWebKit window with server</li>
+<li>873 Deprecated methods could emit DeprecationWarning</li>
+<li>831 PySide docs would have a &#8220;Inherited by&#8221; list for each class</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id31">
+<h2>1.0.5 (2011-07-22)<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id32">
+<h3>Major changes<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Widgets present on &#8220;ui&#8221; files are exported in the root widget, check PySide ML thread for more information[1];</li>
+<li>pyside-uic generate menubars without parent on MacOS plataform;</li>
+<li>Signal connection optimizations;</li>
+</ul>
+</div>
+<div class="section" id="id33">
+<h3>Bug fixes<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>892 Segfault when destructing QWidget and QApplication has event filter installed</li>
+<li>407 Crash while multiple inheriting with QObject and native python class</li>
+<li>939 Shiboken::importModule must verify if PyImport_ImportModule succeeds</li>
+<li>937 missing pid method in QProcess</li>
+<li>927 Segfault on QThread code.</li>
+<li>925 Segfault when passing a QScriptValue as QObject or when using .toVariant() on a QScriptValue</li>
+<li>905 QtGui.QHBoxLayout.setMargin function call is created by pyside-uic, but this is not available in the pyside bindings</li>
+<li>904 Repeatedly opening a QDialog with Qt.WA_DeleteOnClose set crashes PySide</li>
+<li>899 Segfault with &#8216;QVariantList&#8217; Property.</li>
+<li>893 Shiboken leak reference in the parent control</li>
+<li>878 Shiboken may generate incompatible modules if a new class is added.</li>
+<li>938 QTemporaryFile JPEG problem</li>
+<li>934 A __getitem__ of QByteArray behaves strange</li>
+<li>929 pkg-config files do not know about Python version tags</li>
+<li>926 qmlRegisterType does not work with QObject</li>
+<li>924 Allow QScriptValue to be accessed via []</li>
+<li>921 Signals not automatically disconnected on object destruction</li>
+<li>920 Cannot use same slot for two signals</li>
+<li>919 Default arguments on QStyle methods not working</li>
+<li>915 QDeclarativeView.scene().addItem(x) make the x object invalid</li>
+<li>913 Widgets inside QTabWidget are not exported as members of the containing widget</li>
+<li>910 installEventFilter() increments reference count on target object</li>
+<li>907 pyside-uic adds MainWindow.setMenuBar(self.menubar) to the generated code under OS X</li>
+<li>903 eventFilter in ItemDelegate</li>
+<li>897 QObject.property() and QObject.setProperty() methods fails for user-defined properties</li>
+<li>896 QObject.staticMetaObject() is missing</li>
+<li>916 Missing info about when is possible to use keyword arguments in docs [was: QListWidgetItem&#8217;s constructor ignores text parameter]</li>
+<li>890 Add signal connection example for valueChanged(int) on QSpinBox to the docs</li>
+<li>821 Mapping interface for QPixmapCache</li>
+<li>909 Deletion of QMainWindow/QApplication leads to segmentation fault</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Changes</a><ul>
+<li><a class="reference internal" href="#id1">1.2.2 (2014-04-24)</a><ul>
+<li><a class="reference internal" href="#complete-list-of-changes-and-bug-fixes">Complete list of changes and bug fixes</a><ul>
+<li><a class="reference internal" href="#pyside">PySide</a></li>
+<li><a class="reference internal" href="#shiboken">Shiboken</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">1.2.1 (2013-08-16)</a><ul>
+<li><a class="reference internal" href="#major-changes">Major changes</a><ul>
+<li><a class="reference internal" href="#id3">PySide</a></li>
+<li><a class="reference internal" href="#id4">Shiboken</a></li>
+<li><a class="reference internal" href="#pyside-setup">PySide-setup</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">1.2.0 (2013-07-02)</a><ul>
+<li><a class="reference internal" href="#id6">Major changes</a><ul>
+<li><a class="reference internal" href="#id7">PySide</a></li>
+<li><a class="reference internal" href="#id8">Shiboken</a></li>
+<li><a class="reference internal" href="#id9">PySide-setup</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">Complete list of changes and bug fixes</a><ul>
+<li><a class="reference internal" href="#id11">PySide</a></li>
+<li><a class="reference internal" href="#id12">Shiboken</a></li>
+<li><a class="reference internal" href="#id13">PySide-setup</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id14">1.1.2 (2012-08-28)</a><ul>
+<li><a class="reference internal" href="#bug-fixes">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id15">1.1.1 (2012-04-19)</a><ul>
+<li><a class="reference internal" href="#id16">Major changes</a></li>
+<li><a class="reference internal" href="#id17">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id18">1.1.0 (2012-01-02)</a><ul>
+<li><a class="reference internal" href="#id19">Major changes</a></li>
+<li><a class="reference internal" href="#id20">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id21">1.0.9 (2011-11-29)</a><ul>
+<li><a class="reference internal" href="#id22">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id23">1.0.8 (2011-10-21)</a><ul>
+<li><a class="reference internal" href="#id24">Major changes</a></li>
+<li><a class="reference internal" href="#id25">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id26">1.0.7 (2011-09-21)</a><ul>
+<li><a class="reference internal" href="#id27">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id28">1.0.6 (2011-08-22)</a><ul>
+<li><a class="reference internal" href="#id29">Major changes</a></li>
+<li><a class="reference internal" href="#id30">Bug fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id31">1.0.5 (2011-07-22)</a><ul>
+<li><a class="reference internal" href="#id32">Major changes</a></li>
+<li><a class="reference internal" href="#id33">Bug fixes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/build/pyside/CHANGES.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../_sources/build/pyside/CHANGES.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>
