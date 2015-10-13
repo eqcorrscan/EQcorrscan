@@ -1,0 +1,566 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PySide &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyside">
+<h1><a class="toc-backref" href="#id9">PySide</a><a class="headerlink" href="#pyside" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first"><strong>Table of Contents</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#pyside" id="id9">PySide</a><ul>
+<li><a class="reference internal" href="#introduction" id="id10">Introduction</a></li>
+<li><a class="reference internal" href="#compatibility" id="id11">Compatibility</a></li>
+<li><a class="reference internal" href="#installation" id="id12">Installation</a><ul>
+<li><a class="reference internal" href="#installing-prerequisities" id="id13">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#installing-pyside-on-a-windows-system" id="id14">Installing PySide on a Windows System</a></li>
+<li><a class="reference internal" href="#installing-pyside-on-a-unix-system" id="id15">Installing PySide on a UNIX System</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-pyside-on-a-windows-system" id="id16">Building PySide on a Windows System</a><ul>
+<li><a class="reference internal" href="#id1" id="id17">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#building-pyside-distribution" id="id18">Building PySide distribution</a></li>
+<li><a class="reference internal" href="#building-pyside-distribution-from-git-repository" id="id19">Building PySide distribution from git repository</a></li>
+<li><a class="reference internal" href="#installing-pyside-distribution" id="id20">Installing PySide distribution</a></li>
+<li><a class="reference internal" href="#installing-pyside-distribution-into-virtual-python-environment" id="id21">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-pyside-on-a-unix-system-ubuntu-12-04-14-04" id="id22">Building PySide on a UNIX System (Ubuntu 12.04 - 14.04)</a><ul>
+<li><a class="reference internal" href="#id3" id="id23">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#id5" id="id24">Building PySide distribution</a></li>
+<li><a class="reference internal" href="#id6" id="id25">Building PySide distribution from git repository</a></li>
+<li><a class="reference internal" href="#id7" id="id26">Installing PySide distribution</a></li>
+<li><a class="reference internal" href="#id8" id="id27">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyside-setup-script-command-line-options" id="id28">PySide Setup Script command line options</a><ul>
+<li><a class="reference internal" href="#usage-on-windows-system" id="id29">Usage on Windows System</a></li>
+<li><a class="reference internal" href="#usage-on-unix-system" id="id30">Usage on UNIX System</a></li>
+<li><a class="reference internal" href="#distribution-types" id="id31">Distribution types</a></li>
+<li><a class="reference internal" href="#options" id="id32">Options</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#feedback-and-getting-involved" id="id33">Feedback and getting involved</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id10">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>PySide is the Python Qt bindings project, providing access the complete Qt 4.8 framework
+as well as to generator tools for rapidly generating bindings for any C++ libraries.</p>
+<p>The PySide project is developed in the open, with all facilities you&#8217;d expect
+from any modern OSS project such as all code in a git repository, an open
+Bugzilla for reporting bugs, and an open design process. We welcome
+any contribution without requiring a transfer of copyright.</p>
+</div>
+<div class="section" id="compatibility">
+<h2><a class="toc-backref" href="#id11">Compatibility</a><a class="headerlink" href="#compatibility" title="Permalink to this headline">¶</a></h2>
+<p>PySide requires Python 2.6 or later and Qt 4.6 or better. Qt 5.x is currently not supported.</p>
+</div>
+<div class="section" id="installation">
+<h2><a class="toc-backref" href="#id12">Installation</a><a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installing-prerequisities">
+<h3><a class="toc-backref" href="#id13">Installing prerequisities</a><a class="headerlink" href="#installing-prerequisities" title="Permalink to this headline">¶</a></h3>
+<p>Install latest <cite>pip</cite> distribution: download <a class="reference external" href="https://raw.github.com/pypa/pip/master/contrib/get-pip.py">get-pip.py</a> and run it using
+the <code class="docutils literal"><span class="pre">python</span></code> interpreter.</p>
+</div>
+<div class="section" id="installing-pyside-on-a-windows-system">
+<h3><a class="toc-backref" href="#id14">Installing PySide on a Windows System</a><a class="headerlink" href="#installing-pyside-on-a-windows-system" title="Permalink to this headline">¶</a></h3>
+<p>To install PySide on Windows you can choose from the following options:</p>
+<ol class="arabic">
+<li><p class="first">Use pip to install the <cite>wheel</cite> binary packages:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\pip install PySide --use-wheel -f https://download.qt-project.org/official_releases/pyside/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Use setuptools to install the <cite>egg</cite> binary packages:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\easy_install PySide
+</pre></div>
+</div>
+</li>
+<li><p class="first">Download and install the packages from the <a class="reference external" href="http://qt-project.org/wiki/PySide_Binaries_Windows">releases page</a>.</p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Provided binaries are without any other external dependencies.
+All required Qt libraries, development tools and examples are included.</p>
+</div>
+</div>
+<div class="section" id="installing-pyside-on-a-unix-system">
+<h3><a class="toc-backref" href="#id15">Installing PySide on a UNIX System</a><a class="headerlink" href="#installing-pyside-on-a-unix-system" title="Permalink to this headline">¶</a></h3>
+<p>We do not provide binaries for UNIX System. Please read the build instructions in section
+<code class="docutils literal"><span class="pre">Building</span> <span class="pre">PySide</span> <span class="pre">on</span> <span class="pre">a</span> <span class="pre">UNIX</span> <span class="pre">System</span></code>.</p>
+</div>
+</div>
+<div class="section" id="building-pyside-on-a-windows-system">
+<h2><a class="toc-backref" href="#id16">Building PySide on a Windows System</a><a class="headerlink" href="#building-pyside-on-a-windows-system" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id17">Installing prerequisities</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Install <a class="reference external" href="http://www.python.org/download/">Python</a>.</p>
+</li>
+<li><p class="first">Install <a class="reference external" href="http://download.qt-project.org/official_releases/qt/4.8/4.8.5/qt-win-opensource-4.8.5-vs2008.exe">Qt 4.8 libraries for Windows VS 2008 edition</a>
+when building against Python 2.6, 2.7 or 3.2.
+Install <a class="reference external" href="http://download.qt-project.org/official_releases/qt/4.8/4.8.5/qt-win-opensource-4.8.5-vs2010.exe">Qt 4.8 libraries for Windows VS 2010 edition</a>
+when building against Python 3.3.</p>
+</li>
+<li><p class="first">Install <a class="reference external" href="http://www.cmake.org/cmake/resources/software.html">Cmake</a>.</p>
+</li>
+<li><p class="first">Install <a class="reference external" href="http://www.microsoft.com/en-us/download/details.aspx?id=3138">Windows SDK v7.0</a>
+when building against Python 2.6, 2.7 or 3.2.
+Install <a class="reference external" href="http://www.microsoft.com/en-us/download/details.aspx?id=8279">Windows SDK v7.1</a>
+when building against Python 3.3.</p>
+</li>
+<li><p class="first">Install <a class="reference external" href="http://git-scm.com/download/win">Git</a>.</p>
+</li>
+<li><p class="first">(Optional) Install <a class="reference external" href="http://slproweb.com/products/Win32OpenSSL.html">OpenSSL</a>.</p>
+</li>
+<li><p class="first">Install latest <cite>pip</cite> distribution into the Python you
+installed in the first step: download <a class="reference external" href="https://raw.github.com/pypa/pip/master/contrib/get-pip.py">get-pip.py</a> and run it using
+the <code class="docutils literal"><span class="pre">python</span></code> interpreter of your Python 2.7 installation using a
+command prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\python get-pip.py
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install latest <cite>wheel</cite> distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\pip install wheel
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="building-pyside-distribution">
+<h3><a class="toc-backref" href="#id18">Building PySide distribution</a><a class="headerlink" href="#building-pyside-distribution" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Download and extract <a class="reference external" href="https://pypi.python.org/packages/source/P/PySide/PySide-1.2.2.tar.gz">PySide source distribution</a></p>
+</li>
+<li><p class="first">Switch to the distribution directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; cd PySide-1.2.2
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build the <cite>wheel</cite> binary distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\python.exe setup.py bdist_wheel --qmake=c:\Qt\4.8.5\bin\qmake.exe --openssl=c:\OpenSSL32bit\bin
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="building-pyside-distribution-from-git-repository">
+<h3><a class="toc-backref" href="#id19">Building PySide distribution from git repository</a><a class="headerlink" href="#building-pyside-distribution-from-git-repository" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Clone <code class="docutils literal"><span class="pre">PySide</span></code> setup scripts from git repository:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; git clone https://github.com/PySide/pyside-setup.git pyside-setup
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch to the <code class="docutils literal"><span class="pre">pyside-setup</span></code> directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; cd pyside-setup
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build the <cite>wheel</cite> binary distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\python.exe setup.py bdist_wheel --version=1.2.2 --qmake=c:\Qt\4.8.5\bin\qmake.exe --openssl=c:\OpenSSL32bit\bin
+</pre></div>
+</div>
+</li>
+<li><p class="first">To build the development version of <code class="docutils literal"><span class="pre">PySide</span></code> distribution, ignore the &#8211;version parameter:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\python.exe setup.py bdist_wheel --qmake=c:\Qt\4.8.5\bin\qmake.exe --openssl=c:\OpenSSL32bit\bin
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="installing-pyside-distribution">
+<h3><a class="toc-backref" href="#id20">Installing PySide distribution</a><a class="headerlink" href="#installing-pyside-distribution" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">After the successful build, install the distribution with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\pip install --use-wheel dist\PySide-1.2.2-cp27-none-win32.whl
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="installing-pyside-distribution-into-virtual-python-environment">
+<h3><a class="toc-backref" href="#id21">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a><a class="headerlink" href="#installing-pyside-distribution-into-virtual-python-environment" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Install latest <cite>virtualenv</cite> distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\pip install virtualenv
+</pre></div>
+</div>
+</li>
+<li><p class="first">Use <cite>virtualenv</cite> to make a workspace:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\Scripts\virtualenv --no-site-packages env
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch to the <code class="docutils literal"><span class="pre">env</span></code> directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; cd env
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install the distribution with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>c:\&gt; Scripts\pip install --use-wheel ..\dist\PySide-1.2.2-cp27-none-win32.whl
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="building-pyside-on-a-unix-system-ubuntu-12-04-14-04">
+<h2><a class="toc-backref" href="#id22">Building PySide on a UNIX System (Ubuntu 12.04 - 14.04)</a><a class="headerlink" href="#building-pyside-on-a-unix-system-ubuntu-12-04-14-04" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#id23">Installing prerequisities</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Install build dependencies:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ sudo apt-get install build-essential git cmake libqt4-dev libphonon-dev python2.7-dev libxml2-dev libxslt1-dev qtmobility-dev
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install latest <cite>pip</cite> distribution into the Python you
+installed in the first step: download <a class="reference external" href="https://raw.github.com/pypa/pip/master/contrib/get-pip.py">get-pip.py</a> and run it using
+the <code class="docutils literal"><span class="pre">python</span></code> interpreter of your Python 2.7 installation using a
+command prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+$ sudo python2.7 get-pip.py
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install latest <cite>wheel</cite> distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ sudo pip2.7 install wheel
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="id5">
+<h3><a class="toc-backref" href="#id24">Building PySide distribution</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Download <code class="docutils literal"><span class="pre">PySide</span></code> source distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ wget https://pypi.python.org/packages/source/P/PySide/PySide-1.2.2.tar.gz
+</pre></div>
+</div>
+</li>
+<li><p class="first">Extract the source distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ tar -xvzf PySide-1.2.2.tar.gz
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch to the distribution directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd PySide-1.2.2
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build the <cite>wheel</cite> binary distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4
+</pre></div>
+</div>
+</li>
+<li><p class="first">Optionally you can build standalone version of distribution with embedded Qt libs:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4 --standalone
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="id6">
+<h3><a class="toc-backref" href="#id25">Building PySide distribution from git repository</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Clone <code class="docutils literal"><span class="pre">PySide</span></code> setup scripts from git repository:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ git clone https://github.com/PySide/pyside-setup.git pyside-setup
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch to the <code class="docutils literal"><span class="pre">pyside-setup</span></code> directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd pyside-setup
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build <code class="docutils literal"><span class="pre">PySide</span></code> distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4 --version=1.2.2
+</pre></div>
+</div>
+</li>
+<li><p class="first">Optionally you can build standalone version of distribution with embedded Qt libs:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4 --version=1.2.2 --standalone
+</pre></div>
+</div>
+</li>
+<li><p class="first">To build the development version of <code class="docutils literal"><span class="pre">PySide</span></code> distribution, ignore the &#8211;version parameter:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="id7">
+<h3><a class="toc-backref" href="#id26">Installing PySide distribution</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">After the successful build, install the distribution with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ sudo pip2.7 install --use-wheel dist/PySide-1.2.2-cp27-none-linux-x86_64.whl
+</pre></div>
+</div>
+</li>
+<li><p class="first">Run the post-install script to finish the package configuration:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ sudo python2.7 pyside_postinstall.py -install
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="id8">
+<h3><a class="toc-backref" href="#id27">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Install latest <cite>virtualenv</cite> distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ sudo pip2.7 virtualenv
+</pre></div>
+</div>
+</li>
+<li><p class="first">Use <cite>virtualenv</cite> to make a workspace:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ virtualenv-2.7 --no-site-packages env
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch to the <code class="docutils literal"><span class="pre">env</span></code> directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd env
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install the distribution with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ bin/pip2.7 install --use-wheel ../dist/PySide-1.2.2-cp27-none-linux-x86_64.whl
+</pre></div>
+</div>
+</li>
+<li><p class="first">Run the post-install script to finish the package configuration:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ bin/python bin/pyside_postinstall.py -install
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="pyside-setup-script-command-line-options">
+<h2><a class="toc-backref" href="#id28">PySide Setup Script command line options</a><a class="headerlink" href="#pyside-setup-script-command-line-options" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="usage-on-windows-system">
+<h3><a class="toc-backref" href="#id29">Usage on Windows System</a><a class="headerlink" href="#usage-on-windows-system" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre>c:\&gt; c:\Python27\python.exe setup.py [distribution_type] [options]
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="usage-on-unix-system">
+<h3><a class="toc-backref" href="#id30">Usage on UNIX System</a><a class="headerlink" href="#usage-on-unix-system" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre>python2.7 setup.py [distribution_type] [options]
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="distribution-types">
+<h3><a class="toc-backref" href="#id31">Distribution types</a><a class="headerlink" href="#distribution-types" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">bdist_wheel</span></code></dt>
+<dd>Create wheel binary distribution.
+This distribution type can be installed with <code class="docutils literal"><span class="pre">pip</span></code>.</dd>
+<dt><code class="docutils literal"><span class="pre">bdist_egg</span></code></dt>
+<dd>Create egg binary distribution.
+This distribution type can be installed with <code class="docutils literal"><span class="pre">easy_install</span></code>.</dd>
+<dt><code class="docutils literal"><span class="pre">bdist_wininst</span></code></dt>
+<dd>Create standalone windows installer with embedded Qt libs and development tools.
+This distribution type can be installed with <code class="docutils literal"><span class="pre">easy_install</span></code>.</dd>
+<dt><code class="docutils literal"><span class="pre">install</span></code></dt>
+<dd>Install package to site packages folder.</dd>
+<dt><code class="docutils literal"><span class="pre">develop</span></code></dt>
+<dd>Install package in <code class="docutils literal"><span class="pre">development</span> <span class="pre">mode</span></code>, such that it&#8217;s available on
+<code class="docutils literal"><span class="pre">sys.path</span></code>, yet can still be edited directly from its source folder.</dd>
+<dt><code class="docutils literal"><span class="pre">sdist</span></code></dt>
+<dd>Create full source distribution with included sources of PySide Setup Scripts,
+PySide, Shiboken, PySide Tools and PySide Examples.
+Can be used to build binary distribution in offline mode.</dd>
+</dl>
+</div>
+<div class="section" id="options">
+<h3><a class="toc-backref" href="#id32">Options</a><a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">--qmake</span></code></dt>
+<dd>Specify the path to qmake.
+Useful when the qmake is not in path or more than one Qt versions are installed.</dd>
+<dt><code class="docutils literal"><span class="pre">--openssl</span></code></dt>
+<dd>Specify the path to OpenSSL libs.</dd>
+<dt><code class="docutils literal"><span class="pre">--only-package</span></code></dt>
+<dd>Skip rebuilding everything and create distribution from prebuilt binaries.
+Before using this option first time, the full distribution build is required.</dd>
+<dt><code class="docutils literal"><span class="pre">--cmake</span></code></dt>
+<dd>Specify the path to cmake.
+Useful when the cmake is not in path.</dd>
+<dt><code class="docutils literal"><span class="pre">--standalone</span></code></dt>
+<dd>When enabled, all required Qt libs will be included in PySide distribution.
+This option is allways enabled on Windows System.
+On Linux it&#8217;s disabled by default.</dd>
+<dt><code class="docutils literal"><span class="pre">--version</span></code></dt>
+<dd>Specify what version of PySide distribution to build.
+This option is available only when the setup scripts are cloned from git repository.</dd>
+<dt><code class="docutils literal"><span class="pre">--list-versions</span></code></dt>
+<dd>List available versions of PySide distributions.</dd>
+<dt><code class="docutils literal"><span class="pre">--ignore-git</span></code></dt>
+<dd>Don&#8217;t pull sources from git repository.</dd>
+<dt><code class="docutils literal"><span class="pre">--make-spec</span></code></dt>
+<dd>Specify the cmake makefile generator type.
+Available values are <code class="docutils literal"><span class="pre">msvc</span></code> on Windows System and <code class="docutils literal"><span class="pre">make</span></code> on UNIX System.</dd>
+<dt><code class="docutils literal"><span class="pre">--no-examples</span></code></dt>
+<dd>Don&#8217;t include PySide examples in PySide distribution</dd>
+<dt><code class="docutils literal"><span class="pre">--jobs</span></code></dt>
+<dd>Specify the number of parallel build jobs</dd>
+<dt><code class="docutils literal"><span class="pre">--jom</span></code></dt>
+<dd>Use <a class="reference external" href="http://qt-project.org/wiki/jom">jom</a> instead of nmake with msvc</dd>
+<dt><code class="docutils literal"><span class="pre">--build-tests</span></code></dt>
+<dd>Enable building the tests</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="feedback-and-getting-involved">
+<h2><a class="toc-backref" href="#id33">Feedback and getting involved</a><a class="headerlink" href="#feedback-and-getting-involved" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Mailing list: <a class="reference external" href="http://lists.qt-project.org/mailman/listinfo/pyside">http://lists.qt-project.org/mailman/listinfo/pyside</a></li>
+<li>Issue tracker: <a class="reference external" href="https://bugreports.qt-project.org/browse/PYSIDE">https://bugreports.qt-project.org/browse/PYSIDE</a></li>
+<li>Code Repository: <a class="reference external" href="http://qt.gitorious.org/pyside">http://qt.gitorious.org/pyside</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PySide</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#compatibility">Compatibility</a></li>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
+<li><a class="reference internal" href="#installing-prerequisities">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#installing-pyside-on-a-windows-system">Installing PySide on a Windows System</a></li>
+<li><a class="reference internal" href="#installing-pyside-on-a-unix-system">Installing PySide on a UNIX System</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-pyside-on-a-windows-system">Building PySide on a Windows System</a><ul>
+<li><a class="reference internal" href="#id1">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#building-pyside-distribution">Building PySide distribution</a></li>
+<li><a class="reference internal" href="#building-pyside-distribution-from-git-repository">Building PySide distribution from git repository</a></li>
+<li><a class="reference internal" href="#installing-pyside-distribution">Installing PySide distribution</a></li>
+<li><a class="reference internal" href="#installing-pyside-distribution-into-virtual-python-environment">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-pyside-on-a-unix-system-ubuntu-12-04-14-04">Building PySide on a UNIX System (Ubuntu 12.04 - 14.04)</a><ul>
+<li><a class="reference internal" href="#id3">Installing prerequisities</a></li>
+<li><a class="reference internal" href="#id5">Building PySide distribution</a></li>
+<li><a class="reference internal" href="#id6">Building PySide distribution from git repository</a></li>
+<li><a class="reference internal" href="#id7">Installing PySide distribution</a></li>
+<li><a class="reference internal" href="#id8">Installing PySide distribution into <code class="docutils literal"><span class="pre">virtual</span></code> Python environment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyside-setup-script-command-line-options">PySide Setup Script command line options</a><ul>
+<li><a class="reference internal" href="#usage-on-windows-system">Usage on Windows System</a></li>
+<li><a class="reference internal" href="#usage-on-unix-system">Usage on UNIX System</a></li>
+<li><a class="reference internal" href="#distribution-types">Distribution types</a></li>
+<li><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#feedback-and-getting-involved">Feedback and getting involved</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/build/pyside/README.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../_sources/build/pyside/README.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

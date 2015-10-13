@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>QML Advanced Tutorial 3 - Implementing the Game Logic &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="qml-advanced-tutorial-3-implementing-the-game-logic">
+<span id="samegame3"></span><h1>QML Advanced Tutorial 3 - Implementing the Game Logic<a class="headerlink" href="#qml-advanced-tutorial-3-implementing-the-game-logic" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="making-a-playable-game">
+<h2>Making a playable game<a class="headerlink" href="#making-a-playable-game" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have all the game components, we can add the game logic that
+dictates how a player interacts with the blocks and plays the game
+until it is won or lost.</p>
+<p>To do this, we have added the following functions to <code class="docutils literal"><span class="pre">samegame.js</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">handleClick(x,y)</span></code></li>
+<li><code class="docutils literal"><span class="pre">floodFill(xIdx,yIdx,type)</span></code></li>
+<li><code class="docutils literal"><span class="pre">shuffleDown()</span></code></li>
+<li><code class="docutils literal"><span class="pre">victoryCheck()</span></code></li>
+<li><code class="docutils literal"><span class="pre">floodMoveCheck(xIdx,</span> <span class="pre">yIdx,</span> <span class="pre">type)</span></code></li>
+</ul>
+<p>As this is a tutorial about QML, not game design, we will only discuss <code class="docutils literal"><span class="pre">handleClick()</span></code> and <code class="docutils literal"><span class="pre">victoryCheck()</span></code> below since they interface directly with the QML elements. Note that although the game logic here is written in JavaScript, it could have been written in Python and then exposed to QML.</p>
+</div>
+<div class="section" id="enabling-mouse-click-interaction">
+<h2>Enabling mouse click interaction<a class="headerlink" href="#enabling-mouse-click-interaction" title="Permalink to this headline">¶</a></h2>
+<p>To make it easier for the JavaScript code to interface with the QML elements, we have added an Item called <code class="docutils literal"><span class="pre">gameCanvas</span></code> to <code class="docutils literal"><span class="pre">samegame.qml</span></code>. It replaces the background as the item which contains the blocks. It also accepts mouse input from the user.  Here is the item code:</p>
+<p>The <code class="docutils literal"><span class="pre">gameCanvas</span></code> item is the exact size of the board, and has a <code class="docutils literal"><span class="pre">score</span></code> property and a MouseArea to handle mouse clicks.
+The blocks are now created as its children, and its dimensions are used to determine the board size so that
+the application scales to the available screen size.
+Since its size is bound to a multiple of <code class="docutils literal"><span class="pre">blockSize</span></code>, <code class="docutils literal"><span class="pre">blockSize</span></code> was moved out of <code class="docutils literal"><span class="pre">samegame.js</span></code> and into <code class="docutils literal"><span class="pre">samegame.qml</span></code> as a QML property.
+Note that it can still be accessed from the script.</p>
+<p>When clicked, the MouseArea calls <code class="docutils literal"><span class="pre">handleClick()</span></code> in <code class="docutils literal"><span class="pre">samegame.js</span></code>, which determines whether the player&#8217;s click should cause any blocks to be removed, and updates <code class="docutils literal"><span class="pre">gameCanvas.score</span></code> with the current score if necessary. Here is the <code class="docutils literal"><span class="pre">handleClick()</span></code> function:</p>
+<p>Note that if <code class="docutils literal"><span class="pre">score</span></code> was a global variable in the <code class="docutils literal"><span class="pre">samegame.js</span></code> file you would not be able to bind to it. You can only bind to QML properties.</p>
+</div>
+<div class="section" id="updating-the-score">
+<h2>Updating the score<a class="headerlink" href="#updating-the-score" title="Permalink to this headline">¶</a></h2>
+<p>When the player clicks a block and triggers c handleClick(), c handleClick() also calls c victoryCheck() to update the score and to check whether the player has completed the game. Here is the c victoryCheck() code:</p>
+<p>This updates the <code class="docutils literal"><span class="pre">gameCanvas.score</span></code> value and displays a &#8220;Game Over&#8221; dialog if the game is finished.</p>
+<p>The Game Over dialog is created using a <code class="docutils literal"><span class="pre">Dialog</span></code> element that is defined in <code class="docutils literal"><span class="pre">Dialog.qml</span></code>. Here is the <code class="docutils literal"><span class="pre">Dialog.qml</span></code> code. Notice how it is designed to be usable imperatively from the script file, via the functions and signals:</p>
+<p>And this is how it is used in the main <code class="docutils literal"><span class="pre">samegame.qml</span></code> file:</p>
+<p>We give the dialog a <code class="docutils literal"><span class="pre">z</span></code> value of 100 to ensure it is displayed on top of our other components. The default <code class="docutils literal"><span class="pre">z</span></code> value for an item is 0.</p>
+<div class="section" id="a-dash-of-color">
+<h3>A dash of color<a class="headerlink" href="#a-dash-of-color" title="Permalink to this headline">¶</a></h3>
+<p>It&#8217;s not much fun to play Same Game if all the blocks are the same color, so we&#8217;ve modified the <code class="docutils literal"><span class="pre">createBlock()</span></code> function in <code class="docutils literal"><span class="pre">samegame.js</span></code> to randomly create a different type of block (for either red, green or blue) each time it is called. <code class="docutils literal"><span class="pre">Block.qml</span></code> has also changed so that each block contains a different image depending on its type:</p>
+</div>
+</div>
+<div class="section" id="a-working-game">
+<h2>A working game<a class="headerlink" href="#a-working-game" title="Permalink to this headline">¶</a></h2>
+<p>Now we now have a working game! The blocks can be clicked, the player can score, and the game can end (and then you can start a new one).
+Here is a screenshot of what has been accomplished so far:</p>
+<div class="figure align-center">
+<img alt="../../../../../../../_images/declarative-adv-tutorial3.png" src="../../../../../../../_images/declarative-adv-tutorial3.png" />
+</div>
+<p>This is what <code class="docutils literal"><span class="pre">samegame.qml</span></code> looks like now:</p>
+<p>The game works, but it&#8217;s a little boring right now. Where are the smooth animated transitions? Where are the high scores?
+If you were a QML expert you could have written these in the first iteration, but in this tutorial they&#8217;ve been saved
+until the next chapter - where your application becomes alive!</p>
+<p>[Previous <a class="reference internal" href="samegame2.html#samegame2"><span>QML Advanced Tutorial 2 - Populating the Game Canvas</span></a>] [Next <a class="reference internal" href="samegame4.html#samegame4"><span>QML Advanced Tutorial 4 - Finishing Touches</span></a>]</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">QML Advanced Tutorial 3 - Implementing the Game Logic</a><ul>
+<li><a class="reference internal" href="#making-a-playable-game">Making a playable game</a></li>
+<li><a class="reference internal" href="#enabling-mouse-click-interaction">Enabling mouse click interaction</a></li>
+<li><a class="reference internal" href="#updating-the-score">Updating the score</a><ul>
+<li><a class="reference internal" href="#a-dash-of-color">A dash of color</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#a-working-game">A working game</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmladvancedtutorial/samegame3.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmladvancedtutorial/samegame3.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>
