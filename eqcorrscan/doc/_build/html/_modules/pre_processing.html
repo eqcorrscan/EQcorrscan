@@ -1,0 +1,427 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pre_processing &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>pre_processing</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for pre_processing</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utilities module for the EQcorrscan package written by Calum Chamberlain of</span>
+<span class="sd">Victoria University Wlelington.  These functions are designed to do the basic</span>
+<span class="sd">processing of the data using obspy modules (which also rely on scipy and numpy).</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
+<span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">bandpass</span>
+
+<div class="viewcode-block" id="_check_daylong"><a class="viewcode-back" href="../utils.html#pre_processing._check_daylong">[docs]</a><span class="k">def</span> <span class="nf">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to check the data quality of the daylong file - check to see that</span>
+<span class="sd">    the day isn&#39;t just zeros, with large steps, if it is then the resampling will</span>
+<span class="sd">    hate it.</span>
+
+<span class="sd">    :type tr: obspy.Trace</span>
+<span class="sd">    :param tr: Trace to check if the data are daylong.</span>
+
+<span class="sd">    :return qual: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
+        <span class="n">qual</span><span class="o">=</span><span class="bp">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qual</span><span class="o">=</span><span class="bp">True</span>
+    <span class="k">return</span> <span class="n">qual</span>
+</div>
+<div class="viewcode-block" id="shortproc"><a class="viewcode-back" href="../utils.html#pre_processing.shortproc">[docs]</a><span class="k">def</span> <span class="nf">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic function to bandpass, downsample.  Works in place</span>
+<span class="sd">    on data.  This is employed to ensure all parts of the data are processed</span>
+<span class="sd">    in the same way.</span>
+
+<span class="sd">    :type st: obspy.Stream</span>
+<span class="sd">    :param st: Stream to process</span>
+<span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: High cut for bandpass in Hz</span>
+<span class="sd">    :type lowcut: float</span>
+<span class="sd">    :param lowcut: Low cut for bandpass in Hz</span>
+<span class="sd">    :type filt_order: int</span>
+<span class="sd">    :param filt_order: Number of corners for bandpass filter</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Sampling rate desired in Hz</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug flag from 0-5, higher numbers = more output</span>
+
+<span class="sd">    :return: obspy.Stream</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+        <span class="c"># Check data quality first</span>
+        <span class="n">qual</span><span class="o">=</span><span class="n">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">qual</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">=</span><span class="s">&quot;Data have more zeros than actual data, please check the raw&quot;</span> <span class="o">+</span>\
+                    <span class="s">&quot;data set-up and manually sort it&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="c"># Check sampling rate and resample</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">!=</span> <span class="n">samp_rate</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
+
+        <span class="c"># Filtering section</span>
+        <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="c"># Correct FRAN N,E channels to 1,2 as this is correct</span>
+        <span class="c"># if tr.stats.station==&#39;FRAN&#39; and tr.stats.channel==&#39;SHN&#39;:</span>
+            <span class="c"># print &#39;Correcting FRAN SHN to SH1&#39;</span>
+            <span class="c"># tr.stats.channel=&#39;SH1&#39;</span>
+        <span class="c"># if tr.stats.station==&#39;FRAN&#39; and tr.stats.channel==&#39;SHE&#39;:</span>
+            <span class="c"># print &#39;Correcting FRAN SHE to SH2&#39;</span>
+            <span class="c"># tr.stats.channel=&#39;SH2&#39;</span>
+        <span class="c"># Account for two letter channel names in s-files and therefore templates</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="c"># Final visual check for debug</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">st</span>
+</div>
+<div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../utils.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic function to bandpass, downsample and check headers and length of trace</span>
+<span class="sd">    to ensure files start at the start of a day and are daylong.  Works in place</span>
+<span class="sd">    on data.  This is employed to ensure all parts of the data are processed</span>
+<span class="sd">    in the same way.</span>
+
+<span class="sd">    :type tr: obspy.Trace</span>
+<span class="sd">    :param tr: Trace to process</span>
+<span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: High cut in Hz for bandpass</span>
+<span class="sd">    :type lowcut: float</span>
+<span class="sd">    :type lowcut: Low cut in Hz for bandpass</span>
+<span class="sd">    :type filt_order: int</span>
+<span class="sd">    :param filt_order: Corners for bandpass</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Desired sampling rate in Hz</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug output level from 0-5, higher numbers = more output</span>
+<span class="sd">    :type starttime: obspy.UTCDateTime</span>
+<span class="sd">    :param starttime: Desired start of trace</span>
+
+<span class="sd">    :return: obspy.Stream</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">day</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+        <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Working on: &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
+    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+    <span class="c"># Do a brute force quality check</span>
+    <span class="n">qual</span><span class="o">=</span><span class="n">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">qual</span><span class="p">:</span>
+        <span class="n">msg</span><span class="o">=</span><span class="s">&quot;Data have more zeros than actual data, please check the raw&quot;</span> <span class="o">+</span>\
+                <span class="s">&quot;data set-up and manually sort it&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
+
+    <span class="c"># If there is one sample too many remove the first sample - this occurs</span>
+    <span class="c"># at station FOZ where the first sample is zero when it shouldn&#39;t be,</span>
+    <span class="c"># Not real sample generated during data download</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">==</span><span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+    <span class="k">print</span> <span class="s">&#39;I have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; data points for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span>\
+            <span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; before processing&#39;</span>
+
+    <span class="c"># Sanity check to ensure files are daylong</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Data for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span>\
+                    <span class="s">&#39; is not of daylong length, will zero pad&#39;</span>
+        <span class="c"># Work out when the trace thinks it is starting - Aaron&#39;s time headers</span>
+        <span class="c"># are often wrong</span>
+        <span class="n">traceday</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                            <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                            <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">))</span>
+        <span class="c"># Use obspy&#39;s trim function with zero padding</span>
+        <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">traceday</span><span class="p">,</span><span class="n">traceday</span><span class="o">+</span><span class="mi">86400</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>\
+                    <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="c"># If there is one sample too many after this remove the last one</span>
+        <span class="c"># by convention</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">==</span><span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">*</span><span class="mi">86400</span> <span class="o">==</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span> <span class="p">(</span><span class="s">&#39;Data are not daylong for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
+                                  <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;I now have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; data points after enforcing day length&#39;</span>
+
+    <span class="c"># Check sampling rate and resample</span>
+    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">!=</span> <span class="n">samp_rate</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Resampling&#39;</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
+
+
+    <span class="c"># Filtering section</span>
+    <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="o">&gt;=</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Bandpassing&#39;</span>
+    <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="c">################### CHANNEL renaming, does not need to be in the main codes!</span>
+    <span class="c"># Correct FRAN N,E channels to 1,2 as this is correct</span>
+    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FRAN&#39;</span> <span class="ow">and</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="s">&#39;SHN&#39;</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Correcting FRAN SHN to SH1&#39;</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;SH1&#39;</span>
+    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FRAN&#39;</span> <span class="ow">and</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="s">&#39;SHE&#39;</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Correcting FRAN SHE to SH2&#39;</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;SH2&#39;</span>
+
+    <span class="c"># Correct FOZ channels</span>
+    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FOZ&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c"># Account for two letter channel names in s-files and therefore templates</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c"># Sanity check the time header</span>
+    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+        <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">day</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Time headers are wrong: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;Correcting to: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span>
+
+    <span class="c"># Sanity check to ensure files are daylong</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Data for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span>\
+                    <span class="s">&#39; is not of daylong length, will zero pad&#39;</span>
+        <span class="c"># Work out when the trace thinks it is starting - Aaron&#39;s time headers</span>
+        <span class="c"># are often wrong</span>
+        <span class="n">traceday</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                            <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                            <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">))</span>
+        <span class="c"># Use obspy&#39;s trim function with zero padding</span>
+        <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">traceday</span><span class="p">,</span><span class="n">traceday</span><span class="o">+</span><span class="mi">86400</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>\
+                    <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="c"># If there is one sample too many after this remove the last one</span>
+        <span class="c"># by convention</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">==</span><span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">*</span><span class="mi">86400</span> <span class="o">==</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span> <span class="p">(</span><span class="s">&#39;Data are not daylong for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
+                                  <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="c"># Final visual check for debug</span>
+    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">tr</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.1-alpha',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

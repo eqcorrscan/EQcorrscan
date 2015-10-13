@@ -1,0 +1,2359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Utils &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Utils</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/modules.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="utils">
+<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<p>Codes to run basic utility functions for integration with seisan and to
+find peaks in noisy data.</p>
+<div class="section" id="module-Sfile_util">
+<span id="sfile-util"></span><h2>Sfile_util<a class="headerlink" href="#module-Sfile_util" title="Permalink to this headline">¶</a></h2>
+<p>Part of the EQcorrscan module to read nordic format s-files and write them
+EQcorrscan is a python module designed to run match filter routines for
+seismology, within it are routines for integration to seisan and obspy.
+With obspy integration (which is necessary) all main waveform formats can be
+read in and output.</p>
+<p>Code generated by Calum John Chamberlain of Victoria University of Wellington,
+2015.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="class">
+<dt id="Sfile_util.EVENTINFO">
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time</em>, <em>loc_mod_ind</em>, <em>dist_ind</em>, <em>ev_id</em>, <em>latitude</em>, <em>longitude</em>, <em>depth</em>, <em>depth_ind</em>, <em>loc_ind</em>, <em>agency</em>, <em>nsta</em>, <em>t_RMS</em>, <em>Mag_1</em>, <em>Mag_1_type</em>, <em>Mag_1_agency</em>, <em>Mag_2</em>, <em>Mag_2_type</em>, <em>Mag_2_agency</em>, <em>Mag_3</em>, <em>Mag_3_type</em>, <em>Mag_3_agency</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Header information for seisan events</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Sfile_util.PICK">
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>impulsivity</em>, <em>phase</em>, <em>weight</em>, <em>polarity</em>, <em>time</em>, <em>coda</em>, <em>amplitude</em>, <em>peri</em>, <em>azimuth</em>, <em>velocity</em>, <em>AIN</em>, <em>SNR</em>, <em>azimuthres</em>, <em>timeres</em>, <em>finalweight</em>, <em>distance</em>, <em>CAZ</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pick information for seisan implimentation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.blanksfile">
+<code class="descclassname">Sfile_util.</code><code class="descname">blanksfile</code><span class="sig-paren">(</span><em>wavefile</em>, <em>evtype</em>, <em>userID</em>, <em>outdir</em>, <em>overwrite=False</em>, <em>evtime=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#blanksfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.blanksfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module to generate an empty s-file with a populated header for a given
+waveform.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wavefile</strong> (<em>String</em>) &#8211; Wavefile to associate with this S-file, the timing of the
+S-file will be taken from this file if evtime is not set</li>
+<li><strong>evtype</strong> (<em>String</em>) &#8211; L,R,D</li>
+<li><strong>userID</strong> (<em>String</em>) &#8211; 4-charectar SEISAN USER ID</li>
+<li><strong>outdir</strong> (<em>String</em>) &#8211; Location to write S-file</li>
+<li><strong>overwrite</strong> (<em>Bool</em>) &#8211; Overwrite an existing S-file, default=False</li>
+<li><strong>evtime</strong> (<em>UTCDateTime</em>) &#8211; If given this will set the timing of the S-file</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">String, S-file name</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.populateSfile">
+<code class="descclassname">Sfile_util.</code><code class="descname">populateSfile</code><span class="sig-paren">(</span><em>sfilename</em>, <em>picks</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#populateSfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.populateSfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module to populate a blank nordic format S-file with pick information,
+arguments required are the filename of the blank s-file and the picks
+where picks is a dictionary of picks including station, channel,
+impulsivity, phase, weight, polarity, time, coda, amplitude, peri, azimuth,
+velocity, SNR, azimuth residual, Time-residual, final weight,
+epicentral distance &amp; azimuth from event to station.</p>
+<p>This is a full pick line information from the seisan manual, P. 341</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sfilename</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to S-file to populate, must have a header already</li>
+<li><strong>picks</strong> (<em>List of :class: PICK</em>) &#8211; List of the picks to be written out</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.readheader">
+<code class="descclassname">Sfile_util.</code><code class="descname">readheader</code><span class="sig-paren">(</span><em>sfilename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#readheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readheader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fucntion to read the header information from a seisan nordic format S-file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfilename</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to the s-file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">EVENTINFO</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.readpicks">
+<code class="descclassname">Sfile_util.</code><code class="descname">readpicks</code><span class="sig-paren">(</span><em>sfilename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#readpicks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readpicks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read pick information from the s-file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfilename</strong> (<em>String</em>) &#8211; Path to sfile</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of :class: PICK</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.readwavename">
+<code class="descclassname">Sfile_util.</code><code class="descname">readwavename</code><span class="sig-paren">(</span><em>sfilename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#readwavename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readwavename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to extract the waveform filename from the s-file,
+returns a list of waveform names found in the s-file as multiples can
+be present.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfilename</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to the sfile</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Sfile_util.test_rw">
+<code class="descclassname">Sfile_util.</code><code class="descname">test_rw</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#test_rw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.test_rw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to test the functions herein.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-findpeaks">
+<span id="findpeaks"></span><h2>findpeaks<a class="headerlink" href="#module-findpeaks" title="Permalink to this headline">¶</a></h2>
+<p>Function to find peaks in data above a certain threshold as part of the EQcorr
+package written by Calum Chamberlain of Victoria University of Wellington in
+early 2015.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="findpeaks.find_peaks2">
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>maxwidth=10</em>, <em>starttime=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/findpeaks.html#find_peaks2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine peaks in an array of data using scipy find_peaks_cwt,
+works fast in certain cases, but for match_filter cccsum peak finding,
+find_peaks2_short works better.  Test it out and see which works best for
+your application.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>arr</strong> (<em>ndarray</em>) &#8211; 1-D numpy array is required</li>
+<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and peaks    will not be found in.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Optional, debug level 0-5</li>
+<li><strong>maxwidth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Maximum peak width to look for in samples</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">peaks, locs: Lists of peak values and locations.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="findpeaks.find_peaks2_short">
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2_short</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/findpeaks.html#find_peaks2_short"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2_short" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine peaks in an array of data above a certain threshold.
+Uses a mask to remove data below threshold and finds peaks in what is left.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>arr</strong> (<em>ndarray</em>) &#8211; 1-D numpy array is required</li>
+<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and peaks    will not be found in.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Optional, debug level 0-5</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">peaks, locs: Lists of peak values and locations.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="findpeaks.find_peaks_dep">
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks_dep</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/findpeaks.html#find_peaks_dep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks_dep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine peaks in an array of data above a certain threshold.</p>
+<p>Depreciated peak-finding routine, very slow, but accurate.  If all else fails
+this one should work.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>arr</strong> (<em>ndarray</em>) &#8211; 1-D numpy array is required</li>
+<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and peaks    will not be found in.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">peaks, locs: Lists of peak values and locations.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="findpeaks.is_prime">
+<code class="descclassname">findpeaks.</code><code class="descname">is_prime</code><span class="sig-paren">(</span><em>number</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/findpeaks.html#is_prime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.is_prime" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Function to test primality of a number. Function lifted from online resource:</dt>
+<dd><a class="reference external" href="http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w">http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w</a></dd>
+<dt>This function is distributed under a seperate licence:</dt>
+<dd>This article, along with any associated source code and files, is
+licensed under The Code Project Open License (CPOL)</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>number</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Integer to test for primality</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-clustering">
+<span id="clustering"></span><h2>clustering<a class="headerlink" href="#module-clustering" title="Permalink to this headline">¶</a></h2>
+<p>Code to compute the linkage between seismograms and cluster them accordingly</p>
+<p>Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015</p>
+<p>Implimented to streamline templates after template detection in beamforming
+methods, employed by implimentation of Frank et al. code.</p>
+<p>As such this code is designed to work only for templates with the same channels</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="clustering.SVD">
+<code class="descclassname">clustering.</code><code class="descname">SVD</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the SVD of a number of templates and return the singular
+vectors and singular values of the templates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of Obspy.Stream</em>) &#8211; List of the templates to be analysed</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">SVector(list of ndarray), SValues(list) for each channel,             Uvalues(list of ndarray) for each channel,             stachans, List of String (station.channel)</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Note</p>
+<p>It is recommended that you align the data before computing the SVD, e.g.,
+the P-arrival on all templates for the same channel should appear at the same
+time in the trace.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.SVD_2_stream">
+<code class="descclassname">clustering.</code><code class="descname">SVD_2_stream</code><span class="sig-paren">(</span><em>SVectors</em>, <em>stachans</em>, <em>k</em>, <em>sampling_rate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#SVD_2_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.SVD_2_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to convert the singular vectors output by SVD to streams, one for
+each singular vector level, for all channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>SVectors</strong> (<em>List of np.ndarray</em>) &#8211; Singular vectors</li>
+<li><strong>stachans</strong> (<em>List of Strings</em>) &#8211; List of station.channel Strings</li>
+<li><strong>k</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of streams to return = number of SV&#8217;s to include</li>
+<li><strong>sampling_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">SVstreams, List of Obspy.Stream, with SVStreams[0] being
+composed of the highest rank singular vectors.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.cluster">
+<code class="descclassname">clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>templates</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to take a set of templates and cluster them, will return distance            matrix of grouped templates</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates</strong> (<em>List of Obspy.Stream</em>) &#8211; List of templates to compute clustering for</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; plot linkage on screen if True, defaults to True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of cluster groups, array of length len(templates), with
+each number relating to a cluster</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Note:
+Not fully feautured yet, returns the Z matrix, but doesn&#8217;t tell you what        can be clustered.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.corr_cluster">
+<code class="descclassname">clustering.</code><code class="descname">corr_cluster</code><span class="sig-paren">(</span><em>traces</em>, <em>thresh=0.9</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#corr_cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.corr_cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group traces based on correlations above threshold with the stack - will
+run twice, once with a lower threshold, then again with your threshold to
+remove large outliers</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>traces</strong> (<em>List of :class:obspy.Trace</em>) &#8211; Traces to compute similarity between</li>
+<li><strong>thrsh</strong> &#8211; Correlation threshold between -1-1</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">np.ndarray of bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.cross_chan_coherence">
+<code class="descclassname">clustering.</code><code class="descname">cross_chan_coherence</code><span class="sig-paren">(</span><em>st1</em>, <em>st2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#cross_chan_coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.cross_chan_coherence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine the cross-channel coherancy between two streams of
+multichannel seismic data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>st1</strong> (<em>obspy Stream</em>) &#8211; Stream one</li>
+<li><strong>st2</strong> (<em>obspy Stream</em>) &#8211; Stream two</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">cross channel coherence, float - normalized by number of channels</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.distance_matrix">
+<code class="descclassname">clustering.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the distance matrix for all templates - will give
+distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
+have small distances, and an equally well correlated reverse image will
+have the same distance as apositively correlated image - this is an issue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>template</strong> &#8211; List of the streams to compute the distance matrix for</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">ndarray - distance matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.empirical_SVD">
+<code class="descclassname">clustering.</code><code class="descname">empirical_SVD</code><span class="sig-paren">(</span><em>templates</em>, <em>linear=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#empirical_SVD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.empirical_SVD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empirical subspace detector generation function.  Takes a list of templates
+and computes the stack as the first order subspace detector, and the
+differential of this as the second order subspace detector following
+the emprical subspace method of Barrett &amp; Beroza, 2014 - SRL.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates</strong> (<em>list of stream</em>) &#8211; list of template streams to compute the subspace detectors        from</li>
+<li><strong>linear</strong> (<em>Bool</em>) &#8211; Set to true by default to compute the linear stack as the        first subspace vector, False will use the phase-weighted stack as the        first subspace vector.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of two streams</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.extract_detections">
+<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>templates</em>, <em>extract_len=90.0</em>, <em>outdir=None</em>, <em>extract_Z=True</em>, <em>additional_stations=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to extract the waveforms associated with each detection in a list
+of detections for the template, template.  Waveforms will be returned as
+a list of obspy.Streams containing segments of extract_len.  They will also
+be saved if outdir is set.  The default is unset.  The default extract_len
+is 90 seconds per channel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detections</strong> (<em>List tuple of of :class: datetime.datetime, string</em>) &#8211; List of datetime objects, and their associated template            name</li>
+<li><strong>templates</strong> (<em>List of tuple of string and :class: obspy.Stream</em>) &#8211; A list of the tuples of the template name and the template            Stream used to detect detections.</li>
+<li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length to extract around the detection (will be equally            cut around the detection time) in seconds.  Default is 90.0.</li>
+<li><strong>outdir</strong> (<em>Bool or String</em>) &#8211; Default is None, with None set, no files will be saved,            if set each detection will be saved into this directory with files            named according to the detection time, NOT than the waveform            start time. Detections will be saved into template subdirectories.</li>
+<li><strong>extract_Z</strong> (<em>Bool</em>) &#8211; Set to True to also extract Z channels for detections            delays will be the same as horizontal channels, only applies if            only horizontal channels were used in the template.</li>
+<li><strong>additional_stations</strong> (<em>List of tuple</em>) &#8211; List of stations, chanels and networks to also            extract data for using an average delay.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of :class: obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="clustering.group_delays">
+<code class="descclassname">clustering.</code><code class="descname">group_delays</code><span class="sig-paren">(</span><em>templates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#group_delays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.group_delays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to group template waveforms according to their delays</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> (<em>List of obspy.Stream</em>) &#8211; List of the waveforms you want to group</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of List of obspy.Streams where each initial list is a group            with the same delays</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-pre_processing">
+<span id="pre-processing"></span><h2>pre_processing<a class="headerlink" href="#module-pre_processing" title="Permalink to this headline">¶</a></h2>
+<p>Utilities module for the EQcorrscan package written by Calum Chamberlain of
+Victoria University Wlelington.  These functions are designed to do the basic
+processing of the data using obspy modules (which also rely on scipy and numpy).</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="pre_processing._check_daylong">
+<code class="descclassname">pre_processing.</code><code class="descname">_check_daylong</code><span class="sig-paren">(</span><em>tr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#_check_daylong"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._check_daylong" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to check the data quality of the daylong file - check to see that
+the day isn&#8217;t just zeros, with large steps, if it is then the resampling will
+hate it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to check if the data are daylong.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return qual:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.dayproc">
+<code class="descclassname">pre_processing.</code><code class="descname">dayproc</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug</em>, <em>starttime</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#dayproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass, downsample and check headers and length of trace
+to ensure files start at the start of a day and are daylong.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to process</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut in Hz for bandpass</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Corners for bandpass</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.shortproc">
+<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass, downsample.  Works in place
+on data.  This is employed to ensure all parts of the data are processed
+in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners for bandpass filter</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate desired in Hz</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-EQcorrscan_plotting">
+<span id="eqcorrscan-plotting"></span><h2>EQcorrscan_plotting<a class="headerlink" href="#module-EQcorrscan_plotting" title="Permalink to this headline">¶</a></h2>
+<p>Utility code for most of the plots used as part of the EQcorrscan package.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="EQcorrscan_plotting.NR_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">NR_plot</code><span class="sig-paren">(</span><em>stream</em>, <em>NR_stream</em>, <em>detections</em>, <em>false_detections=False</em>, <em>size=(18.5</em>, <em>10)</em>, <em>save=False</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#NR_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.NR_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the Network response alongside the streams used - highlights
+detection times in the network response</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> &#8211; Stream to plot</li>
+<li><strong>NR_stream</strong> &#8211; Stream for the network response</li>
+<li><strong>detections</strong> (<em>List of datetime objects</em>) &#8211; List of the detections</li>
+<li><strong>false_detections</strong> (<em>List of datetime</em>) &#8211; Either False (default) or list of false detection     times</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Size of figure, default is (18.5,10)</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save figure or plot to screen, if not False, must be string of        save path</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String for the title of the plot, set to False</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.Noise_plotting">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">Noise_plotting</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>PAZ</em>, <em>datasource</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#Noise_plotting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.Noise_plotting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make use of obspy&#8217;s PPSD functionality to read in data from
+a single station and the poles-and-zeros for that station before plotting
+the PPSD for this station.  See McNamara(2004) for more details.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>station</strong> (<em>String</em>) &#8211; Station name as it is in the filenames in the database</li>
+<li><strong>channel</strong> (<em>String</em>) &#8211; Channel name as it is in the filenames in the database</li>
+<li><strong>PAZ</strong> (<em>Dict</em>) &#8211; Must contain, Poles, Zeros, Sensitivity, Gain
+:type Poles: List of Complex
+:type Zeros: List of Complex
+:type Sensitivity: Float
+:type Gain: Float</li>
+<li><strong>datasource</strong> (<em>String</em>) &#8211; The directory in which data can be found, can contain
+wildcards.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">PPSD object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.SVD_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">SVD_plot</code><span class="sig-paren">(</span><em>SVStreams</em>, <em>SValues</em>, <em>stachans</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#SVD_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.SVD_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the singular vectors from the clustering routines, one
+plot for each stachan</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>SVStreams</strong> (<em>List of :class:Obspy.Stream</em>) &#8211; See clustering.SVD_2_Stream - will assume these are            ordered by power, e.g. first singular vector in the first stream</li>
+<li><strong>SValues</strong> (<em>List of float</em>) &#8211; List of the singular values corresponding to the SVStreams</li>
+<li><strong>stachans</strong> (<em>List</em>) &#8211; List of station.channel</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.cumulative_detections">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple plotting function to take a list of datetime objects and plot
+a cumulative detections list.  Can take dates as a list of lists and will
+plot each list seperately, e.g. if you have dates from more than one
+template it will overlay them in different colours.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dates</strong> (<em>list of lists of datetime.datetime</em>) &#8211; Must be a list of lists of datetime.datetime objects</li>
+<li><strong>template_names</strong> (<em>list of strings</em>) &#8211; List of the template names in order of the dates</li>
+<li><strong>save</strong> (<em>Boolean, optional</em>) &#8211; Save figure or show to screen</li>
+<li><strong>savefile</strong> (<em>String, optional</em>) &#8211; String to save to.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.detection_multiplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">detection_multiplot</code><span class="sig-paren">(</span><em>stream</em>, <em>template</em>, <em>times</em>, <em>streamcolour='k'</em>, <em>templatecolour='r'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#detection_multiplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.detection_multiplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the stream of data that has been detected in, with the
+template on top of it timed according to a list of given times, just a
+pretty way to show a detection!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; Stream of data to be plotted as the base (black)</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Template to be plotted on top of the base stream (red)</li>
+<li><strong>times</strong> (<em>List of datetime.datetime</em>) &#8211; list of times of detections in the order of the channels in
+template.</li>
+<li><strong>streamcolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String of matplotlib colour types for the stream</li>
+<li><strong>templatecolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Colour to plot the template in.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.interev_mag">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">interev_mag</code><span class="sig-paren">(</span><em>times</em>, <em>mags</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#interev_mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.interev_mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot interevent times against magnitude for given times
+and magnitudes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>times</strong> (<em>list of datetime</em>) &#8211; list of the detection times, must be sorted the same as mags</li>
+<li><strong>mags</strong> (<em>list of float</em>) &#8211; list of magnitudes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.interev_mag_sfiles">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">interev_mag_sfiles</code><span class="sig-paren">(</span><em>sfiles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#interev_mag_sfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.interev_mag_sfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot interevent-time versus magnitude for series of events.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfiles</strong> (<em>List</em>) &#8211; List of sfiles to read from</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.multi_event_singlechan">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">multi_event_singlechan</code><span class="sig-paren">(</span><em>streams</em>, <em>picks</em>, <em>clip=10.0</em>, <em>pre_pick=2.0</em>, <em>freqmin=False</em>, <em>freqmax=False</em>, <em>realign=False</em>, <em>cut=(-3.0</em>, <em>5.0)</em>, <em>PWS=False</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#multi_event_singlechan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.multi_event_singlechan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot data from a single channel at a single station for multiple
+events - data will be alligned by their pick-time given in the picks</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>streams</strong> (<em>List of :class:obspy.stream</em>) &#8211; List of the streams to use, can contain more traces than        you plan on plotting</li>
+<li><strong>picks</strong> (<em>List of :class:PICK</em>) &#8211; List of picks, one for each stream</li>
+<li><strong>clip</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to plot, defaults to 10.0</li>
+<li><strong>pre_pick</strong> (<em>Float</em>) &#8211; Length in seconds to extract and plot before the pick,        defaults to 2.0</li>
+<li><strong>freqmin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>freqmax</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>realign</strong> (<em>Bool</em>) &#8211; To compute best alignement based on correlation or not.</li>
+<li><strong>cut</strong> (<em>tuple:</em>) &#8211; tuple of start and end times for cut in seconds from the pick</li>
+<li><strong>PWS</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; compute Phase Weighted Stack, if False, will compute linear stack</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Plot title.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Alligned and cut traces, and new picks</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.peaks_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">peaks_plot</code><span class="sig-paren">(</span><em>data, starttime, samp_rate, save=False, peaks=[(0, 0)], savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#peaks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.peaks_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple utility code to plot the correlation peaks to check that the peak
+finding routine is running correctly, used in debugging for the EQcorrscan
+module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<em>numpy.array</em>) &#8211; Numpy array of the data within which peaks have been found</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Start time for the data</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate of data in Hz</li>
+<li><strong>save</strong> (<em>Boolean, optional</em>) &#8211; Save figure or plot to screen (False)</li>
+<li><strong>peaks</strong> (<em>List of Tuple, optional</em>) &#8211; List of peak locations and amplitudes (loc, amp)</li>
+<li><strong>savefile</strong> (<em>String, optional</em>) &#8211; Path to save to, only used if save=True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.pretty_template_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">pretty_template_plot</code><span class="sig-paren">(</span><em>template</em>, <em>size=(18.5</em>, <em>10.5)</em>, <em>save=False</em>, <em>title=False</em>, <em>background=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#pretty_template_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.pretty_template_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make a pretty plot of a single template, designed to work better
+than the default obspy plotting routine for short data lengths.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>template</strong> &#8211; Template stream to plot</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; tuple of plot size</li>
+<li><strong>save</strong> (<em>Boolean</em>) &#8211; if False will plot to screen, if True will save</li>
+<li><strong>title</strong> (<em>Boolean</em>) &#8211; String if set will be the plot title</li>
+<li><strong>background</strong> &#8211; Stream to plot the template within.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.threeD_gridplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot in 3D a series of grid points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> (<em>List of tuples</em>) &#8211; List of tuples of the form (lat, long, depth)</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True will save without plotting to screen, if False        (default) will plot to screen but not save</li>
+<li><strong>savefile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; required if save=True, path to save figure to.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.threeD_seismplot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_seismplot</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#threeD_seismplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_seismplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot seismicity and stations in a 3D, movable, zoomable space
+using matplotlibs Axes3D package.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stations</strong> (<em>list of tuple</em>) &#8211; list of one tuple per station of (lat, long, elevation),
+with up positive</li>
+<li><strong>nodes</strong> (<em>list of tuple</em>) &#8211; list of one tuple per event of (lat, long, depth) with down
+positive</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="EQcorrscan_plotting.triple_plot">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to make a triple plot with a day-long seismogram, day-long
+correlation sum trace and histogram of the correlation sum to show normality</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cccsum</strong> (<em>numpy.array</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A sample trace from the same time as cccsum</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Detection threshold within cccsum</li>
+<li><strong>save</strong> (<em>Bool, optional</em>) &#8211; If True will svae and not plot to screen, vice-versa if False</li>
+<li><strong>savefile</strong> (<em>String, optional</em>) &#8211; Path to save figure to, only required if save=True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-mag_calc">
+<span id="mag-calc"></span><h2>mag_calc<a class="headerlink" href="#module-mag_calc" title="Permalink to this headline">¶</a></h2>
+<p>Functions to simulate Wood Anderson traces, pick maximum peak-to-peak amplitudes
+write these amplitudes and periods to SEISAN s-files and to calculate magnitudes
+from this and the informaiton within SEISAN s-files.</p>
+<p>Written as part of the EQcorrscan package by Calum Chamberlain - first written
+to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up
+by Warren-Smith [2014/15].</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="mag_calc.Amp_pick_sfile">
+<code class="descclassname">mag_calc.</code><code class="descname">Amp_pick_sfile</code><span class="sig-paren">(</span><em>sfile, datapath, respdir, chans=['Z'], var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0, highcut=20.0, corners=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#Amp_pick_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.Amp_pick_sfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read information from a SEISAN s-file, load the data and the
+picks, cut the data for the channels given around the S-window, simulate
+a Wood Anderson seismometer, then pick the maximum peak-to-trough
+amplitude.</p>
+<p>Output will be put into a mag_calc.out file which will be in full S-file
+format and can be copied to a REA database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>datapath</strong> (<em>String</em>) &#8211; Path to the waveform files - usually the path to the WAV directory</li>
+<li><strong>respdir</strong> (<em>String</em>) &#8211; Path to the response information directory</li>
+<li><strong>chans</strong> (<em>List of strings</em>) &#8211; List of the channels to pick on, defaults to [&#8216;Z&#8217;] - should
+just be the orientations, e.g. Z,1,2,N,E</li>
+<li><strong>var_wintype</strong> (<em>Bool</em>) &#8211; If True, the winlen will be
+multiplied by the P-S time if both P and S picks are
+available, otherwise it will be multiplied by the hypocentral
+distance*0.34 - dervided using a p-s ratio of 1.68 and
+S-velocity of 1.5km/s to give a large window, defaults to True</li>
+<li><strong>winlen</strong> (<em>Float</em>) &#8211; Length of window, see above parameter, if var_wintype is False
+Then this will be in seconds, otherwise it is the multiplier
+to the p-s time, defaults to 0.5</li>
+<li><strong>pre_pick</strong> (<em>Float</em>) &#8211; Time before the s-pick to start the cut window, defaults
+to 0.2</li>
+<li><strong>pre_filt</strong> (<em>Bool</em>) &#8211; To apply a pre-filter or not, defaults to True</li>
+<li><strong>lowcut</strong> (<em>Float</em>) &#8211; Lowcut in Hz for the pre-filter, defaults to 1.0</li>
+<li><strong>highcut</strong> (<em>Float</em>) &#8211; Highcut in Hz for the pre-filter, defaults to 20.0</li>
+<li><strong>corners</strong> (<em>Int</em>) &#8211; Number of corners to use in the pre-filter</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._GSE2_PAZ_read">
+<code class="descclassname">mag_calc.</code><code class="descname">_GSE2_PAZ_read</code><span class="sig-paren">(</span><em>GSEfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_GSE2_PAZ_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._GSE2_PAZ_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the instrument response information from a GSE Poles and
+Zeros file as generated by the SEISAN program RESP.</p>
+<p>Format must be CAL2, not coded for any other format at the moment, contact
+the author to add others in.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>GSEfile</strong> (<em>Str</em>) &#8211; Path to GSE file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Dict of poles, zeros, gain and sensitivity</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._find_resp">
+<code class="descclassname">mag_calc.</code><code class="descname">_find_resp</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>network</em>, <em>time</em>, <em>delta</em>, <em>directory</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_find_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._find_resp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to find the response information for a given station and
+channel at a given time and return a dictionary of poles and zeros, gain
+and sensitivity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>station</strong> (<em>String</em>) &#8211; Station name (as in the response files)</li>
+<li><strong>channel</strong> (<em>String</em>) &#8211; Channel name (as in the response files)</li>
+<li><strong>network</strong> (<em>String</em>) &#8211; Network to scan for, can be a wildcard</li>
+<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/library/datetime.html#datetime.datetime" title="(in Python v2.7)"><em>datetime.datetime</em></a>) &#8211; Date-time to look for repsonse information</li>
+<li><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sample interval in seconds</li>
+<li><strong>directory</strong> (<em>String</em>) &#8211; Directory to scan for response information</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Dictionary</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._max_p2t">
+<code class="descclassname">mag_calc.</code><code class="descname">_max_p2t</code><span class="sig-paren">(</span><em>data</em>, <em>delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_max_p2t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._max_p2t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to find the maximum peak to trough amplitude and period of this
+amplitude.  Originally designed to be used to calculate magnitudes (by
+taking half of the peak-to-trough amplitude as the peak amplitude).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>ndarray</em>) &#8211; waveform trace to find the peak-to-trough in.</li>
+<li><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling interval in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of (amplitude, period, time) with amplitude in the same scale as
+given in the input data, and period in seconds, and time in seconds
+from the start of the data window.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc._sim_WA">
+<code class="descclassname">mag_calc.</code><code class="descname">_sim_WA</code><span class="sig-paren">(</span><em>trace</em>, <em>PAZ</em>, <em>seedresp</em>, <em>water_level</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#_sim_WA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc._sim_WA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to remove the insturment response from a trace and return a
+de-meaned, de-trended, Wood Anderson simulated trace in it&#8217;s place.</p>
+<p>Works in-place on data and will destroy your original data, copy the
+trace before giving it to this function!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A standard obspy trace, generally should be given without
+pre-filtering, if given with pre-filtering for use with
+amplitude determiniation for magnitudes you will need to
+worry about how you cope with the response of this filter
+yourself.</li>
+<li><strong>PAZ</strong> (<a class="reference external" href="https://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; Dictionary containing lists of poles and zeros, the gain and
+the sensitivity.</li>
+<li><strong>water_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Water level for the simulation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Trace</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mag_calc.dist_calc">
+<code class="descclassname">mag_calc.</code><code class="descname">dist_calc</code><span class="sig-paren">(</span><em>loc1</em>, <em>loc2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mag_calc.html#dist_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mag_calc.dist_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calcualte the distance in km between two points, uses the flat
+Earth approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>loc1</strong> (<em>Tuple</em>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
+<li><strong>loc2</strong> (<em>Tuple</em>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-stacking">
+<span id="stacking"></span><h2>stacking<a class="headerlink" href="#module-stacking" title="Permalink to this headline">¶</a></h2>
+<p>Utility module of the EQcorrscan package to allow for different methods of
+stacking of seismic signal in one place.</p>
+<p>In alpha stages and only with linear stacking implimented thusfar</p>
+<p>Calum Chamberlain 24/06/2015</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="stacking.PWS_stack">
+<code class="descclassname">stacking.</code><code class="descname">PWS_stack</code><span class="sig-paren">(</span><em>streams</em>, <em>weight=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stacking.html#PWS_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.PWS_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the phase weighted stack of a series of streams.
+Recommend aligning the traces before stacking.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>streams</strong> (<em>list of obspy.Stream</em>) &#8211; List of Stream to stack</li>
+<li><strong>weight</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Exponent to the phase stack used for weighting.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="stacking.align_traces">
+<code class="descclassname">stacking.</code><code class="descname">align_traces</code><span class="sig-paren">(</span><em>trace_list</em>, <em>shift_len</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stacking.html#align_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.align_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to allign traces relative to each other based on their
+cross-correlation value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trace_list</strong> (<em>List of Traces</em>) &#8211; List of traces to allign</li>
+<li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Length to allow shifting within in samples</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of shifts for best allignment in seconds</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="stacking.linstack">
+<code class="descclassname">stacking.</code><code class="descname">linstack</code><span class="sig-paren">(</span><em>streams</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stacking.html#linstack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.linstack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the linear stack of a series of seismic streams of
+multiplexed data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stream</strong> &#8211; List of streams to stack</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">stack - Stream</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-catalogue2DD">
+<span id="catalogue2dd"></span><h2>catalogue2DD<a class="headerlink" href="#module-catalogue2DD" title="Permalink to this headline">¶</a></h2>
+<p>Module written by Calum Chamberlain as part of the EQcorrscan package.</p>
+<p>This module contains functions to convert a seisan catalogue to files ready for
+relocation in hypoDD - it will generate both a catalogue (dt.ct) file, event
+file (event.dat), station information file (station.dat), and a correlation
+oiutput file correlated every event in the catalogue with every other event to
+optimize the picks (dt.cc).</p>
+<p>The correlation routine relies on obspy&#8217;s xcorrPickCorrection function from the
+obspy.signal.cross_correlation module.  This function optimizes picks to better
+than sample accuracy by interpolating the correlation function and finding the
+maximum of this rather than the true maximum correlation value.  The output
+from this function is stored in the dt.cc file.</p>
+<p>Information for the station.dat file is read from SEISAN&#8217;s STATION0.HYP file</p>
+<p>Earthquake picks and locations are taken from the catalogued s-files - these
+must be pre-located before entering this routine as origin times and hypocentre
+locations are needed for event.dat files.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="catalogue2DD._av_weight">
+<code class="descclassname">catalogue2DD.</code><code class="descname">_av_weight</code><span class="sig-paren">(</span><em>W1</em>, <em>W2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#_av_weight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD._av_weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>W1</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Seisan input weight (0-4)</li>
+<li><strong>W2</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Seisan input weight (0-4)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD._cc_round">
+<code class="descclassname">catalogue2DD.</code><code class="descname">_cc_round</code><span class="sig-paren">(</span><em>num</em>, <em>dp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#_cc_round"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD._cc_round" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to take a float and round it to dp padding with zeros
+to return a string</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>num</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Number to round</li>
+<li><strong>dp</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of decimal places to round to.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD._separation">
+<code class="descclassname">catalogue2DD.</code><code class="descname">_separation</code><span class="sig-paren">(</span><em>loc1</em>, <em>loc2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#_separation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD._separation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate the distance between two points in the earth</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>loc1</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
+<li><strong>loc2</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">distance in km (float)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD.readSTATION0">
+<code class="descclassname">catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the STATION0.HYP file on the path given.  Outputs written
+in station.dat file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>String</em>) &#8211; Path to the STATION0.HYP file</li>
+<li><strong>station</strong> (<em>List</em>) &#8211; Stations to look for</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of tuples of station, lat, long, elevation</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD.write_catalogue">
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=1</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write the dt.ct file needed by hypoDD - takes input event list
+from write_event as a list of tuples of event id and sfile.  It will read
+the pick information from the seisan formated s-file using the Sfile_util
+utilities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List stations</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD.write_correlations">
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em>, <em>max_sep=4</em>, <em>min_link=8</em>, <em>coh_thresh=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write a dt.cc file for hypoDD input - takes an input list of
+events and computes pick refienements by correlation.</p>
+<p>Note that this is <strong>NOT</strong> fast.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
+<li><strong>wavbase</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to the seisan wave directory that the wavefiles in the
+S-files are stored</li>
+<li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract around the pick</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time before the pick to start the correclation window</li>
+<li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time to allow pick to vary</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lowcut in Hz - default=1.0</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Highcut in Hz - deafult=10.0</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="catalogue2DD.write_event">
+<code class="descclassname">catalogue2DD.</code><code class="descname">write_event</code><span class="sig-paren">(</span><em>sfile_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#write_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.write_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write out an event.dat file of the events</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfile_list</strong> (<em>List</em>) &#8211; List of s-files to sort and put into the database</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of tuples of event ID (int) and Sfile name</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="par">
+<h1>Par<a class="headerlink" href="#par" title="Permalink to this headline">¶</a></h1>
+<p>User-editable codes to input parameters for <em>core</em> files.
+Scripts are coded in the files with a full description of the parameters</p>
+<span class="target" id="module-match_filter_par"></span><p>Outline definitions for match filter python code</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<span class="target" id="module-template_gen_par"></span><p>Outline definitions for template generation</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+</div>
+<div class="section" id="core">
+<h1>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h1>
+<p>Core programs for the EQcorrscan project.</p>
+<div class="section" id="module-bright_lights">
+<span id="bright-lights"></span><h2>bright_lights<a class="headerlink" href="#module-bright_lights" title="Permalink to this headline">¶</a></h2>
+<p>Code to determine the birghtness function of seismic data according to a three-dimensional travel-time grid.  This travel-time grid should be generated usingthe grid2time function of the NonLinLoc package by Anthony Lomax which can befound here: <a class="reference external" href="http://alomax.free.fr/nlloc/">http://alomax.free.fr/nlloc/</a> and is not distributed within thispackage as this is a very useful stand-alone library for seismic event location.</p>
+<p>This code is based on the method of Frank &amp; Shapiro 2014</p>
+<p>Part of the EQcorrscan module to integrate seisan nordic files into a fullcross-channel correlation for detection routine.EQcorrscan is a python module designed to run match filter routines forseismology, within it are routines for integration to seisan and obspy.With obspy integration (which is necessary) all main waveform formats can beread in and output.</p>
+<p>This main section contains a script, LFE_search.py which demonstrates the usageof the built in functions from template generation from picked waveformsthrough detection by match filter of continuous data to the generation of lagtimes to be used for relative locations.</p>
+<p>The match-filter routine described here was used a previous Matlab code for theChamberlain et al. 2014 G-cubed publication.  The basis for the lag-timegeneration section is outlined in Hardebeck &amp; Shelly 2011, GRL.
+Code generated by Calum John Chamberlain of Victoria University of Wellington,2015.</p>
+<p class="rubric">Note</p>
+<dl class="docutils">
+<dt>Pre-requisites:</dt>
+<dd><ul class="first last">
+<li><p class="first">gcc             - for the installation of the openCV correlation routine</p>
+</li>
+<li><p class="first">python-cv2      - Python bindings for the openCV routines</p>
+</li>
+<li><p class="first">python-joblib   - used for parallel processing</p>
+</li>
+<li><dl class="first docutils">
+<dt>python-obspy    - used for lots of common seismological processing</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>requires:</dt>
+<dd><ul class="first last simple">
+<li>numpy</li>
+<li>scipy</li>
+<li>matplotlib</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">NonLinLoc       - used outside of all codes for travel-time generation</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="bright_lights._cum_net_resp">
+<code class="descclassname">bright_lights.</code><code class="descname">_cum_net_resp</code><span class="sig-paren">(</span><em>node_lis</em>, <em>instance=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_cum_net_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._cum_net_resp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the cumulative network response by reading the saved
+energy .npy files</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node_lis</strong> (<em>np.ndarray</em>) &#8211; List of nodes (ints) to read from</li>
+<li><strong>instance</strong> (<em>Int</em>) &#8211; Instance flag for parallelisation, defaults to 0.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">np.ndarray cum_net_resp, list of indeces used</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights._find_detections">
+<code class="descclassname">bright_lights.</code><code class="descname">_find_detections</code><span class="sig-paren">(</span><em>cum_net_resp</em>, <em>nodes</em>, <em>threshold</em>, <em>thresh_type</em>, <em>samp_rate</em>, <em>realstations</em>, <em>length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_find_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._find_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to find detections within the cumulative network response according
+to Frank et al. (2014).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cum_net_resp</strong> (<em>np.ndarray</em>) &#8211; Array of cumulative network response for nodes</li>
+<li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; Nodes associated with the source of energy in the cum_net_resp</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value</li>
+<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD (Median Absolute Deviation) or abs (absolute)    or RMS (Root Mean Squared)</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+<li><strong>realstations</strong> (<em>list of str</em>) &#8211; List of stations used to make the cumulative network    response, will be reported in the DETECTION</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum length of peak to look for in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">detections as :class: DETECTION</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights._node_loop">
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Internal function to allow for parallelisation of brightness</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use</li>
+<li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i]</li>
+<li><strong>stream</strong> &#8211; Data stream to find the brightness for</li>
+<li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation</li>
+<li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM</li>
+<li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(i, energy (np.ndarray))</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights._read_tt">
+<code class="descclassname">bright_lights.</code><code class="descname">_read_tt</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em>, <em>phase</em>, <em>phaseout='S'</em>, <em>ps_ratio=1.68</em>, <em>lags_switch=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_read_tt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._read_tt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read in .csv files of slowness generated from Grid2Time (part
+of NonLinLoc by Anthony Lomax) and convert this to a useful format here.</p>
+<p>It should be noted that this can read either P or S travel-time grids, not
+both at the moment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The path to the .csv Grid2Time outputs</li>
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names to read slowness files for.</li>
+<li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; What phase to return the lagtimes in</li>
+<li><strong>ps_ratio</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; p to s ratio for coversion</li>
+<li><strong>lags_switch</strong> (<em>Bool</em>) &#8211; Return lags or raw travel-times, if set to true will return lags.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes,     :class: &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and     lags[1] nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights._resample_grid">
+<code class="descclassname">bright_lights.</code><code class="descname">_resample_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>mindepth</em>, <em>maxdepth</em>, <em>corners</em>, <em>resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_resample_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._resample_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to resample the lagtime grid to a given volume.  For use if the
+grid from Grid2Time is too large or you want to run a faster, downsampled
+scan.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]    refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in    degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds    :type mindepth: float</li>
+<li><strong>mindepth</strong> &#8211; Upper limit of volume</li>
+<li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lower limit of volume</li>
+<li><strong>corners</strong> (<em>matplotlib.Path</em>) &#8211; matplotlib path of the corners for the 2D polygon to cut to    in lat and long</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights._rm_similarlags">
+<code class="descclassname">bright_lights.</code><code class="descname">_rm_similarlags</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>threshold</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_rm_similarlags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._rm_similarlags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to remove those nodes that have a very similar network moveout
+to another lag.</p>
+<p>Will, for each node, calculate the difference in lagtime at each station
+at every node, then sum these for each node to get a cumulative difference
+in network moveout.  This will result in an array of arrays with zeros on
+the diagonal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]    refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in    degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds</li>
+<li><strong>threshold</strong> &#8211; Threshold for removal in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class:     &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]    nodes[1][1] refers to station[1] and lags[1][1]    nodes[n][n] is a tuple of latitude, longitude and depth.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights.brightness">
+<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate the brightness function in terms of energy for a day
+of data over the entire network for a given grid of nodes.</p>
+<p>Note data in stream must be all of the same length and have the same
+sampling rates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]    refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and    nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in    degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i].    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds.</li>
+<li><strong>data</strong> &#8211; Data through which to look for detections.</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the    brightness function</li>
+<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.</li>
+<li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of templates as :class: <cite>obspy.Stream</cite> objects</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="bright_lights.coherence">
+<code class="descclassname">bright_lights.</code><code class="descname">coherence</code><span class="sig-paren">(</span><em>stream_in, stations=['all'], clip=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine the average network coherence of a given template or
+detection.  You will want your stream to contain only signal as noise
+will reduce the coherence (assuming it is incoherant random noise).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream of seismic data you want to calculate the            coherence for.</li>
+<li><strong>stations</strong> (<em>List of String</em>) &#8211; List of stations to use for coherence, default is all</li>
+<li><strong>clip</strong> (<em>Tuple of Float</em>) &#8211; Default is to use all the data given -             tuple of start and end in seconds from start of trace</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float - coherence, int number of channels used</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-template_gen">
+<span id="template-gen"></span><h2>template_gen<a class="headerlink" href="#module-template_gen" title="Permalink to this headline">¶</a></h2>
+<p>Function to generate template waveforms and information to go with them for theapplication of cross-correlation of seismic data for the detection of repeatingevents.</p>
+<p>Part of the EQcorrscan module to read nordic format s-filesEQcorrscan is a python module designed to run match filter routines forseismology, within it are routines for integration to seisan and obspy.With obspy integration (which is necessary) all main waveform formats can beread in and output.</p>
+<p>This main section contains a script, LFE_search.py which demonstrates the usageof the built in functions from template generation from picked waveformsthrough detection by match filter of continuous data to the generation of lagtimes to be used for relative locations.</p>
+<p>The match-filter routine described here was used a previous Matlab code for theChamberlain et al. 2014 G-cubed publication.  The basis for the lag-timegeneration section is outlined in Hardebeck &amp; Shelly 2011, GRL.</p>
+<p>Code generated by Calum John Chamberlain of Victoria University of Wellington,2015.</p>
+<p class="rubric">Note</p>
+<dl class="docutils">
+<dt>Pre-requisites:</dt>
+<dd><ul class="first last">
+<li><p class="first">gcc             - for the installation of the openCV correlation routine</p>
+</li>
+<li><p class="first">python-cv2      - Python bindings for the openCV routines</p>
+</li>
+<li><p class="first">python-joblib   - used for parallel processing</p>
+</li>
+<li><dl class="first docutils">
+<dt>python-obspy    - used for lots of common seismological processing</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>requires:</dt>
+<dd><ul class="first last simple">
+<li>numpy</li>
+<li>scipy</li>
+<li>matplotlib</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">NonLinLoc       - used outside of all codes for travel-time generation</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="template_gen._template_gen">
+<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin</em>, <em>prepick=0.05</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a cut template in the obspy
+Stream class from a given set of picks and data, also in an obspy stream
+class.  Should be given pre-processed data (downsampled and filtered)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>picks</strong> &#8211; Picks to extract data around</li>
+<li><strong>st</strong> &#8211; Stream to etract templates from</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of template in seconds</li>
+<li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; P, S or all</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract before the pick time            default is 0.05 seconds</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To plot the template or not, default is True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_contbase">
+<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut=None</em>, <em>highcut=None</em>, <em>samp_rate=None</em>, <em>filt_order=None</em>, <em>length=None</em>, <em>prepick=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read in picks from sfile then generate the template from the
+picks within this and the wavefiles from the continous database of day-long
+files.  Included is a section to sanity check that the files are daylong and
+that they start at the start of the day.  You should ensure this is the case
+otherwise this may alter your data if your data are daylong but the headers
+are incorrectly set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sfile</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; sfilename must be the path to a seisan nordic type s-file             containing waveform and pick information, all other arguments can             be numbers save for swin which must be either P, S or all             (case-sensitive).</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in template            defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template            defaults file</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in            template defaults file</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look in            template defaults file</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template            defaults file.</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_sfile">
+<code class="descclassname">template_gen.</code><code class="descname">from_sfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut=None</em>, <em>highcut=None</em>, <em>samp_rate=None</em>, <em>filt_order=None</em>, <em>length=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#from_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_sfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read in picks from sfile then generate the template from the
+picks within this and the wavefile found in the pick file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sfile</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; sfilename must be the    path to a seisan nordic type s-file containing waveform and pick    information.</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in template            defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template            defaults file</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in            template defaults file</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look in            template defaults file</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template            defaults file.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-match_filter">
+<span id="match-filter"></span><h2>match_filter<a class="headerlink" href="#module-match_filter" title="Permalink to this headline">¶</a></h2>
+<p>Function to cross-correlate templates generated by template_gen function withdata and output the detecitons.  The main component of this script is thenormxcorr2 function from the openCV image processing package.  This is a highlyoptimized and accurate normalized cross-correlation routine.  The details ofthis code can be found here:    - <a class="reference external" href="http://www.cs.ubc.ca/research/deaton/remarks_ncc.htmlThe">http://www.cs.ubc.ca/research/deaton/remarks_ncc.htmlThe</a> cpp code was first tested using the Matlab mex wrapper, and has since beenported to a python callable dynamic library.</p>
+<p>Part of the EQcorrscan module to integrate seisan nordic files into a fullcross-channel correlation for detection routine.EQcorrscan is a python module designed to run match filter routines forseismology, within it are routines for integration to seisan and obspy.With obspy integration (which is necessary) all main waveform formats can beread in and output.</p>
+<p>This main section contains a script, LFE_search.py which demonstrates the usageof the built in functions from template generation from picked waveformsthrough detection by match filter of continuous data to the generation of lagtimes to be used for relative locations.</p>
+<p>The match-filter routine described here was used a previous Matlab code for theChamberlain et al. 2014 G-cubed publication.  The basis for the lag-timegeneration section is outlined in Hardebeck &amp; Shelly 2011, GRL.</p>
+<p>Code generated by Calum John Chamberlain of Victoria University of Wellington,2015.</p>
+<p class="rubric">Note</p>
+<dl class="docutils">
+<dt>Pre-requisites:</dt>
+<dd><ul class="first last">
+<li><p class="first">gcc             - for the installation of the openCV correlation routine</p>
+</li>
+<li><p class="first">python-cv2      - Python bindings for the openCV routines</p>
+</li>
+<li><p class="first">python-joblib   - used for parallel processing</p>
+</li>
+<li><dl class="first docutils">
+<dt>python-obspy    - used for lots of common seismological processing</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>requires:</dt>
+<dd><ul class="first last simple">
+<li>numpy</li>
+<li>scipy</li>
+<li>matplotlib</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">NonLinLoc       - used outside of all codes for travel-time generation</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="class">
+<dt id="match_filter.DETECTION">
+<em class="property">class </em><code class="descclassname">match_filter.</code><code class="descname">DETECTION</code><span class="sig-paren">(</span><em>template_name</em>, <em>detect_time</em>, <em>no_chans</em>, <em>detect_val</em>, <em>threshold</em>, <em>typeofdet</em>, <em>chans=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#DETECTION"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.DETECTION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Information required for a full detection based on cross-channel
+correlation sums.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">type template_name:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><p class="first">str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param template_name:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The name of the template for which this detection        was made</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type detect_time:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><table class="first docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">&#8216;obspy.UTCDateTime&#8217;</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param detect_time:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">Time of detection as an obspy UTCDateTime object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type no_chans:</th><td class="field-body"><p class="first">int</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param no_chans:</th><td class="field-body"><p class="first">The number of channels for which the cross-channel        correlation sum was calculated over.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type chans:</th><td class="field-body"><p class="first">list of str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param chans:</th><td class="field-body"><p class="first">List of stations for the detection</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type cccsum_val:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><p class="first">float</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param cccsum_val:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The raw value of the cross-channel correlation sum        for this detection.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type threshold:</th><td class="field-body"><p class="first">float</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param threshold:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The value of the threshold used for this detection,        will be the raw threshold value related to the cccsum.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type typeofdet:</th><td class="field-body"><p class="first">str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param typeofdet:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Type of detection, STA, corr, bright</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter._channel_loop">
+<code class="descclassname">match_filter.</code><code class="descname">_channel_loop</code><span class="sig-paren">(</span><em>templates</em>, <em>stream</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#_channel_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter._channel_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loop to generate cross channel correaltion sums for a series of templates
+hands off the actual correlations to a sister function which can be run in
+parallel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates</strong> &#8211; A list of templates, where each one should be an    obspy.Stream object containing multiple traces of seismic data and the    relevant header information.</li>
+<li><strong>stream</strong> &#8211; A single obspy.Stream object containing daylong seismic data    to be correlated through using the templates.  This is in effect the image</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New list of :class: &#8216;numpy.array&#8217; objects.  These will contain the    correlation sums for each template for this day of data.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of ints as number of channels used for each cross-correlation</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter._template_loop">
+<code class="descclassname">match_filter.</code><code class="descname">_template_loop</code><span class="sig-paren">(</span><em>template</em>, <em>chan</em>, <em>station</em>, <em>channel</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#_template_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter._template_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sister loop to handle the correlation of a single template (of multiple
+channels) with a single channel of data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<em>Int</em>) &#8211; Optional argument, used to keep track of which process is being    run.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple of (i,ccc) with ccc as an ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter.match_filter">
+<code class="descclassname">match_filter.</code><code class="descname">match_filter</code><span class="sig-paren">(</span><em>template_names</em>, <em>templates</em>, <em>stream</em>, <em>threshold</em>, <em>threshold_type</em>, <em>trig_int</em>, <em>plotvar</em>, <em>tempdir=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#match_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.match_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Over-arching code to run the correlations of given templates with a day of
+seismic data and output the detections based on a given threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates</strong> (<em>list :class: &#8216;obspy.Stream&#8217;</em>) &#8211; A list of templates of which each template is a Stream of    obspy traces containing seismic data and header information.</li>
+<li><strong>stream</strong> &#8211; An obspy.Stream object containing all the data available and    required for the correlations with templates given.  For efficiency this    should contain no excess traces which are not in one or more of the    templates.</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; A threshold value set based on the threshold_type    :type threshold_type: str</li>
+<li><strong>threshold_type</strong> &#8211; The type of threshold to be used, can be MAD,    absolute or av_chan_corr.    MAD threshold is calculated as the    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum    for a given template.    absolute threhsold is a true absolute threshold based on the cccsum value    av_chan_corr is based on the mean values of single-channel    cross-correlations assuming all data are present as required for the    template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where    template is a single template from the input and the length is the number    of channels within this template.</li>
+<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Directory to put temporary files, or False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">&#8216;DETECTIONS&#8217; detections for each channel formatted as    :class: &#8216;obspy.UTCDateTime&#8217; objects.</td>
+</tr>
+</tbody>
+</table>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter.normxcorr2">
+<code class="descclassname">match_filter.</code><code class="descname">normxcorr2</code><span class="sig-paren">(</span><em>template</em>, <em>image</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#normxcorr2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.normxcorr2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base function to call the c++ correlation routine from the openCV image
+processing suite.  Requires you to have installed the openCV python
+bindings, which can be downloaded on Linux machines using:</p>
+<blockquote>
+<div><ul class="simple">
+<li>sudo apt-get install python-openCV</li>
+</ul>
+</div></blockquote>
+<p>Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the
+normalized cross-correaltion.  Documentation on this function can be
+found here:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate">http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate</a></li>
+</ul>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>template</strong> &#8211; Template array</li>
+<li><strong>image</strong> &#8211; image to scan    the template through.  The order of these matters, if you put the template    after the image you will get a reversed correaltion matrix</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">New :class: &#8216;numpy.array&#8217; object of the correlation values for the    correlation of the image with the template.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-lag_calc">
+<span id="lag-calc"></span><h2>lag_calc<a class="headerlink" href="#module-lag_calc" title="Permalink to this headline">¶</a></h2>
+<p>Functions to generate lag-times for events detected by correlation.</p>
+<p>Part of the EQcorrscan module to integrate seisan nordic files into a full
+cross-channel correlation for detection routine.
+EQcorrscan is a python module designed to run match filter routines for
+seismology, within it are routines for integration to seisan and obspy.
+With obspy integration (which is necessary) all main waveform formats can be
+read in and output.</p>
+<p>This main section contains a script, LFE_search.py which demonstrates the usage
+of the built in functions from template generation from picked waveforms
+through detection by match filter of continuous data to the generation of lag
+times to be used for relative locations.</p>
+<p>The match-filter routine described here was used a previous Matlab code for the
+Chamberlain et al. 2014 G-cubed publication.  The basis for the lag-time
+generation section is outlined in Hardebeck &amp; Shelly 2011, GRL.</p>
+<p>Code generated by Calum John Chamberlain of Victoria University of Wellington,
+2015.</p>
+<p class="rubric">Note</p>
+<dl class="docutils">
+<dt>Pre-requisites:</dt>
+<dd><ul class="first last">
+<li><p class="first">gcc             - for the installation of the openCV correlation routine</p>
+</li>
+<li><p class="first">python-cv2      - Python bindings for the openCV routines</p>
+</li>
+<li><p class="first">python-joblib   - used for parallel processing</p>
+</li>
+<li><dl class="first docutils">
+<dt>python-obspy    - used for lots of common seismological processing</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>requires:</dt>
+<dd><ul class="first last simple">
+<li>numpy</li>
+<li>scipy</li>
+<li>matplotlib</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">NonLinLoc       - used outside of all codes for travel-time generation</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="lag_calc._channel_loop">
+<code class="descclassname">lag_calc.</code><code class="descname">_channel_loop</code><span class="sig-paren">(</span><em>detection</em>, <em>template</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lag_calc.html#_channel_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lag_calc._channel_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility function to take a stream of data for the detected event and parse
+the correct data to lag_gen</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detection</strong> (<em>obspy.Stream</em>) &#8211; Stream of data for the slave event detected using template</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Stream of data as the template for the detection.</li>
+<li><strong>i</strong> (<em>int, optional</em>) &#8211; Used to track which process has occured when running in parallel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">picks, a tuple of (lag in s, cross-correlation value, station, chan)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lag_calc.day_loop">
+<code class="descclassname">lag_calc.</code><code class="descname">day_loop</code><span class="sig-paren">(</span><em>detection_streams</em>, <em>template</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lag_calc.html#day_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lag_calc.day_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to loop through multiple detections for one template - ostensibly
+designed to run for the same day of data for I/O simplicity, but as you
+are passing stream objects it could run for all the detections ever, as long
+as you have the RAM!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detection_streams</strong> (<em>List of obspy.Stream</em>) &#8211; List of all the detections for this template that you
+want to compute the optimum pick for.</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; The original template used to detect the detections passed</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">lags - List of List of tuple: lags[i] corresponds to detection[i],
+lags[i][j] corresponds to a channel of detection[i], within
+this tuple is the lag (in seconds), normalised correlation,
+station and channel.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lag_calc.lag_calc">
+<code class="descclassname">lag_calc.</code><code class="descname">lag_calc</code><span class="sig-paren">(</span><em>detections</em>, <em>detect_data</em>, <em>templates</em>, <em>shift_len=0.2</em>, <em>min_cc=0.4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lag_calc.html#lag_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lag_calc.lag_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overseer function to take a list of detection objects, cut the data for
+them to lengths of the same length of the template + shift_len on
+either side. This will then write out SEISAN s-file for the detections
+with pick times based on the lag-times found at the maximum correlation,
+providing that correlation is above the min_cc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>detections</strong> (<em>List of DETECTION</em>) &#8211; List of DETECTION objects</li>
+<li><strong>detect_data</strong> (<em>obspy.Stream</em>) &#8211; All the data needed to cut from - can be a gappy Stream</li>
+<li><strong>templates</strong> (<em>List of tuple of String, obspy.Stream</em>) &#8211; List of the templates used as tuples of template name, template</li>
+<li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Shift length allowed for the pick in seconds, will be
+plus/minus this amount - default=0.2</li>
+<li><strong>min_cc</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum cross-correlation value to be considered a pick,
+default=0.4</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.1-alpha',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
