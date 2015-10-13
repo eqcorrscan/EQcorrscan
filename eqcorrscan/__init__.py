@@ -28,7 +28,7 @@ import sys
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 
 __all__ = ['core', 'utils', 'par']
-
+__version__ = 'v0.0.2'
 if __name__ == '__main__':
     import doctest
     doctest.testmod(exclude_empty=True)

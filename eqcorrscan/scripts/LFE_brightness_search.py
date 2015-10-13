@@ -36,6 +36,7 @@ Split=False
 startdate=False
 sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
+oldnodes=False
 if len(sys.argv) == 2:
     flag=str(sys.argv[1])
     if flag == '--debug':
@@ -44,9 +45,12 @@ if len(sys.argv) == 2:
     elif flag == '--debug-prep':
         Test=False
         Prep=True
+    elif flag == '--old-nodes':
+        Test=False
+        Prep=False
+        oldnodes=True
     else:
-        raise IOError("I don't recognise your arguments I know --debug and "+\
-        "--debug-prep, and --instance, --splits, --startdate, --enddate")
+        raise IOError("I don't recognise your arguments I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
 elif len(sys.argv) == 5:
     args=sys.argv[1:len(sys.argv)]
     if args[0] == '--instance' or args[2]=='--instance':
@@ -73,7 +77,41 @@ elif len(sys.argv) == 5:
                 enddate=dt.datetime.strptime(str(args[i+1]), '%Y/%m/%d')
                 print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
     else:
-        raise IOError("I don't recognise your arguments,  I know --debug and --debug-prep, and --instance, --splits, --startdate, --enddate")
+        raise IOError("I don't recognise your arguments,  I know --debug and"+\
+                      "--debug-prep, and --instance, --splits, --startdate, --enddate")
+elif len(sys.argv) == 6:
+    args=sys.argv[1:len(sys.argv)]
+    if args[0] == '--instance' or args[1]=='--instance' or args[2]=='--instance':
+        # Arguments to allow the code to be run in multiple instances
+        Split=True
+        Test=False
+        Prep=False
+        for i in xrange(len(args)):
+            if args[i] == '--instance':
+                instance=int(args[i+1])
+                print 'I will run this for instance '+str(instance)
+            elif args[i] == '--splits':
+                splits=int(args[i+1])
+                print 'I will divide the days into '+str(splits)+' chunks'
+            elif args[i] == '--old-nodes':
+                oldnodes=True
+    elif args[0] == '--startdate' or argc[1] == '--startdate' or args[2] == '--startdate':
+        Split=False
+        Test=False
+        Prep=False
+        for i in xrange(len(args)):
+            if args[i]== '--startdate':
+                startdate=dt.datetime.strptime(str(args[i+1]),'%Y/%m/%d')
+                print 'Start date is: '+dt.datetime.strftime(startdate, '%Y/%m/%d')
+            elif args[i] == '--enddate':
+                enddate=dt.datetime.strptime(str(args[i+1]), '%Y/%m/%d')
+                print 'End date is: '+dt.datetime.strftime(enddate, '%Y/%m/%d')
+            elif args[i] == '--old-nodes':
+                oldnodes=True
+    else:
+        raise IOError("I don't recognise your arguments,  I know --debug and"+\
+                      "--debug-prep, and --instance, --splits, --startdate, --enddate")
+
 elif len(sys.argv) == 7:
     args=sys.argv[1:len(sys.argv)]
     Split=False
@@ -96,8 +134,8 @@ else:
     Prep=False
     Split=False
 
-from par import template_gen_par as templatedef
-from par import match_filter_par as matchdef
+from par import LFE_template_gen_par as templatedef
+from par import match_filter_par_LFEs as matchdef
 from par import bright_lights_par as brightdef
 from utils import seismo_logs
 if brightdef.plotsave:
@@ -113,7 +151,7 @@ from utils import pre_processing
 from utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
-import warnings
+import warnings, pickle
 
 templates=[]
 delays=[]
@@ -126,35 +164,55 @@ print '     highcut: '+str(templatedef.highcut)+' Hz'
 print '     length: '+str(templatedef.length)+' s'
 print '     swin: '+templatedef.swin+'\n'
 
-
-# Use the brightness function to search for possible templates
-# First read in the travel times
-print 'Reading in the original grids'
-stations, allnodes, alllags = \
+if not oldnodes:
+    # Use the brightness function to search for possible templates
+    # First read in the travel times
+    print 'Reading in the original grids'
+    stations, allnodes, alllags = \
             bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
                                     brightdef.phase, phaseout='S', \
                                     ps_ratio=brightdef.ps_ratio)
-print 'I have read in '+str(len(allnodes))+' nodes'
-# Resample the grid to allow us to run it quickly!
-print 'Cutting the grid'
-stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,
-                                                     alllags,
-                                                     brightdef.mindepth,
-                                                     brightdef.maxdepth,
-                                                     brightdef.corners,
-                                                     brightdef.resolution)
-del allnodes, alllags
-# Check that we still have a grid!
-if len(nodes) == 0:
-    raise IOError("You have no nodes left")
-# Remove lags that have a similar network moveout, e.g. the sum of the
-# differences in moveouts is small.
-print "Removing simlar lags"
-stations, nodes, lags = bright_lights._rm_similarlags(stations, nodes, lags,
-                                                      brightdef.nodesimthresh)
-print "Plotting new grid"
-plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png')
-# Call the main function!
+    print 'I have read in '+str(len(allnodes))+' nodes'
+    # Resample the grid to allow us to run it quickly!
+    print 'Cutting the grid'
+    stations, nodes, lags = bright_lights._resample_grid(stations, allnodes,
+                                                         alllags,
+                                                         brightdef.mindepth,
+                                                         brightdef.maxdepth,
+                                                         brightdef.corners,
+                                                         brightdef.resolution)
+    del allnodes, alllags
+    # Check that we still have a grid!
+    if len(nodes) == 0:
+        raise IOError("You have no nodes left")
+    # Remove lags that have a similar network moveout, e.g. the sum of the
+    # differences in moveouts is small.
+    print "Removing simlar lags"
+    stations, nodes, lags = bright_lights._rm_similarlags(stations, nodes, lags,
+                                                          brightdef.nodesimthresh)
+   # print "Plotting new grid"
+   # plotting.threeD_gridplot(nodes, save=brightdef.plotsave, savefile='Nodes_in.png')
+    # Call the main function!
+
+    fnodesin=open('Nodes_in.csv','w')
+    for node in nodes:
+        fnodesin.write(node[0]+','+node[1]+','+node[2]+'\n')
+    fnodesin.close()
+    with open('Nodes_in.pkl','wb') as pickle_file:
+        pickle.dump(nodes, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('Lags_in.pkl','wb') as pickle_file:
+        pickle.dump(lags, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('Stations_in.pkl','wb') as pickle_file:
+        pickle.dump(stations, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+else:
+    with open('Nodes_in.pkl','rb') as pickle_load:
+        nodes = pickle.load(pickle_load)
+    with open('Lags_in.pkl','rb') as pickle_load:
+        lags = pickle.load(pickle_load)
+    with open('Stations_in.pkl','rb') as pickle_load:
+        stations = pickle.load(pickle_load)
+    print 'Read in '+str(len(nodes))+' nodes'
+
 templates=[]
 nodesout=[]
 
@@ -189,7 +247,19 @@ for day in dates: #Loop through dates
             # del stream
         for station in stations:
             # Check logs for this day
-            rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+            if station == 'WHAT2':
+                sta='WHAT'
+                useful_chans=['2']
+            elif station == 'POCR2':
+                sta='POCR'
+                useful_chans=['2']
+            elif station == 'FRAN':
+                sta=station
+                useful_chans=['2']
+            else:
+                sta=station
+                useful_chans=['N','2']
+            rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+sta+'/'+\
                     str(day.year)+str(day.julday).zfill(3)
             errors, full = seismo_logs.check_all_logs(rawdir, \
                                                       1.0/templatedef.samp_rate)
@@ -212,13 +282,14 @@ for day in dates: #Loop through dates
                         str(day.day).zfill(2)
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 daydir='Y'+str(day.year)+'/R'+str(day.julday).zfill(3)+'.01'
-            print '     Reading data from: '+contbase[0]+'/'+daydir+'/*'+station+'*'
-            for chan in ['N','E','1','2']: # only take horizontal components
-                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*'):
+            print '     Reading data from: '
+            for chan in useful_chans: # only take N horizontal components
+                if glob.glob(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'):
+                    print contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*'
                     if not 'stream' in locals():
-                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
+                        stream=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
                     else:
-                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'*'+chan+'*')
+                        stream+=obsread(contbase[0]+'/'+daydir+'/*'+station+'.*'+chan+'.*')
     else:
         for station in stations:
             fname='test_data/'+station+'-*-'+str(day.year)+\
@@ -238,28 +309,28 @@ for day in dates: #Loop through dates
         if not parallel:
             for tr in stream:
                 # tr.plot()
-                tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
-                                            templatedef.filter_order, templatedef.samp_rate,\
+                tr=pre_processing.dayproc(tr, brightedef.lowcut, brightdef.highcut,\
+                                            brightdef.filter_order, brightdef.samp_rate,\
                                             templatedef.debug, day)
         else:
-            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
-                                                                   templatedef.highcut,\
-                                                                   templatedef.filter_order,\
-                                                                   templatedef.samp_rate,\
+            stream=Parallel(n_jobs=10)(delayed(pre_processing.dayproc)(tr, brightdef.lowcut,\
+                                                                   brightdef.highcut,\
+                                                                   brightdef.filter_order,\
+                                                                   brightdef.samp_rate,\
                                                                    templatedef.debug, day)\
                                 for tr in stream)
             stream=Stream(stream)
             print stream
     if not Prep:
-        stream_copy=stream.copy() # Keep the stream safe, we move to float16 in bight_lights
+        #stream_copy=stream.copy() # Keep the stream safe
         print "Running the detection routine"
         # Check that the data are okay
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream,
                         brightdef.threshold, brightdef.thresh_type,\
-                        brightdef.coherance, instance)
-        del detect_templates, stream # Delete templates from memory to conserve RAM!
-        stream=stream_copy
+                        brightdef.coherance, instance, matchdef, templatedef)
+        del detect_templates#, stream # Delete templates from memory to conserve RAM!
+        #stream=stream_copy
         nodesout+=detect_nodes
         if Split:
             plotting.threeD_gridplot(nodesout, save=brightdef.plotsave,\

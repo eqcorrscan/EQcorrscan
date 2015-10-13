@@ -37,15 +37,14 @@ from obspy import UTCDateTime
                        # 86400)]
 
 
-dates=[UTCDateTime('2012-08-17')+i \
- for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2012-08-17')),\
-
+dates=[UTCDateTime('2009-03-26')+i \
+ for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2009-03-26')),\
                  86400)] # Example of a generator expression for all-time
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
 
-threshold=10.00                     # Threshold to declare a detection at, type
+threshold=8.00                      # Threshold to declare a detection at, type
                                     # of threshold is set below
 
 threshtype='MAD'                    # Type of threshold, can be either MAD or
