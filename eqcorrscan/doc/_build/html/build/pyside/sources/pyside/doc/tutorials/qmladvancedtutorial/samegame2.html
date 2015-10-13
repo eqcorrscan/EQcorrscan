@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>QML Advanced Tutorial 2 - Populating the Game Canvas &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="qml-advanced-tutorial-2-populating-the-game-canvas">
+<span id="samegame2"></span><h1>QML Advanced Tutorial 2 - Populating the Game Canvas<a class="headerlink" href="#qml-advanced-tutorial-2-populating-the-game-canvas" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="generating-the-blocks-in-javascript">
+<h2>Generating the blocks in JavaScript<a class="headerlink" href="#generating-the-blocks-in-javascript" title="Permalink to this headline">¶</a></h2>
+<p>Now that we&#8217;ve written some basic elements, let&#8217;s start writing the game.</p>
+<p>The first task is to generate the game blocks. Each time the New Game button
+is clicked, the game canvas is populated with a new, random set of
+blocks. Since we need to dynamically generate new blocks for each new game,
+we cannot use Repeater to define the blocks. Instead, we will
+create the blocks in JavaScript.</p>
+<p>Here is the JavaScript code for generating the blocks, contained in a new
+file, <code class="docutils literal"><span class="pre">samegame.js</span></code>. The code is explained below.</p>
+<p>The <code class="docutils literal"><span class="pre">startNewGame()</span></code> function deletes the blocks created in the previous game and
+calculates the number of rows and columns of blocks required to fill the game window for the new game.
+Then, it creates an array to store all the game
+blocks, and calls <code class="docutils literal"><span class="pre">createBlock()</span></code> to create enough blocks to fill the game window.</p>
+<p>The <code class="docutils literal"><span class="pre">createBlock()</span></code> function creates a block from the <code class="docutils literal"><span class="pre">Block.qml</span></code> file
+and moves the new block to its position on the game canvas. This involves several steps:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">Qt.createComponent()</span></code> is called to
+generate an element from <code class="docutils literal"><span class="pre">Block.qml</span></code>.  If the component is ready,
+we can call <code class="docutils literal"><span class="pre">createObject()</span></code> to create an instance of the <code class="docutils literal"><span class="pre">Block</span></code>
+item.</li>
+<li>If <code class="docutils literal"><span class="pre">createObject()</span></code> returned null (i.e. if there was an error
+while loading the object), print the error information.</li>
+<li>Place the block in its position on the board and set its width and
+height.  Also, store it in the blocks array for future reference.</li>
+<li>Finally, print error information to the console if the component
+could not be loaded for some reason (for example, if the file is
+missing).</li>
+</ul>
+</div>
+<div class="section" id="connecting-javascript-components-to-qml">
+<h2>Connecting JavaScript components to QML<a class="headerlink" href="#connecting-javascript-components-to-qml" title="Permalink to this headline">¶</a></h2>
+<p>Now we need to call the JavaScript code in <code class="docutils literal"><span class="pre">samegame.js</span></code> from our QML files.
+To do this, we add this line to <code class="docutils literal"><span class="pre">samegame.qml</span></code> which imports
+the JavaScript file as a module:</p>
+<p>This allows us to refer to any functions within <code class="docutils literal"><span class="pre">samegame.js</span></code> using &#8220;SameGame&#8221;
+as a prefix: for example, <code class="docutils literal"><span class="pre">SameGame.startNewGame()</span></code> or <code class="docutils literal"><span class="pre">SameGame.createBlock()</span></code>.
+This means we can now connect the New Game button&#8217;s <code class="docutils literal"><span class="pre">onClicked</span></code> handler to the <code class="docutils literal"><span class="pre">startNewGame()</span></code>
+function, like this:</p>
+<p>So, when you click the New Game button, <code class="docutils literal"><span class="pre">startNewGame()</span></code> is called and generates a field of blocks, like this:</p>
+<div class="figure align-center">
+<img alt="../../../../../../../_images/declarative-adv-tutorial2.png" src="../../../../../../../_images/declarative-adv-tutorial2.png" />
+</div>
+<p>Now, we have a screen of blocks, and we can begin to add the game mechanics.</p>
+<p>[Previous <a class="reference internal" href="samegame1.html#samegame1"><span>QML Advanced Tutorial 1 - Creating the Game Canvas and Blocks</span></a>] [Next <a class="reference internal" href="samegame3.html#samegame3"><span>QML Advanced Tutorial 3 - Implementing the Game Logic</span></a>]</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">QML Advanced Tutorial 2 - Populating the Game Canvas</a><ul>
+<li><a class="reference internal" href="#generating-the-blocks-in-javascript">Generating the blocks in JavaScript</a></li>
+<li><a class="reference internal" href="#connecting-javascript-components-to-qml">Connecting JavaScript components to QML</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmladvancedtutorial/samegame2.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmladvancedtutorial/samegame2.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>
