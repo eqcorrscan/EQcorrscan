@@ -1,0 +1,120 @@
+\begin{theindex}
+\def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
+
+  \bigletter {Symbols}
+  \item \_GSE2\_PAZ\_read() (in module mag\_calc), \hyperpage{24}
+  \item \_av\_weight() (in module catalogue2DD), \hyperpage{25}
+  \item \_cc\_round() (in module catalogue2DD), \hyperpage{25}
+  \item \_channel\_loop() (in module lag\_calc), \hyperpage{17}
+  \item \_channel\_loop() (in module match\_filter), \hyperpage{16}
+  \item \_check\_daylong() (in module pre\_processing), \hyperpage{21}
+  \item \_find\_detections() (in module bright\_lights), \hyperpage{11}
+  \item \_find\_resp() (in module mag\_calc), \hyperpage{24}
+  \item \_max\_p2t() (in module mag\_calc), \hyperpage{24}
+  \item \_node\_loop() (in module bright\_lights), \hyperpage{12}
+  \item \_read\_tt() (in module bright\_lights), \hyperpage{12}
+  \item \_resample\_grid() (in module bright\_lights), \hyperpage{12}
+  \item \_rm\_similarlags() (in module bright\_lights), \hyperpage{12}
+  \item \_sim\_WA() (in module mag\_calc), \hyperpage{24}
+  \item \_template\_gen() (in module template\_gen), \hyperpage{14}
+  \item \_template\_loop() (in module match\_filter), \hyperpage{16}
+
+  \indexspace
+  \bigletter A
+  \item Amp\_pick\_sfile() (in module mag\_calc), \hyperpage{23}
+
+  \indexspace
+  \bigletter B
+  \item blanksfile() (in module Sfile\_util), \hyperpage{19}
+  \item bright\_lights (module), \hyperpage{11}
+  \item brightness() (in module bright\_lights), \hyperpage{13}
+
+  \indexspace
+  \bigletter C
+  \item catalogue2DD (module), \hyperpage{25}
+  \item cluster() (in module clustering), \hyperpage{21}
+  \item clustering (module), \hyperpage{20}
+  \item coherance() (in module bright\_lights), \hyperpage{13}
+  \item cross\_chan\_coherance() (in module clustering), \hyperpage{21}
+  \item cumulative\_detections() (in module EQcorrscan\_plotting), \hyperpage{22}
+
+  \indexspace
+  \bigletter D
+  \item day\_loop() (in module lag\_calc), \hyperpage{17}
+  \item dayproc() (in module pre\_processing), \hyperpage{21}
+  \item DETECTION (class in match\_filter), \hyperpage{15}
+  \item detection\_multiplot() (in module EQcorrscan\_plotting), \hyperpage{22}
+  \item detection\_timeseries() (in module EQcorrscan\_plotting), \hyperpage{22}
+  \item distance\_matrix() (in module clustering), \hyperpage{21}
+
+  \indexspace
+  \bigletter E
+  \item EQcorrscan\_plotting (module), \hyperpage{22}
+
+  \indexspace
+  \bigletter F
+  \item find\_peaks() (in module findpeaks), \hyperpage{20}
+  \item find\_peaks2() (in module findpeaks), \hyperpage{20}
+  \item findpeaks (module), \hyperpage{20}
+  \item from\_contbase() (in module template\_gen), \hyperpage{14}
+  \item from\_sfile() (in module template\_gen), \hyperpage{14}
+
+  \indexspace
+  \bigletter G
+  \item group\_delays() (in module clustering), \hyperpage{21}
+
+  \indexspace
+  \bigletter L
+  \item lag\_calc (module), \hyperpage{17}
+  \item lag\_calc() (in module lag\_calc), \hyperpage{18}
+  \item linstack() (in module stacking), \hyperpage{25}
+
+  \indexspace
+  \bigletter M
+  \item mag\_calc (module), \hyperpage{23}
+  \item match\_filter (module), \hyperpage{15}
+  \item match\_filter() (in module match\_filter), \hyperpage{16}
+  \item match\_filter\_par (module), \hyperpage{27}
+
+  \indexspace
+  \bigletter N
+  \item Noise\_plotting() (in module EQcorrscan\_plotting), \hyperpage{22}
+  \item normxcorr2() (in module match\_filter), \hyperpage{16}
+
+  \indexspace
+  \bigletter P
+  \item peaks\_plot() (in module EQcorrscan\_plotting), \hyperpage{22}
+  \item PICK (class in Sfile\_util), \hyperpage{19}
+  \item populateSfile() (in module Sfile\_util), \hyperpage{19}
+  \item pre\_processing (module), \hyperpage{21}
+  \item PWS\_stack() (in module stacking), \hyperpage{25}
+
+  \indexspace
+  \bigletter R
+  \item readpicks() (in module Sfile\_util), \hyperpage{19}
+  \item readSTATION0() (in module catalogue2DD), \hyperpage{25}
+  \item readwavename() (in module Sfile\_util), \hyperpage{19}
+
+  \indexspace
+  \bigletter S
+  \item Sfile\_util (module), \hyperpage{19}
+  \item shortproc() (in module pre\_processing), \hyperpage{22}
+  \item stacking (module), \hyperpage{24}
+  \item SVD\_2\_stream\_testing() (in module clustering), \hyperpage{20}
+  \item SVD\_tetsing() (in module clustering), \hyperpage{21}
+
+  \indexspace
+  \bigletter T
+  \item template\_gen (module), \hyperpage{13}
+  \item template\_gen\_par (module), \hyperpage{27}
+  \item threeD\_gridplot() (in module EQcorrscan\_plotting), \hyperpage{23}
+  \item threeD\_seismplot() (in module EQcorrscan\_plotting), \hyperpage{23}
+  \item triple\_plot() (in module EQcorrscan\_plotting), \hyperpage{23}
+
+  \indexspace
+  \bigletter W
+  \item write\_catalogue() (in module catalogue2DD), \hyperpage{25}
+  \item write\_correlations() (in module catalogue2DD), \hyperpage{25}
+  \item write\_event() (in module catalogue2DD), \hyperpage{26}
+
+\end{theindex}

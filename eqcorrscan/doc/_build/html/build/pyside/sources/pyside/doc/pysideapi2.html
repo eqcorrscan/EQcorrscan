@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PySide API 2 &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyside-api-2">
+<span id="pysideapi2"></span><h1>PySide API 2<a class="headerlink" href="#pyside-api-2" title="Permalink to this headline">¶</a></h1>
+<p>Since the beginning one of the PySide goals was to be API compatible with PyQt4,
+but with some (documented) exceptions. For example, PySide will not export to
+Python components marked as deprecated on C++ Qt. All the modifications follow
+the <a class="reference external" href="http://www.pyside.org/docs/pseps/psep-0101.html">PSEP101</a> as its guideline.</p>
+<p>The release 4.7 of PyQt4 came with improvements on the pythonic front, being
+the extinction of QString a good example. PySide followed this change, except in
+one point: while PyQt4 has conserved the old behavior as optional, PySide
+bindings fully adopted the new API - completely removing QString. No turning
+back. Thus remember to update your source code to the new API, this will ensure
+your code will run on both bindings.</p>
+<div class="section" id="hash-function-return-value">
+<h2>__hash__() function return value<a class="headerlink" href="#hash-function-return-value" title="Permalink to this headline">¶</a></h2>
+<p>The hash value returned for the classes <code class="xref py py-class docutils literal"><span class="pre">PySide.QtCore.QDate</span></code>, <code class="xref py py-class docutils literal"><span class="pre">PySide.QtCore.QDateTime</span></code>, <code class="xref py py-class docutils literal"><span class="pre">PySide.QtCore.QTime</span></code>, <code class="xref py py-class docutils literal"><span class="pre">PySide.QtCore.QUrl</span></code> will be
+based on their string representations, thus objects with the same value will
+produce the same hash.</p>
+</div>
+<div class="section" id="qstring">
+<h2>QString<a class="headerlink" href="#qstring" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="methods-that-change-qstring-arguments">
+<h3>Methods that change QString arguments<a class="headerlink" href="#methods-that-change-qstring-arguments" title="Permalink to this headline">¶</a></h3>
+<p>Methods and functions that change the contents of a QString argument were
+modified to receive an immutable Python unicode (or str) and return another
+Python unicode/str as the modified string.</p>
+<p>The following methods had their return types modified this way:</p>
+<p><strong>Classes:</strong> QAbstractSpinBox, QDateTimeEdit, QDoubleSpinBox, QSpinBox, QValidator</p>
+<ul class="simple">
+<li><em>fixup(string)</em>: string</li>
+<li><em>validate(string, int)</em>: [QValidator.State, string, int]</li>
+</ul>
+<p><strong>Classes:</strong> QDoubleValidator, QIntValidator, QRegExpValidator</p>
+<ul class="simple">
+<li><em>validate(string, int)</em>: [QValidator.State, string, int]</li>
+</ul>
+<p><strong>Class:</strong> QClipboard</p>
+<ul class="simple">
+<li><em>text(string, QClipboard.Mode mode=QClipboard.Clipboard)</em>: [string, string]</li>
+</ul>
+<p><strong>Class:</strong> QFileDialog</p>
+<p>Instead of <em>getOpenFileNameAndFilter()</em>, <em>getOpenFileNamesAndFilter()</em> and <em>getSaveFileNameAndFilter()</em> like PyQt4 does,
+PySide has modified the original methods to return a tuple.</p>
+<ul class="simple">
+<li><em>getOpenFileName(QWidget parent=None, str caption=None, str dir=None, str filter=None, QFileDialog.Options options=0)</em>: [string, filter]</li>
+<li><em>getOpenFileNames(QWidget parent=None, str caption=None, str dir=None, str filter=None, QFileDialog.Options options=0)</em>: [list(string), filter]</li>
+<li><em>getSaveFileName(QWidget parent=None, str caption=None, str dir=None, str filter=None, QFileDialog.Options options=0)</em>: [string, filter]</li>
+</ul>
+<p><strong>Class:</strong> QWebPage</p>
+<ul class="simple">
+<li><em>javaScriptPrompt(QWebFrame, string, string)</em>: [bool, string]</li>
+</ul>
+</div>
+<div class="section" id="other-qstring-related-changes">
+<h3>Other QString related changes<a class="headerlink" href="#other-qstring-related-changes" title="Permalink to this headline">¶</a></h3>
+<p><strong>Classes:</strong> QFontMetrics and QFontMetricsF</p>
+<p>They had two new methods added. Both take a string of one character and convert to a QChar (to call the C++ counterpart):</p>
+<ul class="simple">
+<li>widthChar(string)</li>
+<li>boundingRectChar(string)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="qtextstream">
+<h2>QTextStream<a class="headerlink" href="#qtextstream" title="Permalink to this headline">¶</a></h2>
+<p>Inside this class some renames were applied to avoid clashes with native Python functions. They are: <em>bin_()</em>, <em>hex_()</em> and <em>oct_()</em>.
+The only modification was the addition of &#8216;_&#8217; character.</p>
+</div>
+<div class="section" id="qvariant">
+<h2>QVariant<a class="headerlink" href="#qvariant" title="Permalink to this headline">¶</a></h2>
+<p>As QVariant was removed, any function expecting it can receive any Python object (None is an invalid QVariant). The same rule is valid when returning something: the returned QVariant will be converted to the its original Python object type.</p>
+<p>When a method expects a <em>QVariant::Type</em> the programmer can use a string (the type name) or the type itself.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PySide API 2</a><ul>
+<li><a class="reference internal" href="#hash-function-return-value">__hash__() function return value</a></li>
+<li><a class="reference internal" href="#qstring">QString</a><ul>
+<li><a class="reference internal" href="#methods-that-change-qstring-arguments">Methods that change QString arguments</a></li>
+<li><a class="reference internal" href="#other-qstring-related-changes">Other QString related changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#qtextstream">QTextStream</a></li>
+<li><a class="reference internal" href="#qvariant">QVariant</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../_sources/build/pyside/sources/pyside/doc/pysideapi2.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../_sources/build/pyside/sources/pyside/doc/pysideapi2.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

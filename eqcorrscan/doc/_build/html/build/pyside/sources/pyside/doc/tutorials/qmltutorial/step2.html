@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>QML Tutorial 2 - QML Components &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="qml-tutorial-2-qml-components">
+<span id="qmlcomponents"></span><h1>QML Tutorial 2 - QML Components<a class="headerlink" href="#qml-tutorial-2-qml-components" title="Permalink to this headline">¶</a></h1>
+<p>This chapter adds a color picker to change the color of the text.</p>
+<div class="figure align-center">
+<img alt="../../../../../../../_images/declarative-tutorial2.png" src="../../../../../../../_images/declarative-tutorial2.png" />
+</div>
+<p>Our color picker is made of six cells with different colors.
+To avoid writing the same code multiple times for each cell, we create a new <code class="docutils literal"><span class="pre">Cell</span></code> component.
+A component provides a way of defining a new type that we can re-use in other QML files.
+A QML component is like a black-box and interacts with the outside world through properties, signals and functions and is generally
+defined in its own QML file.
+The component&#8217;s filename must always start with a capital letter.</p>
+<p>Here is the QML code for <code class="docutils literal"><span class="pre">Cell.qml</span></code>:</p>
+<div class="section" id="walkthrough">
+<h2>Walkthrough<a class="headerlink" href="#walkthrough" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-cell-component">
+<h3>The Cell Component<a class="headerlink" href="#the-cell-component" title="Permalink to this headline">¶</a></h3>
+<p>The root element of our component is an Item with the <code class="docutils literal"><span class="pre">id</span></code> <em>container</em>.
+An Item is the most basic visual element in QML and is often used as a container for other elements.</p>
+<p>We declare a <code class="docutils literal"><span class="pre">cellColor</span></code> property. This property is accessible from  <em>outside</em> our component, this allows us
+to instantiate the cells with different colors.
+This property is just an alias to an existing property - the color of the rectangle that compose the cell.</p>
+<p>We want our component to also have a signal that we call <em>clicked</em> with a <em>cellColor</em> parameter of type <em>color</em>.
+We will use this signal to change the color of the text in the main QML file later.</p>
+<p>Our cell component is basically a colored rectangle with the <code class="docutils literal"><span class="pre">id</span></code> <em>rectangle</em>.</p>
+<p>The <code class="docutils literal"><span class="pre">anchors.fill</span></code> property is a convenient way to set the size of an element.
+In this case the rectangle will have the same size as its parent.</p>
+<p>In order to change the color of the text when clicking on a cell, we create a MouseArea element with
+the same size as its parent.</p>
+<p>A MouseArea defines a signal called <em>clicked</em>.
+When this signal is triggered we want to emit our own <em>clicked</em> signal with the color as parameter.</p>
+</div>
+<div class="section" id="the-main-qml-file">
+<h3>The main QML file<a class="headerlink" href="#the-main-qml-file" title="Permalink to this headline">¶</a></h3>
+<p>In our main QML file, we use our <code class="docutils literal"><span class="pre">Cell</span></code> component to create the color picker:</p>
+<p>We create the color picker by putting 6 cells with different colors in a grid.</p>
+<p>When the <em>clicked</em> signal of our cell is triggered, we want to set the color of the text to the <em>cellColor</em> passed as a parameter.
+We can react to any signal of our component through a property of the name <em>&#8216;onSignalName&#8217;</em>.</p>
+<p>[Previous <a class="reference internal" href="step1.html#qmlbasictypes"><span>QML Tutorial 1 - Basic Types</span></a>][Next <a class="reference internal" href="step3.html#qmlstatesandtransitions"><span>QML Tutorial 3 - States and Transitions</span></a>]</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">QML Tutorial 2 - QML Components</a><ul>
+<li><a class="reference internal" href="#walkthrough">Walkthrough</a><ul>
+<li><a class="reference internal" href="#the-cell-component">The Cell Component</a></li>
+<li><a class="reference internal" href="#the-main-qml-file">The main QML file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmltutorial/step2.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmltutorial/step2.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

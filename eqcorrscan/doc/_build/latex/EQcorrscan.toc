@@ -1,0 +1,33 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}EQcorrscan}{3}{chapter.1}
+\contentsline {chapter}{\numberline {2}References}{5}{chapter.2}
+\contentsline {chapter}{\numberline {3}Contents:}{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}Introduction to the EQcorrscan package}{7}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Installation}{7}{subsection.3.1.1}
+\contentsline {subsection}{\numberline {3.1.2}Functions}{7}{subsection.3.1.2}
+\contentsline {section}{\numberline {3.2}EQcorrscan tutorial}{8}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}Match-filter detection}{8}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}References}{9}{subsection.3.2.2}
+\contentsline {section}{\numberline {3.3}Core}{12}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}bright\_lights}{12}{subsection.3.3.1}
+\contentsline {paragraph}{Note}{12}{paragraph*.3}
+\contentsline {subsection}{\numberline {3.3.2}template\_gen}{15}{subsection.3.3.2}
+\contentsline {paragraph}{Note}{15}{paragraph*.12}
+\contentsline {subsection}{\numberline {3.3.3}match\_filter}{17}{subsection.3.3.3}
+\contentsline {paragraph}{Note}{17}{paragraph*.16}
+\contentsline {subsection}{\numberline {3.3.4}lag\_calc}{19}{subsection.3.3.4}
+\contentsline {paragraph}{Note}{20}{paragraph*.22}
+\contentsline {section}{\numberline {3.4}Utils}{21}{section.3.4}
+\contentsline {subsection}{\numberline {3.4.1}Sfile\_util}{21}{subsection.3.4.1}
+\contentsline {subsection}{\numberline {3.4.2}findpeaks}{22}{subsection.3.4.2}
+\contentsline {subsection}{\numberline {3.4.3}clustering}{24}{subsection.3.4.3}
+\contentsline {paragraph}{Note}{24}{paragraph*.39}
+\contentsline {paragraph}{Note: Not fully feautured yet, returns the Z matrix, but doesn't tell you what can be clustered.}{25}{paragraph*.42}
+\contentsline {subsection}{\numberline {3.4.4}pre\_processing}{26}{subsection.3.4.4}
+\contentsline {subsection}{\numberline {3.4.5}EQcorrscan\_plotting}{27}{subsection.3.4.5}
+\contentsline {subsection}{\numberline {3.4.6}mag\_calc}{30}{subsection.3.4.6}
+\contentsline {subsection}{\numberline {3.4.7}stacking}{32}{subsection.3.4.7}
+\contentsline {subsection}{\numberline {3.4.8}catalogue2DD}{33}{subsection.3.4.8}
+\contentsline {section}{\numberline {3.5}Par}{35}{section.3.5}
+\contentsline {chapter}{Python Module Index}{37}{section*.83}
+\contentsline {chapter}{Index}{39}{section*.84}
