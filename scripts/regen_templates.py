@@ -24,7 +24,7 @@ This file is part of EQcorrscan.
 import glob, os, sys
 # sys.path.append('/home/calumch/my_programs/Building/EQcorrscan')
 sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
-templates=glob.glob('templates/brightness_tremor/*.ms')
+templates=glob.glob('templates/adaptive_tremor/*.ms')
 datasource='/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes_S/'
 GeoNet='/Volumes/GeoPhysics_09/users-data/chambeca/Alpine_Fault_SAC/SAC_resampled/'
 length1=3.0

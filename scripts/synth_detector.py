@@ -113,7 +113,7 @@ print '     swin: '+templatedef.swin+'\n'
 print 'Reading in the original grids'
 stations, allnodes, alltravel_times = \
             bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
-                                    brightdef.phase, phaseout='S', \
+                                    brightdef.phase, phaseout='P', \
                                     ps_ratio=brightdef.ps_ratio, lags_switch=False)
 print 'I have read in '+str(len(allnodes))+' nodes'
 
@@ -133,10 +133,15 @@ del allnodes, alltravel_times
 if len(nodes) == 0:
     raise IOError("You have no nodes left")
 
+print "Removing simlar lags"
+stations, nodes, travel_times = bright_lights._rm_similarlags(stations, nodes,\
+                                                              travel_times,
+                                                      brightdef.nodesimthresh)
+
 # Call the template generation function
-synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
+synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'P', \
         PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
-        flength=int(templatedef.samp_rate*templatedef.length))
+        flength=int(templatedef.samp_rate*templatedef.length), phaseout='S')
 print 'We have '+str(len(synth_templates))+' synthetic templates'
 
 # Write out the synthetics!
@@ -151,9 +156,9 @@ for synth in synth_templates:
         i+=1
         continue
     for tr in synth:
-        tr.data=(tr.data*1000).astype(np.int32)
         tr.filter('bandpass', freqmin=templatedef.lowcut,\
                     freqmax=templatedef.highcut)
+        tr.data=(tr.data*1000).astype(np.int32)
         # Name the channels so that they can be found!
         if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
             tr.stats.channel='HHN'
@@ -166,7 +171,7 @@ for synth in synth_templates:
             tr.stats.network='NZ'
         elif tr.stats.station in ['EORO','WHYM','COSA','GOVA','LABE','MTFO',\
                                     'COVA','POCR','SOLU','WHAT',\
-                                    'MTBA','SOLU']:
+                                    'MTBA','SOLU','LARB']:
             tr.stats.channel='SHN'
             tr.stats.network='AF'
         elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
@@ -181,6 +186,11 @@ for synth in synth_templates:
     i+=1
 
 del nodes, travel_times
+# template_names=glob.glob('templates/synthetics/*_template.ms')
+# templates=[obsread(tfile) for tfile in template_names]
+# template_names=[t.split('/')[-1].split('_template.ms')[0] \
+                # for t in template_names]
+
 print 'We have '+str(len(templates))+' templates with at least five stations'
 print 'Working out what stations we have'
 
@@ -210,6 +220,7 @@ for template in templates:
         else:
             raise ValueError('Channels are not named with either three or two characters')
 stations=list(set(stations))
+print stations
 # Use the templates to scan through the datas!
 # Work out what days are to be scanned through
 if startdate:
@@ -232,7 +243,7 @@ if Split:
     print 'This instance will run from '+str(min(dates))
 
 
-f=open('detections/'+str(min(dates).year)+\
+f=open('detections/synthetics_'+str(min(dates).year)+\
        str(min(dates).month).zfill(2)+\
        str(min(dates).day).zfill(2)+'_'+\
        str(max(dates).year)+str(max(dates).month).zfill(2)+\
@@ -363,12 +374,17 @@ for day in dates:
                                                  'temp_'+str(instance))
 
             for detection in detections:
-                # output detections to file
-                f.write(detection.template_name+', '+str(detection.detect_time)+\
-                        ', '+str(detection.detect_val)+', '+str(detection.threshold)+\
-                        ', '+str(detection.no_chans)+'\n')
-                print 'template: '+detection.template_name+' detection at: '\
-                    +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
+                # Check that at least the minimum number of stations have been
+                # used
+                if detection.no_chans < matchdef.minsta:
+                    print 'Too few stations for this detection: '+str(no_chans)
+                else:
+                    # output detections to file
+                    f.write(detection.template_name+', '+str(detection.detect_time)+\
+                            ', '+str(detection.detect_val)+', '+str(detection.threshold)+\
+                            ', '+str(detection.no_chans)+'\n')
+                    print 'template: '+detection.template_name+' detection at: '\
+                        +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
             if detections:
                 f.write('\n')
         else:

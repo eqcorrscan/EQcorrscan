@@ -684,3 +684,4 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
             axes[0].set_title(stachan)
         plt.show()
     return
+
