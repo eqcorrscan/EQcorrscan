@@ -189,23 +189,20 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="function">
 <dt id="bright_lights._cum_net_resp">
-<code class="descclassname">bright_lights.</code><code class="descname">_cum_net_resp</code><span class="sig-paren">(</span><em>node_lis</em>, <em>instance</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_cum_net_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._cum_net_resp" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_cum_net_resp</code><span class="sig-paren">(</span><em>node_lis</em>, <em>instance=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_cum_net_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._cum_net_resp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to compute the cumulative network response by reading the saved
 energy .npy files</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>node_lis</strong> (<em>np.ndarray</em>) &#8211; List of nodes (ints) to read from</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node_lis</strong> (<em>np.ndarray</em>) &#8211; List of nodes (ints) to read from</li>
+<li><strong>instance</strong> (<em>Int</em>) &#8211; Instance flag for parallelisation, defaults to 0.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">np.ndarray cum_net_resp, list of indeces used</td>
-</tr>
-</tbody>
-</table>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">np.ndarray cum_net_resp, list of indeces used</p>
 </td>
 </tr>
 </tbody>
@@ -214,7 +211,7 @@ energy .npy files</p>
 
 <dl class="function">
 <dt id="bright_lights._find_detections">
-<code class="descclassname">bright_lights.</code><code class="descname">_find_detections</code><span class="sig-paren">(</span><em>cum_net_resp</em>, <em>nodes</em>, <em>threshold</em>, <em>thresh_type</em>, <em>samp_rate</em>, <em>realstations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_find_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._find_detections" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_find_detections</code><span class="sig-paren">(</span><em>cum_net_resp</em>, <em>nodes</em>, <em>threshold</em>, <em>thresh_type</em>, <em>samp_rate</em>, <em>realstations</em>, <em>length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_find_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._find_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to find detections within the cumulative network response according
 to Frank et al. (2014).</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -222,12 +219,17 @@ to Frank et al. (2014).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>cum_net_resp</strong> (<em>np.array</em>) &#8211; Array of cumulative network response for nodes</li>
+<li><strong>cum_net_resp</strong> (<em>np.ndarray</em>) &#8211; Array of cumulative network response for nodes</li>
 <li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; Nodes associated with the source of energy in the cum_net_resp</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value</li>
+<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD (Median Absolute Deviation) or abs (absolute)    or RMS (Root Mean Squared)</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+<li><strong>realstations</strong> (<em>list of str</em>) &#8211; List of stations used to make the cumulative network    response, will be reported in the DETECTION</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum length of peak to look for in seconds</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">detections as class DETECTION</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">detections as :class: DETECTION</p>
 </td>
 </tr>
 </tbody>
@@ -236,13 +238,25 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._node_loop">
-<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to allow for parallelisation of brightness</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(i, energy (np.array))</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use</li>
+<li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i]</li>
+<li><strong>stream</strong> &#8211; Data stream to find the brightness for</li>
+<li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation</li>
+<li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM</li>
+<li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(i, energy (np.ndarray))</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -250,7 +264,7 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._read_tt">
-<code class="descclassname">bright_lights.</code><code class="descname">_read_tt</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em>, <em>phase</em>, <em>phaseout='S'</em>, <em>ps_ratio=1.68</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_read_tt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._read_tt" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_read_tt</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em>, <em>phase</em>, <em>phaseout='S'</em>, <em>ps_ratio=1.68</em>, <em>lags_switch=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_read_tt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._read_tt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in .csv files of slowness generated from Grid2Time (part
 of NonLinLoc by Anthony Lomax) and convert this to a useful format here.</p>
 <p>It should be noted that this can read either P or S travel-time grids, not
@@ -264,6 +278,7 @@ both at the moment.</p>
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names to read slowness files for.</li>
 <li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; What phase to return the lagtimes in</li>
 <li><strong>ps_ratio</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; p to s ratio for coversion</li>
+<li><strong>lags_switch</strong> (<em>Bool</em>) &#8211; Return lags or raw travel-times, if set to true will return lags.</li>
 </ul>
 </td>
 </tr>
@@ -331,7 +346,7 @@ the diagonal.</p>
 
 <dl class="function">
 <dt id="bright_lights.brightness">
-<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherance_thresh</em>, <em>instance=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.</p>
 <p>Note data in stream must be all of the same length and have the same
@@ -347,7 +362,8 @@ sampling rates.</p>
 <li><strong>data</strong> &#8211; Data through which to look for detections.</li>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the    brightness function</li>
 <li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.</li>
-<li><strong>coherance_thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.</li>
+<li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
 </ul>
 </td>
 </tr>
@@ -359,19 +375,24 @@ sampling rates.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="bright_lights.coherance">
-<code class="descclassname">bright_lights.</code><code class="descname">coherance</code><span class="sig-paren">(</span><em>stream</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#coherance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to determine the average network coherance of a given template or
+<dt id="bright_lights.coherence">
+<code class="descclassname">bright_lights.</code><code class="descname">coherence</code><span class="sig-paren">(</span><em>stream_in, stations=['all'], clip=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to determine the average network coherence of a given template or
 detection.  You will want your stream to contain only signal as noise
-will reduce the coherance (assuming it is incoherant random noise).</p>
+will reduce the coherence (assuming it is incoherant random noise).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream of seismic data you want to calculate the
-coherance for.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream of seismic data you want to calculate the            coherence for.</li>
+<li><strong>stations</strong> (<em>List of String</em>) &#8211; List of stations to use for coherence, default is all</li>
+<li><strong>clip</strong> (<em>Tuple of Float</em>) &#8211; Default is to use all the data given -             tuple of start and end in seconds from start of trace</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">float - coherance</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float - coherence, int number of channels used</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -433,7 +454,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="function">
 <dt id="template_gen._template_gen">
-<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin</em>, <em>prepick=0.05</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate a cut template in the obspy
 Stream class from a given set of picks and data, also in an obspy stream
 class.  Should be given pre-processed data (downsampled and filtered)</p>
@@ -446,6 +467,8 @@ class.  Should be given pre-processed data (downsampled and filtered)</p>
 <li><strong>st</strong> &#8211; Stream to etract templates from</li>
 <li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of template in seconds</li>
 <li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; P, S or all</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract before the pick time            default is 0.05 seconds</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To plot the template or not, default is True</li>
 </ul>
 </td>
 </tr>
@@ -455,7 +478,7 @@ class.  Should be given pre-processed data (downsampled and filtered)</p>
 
 <dl class="function">
 <dt id="template_gen.from_contbase">
-<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut=None</em>, <em>highcut=None</em>, <em>samp_rate=None</em>, <em>filt_order=None</em>, <em>length=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut=None</em>, <em>highcut=None</em>, <em>samp_rate=None</em>, <em>filt_order=None</em>, <em>length=None</em>, <em>prepick=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in picks from sfile then generate the template from the
 picks within this and the wavefiles from the continous database of day-long
 files.  Included is a section to sanity check that the files are daylong and
@@ -473,6 +496,7 @@ are incorrectly set.</p>
 <li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in            template defaults file</li>
 <li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look in            template defaults file</li>
 <li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template            defaults file.</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
 </ul>
 </td>
 </tr>
@@ -688,7 +712,7 @@ seismic data and output the detections based on a given threshold.</p>
 <li><strong>stream</strong> &#8211; An obspy.Stream object containing all the data available and    required for the correlations with templates given.  For efficiency this    should contain no excess traces which are not in one or more of the    templates.</li>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; A threshold value set based on the threshold_type    :type threshold_type: str</li>
 <li><strong>threshold_type</strong> &#8211; The type of threshold to be used, can be MAD,    absolute or av_chan_corr.    MAD threshold is calculated as the    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum    for a given template.    absolute threhsold is a true absolute threshold based on the cccsum value    av_chan_corr is based on the mean values of single-channel    cross-correlations assuming all data are present as required for the    template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where    template is a single template from the input and the length is the number    of channels within this template.</li>
-<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Direcotry to put temporary files, or False</li>
+<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Directory to put temporary files, or False</li>
 </ul>
 </td>
 </tr>
@@ -730,30 +754,13 @@ found here:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image</strong> &#8211; Requires two numpy arrays, the template and the image to scan    the template through.  The order of these matters, if you put the template    after the imag you will get a reversed correaltion matrix</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">New :class: &#8216;numpy.array&#8217; object of the correlation values for the    correlation of the image with the template.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="match_filter.run_channel_loop">
-<code class="descclassname">match_filter.</code><code class="descname">run_channel_loop</code><span class="sig-paren">(</span><em>templates</em>, <em>stream</em>, <em>tempdir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/match_filter.html#run_channel_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.run_channel_loop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Python helper function to run the Cythonised channel_loop function</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>templates</strong> (<em>List of :class: obspy.Stream</em>) &#8211; List of all the templates</li>
-<li><strong>stream</strong> &#8211; The image stream to scan through</li>
-<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; location to put temporary files</li>
+<li><strong>template</strong> &#8211; Template array</li>
+<li><strong>image</strong> &#8211; image to scan    the template through.  The order of these matters, if you put the template    after the image you will get a reversed correaltion matrix</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">cccsums (np.ndarray), no_chans (np.ndarray)</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">New :class: &#8216;numpy.array&#8217; object of the correlation values for the    correlation of the image with the template.</p>
 </td>
 </tr>
 </tbody>
@@ -834,9 +841,15 @@ the correct data to lag_gen</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<em>int, optional</em>) &#8211; Used to track which process has occured when running in parallel</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>detection</strong> (<em>obspy.Stream</em>) &#8211; Stream of data for the slave event detected using template</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Stream of data as the template for the detection.</li>
+<li><strong>i</strong> (<em>int, optional</em>) &#8211; Used to track which process has occured when running in parallel</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">picks, a tuple of (lag in s, cross-correlation value, station, chan)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -844,7 +857,7 @@ the correct data to lag_gen</p>
 
 <dl class="function">
 <dt id="lag_calc.day_loop">
-<code class="descclassname">lag_calc.</code><code class="descname">day_loop</code><span class="sig-paren">(</span><em>detections</em>, <em>template</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lag_calc.html#day_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lag_calc.day_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lag_calc.</code><code class="descname">day_loop</code><span class="sig-paren">(</span><em>detection_streams</em>, <em>template</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lag_calc.html#day_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lag_calc.day_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to loop through multiple detections for one template - ostensibly
 designed to run for the same day of data for I/O simplicity, but as you
 are passing stream objects it could run for all the detections ever, as long
@@ -854,7 +867,7 @@ as you have the RAM!</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>detections</strong> (<em>List of obspy.Stream</em>) &#8211; List of all the detections for this template that you
+<li><strong>detection_streams</strong> (<em>List of obspy.Stream</em>) &#8211; List of all the detections for this template that you
 want to compute the optimum pick for.</li>
 <li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; The original template used to detect the detections passed</li>
 </ul>

@@ -19,7 +19,7 @@
 
 
 \title{EQcorrscan Documentation}
-\date{September 04, 2015}
+\date{October 13, 2015}
 \release{0.1.1-alpha}
 \author{Calum John Chamberlain}
 \newcommand{\sphinxlogo}{\includegraphics{EQcorrscan_logo.pdf}\par}
@@ -389,7 +389,6 @@ CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). \href{http://onlinel
 \PYG{c}{\PYGZsh{} First we import the required modules:}
 \PYG{k+kn}{from} \PYG{n+nn}{obspy} \PYG{k+kn}{import} \PYG{n}{read}\PYG{p}{,} \PYG{n}{Stream}
 \PYG{k+kn}{from} \PYG{n+nn}{core} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen}\PYG{p}{,} \PYG{n}{match\PYGZus{}filter}
-\PYG{k+kn}{from} \PYG{n+nn}{par} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen\PYGZus{}par} \PYG{k}{as} \PYG{n}{templatedef}
 \PYG{k+kn}{from} \PYG{n+nn}{par} \PYG{k+kn}{import} \PYG{n}{match\PYGZus{}filter\PYGZus{}par} \PYG{k}{as} \PYG{n}{matchdef}
 \PYG{k+kn}{from} \PYG{n+nn}{utils} \PYG{k+kn}{import} \PYG{n}{pre\PYGZus{}processing}\PYG{p}{,} \PYG{n}{Sfile\PYGZus{}util}
 \PYG{k+kn}{import} \PYG{n+nn}{glob}
@@ -569,20 +568,21 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \index{\_cum\_net\_resp() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights._cum_net_resp}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_cum\_net\_resp}}{\emph{node\_lis}, \emph{instance}}{}
+\phantomsection\label{core:bright_lights._cum_net_resp}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_cum\_net\_resp}}{\emph{node\_lis}, \emph{instance=0}}{}
 Function to compute the cumulative network response by reading the saved
 energy .npy files
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
 \textbf{\texttt{node\_lis}} (\emph{np.ndarray}) -- List of nodes (ints) to read from
 
+\item {} 
+\textbf{\texttt{instance}} (\emph{Int}) -- Instance flag for parallelisation, defaults to 0.
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
-\begin{quote}\begin{description}
-\item[{class}] \leavevmode
 np.ndarray cum\_net\_resp, list of indeces used
-
-\end{description}\end{quote}
-
 
 \end{description}\end{quote}
 
@@ -591,21 +591,36 @@ np.ndarray cum\_net\_resp, list of indeces used
 \index{\_find\_detections() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights._find_detections}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_find\_detections}}{\emph{cum\_net\_resp}, \emph{nodes}, \emph{threshold}, \emph{thresh\_type}, \emph{samp\_rate}, \emph{realstations}}{}
+\phantomsection\label{core:bright_lights._find_detections}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_find\_detections}}{\emph{cum\_net\_resp}, \emph{nodes}, \emph{threshold}, \emph{thresh\_type}, \emph{samp\_rate}, \emph{realstations}, \emph{length}}{}
 Function to find detections within the cumulative network response according
 to Frank et al. (2014).
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{\texttt{cum\_net\_resp}} (\emph{np.array}) -- Array of cumulative network response for nodes
+\textbf{\texttt{cum\_net\_resp}} (\emph{np.ndarray}) -- Array of cumulative network response for nodes
 
 \item {} 
 \textbf{\texttt{nodes}} (\emph{list of tuples}) -- Nodes associated with the source of energy in the cum\_net\_resp
 
+\item {} 
+\textbf{\texttt{threshold}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Threshold value
+
+\item {} 
+\textbf{\texttt{thresh\_type}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either MAD (Median Absolute Deviation) or abs (absolute)    or RMS (Root Mean Squared)
+
+\item {} 
+\textbf{\texttt{samp\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sampling rate in Hz
+
+\item {} 
+\textbf{\texttt{realstations}} (\emph{list of str}) -- List of stations used to make the cumulative network    response, will be reported in the DETECTION
+
+\item {} 
+\textbf{\texttt{length}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Maximum length of peak to look for in seconds
+
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-detections as class DETECTION
+detections as :class: DETECTION
 
 \end{description}\end{quote}
 
@@ -614,11 +629,35 @@ detections as class DETECTION
 \index{\_node\_loop() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{lags}, \emph{stream}, \emph{i=0}, \emph{mem\_issue=False}, \emph{instance=0}}{}
+\phantomsection\label{core:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{lags}, \emph{stream}, \emph{i=0}, \emph{mem\_issue=False}, \emph{instance=0}, \emph{plot=False}}{}
 Internal function to allow for parallelisation of brightness
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stations}} (\href{https://docs.python.org/library/functions.html\#list}{\emph{list}}) -- List of stations to use
+
+\item {} 
+\textbf{\texttt{lags}} (\emph{np.ndarray}) -- List of lags where lags{[}i{[}:{]}{]} are the lags for stations{[}i{]}
+
+\item {} 
+\textbf{\texttt{stream}} -- Data stream to find the brightness for
+
+\item {} 
+\textbf{\texttt{i}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Index of loop for parallelisation
+
+\item {} 
+\textbf{\texttt{mem\_issue}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- If True will write to disk rather than storing data in RAM
+
+\item {} 
+\textbf{\texttt{instance}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- instance for bulk parallelisation, only used if mem\_issue=true
+
+\item {} 
+\textbf{\texttt{plot}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- Turn plotting on or off, defaults to False
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
-(i, energy (np.array))
+(i, energy (np.ndarray))
 
 \end{description}\end{quote}
 
@@ -627,7 +666,7 @@ Internal function to allow for parallelisation of brightness
 \index{\_read\_tt() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights._read_tt}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_read\_tt}}{\emph{path}, \emph{stations}, \emph{phase}, \emph{phaseout='S'}, \emph{ps\_ratio=1.68}}{}
+\phantomsection\label{core:bright_lights._read_tt}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_read\_tt}}{\emph{path}, \emph{stations}, \emph{phase}, \emph{phaseout='S'}, \emph{ps\_ratio=1.68}, \emph{lags\_switch=True}}{}
 Function to read in .csv files of slowness generated from Grid2Time (part
 of NonLinLoc by Anthony Lomax) and convert this to a useful format here.
 
@@ -646,6 +685,9 @@ both at the moment.
 
 \item {} 
 \textbf{\texttt{ps\_ratio}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- p to s ratio for coversion
+
+\item {} 
+\textbf{\texttt{lags\_switch}} (\emph{Bool}) -- Return lags or raw travel-times, if set to true will return lags.
 
 \end{itemize}
 
@@ -729,7 +771,7 @@ list stations, list of lists of tuples nodes, :class:     `numpy.array' lags sta
 \index{brightness() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}, \emph{coherance\_thresh}, \emph{instance=0}}{}
+\phantomsection\label{core:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}, \emph{coherence\_thresh}, \emph{instance=0}, \emph{matchdef=False}, \emph{defaults=False}, \emph{pre\_pick=0.2}}{}
 Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.
 
@@ -756,7 +798,10 @@ sampling rates.
 \textbf{\texttt{thresh\_type}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.
 
 \item {} 
-\textbf{\texttt{coherance\_thresh}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.
+\textbf{\texttt{coherence\_thresh}} (\emph{tuple of floats}) -- Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence
+
+\item {} 
+\textbf{\texttt{pre\_pick}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Seconds before the detection time to include in template
 
 \end{itemize}
 
@@ -767,20 +812,28 @@ list of templates as :class: \emph{obspy.Stream} objects
 
 \end{fulllineitems}
 
-\index{coherance() (in module bright\_lights)}
+\index{coherence() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights.coherance}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{coherance}}{\emph{stream}}{}
-Function to determine the average network coherance of a given template or
+\phantomsection\label{core:bright_lights.coherence}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{coherence}}{\emph{stream\_in, stations={[}'all'{]}, clip=False}}{}
+Function to determine the average network coherence of a given template or
 detection.  You will want your stream to contain only signal as noise
-will reduce the coherance (assuming it is incoherant random noise).
+will reduce the coherence (assuming it is incoherant random noise).
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\textbf{\texttt{stream}} (\emph{obspy.Stream}) -- The stream of seismic data you want to calculate the
-coherance for.
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stream}} (\emph{obspy.Stream}) -- The stream of seismic data you want to calculate the            coherence for.
+
+\item {} 
+\textbf{\texttt{stations}} (\emph{List of String}) -- List of stations to use for coherence, default is all
+
+\item {} 
+\textbf{\texttt{clip}} (\emph{Tuple of Float}) -- Default is to use all the data given -             tuple of start and end in seconds from start of trace
+
+\end{itemize}
 
 \item[{Returns}] \leavevmode
-float - coherance
+float - coherence, int number of channels used
 
 \end{description}\end{quote}
 
@@ -860,7 +913,7 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \index{\_template\_gen() (in module template\_gen)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:template_gen._template_gen}\pysiglinewithargsret{\code{template\_gen.}\bfcode{\_template\_gen}}{\emph{picks}, \emph{st}, \emph{length}, \emph{swin}}{}
+\phantomsection\label{core:template_gen._template_gen}\pysiglinewithargsret{\code{template\_gen.}\bfcode{\_template\_gen}}{\emph{picks}, \emph{st}, \emph{length}, \emph{swin}, \emph{prepick=0.05}, \emph{plot=False}}{}
 Function to generate a cut template in the obspy
 Stream class from a given set of picks and data, also in an obspy stream
 class.  Should be given pre-processed data (downsampled and filtered)
@@ -878,6 +931,12 @@ class.  Should be given pre-processed data (downsampled and filtered)
 \item {} 
 \textbf{\texttt{swin}} (\href{https://docs.python.org/library/string.html\#module-string}{\emph{string}}) -- P, S or all
 
+\item {} 
+\textbf{\texttt{prepick}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Length in seconds to extract before the pick time            default is 0.05 seconds
+
+\item {} 
+\textbf{\texttt{plot}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- To plot the template or not, default is True
+
 \end{itemize}
 
 \end{description}\end{quote}
@@ -887,7 +946,7 @@ class.  Should be given pre-processed data (downsampled and filtered)
 \index{from\_contbase() (in module template\_gen)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:template_gen.from_contbase}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_contbase}}{\emph{sfile}, \emph{lowcut=None}, \emph{highcut=None}, \emph{samp\_rate=None}, \emph{filt\_order=None}, \emph{length=None}}{}
+\phantomsection\label{core:template_gen.from_contbase}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_contbase}}{\emph{sfile}, \emph{lowcut=None}, \emph{highcut=None}, \emph{samp\_rate=None}, \emph{filt\_order=None}, \emph{length=None}, \emph{prepick=None}}{}
 Function to read in picks from sfile then generate the template from the
 picks within this and the wavefiles from the continous database of day-long
 files.  Included is a section to sanity check that the files are daylong and
@@ -913,6 +972,9 @@ are incorrectly set.
 
 \item {} 
 \textbf{\texttt{length}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Extract length in seconds, if None will look in template            defaults file.
+
+\item {} 
+\textbf{\texttt{prepick}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Pre-pick time in seconds
 
 \end{itemize}
 
@@ -1147,7 +1209,7 @@ seismic data and output the detections based on a given threshold.
 \textbf{\texttt{threshold\_type}} -- The type of threshold to be used, can be MAD,    absolute or av\_chan\_corr.    MAD threshold is calculated as the    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum    for a given template.    absolute threhsold is a true absolute threshold based on the cccsum value    av\_chan\_corr is based on the mean values of single-channel    cross-correlations assuming all data are present as required for the    template, e.g. av\_chan\_corr\_thresh=threshold*(cccsum/len(template)) where    template is a single template from the input and the length is the number    of channels within this template.
 
 \item {} 
-\textbf{\texttt{tempdir}} (\emph{String or False}) -- Direcotry to put temporary files, or False
+\textbf{\texttt{tempdir}} (\emph{String or False}) -- Directory to put temporary files, or False
 
 \end{itemize}
 
@@ -1185,36 +1247,17 @@ found here:
 
 \end{itemize}
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\textbf{\texttt{image}} -- Requires two numpy arrays, the template and the image to scan    the template through.  The order of these matters, if you put the template    after the imag you will get a reversed correaltion matrix
-
-\item[{Returns}] \leavevmode
-New :class: `numpy.array' object of the correlation values for the    correlation of the image with the template.
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{run\_channel\_loop() (in module match\_filter)}
-
-\begin{fulllineitems}
-\phantomsection\label{core:match_filter.run_channel_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{run\_channel\_loop}}{\emph{templates}, \emph{stream}, \emph{tempdir}}{}
-Python helper function to run the Cythonised channel\_loop function
-\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{\texttt{templates}} (\emph{List of :class: obspy.Stream}) -- List of all the templates
+\textbf{\texttt{template}} -- Template array
 
 \item {} 
-\textbf{\texttt{stream}} -- The image stream to scan through
-
-\item {} 
-\textbf{\texttt{tempdir}} (\emph{String or False}) -- location to put temporary files
+\textbf{\texttt{image}} -- image to scan    the template through.  The order of these matters, if you put the template    after the image you will get a reversed correaltion matrix
 
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-cccsums (np.ndarray), no\_chans (np.ndarray)
+New :class: `numpy.array' object of the correlation values for the    correlation of the image with the template.
 
 \end{description}\end{quote}
 
@@ -1309,11 +1352,20 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 Utility function to take a stream of data for the detected event and parse
 the correct data to lag\_gen
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{detection}} (\emph{obspy.Stream}) -- Stream of data for the slave event detected using template
+
+\item {} 
+\textbf{\texttt{template}} (\emph{obspy.Stream}) -- Stream of data as the template for the detection.
+
+\item {} 
 \textbf{\texttt{i}} (\emph{int, optional}) -- Used to track which process has occured when running in parallel
 
+\end{itemize}
+
 \item[{Returns}] \leavevmode
-lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)
+picks, a tuple of (lag in s, cross-correlation value, station, chan)
 
 \end{description}\end{quote}
 
@@ -1322,7 +1374,7 @@ lagtimes, a tuple of (lag in s, cross-correlation value, station, chan)
 \index{day\_loop() (in module lag\_calc)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:lag_calc.day_loop}\pysiglinewithargsret{\code{lag\_calc.}\bfcode{day\_loop}}{\emph{detections}, \emph{template}}{}
+\phantomsection\label{core:lag_calc.day_loop}\pysiglinewithargsret{\code{lag\_calc.}\bfcode{day\_loop}}{\emph{detection\_streams}, \emph{template}}{}
 Function to loop through multiple detections for one template - ostensibly
 designed to run for the same day of data for I/O simplicity, but as you
 are passing stream objects it could run for all the detections ever, as long
@@ -1330,7 +1382,7 @@ as you have the RAM!
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{\texttt{detections}} (\emph{List of obspy.Stream}) -- List of all the detections for this template that you
+\textbf{\texttt{detection\_streams}} (\emph{List of obspy.Stream}) -- List of all the detections for this template that you
 want to compute the optimum pick for.
 
 \item {} 
@@ -1419,6 +1471,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\textgreater{}.
 \end{quote}
+\index{EVENTINFO (class in Sfile\_util)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:Sfile_util.EVENTINFO}\pysiglinewithargsret{\strong{class }\code{Sfile\_util.}\bfcode{EVENTINFO}}{\emph{time}, \emph{loc\_mod\_ind}, \emph{dist\_ind}, \emph{ev\_id}, \emph{latitude}, \emph{longitude}, \emph{depth}, \emph{depth\_ind}, \emph{loc\_ind}, \emph{agency}, \emph{nsta}, \emph{t\_RMS}, \emph{Mag\_1}, \emph{Mag\_1\_type}, \emph{Mag\_1\_agency}, \emph{Mag\_2}, \emph{Mag\_2\_type}, \emph{Mag\_2\_agency}, \emph{Mag\_3}, \emph{Mag\_3\_type}, \emph{Mag\_3\_agency}}{}
+Header information for seisan events
+
+\end{fulllineitems}
+
 \index{PICK (class in Sfile\_util)}
 
 \begin{fulllineitems}
@@ -1475,6 +1535,38 @@ velocity, SNR, azimuth residual, Time-residual, final weight,
 epicentral distance \& azimuth from event to station.
 
 This is a full pick line information from the seisan manual, P. 341
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{sfilename}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Path to S-file to populate, must have a header already
+
+\item {} 
+\textbf{\texttt{picks}} (\emph{List of :class: PICK}) -- List of the picks to be written out
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{readheader() (in module Sfile\_util)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:Sfile_util.readheader}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{readheader}}{\emph{sfilename}}{}
+Fucntion to read the header information from a seisan nordic format S-file.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{sfilename}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Path to the s-file
+
+\item[{Returns}] \leavevmode
+\begin{quote}\begin{description}
+\item[{class}] \leavevmode
+EVENTINFO
+
+\end{description}\end{quote}
+
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -1482,10 +1574,13 @@ This is a full pick line information from the seisan manual, P. 341
 
 \begin{fulllineitems}
 \phantomsection\label{utils:Sfile_util.readpicks}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{readpicks}}{\emph{sfilename}}{}
-Function to read pick informaiton from the s-file
+Function to read pick information from the s-file
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{sfilename}} (\emph{String}) -- Path to sfile
+
 \item[{Returns}] \leavevmode
-Sfile\_tile.PICK
+List of :class: PICK
 
 \end{description}\end{quote}
 
@@ -1498,6 +1593,22 @@ Sfile\_tile.PICK
 Convenience function to extract the waveform filename from the s-file,
 returns a list of waveform names found in the s-file as multiples can
 be present.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{sfilename}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Path to the sfile
+
+\item[{Returns}] \leavevmode
+List of str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{test\_rw() (in module Sfile\_util)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:Sfile_util.test_rw}\pysiglinewithargsret{\code{Sfile\_util.}\bfcode{test\_rw}}{}{}
+Function to test the functions herein.
 
 \end{fulllineitems}
 
@@ -1527,13 +1638,77 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\textgreater{}.
 \end{quote}
-\index{find\_peaks() (in module findpeaks)}
+\index{find\_peaks2() (in module findpeaks)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:findpeaks.find_peaks}\pysiglinewithargsret{\code{findpeaks.}\bfcode{find\_peaks}}{\emph{arr}, \emph{thresh}, \emph{trig\_int}}{}
+\phantomsection\label{utils:findpeaks.find_peaks2}\pysiglinewithargsret{\code{findpeaks.}\bfcode{find\_peaks2}}{\emph{arr}, \emph{thresh}, \emph{trig\_int}, \emph{debug=0}, \emph{maxwidth=10}, \emph{starttime=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{samp\_rate=1.0}}{}
+Function to determine peaks in an array of data using scipy find\_peaks\_cwt,
+works fast in certain cases, but for match\_filter cccsum peak finding,
+find\_peaks2\_short works better.  Test it out and see which works best for
+your application.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{arr}} (\emph{ndarray}) -- 1-D numpy array is required
+
+\item {} 
+\textbf{\texttt{thresh}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- The threshold below which will be considered noise and peaks    will not be found in.
+
+\item {} 
+\textbf{\texttt{trig\_int}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Optional, debug level 0-5
+
+\item {} 
+\textbf{\texttt{maxwidth}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Maximum peak width to look for in samples
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+peaks, locs: Lists of peak values and locations.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{find\_peaks2\_short() (in module findpeaks)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:findpeaks.find_peaks2_short}\pysiglinewithargsret{\code{findpeaks.}\bfcode{find\_peaks2\_short}}{\emph{arr}, \emph{thresh}, \emph{trig\_int}, \emph{debug=0}, \emph{starttime=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{samp\_rate=1.0}}{}
+Function to determine peaks in an array of data above a certain threshold.
+Uses a mask to remove data below threshold and finds peaks in what is left.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{arr}} (\emph{ndarray}) -- 1-D numpy array is required
+
+\item {} 
+\textbf{\texttt{thresh}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- The threshold below which will be considered noise and peaks    will not be found in.
+
+\item {} 
+\textbf{\texttt{trig\_int}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Optional, debug level 0-5
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+peaks, locs: Lists of peak values and locations.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{find\_peaks\_dep() (in module findpeaks)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:findpeaks.find_peaks_dep}\pysiglinewithargsret{\code{findpeaks.}\bfcode{find\_peaks\_dep}}{\emph{arr}, \emph{thresh}, \emph{trig\_int}, \emph{debug=0}, \emph{starttime=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{samp\_rate=1.0}}{}
 Function to determine peaks in an array of data above a certain threshold.
 
-EXPERIMENTAL CODE, DOES NOT WORK EFFICIENTLY, RECOMEND USING find\_peaks2
+Depreciated peak-finding routine, very slow, but accurate.  If all else fails
+this one should work.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
@@ -1554,30 +1729,24 @@ peaks, locs: Lists of peak values and locations.
 
 \end{fulllineitems}
 
-\index{find\_peaks2() (in module findpeaks)}
+\index{is\_prime() (in module findpeaks)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:findpeaks.find_peaks2}\pysiglinewithargsret{\code{findpeaks.}\bfcode{find\_peaks2}}{\emph{arr}, \emph{thresh}, \emph{trig\_int}, \emph{debug=0}, \emph{starttime=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{samp\_rate=1.0}}{}
-Function to determine peaks in an array of data above a certain threshold.
-Improvement on find\_peaks, speed-up of approx 250x.
+\phantomsection\label{utils:findpeaks.is_prime}\pysiglinewithargsret{\code{findpeaks.}\bfcode{is\_prime}}{\emph{number}}{}~\begin{description}
+\item[{Function to test primality of a number. Function lifted from online resource:}] \leavevmode
+\href{http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w}{http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w}
+
+\item[{This function is distributed under a seperate licence:}] \leavevmode
+This article, along with any associated source code and files, is
+licensed under The Code Project Open License (CPOL)
+
+\end{description}
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode\begin{itemize}
-\item {} 
-\textbf{\texttt{arr}} (\emph{ndarray}) -- 1-D numpy array is required
-
-\item {} 
-\textbf{\texttt{thresh}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- The threshold below which will be considered noise and peaks    will not be found in.
-
-\item {} 
-\textbf{\texttt{trig\_int}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- The minimum difference in samples between triggers,    if multiple peaks within this window this code will find the highest.
-
-\item {} 
-\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Optional, debug level 0-5
-
-\end{itemize}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{number}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Integer to test for primality
 
 \item[{Returns}] \leavevmode
-peaks, locs: Lists of peak values and locations.
+bool
 
 \end{description}\end{quote}
 
@@ -1614,43 +1783,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\textgreater{}.
 \end{quote}
-\index{SVD\_2\_stream\_testing() (in module clustering)}
+\index{SVD() (in module clustering)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:clustering.SVD_2_stream_testing}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD\_2\_stream\_testing}}{\emph{SVectors}, \emph{stachans}, \emph{k}, \emph{sampling\_rate}}{}
-Function to convert the singular vectors output by SVD to streams, one for
-each singular vector level, for all channels.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode\begin{itemize}
-\item {} 
-\textbf{\texttt{SVectors}} (\emph{ndarray}) -- Singular vectors
-
-\item {} 
-\textbf{\texttt{stachans}} (\emph{List of Strings}) -- List of station.channel Strings
-
-\item {} 
-\textbf{\texttt{k}} (\emph{Int}) -- Number of streams to return = number of SV's to include
-
-\end{itemize}
-
-\item[{Sampling\_rate}] \leavevmode
-Float
-
-\item[{Returns}] \leavevmode
-SVstreams, List of Obspy.Stream, with SVStreams{[}0{]} being
-composed of the highest rank singular vectors.
-
-\end{description}\end{quote}
-\paragraph{Note}
-
-\textbf{IN ALPHA, not working as expected}
-
-\end{fulllineitems}
-
-\index{SVD\_testing() (in module clustering)}
-
-\begin{fulllineitems}
-\phantomsection\label{utils:clustering.SVD_testing}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD\_testing}}{\emph{templates}}{}
+\phantomsection\label{utils:clustering.SVD}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD}}{\emph{templates}}{}
 Function to compute the SVD of a number of templates and return the singular
 vectors and singular values of the templates.
 \begin{quote}\begin{description}
@@ -1658,31 +1794,42 @@ vectors and singular values of the templates.
 \textbf{\texttt{templates}} (\emph{List of Obspy.Stream}) -- List of the templates to be analysed
 
 \item[{Returns}] \leavevmode
-SVector(ndarray), SValues(ndarray) for each channel, stachans, List
-of String (station.channel)
+SVector(list of ndarray), SValues(list) for each channel,             Uvalues(list of ndarray) for each channel,             stachans, List of String (station.channel)
 
 \end{description}\end{quote}
 \paragraph{Note}
 
-\textbf{IN ALPHA, not working as expected}
-
-It is recommended that you align the data before computing the SVD, .e.g.,
+It is recommended that you align the data before computing the SVD, e.g.,
 the P-arrival on all templates for the same channel should appear at the same
 time in the trace.
 
 \end{fulllineitems}
 
-\index{allign\_traces() (in module clustering)}
+\index{SVD\_2\_stream() (in module clustering)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:clustering.allign_traces}\pysiglinewithargsret{\code{clustering.}\bfcode{allign\_traces}}{\emph{traces}}{}
-Function to allign all traces in a stream based on their cross-correlations
+\phantomsection\label{utils:clustering.SVD_2_stream}\pysiglinewithargsret{\code{clustering.}\bfcode{SVD\_2\_stream}}{\emph{SVectors}, \emph{stachans}, \emph{k}, \emph{sampling\_rate}}{}
+Function to convert the singular vectors output by SVD to streams, one for
+each singular vector level, for all channels.
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\textbf{\texttt{traces}} (\emph{List of :class: obspy.Trace}) -- List of of single channels unalligned - should contain            data from multiple earthquakes for a single site, channel and phase            I will compute the linear stack of all traces and allign the traces            relative to this.
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{SVectors}} (\emph{List of np.ndarray}) -- Singular vectors
+
+\item {} 
+\textbf{\texttt{stachans}} (\emph{List of Strings}) -- List of station.channel Strings
+
+\item {} 
+\textbf{\texttt{k}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Number of streams to return = number of SV's to include
+
+\item {} 
+\textbf{\texttt{sampling\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sampling rate in Hz
+
+\end{itemize}
 
 \item[{Returns}] \leavevmode
-List of ndarray
+SVstreams, List of Obspy.Stream, with SVStreams{[}0{]} being
+composed of the highest rank singular vectors.
 
 \end{description}\end{quote}
 
@@ -1694,23 +1841,67 @@ List of ndarray
 \phantomsection\label{utils:clustering.cluster}\pysiglinewithargsret{\code{clustering.}\bfcode{cluster}}{\emph{templates}, \emph{show=True}}{}
 Function to take a set of templates and cluster them, will return distance            matrix of grouped templates
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{templates}} (\emph{List of Obspy.Stream}) -- List of templates to compute clustering for
+
+\item {} 
+\textbf{\texttt{show}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- plot linkage on screen if True, defaults to True
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
 List of cluster groups, array of length len(templates), with
 each number relating to a cluster
 
 \end{description}\end{quote}
+\paragraph{Note:
+Not fully feautured yet, returns the Z matrix, but doesn't tell you what        can be clustered.}
 
 \end{fulllineitems}
 
-\index{cross\_chan\_coherance() (in module clustering)}
+\index{corr\_cluster() (in module clustering)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:clustering.cross_chan_coherance}\pysiglinewithargsret{\code{clustering.}\bfcode{cross\_chan\_coherance}}{\emph{st1}, \emph{st2}}{}
+\phantomsection\label{utils:clustering.corr_cluster}\pysiglinewithargsret{\code{clustering.}\bfcode{corr\_cluster}}{\emph{traces}, \emph{thresh=0.9}}{}
+Group traces based on correlations above threshold with the stack - will
+run twice, once with a lower threshold, then again with your threshold to
+remove large outliers
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{traces}} (\emph{List of :class:obspy.Trace}) -- Traces to compute similarity between
+
+\item {} 
+\textbf{\texttt{thrsh}} -- Correlation threshold between -1-1
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+np.ndarray of bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{cross\_chan\_coherence() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:clustering.cross_chan_coherence}\pysiglinewithargsret{\code{clustering.}\bfcode{cross\_chan\_coherence}}{\emph{st1}, \emph{st2}}{}
 Function to determine the cross-channel coherancy between two streams of
 multichannel seismic data.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{st1}} (\emph{obspy Stream}) -- Stream one
+
+\item {} 
+\textbf{\texttt{st2}} (\emph{obspy Stream}) -- Stream two
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
-cross channel coherance, float - normalized by number of channels
+cross channel coherence, float - normalized by number of channels
 
 \end{description}\end{quote}
 
@@ -1725,8 +1916,36 @@ distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
 have small distances, and an equally well correlated reverse image will
 have the same distance as apositively correlated image - this is an issue
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{template}} -- List of the streams to compute the distance matrix for
+
 \item[{Returns}] \leavevmode
 ndarray - distance matrix
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{empirical\_SVD() (in module clustering)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:clustering.empirical_SVD}\pysiglinewithargsret{\code{clustering.}\bfcode{empirical\_SVD}}{\emph{templates}, \emph{linear=True}}{}
+Empirical subspace detector generation function.  Takes a list of templates
+and computes the stack as the first order subspace detector, and the
+differential of this as the second order subspace detector following
+the emprical subspace method of Barrett \& Beroza, 2014 - SRL.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{templates}} (\emph{list of stream}) -- list of template streams to compute the subspace detectors        from
+
+\item {} 
+\textbf{\texttt{linear}} (\emph{Bool}) -- Set to true by default to compute the linear stack as the        first subspace vector, False will use the phase-weighted stack as the        first subspace vector.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+list of two streams
 
 \end{description}\end{quote}
 
@@ -1780,8 +1999,7 @@ Function to group template waveforms according to their delays
 \textbf{\texttt{templates}} (\emph{List of obspy.Stream}) -- List of the waveforms you want to group
 
 \item[{Returns}] \leavevmode
-List of List of obspy.Streams where each initial list is a group
-with the same delays
+List of List of obspy.Streams where each initial list is a group            with the same delays
 
 \end{description}\end{quote}
 
@@ -1821,6 +2039,9 @@ Function to check the data quality of the daylong file - check to see that
 the day isn't just zeros, with large steps, if it is then the resampling will
 hate it.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{tr}} (\emph{obspy.Trace}) -- Trace to check if the data are daylong.
+
 \item[{Return qual}] \leavevmode
 bool
 
@@ -1837,6 +2058,27 @@ to ensure files start at the start of a day and are daylong.  Works in place
 on data.  This is employed to ensure all parts of the data are processed
 in the same way.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{tr}} (\emph{obspy.Trace}) -- Trace to process
+
+\item {} 
+\textbf{\texttt{highcut}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- High cut in Hz for bandpass
+
+\item {} 
+\textbf{\texttt{filt\_order}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Corners for bandpass
+
+\item {} 
+\textbf{\texttt{samp\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Desired sampling rate in Hz
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Debug output level from 0-5, higher numbers = more output
+
+\item {} 
+\textbf{\texttt{starttime}} (\emph{obspy.UTCDateTime}) -- Desired start of trace
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
 obspy.Stream
 
@@ -1852,6 +2094,27 @@ Basic function to bandpass, downsample.  Works in place
 on data.  This is employed to ensure all parts of the data are processed
 in the same way.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{st}} (\emph{obspy.Stream}) -- Stream to process
+
+\item {} 
+\textbf{\texttt{highcut}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- High cut for bandpass in Hz
+
+\item {} 
+\textbf{\texttt{lowcut}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Low cut for bandpass in Hz
+
+\item {} 
+\textbf{\texttt{filt\_order}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Number of corners for bandpass filter
+
+\item {} 
+\textbf{\texttt{samp\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sampling rate desired in Hz
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Debug flag from 0-5, higher numbers = more output
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
 obspy.Stream
 
@@ -1883,6 +2146,41 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\textgreater{}.
 \end{quote}
+\index{NR\_plot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:EQcorrscan_plotting.NR_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{NR\_plot}}{\emph{stream}, \emph{NR\_stream}, \emph{detections}, \emph{false\_detections=False}, \emph{size=(18.5}, \emph{10)}, \emph{save=False}, \emph{title=False}}{}
+Function to plot the Network response alongside the streams used - highlights
+detection times in the network response
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{stream}} -- Stream to plot
+
+\item {} 
+\textbf{\texttt{NR\_stream}} -- Stream for the network response
+
+\item {} 
+\textbf{\texttt{detections}} (\emph{List of datetime objects}) -- List of the detections
+
+\item {} 
+\textbf{\texttt{false\_detections}} (\emph{List of datetime}) -- Either False (default) or list of false detection     times
+
+\item {} 
+\textbf{\texttt{size}} (\href{https://docs.python.org/library/functions.html\#tuple}{\emph{tuple}}) -- Size of figure, default is (18.5,10)
+
+\item {} 
+\textbf{\texttt{save}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- Save figure or plot to screen, if not False, must be string of        save path
+
+\item {} 
+\textbf{\texttt{title}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- String for the title of the plot, set to False
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{Noise\_plotting() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
@@ -1918,6 +2216,29 @@ PPSD object
 
 \end{fulllineitems}
 
+\index{SVD\_plot() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:EQcorrscan_plotting.SVD_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{SVD\_plot}}{\emph{SVStreams}, \emph{SValues}, \emph{stachans}, \emph{title=False}}{}
+Function to plot the singular vectors from the clustering routines, one
+plot for each stachan
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{SVStreams}} (\emph{List of :class:Obspy.Stream}) -- See clustering.SVD\_2\_Stream - will assume these are            ordered by power, e.g. first singular vector in the first stream
+
+\item {} 
+\textbf{\texttt{SValues}} (\emph{List of float}) -- List of the singular values corresponding to the SVStreams
+
+\item {} 
+\textbf{\texttt{stachans}} (\emph{List}) -- List of station.channel
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{cumulative\_detections() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
@@ -1933,6 +2254,12 @@ template it will overlay them in different colours.
 
 \item {} 
 \textbf{\texttt{template\_names}} (\emph{list of strings}) -- List of the template names in order of the dates
+
+\item {} 
+\textbf{\texttt{save}} (\emph{Boolean, optional}) -- Save figure or show to screen
+
+\item {} 
+\textbf{\texttt{savefile}} (\emph{String, optional}) -- String to save to.
 
 \end{itemize}
 
@@ -1959,21 +2286,93 @@ pretty way to show a detection!
 \textbf{\texttt{times}} (\emph{List of datetime.datetime}) -- list of times of detections in the order of the channels in
 template.
 
+\item {} 
+\textbf{\texttt{streamcolour}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- String of matplotlib colour types for the stream
+
+\item {} 
+\textbf{\texttt{templatecolour}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Colour to plot the template in.
+
 \end{itemize}
 
 \end{description}\end{quote}
 
 \end{fulllineitems}
 
-\index{detection\_timeseries() (in module EQcorrscan\_plotting)}
+\index{interev\_mag() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:EQcorrscan_plotting.detection_timeseries}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{detection\_timeseries}}{\emph{stream}, \emph{detector}, \emph{detections}}{}
-Function to plot the data and detector with detections labelled in red,
-will downsample if too many data points.
+\phantomsection\label{utils:EQcorrscan_plotting.interev_mag}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{interev\_mag}}{\emph{times}, \emph{mags}}{}
+Function to plot interevent times against magnitude for given times
+and magnitudes.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{times}} (\emph{list of datetime}) -- list of the detection times, must be sorted the same as mags
+
+\item {} 
+\textbf{\texttt{mags}} (\emph{list of float}) -- list of magnitudes
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{interev\_mag\_sfiles() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:EQcorrscan_plotting.interev_mag_sfiles}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{interev\_mag\_sfiles}}{\emph{sfiles}}{}
+Function to plot interevent-time versus magnitude for series of events.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{\texttt{detections}} (\emph{np.array}) -- array of positions of detections in samples
+\textbf{\texttt{sfiles}} (\emph{List}) -- List of sfiles to read from
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{multi\_event\_singlechan() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:EQcorrscan_plotting.multi_event_singlechan}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{multi\_event\_singlechan}}{\emph{streams}, \emph{picks}, \emph{clip=10.0}, \emph{pre\_pick=2.0}, \emph{freqmin=False}, \emph{freqmax=False}, \emph{realign=False}, \emph{cut=(-3.0}, \emph{5.0)}, \emph{PWS=False}, \emph{title=False}}{}
+Function to plot data from a single channel at a single station for multiple
+events - data will be alligned by their pick-time given in the picks
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{streams}} (\emph{List of :class:obspy.stream}) -- List of the streams to use, can contain more traces than        you plan on plotting
+
+\item {} 
+\textbf{\texttt{picks}} (\emph{List of :class:PICK}) -- List of picks, one for each stream
+
+\item {} 
+\textbf{\texttt{clip}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Length in seconds to plot, defaults to 10.0
+
+\item {} 
+\textbf{\texttt{pre\_pick}} (\emph{Float}) -- Length in seconds to extract and plot before the pick,        defaults to 2.0
+
+\item {} 
+\textbf{\texttt{freqmin}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Low cut for bandpass in Hz
+
+\item {} 
+\textbf{\texttt{freqmax}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- High cut for bandpass in Hz
+
+\item {} 
+\textbf{\texttt{realign}} (\emph{Bool}) -- To compute best alignement based on correlation or not.
+
+\item {} 
+\textbf{\texttt{cut}} (\emph{tuple:}) -- tuple of start and end times for cut in seconds from the pick
+
+\item {} 
+\textbf{\texttt{PWS}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- compute Phase Weighted Stack, if False, will compute linear stack
+
+\item {} 
+\textbf{\texttt{title}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Plot title.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+Alligned and cut traces, and new picks
 
 \end{description}\end{quote}
 
@@ -1987,6 +2386,27 @@ Simple utility code to plot the correlation peaks to check that the peak
 finding routine is running correctly, used in debugging for the EQcorrscan
 module.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{data}} (\emph{numpy.array}) -- Numpy array of the data within which peaks have been found
+
+\item {} 
+\textbf{\texttt{starttime}} (\emph{obspy.UTCDateTime}) -- Start time for the data
+
+\item {} 
+\textbf{\texttt{samp\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sampling rate of data in Hz
+
+\item {} 
+\textbf{\texttt{save}} (\emph{Boolean, optional}) -- Save figure or plot to screen (False)
+
+\item {} 
+\textbf{\texttt{peaks}} (\emph{List of Tuple, optional}) -- List of peak locations and amplitudes (loc, amp)
+
+\item {} 
+\textbf{\texttt{savefile}} (\emph{String, optional}) -- Path to save to, only used if save=True
+
+\end{itemize}
+
 \end{description}\end{quote}
 
 \end{fulllineitems}
@@ -1994,10 +2414,28 @@ module.
 \index{pretty\_template\_plot() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:EQcorrscan_plotting.pretty_template_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{pretty\_template\_plot}}{\emph{template}, \emph{size=(18.5}, \emph{10.5)}, \emph{save=False}, \emph{title=False}}{}
+\phantomsection\label{utils:EQcorrscan_plotting.pretty_template_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{pretty\_template\_plot}}{\emph{template}, \emph{size=(18.5}, \emph{10.5)}, \emph{save=False}, \emph{title=False}, \emph{background=False}}{}
 Function to make a pretty plot of a single template, designed to work better
 than the default obspy plotting routine for short data lengths.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{template}} -- Template stream to plot
+
+\item {} 
+\textbf{\texttt{size}} (\href{https://docs.python.org/library/functions.html\#tuple}{\emph{tuple}}) -- tuple of plot size
+
+\item {} 
+\textbf{\texttt{save}} (\emph{Boolean}) -- if False will plot to screen, if True will save
+
+\item {} 
+\textbf{\texttt{title}} (\emph{Boolean}) -- String if set will be the plot title
+
+\item {} 
+\textbf{\texttt{background}} -- Stream to plot the template within.
+
+\end{itemize}
+
 \end{description}\end{quote}
 
 \end{fulllineitems}
@@ -2008,8 +2446,17 @@ than the default obspy plotting routine for short data lengths.
 \phantomsection\label{utils:EQcorrscan_plotting.threeD_gridplot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{threeD\_gridplot}}{\emph{nodes}, \emph{save=False}, \emph{savefile='`}}{}
 Function to plot in 3D a series of grid points.
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
 \textbf{\texttt{nodes}} (\emph{List of tuples}) -- List of tuples of the form (lat, long, depth)
+
+\item {} 
+\textbf{\texttt{save}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- if True will save without plotting to screen, if False        (default) will plot to screen but not save
+
+\item {} 
+\textbf{\texttt{savefile}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- required if save=True, path to save figure to.
+
+\end{itemize}
 
 \end{description}\end{quote}
 
@@ -2044,6 +2491,24 @@ positive
 Main function to make a triple plot with a day-long seismogram, day-long
 correlation sum trace and histogram of the correlation sum to show normality
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{cccsum}} (\emph{numpy.array}) -- Array of the cross-channel cross-correlation sum
+
+\item {} 
+\textbf{\texttt{trace}} (\emph{obspy.Trace}) -- A sample trace from the same time as cccsum
+
+\item {} 
+\textbf{\texttt{threshold}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Detection threshold within cccsum
+
+\item {} 
+\textbf{\texttt{save}} (\emph{Bool, optional}) -- If True will svae and not plot to screen, vice-versa if False
+
+\item {} 
+\textbf{\texttt{savefile}} (\emph{String, optional}) -- Path to save figure to, only required if save=True
+
+\end{itemize}
+
 \end{description}\end{quote}
 
 \end{fulllineitems}
@@ -2115,7 +2580,7 @@ to the p-s time, defaults to 0.5
 
 \item {} 
 \textbf{\texttt{pre\_pick}} (\emph{Float}) -- Time before the s-pick to start the cut window, defaults
-to 1.0
+to 0.2
 
 \item {} 
 \textbf{\texttt{pre\_filt}} (\emph{Bool}) -- To apply a pre-filter or not, defaults to True
@@ -2145,6 +2610,9 @@ Zeros file as generated by the SEISAN program RESP.
 Format must be CAL2, not coded for any other format at the moment, contact
 the author to add others in.
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{GSEfile}} (\emph{Str}) -- Path to GSE file
+
 \item[{Returns}] \leavevmode
 Dict of poles, zeros, gain and sensitivity
 
@@ -2177,7 +2645,7 @@ and sensitivity.
 \textbf{\texttt{delta}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Sample interval in seconds
 
 \item {} 
-\textbf{\texttt{direcotry}} -- Directory to scan for response information
+\textbf{\texttt{directory}} (\emph{String}) -- Directory to scan for response information
 
 \end{itemize}
 
@@ -2255,8 +2723,14 @@ obspy.Trace
 Function to calcualte the distance in km between two points, uses the flat
 Earth approximation
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
 \textbf{\texttt{loc1}} (\emph{Tuple}) -- Tuple of lat, lon, depth (in decimal degrees and km)
+
+\item {} 
+\textbf{\texttt{loc2}} (\emph{Tuple}) -- Tuple of lat, lon, depth (in decimal degrees and km)
+
+\end{itemize}
 
 \end{description}\end{quote}
 
@@ -2295,13 +2769,43 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 
 \begin{fulllineitems}
 \phantomsection\label{utils:stacking.PWS_stack}\pysiglinewithargsret{\code{stacking.}\bfcode{PWS\_stack}}{\emph{streams}, \emph{weight=2}}{}
-Function to compute the phase weighted stack of a series of streams
+Function to compute the phase weighted stack of a series of streams.
+Recommend aligning the traces before stacking.
 \begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{streams}} (\emph{list of obspy.Stream}) -- List of Stream to stack
+
+\item {} 
 \textbf{\texttt{weight}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Exponent to the phase stack used for weighting.
+
+\end{itemize}
 
 \item[{Returns}] \leavevmode
 obspy.Stream
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{align\_traces() (in module stacking)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:stacking.align_traces}\pysiglinewithargsret{\code{stacking.}\bfcode{align\_traces}}{\emph{trace\_list}, \emph{shift\_len}}{}
+Function to allign traces relative to each other based on their
+cross-correlation value
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{trace\_list}} (\emph{List of Traces}) -- List of traces to allign
+
+\item {} 
+\textbf{\texttt{shift\_len}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Length to allow shifting within in samples
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+list of shifts for best allignment in seconds
 
 \end{description}\end{quote}
 
@@ -2314,6 +2818,9 @@ obspy.Stream
 Function to compute the linear stack of a series of seismic streams of
 multiplexed data
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{stream}} -- List of streams to stack
+
 \item[{Returns}] \leavevmode
 stack - Stream
 
@@ -2369,6 +2876,15 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \phantomsection\label{utils:catalogue2DD._av_weight}\pysiglinewithargsret{\code{catalogue2DD.}\bfcode{\_av\_weight}}{\emph{W1}, \emph{W2}}{}
 Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{W1}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Seisan input weight (0-4)
+
+\item {} 
+\textbf{\texttt{W2}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Seisan input weight (0-4)
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
 str
 
@@ -2383,6 +2899,15 @@ str
 Convenience function to take a float and round it to dp padding with zeros
 to return a string
 \begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{num}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Number to round
+
+\item {} 
+\textbf{\texttt{dp}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Number of decimal places to round to.
+
+\end{itemize}
+
 \item[{Returns}] \leavevmode
 string
 
@@ -2466,9 +2991,11 @@ List stations
 \index{write\_correlations() (in module catalogue2DD)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:catalogue2DD.write_correlations}\pysiglinewithargsret{\code{catalogue2DD.}\bfcode{write\_correlations}}{\emph{event\_list}, \emph{wavbase}, \emph{extract\_len}, \emph{pre\_pick}, \emph{shift\_len}, \emph{lowcut=1.0}, \emph{highcut=10.0}, \emph{max\_sep=4}, \emph{min\_link=8}}{}
+\phantomsection\label{utils:catalogue2DD.write_correlations}\pysiglinewithargsret{\code{catalogue2DD.}\bfcode{write\_correlations}}{\emph{event\_list}, \emph{wavbase}, \emph{extract\_len}, \emph{pre\_pick}, \emph{shift\_len}, \emph{lowcut=1.0}, \emph{highcut=10.0}, \emph{max\_sep=4}, \emph{min\_link=8}, \emph{coh\_thresh=0.0}}{}
 Function to write a dt.cc file for hypoDD input - takes an input list of
-events and computes pick refienements by correlation
+events and computes pick refienements by correlation.
+
+Note that this is \textbf{NOT} fast.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
@@ -2574,11 +3101,25 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \renewcommand{\indexname}{Python Module Index}
 \begin{theindex}
 \def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
-\bigletter{m}
-\item {\texttt{match\_filter\_par}}, \pageref{par:module-match_filter_par}
+\bigletter{c}
+\item {\texttt{catalogue2DD}}, \pageref{utils:module-catalogue2DD}
+\item {\texttt{clustering}}, \pageref{utils:module-clustering}
 \indexspace
-\bigletter{t}
-\item {\texttt{template\_gen\_par}}, \pageref{par:module-template_gen_par}
+\bigletter{e}
+\item {\texttt{EQcorrscan\_plotting}}, \pageref{utils:module-EQcorrscan_plotting}
+\indexspace
+\bigletter{f}
+\item {\texttt{findpeaks}}, \pageref{utils:module-findpeaks}
+\indexspace
+\bigletter{m}
+\item {\texttt{mag\_calc}}, \pageref{utils:module-mag_calc}
+\indexspace
+\bigletter{p}
+\item {\texttt{pre\_processing}}, \pageref{utils:module-pre_processing}
+\indexspace
+\bigletter{s}
+\item {\texttt{Sfile\_util}}, \pageref{utils:module-Sfile_util}
+\item {\texttt{stacking}}, \pageref{utils:module-stacking}
 \end{theindex}
 
 \renewcommand{\indexname}{Index}

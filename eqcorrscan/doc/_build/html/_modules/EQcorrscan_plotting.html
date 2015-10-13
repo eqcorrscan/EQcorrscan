@@ -160,10 +160,15 @@
 <span class="sd">    correlation sum trace and histogram of the correlation sum to show normality</span>
 
 <span class="sd">    :type cccsum: numpy.array</span>
+<span class="sd">    :param cccsum: Array of the cross-channel cross-correlation sum</span>
 <span class="sd">    :type trace: obspy.Trace</span>
+<span class="sd">    :param trace: A sample trace from the same time as cccsum</span>
 <span class="sd">    :type threshold: float</span>
+<span class="sd">    :param threshold: Detection threshold within cccsum</span>
 <span class="sd">    :type save: Bool, optional</span>
+<span class="sd">    :param save: If True will svae and not plot to screen, vice-versa if False</span>
 <span class="sd">    :type savefile: String, optional</span>
+<span class="sd">    :param savefile: Path to save figure to, only required if save=True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
         <span class="k">print</span> <span class="s">&#39;cccsum is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; trace is: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
@@ -196,6 +201,7 @@
     <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
@@ -208,11 +214,17 @@
 <span class="sd">    module.</span>
 
 <span class="sd">    :type data: numpy.array</span>
+<span class="sd">    :param data: Numpy array of the data within which peaks have been found</span>
 <span class="sd">    :type starttime: obspy.UTCDateTime</span>
+<span class="sd">    :param starttime: Start time for the data</span>
 <span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Sampling rate of data in Hz</span>
 <span class="sd">    :type save: Boolean, optional</span>
+<span class="sd">    :param save: Save figure or plot to screen (False)</span>
 <span class="sd">    :type peaks: List of Tuple, optional</span>
+<span class="sd">    :param peaks: List of peak locations and amplitudes (loc, amp)</span>
 <span class="sd">    :type savefile: String, optional</span>
+<span class="sd">    :param savefile: Path to save to, only used if save=True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">npts</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npts</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">samp_rate</span><span class="o">*</span><span class="mi">3600</span><span class="p">)</span>
@@ -228,6 +240,7 @@
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">&#39;Peaks&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
@@ -244,7 +257,9 @@
 <span class="sd">    :type template_names: list of strings</span>
 <span class="sd">    :param template_names: List of the template names in order of the dates</span>
 <span class="sd">    :type save: Boolean, optional</span>
+<span class="sd">    :param save: Save figure or show to screen</span>
 <span class="sd">    :type savefile: String, optional</span>
+<span class="sd">    :param savefile: String to save to.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Set up a default series of parameters for lines</span>
     <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;blue&#39;</span><span class="p">,</span> <span class="s">&#39;green&#39;</span><span class="p">,</span> <span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="s">&#39;cyan&#39;</span><span class="p">,</span> <span class="s">&#39;magenta&#39;</span><span class="p">,</span> <span class="s">&#39;yellow&#39;</span><span class="p">,</span> <span class="s">&#39;black&#39;</span><span class="p">,</span> \
@@ -280,6 +295,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span><span class="mi">8</span><span class="p">},</span><span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="c">#handles=plothandles)</span>
     <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
@@ -290,6 +306,11 @@
 
 <span class="sd">    :type nodes: List of tuples</span>
 <span class="sd">    :param nodes: List of tuples of the form (lat, long, depth)</span>
+<span class="sd">    :type save: bool</span>
+<span class="sd">    :param save: if True will save without plotting to screen, if False\</span>
+<span class="sd">        (default) will plot to screen but not save</span>
+<span class="sd">    :type savefile: str</span>
+<span class="sd">    :param savefile: required if save=True, path to save figure to.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">lats</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">longs</span><span class="o">=</span><span class="p">[]</span>
@@ -309,41 +330,132 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">get_major_formatter</span><span class="p">()</span><span class="o">.</span><span class="n">set_scientific</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefile</span><span class="p">)</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="detection_timeseries"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.detection_timeseries">[docs]</a><span class="k">def</span> <span class="nf">detection_timeseries</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">detections</span><span class="p">):</span>
+<div class="viewcode-block" id="multi_event_singlechan"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.multi_event_singlechan">[docs]</a><span class="k">def</span> <span class="nf">multi_event_singlechan</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">picks</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>\
+                           <span class="n">freqmin</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">realign</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> \
+                           <span class="n">cut</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span><span class="mf">5.0</span><span class="p">),</span> <span class="n">PWS</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to plot the data and detector with detections labelled in red,</span>
-<span class="sd">    will downsample if too many data points.</span>
+<span class="sd">    Function to plot data from a single channel at a single station for multiple</span>
+<span class="sd">    events - data will be alligned by their pick-time given in the picks</span>
 
-<span class="sd">    :type stream: obspy.Stream</span>
-<span class="sd">    :type detector: np.array</span>
-<span class="sd">    :type detections: np.array</span>
-<span class="sd">    :param detections: array of positions of detections in samples</span>
+<span class="sd">    :type streams: List of :class:obspy.stream</span>
+<span class="sd">    :param streams: List of the streams to use, can contain more traces than\</span>
+<span class="sd">        you plan on plotting</span>
+<span class="sd">    :type picks: List of :class:PICK</span>
+<span class="sd">    :param picks: List of picks, one for each stream</span>
+<span class="sd">    :type clip: float</span>
+<span class="sd">    :param clip: Length in seconds to plot, defaults to 10.0</span>
+<span class="sd">    :type pre_pick: Float</span>
+<span class="sd">    :param pre_pick: Length in seconds to extract and plot before the pick,\</span>
+<span class="sd">        defaults to 2.0</span>
+<span class="sd">    :type freqmin: float</span>
+<span class="sd">    :param freqmin: Low cut for bandpass in Hz</span>
+<span class="sd">    :type freqmax: float</span>
+<span class="sd">    :param freqmax: High cut for bandpass in Hz</span>
+<span class="sd">    :type realign: Bool</span>
+<span class="sd">    :param realign: To compute best alignement based on correlation or not.</span>
+<span class="sd">    :type cut: tuple:</span>
+<span class="sd">    :param cut: tuple of start and end times for cut in seconds from the pick</span>
+<span class="sd">    :type PWS: bool</span>
+<span class="sd">    :param PWS: compute Phase Weighted Stack, if False, will compute linear stack</span>
+<span class="sd">    :type title: str</span>
+<span class="sd">    :param title: Plot title.</span>
+
+<span class="sd">    :returns: Alligned and cut traces, and new picks</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Trace</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-    <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-    <span class="n">samp_rate</span><span class="o">=</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)):</span>
-        <span class="n">tr</span><span class="o">=</span><span class="n">stream</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-            <span class="n">tr</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">10</span><span class="p">))</span>
-        <span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
-        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
-    <span class="n">detector</span><span class="o">=</span><span class="n">Trace</span><span class="p">(</span><span class="n">detector</span><span class="p">)</span>
-    <span class="n">detector</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">=</span><span class="n">samp_rate</span>
-    <span class="k">if</span> <span class="n">detector</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-        <span class="n">detector</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">detector</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">10</span><span class="p">))</span>
-    <span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">detector</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">detector</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
-    <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="o">.</span><span class="n">data</span>
-    <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">detector</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-    <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
-    <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Detector&#39;</span><span class="p">)</span>
-    <span class="k">return</span>
+    <span class="kn">import</span> <span class="nn">stacking</span><span class="o">,</span> <span class="nn">copy</span>
+    <span class="kn">from</span> <span class="nn">core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">traces</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">al_traces</span><span class="o">=</span><span class="p">[]</span>
+    <span class="c"># Keep input safe</span>
+    <span class="n">plist</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">picks</span><span class="p">)</span>
+    <span class="n">st_list</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">streams</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plist</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">st_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+            <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">tr</span><span class="o">=</span><span class="n">st_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">continue</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;linear&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">freqmin</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">freqmin</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">freqmax</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">realign</span><span class="p">:</span>
+            <span class="n">tr_cut</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tr_cut</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">cut</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">cut</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>\
+                        <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr_cut</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">&lt;=</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">cut</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cut</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">tr_cut</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Not enough in the trace for &#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span>
+                <span class="k">print</span> <span class="s">&#39;Suggest removing pick from sfile at time &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">al_traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr_cut</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">clip</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
+                    <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;No data in the trace for &#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">print</span> <span class="s">&#39;Suggest removing pick from sfile at time &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">realign</span><span class="p">:</span>
+        <span class="n">shift_len</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="n">cut</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cut</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">al_traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
+        <span class="n">shifts</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">align_traces</span><span class="p">(</span><span class="n">al_traces</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shifts</span><span class="p">)):</span>
+            <span class="k">print</span> <span class="s">&#39;Shifting by &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">shifts</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">+</span><span class="s">&#39; seconds&#39;</span>
+            <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">-=</span><span class="n">shifts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">clip</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span>\
+                           <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c"># We now have a list of traces</span>
+    <span class="n">traces</span><span class="o">=</span><span class="p">[(</span><span class="n">trace</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+    <span class="n">traces</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">traces</span><span class="o">=</span><span class="p">[</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+    <span class="c"># Plot the traces</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+        <span class="n">tr</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="c"># convert to seconds</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+        <span class="c"># axes[i+1].set_ylabel(tr.stats.starttime.datetime.strftime(&#39;%Y/%m/%d %H:%M&#39;),\</span>
+                             <span class="c"># rotation=0)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
+        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="n">traces</span><span class="o">=</span><span class="p">[</span><span class="n">Stream</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">PWS</span><span class="p">:</span>
+        <span class="n">linstack</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">PWS_stack</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">linstack</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+    <span class="n">tr</span><span class="o">=</span><span class="n">linstack</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+            <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Stack&#39;</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+        <span class="n">cc</span><span class="o">=</span><span class="n">normxcorr2</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;cc=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span><span class="mi">2</span><span class="p">)),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))),</span> \
+                       <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s">&#39;white&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.95</span><span class="p">),</span>\
+                       <span class="n">transform</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">),</span> \
+                       <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s">&#39;white&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.95</span><span class="p">),</span>\
+                       <span class="n">transform</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time (s)&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">traces</span><span class="p">,</span> <span class="n">plist</span>
 </div>
 <div class="viewcode-block" id="detection_multiplot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.detection_multiplot">[docs]</a><span class="k">def</span> <span class="nf">detection_multiplot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">streamcolour</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>\
         <span class="n">templatecolour</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">):</span>
@@ -359,6 +471,10 @@
 <span class="sd">    :type times: List of datetime.datetime</span>
 <span class="sd">    :param times: list of times of detections in the order of the channels in</span>
 <span class="sd">                template.</span>
+<span class="sd">    :type streamcolour: str</span>
+<span class="sd">    :param streamcolour: String of matplotlib colour types for the stream</span>
+<span class="sd">    :type templatecolour: str</span>
+<span class="sd">    :param templatecolour: Colour to plot the template in.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
@@ -395,6 +511,55 @@
     <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="interev_mag_sfiles"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.interev_mag_sfiles">[docs]</a><span class="k">def</span> <span class="nf">interev_mag_sfiles</span><span class="p">(</span><span class="n">sfiles</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to plot interevent-time versus magnitude for series of events.</span>
+
+<span class="sd">    :type sfiles: List</span>
+<span class="sd">    :param sfiles: List of sfiles to read from</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">Sfile_util</span>
+    <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">]</span>
+    <span class="n">mags</span><span class="o">=</span><span class="p">[</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">Mag_1</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">]</span>
+    <span class="n">interev_mag</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">mags</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="interev_mag"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.interev_mag">[docs]</a><span class="k">def</span> <span class="nf">interev_mag</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">mags</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to plot interevent times against magnitude for given times</span>
+<span class="sd">    and magnitudes.</span>
+
+<span class="sd">    :type times: list of datetime</span>
+<span class="sd">    :param times: list of the detection times, must be sorted the same as mags</span>
+<span class="sd">    :type mags: list of float</span>
+<span class="sd">    :param mags: list of magnitudes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="p">[(</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mags</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">))]</span>
+    <span class="n">l</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span>
+    <span class="n">mags</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span>
+    <span class="c"># Make two subplots next to each other of time before and time after</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">pre_times</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">post_times</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pre_times</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">post_times</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pre_times</span><span class="p">,</span> <span class="n">mags</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;Pre-event times&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Magnitude&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time (Minutes)&#39;</span><span class="p">)</span>
+    <span class="c"># axes[0].set_xlim([0, max(pre_times)+(0.1*(max(pre_times)-min(pre_times)))])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_majorticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">30</span> <span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pre_times</span><span class="p">,</span> <span class="n">mags</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;Post-event times&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time (Minutes)&#39;</span><span class="p">)</span>
+    <span class="c"># axes[1].set_xlim([0, max(post_times)+(0.1*(max(post_times)-min(post_times)))])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_majorticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">30</span> <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </div>
 <div class="viewcode-block" id="threeD_seismplot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.threeD_seismplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_seismplot</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -475,23 +640,57 @@
     <span class="n">ppsd</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">ppsd</span>
 </div>
-<div class="viewcode-block" id="pretty_template_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.pretty_template_plot">[docs]</a><span class="k">def</span> <span class="nf">pretty_template_plot</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mf">18.5</span><span class="p">,</span> <span class="mf">10.5</span><span class="p">),</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="pretty_template_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.pretty_template_plot">[docs]</a><span class="k">def</span> <span class="nf">pretty_template_plot</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mf">18.5</span><span class="p">,</span> <span class="mf">10.5</span><span class="p">),</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>\
+                        <span class="n">background</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to make a pretty plot of a single template, designed to work better</span>
 <span class="sd">    than the default obspy plotting routine for short data lengths.</span>
 
 <span class="sd">    :type template: :class: obspy.Stream</span>
+<span class="sd">    :param template: Template stream to plot</span>
+<span class="sd">    :type size: tuple</span>
+<span class="sd">    :param size: tuple of plot size</span>
+<span class="sd">    :type save: Boolean</span>
+<span class="sd">    :param save: if False will plot to screen, if True will save</span>
+<span class="sd">    :type title: Boolean</span>
+<span class="sd">    :param title: String if set will be the plot title</span>
+<span class="sd">    :type backrgound: :class: obspy.stream</span>
+<span class="sd">    :param background: Stream to plot the template within.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
-    <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-    <span class="n">mintime</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">background</span><span class="p">:</span>
+        <span class="n">mintime</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mintime</span><span class="o">=</span><span class="n">background</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
     <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;network&#39;</span><span class="p">,</span><span class="s">&#39;station&#39;</span><span class="p">,</span> <span class="s">&#39;starttime&#39;</span><span class="p">])</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
         <span class="n">delay</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span>
+        <span class="n">delay</span><span class="o">*=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
         <span class="n">y</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">+</span><span class="n">delay</span><span class="p">)</span>
-        <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
-        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+        <span class="n">x</span><span class="o">+=</span><span class="n">delay</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="c"># x=np.arange(delay, (len(y)*tr.stats.sampling_rate)+delay,\</span>
+            <span class="c"># tr.stats.sampling_rate)</span>
+        <span class="k">if</span> <span class="n">background</span><span class="p">:</span>
+            <span class="n">btr</span><span class="o">=</span><span class="n">background</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                                <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">bdelay</span><span class="o">=</span><span class="n">btr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span>
+            <span class="n">bdelay</span><span class="o">*=</span><span class="n">btr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+            <span class="n">by</span><span class="o">=</span><span class="n">btr</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">bx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">by</span><span class="p">))</span>
+            <span class="n">bx</span><span class="o">+=</span><span class="n">bdelay</span>
+            <span class="n">bx</span><span class="o">=</span><span class="n">bx</span><span class="o">/</span><span class="n">btr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bx</span><span class="p">,</span><span class="n">by</span><span class="p">,</span><span class="s">&#39;k&#39;</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
         <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
         <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
@@ -501,8 +700,146 @@
         <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save</span><span class="p">)</span></div>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NR_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.NR_plot">[docs]</a><span class="k">def</span> <span class="nf">NR_plot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">NR_stream</span><span class="p">,</span> <span class="n">detections</span><span class="p">,</span> <span class="n">false_detections</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>\
+            <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mf">18.5</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to plot the Network response alongside the streams used - highlights</span>
+<span class="sd">    detection times in the network response</span>
+
+<span class="sd">    :type stream: :class: obspy.Stream</span>
+<span class="sd">    :param stream: Stream to plot</span>
+<span class="sd">    :type NR_stream: :class: obspy.Stream</span>
+<span class="sd">    :param NR_stream: Stream for the network response</span>
+<span class="sd">    :type detections: List of datetime objects</span>
+<span class="sd">    :param detections: List of the detections</span>
+<span class="sd">    :type false_detections: List of datetime</span>
+<span class="sd">    :param false_detections: Either False (default) or list of false detection\</span>
+<span class="sd">     times</span>
+<span class="sd">    :type size: tuple</span>
+<span class="sd">    :param size: Size of figure, default is (18.5,10)</span>
+<span class="sd">    :type save: bool</span>
+<span class="sd">    :param save: Save figure or plot to screen, if not False, must be string of\</span>
+<span class="sd">        save path</span>
+<span class="sd">    :type title: str</span>
+<span class="sd">    :param title: String for the title of the plot, set to False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="kn">as</span> <span class="nn">mdates</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">mintime</span><span class="o">=</span><span class="n">stream</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;network&#39;</span><span class="p">,</span><span class="s">&#39;station&#39;</span><span class="p">,</span> <span class="s">&#39;starttime&#39;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="n">delay</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span>
+        <span class="n">delay</span><span class="o">*=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="n">y</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">s</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>\
+           <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="c"># Plot the network response</span>
+    <span class="n">tr</span><span class="o">=</span><span class="n">NR_stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">delay</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">mintime</span>
+    <span class="n">delay</span><span class="o">*=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">s</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>\
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="c"># Plot the detections!</span>
+    <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">false_detections</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">false_detections</span><span class="p">:</span>
+            <span class="n">xd</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">detection</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">xd</span><span class="p">,</span> <span class="n">xd</span><span class="p">),</span> <span class="p">(</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">),</span> <span class="s">&#39;k--&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="n">xd</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">detection</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">xd</span><span class="p">,</span> <span class="n">xd</span><span class="p">),</span> <span class="p">(</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">),</span> <span class="s">&#39;r--&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="c"># Set formatters for x-labels</span>
+    <span class="n">mins</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">MinuteLocator</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">10800</span>\
+       <span class="ow">and</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">25200</span><span class="p">:</span>
+        <span class="n">hours</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">MinuteLocator</span><span class="p">(</span><span class="n">byminute</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">45</span><span class="p">])</span>
+    <span class="k">elif</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">1200</span><span class="p">:</span>
+        <span class="n">hours</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">MinuteLocator</span><span class="p">(</span><span class="n">byminute</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">25200</span>\
+        <span class="ow">and</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">172800</span><span class="p">:</span>
+        <span class="n">hours</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">HourLocator</span><span class="p">(</span><span class="n">byhour</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">172800</span><span class="p">:</span>
+        <span class="n">hours</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">DayLocator</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">hours</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">MinuteLocator</span><span class="p">(</span><span class="n">byminute</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+    <span class="n">hrFMT</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">hours</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">hrFMT</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">mins</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span><span class="o">.</span><span class="n">autofmt_xdate</span><span class="p">()</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fmt_xdata</span><span class="o">=</span><span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">save</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="SVD_plot"><a class="viewcode-back" href="../utils.html#EQcorrscan_plotting.SVD_plot">[docs]</a><span class="k">def</span> <span class="nf">SVD_plot</span><span class="p">(</span><span class="n">SVStreams</span><span class="p">,</span> <span class="n">SValues</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to plot the singular vectors from the clustering routines, one</span>
+<span class="sd">    plot for each stachan</span>
+
+<span class="sd">    :type SVStreams: List of :class:Obspy.Stream</span>
+<span class="sd">    :param SVStreams: See clustering.SVD_2_Stream - will assume these are\</span>
+<span class="sd">            ordered by power, e.g. first singular vector in the first stream</span>
+<span class="sd">    :type SValues: List of float</span>
+<span class="sd">    :param SValues: List of the singular values corresponding to the SVStreams</span>
+<span class="sd">    :type stachans: List</span>
+<span class="sd">    :param stachans: List of station.channel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">stachan</span>
+        <span class="n">plot_traces</span><span class="o">=</span><span class="p">[</span><span class="n">SVStream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>\
+                                     <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>\
+                     <span class="k">for</span> <span class="n">SVStream</span> <span class="ow">in</span> <span class="n">SVStreams</span><span class="p">]</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plot_traces</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">plot_traces</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;SV &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">SValues</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">SValues</span><span class="p">),</span><span class="mi">2</span><span class="p">)),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([])</span>
+            <span class="k">print</span> <span class="n">i</span>
+            <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time (s)&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">stachan</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span></div>
 </pre></div>
 
           </div>
