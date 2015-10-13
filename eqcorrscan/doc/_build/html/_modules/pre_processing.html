@@ -155,16 +155,6 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c"># There is a problem with Aaron&#39;s processing of FRAN, whereby channels</span>
-<span class="c"># are not named consistently, horizontal channels are intermitently</span>
-<span class="c"># referred to as N,E and 1,2 after the borehole sensor has been deployed</span>
-<span class="c"># and these come from the borehole.  This was worked around in matlab,</span>
-<span class="c"># and while Laura-May is working on the matlab codes I will impliment</span>
-<span class="c"># a work aroudn here, but this should be corrected by a bulk process</span>
-<span class="c"># of the raw data to miniseed, which will then serve as the go-to</span>
-<span class="c"># resource.</span>
-
-
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">bandpass</span>
 
@@ -175,6 +165,7 @@
 <span class="sd">    hate it.</span>
 
 <span class="sd">    :type tr: obspy.Trace</span>
+<span class="sd">    :param tr: Trace to check if the data are daylong.</span>
 
 <span class="sd">    :return qual: bool</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -192,12 +183,17 @@
 <span class="sd">    in the same way.</span>
 
 <span class="sd">    :type st: obspy.Stream</span>
+<span class="sd">    :param st: Stream to process</span>
 <span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: High cut for bandpass in Hz</span>
 <span class="sd">    :type lowcut: float</span>
+<span class="sd">    :param lowcut: Low cut for bandpass in Hz</span>
 <span class="sd">    :type filt_order: int</span>
+<span class="sd">    :param filt_order: Number of corners for bandpass filter</span>
 <span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Sampling rate desired in Hz</span>
 <span class="sd">    :type debug: int</span>
-<span class="sd">    :type starttime: obspy.UTCDateTime</span>
+<span class="sd">    :param debug: Debug flag from 0-5, higher numbers = more output</span>
 
 <span class="sd">    :return: obspy.Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -242,12 +238,19 @@
 <span class="sd">    in the same way.</span>
 
 <span class="sd">    :type tr: obspy.Trace</span>
+<span class="sd">    :param tr: Trace to process</span>
 <span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: High cut in Hz for bandpass</span>
 <span class="sd">    :type lowcut: float</span>
+<span class="sd">    :type lowcut: Low cut in Hz for bandpass</span>
 <span class="sd">    :type filt_order: int</span>
+<span class="sd">    :param filt_order: Corners for bandpass</span>
 <span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Desired sampling rate in Hz</span>
 <span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug output level from 0-5, higher numbers = more output</span>
 <span class="sd">    :type starttime: obspy.UTCDateTime</span>
+<span class="sd">    :param starttime: Desired start of trace</span>
 
 <span class="sd">    :return: obspy.Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -310,6 +313,8 @@
         <span class="k">print</span> <span class="s">&#39;Bandpassing&#39;</span>
     <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
                 <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="c">################### CHANNEL renaming, does not need to be in the main codes!</span>
     <span class="c"># Correct FRAN N,E channels to 1,2 as this is correct</span>
     <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FRAN&#39;</span> <span class="ow">and</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="s">&#39;SHN&#39;</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&#39;Correcting FRAN SHN to SH1&#39;</span>
@@ -359,8 +364,8 @@
     <span class="c"># Final visual check for debug</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">tr</span>
-</pre></div></div>
+    <span class="k">return</span> <span class="n">tr</span></div>
+</pre></div>
 
           </div>
           <footer>

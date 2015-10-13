@@ -220,8 +220,7 @@
     <span class="c"># Perform some checks first</span>
     <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
-        <span class="k">print</span> <span class="s">&#39;sfile does not exist&#39;</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;sfile does not exist&#39;</span><span class="p">)</span>
 
     <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
     <span class="c"># Read in the header of the sfile</span>
@@ -272,7 +271,7 @@
     <span class="k">return</span> <span class="n">st1</span>
 </div>
 <div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../modules.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>\
-                  <span class="n">filt_order</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                  <span class="n">filt_order</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
 <span class="sd">    picks within this and the wavefiles from the continous database of day-long</span>
@@ -301,12 +300,13 @@
 <span class="sd">    :type length: float</span>
 <span class="sd">    :param length: Extract length in seconds, if None will look in template\</span>
 <span class="sd">            defaults file.</span>
+<span class="sd">    :type prepick: float</span>
+<span class="sd">    :param prepick: Pre-pick time in seconds</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Perform some checks first</span>
     <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
-        <span class="k">print</span> <span class="s">&#39;sfile does not exist&#39;</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;sfile does not exist&#39;</span><span class="p">)</span>
 
     <span class="c"># import some things</span>
     <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
@@ -324,24 +324,39 @@
     <span class="c"># Read in pick info</span>
     <span class="n">picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
     <span class="k">print</span> <span class="s">&quot;I have found the following picks&quot;</span>
+    <span class="n">pick_chans</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">used_picks</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
-        <span class="k">print</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">contbase</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;yyyy/mm/dd&#39;</span><span class="p">:</span>
-                <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
-                        <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;Yyyyy/Rjjj.01&#39;</span><span class="p">:</span>
-                <span class="n">daydir</span><span class="o">=</span><span class="s">&#39;Y&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/R&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">julday</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.01&#39;</span>
-            <span class="k">elif</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;yyyymmdd&#39;</span><span class="p">:</span>
-                <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-            <span class="k">if</span> <span class="s">&#39;wavefiles&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
-                <span class="n">wavefiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">wavefiles</span><span class="o">=</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span> <span class="ow">in</span> <span class="n">pick_chans</span> <span class="ow">and</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
+            <span class="n">pick_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+            <span class="n">used_picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">pick</span>
+            <span class="k">for</span> <span class="n">contbase</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;yyyy/mm/dd&#39;</span><span class="p">:</span>
+                    <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
+                            <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;Yyyyy/Rjjj.01&#39;</span><span class="p">:</span>
+                    <span class="n">daydir</span><span class="o">=</span><span class="s">&#39;Y&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/R&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">julday</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.01&#39;</span>
+                <span class="k">elif</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;yyyymmdd&#39;</span><span class="p">:</span>
+                    <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s">&#39;wavefiles&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">wavefiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
+                    <span class="s">&#39;.*&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">wavefiles</span><span class="o">=</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">daydir</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span>\
+                    <span class="s">&#39;.*&#39;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
+            <span class="k">print</span> <span class="s">&#39;Duplicate pick &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span>\
+            <span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span><span class="s">&#39;IAML&#39;</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Amplitude pick &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span>\
+            <span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">picks</span><span class="o">=</span><span class="n">used_picks</span>
     <span class="n">wavefiles</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">))</span>
 
     <span class="c"># Read in waveform file</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
+    <span class="n">wavefiles</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">wavefile</span> <span class="ow">in</span> <span class="n">wavefiles</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&quot;I am going to read waveform data from: &quot;</span><span class="o">+</span><span class="n">wavefile</span>
         <span class="k">if</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
@@ -357,17 +372,21 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">filt_order</span><span class="p">:</span>
         <span class="n">filt_order</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">filter_order</span>
     <span class="c"># Porcess waveform data</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
                                 <span class="n">samp_rate</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">length</span><span class="p">:</span>
         <span class="n">length</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">length</span>
     <span class="c"># Cut the templates</span>
-    <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prepick</span><span class="p">:</span>
+        <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="n">prepick</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
 
 </div>
-<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../modules.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">):</span>
+<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../modules.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to generate a cut template in the obspy</span>
 <span class="sd">    Stream class from a given set of picks and data, also in an obspy stream</span>
@@ -381,16 +400,28 @@
 <span class="sd">    :param length: Length of template in seconds</span>
 <span class="sd">    :type swin: string</span>
 <span class="sd">    :param swin: P, S or all</span>
+<span class="sd">    :type prepick: float</span>
+<span class="sd">    :param prepick: Length in seconds to extract before the pick time\</span>
+<span class="sd">            default is 0.05 seconds</span>
+<span class="sd">    :type plot: bool</span>
+<span class="sd">    :param plot: To plot the template or not, default is True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="kn">from</span> <span class="nn">utils.EQcorrscan_plotting</span> <span class="kn">import</span> <span class="n">pretty_template_plot</span> <span class="k">as</span> <span class="n">tplot</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
     <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">tempdef</span>
-    <span class="kn">import</span> <span class="nn">copy</span>
+    <span class="kn">import</span> <span class="nn">copy</span><span class="o">,</span> <span class="nn">warnings</span>
     <span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">channels</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">st_stachans</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
         <span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">st_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stations</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">channels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">st_stachans</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;No data provided for &#39;</span><span class="o">+</span><span class="n">stations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">channels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
     <span class="c"># Select which channels we actually have picks for</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
@@ -399,12 +430,12 @@
                     <span class="n">temp_channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
                 <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
                     <span class="n">temp_channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
-                <span class="k">if</span> <span class="n">temp_channel</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">:</span>
-                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">temp_channel</span>
-                    <span class="k">if</span> <span class="s">&#39;st1&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
-                        <span class="n">st1</span><span class="o">+=</span><span class="n">tr</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">st1</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+                <span class="c"># if temp_channel in channels:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">temp_channel</span>
+                <span class="k">if</span> <span class="s">&#39;st1&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">st1</span><span class="o">+=</span><span class="n">tr</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">st1</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s">&#39;st1&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
                     <span class="n">st1</span><span class="o">+=</span><span class="n">tr</span>
@@ -412,7 +443,8 @@
                     <span class="n">st1</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
     <span class="n">st</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">st1</span><span class="p">)</span>
     <span class="k">del</span> <span class="n">st1</span>
-
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">stplot</span><span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="kn">from</span> <span class="nn">obspy.core.trace</span> <span class="kn">import</span> <span class="n">Trace</span>
     <span class="c"># Cut the data</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
@@ -420,12 +452,18 @@
             <span class="k">del</span> <span class="n">starttime</span>
         <span class="k">if</span> <span class="n">swin</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span> <span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">:</span>
-                    <span class="n">starttime</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span>
+                <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span> \
+                    <span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="ow">and</span>\
+                    <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">:</span>
+                    <span class="n">starttime</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">prepick</span>
+                <span class="k">elif</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span>\
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;1&#39;</span><span class="p">,</span><span class="s">&#39;2&#39;</span><span class="p">,</span><span class="s">&#39;N&#39;</span><span class="p">,</span><span class="s">&#39;E&#39;</span><span class="p">]</span> <span class="ow">and</span>\
+                    <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">:</span>
+                    <span class="n">starttime</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">prepick</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="n">swin</span><span class="p">:</span>
-                    <span class="n">starttime</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span>
+                    <span class="n">starttime</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">prepick</span>
         <span class="k">if</span> <span class="s">&#39;starttime&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
             <span class="k">print</span> <span class="s">&quot;Cutting &quot;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span><span class="n">endtime</span><span class="o">=</span><span class="n">starttime</span><span class="o">+</span><span class="n">length</span><span class="p">,</span> <span class="n">nearest_sample</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
@@ -435,9 +473,15 @@
                 <span class="n">st1</span><span class="o">+=</span><span class="n">tr</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">st1</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;No pick for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
         <span class="c"># Ensure that the template is the correct length</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">*</span><span class="n">length</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">tplot</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="n">stplot</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">st1</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span>\
+                                        <span class="n">st1</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="o">+</span><span class="mi">10</span><span class="p">))</span>
+        <span class="k">del</span> <span class="n">stplot</span>
     <span class="k">del</span> <span class="n">st</span>
     <span class="c"># st1.plot(size=(800,600))</span>
     <span class="k">return</span> <span class="n">st1</span>
