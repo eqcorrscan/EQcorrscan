@@ -8,7 +8,7 @@ All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
 import numpy as np
-def seis_sim(SP, amp_ratio=1.5, flength=False):
+def seis_sim(SP, amp_ratio=1.5, flength=False,phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.
     Will generate spikes separated by a given S-P time, which are then convolved
@@ -25,40 +25,56 @@ def seis_sim(SP, amp_ratio=1.5, flength=False):
     :param amp_raio: S:P amplitude ratio
     :type flength: int
     :param flength: Fixed length in samples, defaults to False
+    :type phaseout: str
+    :param phaseout: Either 'P', 'S' or 'all', controls which phases to cut\
+     around, defaults to 'all'. Can only be used with 'P' or 'S' options if\
+     flength is set.
 
     :returns: np.ndarray
     """
-    if not flength and 2.5*SP < 100.0:
+    if flength and 2.5*SP < flength and 100 < flength:
+        additional_length=flength
+    elif 2.5*SP < 100.0:
         additional_length=100
-    elif not flength:
-        additional_length=2.5*SP
     else:
-        additional_length=flength-10
+        additional_length=2.5*SP
     synth=np.zeros(SP+10+additional_length) # Make the array begin 10 samples before the P\
             # and at least 2.5 times the S-P samples after the S arrival
-    synth[10]=1.0
+    synth[10]=1.0 # P-spike fixed at 10 samples from start of window
     # The length of the decaying S-phase should depend on the SP time,\
             # Some basic estimations suggest this should be atleast 10 samples\
             # and that the coda should be about 1/10 of the SP time
     S_length=int(10+SP/3.0)
     S_spikes=np.arange(amp_ratio, 0, -(amp_ratio/S_length))
-    synth[10+SP:10+SP+len(S_spikes)] = S_spikes
     # What we actually want, or what appears better is to have a series of\
-            # individual spikes, of alternating polarity...
-    for i in xrange(10+SP+1, 10+SP+S_length, 2):
-        synth[i]=0
-    for i in xrange(10+SP, 10+SP+S_length,3):
-        synth[i]*=-1
+    # individual spikes, of alternating polarity...
+    for i in xrange(len(S_spikes)):
+        if i in np.arange(1,len(S_spikes),2):
+            S_spikes[i]=0
+        if i in np.arange(2, len(S_spikes),4):
+            S_spikes[i]*=-1
+    # Put these spikes into the synthetic
+    synth[10+SP:10+SP+len(S_spikes)] = S_spikes
     # Generate a rough damped sine wave to convolve with the model spikes
     sine_x=np.arange(0, 10.0, 0.5)
     damped_sine=np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
     # Convolve the spike model with the damped sine!
     synth=np.convolve(synth,damped_sine)
     # Normalize snyth
-    synth=synth/np.max(synth)
-    if flength and len(synth) > flength:
-        synth=synth[0:flength]
-    return synth
+    synth=synth/np.max(np.abs(synth))
+    if not flength:
+        return synth
+    else:
+        if phaseout in ['all','P']:
+            synth=synth[0:flength]
+        elif phaseout=='S':
+            synth=synth[SP:]
+            if len(synth) < flength:
+                # If this is too short, pad
+                synth=np.append(synth, np.zeros(flength-len(synth)))
+            else:
+                synth=synth[0:flength]
+        return synth
 
 def SVD_sim(SP, lowcut, highcut, samp_rate, amp_range=np.arange(-10,10,0.01)):
     """
@@ -97,7 +113,7 @@ def SVD_sim(SP, lowcut, highcut, samp_rate, amp_range=np.arange(-10,10,0.01)):
     return V, s, U, stachans
 
 def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
-                samp_rate=100, flength=False):
+                samp_rate=100, flength=False, phaseout='all'):
     """
     Function to generate a group of synthetic seismograms to simulate phase
     arrivals from a grid of known sources in a three-dimensional model.  Lags
@@ -124,6 +140,9 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
     :param samp_rate: Desired sample rate in Hz, defaults to 100.0
     :type flength: int
     :param flength: Length of template in samples, defaults to False
+    :type phaseout: str
+    :param phaseout: Either 'S', 'P' or 'all', determines which phases to clip\
+     around
 
     :returns: List of :class:obspy.Stream
     """
@@ -153,15 +172,24 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 tr.stats.starttime+=(tt/PS_ratio)
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
-            if SP_time*samp_rate > flength-11:
-                #warnings.warn('Cannot make this template, SP-time '+str(SP_time)+\
-                                # ' longer than length: '+str(flength/samp_rate))
-                continue
-            else:
+            # if SP_time*samp_rate > flength-11:
+            #     print 'No template for '+station
+            #     print 'Travel-time is :'+str(tt)
+            #     print node
+            #     print 'SP time is: '+str(SP_time)
+            #     #warnings.warn('Cannot make this template, SP-time '+str(SP_time)+\
+            #                     # ' longer than length: '+str(flength/samp_rate))
+            #     continue
+            if SP_time*samp_rate < flength-11 and phaseout=='all':
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
-                                flength=flength)
+                                flength=flength, phaseout=phaseout)
+                st.append(tr)
+            elif phaseout in ['P','S']:
+                tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
+                                flength=flength, phaseout=phaseout)
                 st.append(tr)
             j+=1
         templates.append(Stream(st))
+        # Stream(st).plot(size=(800,600))
         i+=1
     return templates

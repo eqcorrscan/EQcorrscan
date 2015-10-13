@@ -36,7 +36,7 @@ Pre-requisites:
     python-pylab    - used for plotting
 """
 
-__all__ = ['Sfile_utils', 'pre_processing', 'findpeaks', 'daily_correl_plot']
+__all__ = ['Sfile_util', 'pre_processing', 'findpeaks', 'daily_correl_plot']
 
 if __name__ == '__main__':
     import doctest
