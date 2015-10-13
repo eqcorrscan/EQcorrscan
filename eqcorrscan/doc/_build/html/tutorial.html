@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
+        <link rel="next" title="Core" href="core.html"/>
+        <link rel="prev" title="Introduction to the EQcorrscan package" href="intro.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>EQcorrscan tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="eqcorrscan-tutorial">
+<h1>EQcorrscan tutorial<a class="headerlink" href="#eqcorrscan-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to EQcorrscan - this package is designed to compute earthquake detections
+using a paralleled match-filter network cross-correlation routine.  The inner
+loop of this package is the cross-correaltion of templates of seismic data
+with daylong seismic data.  This inner function is the openCV.match_template
+function - this appears to be a well optimized cross-correlation function written
+in c++.  Cross-correlations are computed in the frequency domain for large
+datasets, for which a day of seismic data usually qualifies.</p>
+<p>Before continuing with this tutorial please check that you have installed all
+the pre-requisite modules, as this won&#8217;t be done for you.  The list of these is
+in the Introduction section of this documentation.</p>
+<p>As you will see, this package is divided into three main sub-modules, the
+Core, Utils and Par sub-modules.  The Core sub-module contains the main, high-level
+functions:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">bright_lights:</th><td class="field-body">A brightness based template detection routine;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">template_gen:</th><td class="field-body">A series of routines to generate templates for match-filter detection
+from continuous or cut data, with pick-times defined either manually, or from a
+<em>Seian</em> s-file;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">match_filter:</th><td class="field-body">The main match-filter routines, this is split into several
+smaller functions to allow python based parallelisation;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">lag_calc:</th><td class="field-body">Routines for calculating optimal lag-times for events detected
+by the match-filter routine, these lags can then be used to define new picks
+for high accuracy reloactions.</td>
+</tr>
+</tbody>
+</table>
+<p>The Par sub-module contains parameter files which are provided to allow for simple
+bulk processing of large datasets.  These <em>MUST</em> be edited by the user for their
+dataset.</p>
+<p>The Utils sub-module contains useful, but small functions.  These functions are
+rarely cpu intensive, but perform vital operations, such as reading <em>Seisan</em> s-files,
+finding peaks in noisy data, converting a seisan database to hypoDD formatted
+files and computing cross-correlations between detections for hypoDD (a double
+difference reloaction software), calculating magnitudes, clustering detections,
+stacking detections, making pretty plots, and processing seismic data in the
+same way repeatedly using <em>Obspy</em>&#8216;s functionality.</p>
+<div class="section" id="match-filter-detection">
+<h2>Match-filter detection<a class="headerlink" href="#match-filter-detection" title="Permalink to this headline">¶</a></h2>
+<p>In this section we will discuss generating a template from a <em>Seisan</em> s-file, and
+using this template to scan for similar earthquakes within a day of data.  This single
+template and single day of data does not truely exploit the parallel operations within
+this package however, so you would be encouraged to think about where parallel operations
+occur (<em>hint, the code can run one template per cpu</em>), and why there are &#8211;instance and
+&#8211;splits flags (<em>hint, if you have heaps of memory and cpus you can do some brute
+force day parallelisation!</em>).</p>
+<p>The following script is included in the top-level directory alongside the full-scripts
+used by the author to generate a 6.5 year long catalogue of low-frequency earthquakes
+for the central Southern Alps of New Zealand.</p>
+<p>This tutorial script highlights the ability of the match-filter method in detecting
+earthquakes of near-repeating nature.  The dataset is a day of data taken from the
+New Zealand national database, and the Southern Alp Microearthquake Borehole Array
+(SAMBA) network (Boese et al. 2012).  This day was found to contain a swarm of
+earthquakes, as published by Boese et al. (2014), the s-file provided is one of
+these events.</p>
+<p>The main processing flow is outlined in the figure below, note the main speedups
+in this process are achioeved by running multiple templates at once, however this
+increaces memory usage.  If memory is problem there are flags (mem_issue) in the
+match_filter.py source that can be turned on - the codes will then write temporary
+files, which is slower, but can allow for more data crunching at once, your trade-off,
+your call.</p>
+<a class="reference internal image-reference" href="_images/processing_flow.png"><img alt="processing_flow.png" class="align-center" src="_images/processing_flow.png" style="width: 600px;" /></a>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>CM Boese, J Townend, E Smith, T Stern (2012). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1029/2011JB008460/full">Microseismicity and stress in the vicinity of the Alpine Fault, central Southern Alps, New Zealand</a>, <em>JGR</em>, doi:10.1029/2011JB008460</li>
+<li>CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1002/2013GC005171/full">Background and delayed-triggered swarms in the central Southern Alps, South Island, New Zealand</a>, <em>G-cubed</em>, doi:10.1002/2013GC005171</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Tutorial</span>
+
+<span class="sd">    This script is designed as a tutorial to highlight how to call the main</span>
+<span class="sd">    functions within the EQcorrscan module.  In this tutorial we will see how</span>
+<span class="sd">    to generate a template and run this through the match-filter routine.</span>
+
+<span class="sd">    The template will be generated from a pre-picked earthquake, however there</span>
+<span class="sd">    are other ways to generate templates, for example this package also contains</span>
+<span class="sd">    a simple brightness function that is designed to scan continuous seismic</span>
+<span class="sd">    data and look for impulsive energy originating from a discrete point in a</span>
+<span class="sd">    seismic velocity model.  The use of this brightness function is not</span>
+<span class="sd">    included in this tutorial script yet because it is still in beta.</span>
+
+<span class="sd">This package is dstributed under the LGPL v3.0, by using this script and the</span>
+<span class="sd">functions contained within the EQcorrscan package you implicitly accept the</span>
+<span class="sd">licence.  For the full wording of the licence refer to the licence.txt file.</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c"># First we import the required modules:</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">Stream</span>
+<span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">template_gen</span><span class="p">,</span> <span class="n">match_filter</span>
+<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span><span class="p">,</span> <span class="n">Sfile_util</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="c"># Now we find the s-file we want to use to generate a template from</span>
+<span class="n">sfiles</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/*L.S*&#39;</span><span class="p">)</span>
+
+<span class="c"># Generate the template from these sfiles:</span>
+<span class="n">templates</span><span class="o">=</span><span class="p">[]</span> <span class="c"># Open a list to be filled - only applies for multiple templates</span>
+<span class="n">template_names</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of template names for later ID</span>
+<span class="n">i</span><span class="o">=</span><span class="mi">0</span> <span class="c"># Template name iterator</span>
+<span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">:</span>
+    <span class="c"># Read in the picks from the S-file, note, in the full case one fo the main\</span>
+            <span class="c"># functions in template_gen would be used rather than this, but for\</span>
+            <span class="c"># the tutorial we will read in the data here - also note that this\</span>
+            <span class="c"># template generation is inefficient for multiple templates, if using\</span>
+            <span class="c"># daylong data for multiple templates you would want to only read\</span>
+            <span class="c"># the seismic data once and cut it multiple times.</span>
+    <span class="n">picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;wavefiles&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">wavefiles</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/&#39;</span><span class="o">+</span>\
+                                   <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">wavefiles</span><span class="o">+=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/&#39;</span><span class="o">+</span>\
+                                 <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+    <span class="n">wavefiles</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">wavefile</span> <span class="ow">in</span> <span class="n">wavefiles</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Reading data from &#39;</span><span class="o">+</span><span class="n">wavefile</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">st</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">st</span><span class="o">+=</span><span class="n">read</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
+    <span class="n">day</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span>\
+                                  <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+    <span class="c"># Apply a small amoutn of delay before the pick</span>
+    <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
+        <span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="mf">0.1</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">)</span>
+    <span class="c"># This will generate an obspy.Stream object</span>
+    <span class="c"># Append this Stream to the list of templates</span>
+    <span class="n">templates</span><span class="o">+=</span><span class="p">[</span><span class="n">template</span><span class="p">]</span>
+    <span class="n">template_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;tutorial_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="c"># Plot the template just to check that all is well!</span>
+    <span class="n">template</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span><span class="mi">600</span><span class="p">),</span> <span class="n">equal_scale</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c"># Save template for later</span>
+    <span class="n">template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/&#39;</span><span class="o">+</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;_template.ms&#39;</span><span class="p">,</span>\
+                   <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
+    <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">del</span> <span class="n">template</span><span class="p">,</span> <span class="n">st</span>
+
+<span class="c"># Extract the stations from the templates</span>
+<span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;stachans&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="n">stachans</span><span class="o">=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stachans</span><span class="o">+=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">]</span>
+
+<span class="c"># Make this a unique list</span>
+<span class="n">stachans</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stachans</span><span class="p">))</span>
+
+<span class="c"># Read in the continuous data for these station, channel combinations</span>
+<span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;Reading data from: test_data/tutorial_data/&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*..*&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*&#39;</span>
+    <span class="c"># Generate a new stream object and add to it</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="n">st</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*..*&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">+=</span><span class="n">read</span><span class="p">(</span><span class="s">&#39;test_data/tutorial_data/&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*..*&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*&#39;</span><span class="p">)</span>
+
+<span class="c"># Merge the data to account for miniseed files being written in chunks</span>
+<span class="c"># We need continuous day-long data, so data are padded if there are gaps</span>
+<span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
+
+<span class="c"># Work out what day we are working on, required as we will pad the data to be daylong</span>
+<span class="n">day</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span>
+
+<span class="c"># Process the data in the same way as the template</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+    <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span>\
+                              <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+
+<span class="c"># Compute detections</span>
+<span class="n">detections</span><span class="o">=</span><span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span>\
+                                     <span class="n">matchdef</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">threshtype</span><span class="p">,</span>\
+                                     <span class="n">matchdef</span><span class="o">.</span><span class="n">trig_int</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>\
+                                     <span class="s">&#39;temp_0&#39;</span><span class="p">)</span>
+
+<span class="c"># We now have a list of detections! We can output these to a file to check later</span>
+<span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;tutorial_detections.csv&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">+</span>\
+            <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span><span class="o">+</span>\
+            <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">no_chans</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="core.html" class="btn btn-neutral float-right" title="Core">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="intro.html" class="btn btn-neutral" title="Introduction to the EQcorrscan package"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.1-alpha',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

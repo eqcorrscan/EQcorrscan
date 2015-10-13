@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Including In Your Project &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p>QtWebKit provides a Web browser engine that makes it easy to embed content from the World Wide Web into your Qt application. At the same time Web content can be enhanced with native controls.</p>
+<p>QtWebKit provides facilities for rendering of HyperText Markup Language (HTML), Extensible HyperText Markup Language (XHTML) and Scalable Vector Graphics (SVG) documents, styled using Cascading Style Sheets (CSS) and scripted with JavaScript.</p>
+<p>A bridge between the JavaScript execution environment and the Qt object model makes it possible for custom QObjects to be scripted. Integration with the Qt networking module enables Web pages to be transparently loaded from Web servers, the local file system or even the Qt resource system.</p>
+<p>In addition to providing pure rendering features, HTML documents can be made fully editable to the user through the use of the contenteditable attribute on HTML elements.</p>
+<p>QtWebKit is based on the Open Source WebKit engine. More information about WebKit itself can be found on the <span class="target" id="webkit-open-source-project-http-webkit-org">WebKit Open Source Project &lt;http://webkit.org/&gt;</span> Web site.</p>
+<div class="section" id="including-in-your-project">
+<h1>Including In Your Project<a class="headerlink" href="#including-in-your-project" title="Permalink to this headline">¶</a></h1>
+<p>To include the definitions of the module&#8217;s classes, use the following directive:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">PySide.QtWebKit</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Web site icons, also known as &#8220;FavIcons&#8221;, are currently not supported on Windows. We plan to address this in a future release.</p>
+</div>
+</div>
+<div class="section" id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h1>
+<p>The easiest way to render content is through the QWebView class. As a widget it can be embedded into your forms or a graphics view, and it provides convenience functions for downloading and rendering web sites.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">view</span> <span class="o">=</span> <span class="n">QWebView</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+<span class="n">view</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">QUrl</span><span class="p">(</span><span class="s">&quot;http://qt.nokia.com/&quot;</span><span class="p">))</span>
+<span class="n">view</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>QWebView is used to view Web pages. An instance of QWebView has one QWebPage. QWebPage provides access to the document structure in a page, describing features such as frames, the navigation history, and the undo/redo stack for editable content.</p>
+<p>HTML documents can be nested using frames in a frameset. An individual frame in HTML is represented using the QWebFrame class. This class includes the bridge to the JavaScript window object and can be painted using QPainter. Each QWebPage has one QWebFrame object as its main frame, and the main frame may contain many child frames.</p>
+<p>Individual elements of an HTML document can be accessed via DOM JavaScript interfaces from within a web page. The equivalent of this API in QtWebKit is represented by QWebElement. QWebElement objects are obtained using QWebFrame&#8217;s findAllElements() and findFirstElement() functions with CSS selector queries.</p>
+<p>Common web browser features, defaults and other settings can be configured through the QWebSettings class. It is possible to provide defaults for all QWebPage instances through the default settings. Individual attributes can be overidden by the page specific settings object.</p>
+</div>
+<div class="section" id="netscape-plugin-support">
+<h1>Netscape Plugin Support<a class="headerlink" href="#netscape-plugin-support" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Netscape plugin support is only available on desktop platforms.</p>
+</div>
+<p>Since WebKit supports the Netscape Plugin API, Qt applications can display Web pages that embed common plugins on platforms for which those plugins are available. To enable plugin support, the user must have the appropriate binary files for those plugins installed and the <code class="docutils literal"><span class="pre">QWebSettings.PluginsEnabled</span></code> attribute must be enabled for the application.</p>
+<p>The following locations are searched for plugins:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Linux/Unix (X11)</dt>
+<dd><ul class="first last">
+<li><p class="first">.mozilla/plugins in the user&#8217;s home directory</p>
+</li>
+<li><p class="first">.netscape/plugins in the user&#8217;s home directory</p>
+</li>
+<li><dl class="first docutils">
+<dt>System locations, such as</dt>
+<dd><ul class="first last simple">
+<li>/usr/lib/browser/plugins</li>
+<li>/usr/local/lib/mozilla/plugins</li>
+<li>/usr/lib/firefox/plugins</li>
+<li>/usr/lib64/browser-plugins</li>
+<li>/usr/lib/browser-plugins</li>
+<li>/usr/lib/mozilla/plugins</li>
+<li>/usr/local/netscape/plugins</li>
+<li>/opt/mozilla/plugins</li>
+<li>/opt/mozilla/lib/plugins</li>
+<li>/opt/netscape/plugins</li>
+<li>/opt/netscape/communicator/plugins</li>
+<li>/usr/lib/netscape/plugins</li>
+<li>/usr/lib/netscape/plugins-libc5</li>
+<li>/usr/lib/netscape/plugins-libc6</li>
+<li>/usr/lib64/netscape/plugins</li>
+<li>/usr/lib64/mozilla/plugins</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Locations specified by environment variables:</dt>
+<dd><ul class="first last simple">
+<li>$MOZILLA_HOME/plugins</li>
+<li>$MOZ_PLUGIN_PATH</li>
+<li>$QTWEBKIT_PLUGIN_PATH</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Windows</dt>
+<dd><ul class="first last simple">
+<li>The user&#8217;s Application DataMozillaplugins directory</li>
+<li>Standard system locations of plugins for Quicktime, Flash, etc.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Mac OS X</dt>
+<dd><ul class="first last simple">
+<li>Library/Internet Plug-Ins in the user&#8217;s home directory</li>
+<li>The system /Library/Internet Plug-Ins directory</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="license-information">
+<h1>License Information<a class="headerlink" href="#license-information" title="Permalink to this headline">¶</a></h1>
+<p>Qt Commercial Edition licensees that wish to distribute applications that use the QtWebKit module need to be aware of their obligations under the GNU Library General Public License (LGPL).</p>
+<p>Developers using the Open Source Edition can choose to redistribute the module under the appropriate version of the GNU LGPL.
+WebKit is licensed under the GNU Library General Public License. Individual contributor names and copyright dates can be found inline in the code.</p>
+<p>This library is free software; you can redistribute it and/or modify it under the terms of the GNU Library General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
+<p>This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Library General Public License for more details.</p>
+<p>You should have received a copy of the GNU Library General Public License along with this library; see the file COPYING.LIB. If not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Including In Your Project</a></li>
+<li><a class="reference internal" href="#architecture">Architecture</a></li>
+<li><a class="reference internal" href="#netscape-plugin-support">Netscape Plugin Support</a></li>
+<li><a class="reference internal" href="#license-information">License Information</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../_sources/build/pyside/sources/pyside/doc/extras/PySide.QtWebKit.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../_sources/build/pyside/sources/pyside/doc/extras/PySide.QtWebKit.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

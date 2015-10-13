@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>QML Tutorial 1 - Basic Types &mdash; EQcorrscan 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="EQcorrscan 0.0.1 documentation" href="../../../../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../../../../index.html">EQcorrscan 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="qml-tutorial-1-basic-types">
+<span id="qmlbasictypes"></span><h1>QML Tutorial 1 - Basic Types<a class="headerlink" href="#qml-tutorial-1-basic-types" title="Permalink to this headline">¶</a></h1>
+<p>This first program is a very simple &#8220;Hello world&#8221; example that introduces some basic QML concepts.
+The picture below is a screenshot of this program.</p>
+<div class="figure align-center">
+<img alt="../../../../../../../_images/declarative-tutorial1.png" src="../../../../../../../_images/declarative-tutorial1.png" />
+</div>
+<p>Here is the QML code for the application:</p>
+<div class="section" id="walkthrough">
+<h2>Walkthrough<a class="headerlink" href="#walkthrough" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="import">
+<h3>Import<a class="headerlink" href="#import" title="Permalink to this headline">¶</a></h3>
+<p>First, we need to import the types that we need for this example. Most QML files will import the built-in QML
+types (like Rectangle, Image, ...) that come with Qt, using:</p>
+</div>
+<div class="section" id="rectangle-element">
+<h3>Rectangle element<a class="headerlink" href="#rectangle-element" title="Permalink to this headline">¶</a></h3>
+<p>We declare a root element of type Rectangle. It is one of the basic building blocks you can use to create an application in QML.
+We give it an <code class="docutils literal"><span class="pre">id</span></code> to be able to refer to it later. In this case, we call it &#8220;page&#8221;.
+We also set the <code class="docutils literal"><span class="pre">width</span></code>, <code class="docutils literal"><span class="pre">height</span></code> and <code class="docutils literal"><span class="pre">color</span></code> properties.
+The Rectangle element contains many other properties (such as <code class="docutils literal"><span class="pre">x</span></code> and <code class="docutils literal"><span class="pre">y</span></code>), but these are left at their default values.</p>
+</div>
+<div class="section" id="text-element">
+<h3>Text element<a class="headerlink" href="#text-element" title="Permalink to this headline">¶</a></h3>
+<p>We add a Text element as a child of the root Rectangle element that displays the text &#8216;Hello world!&#8217;.</p>
+<p>The <code class="docutils literal"><span class="pre">y</span></code> property is used to position the text vertically at 30 pixels from the top of its parent.</p>
+<p>The <code class="docutils literal"><span class="pre">anchors.horizontalCenter</span></code> property refers to the horizontal center of an element.
+In this case, we specify that our text element should be horizontally centered in the <em>page</em> element.</p>
+<p>The <code class="docutils literal"><span class="pre">font.pointSize</span></code> and <code class="docutils literal"><span class="pre">font.bold</span> <span class="pre">properties</span></code> are related to fonts and use the dot notation.</p>
+</div>
+<div class="section" id="viewing-the-example">
+<h3>Viewing the example<a class="headerlink" href="#viewing-the-example" title="Permalink to this headline">¶</a></h3>
+<p>To view what you have created, run the QML Viewer tool (located in the <code class="docutils literal"><span class="pre">bin</span> <span class="pre">directory</span></code> of your Qt installation) with your filename as the first argument.
+For example, to run the provided completed Tutorial 1 example from the install location, you would type:</p>
+<div class="highlight-python"><div class="highlight"><pre>bin/qmlviewer tutorial1.qml
+</pre></div>
+</div>
+<p>[Previous <a class="reference internal" href="index.html#qmltutorial"><span>QML Tutorial</span></a>][Next <a class="reference internal" href="step2.html#qmlcomponents"><span>QML Tutorial 2 - QML Components</span></a>]</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../../../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">QML Tutorial 1 - Basic Types</a><ul>
+<li><a class="reference internal" href="#walkthrough">Walkthrough</a><ul>
+<li><a class="reference internal" href="#import">Import</a></li>
+<li><a class="reference internal" href="#rectangle-element">Rectangle element</a></li>
+<li><a class="reference internal" href="#text-element">Text element</a></li>
+<li><a class="reference internal" href="#viewing-the-example">Viewing the example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmltutorial/step1.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Calum John Chamberlain.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="../../../../../../../_sources/build/pyside/sources/pyside/doc/tutorials/qmltutorial/step1.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>
