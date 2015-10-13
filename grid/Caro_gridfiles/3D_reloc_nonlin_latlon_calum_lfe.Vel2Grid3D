@@ -1,4 +1,0 @@
-VGINP  ./model/3D_reloc_nonlin_latlon_calum_lfe.txt SIMUL2K 0.0 0.0 0.0
-VGOUT ./model/3D_reloc_nonlin_latlon_calum_lfe
-VGTYPE P
-VGGRID  50 90 26 -30. -95.0 -2.0  2.  2.  2.   SLOW_LEN
