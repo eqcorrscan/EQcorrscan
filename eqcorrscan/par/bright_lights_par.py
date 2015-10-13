@@ -29,27 +29,28 @@ This file is part of EQcorrscan.
 from obspy import UTCDateTime
 import numpy as np
 import matplotlib.path as mplPath
-stations=['EORO','WHYM','COSA','FOZ','LBZ','JCZ','WVZ','GCSZ',
+stations=['EORO','WHYM','COSA','FOZ','LBZ',#'JCZ','WVZ','GCSZ',
           'GOVA','LABE','MTFO','RPZ',
-          'COVA','FRAN','POCR','SOLU',
-          'WHAT','POCR2','WHAT2','MTBA',
+          'COVA','FRAN','SOLU',
+          'WHAT2','MTBA',
           'LARB']   # List of stations to use for template
                                         # generation
 
 nllpath='./grid/Caro_larger_grid/3D'    # Path to nonlinloc .csv grid files of
+# nllpath='./grid/3D'    # Path to nonlinloc .csv grid files of
                                         # travel times
 # corners=mplPath.Path(np.array([[170., -44.],\
                           # [170.1, -44.],\
                           # [170.1, -43.8],\
                           # [170, -43.8]]))
-# corners=mplPath.Path(np.array([[169.7, -44.0519],\
-                          # [170.3, -43.7],\
-                          # [170.3, -43.3],\
-                          # [169.4, -43.75]]))
-corners=mplPath.Path(np.array([[169.55, -44.2],\
-                               [170.8, -43.6],\
-                               [170.5, -43.16],\
-                               [169.2, -43.76]]))
+corners=mplPath.Path(np.array([[169.85, -43.9],\
+                          [169.55, -43.7],\
+                          [170.1, -43.35],\
+                          [170.4, -43.65]]))
+# corners=mplPath.Path(np.array([[169.55, -44.2],\
+                               # [170.8, -43.6],\
+                               # [170.5, -43.16],\
+                               # [169.2, -43.76]]))
 
                                         # Numpy array to be converted into a
                                         # matplotlib path - should descirbe
@@ -109,7 +110,7 @@ coherance_stations=['GOVA', 'FRAN',\
                                         # computing coherance
 coherance_clip=(0.0,3.0)                # Clip window for computiong the coherance
                                         # in seconds from start of template trace
-plotsave=True                           # Save plots, set to True to not show
+plotsave=False                          # Save plots, set to True to not show
                                         # any plots
 clip_level=20.0                         # Level to clip energy amplitudes to as
                                         # a multiplier of the mean energy amplitude
