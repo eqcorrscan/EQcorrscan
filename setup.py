@@ -20,6 +20,11 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
+try:
+    import cv2
+except:
+    raise ImportError('No cv2 module, openCV, you need to install this yourself')
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
