@@ -36,6 +36,7 @@ def dist_calc(loc1, loc2):
     :type loc1: Tuple
     :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
     :type loc2: Tuple
+    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
     """
     R=6371.009  # Radius of the Earth in km
     dlat=np.radians(abs(loc1[0]-loc2[0]))
@@ -143,6 +144,7 @@ def _GSE2_PAZ_read(GSEfile):
     the author to add others in.
 
     :type GSEfile: Str
+    :param GSEfile: Path to GSE file
 
     :returns: Dict of poles, zeros, gain and sensitivity
     """
@@ -197,7 +199,7 @@ def _find_resp(station, channel, network, time, delta, directory):
     :type delta: float
     :param delta: Sample interval in seconds
     :type directory: String
-    :param direcotry: Directory to scan for response information
+    :param directory: Directory to scan for response information
 
     :returns: Dictionary
     """
@@ -517,50 +519,6 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
         print pick
     Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
-
-def _channel_SVD_amp(traces):
-    """
-    Function to compute the relative amplitude of a series of traces from the
-    same station and channel based on their amplitude relative to the first
-    singular basis vector according to the method of Rubenstein and Ellsworth.
-
-    :type traces: List of :class:obspy.Trace
-
-    :returns: List of Float of relative amplitudes
-    """
-    import clustering
-    from obspy import Stream
-    import matplotlib.pyplot as plt
-    SVectors, SValues, stachans = clustering.SVD([Stream(tr) for tr in traces])
-    SVStreams = clustering.SVD_2_stream(SVectors, stachans, 1,\
-     traces[0].stats.sampling_rate)
-    SVtrace=SVStreams[0][0]
-    print len(SVtrace.data)
-    amplitudes=[]
-    i=0
-    for tr in traces:
-        amplitudes.append((max(tr.data)/max(SVtrace.data),max(tr.data)))
-        x=np.arange(len(tr.data))
-        plt.plot(x,tr.data,'k')
-        plt.plot(x,SVtrace.data*amplitudes[i][0],'r')
-        plt.show()
-        i+=1
-    return amplitudes
-
-
-def SVD_picker(sfiles):
-    """
-    Function to compute the SVD derived amplitude variations according to the
-    method of Rubenstein & Ellsworth 2010 - needs to be a sequence of
-    repeating or near-repeating earthquakes.
-
-    :type sfile: List
-    :param sfiles: List of sfiles to pick from.
-
-    :returns: picks List of list of :class:PICK
-    """
-    import clustering
-
 
 if __name__ == '__main__':
     """

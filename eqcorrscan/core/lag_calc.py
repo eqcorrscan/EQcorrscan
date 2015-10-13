@@ -61,7 +61,9 @@ def _channel_loop(detection, template, i=0):
     the correct data to lag_gen
 
     :type detection: obspy.Stream
+    :param detection: Stream of data for the slave event detected using template
     :type template: obspy.Stream
+    :param template: Stream of data as the template for the detection.
     :type i: int, optional
     :param i: Used to track which process has occured when running in parallel
 
