@@ -83,4 +83,4 @@ script:
   - cd empty
 
 notifications:
-    email: true
+    email: false
