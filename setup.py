@@ -19,12 +19,11 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-import warnings
 
 try:
     import cv2
 except:
-    warnings.warn('No cv2 module, openCV, you need to install this yourself')
+    print '##### No cv2 module, openCV, you need to install this yourself'
 
 here = path.abspath(path.dirname(__file__))
 
