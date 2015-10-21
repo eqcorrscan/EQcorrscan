@@ -41,10 +41,13 @@ def test_import():
     return True
 
 
-def tests():
-    from eqcorrscan.utils import Sfile_utils
+def run():
+    """
+    Where we call all the available tests from
+    """
+    from eqcorrscan.utils import Sfile_util
     assert test_import == True
     assert Sfile_util.test_rw() == True
 
 if __name__ == '__main__':
-    tests()
+    run()
