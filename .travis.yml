@@ -1,23 +1,20 @@
 language: python
 os: linux
 python: "2.7"
-# matrix:
-  # include:
-    # - os: linux
-      # python: "2.7"
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.3
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.4
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.5
-    # - os: osx
-      # python: "2.7"
-      # env: PYTHON_VERSION=2.7
-    # #- os: osx
-    # #  env: PYTHON_VERSION=3.5
 
 sudo: false
+
+addons:
+  apt:
+    source:
+      - lucid
+    packages:
+      - python-opencv
+
+# before_install:
+#   - sudo apt-get update
+#   - sudo apt-get install python-opencv
+#   - sudo dpkg -L python-opencv
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -80,9 +77,8 @@ install:
   - git version
   - pip install .
 script:
-  - mkdir empty
-  - cd empty
+  # Run the tests available, more should be added
+  - python eqcorrscan/tests/runtests.py
 
 notifications:
     email: false
-
