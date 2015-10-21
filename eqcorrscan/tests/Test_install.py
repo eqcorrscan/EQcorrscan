@@ -41,7 +41,7 @@ def test_import():
     return True
 
 # Utilities tests
-import utils
+from eqcorrscan import utils
 head=utils.Sfile_util.test_rw()
 
 
