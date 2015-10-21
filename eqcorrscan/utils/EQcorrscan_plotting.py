@@ -236,7 +236,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     :returns: Alligned and cut traces, and new picks
     """
     import stacking, copy
-    from core.match_filter import normxcorr2
+    from eqcorrscan.core.match_filter import normxcorr2
     from obspy import Stream
     fig, axes = plt.subplots(len(picks)+1, 1, sharex=True, figsize=(7, 12))
     axes = axes.ravel()

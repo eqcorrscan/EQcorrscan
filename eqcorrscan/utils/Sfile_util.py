@@ -36,9 +36,14 @@ class PICK:
     Pick information for seisan implimentation
     """
     pickcount=0
-    def __init__(self, station, channel, impulsivity, phase, weight, polarity,
-                 time, coda, amplitude, peri, azimuth, velocity, AIN, SNR,
-                 azimuthres, timeres, finalweight, distance, CAZ):
+    def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
+                 weight=999, polarity=' ', time=UTCDateTime(0),
+                 coda=999, amplitude=float('NaN'),
+                 peri=float('NaN'), azimuth=float('NaN'),
+                 velocity=float('NaN'), AIN=' ', SNR=999,
+                 azimuthres=999, timeres=float('NaN'),
+                 finalweight=999, distance=float('NaN'),
+                 CAZ=999):
         self.station=station
         self.channel=channel
         self.impulsivity=impulsivity
@@ -97,10 +102,13 @@ class EVENTINFO:
     """
     Header information for seisan events
     """
-    def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
-                 depth, depth_ind, loc_ind, agency, nsta, t_RMS, Mag_1,
-                 Mag_1_type, Mag_1_agency, Mag_2, Mag_2_type, Mag_2_agency,
-                 Mag_3, Mag_3_type, Mag_3_agency):
+    def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
+                 ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
+                 depth=float('NaN'), depth_ind=' ', loc_ind=' ', agency=' ',
+                 nsta=0, t_RMS=float('NaN'), Mag_1=float('NaN'),
+                 Mag_1_type=' ', Mag_1_agency=' ', Mag_2=float('NaN'),
+                 Mag_2_type=' ', Mag_2_agency=' ', Mag_3=float('NaN'),
+                 Mag_3_type=' ', Mag_3_agency=' '):
         self.time=time
         self.loc_mod_ind=loc_mod_ind
         self.dist_ind=dist_ind
@@ -180,10 +188,7 @@ def readheader(sfilename):
     import warnings
     f=open(sfilename,'r')
     # Base populate to allow for empty parts of file
-    sfilename_header=EVENTINFO(UTCDateTime(), '', '', '',  float('NaN'),
-                               float('NaN'), float('NaN'), '', '', '', 0,
-                               float('NaN'), float('NaN'), '', '', float('NaN'),
-                               '', '', float('NaN'), '', '')
+    sfilename_header=EVENTINFO()
     topline=f.readline()
     if topline[79]==' ' or topline[79]=='1':
         # Topline contains event information
