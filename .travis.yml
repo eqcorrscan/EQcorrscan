@@ -70,7 +70,7 @@ install:
   - git version
   - pip install .
 script:
-  - python tests/Test_install.py
+  - python eqcorrscan/tests/Test_install.py
 
 notifications:
     email: false
