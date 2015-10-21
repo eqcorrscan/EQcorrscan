@@ -545,7 +545,7 @@ def test_rw():
     assert readpicks(sfilename)[0].CAZ == test_pick.CAZ
     header = readheader(sfilename)
     os.remove(sfilename)
-    return header
+    return True
 
 if __name__=='__main__':
     # Read arguments
