@@ -21,10 +21,10 @@ sudo: false
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
-      export py=$PYTHON_VERSION
+      export py=$PYTHON_VERSION;
     else
       export OS="Linux";
-      export py=$TRAVIS_PYTHON_VERSION
+      export py=$TRAVIS_PYTHON_VERSION;
     fi
   - if [[ "${py:0:1}" == '2' ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-${OS}-x86_64.sh -O miniconda.sh;
