@@ -2,12 +2,19 @@ language: python
 os: linux
 python: "2.7"
 
-sudo: required
+sudo: false
 
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install python-opencv
-  - sudo dpkg -L python-opencv
+addons:
+  apt:
+    source:
+      - lucid
+    packages:
+      - python-opencv
+
+# before_install:
+#   - sudo apt-get update
+#   - sudo apt-get install python-opencv
+#   - sudo dpkg -L python-opencv
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
