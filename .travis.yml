@@ -1,21 +1,22 @@
 language: python
+os: linux
+python: "2.7"
+# matrix:
+  # include:
+    # - os: linux
+      # python: "2.7"
+    # #- os: linux
+    # #  env: PYTHON_VERSION=3.3
+    # #- os: linux
+    # #  env: PYTHON_VERSION=3.4
+    # #- os: linux
+    # #  env: PYTHON_VERSION=3.5
 
-matrix:
-  include:
-    - os: linux
-      python: "2.7"
-    #- os: linux
-    #  env: PYTHON_VERSION=3.3
-    #- os: linux
-    #  env: PYTHON_VERSION=3.4
-    #- os: linux
-    #  env: PYTHON_VERSION=3.5
-
-    - os: osx
-      python: "2.7"
-      env: PYTHON_VERSION=2.7
-    #- os: osx
-    #  env: PYTHON_VERSION=3.5
+    # - os: osx
+      # python: "2.7"
+      # env: PYTHON_VERSION=2.7
+    # #- os: osx
+    # #  env: PYTHON_VERSION=3.5
 
 sudo: false
 
