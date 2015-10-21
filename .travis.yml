@@ -77,12 +77,6 @@ install:
   - git version
   - pip install .
 
-after_success:
-  - mv .coverage ../.coverage.empty
-  - cd ..
-  - coverage combine
-  - coveralls
-
 notifications:
     email: true
 
