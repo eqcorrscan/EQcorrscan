@@ -2,9 +2,9 @@ language: python
 os: linux
 python: "2.7"
 
-#sudo: false
+sudo: required
 
-before install:
+before_install:
   - sudo apt-get update
   - sudo apt-get install python-opencv
   - sudo dpkg -L python-opencv
