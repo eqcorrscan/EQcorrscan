@@ -464,26 +464,30 @@ def match_filter(template_names, templates, stream, threshold,
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
-        # maintins timeing
+        # maintins timing
         if plotvar:
             stream_plot=copy.deepcopy(stream[0])
             # Downsample for plotting
             stream_plot.decimate(int(stream[0].stats.sampling_rate/20))
             cccsum_plot=Trace(cccsum)
             cccsum_plot.stats.sampling_rate=stream[0].stats.sampling_rate
-            cccsum_plot=cccsum_plot.decimate(int(stream[0].stats.sampling_rate/20)).data
+            # Resample here to maintain shape better
+            cccsum_hist=cccsum_plot.copy()
+            cccsum_hist=cccsum_hist.decimate(int(stream[0].stats.sampling_rate/20)).data
+            cccsum_plot=EQcorrscan_plotting.chunk_data(cccsum_plot, 20, 'Maxabs').data
             # Enforce same length
             stream_plot.data=stream_plot.data[0:len(cccsum_plot)]
             cccsum_plot=cccsum_plot[0:len(stream_plot.data)]
-            EQcorrscan_plotting.triple_plot(cccsum_plot, stream_plot,\
+            cccsum_hist=cccsum_hist[0:len(stream_plot.data)]
+            EQcorrscan_plotting.triple_plot(cccsum_plot, cccsum_hist, stream_plot,\
                                             rawthresh, True,\
                                             'plot/cccsum_plot_'+template_names[i]+'_'+\
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
-                                        str(stream[0].stats.starttime.day)+'.pdf')
-            # np.save(template_names[i]+\
-                        # stream[0].stats.starttime.datetime.strftime('%Y%j'),\
-                    # cccsum)
+                                        str(stream[0].stats.starttime.day)+'.jpg')
+            np.save(template_names[i]+\
+                        stream[0].stats.starttime.datetime.strftime('%Y%j'),\
+                    cccsum)
         tic=time.clock()
         if matchdef.debug>=4:
             np.save('cccsum_'+str(i)+'.npy', cccsum)

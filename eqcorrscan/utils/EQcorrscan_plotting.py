@@ -22,13 +22,65 @@ This file is part of EQcorrscan.
 """
 import numpy as np
 import matplotlib.pylab as plt
-def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
+
+def chunk_data(tr, samp_rate, state='mean'):
+    """
+    Function to downsample data for plotting by computing the maximum of
+    data within chunks, usefil for plotting waveforms or cccsums, large datasets
+    that ould otherwise exceed the complexity allowed, and overflow.
+
+    :type tr: :class: obspy.Trace
+    :param tr: Trace to be chunked
+    :type samp_rate: float
+    :param samp_rate: Desired sampling rate in Hz
+    :type state: str
+    :param state: Either 'Min', 'Max', 'Mean' or 'Maxabs' to return one of\
+            these for the chunks. Maxabs will return the largest (positive or\
+            negative) for that chunk.
+
+    :returns: :class: obspy.Trace
+    """
+    trout=tr.copy() # Don't do it inplace on data
+    x = np.arange(len(tr.data))
+    y = tr.data
+
+    chunksize=int(round(tr.stats.sampling_rate/samp_rate))
+    # Wrap the array into a 2D array of chunks, truncating the last chunk if
+    # chunksize isn't an even divisor of the total size.
+    # (This part won't use _any_ additional memory)
+    numchunks = y.size // chunksize
+    ychunks = y[:chunksize*numchunks].reshape((-1, chunksize))
+    xchunks = x[:chunksize*numchunks].reshape((-1, chunksize))
+
+    # Calculate the max, min, and means of chunksize-element chunks...
+    if state=='Max':
+        trout.data = ychunks.max(axis=1)
+    elif state=='Min':
+        trout.data = ychunks.min(axis=1)
+    elif state=='Mean':
+        trout.data = ychunks.mean(axis=1)
+    elif state=='Maxabs':
+        max_env=ychunks.max(axis=1)
+        min_env=ychunks.min(axis=1)
+        indeces=np.argmax(np.vstack([np.abs(max_env), np.abs(min_env)]),axis=0)
+        stack=np.vstack([max_env, min_env]).T
+        trout.data=np.array([stack[i][indeces[i]] for i in xrange(len(stack))])
+    xcenters = xchunks.mean(axis=1)
+    trout.stats.starttime=tr.stats.starttime+xcenters[0]/tr.stats.sampling_rate
+    trout.stats.sampling_rate=samp_rate
+    return trout
+
+
+def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
     """
     Main function to make a triple plot with a day-long seismogram, day-long
     correlation sum trace and histogram of the correlation sum to show normality
 
-    :type cccsum: numpy.array
+    :type cccsum: numpy.ndarray
     :param cccsum: Array of the cross-channel cross-correlation sum
+    :type cccsum_hist: numpy.ndarray
+    :param ccsum_hist: cccsum for histogram plotting, can be the same as cccsum\
+                    but included if cccsum is just an envelope.
     :type trace: obspy.Trace
     :param trace: A sample trace from the same time as cccsum
     :type threshold: float
@@ -61,7 +113,7 @@ def triple_plot(cccsum, trace, threshold, save=False, savefile=''):
     # ax2.legend()
     # Generate a small subplot for the histogram of the cccsum data
     ax3 = plt.subplot2grid((2,5), (1,4), sharey=ax2)
-    ax3.hist(cccsum, 200, normed=1, histtype='stepfilled', \
+    ax3.hist(cccsum_hist, 200, normed=1, histtype='stepfilled', \
              orientation='horizontal', color='black')
     ax3.set_ylim([-5, 5])
     fig=plt.gcf()
