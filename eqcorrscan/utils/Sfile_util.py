@@ -318,7 +318,7 @@ def readpicks(sfilename):
         velocity=_float_conv(line[52:56])
         if header[57:60]=='AIN':
             SNR=''
-            AIN=_int_conv(line[57:60])
+            AIN=_float_conv(line[57:60])
         elif header[57:60]=='SNR':
             AIN=''
             SNR=_float_conv(line[57:60])
@@ -545,7 +545,7 @@ def test_rw():
     assert readpicks(sfilename)[0].CAZ == test_pick.CAZ
     header = readheader(sfilename)
     os.remove(sfilename)
-    return header
+    return True
 
 if __name__=='__main__':
     # Read arguments
