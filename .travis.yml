@@ -70,7 +70,8 @@ install:
   - git version
   - pip install .
 script:
-  - python eqcorrscan/tests/Test_install.py
+  # Run the tests available, more should be added
+  - python eqcorrscan/tests/runtests.py
 
 notifications:
     email: false
