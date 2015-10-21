@@ -79,7 +79,6 @@ install:
 script:
   - mkdir empty
   - cd empty
-  - MODULELIST=`python -c "from eqcorrscan.core import match_filter.* as MODULES; print('eqcorrscan.' + ',eqcorrscan.'.join(MODULES))"`
 
 notifications:
     email: true
