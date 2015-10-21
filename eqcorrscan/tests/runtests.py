@@ -46,7 +46,7 @@ def run():
     Where we call all the available tests from
     """
     from eqcorrscan.utils import Sfile_util
-    assert test_import == True
+    assert test_import() == True
     assert Sfile_util.test_rw() == True
 
 if __name__ == '__main__':

@@ -318,7 +318,7 @@ def readpicks(sfilename):
         velocity=_float_conv(line[52:56])
         if header[57:60]=='AIN':
             SNR=''
-            AIN=_int_conv(line[57:60])
+            AIN=_float_conv(line[57:60])
         elif header[57:60]=='SNR':
             AIN=''
             SNR=_float_conv(line[57:60])
