@@ -5,6 +5,7 @@ package.
 """
 
 def test_import():
+    sys.path.insert(0,'/usr/lib/pyshared/python2.7') # Insert path for travis
     i=0
     try:
         import cv2
@@ -40,13 +41,14 @@ def test_import():
         return False
     return True
 
-# Utilities tests
-import utils
-head=utils.Sfile_util.test_rw()
 
-
-def tests():
-    assert test_import == True
+def run():
+    """
+    Where we call all the available tests from
+    """
+    from eqcorrscan.utils import Sfile_util
+    assert test_import() == True
+    assert Sfile_util.test_rw() == True
 
 if __name__ == '__main__':
-    tests()
+    run()
