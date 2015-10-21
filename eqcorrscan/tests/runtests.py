@@ -5,6 +5,7 @@ package.
 """
 
 def test_import():
+    sys.path.insert(0,'/usr/lib/pyshared/python2.7') # Insert path for travis
     i=0
     try:
         import cv2
