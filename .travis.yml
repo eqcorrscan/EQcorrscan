@@ -1,24 +1,13 @@
 language: python
 os: linux
 python: "2.7"
-# matrix:
-  # include:
-    # - os: linux
-      # python: "2.7"
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.3
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.4
-    # #- os: linux
-    # #  env: PYTHON_VERSION=3.5
 
-    # - os: osx
-      # python: "2.7"
-      # env: PYTHON_VERSION=2.7
-    # #- os: osx
-    # #  env: PYTHON_VERSION=3.5
+#sudo: false
 
-sudo: false
+before install:
+  - sudo apt-get update
+  - sudo apt-get install python-opencv
+  - sudo dpkg -L python-opencv
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -81,8 +70,7 @@ install:
   - git version
   - pip install .
 script:
-  - mkdir empty
-  - cd empty
+  - python tests/Test_install.py
 
 notifications:
     email: false
