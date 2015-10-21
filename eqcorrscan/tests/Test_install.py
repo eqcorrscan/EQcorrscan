@@ -40,13 +40,11 @@ def test_import():
         return False
     return True
 
-# Utilities tests
-from eqcorrscan import utils
-head=utils.Sfile_util.test_rw()
-
 
 def tests():
+    from eqcorrscan.utils import Sfile_utils
     assert test_import == True
+    assert Sfile_util.test_rw() == True
 
 if __name__ == '__main__':
     tests()
