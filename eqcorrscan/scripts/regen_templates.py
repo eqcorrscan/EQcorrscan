@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Script to re-gernate templates from the originally defined templates of varying
 lengths, and enable stacking.

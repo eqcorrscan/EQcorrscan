@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #------------------------------------------------------------------------------
 #   Purpose:    Script to call all elements of EQcorrscan module to search
@@ -325,4 +325,3 @@ for day in dates:
                          '-'+str(tr.stats.starttime.day).zfill(2)+\
                          '-processed.ms', format='MSEED')
 f.close()
-
