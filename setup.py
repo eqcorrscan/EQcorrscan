@@ -36,11 +36,11 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 # Get a list of all the scripts not to be installed
 scriptfiles=glob.glob('eqcorrscan/scripts/*.py')
-scriptfiles.append(glob.glob('eqcorrscan/*.sl'))
-scriptfiles.append(glob.glob('eqcorrscan/tutorial.py'))
-scriptfiles.append(glob.glob('eqcorrscan/WHATVsearch.py'))
-scriptfiles.append(glob.glob('eqcorrscan/LFE_brightness_search.py'))
-scriptfiles.append(glob.glob('eqcorrscan/synth_test.py'))
+scriptfiles+=glob.glob('eqcorrscan/*.sl')
+scriptfiles+=glob.glob('eqcorrscan/tutorial.py')
+scriptfiles+=glob.glob('eqcorrscan/WHATVsearch.py')
+scriptfiles+=glob.glob('eqcorrscan/LFE_brightness_search.py')
+scriptfiles+=glob.glob('eqcorrscan/synth_test.py')
 
 
 setup(
