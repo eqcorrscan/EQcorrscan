@@ -73,11 +73,11 @@ setup(
         'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Seismologists',
-        'Topic :: Seismology :: Earthquake Detection',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: LGPL License',
+        'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
