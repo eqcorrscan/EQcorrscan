@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script to test the brightness function with synthetic data
 """

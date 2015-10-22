@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script to utilise the match_filter routines of EQcorrscan and the synth_seis
 routines in the utils of EQcorrscan.  This script will read in a grid of
