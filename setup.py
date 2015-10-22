@@ -41,8 +41,7 @@ scriptfiles.append(glob.glob('eqcorrscan/tutorial.py'))
 scriptfiles.append(glob.glob('eqcorrscan/WHATVsearch.py'))
 scriptfiles.append(glob.glob('eqcorrscan/LFE_brightness_search.py'))
 scriptfiles.append(glob.glob('eqcorrscan/synth_test.py'))
-# Get a list of the tutorial dataset
-datafiles=glob.glob('eqcorrscan/test_data/tutorial_data/*')
+
 
 setup(
     name='EQcorrscan',
@@ -123,7 +122,7 @@ setup(
     # need to place data files outside of your packages. See:
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[('tutorial_data', datafiles)],
+    data_files=[('tutorial_data', 'eqcorrscan/test_data/tutorial_data.tgz')],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
