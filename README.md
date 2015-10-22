@@ -3,6 +3,7 @@ A python package to conduct match-filter earthquake detections.
 
 [![TravisCI Status](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
+[![Documentation Status](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 If you are looking for a (relatively) stable release, please download the latest
 [release](https://github.com/calum-chamberlain/EQcorrscan/releases/tag/v0.0-alpha.1).
