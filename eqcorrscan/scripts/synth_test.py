@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script to validate the synthetic detector method against test earthquakes
 """

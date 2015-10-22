@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This requires mayavi installed.
 """
