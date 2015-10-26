@@ -29,12 +29,12 @@ This file is part of EQcorrscan.
 
 """
 
-import sys, glob
+import sys
+import glob
 import datetime as dt
 instance=0
 Split=False
 startdate=False
-sys.path.insert(0,"/home/processor/Desktop/EQcorrscan")
 parallel=True
 oldnodes=False
 if len(sys.argv) == 2:
@@ -137,7 +137,7 @@ else:
 from par import LFE_template_gen_par as templatedef
 from par import match_filter_par_LFEs as matchdef
 from par import bright_lights_par as brightdef
-from utils import seismo_logs
+from eqcorrscan.utils import seismo_logs
 if brightdef.plotsave:
     import matplotlib
     matplotlib.use('Agg')
@@ -146,9 +146,9 @@ if brightdef.plotsave:
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import bright_lights, match_filter
-from utils import pre_processing
-from utils import EQcorrscan_plotting as plotting
+from eqcorrscan.core import bright_lights, match_filter
+from eqcorrscan.utils import pre_processing
+from eqcorrscan.utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
 import warnings, pickle
@@ -328,7 +328,8 @@ for day in dates: #Loop through dates
         detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream,
                         brightdef.threshold, brightdef.thresh_type,\
-                        brightdef.coherance, instance, matchdef, templatedef)
+                        brightdef.coherance, instance, matchdef, templatedef,\
+                        brightdef)
         del detect_templates#, stream # Delete templates from memory to conserve RAM!
         #stream=stream_copy
         nodesout+=detect_nodes

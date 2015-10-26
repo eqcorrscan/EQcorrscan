@@ -8,6 +8,7 @@ All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
 import numpy as np
+
 def seis_sim(SP, amp_ratio=1.5, flength=False,phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.

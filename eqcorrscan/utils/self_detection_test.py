@@ -24,19 +24,43 @@ This file is part of EQcorrscan.
 
 """
 
-def self_test(template):
+def self_test(template, low_cut, high_cut, filt_order, samp_rate,\
+                threshold, thresh_type, trig_int ,debug=0):
     """
     :type template: :class: obspy.Stream
     :param template: Template to check for self-detectability
+    :type highcut: float
+    :param highcut: High cut in Hz for bandpass
+    :type lowcut: float
+    :type lowcut: Low cut in Hz for bandpass
+    :type filt_order: int
+    :param filt_order: Corners for bandpass
+    :type samp_rate: float
+    :param samp_rate: Desired sampling rate in Hz
+    :type threshold: float
+    :param threshold: A threshold value set based on the threshold_type\
+    :type threshold_type: str
+    :param threshold_type: The type of threshold to be used, can be MAD,\
+        absolute or av_chan_corr.    MAD threshold is calculated as the\
+        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation\
+        sum for a given template. absolute threhsold is a true absolute\
+        threshold based on the cccsum value av_chan_corr is based on the mean\
+        values of single-channel cross-correlations assuming all data are\
+        present as required for the template, \
+        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\
+        template is a single template from the input and the length is the\
+        number of channels within this template.
+    :type trig_int: float
+    :param trig_int: Minimum gap between detections in seconds.
+    :type debug: int
+    :param debug: Debug output level, higher=more output.
     """
     import sys
     sys.path.append('..')
     import datetime as dt
     import pre_processing
-    from EQcorrscan.core import match_filter
+    from eqcorrscan.core import match_filter
     from obspy import read
-    from EQcorrscan.par import match_filter_par as matchdef
-    from EQcorrscan.par import template_gen_par as templatedef
     # Work out the date of the template
     date=template[0].stats.starttime.datetime.date()
     # Read in the appropriate data
@@ -59,14 +83,13 @@ def self_test(template):
             image+=read(base[0]+'/'+daydir+'/'+staform)
     # Process the data using pre-processing
     for tr in image:
-        tr=pre_processing.dayproc(tr, templatedef.lowcut, templatedef.highcut,\
-                                templatedef.filter_order, templatedef.samp_rate,\
+        tr=pre_processing.dayproc(tr, lowcut, highcut, filt_order, samp_rate,\
                                 matchdef.debug, date)
     # image.plot(size=(800,600), equal_scale=False)
     # Apply the detection routine with plot on
     detections=match_filter.match_filter(str(template[0].stats.starttime), \
-                                         [template], image, matchdef.threshold,\
-                                         matchdef.threshtype, matchdef.trig_int,\
+                                         [template], image, threshold,\
+                                         threshtype, trig_int,\
                                          True)
     for detection in detections:
         print 'Detection using template: '+detection.template_name+' at '+\

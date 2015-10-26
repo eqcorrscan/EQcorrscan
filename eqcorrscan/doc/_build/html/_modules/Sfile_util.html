@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Sfile_util &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>Sfile_util &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -163,7 +163,8 @@
 
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<div class="viewcode-block" id="PICK"><a class="viewcode-back" href="../modules.html#Sfile_util.PICK">[docs]</a><span class="k">class</span> <span class="nc">PICK</span><span class="p">:</span>
+
+<div class="viewcode-block" id="PICK"><a class="viewcode-back" href="../utils.html#Sfile_util.PICK">[docs]</a><span class="k">class</span> <span class="nc">PICK</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Pick information for seisan implimentation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -230,7 +231,7 @@
                 <span class="n">_str_conv</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CAZ</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">print_str</span>
 </div>
-<div class="viewcode-block" id="EVENTINFO"><a class="viewcode-back" href="../modules.html#Sfile_util.EVENTINFO">[docs]</a><span class="k">class</span> <span class="nc">EVENTINFO</span><span class="p">:</span>
+<div class="viewcode-block" id="EVENTINFO"><a class="viewcode-back" href="../utils.html#Sfile_util.EVENTINFO">[docs]</a><span class="k">class</span> <span class="nc">EVENTINFO</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Header information for seisan events</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -308,7 +309,7 @@
         <span class="n">string</span><span class="o">=</span><span class="s">&#39;{0:.2f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">string</span>
 
-<div class="viewcode-block" id="readheader"><a class="viewcode-back" href="../modules.html#Sfile_util.readheader">[docs]</a><span class="k">def</span> <span class="nf">readheader</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
+<div class="viewcode-block" id="readheader"><a class="viewcode-back" href="../utils.html#Sfile_util.readheader">[docs]</a><span class="k">def</span> <span class="nf">readheader</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fucntion to read the header information from a seisan nordic format S-file.</span>
 
@@ -394,7 +395,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">sfilename_header</span>
 </div>
-<div class="viewcode-block" id="readpicks"><a class="viewcode-back" href="../modules.html#Sfile_util.readpicks">[docs]</a><span class="k">def</span> <span class="nf">readpicks</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
+<div class="viewcode-block" id="readpicks"><a class="viewcode-back" href="../utils.html#Sfile_util.readpicks">[docs]</a><span class="k">def</span> <span class="nf">readpicks</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read pick information from the s-file</span>
 
@@ -465,7 +466,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">picks</span>
 </div>
-<div class="viewcode-block" id="readwavename"><a class="viewcode-back" href="../modules.html#Sfile_util.readwavename">[docs]</a><span class="k">def</span> <span class="nf">readwavename</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
+<div class="viewcode-block" id="readwavename"><a class="viewcode-back" href="../utils.html#Sfile_util.readwavename">[docs]</a><span class="k">def</span> <span class="nf">readwavename</span><span class="p">(</span><span class="n">sfilename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convenience function to extract the waveform filename from the s-file,</span>
 <span class="sd">    returns a list of waveform names found in the s-file as multiples can</span>
@@ -484,7 +485,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">wavename</span>
 </div>
-<div class="viewcode-block" id="blanksfile"><a class="viewcode-back" href="../modules.html#Sfile_util.blanksfile">[docs]</a><span class="k">def</span> <span class="nf">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span><span class="n">evtype</span><span class="p">,</span><span class="n">userID</span><span class="p">,</span><span class="n">outdir</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">evtime</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="blanksfile"><a class="viewcode-back" href="../utils.html#Sfile_util.blanksfile">[docs]</a><span class="k">def</span> <span class="nf">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span><span class="n">evtype</span><span class="p">,</span><span class="n">userID</span><span class="p">,</span><span class="n">outdir</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">evtime</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Module to generate an empty s-file with a populated header for a given</span>
 <span class="sd">    waveform.</span>
@@ -507,7 +508,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
-    <span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span><span class="nn">os</span><span class="o">,</span> <span class="nn">datetime</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span> <span class="nn">datetime</span>
+    
     <span class="k">if</span> <span class="ow">not</span> <span class="n">evtime</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
@@ -586,7 +590,7 @@
     <span class="k">print</span> <span class="s">&#39;Written s-file: &#39;</span><span class="o">+</span><span class="n">sfilename</span>
     <span class="k">return</span> <span class="n">sfilename</span>
 </div>
-<div class="viewcode-block" id="populateSfile"><a class="viewcode-back" href="../modules.html#Sfile_util.populateSfile">[docs]</a><span class="k">def</span> <span class="nf">populateSfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="n">picks</span><span class="p">):</span>
+<div class="viewcode-block" id="populateSfile"><a class="viewcode-back" href="../utils.html#Sfile_util.populateSfile">[docs]</a><span class="k">def</span> <span class="nf">populateSfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="n">picks</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Module to populate a blank nordic format S-file with pick information,</span>
 <span class="sd">    arguments required are the filename of the blank s-file and the picks</span>
@@ -640,7 +644,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span>
 </div>
-<div class="viewcode-block" id="test_rw"><a class="viewcode-back" href="../modules.html#Sfile_util.test_rw">[docs]</a><span class="k">def</span> <span class="nf">test_rw</span><span class="p">():</span>
+<div class="viewcode-block" id="test_rw"><a class="viewcode-back" href="../utils.html#Sfile_util.test_rw">[docs]</a><span class="k">def</span> <span class="nf">test_rw</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to test the functions herein.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -724,7 +728,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>stacking &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>stacking &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -159,7 +159,8 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<div class="viewcode-block" id="linstack"><a class="viewcode-back" href="../modules.html#stacking.linstack">[docs]</a><span class="k">def</span> <span class="nf">linstack</span><span class="p">(</span><span class="n">streams</span><span class="p">):</span>
+
+<div class="viewcode-block" id="linstack"><a class="viewcode-back" href="../utils.html#stacking.linstack">[docs]</a><span class="k">def</span> <span class="nf">linstack</span><span class="p">(</span><span class="n">streams</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the linear stack of a series of seismic streams of</span>
 <span class="sd">    multiplexed data</span>
@@ -187,7 +188,7 @@
                                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">stack</span>
 </div>
-<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../modules.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../utils.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the phase weighted stack of a series of streams.</span>
 <span class="sd">    Recommend aligning the traces before stacking.</span>
@@ -223,7 +224,7 @@
                 <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="n">weight</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Phasestack</span>
 </div>
-<div class="viewcode-block" id="align_traces"><a class="viewcode-back" href="../modules.html#stacking.align_traces">[docs]</a><span class="k">def</span> <span class="nf">align_traces</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">):</span>
+<div class="viewcode-block" id="align_traces"><a class="viewcode-back" href="../utils.html#stacking.align_traces">[docs]</a><span class="k">def</span> <span class="nf">align_traces</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to allign traces relative to each other based on their</span>
 <span class="sd">    cross-correlation value</span>
@@ -285,7 +286,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

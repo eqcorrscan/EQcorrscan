@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>eqcorrscan.scripts.synth_test &mdash; EQcorrscan 0.0.5 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>eqcorrscan.scripts.synth_test</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for eqcorrscan.scripts.synth_test</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Script to validate the synthetic detector method against test earthquakes</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<div class="viewcode-block" id="synth_from_sfile"><a class="viewcode-back" href="../../../source/eqcorrscan.scripts.synth_test.html#eqcorrscan.scripts.synth_test.synth_from_sfile">[docs]</a><span class="k">def</span> <span class="nf">synth_from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">PS_ratio</span><span class="o">=</span><span class="mf">1.68</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to generate a synthetic template for a given s-file</span>
+
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param path: Path to the sfile</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Sampling rate in Hz for template</span>
+<span class="sd">    :type length: float</span>
+<span class="sd">    :param length: Length of templates in seconds, defaults to 10</span>
+<span class="sd">    :type PS_ratio: float</span>
+<span class="sd">    :param PS_ratio: S-P ratio to use if only one pick found for station,\</span>
+<span class="sd">            defaults to 1.68</span>
+
+<span class="sd">    :returns: :class: obspy.Stream</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">synth_seis</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">UTCDateTime</span>
+    <span class="c"># Get the picks and the origin time</span>
+    <span class="n">picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
+    <span class="n">ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span>
+    <span class="c"># We only want P and S phases</span>
+    <span class="n">picks</span><span class="o">=</span><span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]]</span>
+    <span class="c"># We want a list of the stations that we have picks for</span>
+    <span class="n">stations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">]))</span>
+    <span class="c"># Loop through the stations</span>
+    <span class="n">synths</span><span class="o">=</span><span class="n">Stream</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+        <span class="c"># Find the relevant picks</span>
+        <span class="n">sta_picks</span><span class="o">=</span><span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">station</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sta_picks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">=</span><span class="s">&#39;Only &#39;</span><span class="o">+</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39; phase picked for station &#39;</span><span class="o">+</span>\
+                <span class="n">station</span><span class="o">+</span><span class="s">&#39; will use an S-P ratio of &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">PS_ratio</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="c"># Calculate the pick travel time</span>
+            <span class="n">tt</span> <span class="o">=</span> <span class="p">(</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">ori_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">SP_time</span><span class="o">=</span><span class="p">(</span><span class="n">tt</span><span class="o">*</span><span class="n">PS_ratio</span><span class="p">)</span><span class="o">-</span><span class="n">tt</span>
+                <span class="n">P_pick</span><span class="o">=</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span>
+                <span class="n">S_pick</span><span class="o">=</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">P_pick</span><span class="p">)</span><span class="o">+</span><span class="n">SP_time</span><span class="p">)</span><span class="o">.</span><span class="n">datetime</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">SP_time</span><span class="o">=</span><span class="n">tt</span><span class="o">-</span><span class="p">(</span><span class="n">tt</span><span class="o">/</span><span class="n">PS_ratio</span><span class="p">)</span>
+                <span class="n">P_pick</span><span class="o">=</span><span class="p">(</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">SP_time</span><span class="p">)</span><span class="o">.</span><span class="n">datetime</span>
+                <span class="n">S_pick</span><span class="o">=</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Multiple P picks found for station &#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span>\
+                                <span class="s">&#39;, will use earliest&#39;</span><span class="p">)</span>
+                <span class="n">P_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">])</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">P_pick</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;P&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">sta_picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Multiple S picks found for station &#39;</span><span class="o">+</span><span class="n">station</span><span class="o">+</span>\
+                                <span class="s">&#39;, will use earliest&#39;</span><span class="p">)</span>
+                <span class="n">S_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">S_pick</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">P_pick</span> <span class="o">&gt;</span> <span class="n">S_pick</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;P pick is after S pick&#39;</span><span class="p">)</span>
+            <span class="n">SP_time</span><span class="o">=</span><span class="p">(</span><span class="n">S_pick</span><span class="o">.</span><span class="n">datetime</span><span class="o">-</span><span class="n">P_pick</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="c"># Loop through the picks available</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sta_picks</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">=</span><span class="n">Trace</span><span class="p">(</span><span class="n">synth_seis</span><span class="o">.</span><span class="n">seis_sim</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">SP_time</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">),</span>\
+                        <span class="n">flength</span><span class="o">=</span><span class="n">length</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="p">))</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">=</span><span class="n">samp_rate</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">=</span><span class="n">station</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">channel</span>
+            <span class="c"># Sythetics start 10 samples before P</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="s">&#39;P&#39;</span><span class="p">]:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">P_pick</span><span class="p">)</span><span class="o">-</span><span class="p">(</span><span class="mf">10.0</span><span class="o">/</span><span class="n">samp_rate</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">S_pick</span><span class="p">)</span><span class="o">-</span><span class="p">(</span><span class="mf">10.0</span><span class="o">/</span><span class="n">samp_rate</span><span class="p">)</span>
+            <span class="n">synths</span><span class="o">+=</span><span class="n">tr</span>
+    <span class="k">return</span> <span class="n">synths</span>
+</div>
+<div class="viewcode-block" id="match_synth"><a class="viewcode-back" href="../../../source/eqcorrscan.scripts.synth_test.html#eqcorrscan.scripts.synth_test.match_synth">[docs]</a><span class="k">def</span> <span class="nf">match_synth</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">cont_base</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>\
+                <span class="n">threshold</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span> <span class="n">threshold_type</span><span class="o">=</span><span class="s">&#39;MAD&#39;</span><span class="p">,</span> <span class="n">trig_int</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">plotvar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>\
+                <span class="n">save_template</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to generate a basic synthetic from a real event, given by an s-file</span>
+<span class="sd">    and cross-correlate this with the day of continuous data including the event</span>
+
+<span class="sd">    :type sfile: str</span>
+<span class="sd">    :param sfile: Path to the s-file for the event</span>
+<span class="sd">    :type cont_base: str</span>
+<span class="sd">    :param cont_base: Path to the continuous data, should be in Yyyyy/Rjjj.01\</span>
+<span class="sd">                directories</span>
+<span class="sd">    :type freqmin: float</span>
+<span class="sd">    :param freqmin: Low-cut for bandpass in Hz, defualts to 2.0</span>
+<span class="sd">    :type freqmax: float</span>
+<span class="sd">    :param freqmax: High-cut for bandpass in Hz, defaults to 10.0</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Desired sampling rate in Hz, defaults to 100.0</span>
+<span class="sd">    :type threshold: float</span>
+<span class="sd">    :param threshold: Threshold for detection in cccsum, defaults to 8.0</span>
+<span class="sd">    :type threshold_type: str</span>
+<span class="sd">    :param threshold_type: Type to threshold, either MAD or ABS, defaults to MAD</span>
+<span class="sd">    :type trig_int: float</span>
+<span class="sd">    :param trig_int: Trigger interval in seconds, defaults to 6.0</span>
+<span class="sd">    :type plotvar: bool</span>
+<span class="sd">    :param plotvar: To plot or not, defaults to true</span>
+
+<span class="sd">    :returns: detections</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># import matplotlib.pyplot as plt</span>
+    <span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">match_filter</span><span class="p">,</span> <span class="n">template_gen</span>
+    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span><span class="p">,</span> <span class="n">pre_processing</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">UTCDateTime</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorr</span>
+    <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+    <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">cpu_count</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="c"># Generate the synthetic</span>
+    <span class="n">synth_template</span><span class="o">=</span><span class="n">synth_from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
+                                    <span class="n">PS_ratio</span><span class="o">=</span><span class="mf">1.68</span><span class="p">)</span>
+    <span class="n">synth_template</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">freqmin</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">freqmax</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">synth_template</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">save_template</span><span class="p">:</span>
+        <span class="n">synth_template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Synthetic_&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;STEIM2&#39;</span><span class="p">)</span>
+    <span class="c"># Find the date from the sfile</span>
+    <span class="n">event_date</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span>
+    <span class="n">day</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">event_date</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+    <span class="c"># Work out which stations we have template info for</span>
+    <span class="n">stachans</span><span class="o">=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">synth_template</span><span class="p">]</span>
+    <span class="c"># Read in the day of data</span>
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+        <span class="n">wavfile</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">cont_base</span><span class="o">+</span><span class="n">event_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;/Y%Y/R%j.01/&#39;</span><span class="p">)</span><span class="o">+</span>\
+                            <span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.*.&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;?&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span>\
+                            <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">event_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y.%j&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavfile</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">wavf</span> <span class="ow">in</span> <span class="n">wavfile</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;st&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">st</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="n">wavf</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">st</span><span class="o">+=</span><span class="n">read</span><span class="p">(</span><span class="n">wavf</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
+    <span class="n">cores</span><span class="o">=</span><span class="n">cpu_count</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">cores</span><span class="p">:</span>
+        <span class="n">jobs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">jobs</span><span class="o">=</span><span class="n">cores</span>
+    <span class="n">st</span><span class="o">=</span><span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">jobs</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)(</span><span class="n">tr</span><span class="p">,</span> <span class="n">freqmin</span><span class="p">,</span>\
+                                                             <span class="n">freqmax</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>\
+                                                             <span class="n">samp_rate</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>\
+                                                             <span class="n">day</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">=</span><span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="c"># Make the real template</span>
+    <span class="n">picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
+    <span class="n">real_template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">,</span>\
+                                            <span class="n">prepick</span><span class="o">=</span><span class="mi">10</span><span class="o">/</span><span class="n">samp_rate</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">real_template</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">save_template</span><span class="p">:</span>
+        <span class="n">real_template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Real_&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">,</span>\
+                            <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;STEIM2&#39;</span><span class="p">)</span>
+    <span class="c"># Shift the synthetic to better align with the real one</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">real_template</span><span class="p">:</span>
+        <span class="n">synth_tr</span><span class="o">=</span><span class="n">synth_template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                                        <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">shift</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="n">xcorr</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="k">print</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; shift=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">shift</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; corr=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">corr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">corr</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="o">*=-</span><span class="mi">1</span>
+        <span class="c"># Apply a pad</span>
+        <span class="n">pad</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">shift</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">shift</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">pad</span><span class="p">)[</span><span class="nb">abs</span><span class="p">(</span><span class="n">shift</span><span class="p">):]</span>
+        <span class="k">elif</span> <span class="n">shift</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pad</span><span class="p">,</span> <span class="n">synth_tr</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="n">shift</span><span class="p">]</span>
+        <span class="c"># plt.plot(tr.data, &#39;k&#39;)</span>
+        <span class="c"># plt.plot(synth_tr.data*(max(tr.data)/max(synth_tr.data)), &#39;r&#39;)</span>
+        <span class="c"># print max(tr.data)</span>
+        <span class="c"># print max(synth_tr.data)</span>
+        <span class="c"># plt.title(tr.stats.station+&#39;.&#39;+tr.stats.channel+&#39; Correlates at &#39;+str(corr))</span>
+        <span class="c"># plt.show()</span>
+    <span class="c"># Now we have processed data and a template, we can try and detect!</span>
+    <span class="n">detections</span><span class="o">=</span><span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">([</span><span class="s">&#39;Synthetic_&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                        <span class="s">&#39;Real_&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>\
+                                        <span class="p">[</span><span class="n">synth_template</span><span class="p">,</span> <span class="n">real_template</span><span class="p">],</span>\
+                                        <span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> \
+                                        <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span>\
+                                        <span class="n">plotvar</span><span class="p">,</span> <span class="s">&#39;synth_temp&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;Synthetic_test.csv&#39;</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;template, detect-time, cccsum, threshold, number of channels</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="c"># output detections to file</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">+</span>\
+                <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span><span class="o">+</span>\
+                <span class="s">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">no_chans</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;template: &#39;</span><span class="o">+</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&#39; detection at: &#39;</span>\
+            <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; with a cccsum of: &#39;</span><span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span><span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span><span class="o">==</span><span class="mi">10</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Insufficient arguments &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)))</span>
+    <span class="n">sfile</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">cont_base</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">freqmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">freqmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">samp_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+    <span class="n">threshold_type</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+    <span class="n">trig_int</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+    <span class="n">plotvar</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
+    <span class="n">match_synth</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">cont_base</span><span class="p">,</span> <span class="n">freqmin</span><span class="p">,</span> <span class="n">freqmax</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>\
+                <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

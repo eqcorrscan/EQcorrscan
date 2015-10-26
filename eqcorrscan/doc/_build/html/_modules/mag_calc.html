@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>mag_calc &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>mag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -160,7 +160,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../modules.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
+<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../utils.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
 <span class="sd">    Earth approximation</span>
@@ -171,15 +171,15 @@
 <span class="sd">    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">R</span><span class="o">=</span><span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
-    <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-    <span class="n">dlong</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="n">ddepth</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">mean_lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">((</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">dist</span><span class="o">=</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dlat</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">mean_lat</span><span class="p">)</span><span class="o">*</span><span class="n">dlong</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">dlong</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">ddepth</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">mean_lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">dlat</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">mean_lat</span> <span class="p">)</span> <span class="o">*</span> <span class="n">dlong</span> <span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">dist</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">ddepth</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
-<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../modules.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
+<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove the insturment response from a trace and return a</span>
 <span class="sd">    de-meaned, de-trended, Wood Anderson simulated trace in it&#39;s place.</span>
@@ -222,7 +222,7 @@
                             <span class="n">water_level</span><span class="o">=</span><span class="n">water_level</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">trace</span>
 </div>
-<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../modules.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../utils.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to find the maximum peak to trough amplitude and period of this</span>
 <span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by</span>
@@ -267,7 +267,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delta</span><span class="o">*</span><span class="n">turning_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)][</span><span class="mi">1</span><span class="p">])</span>
 </div>
-<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../modules.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
+<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../utils.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the instrument response information from a GSE Poles and</span>
 <span class="sd">    Zeros file as generated by the SEISAN program RESP.</span>
@@ -314,7 +314,7 @@
          <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="n">sensitivity</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sensor</span>
 </div>
-<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../modules.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
+<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../utils.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to find the response information for a given station and</span>
 <span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
@@ -391,7 +391,7 @@
     <span class="k">elif</span> <span class="n">seedresp</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">seedresp</span>
 </div>
-<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../modules.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../utils.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
                    <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -436,10 +436,7 @@
     <span class="c"># Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of</span>
     <span class="c"># 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow</span>
     <span class="n">ps_multiplier</span><span class="o">=</span><span class="mf">0.34</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
     <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">iirfilter</span>
     <span class="kn">from</span> <span class="nn">obspy.signal.invsim</span> <span class="kn">import</span> <span class="n">paz2AmpValueOfFreqResp</span>
@@ -674,7 +671,8 @@
     	<span class="n">wavepath</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
     <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
     	<span class="n">wavepath</span><span class="o">=</span><span class="bp">None</span>
-    <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">shutil</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+    <span class="kn">import</span> <span class="nn">shutil</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
@@ -741,7 +739,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

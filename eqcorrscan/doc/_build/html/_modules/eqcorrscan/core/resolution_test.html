@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>eqcorrscan.core.resolution_test &mdash; EQcorrscan 0.0.5 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>eqcorrscan.core.resolution_test</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for eqcorrscan.core.resolution_test</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Part of the EQcorrscan package written by Calum Chamberlain of Victoria</span>
+<span class="sd">University of Wellington.</span>
+
+<span class="sd">Functions designed to test the reosultion of templat matching cross-correlation</span>
+<span class="sd">function inspired by Emily Warren-Smith.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+<span class="n">bob</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span>
+<span class="n">bob</span><span class="o">=</span><span class="n">bob</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+<span class="n">path</span><span class="o">=</span><span class="s">&#39;/&#39;</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bob</span><span class="p">)</span><span class="o">-</span><span class="mi">2</span><span class="p">):</span>
+    <span class="n">path</span><span class="o">+=</span><span class="n">bob</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
+<span class="k">print</span> <span class="n">path</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">path</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">findpeaks</span>
+
+<div class="viewcode-block" id="ccc_gen"><a class="viewcode-back" href="../../../source/eqcorrscan.core.resolution_test.html#eqcorrscan.core.resolution_test.ccc_gen">[docs]</a><span class="k">def</span> <span class="nf">ccc_gen</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">template</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to test if a detection is possible at this moveout</span>
+
+<span class="sd">    :type image: obspy.Stream</span>
+<span class="sd">    :type template: obspy.Stream</span>
+<span class="sd">    :type delays: list</span>
+<span class="sd">    :type threhsold: float</span>
+
+<span class="sd">    :returns: ccc, a matrix of correlation values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ccc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;Correlation matrix is shaped: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ccc</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">)):</span>
+        <span class="n">templatetr</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                                   <span class="n">channel</span><span class="o">=</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="n">ccc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">normxcorr2</span><span class="p">(</span><span class="n">templatetr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ccc</span>
+</div>
+<span class="k">def</span> <span class="nf">_node_loop</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">ccc</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)):</span>
+        <span class="n">pad</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">lags</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">freq</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;cccsum&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">cccsum</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">pad</span><span class="p">)[</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">):]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bob</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">pad</span><span class="p">)[</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">):]</span>
+            <span class="n">cccsum</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">bob</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">thresh_type</span><span class="o">==</span><span class="s">&#39;MAD&#39;</span><span class="p">:</span>
+        <span class="n">rawthresh</span><span class="o">=</span><span class="n">threshold</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">thresh_type</span><span class="o">==</span><span class="s">&#39;absolute&#39;</span><span class="p">:</span>
+        <span class="n">rawthresh</span><span class="o">=</span><span class="n">threshold</span>
+    <span class="k">elif</span> <span class="n">thresh_type</span><span class="o">==</span><span class="s">&#39;av_chan_corr&#39;</span><span class="p">:</span>
+        <span class="n">rawthresh</span><span class="o">=</span><span class="n">threshold</span><span class="o">*</span><span class="p">(</span><span class="n">cccsum</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rawthresh</span><span class="o">=</span><span class="n">threshold</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
+    <span class="n">peaks</span> <span class="o">=</span> <span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span>\
+                                  <span class="n">freq</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">node</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span>
+
+<div class="viewcode-block" id="moveout_check"><a class="viewcode-back" href="../../../source/eqcorrscan.core.resolution_test.html#eqcorrscan.core.resolution_test.moveout_check">[docs]</a><span class="k">def</span> <span class="nf">moveout_check</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span>\
+                  <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to check different moveouts for detectability</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Generate random noise and seed with the template</span>
+    <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">bandpass</span>
+    <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+    <span class="n">parallel</span><span class="o">=</span><span class="bp">True</span>
+    <span class="n">image</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">)):</span>
+        <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">+</span>\
+                                      <span class="p">(</span><span class="mi">86400</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>\
+                                      <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>\
+                      <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span><span class="o">=</span>\
+                <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>\
+                      <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span><span class="o">+</span>\
+                <span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+        <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>\
+                               <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">)</span>
+    <span class="n">ccc</span><span class="o">=</span><span class="n">ccc_gen</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
+    <span class="c"># Lags</span>
+    <span class="n">possible_locations</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">freq</span><span class="o">=</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">parallel</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
+            <span class="n">possible_locations</span><span class="o">+=</span><span class="n">_node_loop</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ccc</span><span class="p">,</span> <span class="n">lags</span><span class="p">[:,[</span><span class="n">i</span><span class="p">]],</span>\
+                                           <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">possible_locations</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">5</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">_node_loop</span><span class="p">)</span>\
+                                                            <span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ccc</span><span class="p">,</span>\
+                                                             <span class="n">lags</span><span class="p">[:,[</span><span class="n">i</span><span class="p">]],</span> <span class="n">threshold</span><span class="p">,</span>\
+                                                             <span class="n">thresh_type</span><span class="p">)</span>\
+                                                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">possible_locations</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;Needs one argument, the template to check&quot;</span><span class="p">)</span>
+    <span class="n">templatename</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">defaults</span>
+    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">tempdef</span>
+    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">bright_lights_par</span> <span class="k">as</span> <span class="n">brightdef</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
+    <span class="kn">from</span> <span class="nn">core.bright_lights</span> <span class="kn">import</span> <span class="n">_read_tt</span><span class="p">,</span> <span class="n">_resample_grid</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="n">templatename</span><span class="p">)</span>
+    <span class="n">stations_in</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="n">stations_in</span><span class="o">+=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">]</span>
+    <span class="n">stations_in</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations_in</span><span class="p">))</span>
+    <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span> <span class="o">=</span> <span class="n">_read_tt</span><span class="p">(</span><span class="n">brightdef</span><span class="o">.</span><span class="n">nllpath</span><span class="p">,</span><span class="n">stations_in</span><span class="p">,</span>\
+                                    <span class="n">brightdef</span><span class="o">.</span><span class="n">phase</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="s">&#39;S&#39;</span><span class="p">,</span> \
+                                    <span class="n">ps_ratio</span><span class="o">=</span><span class="n">brightdef</span><span class="o">.</span><span class="n">ps_ratio</span><span class="p">)</span>
+    <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span> <span class="o">=</span> <span class="n">_resample_grid</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">brightdef</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>\
+                                           <span class="n">brightdef</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+    <span class="c"># print np.shape(lags)</span>
+    <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;template_dummy&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">template_dummy</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">template_dummy</span><span class="o">+=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">template_dummy</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stations</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="n">stations</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;alllags&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                    <span class="n">alllags</span><span class="o">=</span><span class="p">[</span><span class="n">lags</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># print stations[i]</span>
+                    <span class="n">alllags</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">alllags</span><span class="p">,</span> <span class="p">[</span><span class="n">lags</span><span class="p">[</span><span class="n">i</span><span class="p">]]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="c"># print np.shape(alllags)</span>
+    <span class="n">lags</span><span class="o">=</span><span class="n">alllags</span>
+    <span class="k">print</span> <span class="s">&#39;Lags is shaped: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">lags</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;I have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; channels of data&#39;</span>
+<span class="c"># Indexing will be an issue, currently don&#39;t check that stations match between data and lags</span>
+    <span class="n">possible_locations</span> <span class="o">=</span> <span class="n">moveout_check</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>\
+                                       <span class="n">defaults</span><span class="o">.</span><span class="n">threshtype</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">lowcut</span><span class="p">,</span>\
+                                       <span class="n">tempdef</span><span class="o">.</span><span class="n">highcut</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">filter_order</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span> <span class="k">as</span> <span class="n">plotting</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible_locations</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">plotting</span><span class="o">.</span><span class="n">threeD_gridplot</span><span class="p">(</span><span class="n">possible_locations</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No possible location found&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
