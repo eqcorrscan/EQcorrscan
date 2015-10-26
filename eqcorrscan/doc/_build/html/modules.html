@@ -157,13 +157,13 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time</em>, <em>loc_mod_ind</em>, <em>dist_ind</em>, <em>ev_id</em>, <em>latitude</em>, <em>longitude</em>, <em>depth</em>, <em>depth_ind</em>, <em>loc_ind</em>, <em>agency</em>, <em>nsta</em>, <em>t_RMS</em>, <em>Mag_1</em>, <em>Mag_1_type</em>, <em>Mag_1_agency</em>, <em>Mag_2</em>, <em>Mag_2_type</em>, <em>Mag_2_agency</em>, <em>Mag_3</em>, <em>Mag_3_type</em>, <em>Mag_3_agency</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>impulsivity</em>, <em>phase</em>, <em>weight</em>, <em>polarity</em>, <em>time</em>, <em>coda</em>, <em>amplitude</em>, <em>peri</em>, <em>azimuth</em>, <em>velocity</em>, <em>AIN</em>, <em>SNR</em>, <em>azimuthres</em>, <em>timeres</em>, <em>finalweight</em>, <em>distance</em>, <em>CAZ</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=' '</em>, <em>SNR=999</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation</p>
 </dd></dl>
 
@@ -810,6 +810,38 @@ plot for each stachan</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="EQcorrscan_plotting.chunk_data">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">chunk_data</code><span class="sig-paren">(</span><em>tr</em>, <em>samp_rate</em>, <em>state='mean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#chunk_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.chunk_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to downsample data for plotting by computing the maximum of
+data within chunks, usefil for plotting waveforms or cccsums, large datasets
+that ould otherwise exceed the complexity allowed, and overflow.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> &#8211; Trace to be chunked</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>state</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;Min&#8217;, &#8216;Max&#8217;, &#8216;Mean&#8217; or &#8216;Maxabs&#8217; to return one of            these for the chunks. Maxabs will return the largest (positive or            negative) for that chunk.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">obspy.Trace</td>
+</tr>
+</tbody>
+</table>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="EQcorrscan_plotting.cumulative_detections">
 <code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple plotting function to take a list of datetime objects and plot
@@ -1007,7 +1039,7 @@ positive</li>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.triple_plot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>cccsum_hist</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function to make a triple plot with a day-long seismogram, day-long
 correlation sum trace and histogram of the correlation sum to show normality</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1015,7 +1047,8 @@ correlation sum trace and histogram of the correlation sum to show normality</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cccsum</strong> (<em>numpy.array</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>cccsum</strong> (<em>numpy.ndarray</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>ccsum_hist</strong> &#8211; cccsum for histogram plotting, can be the same as cccsum                    but included if cccsum is just an envelope.</li>
 <li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A sample trace from the same time as cccsum</li>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Detection threshold within cccsum</li>
 <li><strong>save</strong> (<em>Bool, optional</em>) &#8211; If True will svae and not plot to screen, vice-versa if False</li>
@@ -1623,7 +1656,7 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._node_loop">
-<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>clip_level</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to allow for parallelisation of brightness</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1633,6 +1666,7 @@ to Frank et al. (2014).</p>
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use</li>
 <li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i]</li>
 <li><strong>stream</strong> &#8211; Data stream to find the brightness for</li>
+<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit for energy as a multiplier to the mean energy</li>
 <li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation</li>
 <li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM</li>
 <li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true</li>
@@ -1731,7 +1765,7 @@ the diagonal.</p>
 
 <dl class="function">
 <dt id="bright_lights.brightness">
-<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>brightdef=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.</p>
 <p>Note data in stream must be all of the same length and have the same
@@ -1748,6 +1782,9 @@ sampling rates.</p>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the    brightness function</li>
 <li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.</li>
 <li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence</li>
+<li><strong>matchdef</strong> &#8211; Match-filter filter defaults from a match_filter_par file</li>
+<li><strong>defaults</strong> &#8211; Template generation defaults from a template_gen_par file</li>
+<li><strong>brightdef</strong> &#8211; Bright_lights_par file defaults</li>
 <li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
 </ul>
 </td>
