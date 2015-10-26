@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="index.html"/>
         <link rel="next" title="Core" href="core.html"/>
         <link rel="prev" title="Introduction to the EQcorrscan package" href="intro.html"/> 
 
@@ -206,7 +206,7 @@ your call.</p>
 <li>CM Boese, J Townend, E Smith, T Stern (2012). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1029/2011JB008460/full">Microseismicity and stress in the vicinity of the Alpine Fault, central Southern Alps, New Zealand</a>, <em>JGR</em>, doi:10.1029/2011JB008460</li>
 <li>CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1002/2013GC005171/full">Background and delayed-triggered swarms in the central Southern Alps, South Island, New Zealand</a>, <em>G-cubed</em>, doi:10.1002/2013GC005171</li>
 </ul>
-<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/python</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/env python</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Tutorial</span>
 
@@ -246,10 +246,12 @@ your call.</p>
 
 <span class="c"># First we import the required modules:</span>
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">Stream</span>
-<span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">template_gen</span><span class="p">,</span> <span class="n">match_filter</span>
-<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.core</span> <span class="kn">import</span> <span class="n">template_gen</span><span class="p">,</span> <span class="n">match_filter</span>
+<span class="c"># Before calling these module imports for parameter files you should insert</span>
+<span class="c"># your own path into sys.path so that we find your parameter files.</span>
 <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span><span class="p">,</span> <span class="n">Sfile_util</span>
+<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span><span class="p">,</span> <span class="n">Sfile_util</span>
 <span class="kn">import</span> <span class="nn">glob</span>
 
 <span class="c"># Now we find the s-file we want to use to generate a template from</span>
@@ -289,7 +291,8 @@ your call.</p>
     <span class="c"># Apply a small amoutn of delay before the pick</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="mf">0.1</span>
-    <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">)</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">,</span>\
+                                        <span class="n">tempdef</span><span class="o">=</span><span class="n">templatedef</span><span class="p">)</span>
     <span class="c"># This will generate an obspy.Stream object</span>
     <span class="c"># Append this Stream to the list of templates</span>
     <span class="n">templates</span><span class="o">+=</span><span class="p">[</span><span class="n">template</span><span class="p">]</span>
@@ -390,7 +393,7 @@ your call.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
