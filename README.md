@@ -15,9 +15,22 @@ Changes will be implemented first to the develop branch, then pushed to the mast
 with helpful comments, like line numbers, the command run and the error messages.
 Alternatively, fork the master and help me develop this!
 
+# Installation
+We are now listed on pypi!  Installation has been tested on both OSX and Linux (Ubuntu) and
+is as simple as:
+
+*pip install EQcorrscan*
+
+If you have any issues installing please let me know.  You will need to install openCV
+seperately using (on Linux):
+
+*sudo apt-get install python-opencv*
+
+Or, for Mac users, this is available on Macports or other similar package managers.
+
 The full documentation for this package can be found here:
 [EQcorrscan](http://calum-chamberlain.github.io/EQcorrscan/) - you are also
-welcome to suggest documentation updates or update the doc in the master branch, please
+welcome to suggest documentation updates or update the doc in the develop branch, please
 do not work on the documentation in the gh-pages branch!
 
 This package contains routines to enable the user to conduct match-filter earthquake
@@ -56,11 +69,12 @@ To use this package you will need to set up default parameters in the parameter
 file. Currently these are located in the source directory, this will change in
 the future, hopefully. It is recommended that you copy these default parameter
 files before adding your own to allow you to easily transfer back to other
-parameter set ups.
+parameter set ups. **These are being migrated to a script directory along with all scripts
+for version 0.0.5***
 
 # Contributing
 Please fork this project and work on it there then create a pull request to
-merge back into the master.
+merge back into develop.
 
 When you make changes please run the tests in the test directory to ensure
 everything merges with minimum effort.
