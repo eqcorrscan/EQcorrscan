@@ -238,7 +238,7 @@ to Frank et al. (2014).</p>
 
 <dl class="function">
 <dt id="bright_lights._node_loop">
-<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_node_loop</code><span class="sig-paren">(</span><em>stations</em>, <em>lags</em>, <em>stream</em>, <em>clip_level</em>, <em>i=0</em>, <em>mem_issue=False</em>, <em>instance=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#_node_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._node_loop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to allow for parallelisation of brightness</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -248,6 +248,7 @@ to Frank et al. (2014).</p>
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use</li>
 <li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i]</li>
 <li><strong>stream</strong> &#8211; Data stream to find the brightness for</li>
+<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit for energy as a multiplier to the mean energy</li>
 <li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation</li>
 <li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM</li>
 <li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true</li>
@@ -346,7 +347,7 @@ the diagonal.</p>
 
 <dl class="function">
 <dt id="bright_lights.brightness">
-<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>lags</em>, <em>stream</em>, <em>threshold</em>, <em>thresh_type</em>, <em>coherence_thresh</em>, <em>instance=0</em>, <em>matchdef=False</em>, <em>defaults=False</em>, <em>brightdef=False</em>, <em>pre_pick=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.</p>
 <p>Note data in stream must be all of the same length and have the same
@@ -363,6 +364,9 @@ sampling rates.</p>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the    brightness function</li>
 <li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.</li>
 <li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence</li>
+<li><strong>matchdef</strong> &#8211; Match-filter filter defaults from a match_filter_par file</li>
+<li><strong>defaults</strong> &#8211; Template generation defaults from a template_gen_par file</li>
+<li><strong>brightdef</strong> &#8211; Bright_lights_par file defaults</li>
 <li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
 </ul>
 </td>

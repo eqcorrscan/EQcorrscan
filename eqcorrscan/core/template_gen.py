@@ -54,13 +54,8 @@ This file is part of EQcorrscan.
 
 """
 
-import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
-
 def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
-               filt_order=None, length=None):
+               filt_order=None, matchdef=False, tempdef=False, length=None):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefile found in the pick file.
@@ -81,16 +76,19 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     :type filt_order: int
     :param filt_order: Filter level, if set to None will look in\
             template defaults file
+    :param matchdef: Match_filter_par parameters
+    :param tempdef: Template_gen_par parameters
     :type length: float
     :param length: Extract length in seconds, if None will look in template\
             defaults file.
     """
     # Perform some checks first
-    import os, sys
+    import os
+    import sys
     if not os.path.isfile(sfile):
         raise IOError('sfile does not exist')
 
-    from utils import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     # Read in the header of the sfile
     wavefiles=Sfile_util.readwavename(sfile)
     pathparts=sfile.split('/')[0:len(sfile.split('/'))-1]
@@ -100,9 +98,11 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
             part='WAV'
         wavpath+=part+'/'
     from obspy import read as obsread
-    from utils import pre_processing
-    from par import match_filter_par as matchdef
-    from par import template_gen_par as tempdef
+    from eqcorrscan.utils import pre_processing
+    if not matchdef:
+        from eqcorrscan.par import match_filter_par as matchdef
+    if not tempdef:
+        from eqcorrscan.par import template_gen_par as tempdef
     # Read in waveform file
     for wavefile in wavefiles:
         print "I am going to read waveform data from: "+wavpath+wavefile
@@ -139,7 +139,8 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     return st1
 
 def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
-                  filt_order=None, length=None, prepick=None):
+                  filt_order=None, length=None, prepick=None, tempdef=False,\
+                  matchdef=False):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefiles from the continous database of day-long
@@ -170,6 +171,8 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
             defaults file.
     :type prepick: float
     :param prepick: Pre-pick time in seconds
+    :param tempdef: template_gen_par parameters
+    :param matchdef: Match_filter_par parameters
     """
     # Perform some checks first
     import os, sys
@@ -177,10 +180,12 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
         raise IOError('sfile does not exist')
 
     # import some things
-    from utils import Sfile_util
-    from utils import pre_processing
-    from par import match_filter_par as matchdef
-    from par import template_gen_par as tempdef
+    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import pre_processing
+    if not matchdef:
+        from eqcorrscan.par import match_filter_par as matchdef
+    if not tempdef:
+        from eqcorrscan.par import template_gen_par as tempdef
     import glob
     from obspy import UTCDateTime
 
@@ -254,7 +259,8 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
     return st1
 
 
-def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
+def _template_gen(picks, st, length, swin, prepick=0.05, plot=False,\
+                    tempdef=False):
     """
     Function to generate a cut template in the obspy
     Stream class from a given set of picks and data, also in an obspy stream
@@ -273,11 +279,13 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
             default is 0.05 seconds
     :type plot: bool
     :param plot: To plot the template or not, default is True
+    :param tempdef: Template_gen_par parameters
     """
-    from utils.Sfile_util import PICK
-    from utils.EQcorrscan_plotting import pretty_template_plot as tplot
+    from eqcorrscan.utils.Sfile_util import PICK
+    from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as tplot
     from obspy import Stream
-    from par import template_gen_par as tempdef
+    if not tempdef:
+        from eqcorrscan.par import template_gen_par as tempdef
     import copy, warnings
     stations=[]
     channels=[]

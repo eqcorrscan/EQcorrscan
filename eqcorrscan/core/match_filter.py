@@ -152,7 +152,7 @@ def normxcorr2(template, image):
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
 
-def _template_loop(template, chan, station, channel, i=0):
+def _template_loop(template, chan, station, channel, debug=0 i=0):
     """
     Sister loop to handle the correlation of a single template (of multiple
     channels) with a single channel of data.
@@ -167,9 +167,10 @@ def _template_loop(template, chan, station, channel, i=0):
 
     :returns: tuple of (i,ccc) with ccc as an ndarray
     """
-    from utils.timer import Timer
-    from par import match_filter_par as matchdef
-    ccc=np.array([np.nan]*(len(chan)-len(template[0].data)+1), dtype=np.float16)
+    from eqcorrscan.utils.timer import Timer
+
+    ccc=np.array([np.nan] * (len(chan) - len(template[0].data) + 1),\
+        dtype=np.float16)
     ccc=ccc.reshape((1,len(ccc)))           # Set default value for
                                             # cross-channel correlation in
                                             # case there are no data that
@@ -180,41 +181,43 @@ def _template_loop(template, chan, station, channel, i=0):
         template_data=template.select(station=station, \
                                       channel=channel)
         template_data=template_data[0] # Assuming you only have one template per channel
-        delay=template_data.stats.starttime-template.sort(['starttime'])[0].stats.starttime
-        pad=np.array([0]*int(round(delay*template_data.stats.sampling_rate)))
+        delay=template_data.stats.starttime - \
+                template.sort(['starttime'])[0].stats.starttime
+        pad=np.array([0] * int(round(delay * \
+            template_data.stats.sampling_rate)))
         image=np.append(chan,pad)[len(pad):]
         ccc=(normxcorr2(template_data.data, image))
         ccc=ccc.astype(np.float16)
         # Convert to float16 to save memory for large problems - lose some
         # accuracy which will affect detections very close to threshold
-    if matchdef.debug >= 2 and t.secs > 4:
+    if debug >= 2 and t.secs > 4:
         print "Single if statement took %s s" % t.secs
         if not template_data:
             print "Didn't even correlate!"
         print station+' '+channel
-    elif matchdef.debug >=2:
+    elif debug >=2:
         print "If statement without correlation took %s s" % t.secs
-    if matchdef.debug >= 3:
+    if debug >= 3:
         print '********* DEBUG:  '+station+'.'+\
                 channel+' ccc MAX: '+str(np.max(ccc[0]))
         print '********* DEBUG:  '+station+'.'+\
                 channel+' ccc MEAN: '+str(np.mean(ccc[0]))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
-        if matchdef.debug >=3:
+        if debug >=3:
             np.save('inf_cccmean_ccc.npy', ccc[0])
             np.save('inf_cccmean_template.npy', template_data.data)
             np.save('inf_cccmean_image.npy', image)
-    if matchdef.debug >=3:
+    if debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print 'A single ccc is using: '+str(ccc.nbytes/1000000)+'MB'
         print 'ccc type is: '+str(type(ccc))
-    if matchdef.debug >=3:
+    if debug >=3:
         print 'shape of ccc: '+str(np.shape(ccc))
         print "Parallel worker "+str(i)+" complete"
     return (i, ccc)
 
-def _channel_loop(templates, stream):
+def _channel_loop(templates, stream, cores=1, debug=0):
     """
     Loop to generate cross channel correaltion sums for a series of templates
     hands off the actual correlations to a sister function which can be run in
@@ -226,6 +229,10 @@ def _channel_loop(templates, stream):
     relevant header information.
     :param stream: A single obspy.Stream object containing daylong seismic data\
     to be correlated through using the templates.  This is in effect the image
+    :type core: int
+    :param core: Number of cores to loop over
+    :type debug: int
+    :param debug: Debug level.
 
     :return: New list of :class: 'numpy.array' objects.  These will contain the\
     correlation sums for each template for this day of data.
@@ -233,9 +240,8 @@ def _channel_loop(templates, stream):
     """
     import time, cv2
     from multiprocessing import Pool
-    from par import match_filter_par as matchdef
-    from utils.timer import Timer
-    num_cores=matchdef.cores
+    from eqcorrscan.utils.timer import Timer
+    num_cores=cores
     if len(templates) < num_cores:
         num_cores = len(templates)
     if 'cccs_matrix' in locals():
@@ -256,7 +262,7 @@ def _channel_loop(templates, stream):
         tr_data=tr.data
         station=tr.stats.station
         channel=tr.stats.channel
-        if matchdef.debug >=1:
+        if debug >=1:
             print "Starting parallel run for station "+station+" channel "+\
                     channel
         tic=time.clock()
@@ -265,38 +271,39 @@ def _channel_loop(templates, stream):
             pool=Pool(processes=num_cores, maxtasksperchild=None)
             results=[pool.apply_async(_template_loop, args=(templates[i],\
                                                         tr_data, station,\
-                                                                channel, i))\
+                                                                channel, i,\
+                                                                debug))\
                                   for i in xrange(len(templates))]
             pool.close()
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Correlation loop took: %s s" % t.secs
             print " I have "+str(len(results))+" results"
         with Timer() as t:
             cccs_list=[p.get() for p in results]
             pool.join()
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Getting results took: %s s" % t.secs
         with Timer() as t:
             cccs_list.sort(key=lambda tup: tup[0]) # Sort by placeholder returned from function
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Sorting took: %s s" % t.secs
         with Timer() as t:
             cccs_list = [ccc[1] for ccc in cccs_list]
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Extracting arrays took: %s s" % t.secs
-        if matchdef.debug >= 3:
+        if debug >= 3:
             print 'cccs_list is shaped: '+str(np.shape(cccs_list))
         with Timer() as t:
             cccs=np.concatenate(cccs_list, axis=0)
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    cccs_list conversion: %s s" % t.secs
         del cccs_list
-        if matchdef.debug >=2:
+        if debug >=2:
             print 'After looping through templates the cccs is shaped: '+str(np.shape(cccs))
             print 'cccs is using: '+str(cccs.nbytes/1000000)+' MB of memory'
         cccs_matrix[1]=np.reshape(cccs, (1,len(templates),max(np.shape(cccs))))
         del cccs
-        if matchdef.debug >=2:
+        if debug >=2:
             print 'cccs_matrix shaped: '+str(np.shape(cccs_matrix))
             print 'cccs_matrix is using '+str(cccs_matrix.nbytes/1000000)+' MB of memory'
         # Now we have an array of arrays with the first dimensional index giving the
@@ -304,7 +311,7 @@ def _channel_loop(templates, stream):
         # dimensional index giving the position in the ccc, e.g.:
         # np.shape(cccsums)=(len(stream), len(templates), len(ccc))
 
-        if matchdef.debug >=2:
+        if debug >=2:
             print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
         # First work out how many channels were used
         for i in xrange(0,len(templates)):
@@ -317,22 +324,23 @@ def _channel_loop(templates, stream):
         # for each template for each day
         with Timer() as t:
             cccsums=cccs_matrix.sum(axis=0).astype(np.float32)
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Summing took %s s" % t.secs
-        if matchdef.debug>=2:
+        if debug>=2:
             print 'cccsums is shaped thus: '+str(np.shape(cccsums))
         cccs_matrix[0]=cccsums
         del cccsums
         toc=time.clock()
-        if matchdef.debug >=1:
+        if debug >=1:
             print "--------- TIMER:    Trace loop took "+str(toc-tic)+" s"
-    if matchdef.debug >=2:
+    if debug >=2:
         print 'cccs_matrix is shaped: '+str(np.shape(cccs_matrix))
     cccsums=cccs_matrix[0]
     return cccsums, no_chans
 
-def match_filter(template_names, templates, stream, threshold,
-                 threshold_type, trig_int, plotvar, tempdir=False):
+def match_filter(template_names, templates, stream, threshold,\
+                 threshold_type, trig_int, plotvar, matchdef=False,\
+                 tempdir=False):
     """
     Over-arching code to run the correlations of given templates with a day of
     seismic data and output the detections based on a given threshold.
@@ -361,15 +369,17 @@ def match_filter(template_names, templates, stream, threshold,
     of channels within this template.
     :type tempdir: String or False
     :param tempdir: Directory to put temporary files, or False
+    :param matchdef: Default parameters from a match_filter_par file
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
 
     """
-    from utils import findpeaks, EQcorrscan_plotting
+    from eqcorrscan.utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
-    from par import match_filter_par as matchdef
+    if not matchdef:
+        from eqcorrscan.par import match_filter_par as matchdef
     match_internal=False # Set to True if memory is an issue, if True, will only
                           # use about the same amount of memory as the seismic dat
                           # take up.  If False, it will use 20-100GB per instance
@@ -435,7 +445,8 @@ def match_filter(template_names, templates, stream, threshold,
     if match_internal:
         [cccsums, no_chans] = run_channel_loop(templates, stream, tempdir)
     else:
-        [cccsums, no_chans]=_channel_loop(templates, stream)
+        [cccsums, no_chans]=_channel_loop(templates, stream, matchdef.cores,\
+                            matchdef.debug)
     if len(cccsums[0])==0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc=time.clock()
