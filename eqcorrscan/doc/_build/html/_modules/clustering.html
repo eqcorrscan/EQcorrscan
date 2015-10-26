@@ -165,7 +165,7 @@
 <span class="c"># cross-channel correlation sum</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="cross_chan_coherence"><a class="viewcode-back" href="../utils.html#clustering.cross_chan_coherence">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherence</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
+<div class="viewcode-block" id="cross_chan_coherence"><a class="viewcode-back" href="../modules.html#clustering.cross_chan_coherence">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherence</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to determine the cross-channel coherancy between two streams of</span>
 <span class="sd">    multichannel seismic data.</span>
@@ -191,7 +191,7 @@
     <span class="n">cccoh</span><span class="o">=</span><span class="n">cccoh</span><span class="o">/</span><span class="n">kchan</span>
     <span class="k">return</span> <span class="n">cccoh</span>
 </div>
-<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../utils.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../modules.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the distance matrix for all templates - will give</span>
 <span class="sd">    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will</span>
@@ -216,7 +216,7 @@
             <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">dist_mat</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">dist_mat</span>
 </div>
-<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../utils.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../modules.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to take a set of templates and cluster them, will return distance\</span>
 <span class="sd">            matrix of grouped templates</span>
@@ -244,7 +244,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">Z</span>
 </div>
-<div class="viewcode-block" id="group_delays"><a class="viewcode-back" href="../utils.html#clustering.group_delays">[docs]</a><span class="k">def</span> <span class="nf">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="group_delays"><a class="viewcode-back" href="../modules.html#clustering.group_delays">[docs]</a><span class="k">def</span> <span class="nf">group_delays</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to group template waveforms according to their delays</span>
 
@@ -314,7 +314,7 @@
                     <span class="n">match</span><span class="o">=</span><span class="bp">True</span> <span class="c"># Use this to break the loop</span>
     <span class="k">return</span> <span class="n">groups</span>
 </div>
-<div class="viewcode-block" id="SVD"><a class="viewcode-back" href="../utils.html#clustering.SVD">[docs]</a><span class="k">def</span> <span class="nf">SVD</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+<div class="viewcode-block" id="SVD"><a class="viewcode-back" href="../modules.html#clustering.SVD">[docs]</a><span class="k">def</span> <span class="nf">SVD</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the SVD of a number of templates and return the singular</span>
 <span class="sd">    vectors and singular values of the templates.</span>
@@ -359,7 +359,7 @@
         <span class="n">Uvectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">SVectors</span><span class="p">,</span> <span class="n">SValues</span><span class="p">,</span> <span class="n">Uvectors</span><span class="p">,</span> <span class="n">stachans</span>
 </div>
-<div class="viewcode-block" id="empirical_SVD"><a class="viewcode-back" href="../utils.html#clustering.empirical_SVD">[docs]</a><span class="k">def</span> <span class="nf">empirical_SVD</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">linear</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="empirical_SVD"><a class="viewcode-back" href="../modules.html#clustering.empirical_SVD">[docs]</a><span class="k">def</span> <span class="nf">empirical_SVD</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">linear</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Empirical subspace detector generation function.  Takes a list of templates</span>
 <span class="sd">    and computes the stack as the first order subspace detector, and the</span>
@@ -385,7 +385,7 @@
         <span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">+=</span><span class="mf">0.5</span><span class="o">*</span><span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">first_subspace</span><span class="p">,</span> <span class="n">second_subspace</span><span class="p">]</span>
 </div>
-<div class="viewcode-block" id="SVD_2_stream"><a class="viewcode-back" href="../utils.html#clustering.SVD_2_stream">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
+<div class="viewcode-block" id="SVD_2_stream"><a class="viewcode-back" href="../modules.html#clustering.SVD_2_stream">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to convert the singular vectors output by SVD to streams, one for</span>
 <span class="sd">    each singular vector level, for all channels.</span>
@@ -415,7 +415,7 @@
         <span class="n">SVstreams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">SVstream</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">SVstreams</span>
 </div>
-<div class="viewcode-block" id="corr_cluster"><a class="viewcode-back" href="../utils.html#clustering.corr_cluster">[docs]</a><span class="k">def</span> <span class="nf">corr_cluster</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
+<div class="viewcode-block" id="corr_cluster"><a class="viewcode-back" href="../modules.html#clustering.corr_cluster">[docs]</a><span class="k">def</span> <span class="nf">corr_cluster</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Group traces based on correlations above threshold with the stack - will</span>
 <span class="sd">    run twice, once with a lower threshold, then again with your threshold to</span>
@@ -448,7 +448,7 @@
             <span class="n">output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="bp">False</span>
     <span class="k">return</span> <span class="n">output</span>
 </div>
-<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../utils.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> \
+<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../modules.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> \
                         <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extract_Z</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">additional_stations</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to extract the waveforms associated with each detection in a list</span>

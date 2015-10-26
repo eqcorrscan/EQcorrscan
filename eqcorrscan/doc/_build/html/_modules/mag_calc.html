@@ -160,7 +160,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../utils.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
+<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../modules.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
 <span class="sd">    Earth approximation</span>
@@ -179,7 +179,7 @@
     <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
-<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
+<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../modules.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove the insturment response from a trace and return a</span>
 <span class="sd">    de-meaned, de-trended, Wood Anderson simulated trace in it&#39;s place.</span>
@@ -222,7 +222,7 @@
                             <span class="n">water_level</span><span class="o">=</span><span class="n">water_level</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">trace</span>
 </div>
-<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../utils.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../modules.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to find the maximum peak to trough amplitude and period of this</span>
 <span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by</span>
@@ -267,7 +267,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delta</span><span class="o">*</span><span class="n">turning_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)][</span><span class="mi">1</span><span class="p">])</span>
 </div>
-<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../utils.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
+<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../modules.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the instrument response information from a GSE Poles and</span>
 <span class="sd">    Zeros file as generated by the SEISAN program RESP.</span>
@@ -314,7 +314,7 @@
          <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="n">sensitivity</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sensor</span>
 </div>
-<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../utils.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
+<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../modules.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to find the response information for a given station and</span>
 <span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
@@ -391,7 +391,7 @@
     <span class="k">elif</span> <span class="n">seedresp</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">seedresp</span>
 </div>
-<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../utils.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../modules.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
                    <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>

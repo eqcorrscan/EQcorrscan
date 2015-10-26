@@ -173,7 +173,7 @@
 <span class="kn">import</span> <span class="nn">Sfile_util</span><span class="o">,</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="_cc_round"><a class="viewcode-back" href="../utils.html#catalogue2DD._cc_round">[docs]</a><span class="k">def</span> <span class="nf">_cc_round</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">):</span>
+<div class="viewcode-block" id="_cc_round"><a class="viewcode-back" href="../modules.html#catalogue2DD._cc_round">[docs]</a><span class="k">def</span> <span class="nf">_cc_round</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convenience function to take a float and round it to dp padding with zeros</span>
 <span class="sd">    to return a string</span>
@@ -189,7 +189,7 @@
     <span class="n">num</span><span class="o">=</span><span class="s">&#39;{0:.{1}f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">num</span>
 </div>
-<div class="viewcode-block" id="_av_weight"><a class="viewcode-back" href="../utils.html#catalogue2DD._av_weight">[docs]</a><span class="k">def</span> <span class="nf">_av_weight</span><span class="p">(</span><span class="n">W1</span><span class="p">,</span> <span class="n">W2</span><span class="p">):</span>
+<div class="viewcode-block" id="_av_weight"><a class="viewcode-back" href="../modules.html#catalogue2DD._av_weight">[docs]</a><span class="k">def</span> <span class="nf">_av_weight</span><span class="p">(</span><span class="n">W1</span><span class="p">,</span> <span class="n">W2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)</span>
 
@@ -215,7 +215,7 @@
     <span class="n">W</span><span class="o">=</span><span class="p">(</span><span class="n">W1</span><span class="o">+</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
     <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="_separation"><a class="viewcode-back" href="../utils.html#catalogue2DD._separation">[docs]</a><span class="k">def</span> <span class="nf">_separation</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
+<div class="viewcode-block" id="_separation"><a class="viewcode-back" href="../modules.html#catalogue2DD._separation">[docs]</a><span class="k">def</span> <span class="nf">_separation</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to calculate the distance between two points in the earth</span>
 
@@ -235,7 +235,7 @@
     <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
-<div class="viewcode-block" id="readSTATION0"><a class="viewcode-back" href="../utils.html#catalogue2DD.readSTATION0">[docs]</a><span class="k">def</span> <span class="nf">readSTATION0</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">):</span>
+<div class="viewcode-block" id="readSTATION0"><a class="viewcode-back" href="../modules.html#catalogue2DD.readSTATION0">[docs]</a><span class="k">def</span> <span class="nf">readSTATION0</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the STATION0.HYP file on the path given.  Outputs written</span>
 <span class="sd">    in station.dat file.</span>
@@ -281,7 +281,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">stalist</span>
 </div>
-<div class="viewcode-block" id="write_event"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_event">[docs]</a><span class="k">def</span> <span class="nf">write_event</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
+<div class="viewcode-block" id="write_event"><a class="viewcode-back" href="../modules.html#catalogue2DD.write_event">[docs]</a><span class="k">def</span> <span class="nf">write_event</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to write out an event.dat file of the events</span>
 
@@ -314,7 +314,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">event_list</span>
 </div>
-<div class="viewcode-block" id="write_catalogue"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_catalogue">[docs]</a><span class="k">def</span> <span class="nf">write_catalogue</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<div class="viewcode-block" id="write_catalogue"><a class="viewcode-back" href="../modules.html#catalogue2DD.write_catalogue">[docs]</a><span class="k">def</span> <span class="nf">write_catalogue</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to write the dt.ct file needed by hypoDD - takes input event list</span>
 <span class="sd">    from write_event as a list of tuples of event id and sfile.  It will read</span>
@@ -387,7 +387,7 @@
     <span class="n">fphase</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
 </div>
-<div class="viewcode-block" id="write_correlations"><a class="viewcode-back" href="../utils.html#catalogue2DD.write_correlations">[docs]</a><span class="k">def</span> <span class="nf">write_correlations</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">wavbase</span><span class="p">,</span> <span class="n">extract_len</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
+<div class="viewcode-block" id="write_correlations"><a class="viewcode-back" href="../modules.html#catalogue2DD.write_correlations">[docs]</a><span class="k">def</span> <span class="nf">write_correlations</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">wavbase</span><span class="p">,</span> <span class="n">extract_len</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
                        <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> \
                        <span class="n">coh_thresh</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
