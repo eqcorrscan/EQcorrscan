@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>clustering &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>clustering &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -177,7 +177,7 @@
 
 <span class="sd">    :returns: cross channel coherence, float - normalized by number of channels</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
     <span class="n">cccoh</span><span class="o">=</span><span class="mf">0.0</span>
     <span class="n">kchan</span><span class="o">=</span><span class="mi">0</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st1</span><span class="p">:</span>
@@ -230,7 +230,8 @@
 <span class="sd">                each number relating to a cluster</span>
 <span class="sd">    .. rubric:: Note:</span>
 <span class="sd">        Not fully feautured yet, returns the Z matrix, but doesn&#39;t tell you what\</span>
-<span class="sd">        can be clustered.</span>
+<span class="sd">        can be clustered. It would be good to use the scikits clustering\</span>
+<span class="sd">        routines: http://scikit-learn.org/stable/modules/clustering.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">squareform</span>
     <span class="kn">from</span> <span class="nn">scipy.cluster.hierarchy</span> <span class="kn">import</span> <span class="n">linkage</span><span class="p">,</span> <span class="n">dendrogram</span>
@@ -376,7 +377,7 @@
 
 <span class="sd">    :returns: list of two streams</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">stacking</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">stacking</span>
     <span class="k">if</span> <span class="n">linear</span><span class="p">:</span>
         <span class="n">first_subspace</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
     <span class="n">second_subspace</span><span class="o">=</span><span class="n">first_subspace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -428,7 +429,7 @@
 
 <span class="sd">    :returns: np.ndarray of bool</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">stacking</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">stacking</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
     <span class="kn">from</span> <span class="nn">core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
     <span class="n">stack</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">([</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
@@ -448,7 +449,7 @@
             <span class="n">output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="bp">False</span>
     <span class="k">return</span> <span class="n">output</span>
 </div>
-<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../utils.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> \
+<div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../utils.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">contbase_list</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> \
                         <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extract_Z</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">additional_stations</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to extract the waveforms associated with each detection in a list</span>
@@ -463,6 +464,12 @@
 <span class="sd">    :type templates: List of tuple of string and :class: obspy.Stream</span>
 <span class="sd">    :param templates: A list of the tuples of the template name and the template\</span>
 <span class="sd">            Stream used to detect detections.</span>
+<span class="sd">    :type contbase_list: List of tuple of string</span>
+<span class="sd">    :param contbase_list: List of tuples of the form [&#39;path&#39;, &#39;type&#39;, &#39;network&#39;]\</span>
+<span class="sd">                    Where path is the path to the continuous database, type is\</span>
+<span class="sd">                    the directory structure, which can be either Yyyyy/Rjjj.01,\</span>
+<span class="sd">                    which is the standard IRIS Year, julian day structure, or,\</span>
+<span class="sd">                    yyyymmdd which is a single directory for every day.</span>
 <span class="sd">    :type extract_len: float</span>
 <span class="sd">    :param extract_len: Length to extract around the detection (will be equally\</span>
 <span class="sd">            cut around the detection time) in seconds.  Default is 90.0.</span>
@@ -482,10 +489,8 @@
 <span class="sd">    :returns: List of :class: obspy.Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
     <span class="kn">import</span> <span class="nn">os</span>
     <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
     <span class="c"># Sort the template according to starttimes, needed so that stachan[i]</span>
@@ -553,7 +558,7 @@
         <span class="n">stachans</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">stachans</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">stachans</span> <span class="ow">in</span> <span class="n">all_stachans</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
         <span class="c"># List of all unique stachans - read in all data</span>
         <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
-            <span class="n">contbase</span><span class="o">=</span><span class="p">[</span><span class="n">base</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span>\
+            <span class="n">contbase</span><span class="o">=</span><span class="p">[</span><span class="n">base</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">contbase_list</span>\
                       <span class="k">if</span> <span class="n">base</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">stachan</span><span class="p">[</span><span class="mi">2</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;yyyymmdd&#39;</span><span class="p">:</span>
                 <span class="n">dayfile</span><span class="o">=</span><span class="n">detection_day</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/*&#39;</span><span class="o">+</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>\
@@ -573,11 +578,11 @@
                     <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span>
         <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
         <span class="c"># We now have a stream of day long data, we should process it!</span>
-        <span class="c"># st=Parallel(n_jobs=3)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\</span>
-                                                               <span class="c"># templatedef.highcut,\</span>
-                                                               <span class="c"># templatedef.filter_order,\</span>
-                                                               <span class="c"># templatedef.samp_rate,\</span>
-                                                               <span class="c"># matchdef.debug, detection_day)\</span>
+        <span class="c"># st=Parallel(n_jobs=3)(delayed(pre_processing.dayproc)(tr, lowcut,\</span>
+                                                               <span class="c"># highcut,\</span>
+                                                               <span class="c"># filter_order,\</span>
+                                                               <span class="c"># samp_rate,\</span>
+                                                               <span class="c"># debug, detection_day)\</span>
                                 <span class="c"># for tr in st)</span>
         <span class="c"># st=Stream(st)</span>
         <span class="c"># for tr in st:</span>
@@ -647,7 +652,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

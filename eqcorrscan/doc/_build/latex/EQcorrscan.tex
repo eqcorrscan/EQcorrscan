@@ -19,8 +19,8 @@
 
 
 \title{EQcorrscan Documentation}
-\date{October 13, 2015}
-\release{0.1.1-alpha}
+\date{October 26, 2015}
+\release{0.0.5}
 \author{Calum John Chamberlain}
 \newcommand{\sphinxlogo}{\includegraphics{EQcorrscan_logo.pdf}\par}
 \renewcommand{\releasename}{Release}
@@ -348,7 +348,7 @@ CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). \href{http://onlinel
 \end{itemize}
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{c}{\PYGZsh{}!/usr/bin/python}
+\PYG{c}{\PYGZsh{}!/usr/bin/env python}
 \PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}}
 \PYG{l+s+sd}{Tutorial}
 
@@ -388,9 +388,12 @@ CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). \href{http://onlinel
 
 \PYG{c}{\PYGZsh{} First we import the required modules:}
 \PYG{k+kn}{from} \PYG{n+nn}{obspy} \PYG{k+kn}{import} \PYG{n}{read}\PYG{p}{,} \PYG{n}{Stream}
-\PYG{k+kn}{from} \PYG{n+nn}{core} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen}\PYG{p}{,} \PYG{n}{match\PYGZus{}filter}
+\PYG{k+kn}{from} \PYG{n+nn}{eqcorrscan.core} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen}\PYG{p}{,} \PYG{n}{match\PYGZus{}filter}
+\PYG{c}{\PYGZsh{} Before calling these module imports for parameter files you should insert}
+\PYG{c}{\PYGZsh{} your own path into sys.path so that we find your parameter files.}
 \PYG{k+kn}{from} \PYG{n+nn}{par} \PYG{k+kn}{import} \PYG{n}{match\PYGZus{}filter\PYGZus{}par} \PYG{k}{as} \PYG{n}{matchdef}
-\PYG{k+kn}{from} \PYG{n+nn}{utils} \PYG{k+kn}{import} \PYG{n}{pre\PYGZus{}processing}\PYG{p}{,} \PYG{n}{Sfile\PYGZus{}util}
+\PYG{k+kn}{from} \PYG{n+nn}{par} \PYG{k+kn}{import} \PYG{n}{template\PYGZus{}gen\PYGZus{}par} \PYG{k}{as} \PYG{n}{templatedef}
+\PYG{k+kn}{from} \PYG{n+nn}{eqcorrscan.utils} \PYG{k+kn}{import} \PYG{n}{pre\PYGZus{}processing}\PYG{p}{,} \PYG{n}{Sfile\PYGZus{}util}
 \PYG{k+kn}{import} \PYG{n+nn}{glob}
 
 \PYG{c}{\PYGZsh{} Now we find the s\PYGZhy{}file we want to use to generate a template from}
@@ -430,7 +433,8 @@ CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). \href{http://onlinel
     \PYG{c}{\PYGZsh{} Apply a small amoutn of delay before the pick}
     \PYG{k}{for} \PYG{n}{pick} \PYG{o+ow}{in} \PYG{n}{picks}\PYG{p}{:}
         \PYG{n}{pick}\PYG{o}{.}\PYG{n}{time}\PYG{o}{=}\PYG{n}{pick}\PYG{o}{.}\PYG{n}{time}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{0.1}
-    \PYG{n}{template}\PYG{o}{=}\PYG{n}{template\PYGZus{}gen}\PYG{o}{.}\PYG{n}{\PYGZus{}template\PYGZus{}gen}\PYG{p}{(}\PYG{n}{picks}\PYG{p}{,} \PYG{n}{st}\PYG{p}{,} \PYG{l+m+mf}{1.0}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{all}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+    \PYG{n}{template}\PYG{o}{=}\PYG{n}{template\PYGZus{}gen}\PYG{o}{.}\PYG{n}{\PYGZus{}template\PYGZus{}gen}\PYG{p}{(}\PYG{n}{picks}\PYG{p}{,} \PYG{n}{st}\PYG{p}{,} \PYG{l+m+mf}{1.0}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{all}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+                                        \PYG{n}{tempdef}\PYG{o}{=}\PYG{n}{templatedef}\PYG{p}{)}
     \PYG{c}{\PYGZsh{} This will generate an obspy.Stream object}
     \PYG{c}{\PYGZsh{} Append this Stream to the list of templates}
     \PYG{n}{templates}\PYG{o}{+}\PYG{o}{=}\PYG{p}{[}\PYG{n}{template}\PYG{p}{]}
@@ -629,7 +633,7 @@ detections as :class: DETECTION
 \index{\_node\_loop() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{lags}, \emph{stream}, \emph{i=0}, \emph{mem\_issue=False}, \emph{instance=0}, \emph{plot=False}}{}
+\phantomsection\label{core:bright_lights._node_loop}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{\_node\_loop}}{\emph{stations}, \emph{lags}, \emph{stream}, \emph{clip\_level}, \emph{i=0}, \emph{mem\_issue=False}, \emph{instance=0}, \emph{plot=False}}{}
 Internal function to allow for parallelisation of brightness
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -641,6 +645,9 @@ Internal function to allow for parallelisation of brightness
 
 \item {} 
 \textbf{\texttt{stream}} -- Data stream to find the brightness for
+
+\item {} 
+\textbf{\texttt{clip\_level}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Upper limit for energy as a multiplier to the mean energy
 
 \item {} 
 \textbf{\texttt{i}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Index of loop for parallelisation
@@ -771,7 +778,7 @@ list stations, list of lists of tuples nodes, :class:     `numpy.array' lags sta
 \index{brightness() (in module bright\_lights)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations}, \emph{nodes}, \emph{lags}, \emph{stream}, \emph{threshold}, \emph{thresh\_type}, \emph{coherence\_thresh}, \emph{instance=0}, \emph{matchdef=False}, \emph{defaults=False}, \emph{pre\_pick=0.2}}{}
+\phantomsection\label{core:bright_lights.brightness}\pysiglinewithargsret{\code{bright\_lights.}\bfcode{brightness}}{\emph{stations, nodes, lags, stream, threshold, thresh\_type, template\_length, template\_saveloc, coherence\_thresh, coherance\_stations={[}'all'{]}, coherance\_clip=False, gap=2.0, clip\_level=100, instance=0, pre\_pick=0.2, plotsave=True, cores=1}}{}
 Function to calculate the brightness function in terms of energy for a day
 of data over the entire network for a given grid of nodes.
 
@@ -798,10 +805,34 @@ sampling rates.
 \textbf{\texttt{thresh\_type}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either MAD or abs where MAD is the Median Absolute    Deviation and abs is an absoulte brightness.
 
 \item {} 
+\textbf{\texttt{template\_length}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Length of template to extract in seconds
+
+\item {} 
+\textbf{\texttt{template\_saveloc}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Path of where to save the templates.
+
+\item {} 
 \textbf{\texttt{coherence\_thresh}} (\emph{tuple of floats}) -- Threshold for removing incoherant peaks in the            network response, those below this will not be used as templates.            Must be in the form of (a,b) where the coherence is given by:            a-kchan/b where kchan is the number of channels used to compute            the coherence
 
 \item {} 
+\textbf{\texttt{coherance\_stations}} (\href{https://docs.python.org/library/functions.html\#list}{\emph{list}}) -- List of stations to use in the coherance            thresholding - defaults to `all' which uses all the stations.
+
+\item {} 
+\textbf{\texttt{coherance\_clip}} (\emph{Start and end in seconds of data to window around,            defaults to False, which uses all the data given.}) -- tuple
+
+\item {} 
 \textbf{\texttt{pre\_pick}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Seconds before the detection time to include in template
+
+\item {} 
+\textbf{\texttt{plotsave}} (\href{https://docs.python.org/library/functions.html\#bool}{\emph{bool}}) -- Save or show plots, if False will try and show the plots            on screen - as this is designed for bulk use this is set to            True to save any plots rather than show them if you create            them - changes the backend of matplotlib, so if is set to            False you will see NO PLOTS!
+
+\item {} 
+\textbf{\texttt{core}} -- Number of cores to use, defaults to 1.
+
+\item {} 
+\textbf{\texttt{clip\_level}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Multiplier applied to the mean deviation of the energy                    as an upper limit, used to remove spikes (earthquakes,                     lightning, electircal spikes) from the energy stack.
+
+\item {} 
+\textbf{\texttt{gap}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Minimum inter-event time in seconds for detections
 
 \end{itemize}
 
@@ -946,7 +977,7 @@ class.  Should be given pre-processed data (downsampled and filtered)
 \index{from\_contbase() (in module template\_gen)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:template_gen.from_contbase}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_contbase}}{\emph{sfile}, \emph{lowcut=None}, \emph{highcut=None}, \emph{samp\_rate=None}, \emph{filt\_order=None}, \emph{length=None}, \emph{prepick=None}}{}
+\phantomsection\label{core:template_gen.from_contbase}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_contbase}}{\emph{sfile}, \emph{contbase\_list}, \emph{lowcut}, \emph{highcut}, \emph{samp\_rate}, \emph{filt\_order}, \emph{length}, \emph{prepick}, \emph{swin}, \emph{debug=0}}{}
 Function to read in picks from sfile then generate the template from the
 picks within this and the wavefiles from the continous database of day-long
 files.  Included is a section to sanity check that the files are daylong and
@@ -957,6 +988,9 @@ are incorrectly set.
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
 \textbf{\texttt{sfile}} (\href{https://docs.python.org/library/string.html\#module-string}{\emph{string}}) -- sfilename must be the path to a seisan nordic type s-file             containing waveform and pick information, all other arguments can             be numbers save for swin which must be either P, S or all             (case-sensitive).
+
+\item {} 
+\textbf{\texttt{contbase\_list}} (\emph{List of tuple of string}) -- List of tuples of the form {[}'path', `type', `network'{]}                    Where path is the path to the continuous database, type is                    the directory structure, which can be either Yyyyy/Rjjj.01,                    which is the standard IRIS Year, julian day structure, or,                    yyyymmdd which is a single directory for every day.
 
 \item {} 
 \textbf{\texttt{lowcut}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Low cut (Hz), if set to None will look in template            defaults file
@@ -976,6 +1010,12 @@ are incorrectly set.
 \item {} 
 \textbf{\texttt{prepick}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Pre-pick time in seconds
 
+\item {} 
+\textbf{\texttt{swin}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either `all', `P' or `S', to select which phases to output.
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Level of debugging output, higher=more
+
 \end{itemize}
 
 \end{description}\end{quote}
@@ -985,7 +1025,7 @@ are incorrectly set.
 \index{from\_sfile() (in module template\_gen)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:template_gen.from_sfile}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_sfile}}{\emph{sfile}, \emph{lowcut=None}, \emph{highcut=None}, \emph{samp\_rate=None}, \emph{filt\_order=None}, \emph{length=None}}{}
+\phantomsection\label{core:template_gen.from_sfile}\pysiglinewithargsret{\code{template\_gen.}\bfcode{from\_sfile}}{\emph{sfile}, \emph{lowcut}, \emph{highcut}, \emph{samp\_rate}, \emph{filt\_order}, \emph{length}, \emph{swin}, \emph{debug=0}}{}
 Function to read in picks from sfile then generate the template from the
 picks within this and the wavefile found in the pick file.
 \begin{quote}\begin{description}
@@ -1006,7 +1046,13 @@ picks within this and the wavefile found in the pick file.
 \textbf{\texttt{filt\_order}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Filter level, if set to None will look in            template defaults file
 
 \item {} 
+\textbf{\texttt{swin}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either `all', `P' or `S', to select which phases to output.
+
+\item {} 
 \textbf{\texttt{length}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Extract length in seconds, if None will look in template            defaults file.
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Debug level, higher number=more output.
 
 \end{itemize}
 
@@ -1147,7 +1193,7 @@ Type of detection, STA, corr, bright
 \index{\_channel\_loop() (in module match\_filter)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:match_filter._channel_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_channel\_loop}}{\emph{templates}, \emph{stream}}{}
+\phantomsection\label{core:match_filter._channel_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_channel\_loop}}{\emph{templates}, \emph{stream}, \emph{cores=1}, \emph{debug=0}}{}
 Loop to generate cross channel correaltion sums for a series of templates
 hands off the actual correlations to a sister function which can be run in
 parallel.
@@ -1158,6 +1204,12 @@ parallel.
 
 \item {} 
 \textbf{\texttt{stream}} -- A single obspy.Stream object containing daylong seismic data    to be correlated through using the templates.  This is in effect the image
+
+\item {} 
+\textbf{\texttt{core}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Number of cores to loop over
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Debug level.
 
 \end{itemize}
 
@@ -1174,7 +1226,7 @@ list of ints as number of channels used for each cross-correlation
 \index{\_template\_loop() (in module match\_filter)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:match_filter._template_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_template\_loop}}{\emph{template}, \emph{chan}, \emph{station}, \emph{channel}, \emph{i=0}}{}
+\phantomsection\label{core:match_filter._template_loop}\pysiglinewithargsret{\code{match\_filter.}\bfcode{\_template\_loop}}{\emph{template}, \emph{chan}, \emph{station}, \emph{channel}, \emph{debug=0}, \emph{i=0}}{}
 Sister loop to handle the correlation of a single template (of multiple
 channels) with a single channel of data.
 \begin{quote}\begin{description}
@@ -1191,25 +1243,34 @@ tuple of (i,ccc) with ccc as an ndarray
 \index{match\_filter() (in module match\_filter)}
 
 \begin{fulllineitems}
-\phantomsection\label{core:match_filter.match_filter}\pysiglinewithargsret{\code{match\_filter.}\bfcode{match\_filter}}{\emph{template\_names}, \emph{templates}, \emph{stream}, \emph{threshold}, \emph{threshold\_type}, \emph{trig\_int}, \emph{plotvar}, \emph{tempdir=False}}{}
+\phantomsection\label{core:match_filter.match_filter}\pysiglinewithargsret{\code{match\_filter.}\bfcode{match\_filter}}{\emph{template\_names}, \emph{templates}, \emph{stream}, \emph{threshold}, \emph{threshold\_type}, \emph{trig\_int}, \emph{plotvar}, \emph{cores=1}, \emph{tempdir=False}, \emph{debug=0}}{}
 Over-arching code to run the correlations of given templates with a day of
 seismic data and output the detections based on a given threshold.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{\texttt{templates}} (\emph{list :class: `obspy.Stream'}) -- A list of templates of which each template is a Stream of    obspy traces containing seismic data and header information.
+\textbf{\texttt{templates}} (\emph{list :class: `obspy.Stream'}) -- A list of templates of which each template is a Stream of        obspy traces containing seismic data and header information.
 
 \item {} 
-\textbf{\texttt{stream}} -- An obspy.Stream object containing all the data available and    required for the correlations with templates given.  For efficiency this    should contain no excess traces which are not in one or more of the    templates.
+\textbf{\texttt{stream}} -- An obspy.Stream object containing all the data available and        required for the correlations with templates given.  For efficiency this        should contain no excess traces which are not in one or more of the        templates.
 
 \item {} 
-\textbf{\texttt{threshold}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- A threshold value set based on the threshold\_type    :type threshold\_type: str
+\textbf{\texttt{threshold}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- A threshold value set based on the threshold\_type
 
 \item {} 
-\textbf{\texttt{threshold\_type}} -- The type of threshold to be used, can be MAD,    absolute or av\_chan\_corr.    MAD threshold is calculated as the    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum    for a given template.    absolute threhsold is a true absolute threshold based on the cccsum value    av\_chan\_corr is based on the mean values of single-channel    cross-correlations assuming all data are present as required for the    template, e.g. av\_chan\_corr\_thresh=threshold*(cccsum/len(template)) where    template is a single template from the input and the length is the number    of channels within this template.
+\textbf{\texttt{threshold\_type}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- The type of threshold to be used, can be MAD,        absolute or av\_chan\_corr.    MAD threshold is calculated as the        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation        sum for a given template. absolute threhsold is a true absolute        threshold based on the cccsum value av\_chan\_corr is based on the mean        values of single-channel cross-correlations assuming all data are        present as required for the template,         e.g. av\_chan\_corr\_thresh=threshold*(cccsum/len(template)) where        template is a single template from the input and the length is the        number of channels within this template.
+
+\item {} 
+\textbf{\texttt{trig\_int}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Minimum gap between detections in seconds.
 
 \item {} 
 \textbf{\texttt{tempdir}} (\emph{String or False}) -- Directory to put temporary files, or False
+
+\item {} 
+\textbf{\texttt{cores}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Number of cores to use
+
+\item {} 
+\textbf{\texttt{debug}} (\href{https://docs.python.org/library/functions.html\#int}{\emph{int}}) -- Debug output level, the bigger the number, the more the output
 
 \end{itemize}
 
@@ -1474,7 +1535,7 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \index{EVENTINFO (class in Sfile\_util)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:Sfile_util.EVENTINFO}\pysiglinewithargsret{\strong{class }\code{Sfile\_util.}\bfcode{EVENTINFO}}{\emph{time}, \emph{loc\_mod\_ind}, \emph{dist\_ind}, \emph{ev\_id}, \emph{latitude}, \emph{longitude}, \emph{depth}, \emph{depth\_ind}, \emph{loc\_ind}, \emph{agency}, \emph{nsta}, \emph{t\_RMS}, \emph{Mag\_1}, \emph{Mag\_1\_type}, \emph{Mag\_1\_agency}, \emph{Mag\_2}, \emph{Mag\_2\_type}, \emph{Mag\_2\_agency}, \emph{Mag\_3}, \emph{Mag\_3\_type}, \emph{Mag\_3\_agency}}{}
+\phantomsection\label{utils:Sfile_util.EVENTINFO}\pysiglinewithargsret{\strong{class }\code{Sfile\_util.}\bfcode{EVENTINFO}}{\emph{time=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{loc\_mod\_ind=' `}, \emph{dist\_ind=' `}, \emph{ev\_id=' `}, \emph{latitude=nan}, \emph{longitude=nan}, \emph{depth=nan}, \emph{depth\_ind=' `}, \emph{loc\_ind=' `}, \emph{agency=' `}, \emph{nsta=0}, \emph{t\_RMS=nan}, \emph{Mag\_1=nan}, \emph{Mag\_1\_type=' `}, \emph{Mag\_1\_agency=' `}, \emph{Mag\_2=nan}, \emph{Mag\_2\_type=' `}, \emph{Mag\_2\_agency=' `}, \emph{Mag\_3=nan}, \emph{Mag\_3\_type=' `}, \emph{Mag\_3\_agency=' `}}{}
 Header information for seisan events
 
 \end{fulllineitems}
@@ -1482,7 +1543,7 @@ Header information for seisan events
 \index{PICK (class in Sfile\_util)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:Sfile_util.PICK}\pysiglinewithargsret{\strong{class }\code{Sfile\_util.}\bfcode{PICK}}{\emph{station}, \emph{channel}, \emph{impulsivity}, \emph{phase}, \emph{weight}, \emph{polarity}, \emph{time}, \emph{coda}, \emph{amplitude}, \emph{peri}, \emph{azimuth}, \emph{velocity}, \emph{AIN}, \emph{SNR}, \emph{azimuthres}, \emph{timeres}, \emph{finalweight}, \emph{distance}, \emph{CAZ}}{}
+\phantomsection\label{utils:Sfile_util.PICK}\pysiglinewithargsret{\strong{class }\code{Sfile\_util.}\bfcode{PICK}}{\emph{station=' `}, \emph{channel=' `}, \emph{impulsivity=' `}, \emph{phase=' `}, \emph{weight=999}, \emph{polarity=' `}, \emph{time=UTCDateTime(1970}, \emph{1}, \emph{1}, \emph{0}, \emph{0)}, \emph{coda=999}, \emph{amplitude=nan}, \emph{peri=nan}, \emph{azimuth=nan}, \emph{velocity=nan}, \emph{AIN=' `}, \emph{SNR=999}, \emph{azimuthres=999}, \emph{timeres=nan}, \emph{finalweight=999}, \emph{distance=nan}, \emph{CAZ=999}}{}
 Pick information for seisan implimentation
 
 \end{fulllineitems}
@@ -1856,7 +1917,7 @@ each number relating to a cluster
 
 \end{description}\end{quote}
 \paragraph{Note:
-Not fully feautured yet, returns the Z matrix, but doesn't tell you what        can be clustered.}
+Not fully feautured yet, returns the Z matrix, but doesn't tell you what        can be clustered. It would be good to use the scikits clustering        routines: \href{http://scikit-learn.org/stable/modules/clustering.html}{http://scikit-learn.org/stable/modules/clustering.html}}
 
 \end{fulllineitems}
 
@@ -1954,7 +2015,7 @@ list of two streams
 \index{extract\_detections() (in module clustering)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:clustering.extract_detections}\pysiglinewithargsret{\code{clustering.}\bfcode{extract\_detections}}{\emph{detections}, \emph{templates}, \emph{extract\_len=90.0}, \emph{outdir=None}, \emph{extract\_Z=True}, \emph{additional\_stations={[}{]}}}{}
+\phantomsection\label{utils:clustering.extract_detections}\pysiglinewithargsret{\code{clustering.}\bfcode{extract\_detections}}{\emph{detections}, \emph{templates}, \emph{contbase\_list}, \emph{extract\_len=90.0}, \emph{outdir=None}, \emph{extract\_Z=True}, \emph{additional\_stations={[}{]}}}{}
 Function to extract the waveforms associated with each detection in a list
 of detections for the template, template.  Waveforms will be returned as
 a list of obspy.Streams containing segments of extract\_len.  They will also
@@ -1967,6 +2028,9 @@ is 90 seconds per channel.
 
 \item {} 
 \textbf{\texttt{templates}} (\emph{List of tuple of string and :class: obspy.Stream}) -- A list of the tuples of the template name and the template            Stream used to detect detections.
+
+\item {} 
+\textbf{\texttt{contbase\_list}} (\emph{List of tuple of string}) -- List of tuples of the form {[}'path', `type', `network'{]}                    Where path is the path to the continuous database, type is                    the directory structure, which can be either Yyyyy/Rjjj.01,                    which is the standard IRIS Year, julian day structure, or,                    yyyymmdd which is a single directory for every day.
 
 \item {} 
 \textbf{\texttt{extract\_len}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Length to extract around the detection (will be equally            cut around the detection time) in seconds.  Default is 90.0.
@@ -2239,6 +2303,38 @@ plot for each stachan
 
 \end{fulllineitems}
 
+\index{chunk\_data() (in module EQcorrscan\_plotting)}
+
+\begin{fulllineitems}
+\phantomsection\label{utils:EQcorrscan_plotting.chunk_data}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{chunk\_data}}{\emph{tr}, \emph{samp\_rate}, \emph{state='mean'}}{}
+Function to downsample data for plotting by computing the maximum of
+data within chunks, usefil for plotting waveforms or cccsums, large datasets
+that ould otherwise exceed the complexity allowed, and overflow.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{tr}} -- Trace to be chunked
+
+\item {} 
+\textbf{\texttt{samp\_rate}} (\href{https://docs.python.org/library/functions.html\#float}{\emph{float}}) -- Desired sampling rate in Hz
+
+\item {} 
+\textbf{\texttt{state}} (\href{https://docs.python.org/library/functions.html\#str}{\emph{str}}) -- Either `Min', `Max', `Mean' or `Maxabs' to return one of            these for the chunks. Maxabs will return the largest (positive or            negative) for that chunk.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+\begin{quote}\begin{description}
+\item[{class}] \leavevmode
+obspy.Trace
+
+\end{description}\end{quote}
+
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{cumulative\_detections() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
@@ -2323,6 +2419,7 @@ and magnitudes.
 \begin{fulllineitems}
 \phantomsection\label{utils:EQcorrscan_plotting.interev_mag_sfiles}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{interev\_mag\_sfiles}}{\emph{sfiles}}{}
 Function to plot interevent-time versus magnitude for series of events.
+Wrapper for interev\_mag.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \textbf{\texttt{sfiles}} (\emph{List}) -- List of sfiles to read from
@@ -2487,13 +2584,16 @@ positive
 \index{triple\_plot() (in module EQcorrscan\_plotting)}
 
 \begin{fulllineitems}
-\phantomsection\label{utils:EQcorrscan_plotting.triple_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{triple\_plot}}{\emph{cccsum}, \emph{trace}, \emph{threshold}, \emph{save=False}, \emph{savefile='`}}{}
+\phantomsection\label{utils:EQcorrscan_plotting.triple_plot}\pysiglinewithargsret{\code{EQcorrscan\_plotting.}\bfcode{triple\_plot}}{\emph{cccsum}, \emph{cccsum\_hist}, \emph{trace}, \emph{threshold}, \emph{save=False}, \emph{savefile='`}}{}
 Main function to make a triple plot with a day-long seismogram, day-long
 correlation sum trace and histogram of the correlation sum to show normality
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{\texttt{cccsum}} (\emph{numpy.array}) -- Array of the cross-channel cross-correlation sum
+\textbf{\texttt{cccsum}} (\emph{numpy.ndarray}) -- Array of the cross-channel cross-correlation sum
+
+\item {} 
+\textbf{\texttt{ccsum\_hist}} -- cccsum for histogram plotting, can be the same as cccsum                    but included if cccsum is just an envelope.
 
 \item {} 
 \textbf{\texttt{trace}} (\emph{obspy.Trace}) -- A sample trace from the same time as cccsum
@@ -2915,28 +3015,6 @@ string
 
 \end{fulllineitems}
 
-\index{\_separation() (in module catalogue2DD)}
-
-\begin{fulllineitems}
-\phantomsection\label{utils:catalogue2DD._separation}\pysiglinewithargsret{\code{catalogue2DD.}\bfcode{\_separation}}{\emph{loc1}, \emph{loc2}}{}
-Function to calculate the distance between two points in the earth
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode\begin{itemize}
-\item {} 
-\textbf{\texttt{loc1}} (\emph{tuple (float, float, float)}) -- First point location as lat, long, depth in deg, deg, km
-
-\item {} 
-\textbf{\texttt{loc2}} (\emph{tuple (float, float, float)}) -- First point location as lat, long, depth in deg, deg, km
-
-\end{itemize}
-
-\item[{Returns}] \leavevmode
-distance in km (float)
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{readSTATION0() (in module catalogue2DD)}
 
 \begin{fulllineitems}
@@ -3113,6 +3191,7 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \indexspace
 \bigletter{m}
 \item {\texttt{mag\_calc}}, \pageref{utils:module-mag_calc}
+\item {\texttt{match\_filter\_par}}, \pageref{par:module-match_filter_par}
 \indexspace
 \bigletter{p}
 \item {\texttt{pre\_processing}}, \pageref{utils:module-pre_processing}
@@ -3120,6 +3199,9 @@ along with EQcorrscan.  If not, see \textless{}\href{http://www.gnu.org/licenses
 \bigletter{s}
 \item {\texttt{Sfile\_util}}, \pageref{utils:module-Sfile_util}
 \item {\texttt{stacking}}, \pageref{utils:module-stacking}
+\indexspace
+\bigletter{t}
+\item {\texttt{template\_gen\_par}}, \pageref{par:module-template_gen_par}
 \end{theindex}
 
 \renewcommand{\indexname}{Index}

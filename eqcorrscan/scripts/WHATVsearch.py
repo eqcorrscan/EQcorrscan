@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #------------------------------------------------------------------------------
 #   Purpose:    Script to call all elements of EQcorrscan module to search
@@ -29,7 +29,10 @@ This file is part of EQcorrscan.
 
 """
 
-import sys, os, glob
+import sys
+import os
+import glob
+
 bob=os.path.realpath(__file__)
 bob=bob.split('/')
 path='/'
@@ -44,8 +47,8 @@ from par import match_filter_par as matchdef
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import template_gen
-from utils import seismo_logs
+from eqcorrscan.core import template_gen
+from eqcorrscan.utils import seismo_logs
 
 Split=False
 instance=False
@@ -94,7 +97,8 @@ for sfile in templatedef.sfiles:
     print 'Working on: '+sfile+'\r'
     if not os.path.isfile(templatedef.saveloc+'/'+sfile+'_template.ms'):
         print sfile
-        template=template_gen.from_contbase(sfile)
+        template=template_gen.from_contbase(sfile, tempdef=templatedef, \
+                    matchdef=matchdef)
 
         print 'saving template as: '+templatedef.saveloc+'/'+\
                 str(template[0].stats.starttime)+'.ms'
@@ -304,10 +308,12 @@ for day in dates:
             template_names.append(templatedef.sfiles)
             if not os.path.isdir('temp_'+str(instance)):
                 os.makedirs('temp_'+str(instance))
+
             detections=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot,
-                                                 'temp_'+str(instance))
+                                                 matchdef=matchdef,
+                                                 tempdir='temp_'+str(instance))
 
             for detection in detections:
                 # output detections to file

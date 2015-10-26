@@ -54,13 +54,8 @@ This file is part of EQcorrscan.
 
 """
 
-import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
-
-def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
-               filt_order=None, length=None):
+def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,\
+               debug=0):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefile found in the pick file.
@@ -81,16 +76,21 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     :type filt_order: int
     :param filt_order: Filter level, if set to None will look in\
             template defaults file
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type length: float
     :param length: Extract length in seconds, if None will look in template\
             defaults file.
+    :type debug: int
+    :param debug: Debug level, higher number=more output.
     """
     # Perform some checks first
-    import os, sys
+    import os
+    import sys
     if not os.path.isfile(sfile):
         raise IOError('sfile does not exist')
 
-    from utils import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     # Read in the header of the sfile
     wavefiles=Sfile_util.readwavename(sfile)
     pathparts=sfile.split('/')[0:len(sfile.split('/'))-1]
@@ -100,9 +100,7 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
             part='WAV'
         wavpath+=part+'/'
     from obspy import read as obsread
-    from utils import pre_processing
-    from par import match_filter_par as matchdef
-    from par import template_gen_par as tempdef
+    from eqcorrscan.utils import pre_processing
     # Read in waveform file
     for wavefile in wavefiles:
         print "I am going to read waveform data from: "+wavpath+wavefile
@@ -111,7 +109,7 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
         else:
             st=obsread(wavpath+wavefile)
     for tr in st:
-        if tr.stats.sampling_rate<tempdef.samp_rate:
+        if tr.stats.sampling_rate < samp_rate:
             print 'Sampling rate of data is lower than sampling rate asked for'
             print 'As this is not good practice for correlations I will not do this'
             raise ValueError("Trace: "+tr.stats.station+" sampling rate: "+\
@@ -122,24 +120,14 @@ def from_sfile(sfile, lowcut=None, highcut=None, samp_rate=None,\
     for pick in picks:
         print pick.station+' '+pick.channel+' '+pick.phase+' '+str(pick.time)
 
-    if not lowcut:
-        lowcut=tempdef.lowcut
-    if not highcut:
-        highcut=tempdef.highcut
-    if not samp_rate:
-        samp_rate=tempdef.samp_rate
-    if not filt_order:
-        filt_order=tempdef.filter_order
     # Process waveform data
     st=pre_processing.shortproc(st, lowcut, highcut, filt_order,\
-                      samp_rate, matchdef.debug)
-    if not length:
-        length=tempdef.length
-    st1=_template_gen(picks, st, length, tempdef.swin)
+                      samp_rate, debug)
+    st1=_template_gen(picks, st, length, swin)
     return st1
 
-def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
-                  filt_order=None, length=None, prepick=None):
+def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,\
+                 length, prepick, swin, debug=0):
     """
     Function to read in picks from sfile then generate the template from the
     picks within this and the wavefiles from the continous database of day-long
@@ -153,6 +141,12 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
             containing waveform and pick information, all other arguments can \
             be numbers save for swin which must be either P, S or all \
             (case-sensitive).
+    :type contbase_list: List of tuple of string
+    :param contbase_list: List of tuples of the form ['path', 'type', 'network']\
+                    Where path is the path to the continuous database, type is\
+                    the directory structure, which can be either Yyyyy/Rjjj.01,\
+                    which is the standard IRIS Year, julian day structure, or,\
+                    yyyymmdd which is a single directory for every day.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template\
             defaults file
@@ -170,6 +164,10 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
             defaults file.
     :type prepick: float
     :param prepick: Pre-pick time in seconds
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
     """
     # Perform some checks first
     import os, sys
@@ -177,10 +175,8 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
         raise IOError('sfile does not exist')
 
     # import some things
-    from utils import Sfile_util
-    from utils import pre_processing
-    from par import match_filter_par as matchdef
-    from par import template_gen_par as tempdef
+    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import pre_processing
     import glob
     from obspy import UTCDateTime
 
@@ -199,7 +195,7 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
             pick_chans.append(pick.station+pick.channel)
             used_picks.append(pick)
             print pick
-            for contbase in matchdef.contbase:
+            for contbase in contbase_list:
                 if contbase[1] == 'yyyy/mm/dd':
                     daydir=str(day.year)+'/'+str(day.month).zfill(2)+'/'+\
                             str(day.day).zfill(2)
@@ -231,26 +227,13 @@ def from_contbase(sfile, lowcut=None, highcut=None, samp_rate=None,\
             st+=obsread(wavefile)
         else:
             st=obsread(wavefile)
-    if not lowcut:
-        lowcut=tempdef.lowcut
-    if not highcut:
-        highcut=tempdef.highcut
-    if not samp_rate:
-        samp_rate=tempdef.samp_rate
-    if not filt_order:
-        filt_order=tempdef.filter_order
     # Porcess waveform data
     st.merge(fill_value='interpolate')
     for tr in st:
         tr=pre_processing.dayproc(tr, lowcut, highcut, filt_order,\
-                                samp_rate, matchdef.debug, day)
-    if not length:
-        length=tempdef.length
-    # Cut the templates
-    if not prepick:
-        st1=_template_gen(picks, st, length, tempdef.swin)
-    else:
-        st1=_template_gen(picks, st, length, tempdef.swin, prepick=prepick)
+                                samp_rate, debug, day)
+    # Cut and extract the templates
+    st1=_template_gen(picks, st, length, swin, prepick=prepick)
     return st1
 
 
@@ -274,10 +257,9 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     :type plot: bool
     :param plot: To plot the template or not, default is True
     """
-    from utils.Sfile_util import PICK
-    from utils.EQcorrscan_plotting import pretty_template_plot as tplot
+    from eqcorrscan.utils.Sfile_util import PICK
+    from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as tplot
     from obspy import Stream
-    from par import template_gen_par as tempdef
     import copy, warnings
     stations=[]
     channels=[]

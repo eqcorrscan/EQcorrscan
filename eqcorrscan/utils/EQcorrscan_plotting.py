@@ -70,7 +70,6 @@ def chunk_data(tr, samp_rate, state='mean'):
     trout.stats.sampling_rate=samp_rate
     return trout
 
-
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
     """
     Main function to make a triple plot with a day-long seismogram, day-long
@@ -95,12 +94,12 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
         raise ValueError('cccsum and trace must have the same number of data points')
     df = trace.stats.sampling_rate
     npts = trace.stats.npts
-    t = np.arange(npts, dtype=np.float32) / (df*3600)
+    t = np.arange(npts, dtype=np.float32) / (df * 3600)
     # Generate the subplot for the seismic data
     ax1 = plt.subplot2grid((2,5), (0,0), colspan=4)
     ax1.plot(t, trace.data, 'k')
     ax1.axis('tight')
-    ax1.set_ylim([-15*np.mean(np.abs(trace.data)),15*np.mean(np.abs(trace.data))])
+    ax1.set_ylim([-15 * np.mean(np.abs(trace.data)),15 * np.mean(np.abs(trace.data))])
     # Generate the subplot for the correlation sum data
     ax2 = plt.subplot2grid((2,5), (1,0), colspan=4, sharex=ax1)
     # Plot the threshold values
@@ -108,7 +107,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
     ax2.plot([min(t), max(t)], [-threshold,-threshold], color='r', lw=1)
     ax2.plot(t, cccsum, 'k')
     ax2.axis('tight')
-    ax2.set_ylim([-1.7*threshold, 1.7*threshold])
+    ax2.set_ylim([-1.7 * threshold, 1.7 * threshold])
     ax2.set_xlabel("Time after %s [hr]" % trace.stats.starttime.isoformat())
     # ax2.legend()
     # Generate a small subplot for the histogram of the cccsum data
@@ -147,13 +146,13 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
     :param savefile: Path to save to, only used if save=True
     """
     npts=len(data)
-    t = np.arange(npts, dtype=np.float32) / (samp_rate*3600)
+    t = np.arange(npts, dtype=np.float32) / (samp_rate * 3600)
     fig=plt.figure()
     ax1=fig.add_subplot(111)
     ax1.plot(t, data, 'k')
-    ax1.scatter(peaks[0][1]/(samp_rate*3600),abs(peaks[0][0]),color='r', label='Peaks')
+    ax1.scatter(peaks[0][1] / (samp_rate * 3600),abs(peaks[0][0]),color='r', label='Peaks')
     for peak in peaks:
-        ax1.scatter(peak[1]/(samp_rate*3600),abs(peak[0]),color='r')
+        ax1.scatter(peak[1] / (samp_rate * 3600),abs(peak[0]),color='r')
     ax1.legend()
     ax1.set_xlabel("Time after %s [hr]" % starttime.isoformat())
     ax1.axis('tight')
@@ -287,7 +286,8 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
 
     :returns: Alligned and cut traces, and new picks
     """
-    import stacking, copy
+    from eqcorrscan.utils import stacking
+    import copy
     from eqcorrscan.core.match_filter import normxcorr2
     from obspy import Stream
     fig, axes = plt.subplots(len(picks)+1, 1, sharex=True, figsize=(7, 12))
@@ -326,12 +326,12 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
             continue
         traces.append(tr)
     if realign:
-        shift_len=int(0.25*(cut[1]-cut[0])*al_traces[0].stats.sampling_rate)
+        shift_len=int(0.25 * (cut[1] - cut[0]) * al_traces[0].stats.sampling_rate)
         shifts=stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print 'Shifting by '+str(shifts[i])+' seconds'
             plist[i].time-=shifts[i]
-            traces[i].trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
+            traces[i].trim(plist[i].time - pre_pick, plist[i].time + clip-pre_pick,\
                            nearest_sample=False)
     # We now have a list of traces
     traces=[(trace, trace.stats.starttime.datetime) for trace in traces]
@@ -342,7 +342,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
         tr=traces[i]
         y = tr.data
         x = np.arange(len(y))
-        x = x/tr.stats.sampling_rate # convert to seconds
+        x = x / tr.stats.sampling_rate # convert to seconds
         axes[i+1].plot(x, y, 'k', linewidth=1.1)
         # axes[i+1].set_ylabel(tr.stats.starttime.datetime.strftime('%Y/%m/%d %H:%M'),\
                              # rotation=0)
@@ -357,7 +357,7 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
             channel='*'+picks[0].channel[-1])[0]
     y = tr.data
     x = np.arange(len(y))
-    x = x/tr.stats.sampling_rate
+    x = x / tr.stats.sampling_rate
     axes[0].plot(x, y, 'r', linewidth=2.0)
     axes[0].set_ylabel('Stack', rotation=0)
     axes[0].yaxis.set_ticks([])
@@ -435,11 +435,12 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
 def interev_mag_sfiles(sfiles):
     """
     Function to plot interevent-time versus magnitude for series of events.
+    Wrapper for interev_mag.
 
     :type sfiles: List
     :param sfiles: List of sfiles to read from
     """
-    import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     times=[Sfile_util.readheader(sfile).time for sfile in sfiles]
     mags=[Sfile_util.readheader(sfile).Mag_1 for sfile in sfiles]
     interev_mag(times, mags)
