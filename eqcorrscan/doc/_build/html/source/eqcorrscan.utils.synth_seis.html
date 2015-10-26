@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>eqcorrscan.utils.synth_seis module &mdash; EQcorrscan 0.0.5 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>eqcorrscan.utils.synth_seis module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/source/eqcorrscan.utils.synth_seis.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="module-eqcorrscan.utils.synth_seis">
+<span id="eqcorrscan-utils-synth-seis-module"></span><h1>eqcorrscan.utils.synth_seis module<a class="headerlink" href="#module-eqcorrscan.utils.synth_seis" title="Permalink to this headline">¶</a></h1>
+<p>Test function to do a <strong>very</strong> basic simulation of a seismogram to see how well
+a simple model would fit with real data.</p>
+<p>Written as part of the EQcorrscan project, but not yet distributed.</p>
+<p>All copyright and ownership of this script belongs to Calum Chamberlain.</p>
+<dl class="function">
+<dt id="eqcorrscan.utils.synth_seis.SVD_sim">
+<code class="descclassname">eqcorrscan.utils.synth_seis.</code><code class="descname">SVD_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>amp_range=array([-10.</em>, <em>-9.99</em>, <em>-9.98</em>, <em>...</em>, <em>9.97</em>, <em>9.98</em>, <em>9.99])</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/synth_seis.html#SVD_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.synth_seis.SVD_sim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a basis vectors of a set of simulated seismograms with
+a range of S-P amplitude ratios.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>SP</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; S-P time in seconds - will be converted to samples according to            samp_rate</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low-cut for bandpass filter in Hz</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High-cut for bandpass filter in Hz</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+<li><strong>amp_range</strong> (<em>np.ndarray</em>) &#8211; Amplitude ratio range to generate synthetics for.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">nd.ndarray, set of output basis vectors</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="eqcorrscan.utils.synth_seis.seis_sim">
+<code class="descclassname">eqcorrscan.utils.synth_seis.</code><code class="descname">seis_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>amp_ratio=1.5</em>, <em>flength=False</em>, <em>phaseout='all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/synth_seis.html#seis_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.synth_seis.seis_sim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a simulated seismogram from a given S-P time.
+Will generate spikes separated by a given S-P time, which are then convolved
+with a decaying sine function.  The P-phase is simulated by a positive
+spike of value 1, the S-arrival is simulated by a decaying boxcar of
+maximum amplitude 1.5.  These ampitude ratios can be altered by changing
+the amp_ratio, which is the ratio S amplitude:P amplitude.</p>
+<p>Note, in testing this can achieve 0.3 or greater cross-correlations with data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>SP</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; S-P time in samples</li>
+<li><strong>amp_raio</strong> &#8211; S:P amplitude ratio</li>
+<li><strong>flength</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Fixed length in samples, defaults to False</li>
+<li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;P&#8217;, &#8216;S&#8217; or &#8216;all&#8217;, controls which phases to cut     around, defaults to &#8216;all&#8217;. Can only be used with &#8216;P&#8217; or &#8216;S&#8217; options if     flength is set.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">np.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="eqcorrscan.utils.synth_seis.template_grid">
+<code class="descclassname">eqcorrscan.utils.synth_seis.</code><code class="descname">template_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>travel_times</em>, <em>phase</em>, <em>PS_ratio=1.68</em>, <em>samp_rate=100</em>, <em>flength=False</em>, <em>phaseout='all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/synth_seis.html#template_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.synth_seis.template_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a group of synthetic seismograms to simulate phase
+arrivals from a grid of known sources in a three-dimensional model.  Lags
+must be known and supplied, these can be generated from the bright_lights
+function: read_tt, and resampled to fit the desired grid dimensions and
+spacing using other functions therein.  These synthetic seismograms are very
+simple models of seismograms using the seis_sim function herein.  These
+approximate body-wave P and S first arrivals as spikes convolved with damped
+sine waves.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<em>List</em>) &#8211; List of the station names</li>
+<li><strong>nodes</strong> (<em>list of tuple</em>) &#8211; List of node locations in (lon,lat,depth)</li>
+<li><strong>travel_times</strong> (<em>np.ndarray</em>) &#8211; Array of travel times where travel_times[i][:] refers         to the travel times for station=stations[i], and travel_times[i][j]         refers to stations[i] for nodes[j]</li>
+<li><strong>phase</strong> (<em>String</em>) &#8211; Can be either &#8216;P&#8217; or &#8216;S&#8217;</li>
+<li><strong>PS_ratio</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; P/S velocity ratio, defaults to 1.68</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sample rate in Hz, defaults to 100.0</li>
+<li><strong>flength</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Length of template in samples, defaults to False</li>
+<li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;S&#8217;, &#8216;P&#8217; or &#8216;all&#8217;, determines which phases to clip     around</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of :class:obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

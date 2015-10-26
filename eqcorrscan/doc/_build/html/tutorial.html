@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>EQcorrscan tutorial &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="index.html"/>
         <link rel="next" title="Core" href="core.html"/>
         <link rel="prev" title="Introduction to the EQcorrscan package" href="intro.html"/> 
 
@@ -77,21 +77,21 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="core.html">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-match_filter">match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-lag_calc">lag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#bright-lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#template-gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#match-filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#lag-calc">lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-Sfile_util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-pre_processing">pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-stacking">stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html#module-catalogue2DD">catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#sfile-util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#pre-processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#eqcorrscan-plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#mag-calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#catalogue2dd">catalogue2DD</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="par.html">Par</a></li>
@@ -246,9 +246,12 @@ your call.</p>
 
 <span class="c"># First we import the required modules:</span>
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">Stream</span>
-<span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">template_gen</span><span class="p">,</span> <span class="n">match_filter</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.core</span> <span class="kn">import</span> <span class="n">template_gen</span><span class="p">,</span> <span class="n">match_filter</span>
+<span class="c"># Before calling these module imports for parameter files you should insert</span>
+<span class="c"># your own path into sys.path so that we find your parameter files.</span>
 <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span><span class="p">,</span> <span class="n">Sfile_util</span>
+<span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span><span class="p">,</span> <span class="n">Sfile_util</span>
 <span class="kn">import</span> <span class="nn">glob</span>
 
 <span class="c"># Now we find the s-file we want to use to generate a template from</span>
@@ -288,7 +291,8 @@ your call.</p>
     <span class="c"># Apply a small amoutn of delay before the pick</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="mf">0.1</span>
-    <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">)</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">,</span>\
+                                        <span class="n">tempdef</span><span class="o">=</span><span class="n">templatedef</span><span class="p">)</span>
     <span class="c"># This will generate an obspy.Stream object</span>
     <span class="c"># Append this Stream to the list of templates</span>
     <span class="n">templates</span><span class="o">+=</span><span class="p">[</span><span class="n">template</span><span class="p">]</span>
@@ -389,7 +393,7 @@ your call.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

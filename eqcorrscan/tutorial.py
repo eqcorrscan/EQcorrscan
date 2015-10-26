@@ -38,9 +38,12 @@ This file is part of EQcorrscan.
 
 # First we import the required modules:
 from obspy import read, Stream
-from core import template_gen, match_filter
+from eqcorrscan.core import template_gen, match_filter
+# Before calling these module imports for parameter files you should insert
+# your own path into sys.path so that we find your parameter files.
 from par import match_filter_par as matchdef
-from utils import pre_processing, Sfile_util
+from par import template_gen_par as templatedef
+from eqcorrscan.utils import pre_processing, Sfile_util
 import glob
 
 # Now we find the s-file we want to use to generate a template from
@@ -80,7 +83,8 @@ for sfile in sfiles:
     # Apply a small amoutn of delay before the pick
     for pick in picks:
         pick.time=pick.time-0.1
-    template=template_gen._template_gen(picks, st, 1.0, 'all')
+    template=template_gen._template_gen(picks, st, 1.0, 'all',\
+                                        tempdef=templatedef)
     # This will generate an obspy.Stream object
     # Append this Stream to the list of templates
     templates+=[template]

@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>eqcorrscan.core.thresholding &mdash; EQcorrscan 0.0.5 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>eqcorrscan.core.thresholding</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for eqcorrscan.core.thresholding</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Part of the EQcorrscan package written by Calum Chamberlain of Victoria</span>
+<span class="sd">University of Wellington in 2015.  The main goal of this package is to generate</span>
+<span class="sd">waveform templates from continuous data and search for repeats of this waveform</span>
+<span class="sd">in continuous data using a match-filter cross-correlation routine.</span>
+
+<span class="sd">The prupose of this module specifically is to determine thresholds for the use</span>
+<span class="sd">in various detection routines within the core modules.</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
+
+<div class="viewcode-block" id="coherence_test"><a class="viewcode-back" href="../../../source/eqcorrscan.core.thresholding.html#eqcorrscan.core.thresholding.coherence_test">[docs]</a><span class="k">def</span> <span class="nf">coherence_test</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">wlen</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to determine how the coherence of a day of contious multi-channel,</span>
+<span class="sd">    multi-station seismic data varies with varying grid nodes.  It would be</span>
+<span class="sd">    wise to apply this to a day of seismic data thought to be quiet from within</span>
+<span class="sd">    the grid given, and to a day thought to be loud with energy sources within</span>
+<span class="sd">    the grid to see how this function varies.</span>
+
+<span class="sd">    :type stream: obspy.Stream</span>
+<span class="sd">    :param stream: Day of multi-channel, multi-station seismic data</span>
+<span class="sd">    :type stations: list of str</span>
+<span class="sd">    :param station: List fo the stations in the same order as the delays</span>
+<span class="sd">    :type nodes: list of tuple</span>
+<span class="sd">    :param nodes: A list of the node points as (lat, lon, depth)</span>
+<span class="sd">    :type lags: np.array</span>
+<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to station[i] for all</span>
+<span class="sd">                nodes and lags[i][j] refers to the lag for station[i] at node[j]</span>
+<span class="sd">                should be in seconds.</span>
+<span class="sd">    :type wlen: int</span>
+<span class="sd">    :param wlen: Length of window to determine coherence for - should be the</span>
+<span class="sd">                same as your determined template length - in seconds</span>
+
+<span class="sd">    :return: coherence, array of arrays where coherence[i][:] refers to the</span>
+<span class="sd">            running daily coherence at node[i]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">core.bright_lights</span> <span class="kn">import</span> <span class="n">coherence</span>
+    <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="c"># Convert wlen to samples</span>
+    <span class="n">wlen</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">wlen</span> <span class="o">*</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
+    <span class="c">#Set up coherence array</span>
+    <span class="n">dailycoherence</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="n">wlen</span><span class="p">))]</span>\
+            <span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c"># Use half precision as we don&#39;t need</span>
+                                        <span class="c"># true doubles</span>
+    <span class="c"># Keep a sacred copy of the stream, as we will be applying the lags</span>
+    <span class="c"># directly to a copy of this</span>
+    <span class="n">copyof_stream</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;% </span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stations</span><span class="p">)):</span>
+            <span class="c">#Apply delays</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="n">copyof_stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span> <span class="o">=</span> <span class="n">stations</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">lags</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">):]</span>
+                <span class="n">pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lags</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">))</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pad</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dailycoherence</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="c"># Compute the coherence for each window</span>
+            <span class="n">window</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">copyof_stream</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">window</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">:</span><span class="n">j</span><span class="o">+</span><span class="n">wlen</span><span class="p">]</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">dailycoherence</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;% </span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">dailycoherence</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">coherence</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dailycoherence</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;Needs arguments, e.g. --coherence 2009/07/14&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;--coherence&quot;</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="kn">import</span> <span class="nn">glob</span>
+            <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
+            <span class="n">stream</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="s">&#39;test_data/*&#39;</span><span class="o">+</span><span class="n">date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
+                    <span class="n">date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span><span class="n">date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;-processed.ms&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">os</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">-</span><span class="mi">5</span><span class="p">])</span>
+                <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">templatedef</span>
+                <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">bright_lights_par</span> <span class="k">as</span> <span class="n">brightdef</span>
+                <span class="kn">from</span> <span class="nn">core</span> <span class="kn">import</span> <span class="n">bright_lights</span>
+                <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span> <span class="k">as</span> <span class="n">plotting</span>
+                <span class="c"># Use the brightness function to search for possible templates</span>
+                <span class="c"># First read in the travel times</span>
+                <span class="k">print</span> <span class="s">&#39;Reading in the original grids&#39;</span>
+                <span class="n">stations</span><span class="p">,</span> <span class="n">allnodes</span><span class="p">,</span> <span class="n">alllags</span> <span class="o">=</span> \
+                        <span class="n">bright_lights</span><span class="o">.</span><span class="n">_read_tt</span><span class="p">(</span><span class="n">brightdef</span><span class="o">.</span><span class="n">nllpath</span><span class="p">,</span><span class="n">brightdef</span><span class="o">.</span><span class="n">stations</span><span class="p">,</span>\
+                                    <span class="n">brightdef</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+                <span class="c"># Resample the grid to allow us to run it quickly!</span>
+                <span class="k">print</span> <span class="s">&#39;Cutting the grid&#39;</span>
+                <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span> <span class="o">=</span> <span class="n">bright_lights</span><span class="o">.</span><span class="n">_resample_grid</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">allnodes</span><span class="p">,</span>
+                                                     <span class="n">alllags</span><span class="p">,</span>
+                                                     <span class="n">brightdef</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
+                                                     <span class="n">brightdef</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+                <span class="c"># Remove lags that have a similar network moveout, e.g. the sum of the</span>
+                <span class="c"># differences in moveouts is small.</span>
+                <span class="k">print</span> <span class="s">&quot;Removing simlar lags&quot;</span>
+                <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span> <span class="o">=</span> <span class="n">bright_lights</span><span class="o">.</span><span class="n">_rm_similarlags</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span>
+                                                      <span class="n">brightdef</span><span class="o">.</span><span class="n">nodesimthresh</span><span class="p">)</span>
+                <span class="k">print</span> <span class="s">&quot;Plotting new grid&quot;</span>
+                <span class="n">plotting</span><span class="o">.</span><span class="n">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+                <span class="n">dailycoherence</span> <span class="o">=</span> <span class="n">coherence_test</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> \
+                                <span class="n">templatedef</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;No traces read in for this day, are they processed?&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;I only know --coherence at the moment&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -226,7 +226,6 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     print "Removed "+str(len(nodes)-len(nodes_out))+" duplicate nodes"
     return stations, nodes_out, lags_out
 
-
 def _node_loop(stations, lags, stream, clip_level, \
                 i=0, mem_issue=False, instance=0, plot=False):
     """
@@ -359,8 +358,6 @@ def _cum_net_resp(node_lis, instance=0):
         os.remove('tmp'+str(instance)+'/node_'+str(i)+'.npy')
     return cum_net_resp, indeces
 
-
-
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type,\
                     samp_rate, realstations, length):
     """
@@ -472,8 +469,10 @@ def coherence(stream_in, stations=['all'], clip=False):
     return coherence, len(stream)
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
-               coherence_thresh, instance=0, matchdef=False, defaults=False,\
-               brightdef=False, pre_pick=0.2):
+               template_length, template_saveloc, coherence_thresh,\
+               coherance_stations=['all'], coherance_clip=False,\
+               gap=2.0, clip_level=100, instance=0, pre_pick=0.2, plotsave=True,\
+               cores=1):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -499,28 +498,44 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
     :type thresh_type: str
     :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
     Deviation and abs is an absoulte brightness.
+    :type template_length: float
+    :param template_length: Length of template to extract in seconds
+    :type template_saveloc: str
+    :param template_saveloc: Path of where to save the templates.
     :type coherence_thresh: tuple of floats
     :param coherence_thresh: Threshold for removing incoherant peaks in the\
             network response, those below this will not be used as templates.\
             Must be in the form of (a,b) where the coherence is given by:\
             a-kchan/b where kchan is the number of channels used to compute\
             the coherence
-    :param matchdef: Match-filter filter defaults from a match_filter_par file
-    :param defaults: Template generation defaults from a template_gen_par file
-    :param brightdef: Bright_lights_par file defaults
+    :type coherance_stations: list
+    :param coherance_stations: List of stations to use in the coherance\
+            thresholding - defaults to 'all' which uses all the stations.
+    :type coherance_clip: float
+    :param coherance_clip: tuple
+    :type coherance_clip: Start and end in seconds of data to window around,\
+            defaults to False, which uses all the data given.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
+    :type plotsave: bool
+    :param plotsave: Save or show plots, if False will try and show the plots\
+            on screen - as this is designed for bulk use this is set to\
+            True to save any plots rather than show them if you create\
+            them - changes the backend of matplotlib, so if is set to\
+            False you will see NO PLOTS!
+    :type cores: int
+    :param core: Number of cores to use, defaults to 1.
+    :type clip_level: float
+    :param clip_level: Multiplier applied to the mean deviation of the energy\
+                    as an upper limit, used to remove spikes (earthquakes, \
+                    lightning, electircal spikes) from the energy stack.
+    :type gap: float
+    :param gap: Minimum inter-event time in seconds for detections
 
     :return: list of templates as :class: `obspy.Stream` objects
     """
     from eqcorrscan.core.template_gen import _template_gen
-    if not defaults:
-        from eqcorrscan.par import template_gen_par as defaults
-    if not matchdef:
-        from eqcorrscan.par import match_filter_par as matchdef
-    if not brightdef:
-        from eqcorrscan.par import bright_lights_par as brightdef
-    if brightdef.plotsave:
+    if plotsave:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
@@ -580,7 +595,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         print np.shape(energy)
     else:
         # Parallel run
-        num_cores=brightdef.cores
+        num_cores=cores
         if num_cores > len(nodes):
             num_cores=len(nodes)
         if num_cores > cpu_count():
@@ -588,7 +603,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_node_loop, args=(stations,\
                                                     lags[:,i], stream, i,\
-                                                    brightdef.clip_level,\
+                                                    clip_level,\
                                                     mem_issue, instance))\
                                   for i in xrange(len(nodes))]
         pool.close()
@@ -658,7 +673,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
     # Find detection within this network response
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
-                     stream[0].stats.sampling_rate, realstations, brightdef.gap)
+                     stream[0].stats.sampling_rate, realstations, gap)
     del cum_net_resp
     templates=[]
     nodesout=[]
@@ -699,13 +714,13 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
                                           CAZ=''))
                 i+=1
             print 'Generating template for detection: '+str(j)
-            template=(_template_gen(picks, copy_of_stream, defaults.length, 'all'))
-            template_name=defaults.saveloc+'/'+\
+            template=(_template_gen(picks, copy_of_stream, template_length, 'all'))
+            template_name=template_saveloc+'/'+\
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            temp_coher, kchan=coherence(template, brightdef.coherence_stations,\
-                                 brightdef.coherence_clip)
+            temp_coher, kchan=coherence(template, coherence_stations,\
+                                 coherence_clip)
             coh_thresh=float(coherence_thresh[0]) - kchan / \
                         float(coherence_thresh[1])
             if temp_coher > coh_thresh:
@@ -732,7 +747,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         good_detections=[(cum_net_trace[-1].stats.starttime+\
                           detection.detect_time).datetime \
                          for detection in good_detections]
-        if not brightdef.plotsave:
+        if not plotsave:
             plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]),\
                              detections=good_detections,\
                              # false_detections=all_detections,\
