@@ -1,0 +1,9 @@
+# Annoyingly, although the long-description is found by setup.py it is not included
+# in pypi's archive of the package, we need to include it here...
+
+include README.md
+recursive-include eqcorrscan
+
+# exclude rules
+global-exclude *.pyc
+prune eqcorrscan/docs
