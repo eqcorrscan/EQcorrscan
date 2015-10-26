@@ -86,7 +86,9 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,\
     nodes[n][n] is a tuple of latitude, longitude and depth
     """
 
-    import glob, sys, csv
+    import glob
+    import sys
+    import csv
 
     # Locate the slowness file information
     gridfiles=[]
@@ -224,9 +226,8 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     print "Removed "+str(len(nodes)-len(nodes_out))+" duplicate nodes"
     return stations, nodes_out, lags_out
 
-
-def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
-               plot=False):
+def _node_loop(stations, lags, stream, clip_level, \
+                i=0, mem_issue=False, instance=0, plot=False):
     """
     Internal function to allow for parallelisation of brightness
 
@@ -236,6 +237,8 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
     :param lags: List of lags where lags[i[:]] are the lags for stations[i]
     :type stream: :class: `obspy.Stream`
     :param stream: Data stream to find the brightness for
+    :type clip_level: float
+    :param clip_level: Upper limit for energy as a multiplier to the mean energy
     :type i: int
     :param i: Index of loop for parallelisation
     :type mem_issue: bool
@@ -247,7 +250,6 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
 
     :return: (i, energy (np.ndarray))
     """
-    from par import bright_lights_par as brightdef
     import warnings
     if plot:
         from obspy import Trace, Stream
@@ -266,12 +268,14 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
             warnings.warn('No station match')
             continue
         lag=lags[j[0]]
-        pad=np.zeros(int(round(lag*tr.stats.sampling_rate)))
+        pad=np.zeros(int(round(lag * tr.stats.sampling_rate)))
         lagged_energy=np.square(np.concatenate((tr.data, pad)))[len(pad):]
         # Clip energy
-        lagged_energy=np.clip(lagged_energy, 0, brightdef.clip_level*np.mean(lagged_energy))
+        lagged_energy=np.clip(lagged_energy, 0, \
+                        clip_level * np.mean(lagged_energy))
         if not 'energy' in locals():
-            energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
+            energy=(lagged_energy / \
+                    np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
             # Cope with zeros enountered
             energy=np.nan_to_num(energy)
             # This is now an array of floats - we can convert this to int16
@@ -282,18 +286,19 @@ def _node_loop(stations, lags, stream, i=0, mem_issue=False, instance=0,\
             else:
                 energy=energy.astype(np.int16)
         else:
-            norm_energy=(lagged_energy/np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
+            norm_energy=(lagged_energy / \
+                        np.sqrt(np.mean(np.square(lagged_energy)))).reshape(1,len(lagged_energy))
             norm_energy=np.nan_to_num(norm_energy)
             # Convert to int16
             if not max(norm_energy[0])==0.0:
-                scalor=1/max(norm_energy[0])
-                norm_energy=(500*(norm_energy*scalor)).astype(np.int16)
+                scalor=1 / max(norm_energy[0])
+                norm_energy=(500 * (norm_energy * scalor)).astype(np.int16)
             else:
                 norm_energy=norm_energy.astype(np.int16)
             # Apply lag to data and add it to energy - normalize the data here
             energy=np.concatenate((energy,norm_energy), axis=0)
         if plot:
-            axes[l].plot(lagged_energy*200, 'r')
+            axes[l].plot(lagged_energy * 200, 'r')
             axes[l].plot(tr.data, 'k')
             # energy_tr=Trace(energy[l])
             energy_tr=Trace(lagged_energy)
@@ -353,8 +358,6 @@ def _cum_net_resp(node_lis, instance=0):
         os.remove('tmp'+str(instance)+'/node_'+str(i)+'.npy')
     return cum_net_resp, indeces
 
-
-
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type,\
                     samp_rate, realstations, length):
     """
@@ -380,8 +383,9 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,\
 
     :return: detections as :class: DETECTION
     """
-    from utils import findpeaks
-    from core.match_filter import DETECTION
+    from eqcorrscan.utils import findpeaks
+    from eqcorrscan.core.match_filter import DETECTION
+
     cum_net_resp = np.nan_to_num(cum_net_resp) # Force no NaNs
     if np.isnan(cum_net_resp).any():
         raise ValueError("Nans present")
@@ -389,15 +393,15 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,\
     print 'RMS of data is: '+str(np.sqrt(np.mean(np.square(cum_net_resp))))
     print 'MAD of data is: '+str(np.median(np.abs(cum_net_resp)))
     if thresh_type=='MAD':
-        thresh=(np.median(np.abs(cum_net_resp))*threshold) # Raise to the power
+        thresh=(np.median(np.abs(cum_net_resp)) * threshold) # Raise to the power
     elif thresh_type=='abs':
         thresh=threshold
     elif thresh_type=='RMS':
-        thresh=(np.sqrt(np.mean(np.square(cum_net_resp))))*threshold
+        thresh=(np.sqrt(np.mean(np.square(cum_net_resp)))) * threshold
     print 'Threshold is set to: '+str(thresh)
     print 'Max of data is: '+str(max(cum_net_resp))
     peaks=findpeaks.find_peaks2(cum_net_resp, thresh,
-                    length*samp_rate, debug=0, maxwidth=10)
+                    length * samp_rate, debug=0, maxwidth=10)
     detections=[]
     if peaks:
         for peak in peaks:
@@ -461,12 +465,14 @@ def coherence(stream_in, stations=['all'], clip=False):
     for i in xrange(len(stream)):
         for j in xrange(i+1,len(stream)):
             coherence+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
-    coherence=2*coherence/(len(stream)*(len(stream)-1))
+    coherence=2 * coherence / (len(stream) * (len(stream) - 1))
     return coherence, len(stream)
 
-def brightness(stations, nodes, lags, stream, threshold, thresh_type,
-        coherence_thresh, instance=0, matchdef=False, defaults=False,\
-               pre_pick=0.2):
+def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
+               template_length, template_saveloc, coherence_thresh,\
+               coherance_stations=['all'], coherance_clip=False,\
+               gap=2.0, clip_level=100, instance=0, pre_pick=0.2, plotsave=True,\
+               cores=1):
     """
     Function to calculate the brightness function in terms of energy for a day
     of data over the entire network for a given grid of nodes.
@@ -492,36 +498,56 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :type thresh_type: str
     :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
     Deviation and abs is an absoulte brightness.
+    :type template_length: float
+    :param template_length: Length of template to extract in seconds
+    :type template_saveloc: str
+    :param template_saveloc: Path of where to save the templates.
     :type coherence_thresh: tuple of floats
     :param coherence_thresh: Threshold for removing incoherant peaks in the\
             network response, those below this will not be used as templates.\
             Must be in the form of (a,b) where the coherence is given by:\
             a-kchan/b where kchan is the number of channels used to compute\
             the coherence
+    :type coherance_stations: list
+    :param coherance_stations: List of stations to use in the coherance\
+            thresholding - defaults to 'all' which uses all the stations.
+    :type coherance_clip: float
+    :param coherance_clip: tuple
+    :type coherance_clip: Start and end in seconds of data to window around,\
+            defaults to False, which uses all the data given.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
+    :type plotsave: bool
+    :param plotsave: Save or show plots, if False will try and show the plots\
+            on screen - as this is designed for bulk use this is set to\
+            True to save any plots rather than show them if you create\
+            them - changes the backend of matplotlib, so if is set to\
+            False you will see NO PLOTS!
+    :type cores: int
+    :param core: Number of cores to use, defaults to 1.
+    :type clip_level: float
+    :param clip_level: Multiplier applied to the mean deviation of the energy\
+                    as an upper limit, used to remove spikes (earthquakes, \
+                    lightning, electircal spikes) from the energy stack.
+    :type gap: float
+    :param gap: Minimum inter-event time in seconds for detections
 
     :return: list of templates as :class: `obspy.Stream` objects
     """
-    from core.template_gen import _template_gen
-    if not defaults:
-        from par import template_gen_par as defaults
-    if not matchdef:
-        from par import match_filter_par as matchdef
-    from par import bright_lights_par as brightdef
-    if brightdef.plotsave:
+    from eqcorrscan.core.template_gen import _template_gen
+    if plotsave:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         plt.ioff()
     # from joblib import Parallel, delayed
     from multiprocessing import Pool, cpu_count
-    from utils.Sfile_util import PICK
+    from eqcorrscan.utils.Sfile_util import PICK
     import sys, os
     from copy import deepcopy
     from obspy import read as obsread, Stream
     import matplotlib.pyplot as plt
-    from utils import EQcorrscan_plotting as plotting
+    from eqcorrscan.utils import EQcorrscan_plotting as plotting
     # Check that we actually have the correct stations
     realstations=[]
     for station in stations:
@@ -534,7 +560,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     for tr in stream_copy:
         # int16 max range is +/- 32767
         if max(abs(tr.data)) > 32767:
-            tr.data=32767*(tr.data/max(abs(tr.data)))
+            tr.data=32767 * (tr.data / max(abs(tr.data)))
             # Make sure that the data aren't clipped it they are high gain - scale the data
         tr.data=tr.data.astype(np.int16)
     # The internal _node_loop converts energy to int16 too to converse memory,
@@ -569,7 +595,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         print np.shape(energy)
     else:
         # Parallel run
-        num_cores=brightdef.cores
+        num_cores=cores
         if num_cores > len(nodes):
             num_cores=len(nodes)
         if num_cores > cpu_count():
@@ -577,6 +603,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_node_loop, args=(stations,\
                                                     lags[:,i], stream, i,\
+                                                    clip_level,\
                                                     mem_issue, instance))\
                                   for i in xrange(len(nodes))]
         pool.close()
@@ -595,7 +622,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         print energy.shape
         indeces=np.argmax(energy, axis=0) # Indeces of maximum energy
         print indeces.shape
-        cum_net_resp=np.array([np.nan]*len(indeces))
+        cum_net_resp=np.array([np.nan] * len(indeces))
         cum_net_resp[0]=energy[indeces[0]][0]
         peak_nodes=[nodes[indeces[0]]]
         for i in xrange(1, len(indeces)):
@@ -607,8 +634,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         node_splits=len(nodes)/num_cores
         indeces=[range(node_splits)]
         for i in xrange(1,num_cores-1):
-            indeces.append(range(node_splits*i, node_splits*(i+1)))
-        indeces.append(range(node_splits*(i+1), len(nodes)))
+            indeces.append(range(node_splits * i, node_splits * (i + 1)))
+        indeces.append(range(node_splits * (i + 1), len(nodes)))
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_cum_net_resp, args=(indeces[i], instance))\
                                   for i in xrange(num_cores)]
@@ -646,7 +673,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     # Find detection within this network response
     print 'Finding detections in the cumulatve network response'
     detections=_find_detections(cum_net_resp, peak_nodes, threshold, thresh_type,\
-                     stream[0].stats.sampling_rate, realstations, brightdef.gap)
+                     stream[0].stats.sampling_rate, realstations, gap)
     del cum_net_resp
     templates=[]
     nodesout=[]
@@ -687,14 +714,15 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                           CAZ=''))
                 i+=1
             print 'Generating template for detection: '+str(j)
-            template=(_template_gen(picks, copy_of_stream, defaults.length, 'all'))
-            template_name=defaults.saveloc+'/'+\
+            template=(_template_gen(picks, copy_of_stream, template_length, 'all'))
+            template_name=template_saveloc+'/'+\
                     str(template[0].stats.starttime)+'.ms'
                 # In the interests of RAM conservation we write then read
             # Check coherancy here!
-            temp_coher, kchan=coherence(template, brightdef.coherence_stations,\
-                                 brightdef.coherence_clip)
-            coh_thresh=float(coherence_thresh[0])-kchan/float(coherence_thresh[1])
+            temp_coher, kchan=coherence(template, coherence_stations,\
+                                 coherence_clip)
+            coh_thresh=float(coherence_thresh[0]) - kchan / \
+                        float(coherence_thresh[1])
             if temp_coher > coh_thresh:
                 template.write(template_name,format="MSEED")
                 print 'Written template as: '+template_name
@@ -719,7 +747,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         good_detections=[(cum_net_trace[-1].stats.starttime+\
                           detection.detect_time).datetime \
                          for detection in good_detections]
-        if not brightdef.plotsave:
+        if not plotsave:
             plotting.NR_plot(cum_net_trace[0:-1], Stream(cum_net_trace[-1]),\
                              detections=good_detections,\
                              # false_detections=all_detections,\

@@ -27,6 +27,7 @@ This file is part of EQcorrscan.
 """
 
 import numpy as np
+
 def linstack(streams):
     """
     Function to compute the linear stack of a series of seismic streams of

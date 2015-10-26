@@ -31,6 +31,7 @@ This file is part of EQcorrscan.
 
 from obspy import UTCDateTime
 import numpy as np
+
 class PICK:
     """
     Pick information for seisan implimentation
@@ -375,7 +376,10 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     """
 
     from obspy import read as obsread
-    import sys,os, datetime
+    import sys
+    import os
+    import datetime
+    
     if not evtime:
         try:
             st=obsread(wavefile)

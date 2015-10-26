@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 #SBATCH -J BrightnessTremor
 #SBATCH -A nesi00219
 #SBATCH --time=04:00:00

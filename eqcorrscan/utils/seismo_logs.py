@@ -93,7 +93,8 @@ def check_all_logs(directory, time_thresh):
     :returns: List of :class: datetime.datetime for which timing is above\
             threshold
     """
-    import glob, sys
+    import glob
+    import sys
     import datetime as dt
     log_files=glob.glob(directory+'/*/0/000000000_00000000')
     print 'I have '+str(len(log_files))+' log files to scan'

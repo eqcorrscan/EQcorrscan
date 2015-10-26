@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #------------------------------------------------------------------------------
 #   Purpose:    Script to call all elements of EQcorrscan module to search
