@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>mag_calc &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>mag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -171,12 +171,12 @@
 <span class="sd">    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">R</span><span class="o">=</span><span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
-    <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-    <span class="n">dlong</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="n">ddepth</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">loc2</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">mean_lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">((</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">dist</span><span class="o">=</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dlat</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">mean_lat</span><span class="p">)</span><span class="o">*</span><span class="n">dlong</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dist</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">ddepth</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dlat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">dlong</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">ddepth</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">mean_lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span> <span class="p">(</span> <span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">dlat</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">mean_lat</span> <span class="p">)</span> <span class="o">*</span> <span class="n">dlong</span> <span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">dist</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">ddepth</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
 <div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
@@ -436,10 +436,7 @@
     <span class="c"># Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of</span>
     <span class="c"># 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow</span>
     <span class="n">ps_multiplier</span><span class="o">=</span><span class="mf">0.34</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
     <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">iirfilter</span>
     <span class="kn">from</span> <span class="nn">obspy.signal.invsim</span> <span class="kn">import</span> <span class="n">paz2AmpValueOfFreqResp</span>
@@ -674,7 +671,8 @@
     	<span class="n">wavepath</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
     <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
     	<span class="n">wavepath</span><span class="o">=</span><span class="bp">None</span>
-    <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">shutil</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+    <span class="kn">import</span> <span class="nn">shutil</span>
     <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">startdate</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">),</span> <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
@@ -741,7 +739,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
