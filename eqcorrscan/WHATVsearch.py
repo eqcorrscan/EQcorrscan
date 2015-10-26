@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #------------------------------------------------------------------------------
 #   Purpose:    Script to call all elements of EQcorrscan module to search
@@ -29,7 +29,9 @@ This file is part of EQcorrscan.
 
 """
 
-import sys, os, glob
+import sys
+import os
+import glob
 bob=os.path.realpath(__file__)
 bob=bob.split('/')
 path='/'
@@ -44,8 +46,8 @@ from par import match_filter_par as matchdef
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import template_gen
-from utils import seismo_logs
+from eqcorrscan.core import template_gen
+from eqcorrscan.utils import seismo_logs
 import datetime as dt
 
 Split=False

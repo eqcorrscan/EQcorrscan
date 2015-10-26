@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>template_gen &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>template_gen &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -186,13 +186,8 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">sys</span><span class="o">,</span><span class="nn">inspect</span>
-<span class="n">currentdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">currentframe</span><span class="p">())))</span>
-<span class="n">parentdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">currentdir</span><span class="p">)</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">parentdir</span><span class="p">)</span>
-
-<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../modules.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>\
-               <span class="n">filt_order</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../modules.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span>\
+               <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
 <span class="sd">    picks within this and the wavefile found in the pick file.</span>
@@ -213,16 +208,21 @@
 <span class="sd">    :type filt_order: int</span>
 <span class="sd">    :param filt_order: Filter level, if set to None will look in\</span>
 <span class="sd">            template defaults file</span>
+<span class="sd">    :type swin: str</span>
+<span class="sd">    :param swin: Either &#39;all&#39;, &#39;P&#39; or &#39;S&#39;, to select which phases to output.</span>
 <span class="sd">    :type length: float</span>
 <span class="sd">    :param length: Extract length in seconds, if None will look in template\</span>
 <span class="sd">            defaults file.</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug level, higher number=more output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Perform some checks first</span>
-    <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;sfile does not exist&#39;</span><span class="p">)</span>
 
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
     <span class="c"># Read in the header of the sfile</span>
     <span class="n">wavefiles</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readwavename</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
     <span class="n">pathparts</span><span class="o">=</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -232,9 +232,7 @@
             <span class="n">part</span><span class="o">=</span><span class="s">&#39;WAV&#39;</span>
         <span class="n">wavpath</span><span class="o">+=</span><span class="n">part</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">obsread</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">tempdef</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
     <span class="c"># Read in waveform file</span>
     <span class="k">for</span> <span class="n">wavefile</span> <span class="ow">in</span> <span class="n">wavefiles</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&quot;I am going to read waveform data from: &quot;</span><span class="o">+</span><span class="n">wavpath</span><span class="o">+</span><span class="n">wavefile</span>
@@ -243,7 +241,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">wavpath</span><span class="o">+</span><span class="n">wavefile</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">&lt;</span><span class="n">tempdef</span><span class="o">.</span><span class="n">samp_rate</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">&lt;</span> <span class="n">samp_rate</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&#39;Sampling rate of data is lower than sampling rate asked for&#39;</span>
             <span class="k">print</span> <span class="s">&#39;As this is not good practice for correlations I will not do this&#39;</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Trace: &quot;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&quot; sampling rate: &quot;</span><span class="o">+</span>\
@@ -254,24 +252,14 @@
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">:</span>
         <span class="k">print</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">lowcut</span><span class="p">:</span>
-        <span class="n">lowcut</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">lowcut</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">highcut</span><span class="p">:</span>
-        <span class="n">highcut</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">highcut</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">samp_rate</span><span class="p">:</span>
-        <span class="n">samp_rate</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">samp_rate</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">filt_order</span><span class="p">:</span>
-        <span class="n">filt_order</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">filter_order</span>
     <span class="c"># Process waveform data</span>
     <span class="n">st</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
-                      <span class="n">samp_rate</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">length</span><span class="p">:</span>
-        <span class="n">length</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">length</span>
-    <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">)</span>
+                      <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+    <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
 </div>
-<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../modules.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>\
-                  <span class="n">filt_order</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../modules.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">contbase_list</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
+                 <span class="n">length</span><span class="p">,</span> <span class="n">prepick</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
 <span class="sd">    picks within this and the wavefiles from the continous database of day-long</span>
@@ -285,6 +273,12 @@
 <span class="sd">            containing waveform and pick information, all other arguments can \</span>
 <span class="sd">            be numbers save for swin which must be either P, S or all \</span>
 <span class="sd">            (case-sensitive).</span>
+<span class="sd">    :type contbase_list: List of tuple of string</span>
+<span class="sd">    :param contbase_list: List of tuples of the form [&#39;path&#39;, &#39;type&#39;, &#39;network&#39;]\</span>
+<span class="sd">                    Where path is the path to the continuous database, type is\</span>
+<span class="sd">                    the directory structure, which can be either Yyyyy/Rjjj.01,\</span>
+<span class="sd">                    which is the standard IRIS Year, julian day structure, or,\</span>
+<span class="sd">                    yyyymmdd which is a single directory for every day.</span>
 <span class="sd">    :type lowcut: float</span>
 <span class="sd">    :param lowcut: Low cut (Hz), if set to None will look in template\</span>
 <span class="sd">            defaults file</span>
@@ -302,6 +296,10 @@
 <span class="sd">            defaults file.</span>
 <span class="sd">    :type prepick: float</span>
 <span class="sd">    :param prepick: Pre-pick time in seconds</span>
+<span class="sd">    :type swin: str</span>
+<span class="sd">    :param swin: Either &#39;all&#39;, &#39;P&#39; or &#39;S&#39;, to select which phases to output.</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Level of debugging output, higher=more</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Perform some checks first</span>
     <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
@@ -309,10 +307,8 @@
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;sfile does not exist&#39;</span><span class="p">)</span>
 
     <span class="c"># import some things</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">match_filter_par</span> <span class="k">as</span> <span class="n">matchdef</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">tempdef</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 
@@ -331,7 +327,7 @@
             <span class="n">pick_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
             <span class="n">used_picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
             <span class="k">print</span> <span class="n">pick</span>
-            <span class="k">for</span> <span class="n">contbase</span> <span class="ow">in</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">contbase</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">contbase</span> <span class="ow">in</span> <span class="n">contbase_list</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">contbase</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;yyyy/mm/dd&#39;</span><span class="p">:</span>
                     <span class="n">daydir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>\
                             <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
@@ -363,26 +359,13 @@
             <span class="n">st</span><span class="o">+=</span><span class="n">obsread</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">st</span><span class="o">=</span><span class="n">obsread</span><span class="p">(</span><span class="n">wavefile</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">lowcut</span><span class="p">:</span>
-        <span class="n">lowcut</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">lowcut</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">highcut</span><span class="p">:</span>
-        <span class="n">highcut</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">highcut</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">samp_rate</span><span class="p">:</span>
-        <span class="n">samp_rate</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">samp_rate</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">filt_order</span><span class="p">:</span>
-        <span class="n">filt_order</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">filter_order</span>
     <span class="c"># Porcess waveform data</span>
     <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
-                                <span class="n">samp_rate</span><span class="p">,</span> <span class="n">matchdef</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">length</span><span class="p">:</span>
-        <span class="n">length</span><span class="o">=</span><span class="n">tempdef</span><span class="o">.</span><span class="n">length</span>
-    <span class="c"># Cut the templates</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">prepick</span><span class="p">:</span>
-        <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">tempdef</span><span class="o">.</span><span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="n">prepick</span><span class="p">)</span>
+                                <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+    <span class="c"># Cut and extract the templates</span>
+    <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="n">prepick</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
 
 </div>
@@ -406,10 +389,9 @@
 <span class="sd">    :type plot: bool</span>
 <span class="sd">    :param plot: To plot the template or not, default is True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
-    <span class="kn">from</span> <span class="nn">utils.EQcorrscan_plotting</span> <span class="kn">import</span> <span class="n">pretty_template_plot</span> <span class="k">as</span> <span class="n">tplot</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.EQcorrscan_plotting</span> <span class="kn">import</span> <span class="n">pretty_template_plot</span> <span class="k">as</span> <span class="n">tplot</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
-    <span class="kn">from</span> <span class="nn">par</span> <span class="kn">import</span> <span class="n">template_gen_par</span> <span class="k">as</span> <span class="n">tempdef</span>
     <span class="kn">import</span> <span class="nn">copy</span><span class="o">,</span> <span class="nn">warnings</span>
     <span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">channels</span><span class="o">=</span><span class="p">[]</span>
@@ -528,7 +510,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

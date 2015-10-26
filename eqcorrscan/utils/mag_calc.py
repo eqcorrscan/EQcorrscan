@@ -39,12 +39,12 @@ def dist_calc(loc1, loc2):
     :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
     """
     R=6371.009  # Radius of the Earth in km
-    dlat=np.radians(abs(loc1[0]-loc2[0]))
-    dlong=np.radians(abs(loc1[1]-loc2[1]))
-    ddepth=abs(loc1[2]-loc2[2])
-    mean_lat=np.radians((loc1[0]+loc2[0])/2)
-    dist=R*np.sqrt(dlat**2+(np.cos(mean_lat)*dlong)**2)
-    dist=np.sqrt(dist**2+ddepth**2)
+    dlat=np.radians( abs( loc1[0] - loc2[0] ) )
+    dlong=np.radians( abs( loc1[1] - loc2[1] ) )
+    ddepth=abs( loc1[2] - loc2[2] )
+    mean_lat=np.radians( ( loc1[0] + loc2[0] ) / 2 )
+    dist=R*np.sqrt( dlat ** 2 + ( np.cos( mean_lat ) * dlong ) ** 2 )
+    dist=np.sqrt( dist ** 2 + ddepth ** 2 )
     return dist
 
 def _sim_WA(trace, PAZ, seedresp, water_level):
@@ -304,10 +304,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
     ps_multiplier=0.34
-    try:
-        from utils import Sfile_util
-    except:
-        import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     from obspy import read
     from scipy.signal import iirfilter
     from obspy.signal.invsim import paz2AmpValueOfFreqResp
@@ -542,7 +539,8 @@ if __name__ == '__main__':
     	wavepath=sys.argv[6]
     elif len(sys.argv) == 6:
     	wavepath=None
-    import glob, shutil
+    import glob
+    import shutil
     import datetime as dt
     try:
         startdate=dt.datetime.strptime(startdate.ljust(14,'0'), '%Y%m%d%H%M%S')

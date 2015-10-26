@@ -69,7 +69,7 @@ def _channel_loop(detection, template, i=0):
 
     :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)
     """
-    from utils.Sfile_util import PICK
+    from eqcorrscan.utils.Sfile_util import PICK
     picks=[]
     for i in xrange(len(template)):
         image=detection.select(station=template[i].stats.station,\
@@ -143,7 +143,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4):
     :param min_cc: Minimum cross-correlation value to be considered a pick,
                     default=0.4
     """
-    from utils import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     from obspy import Stream
     # First work out the delays for each template
     delays=[] # List of tuples
