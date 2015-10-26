@@ -18,3 +18,7 @@
 * Travis.CI integration implemented
 * Tests run (needs more tests)
 * Now has synthetic template generation (major step, very much in alpha)
+
+## 0.0.5
+* Update all paths in functions when calling EQcorrscan functions to use the installed version
+* Remove parameter file usage in core functions and replace with variables, parameter files remain for scripts
