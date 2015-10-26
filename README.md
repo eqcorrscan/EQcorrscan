@@ -5,11 +5,13 @@ A python package to conduct match-filter earthquake detections.
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
 [![Documentation Status](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
+The latest release can be installed on OSX and Linux via pip:
+
+**pip install EQcorrscan**
+
 If you are looking for a (relatively) stable release, please download the latest
-[release](https://github.com/calum-chamberlain/EQcorrscan/releases/tag/v0.0-alpha.1).
-This is currently the first alpha release and things will change rapidly, however
-changes will be implemented first to the master branch, then pushed to the release
-and the release number updated.  Please raise issues on this repository, preferably
+[release](https://github.com/calum-chamberlain/EQcorrscan/releases).
+Changes will be implemented first to the develop branch, then pushed to the master and released.  Please raise issues on this repository, preferably
 with helpful comments, like line numbers, the command run and the error messages.
 Alternatively, fork the master and help me develop this!
 
@@ -42,7 +44,7 @@ If you understand that this package is in **heavy** development, but don't plan
 on contributing to your own fork, or if you just want to give this package a spin,
 then this package can be installed by pip:
 
-*pip install git+https://github.com/calum-chamberlain/EQcorrscan.git*
+*pip install EQcorrscan*
 
 You will likely need sudo permissions to run this command.  This installation
 method is quite new to the package (as of v0.0.4), so there are some things that
