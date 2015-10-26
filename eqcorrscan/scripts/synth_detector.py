@@ -9,7 +9,12 @@ routine to detect similar, real-earthquakes in coninuous seismic data.
 These detected events can then be stacked and used as further templates...
 ad infinitium...
 """
-import os, sys, glob, datetime as dt, numpy as np
+import os
+import sys
+import glob
+import datetime as dt
+import numpy as np
+
 sys.path.append('/projects/nesi00219/EQcorrscan')
 instance=0
 Split=False
@@ -80,7 +85,7 @@ else:
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
-from utils import seismo_logs
+from eqcorrscan.utils import seismo_logs
 if brightdef.plotsave:
     import matplotlib
     matplotlib.use('Agg')
@@ -89,9 +94,9 @@ if brightdef.plotsave:
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import bright_lights, match_filter
-from utils import pre_processing, synth_seis
-from utils import EQcorrscan_plotting as plotting
+from eqcorrscan.core import bright_lights, match_filter
+from eqcorrscan.utils import pre_processing, synth_seis
+from eqcorrscan.utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
 import warnings
@@ -379,10 +384,12 @@ for day in dates:
                 else:
                     templates=all_templates[i*100:(i+1)*100]
                     template_names=all_template_names[i*100:(i+1)*100]
+                    
                 detections+=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot,
-                                                 'temp_'+str(instance))
+                                                 matchdef=matchdef,
+                                                 tempdir='temp_'+str(instance))
 
             for detection in detections:
                 # output detections to file

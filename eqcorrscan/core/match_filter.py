@@ -152,7 +152,7 @@ def normxcorr2(template, image):
     ccc=ccc.reshape((1,len(ccc)))
     return ccc
 
-def _template_loop(template, chan, station, channel, debug=0 i=0):
+def _template_loop(template, chan, station, channel, debug=0, i=0):
     """
     Sister loop to handle the correlation of a single template (of multiple
     channels) with a single channel of data.
@@ -339,37 +339,41 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     return cccsums, no_chans
 
 def match_filter(template_names, templates, stream, threshold,\
-                 threshold_type, trig_int, plotvar, matchdef=False,\
-                 tempdir=False):
+                 threshold_type, trig_int, plotvar, cores=1,\
+                 tempdir=False, debug=0):
     """
     Over-arching code to run the correlations of given templates with a day of
     seismic data and output the detections based on a given threshold.
 
     :type templates: list :class: 'obspy.Stream'
     :param templates: A list of templates of which each template is a Stream of\
-    obspy traces containing seismic data and header information.
+        obspy traces containing seismic data and header information.
     :type stream: :class: 'obspy.Stream'
     :param stream: An obspy.Stream object containing all the data available and\
-    required for the correlations with templates given.  For efficiency this\
-    should contain no excess traces which are not in one or more of the\
-    templates.
+        required for the correlations with templates given.  For efficiency this\
+        should contain no excess traces which are not in one or more of the\
+        templates.
     :type threshold: float
-    :param threshold: A threshold value set based on the threshold_type\
+    :param threshold: A threshold value set based on the threshold_type
     :type threshold_type: str
     :param threshold_type: The type of threshold to be used, can be MAD,\
-    absolute or av_chan_corr.\
-    MAD threshold is calculated as the\
-    threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum\
-    for a given template.\
-    absolute threhsold is a true absolute threshold based on the cccsum value\
-    av_chan_corr is based on the mean values of single-channel\
-    cross-correlations assuming all data are present as required for the\
-    template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\
-    template is a single template from the input and the length is the number\
-    of channels within this template.
+        absolute or av_chan_corr.    MAD threshold is calculated as the\
+        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation\
+        sum for a given template. absolute threhsold is a true absolute\
+        threshold based on the cccsum value av_chan_corr is based on the mean\
+        values of single-channel cross-correlations assuming all data are\
+        present as required for the template, \
+        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\
+        template is a single template from the input and the length is the\
+        number of channels within this template.
+    :type trig_int: float
+    :param trig_int: Minimum gap between detections in seconds.
     :type tempdir: String or False
     :param tempdir: Directory to put temporary files, or False
-    :param matchdef: Default parameters from a match_filter_par file
+    :type cores: int
+    :param cores: Number of cores to use
+    :type debug: int
+    :param debug: Debug output level, the bigger the number, the more the output
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
@@ -378,13 +382,11 @@ def match_filter(template_names, templates, stream, threshold,\
     from eqcorrscan.utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
-    if not matchdef:
-        from eqcorrscan.par import match_filter_par as matchdef
     match_internal=False # Set to True if memory is an issue, if True, will only
                           # use about the same amount of memory as the seismic dat
                           # take up.  If False, it will use 20-100GB per instance
     # Debug option to confirm that the channel names match those in the templates
-    if matchdef.debug>=2:
+    if debug>=2:
         template_stachan=[]
         data_stachan=[]
         for template in templates:
@@ -394,7 +396,7 @@ def match_filter(template_names, templates, stream, threshold,\
             data_stachan.append(tr.stats.station+'.'+tr.stats.channel)
         template_stachan=list(set(template_stachan))
         data_stachan=list(set(data_stachan))
-        if matchdef.debug >= 3:
+        if debug >= 3:
             print 'I have template info for these stations:'
             print template_stachan
             print 'I have daylong data for these stations:'
@@ -410,7 +412,7 @@ def match_filter(template_names, templates, stream, threshold,\
     # Would be worth testing without an if statement, but with every station in
     # the possible template stations having data, but for those without real
     # data make the data NaN to return NaN ccc_sum
-    if matchdef.debug >=2:
+    if debug >=2:
         print 'Ensuring all template channels have matches in daylong data'
     template_stachan=[]
     for template in templates:
@@ -440,18 +442,18 @@ def match_filter(template_names, templates, stream, threshold,\
                 nulltrace.data=np.array([np.NaN]*len(template[0].data), dtype=np.float32)
                 template+=nulltrace
 
-    if matchdef.debug >= 2:
+    if debug >= 2:
         print 'Starting the correlation run for this day'
     if match_internal:
         [cccsums, no_chans] = run_channel_loop(templates, stream, tempdir)
     else:
-        [cccsums, no_chans]=_channel_loop(templates, stream, matchdef.cores,\
-                            matchdef.debug)
+        [cccsums, no_chans]=_channel_loop(templates, stream, cores,\
+                            debug)
     if len(cccsums[0])==0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc=time.clock()
     print 'Looping over templates and streams took: '+str(outtoc-outtic)+' s'
-    if matchdef.debug>=2:
+    if debug>=2:
         print 'The shape of the returned cccsums is: '+str(np.shape(cccsums))
         print 'This is from '+str(len(templates))+' templates'
         print 'Correlated with '+str(len(stream))+' channels of data'
@@ -500,22 +502,22 @@ def match_filter(template_names, templates, stream, threshold,\
                         stream[0].stats.starttime.datetime.strftime('%Y%j'),\
                     cccsum)
         tic=time.clock()
-        if matchdef.debug>=4:
+        if debug>=4:
             np.save('cccsum_'+str(i)+'.npy', cccsum)
-        if matchdef.debug>=3 and max(cccsum)>rawthresh:
+        if debug>=3 and max(cccsum)>rawthresh:
             peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
-                                        matchdef.debug, stream[0].stats.starttime,
+                                        debug, stream[0].stats.starttime,
                                         stream[0].stats.sampling_rate)
         elif max(cccsum)>rawthresh:
             peaks=findpeaks.find_peaks2_short(cccsum, rawthresh, \
                                         trig_int*stream[0].stats.sampling_rate,\
-                                        matchdef.debug)
+                                        debug)
         else:
             print 'No peaks found above threshold'
             peaks=False
         toc=time.clock()
-        if matchdef.debug >= 1:
+        if debug >= 1:
             print 'Finding peaks took: '+str(toc-tic)+' s'
         if peaks:
             for peak in peaks:

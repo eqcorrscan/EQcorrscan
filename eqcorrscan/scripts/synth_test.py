@@ -20,8 +20,8 @@ def synth_from_sfile(sfile, samp_rate, length=10.0, PS_ratio=1.68):
 
     :returns: :class: obspy.Stream
     """
-    from utils import Sfile_util
-    from utils import synth_seis
+    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import synth_seis
     from obspy import Stream, Trace, UTCDateTime
     # Get the picks and the origin time
     picks=Sfile_util.readpicks(sfile)
@@ -112,8 +112,8 @@ def match_synth(sfile, cont_base, freqmin=2.0, freqmax=10.0, samp_rate=100.0,\
     :returns: detections
     """
     # import matplotlib.pyplot as plt
-    from core import match_filter, template_gen
-    from utils import Sfile_util, pre_processing
+    from eqcorrscan.core import match_filter, template_gen
+    from eqcorrscan.utils import Sfile_util, pre_processing
     import glob
     from obspy import read, Stream, UTCDateTime
     from obspy.signal.cross_correlation import xcorr

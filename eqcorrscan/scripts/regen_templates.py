@@ -21,7 +21,9 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import glob, os, sys
+import glob
+import os
+import sys
 # sys.path.append('/home/calumch/my_programs/Building/EQcorrscan')
 sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
 templates=glob.glob('templates/adaptive_tremor/*.ms')
@@ -37,11 +39,11 @@ out3='templates/12sec_templates'
 # and back of templates
 
 from obspy import read, Stream
-from utils import clustering, stacking
-from utils import EQcorrscan_plotting as plotting
+from eqcorrscan.utils import clustering, stacking
+from eqcorrscan.utils import EQcorrscan_plotting as plotting
 from par import template_gen_par as defaults
-from core import template_gen
-from utils.Sfile_util import PICK
+from eqcorrscan.core import template_gen
+from eqcorrscan.utils.Sfile_util import PICK
 import numpy as np
 import matplotlib.pyplot as plt
 

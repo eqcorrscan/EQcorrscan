@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>eqcorrscan.utils.catalogue2DD module &mdash; EQcorrscan 0.0.5 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>eqcorrscan.utils.catalogue2DD module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/source/eqcorrscan.utils.catalogue2DD.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="module-eqcorrscan.utils.catalogue2DD">
+<span id="eqcorrscan-utils-catalogue2dd-module"></span><h1>eqcorrscan.utils.catalogue2DD module<a class="headerlink" href="#module-eqcorrscan.utils.catalogue2DD" title="Permalink to this headline">¶</a></h1>
+<p>Module written by Calum Chamberlain as part of the EQcorrscan package.</p>
+<p>This module contains functions to convert a seisan catalogue to files ready for
+relocation in hypoDD - it will generate both a catalogue (dt.ct) file, event
+file (event.dat), station information file (station.dat), and a correlation
+oiutput file correlated every event in the catalogue with every other event to
+optimize the picks (dt.cc).</p>
+<p>The correlation routine relies on obspy&#8217;s xcorrPickCorrection function from the
+obspy.signal.cross_correlation module.  This function optimizes picks to better
+than sample accuracy by interpolating the correlation function and finding the
+maximum of this rather than the true maximum correlation value.  The output
+from this function is stored in the dt.cc file.</p>
+<p>Information for the station.dat file is read from SEISAN&#8217;s STATION0.HYP file</p>
+<p>Earthquake picks and locations are taken from the catalogued s-files - these
+must be pre-located before entering this routine as origin times and hypocentre
+locations are needed for event.dat files.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="eqcorrscan.utils.catalogue2DD.readSTATION0">
+<code class="descclassname">eqcorrscan.utils.catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the STATION0.HYP file on the path given.  Outputs written
+in station.dat file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>String</em>) &#8211; Path to the STATION0.HYP file</li>
+<li><strong>station</strong> (<em>List</em>) &#8211; Stations to look for</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of tuples of station, lat, long, elevation</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="eqcorrscan.utils.catalogue2DD.write_catalogue">
+<code class="descclassname">eqcorrscan.utils.catalogue2DD.</code><code class="descname">write_catalogue</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=1</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/catalogue2DD.html#write_catalogue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.catalogue2DD.write_catalogue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write the dt.ct file needed by hypoDD - takes input event list
+from write_event as a list of tuples of event id and sfile.  It will read
+the pick information from the seisan formated s-file using the Sfile_util
+utilities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List stations</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="eqcorrscan.utils.catalogue2DD.write_correlations">
+<code class="descclassname">eqcorrscan.utils.catalogue2DD.</code><code class="descname">write_correlations</code><span class="sig-paren">(</span><em>event_list</em>, <em>wavbase</em>, <em>extract_len</em>, <em>pre_pick</em>, <em>shift_len</em>, <em>lowcut=1.0</em>, <em>highcut=10.0</em>, <em>max_sep=4</em>, <em>min_link=8</em>, <em>coh_thresh=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/catalogue2DD.html#write_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.catalogue2DD.write_correlations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write a dt.cc file for hypoDD input - takes an input list of
+events and computes pick refienements by correlation.</p>
+<p>Note that this is <strong>NOT</strong> fast.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>event_list</strong> (<em>List of tuple</em>) &#8211; List of tuples of event_id (int) and sfile (String)</li>
+<li><strong>wavbase</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to the seisan wave directory that the wavefiles in the
+S-files are stored</li>
+<li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract around the pick</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time before the pick to start the correclation window</li>
+<li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time to allow pick to vary</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lowcut in Hz - default=1.0</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Highcut in Hz - deafult=10.0</li>
+<li><strong>max_sep</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum seperation between event pairs in km</li>
+<li><strong>min_link</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Minimum links for an event to be paired</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="eqcorrscan.utils.catalogue2DD.write_event">
+<code class="descclassname">eqcorrscan.utils.catalogue2DD.</code><code class="descname">write_event</code><span class="sig-paren">(</span><em>sfile_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/eqcorrscan/utils/catalogue2DD.html#write_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eqcorrscan.utils.catalogue2DD.write_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to write out an event.dat file of the events</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfile_list</strong> (<em>List</em>) &#8211; List of s-files to sort and put into the database</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of tuples of event ID (int) and Sfile name</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

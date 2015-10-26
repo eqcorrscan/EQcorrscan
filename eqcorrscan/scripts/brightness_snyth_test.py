@@ -3,17 +3,18 @@
 Script to test the brightness function with synthetic data
 """
 import pickle
-import sys, glob, datetime as dt
+import sys
+import glob
+import datetime as dt
 import matplotlib.pyplot as plt
-sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
 from par import LFE_template_gen_par as templatedef
 from par import match_filter_par_LFEs as matchdef
 from par import bright_lights_par as brightdef
 from obspy import UTCDateTime, Stream, Trace, read as obsread
 # First generate the templates
-from core import bright_lights, match_filter
-from utils import pre_processing
-from utils import EQcorrscan_plotting as plotting
+from eqcorrscan.core import bright_lights, match_filter
+from eqcorrscan.utils import pre_processing
+from eqcorrscan.utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
 import warnings, pickle, copy
@@ -89,7 +90,8 @@ cutlags=np.array([lags[:,0]]+[lags[:,116]]).T
 detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         nodes, lags, stream,
                         brightdef.threshold, brightdef.thresh_type,\
-                        brightdef.coherance, instance, matchdef, templatedef)
+                        brightdef.coherance, instance, matchdef, templatedef,\
+                        brightdef)
 plotting.threeD_gridplot(detect_nodes)
 # detect_templates, detect_nodes=bright_lights.brightness(stations, \
                         # cutnodes, cutlags, stream,
