@@ -22,3 +22,11 @@
 ## 0.0.5
 * Update all paths in functions when calling EQcorrscan functions to use the installed version
 * Remove parameter file usage in core functions and replace with variables, parameter files remain for scripts
+
+## 0.0.6 & 0.0.7
+Note, double release due to failed 0.0.6 release
+* Properly installable via pip
+
+## Development
+* Added SVD magnitude inversion to utils.mag_calc, tested for single channel
+
