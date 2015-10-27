@@ -1,25 +1,20 @@
 # EQcorrscan
 A python package to conduct match-filter earthquake detections.
 
-[![TravisCI Status](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
+[![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
-[![Documentation Status](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
-
-The latest release can be installed on OSX and Linux via pip:
-
-**pip install EQcorrscan**
-
-If you are looking for a (relatively) stable release, please download the latest
-[release](https://github.com/calum-chamberlain/EQcorrscan/releases).
-Changes will be implemented first to the develop branch, then pushed to the master and released.  Please raise issues on this repository, preferably
-with helpful comments, like line numbers, the command run and the error messages.
-Alternatively, fork the master and help me develop this!
+[![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 # Installation
 We are now listed on pypi!  Installation has been tested on both OSX and Linux (Ubuntu) and
 is as simple as:
 
 *pip install EQcorrscan*
+
+You will likely need sudo permissions to run this command.  This installation
+method is quite new to the package (as of v0.0.4), so there are some things that
+are changing in the install process at the moment.  This should be smoothed out
+by v0.1.0 (maybe mid 2016).
 
 If you have any issues installing please let me know.  You will need to install openCV
 seperately using (on Linux):
@@ -29,7 +24,7 @@ seperately using (on Linux):
 Or, for Mac users, this is available on Macports or other similar package managers.
 
 The full documentation for this package can be found here:
-[EQcorrscan](http://calum-chamberlain.github.io/EQcorrscan/) - you are also
+[Docs](http://calum-chamberlain.github.io/EQcorrscan/) - you are also
 welcome to suggest documentation updates or update the doc in the develop branch, please
 do not work on the documentation in the gh-pages branch!
 
@@ -51,18 +46,6 @@ Also within this package are:
 
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
 is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015.
-
-# Installation
-If you understand that this package is in **heavy** development, but don't plan
-on contributing to your own fork, or if you just want to give this package a spin,
-then this package can be installed by pip:
-
-*pip install EQcorrscan*
-
-You will likely need sudo permissions to run this command.  This installation
-method is quite new to the package (as of v0.0.4), so there are some things that
-are changing in the install process at the moment.  This should be smoothed out
-by v0.1.0 (maybe mid 2016).
 
 # Parameter files
 To use this package you will need to set up default parameters in the parameter
@@ -93,7 +76,7 @@ it back in to the development branch when it is stable enough.
 
 This branching model (git-flow) is pretty well established, and I would recommend
 you to install [git-flow](https://github.com/nvie/gitflow/wiki/Installation) and
-read their [docs](https://github.com/nvie/gitflow). It seems pretty intuitive and
+read their [documentation](https://github.com/nvie/gitflow). It seems pretty intuitive and
 will keep us all branching in the same way.
 
 # References
