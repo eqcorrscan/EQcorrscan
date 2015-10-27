@@ -11,6 +11,12 @@ is as simple as:
 
 *pip install EQcorrscan*
 
+If upgrading from a previous version, rather than running install --upgrade, I recommend the following:
+
+*pip install -U --no-deps EQcorrscan*
+
+This will not try to upgrade your dependencies, which is not needed for 0.0.7.
+
 You will likely need sudo permissions to run this command.  This installation
 method is quite new to the package (as of v0.0.4), so there are some things that
 are changing in the install process at the moment.  This should be smoothed out
