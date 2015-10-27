@@ -259,6 +259,15 @@ def _find_resp(station, channel, network, time, delta, directory):
     elif seedresp:
         return seedresp
 
+def _pairwise(iterable):
+    """
+    Wrapper on itertools for SVD_magnitude
+    """
+    import itertools
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
+
 def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,\
                    highcut=20.0, corners=4):
@@ -516,6 +525,101 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
         print pick
     Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
+
+def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
+    """
+    Function to convert basis vectors calculated by singular value decomposition\
+    (see the SVD functions in clustering) into relative magnitudes.
+
+    :type U: List of np.ndarray
+    :param U: List of the input basis vectors from the SVD, one array for each\
+            channel used.
+    :type s: List of nd.array
+    :param s: List of the singular values, one array for each channel
+    :type V: List of np.ndarry
+    :param V: List of output basis vectors from SVD, one array per channel.
+    :type stachans: List of string of station.channel input
+    type n_SVs: int
+    :param n_SVs: Number of singular values to use, defaults to 4.
+
+    :returns: M, np.array of relative moments
+    """
+    import copy
+    import random
+
+    # Copying script from one obtained from John Townend.
+    # Define kernel
+    K = []
+    i=0
+    for stachan in stachans:
+        # Copy the relevant vectors so as not to detroy them
+        U_working=copy.deepcopy(U[i])
+        V_working=copy.deepcopy(V[i])
+        s_working=copy.deepcopy(s[i])
+        # Set all non-important singular values to zero
+        s_working[n_SVs:len(s_working)] = 0
+        s_working = np.diag(s_working)
+        # Convert to numpy matrices
+        U_working = np.matrix(U_working)
+        V_working = np.matrix(V_working)
+        s_working = np.matrix(s_working)
+
+        # Extract first singular vector weights
+        SVD_weights = U_working[:,0]
+        SVD_weights = np.array(SVD_weights).reshape(-1).tolist()
+        # Shuffle the SVD_weights prior to pairing (I don't know why?)
+        random_SVD_weights = np.copy(SVD_weights)
+        random.shuffle(random_SVD_weights)
+        # Add the first element to the end so all elements will be paired twice
+        random_SVD_weights = np.append(random_SVD_weights,[random_SVD_weights[0]])
+        # Take pairs of all the SVD_weights (each weight appears in 2 pairs)
+        pairs = []
+        for pair in _pairwise(random_SVD_weights):
+            pairs.append(pair)
+        pairs = np.array(pairs,dtype=float)
+
+        # Deciding values for each place in kernel matrix using the pairs
+        for pairsIndex in range(len(pairs)):
+            min_weight = min(pairs[pairsIndex])
+            max_weight = max(pairs[pairsIndex])
+            row = []
+            # Working out values for each row of kernel matrix
+            for j in range(len(SVD_weights)):
+                if SVD_weights[j] == max_weight:
+                    result = -1
+                elif SVD_weights[j] == min_weight:
+                    normalised = max_weight/min_weight
+                    result = float(normalised)
+                else:
+                    result = 0
+                row.append(result)
+            # Add each row to the K matrix
+            K.append(row)
+        i+=1
+
+    # Add an extra row to K, so average moment = 1
+    K.append(np.ones(len(SVD_weights)) * (1. / len(SVD_weights)))
+    print "Created Kernel matrix"
+    Krounded = np.around(K, decimals = 4)
+    # Create a weighting matrix to put emphasis on the final row.
+    W = np.matrix(np.identity(len(K)))
+    # the final element of W = the number of stations*number of events
+    W[-1,-1] = len(K)-1
+    # Make K into a matrix
+    K = np.matrix(K)
+
+    ############
+
+    # Solve using the weighted least squares equation, K.T is K transpose
+    Kinv = np.array(np.linalg.inv(K.T*W*K) * K.T * W)
+
+    # M = Kinv*D
+    # D = [0,0,......,0,1] (column) where the no. of rows = no. of rows of K
+    # Therefore M is the last column of Kinv (by matrix multiplication)
+    # M are the relative moments of the events
+    M = Kinv[:, -1]
+
+    return M
 
 if __name__ == '__main__':
     """
