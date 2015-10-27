@@ -54,7 +54,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=eqcorrscan.__version__+'_hotfix',
+    version=eqcorrscan.__version__,
 
     description='EQcorrscan - correlation earthquake detection',
     long_description=long_description,
@@ -104,8 +104,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy', 'numpy', 'matplotlib', 'joblib',\
-     'scipy>=0.14'],
+    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0', \
+    'joblib>=0.8.4', 'scipy>=0.14'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -127,7 +127,7 @@ setup(
     # need to place data files outside of your packages. See:
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
+    #data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
