@@ -73,7 +73,10 @@ class PICK:
         elif self.distance < 100.0:
             self.distance=int(round(self.distance,1))
         if not self.AIN=='':
-            dummy=int(self.AIN)
+            if not np.isnan(self.AIN):
+                dummy=int(self.AIN)
+            else:
+                dummy=self.AIN
         else:
             dummy=self.SNR
         print_str=' '+self.station.ljust(5)+\
