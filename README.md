@@ -17,6 +17,9 @@ If upgrading from a previous version, rather than running install --upgrade, I r
 
 This will not try to upgrade your dependencies, which is not needed for 0.0.7.
 
+If you want to be kept informed about releases, bug-tracking and enhancements
+without having to keep looking on github, subscribe to our [google group](https://groups.google.com/forum/#!forum/eqcorrscan-users).
+
 You will likely need sudo permissions to run this command.  This installation
 method is quite new to the package (as of v0.0.4), so there are some things that
 are changing in the install process at the moment.  This should be smoothed out
