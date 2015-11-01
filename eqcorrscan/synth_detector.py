@@ -153,6 +153,8 @@ for synth in synth_templates:
    stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
    if len(list(set(stations))) < 5:
        # Only write and use templates with at least five stations
+       print 'too few stations'
+       print stations
        i+=1
        continue
    for tr in synth:
@@ -177,7 +179,7 @@ for synth in synth_templates:
        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
            tr.stats.channel='SH2'
            tr.stats.network='AF'
-   synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
+   synth.write('templates/synthetics/swarm/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
                #encoding='STEIM2', reclen=512)
    template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
@@ -185,7 +187,7 @@ for synth in synth_templates:
    templates.append(synth)
    i+=1
 
-del nodes, travel_time
+del nodes, travel_times
 
 raise IOError('Fin')
 
