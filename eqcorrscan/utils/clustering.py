@@ -221,7 +221,6 @@ def SVD(templates):
         # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
         chan_mat=np.asarray(chan_mat)
         print chan_mat.shape
-        print stachan
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
         SVectors.append(V)
@@ -430,10 +429,10 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
                       if base[2]==stachan[2]][0]
             if contbase[1]=='yyyymmdd':
                 dayfile=detection_day.strftime('%Y%m%d')+'/*'+stachan[0]+\
-                        '.'+stachan[1][0]+'?'+stachan[1][1]+'.*'
+                        '.'+stachan[1][0]+'?'+stachan[1][-1]+'.*'
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 dayfile=detection_day.strftime('Y%Y/R%j.01')+'/'+stachan[0]+\
-                        '.*.'+stachan[1][0]+'?'+stachan[1][1]+'.'+detection_day.strftime('%Y.%j')
+                        '.*.'+stachan[1][0]+'?'+stachan[1][-1]+'.'+detection_day.strftime('%Y.%j')
             if not 'st' in locals():
                 try:
                     st=read(contbase[0]+'/'+dayfile)
