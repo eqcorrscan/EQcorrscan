@@ -61,11 +61,7 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
-import matplotlib, warnings
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-plt.ioff()
-
+import warnings
 
 class DETECTION(object):
     """
@@ -383,7 +379,20 @@ def match_filter(template_names, templates, stream, threshold,\
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
 
+    .. rubric:: Note
+        Plotting within the match-filter routine uses the Agg backend with\
+        interactive plotting turned off.  This is because the function is\
+        designed to work in bulk.  If you wish to turn interactive plotting on\
+        you must import matplotlib in your script first, when you them import\
+        match_filter you will get the warning that this call to matplotlib has\
+        no effect, which will mean that match_filter has not changed the plotting\
+        behaviour.
+
     """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.ioff()
     from eqcorrscan.utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
