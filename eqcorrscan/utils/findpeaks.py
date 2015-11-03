@@ -54,7 +54,6 @@ def is_prime(number):
         ''' case number == 1 '''
         return False
 
-
 def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
@@ -159,8 +158,6 @@ def find_peaks2(arr,thresh, trig_int, debug=0, maxwidth=10,\
         print 'No peaks for you!'
         return peaks
 
-
-
 def find_peaks2_short(arr,thresh, trig_int, debug=0, \
                 starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
     """
@@ -255,7 +252,6 @@ def find_peaks2_short(arr,thresh, trig_int, debug=0, \
     else:
         print 'No peaks for you!'
         return peaks
-
 
 def find_peaks_dep(arr, thresh, trig_int, debug=0,\
                starttime=UTCDateTime('1970-01-01'), samp_rate=1.0):
