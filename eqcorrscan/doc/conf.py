@@ -15,6 +15,14 @@
 import sys
 import os
 import shlex
+# Use mock to allow for autodoc compilation without needing C based modules
+import mock
+MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'matplotlib.dates', 'numpy',
+                'scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
+                'joblib', 'obspy', 'obspy.read', 'obspy.signal',
+                'obspy.signal.cross_correlation', 'cv2', 'scipy.signal']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
