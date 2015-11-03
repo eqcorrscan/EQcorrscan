@@ -28,5 +28,9 @@ Note, double release due to failed 0.0.6 release
 * Properly installable via pip
 
 ## Development
-* Added SVD magnitude inversion to utils.mag_calc, tested for single channel
-
+* Added SVD magnitude inversion to utils.mag_calc, tested for multi-channel
+* Bug-fix in s-file printing when printing AIN, convert to int now before print
+* Add master option to clustering.align_traces, alignment can be forced to this
+* Add plot directory output option to match_filter
+* Change plot downsampling to 10 Hz
+* Clustering.cluster now output groups properly when computing clustering by cross-correlation
