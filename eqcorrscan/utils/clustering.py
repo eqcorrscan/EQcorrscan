@@ -1,13 +1,6 @@
 #!/usr/bin/python
 """
-Code to compute the linkage between seismograms and cluster them accordingly
-
-Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015
-
-Implimented to streamline templates after template detection in beamforming
-methods, employed by implimentation of Frank et al. code.
-
-As such this code is designed to work only for templates with the same channels
+Functions to cluster seismograms by a range of constraints.
 
 Copyright 2015 Calum Chamberlain
 
