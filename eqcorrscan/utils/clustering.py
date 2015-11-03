@@ -26,7 +26,7 @@ This file is part of EQcorrscan.
 # cross-channel correlation sum
 import numpy as np
 
-def cross_chan_coherence(st1, st2):
+def cross_chan_coherence(st1, st2, i=0):
     """
     Function to determine the cross-channel coherancy between two streams of
     multichannel seismic data.
@@ -35,8 +35,11 @@ def cross_chan_coherence(st1, st2):
     :param st1: Stream one
     :type st2: obspy Stream
     :param st2: Stream two
+    :type i: int
+    :param i: index used for parallel async processing, returned unaltered
 
-    :returns: cross channel coherence, float - normalized by number of channels
+    :returns: cross channel coherence, float - normalized by number of channels,
+        if i, returns tuple of (cccoh, i) where i is int, as intput.
     """
     from eqcorrscan.core.match_filter import normxcorr2
     cccoh=0.0
@@ -50,9 +53,9 @@ def cross_chan_coherence(st1, st2):
             cccoh+=normxcorr2(tr1,tr2[0].data)[0][0]
             kchan+=1
     cccoh=cccoh/kchan
-    return cccoh
+    return (cccoh, i)
 
-def distance_matrix(stream_list):
+def distance_matrix(stream_list, cores=1):
     """
     Function to compute the distance matrix for all templates - will give
     distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
@@ -61,24 +64,43 @@ def distance_matrix(stream_list):
 
     :type stream_list: List of obspy.Streams
     :param tream_list: List of the streams to compute the distance matrix for
+    :type core: int
+    :param cores: Number of cores to parallel process using, defaults to 1.
 
     :returns: ndarray - distance matrix
     """
+    from multiprocessing import Pool
+
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
     for i in xrange(len(stream_list)):
+        # Start a parallel processing pool
+        pool=Pool(processes=cores)
+        # Parallel processing
+        results=[pool.apply_async(cross_chan_coherence, args=(stream_list[i],\
+                                                        stream_list[j], j))\
+                            for j in range(len(stream_list))]
+        pool.close()
+        # Extract the results when they are done
+        dist_list=[p.get() for p in results]
+        # Close and join all the processes back to the master process
+        pool.join()
+        # Sort the results by the input j
+        dist_list.sort(key=lambda tup:tup[1])
+        # Sort the list into the dist_mat structure
         for j in xrange(i,len(stream_list)):
             if i==j:
                 dist_mat[i,j]=0.0
             else:
-                dist_mat[i,j]=1-np.abs(cross_chan_coherence(stream_list[i],\
-                stream_list[j]))
+                dist_mat[i,j]=1-dist_list[j][0]
+    # Reshape the distance matrix
     for i in xrange(1,len(stream_list)):
         for j in xrange(i):
             dist_mat[i,j]=dist_mat.T[i,j]
     return dist_mat
 
-def cluster(stream_list, show=True, corr_thresh=0.3):
+def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,\
+        cores='all', debug=1):
     """
     Function to take a set of templates and cluster them, will return groups as
     lists of streams.  Clustering is done by computing the cross-channel
@@ -89,39 +111,68 @@ def cluster(stream_list, show=True, corr_thresh=0.3):
     Groups are then created by clustering the distance matrix at distances
     less than 1 - corr_thresh.
 
+    Will compute the distance matrix in parallel, using all available cores
+
     :type stream_list: List of Obspy.Stream
     :param stream_list: List of templates to compute clustering for
     :type show: bool
     :param show: plot linkage on screen if True, defaults to True
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
+    :type save_corrmat: bool
+    :param save_corrmat: If True will save the distance matrix to dist_mat.npy
+    :type cores: int
+    :param cores: numebr of cores to use when computing the distance matrix,\
+            defaults to 'all' which will work out how many cpus are available\
+            and hog them.
+    :type debug: int
+    :param debug: Level of debugging from 1-5, higher is more output, currently\
+        only level 1 implimented.
 
     :returns: List of groups with each group a list of streams making up\
         that group.
-    .. rubric:: Note:
-        Not fully feautured yet, returns the Z matrix, but doesn't tell you what\
-        can be clustered. It might be good to use the scikits clustering\
-        routines: http://scikit-learn.org/stable/modules/clustering.html
     """
     from scipy.spatial.distance import squareform
     from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
     import matplotlib.pyplot as plt
-    dist_mat=distance_matrix(stream_list)
+    from multiprocessing import cpu_count
+    if cores=='all':
+        num_cores=cpu_count()
+    else:
+        num_cores=cores
+    # Compute the distance matrix
+    if debug >= 1:
+        print 'Computing the distance matrix using '+str(num_cores)+' cores'
+    dist_mat=distance_matrix(stream_list, cores=num_cores)
+    if save_corrmat:
+        np.save('dist_mat.npy', dist_mat)
+        if debug >= 1:
+            print 'Saved the distance matrix as dist_mat.npy'
     dist_vec=squareform(dist_mat)
     # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
+    if debug >= 1:
+        print 'Computing linkage'
     Z = linkage(dist_vec)
-    D = dendrogram(Z, color_threshold = 1 - corr_thresh,\
-     distance_sort='ascending')
     if show:
+        if debug >= 1:
+            print 'Plotting the dendrogram'
+        D = dendrogram(Z, color_threshold = 1 - corr_thresh,\
+            distance_sort='ascending')
         plt.show()
     # Get the indeces of the groups
+    if debug >= 1:
+        print 'Clustering'
     indeces = fcluster(Z, 1 - corr_thresh, 'distance')
     group_ids=list(set(indeces)) # Unique list of group ids
+    if debug >= 1:
+        print 'Found '+str(len(group_ids))+' groups'
     # Convert to tuple of (group id, stream id)
     indeces=[(indeces[i], i) for i in xrange(len(indeces))]
     # Sort by group id
     indeces.sort(key=lambda tup:tup[0])
     groups=[]
+    if debug >= 1:
+        print 'Extracting and grouping'
     for group_id in group_ids:
         group=[]
         for ind in indeces:
@@ -583,4 +634,3 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     print 'Read in '+str(detections_in)+' detections'
     print 'Left with '+str(detections_out)+' detections'
     return detections
-
