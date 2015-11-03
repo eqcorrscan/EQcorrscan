@@ -27,6 +27,7 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
+import warnings
 
 def dist_calc(loc1, loc2):
     """
@@ -526,7 +527,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True, \
     Sfile_util.populateSfile('mag_calc.out',picks_out)
     return picks
 
-def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
+def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     """
     Function to convert basis vectors calculated by singular value decomposition\
     (see the SVD functions in clustering) into relative magnitudes.
@@ -538,7 +539,12 @@ def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
     :param s: List of the singular values, one array for each channel
     :type V: List of np.ndarry
     :param V: List of output basis vectors from SVD, one array per channel.
-    :type stachans: List of string of station.channel input
+    :type stachans: List of string
+    :param stachans: List of station.channel input
+    :type event_list: List of list
+    :param event_list: List of events for which you have data, such that\
+                event_list[i] corresponds to stachans[i], U[i] etc. and\
+                event_list[i][j] corresponds to event j in U[i]
     type n_SVs: int
     :param n_SVs: Number of singular values to use, defaults to 4.
 
@@ -548,14 +554,22 @@ def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
     import random
 
     # Copying script from one obtained from John Townend.
-    # Define kernel
-    K = []
+    # Define maximum number of events, will be the width of K
+    K_width = max([max(ev_list) for ev_list in event_list])+1
+    # Sometimes the randomisation generates a singular matrix - rather than
+    # attempting to regulerize this matrix I propose undertaking the randomisation
+    # step a further time
     i=0
     for stachan in stachans:
+        k = [] # Small kernel matrix for one station - channel
         # Copy the relevant vectors so as not to detroy them
         U_working=copy.deepcopy(U[i])
         V_working=copy.deepcopy(V[i])
         s_working=copy.deepcopy(s[i])
+        ev_list=event_list[i]
+        if not len(ev_list) == len(V_working):
+            print 'V is : '+str(len(V_working))
+            raise IOError('Not the same number of events as V')
         # Set all non-important singular values to zero
         s_working[n_SVs:len(s_working)] = 0
         s_working = np.diag(s_working)
@@ -564,42 +578,78 @@ def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
         V_working = np.matrix(V_working)
         s_working = np.matrix(s_working)
 
-        # Extract first singular vector weights
         SVD_weights = U_working[:,0]
+        # If all the weights are negative take the abs
+        if np.all(SVD_weights < 0):
+            warnings.warn('All weights are negative - flipping them')
+            SVD_weights=np.abs(SVD_weights)
         SVD_weights = np.array(SVD_weights).reshape(-1).tolist()
-        # Shuffle the SVD_weights prior to pairing (I don't know why?)
+        # Shuffle the SVD_weights prior to pairing - will give one of multiple
+        # pairwise options - see p1956 of Rubinstein & Ellsworth 2010
+        # We need to keep the real indexes though, otherwise, if there are multiple
+        # events with the same weight we will end up with multiple -1 values
         random_SVD_weights = np.copy(SVD_weights)
+        # Tack on the indexes
+        random_SVD_weights = random_SVD_weights.tolist()
+        random_SVD_weights = [(random_SVD_weights[_i], _i)\
+            for _i in range(len(random_SVD_weights))]
         random.shuffle(random_SVD_weights)
         # Add the first element to the end so all elements will be paired twice
-        random_SVD_weights = np.append(random_SVD_weights,[random_SVD_weights[0]])
+        random_SVD_weights.append(random_SVD_weights[0])
         # Take pairs of all the SVD_weights (each weight appears in 2 pairs)
         pairs = []
         for pair in _pairwise(random_SVD_weights):
             pairs.append(pair)
-        pairs = np.array(pairs,dtype=float)
-
         # Deciding values for each place in kernel matrix using the pairs
         for pairsIndex in range(len(pairs)):
-            min_weight = min(pairs[pairsIndex])
-            max_weight = max(pairs[pairsIndex])
+            # We will normalize by the minimum weight
+            _weights = zip(*list(pairs[pairsIndex]))[0]
+            _indeces = zip(*list(pairs[pairsIndex]))[1]
+            min_weight = min(_weights)
+            max_weight = max(_weights)
+            min_index = _indeces[np.argmin(_weights)]
+            max_index = _indeces[np.argmax(_weights)]
             row = []
             # Working out values for each row of kernel matrix
             for j in range(len(SVD_weights)):
-                if SVD_weights[j] == max_weight:
+                if j == max_index:
                     result = -1
-                elif SVD_weights[j] == min_weight:
+                elif j == min_index:
                     normalised = max_weight/min_weight
                     result = float(normalised)
                 else:
                     result = 0
                 row.append(result)
+            print row
             # Add each row to the K matrix
-            K.append(row)
+            k.append(row)
+        # k is now a square matrix, we need to flesh it out to be K_width
+        k_filled=np.zeros([len(k), K_width])
+        for j in range(len(k)):
+            l=0
+            for ev in ev_list:
+                k_filled[j,ev]=k[j][l]
+                l+=1
+        if not 'K' in locals():
+            K=k_filled
+        else:
+            K=np.concatenate([K,k_filled])
         i+=1
-
+    # Remove any empty rows
+    K_nonempty=[]
+    events_out=[]
+    for i in range(0,K_width):
+        if not np.all(K[:,i]==0):
+            K_nonempty.append(K[:,i])
+            events_out.append(i)
+    K=np.array(K_nonempty).T
+    K=K.tolist()
+    K_width=len(K[0])
     # Add an extra row to K, so average moment = 1
-    K.append(np.ones(len(SVD_weights)) * (1. / len(SVD_weights)))
-    print "Created Kernel matrix"
+    K.append(np.ones(K_width) * (1. / K_width))
+    print "\nCreated Kernel matrix: "
+    print('\n'.join([''.join([str(round(float(item),3)).ljust(6)\
+            for item in row]) for row in K]))
     Krounded = np.around(K, decimals = 4)
     # Create a weighting matrix to put emphasis on the final row.
     W = np.matrix(np.identity(len(K)))
@@ -607,19 +657,17 @@ def SVD_magnitudes(U, s, V, stachans, n_SVs=4):
     W[-1,-1] = len(K)-1
     # Make K into a matrix
     K = np.matrix(K)
+    np.save('/home/calumch/Dropbox/Manuscripts/EQcrosscorr_detection_paper/Scripts/K.npy', K)
 
     ############
 
     # Solve using the weighted least squares equation, K.T is K transpose
     Kinv = np.array(np.linalg.inv(K.T*W*K) * K.T * W)
 
-    # M = Kinv*D
-    # D = [0,0,......,0,1] (column) where the no. of rows = no. of rows of K
-    # Therefore M is the last column of Kinv (by matrix multiplication)
     # M are the relative moments of the events
     M = Kinv[:, -1]
 
-    return M
+    return M, events_out
 
 if __name__ == '__main__':
     """
