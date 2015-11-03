@@ -516,3 +516,78 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
         return detection_wavefiles
     else:
         return
+
+def space_time_cluster(detections, t_thresh, d_thresh):
+    """
+    Function to cluster detections in space and time, use to seperate repeaters
+    from other events
+
+    :type detections: List
+    :param detections: List of tuple of tuple of location (lat, lon, depth (km)),\
+            and time as a datetime object
+    :type t_thresh: float
+    :param t_thresh: Maximum inter-event time threshold in seconds
+    :type d_thresh: float
+    :param d_thresh: Maximum inter-event distance in km
+
+    :returns: List of tuple (detections, clustered) and list of indeces of\
+            clustered detections
+    """
+    from eqcorrscan.utils.mag_calc import dist_calc
+    import datetime as dt
+    # Ensure they are sorted by time first, not that we need it.
+    detections.sort(key=lambda tup:tup[1])
+    clustered=[]
+    clustered_indeces=[]
+    for master_ind, master in enumerate(detections):
+        keep=False
+        for slave in detections:
+            if not master==slave and\
+               abs((master[1] - slave[1]).total_seconds()) <= t_thresh and \
+               dist_calc(master[0], slave[0]) <= d_thresh:
+                # If the slave events is close in time and space to the master
+                # keep it and break out of the loop.
+                keep=True
+                break
+        if keep:
+            clustered.append(master)
+            clustered_indeces.append(master_ind)
+
+    return clustered, clustered_indeces
+
+def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
+    """
+    Function to remove detections by changing the threshold, can only be done
+    to remove detection by increasing threshold, threshold lowering will have
+    no affect.
+
+    :type path: Str
+    :param path: Path to the .csv detection file
+    :type old_thresh: float
+    :param old_thresh: Old threshold MAD multiplier
+    :type new_thresh: float
+    :param new_thresh: New threhsold MAD multiplier
+    :type chan_thresh: int
+    :param chan_thresh: Minimum number of channels for a detection
+
+    returns: List of detections
+    """
+    f=open(path,'r')
+    old_thresh=float(old_thresh)
+    new_thresh=float(new_thresh)
+    # Be nice, ensure that the thresholds are float
+    detections=[]
+    detections_in=0
+    detections_out=0
+    for line in f:
+        if not line.split(', ')[0]=='template' and len(line) >2:
+            detections_in+=1
+            if abs(float(line.split(', ')[3])) >=\
+               (new_thresh/old_thresh)*float(line.split(', ')[2]) and\
+               int(line.split(', ')[4]) >= chan_thresh:
+                detections_out+=1
+                detections.append(line.split(', '))
+    print 'Read in '+str(detections_in)+' detections'
+    print 'Left with '+str(detections_out)+' detections'
+    return detections
+
