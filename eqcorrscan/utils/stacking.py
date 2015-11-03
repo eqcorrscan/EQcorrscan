@@ -3,8 +3,6 @@
 Utility module of the EQcorrscan package to allow for different methods of
 stacking of seismic signal in one place.
 
-In alpha stages and only with linear stacking implimented thusfar
-
 Calum Chamberlain 24/06/2015
 
 Copyright 2015 Calum Chamberlain
