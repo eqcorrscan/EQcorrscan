@@ -15,6 +15,9 @@ import glob
 import datetime as dt
 import numpy as np
 
+group_max=20 # Maximum number of templates to run at once, depends on memory
+
+sys.path.insert(0, '/home/calumch/my_programs/Building/EQcorrscan')
 sys.path.append('/projects/nesi00219/EQcorrscan')
 instance=0
 Split=False
@@ -141,7 +144,7 @@ if len(nodes) == 0:
 # Call the template generation function
 synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
        PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
-       flength=int(templatedef.samp_rate*templatedef.length))
+       flength=int(templatedef.samp_rate*templatedef.length), phaseout='S')
 print 'We have '+str(len(synth_templates))+' synthetic templates'
 
 # Write out the synthetics!
@@ -153,6 +156,8 @@ for synth in synth_templates:
    stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
    if len(list(set(stations))) < 5:
        # Only write and use templates with at least five stations
+       print 'too few stations'
+       print stations
        i+=1
        continue
    for tr in synth:
@@ -177,7 +182,7 @@ for synth in synth_templates:
        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
            tr.stats.channel='SH2'
            tr.stats.network='AF'
-   synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
+   synth.write('templates/synthetics/swarm/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
                #encoding='STEIM2', reclen=512)
    template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
@@ -185,11 +190,10 @@ for synth in synth_templates:
    templates.append(synth)
    i+=1
 
-del nodes, travel_time
+del nodes, travel_times
 
-raise IOError('Fin')
 
-template_names=glob.glob('templates/synthetics/*_template.ms')
+template_names=glob.glob('templates/synthetics/swarm/*_template.ms')
 templates=[obsread(tfile) for tfile in template_names]
 template_names=[t.split('/')[-1].split('_template.ms')[0] \
                 for t in template_names]
@@ -268,10 +272,10 @@ for day in dates:
         station=stachan.split('.')[0]
         channel=stachan.split('.')[1]
         netcode=stachan.split('.')[2]
-        rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
-                    str(day.year)+str(day.julday).zfill(3)
-        #rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
-        #            str(day.year)+str(day.julday).zfill(3)
+        # rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+        #             str(day.year)+str(day.julday).zfill(3)
+        rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+                   str(day.year)+str(day.julday).zfill(3)
         errors, full = seismo_logs.check_all_logs(rawdir, \
                                                   1.0/templatedef.samp_rate)
         if len(errors) > 1:
@@ -377,20 +381,20 @@ for day in dates:
             groups=0
             detections=[]
             # Cope with having heaps of templates
-            if len(all_templates) > 100:
-                groups=int(len(all_templates)/100)
+            if len(all_templates) > group_max:
+                groups=int(len(all_templates)/group_max)
             for i in xrange(groups):
                 if i==groups:
-                    templates=all_templates[i*100:]
-                    template_names=all_template_names[i*100:]
+                    templates=all_templates[i*group_max:]
+                    template_names=all_template_names[i*group_max:]
                 else:
-                    templates=all_templates[i*100:(i+1)*100]
-                    template_names=all_template_names[i*100:(i+1)*100]
+                    templates=all_templates[i*group_max:(i+1)*group_max]
+                    template_names=all_template_names[i*group_max:(i+1)*group_max]
 
                 detections+=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot,
-                                                 matchdef=matchdef,
+                                                 matchdef.cores,
                                                  tempdir='temp_'+str(instance))
 
             for detection in detections:
