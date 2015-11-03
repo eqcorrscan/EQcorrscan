@@ -120,10 +120,14 @@ def align_traces(trace_list, shift_len, master=False):
                 master=traces[i]
                 MAD_master=np.median(np.abs(master.data))
                 master_no=i
+    else:
+        print 'Using master given by user'
     shifts=[]
+    ccs=[]
     for i in xrange(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
         shift, cc=xcorr(master, traces[i], shift_len)
         shifts.append(shift/master.stats.sampling_rate)
-    return shifts
+        ccs.append(cc)
+    return shifts, ccs
