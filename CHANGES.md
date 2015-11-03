@@ -35,3 +35,5 @@ Note, double release due to failed 0.0.6 release
 * Change plot downsampling to 10 Hz
 * Clustering.cluster now output groups properly when computing clustering by cross-correlation
 * Add plot_synth_real function to EQcorrscan_plotting - use for plotting a synthetic template on top of a real template
+* Add space-time clustering fucntion to clustering, use to group repeating events
+* Add re_thresh_csv to clustering, can be used to increase the detection threshold after detection run
