@@ -339,7 +339,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     return cccsums, no_chans
 
 def match_filter(template_names, templates, stream, threshold,\
-                 threshold_type, trig_int, plotvar, cores=1,\
+                 threshold_type, trig_int, plotvar, plotdir='.', cores=1,\
                  tempdir=False, debug=0):
     """
     Over-arching code to run the correlations of given templates with a day of
@@ -368,6 +368,11 @@ def match_filter(template_names, templates, stream, threshold,\
         number of channels within this template.
     :type trig_int: float
     :param trig_int: Minimum gap between detections in seconds.
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be output here, defaults\
+        to run location.
     :type tempdir: String or False
     :param tempdir: Directory to put temporary files, or False
     :type cores: int
@@ -481,23 +486,24 @@ def match_filter(template_names, templates, stream, threshold,\
         if plotvar:
             stream_plot=copy.deepcopy(stream[0])
             # Downsample for plotting
-            stream_plot.decimate(int(stream[0].stats.sampling_rate/20))
+            stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
             cccsum_plot=Trace(cccsum)
             cccsum_plot.stats.sampling_rate=stream[0].stats.sampling_rate
             # Resample here to maintain shape better
             cccsum_hist=cccsum_plot.copy()
-            cccsum_hist=cccsum_hist.decimate(int(stream[0].stats.sampling_rate/20)).data
-            cccsum_plot=EQcorrscan_plotting.chunk_data(cccsum_plot, 20, 'Maxabs').data
+            cccsum_hist=cccsum_hist.decimate(int(stream[0].stats.sampling_rate\
+                                                / 10)).data
+            cccsum_plot=EQcorrscan_plotting.chunk_data(cccsum_plot, 10, 'Maxabs').data
             # Enforce same length
             stream_plot.data=stream_plot.data[0:len(cccsum_plot)]
             cccsum_plot=cccsum_plot[0:len(stream_plot.data)]
             cccsum_hist=cccsum_hist[0:len(stream_plot.data)]
             EQcorrscan_plotting.triple_plot(cccsum_plot, cccsum_hist, stream_plot,\
                                             rawthresh, True,\
-                                            'plot/cccsum_plot_'+template_names[i]+'_'+\
+                                            plot_dir+'/cccsum_plot_'+template_names[i]+'_'+\
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
-                                        str(stream[0].stats.starttime.day)+'.jpg')
+                                        str(stream[0].stats.starttime.day)+'.pdf')
             np.save(template_names[i]+\
                         stream[0].stats.starttime.datetime.strftime('%Y%j'),\
                     cccsum)
