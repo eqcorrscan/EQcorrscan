@@ -774,8 +774,6 @@ def plot_synth_real(real_template, synthetic, channels=False):
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
     """
-    import matplotlib.pyplot as plt
-    import numpy as np
     from obspy.signal.cross_correlation import xcorr
     from obspy import Stream
     colours=['k', 'r']
@@ -825,4 +823,3 @@ def plot_synth_real(real_template, synthetic, channels=False):
     # axes[0].legend()
     axes[-1].set_xlabel('Time (s)')
     plt.show()
-
