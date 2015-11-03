@@ -2,14 +2,27 @@
 Test function to do a **very** basic simulation of a seismogram to see how well
 a simple model would fit with real data.
 
-Written as part of the EQcorrscan project, but not yet distributed.
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
 import numpy as np
 
-def seis_sim(SP, amp_ratio=1.5, flength=False,phaseout='all'):
+def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.
     Will generate spikes separated by a given S-P time, which are then convolved
