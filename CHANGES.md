@@ -34,3 +34,4 @@ Note, double release due to failed 0.0.6 release
 * Add plot directory output option to match_filter
 * Change plot downsampling to 10 Hz
 * Clustering.cluster now output groups properly when computing clustering by cross-correlation
+* Add plot_synth_real function to EQcorrscan_plotting - use for plotting a synthetic template on top of a real template

@@ -761,3 +761,68 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
             axes[0].set_title(stachan)
         plt.show()
     return
+
+def plot_synth_real(real_template, synthetic, channels=False):
+    """
+    Plot multiple channels of data for real data and synthetic
+
+    :type real_template: obspy.Stream
+    :param real_template: Stream of the real template
+    :type synthetic: obspy.Stream
+    :param synthetic: Stream of synthetic template
+    :type channels: List of str
+    :param channels: List of tuples of (station, channel) to plot, default is\
+            False, which plots all.
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from obspy.signal.cross_correlation import xcorr
+    from obspy import Stream
+    colours=['k', 'r']
+    labels=['Real', 'Synthetic']
+    if channels:
+        real=[]
+        synth=[]
+        for stachan in channels:
+            real.append(real_template.select(station=stachan[0],\
+                                             channel=stachan[1]))
+            synth.append(synthetic.select(station=stachan[0],\
+                                          channel=stachan[1]))
+        real_template=Stream(real)
+        synthetic=Stream(synth)
+
+    # Extract the station and channels
+    stachans = list(set([(tr.stats.station, tr.stats.channel)\
+                         for tr in real_stream]))
+    fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=(5,10))
+    axes=axes.ravel()
+    for i, stachan in enumerate(stachans):
+        real_tr=real_template.select(station=stachan[0],\
+                                     channel=stachan[1])[0]
+        synth_tr=synthetic.select(station=stachan[0],\
+                                           channel=stachan[1])[0]
+        shift, corr = xcorr(real_tr, synth_tr, 2)
+        print 'Shifting by: '+str(shift)+' samples'
+        if corr < 0:
+            synth_tr.data = synth_tr.data * -1
+            corr = corr * -1
+        if shift < 0:
+            synth_tr.data = synth_tr.data[abs(shift):]
+            real_tr.data = real_tr.data[0:len(synth_tr.data)]
+        elif shift > 0:
+            real_tr.data = real_tr.data[abs(shift):]
+            synth_tr.data = synth_tr.data[0:len(real_tr.data)]
+        for j, tr in enumerate([real_tr, synth_tr]):
+            y = tr.data
+            y = y / float(max(abs(y)))
+            x = np.arange(0, len(y))
+            x = x / tr.stats.sampling_rate
+            axes[i].plot(x, y, colours[j], linewidth=2.0, label=labels[j])
+            axes[i].get_yaxis().set_ticks([])
+        axes[i].set_ylabel(stachan[0]+'.'+stachan[1]+' cc='+str(round(corr,2)),\
+                           rotation=0)
+    plt.subplots_adjust(hspace=0)
+    # axes[0].legend()
+    axes[-1].set_xlabel('Time (s)')
+    plt.show()
+
