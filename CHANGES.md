@@ -19,6 +19,8 @@ use to group repeating events;
 * Add [re_thresh_csv](EQcorrscan/eqcorrscan/utils/clustering.py#L551) 
 to clustering, can be used to increase 
 the detection threshold after detection run;
+* Add mock modules to conf.py for ReadTheDocs, also removed 
+requirements.txt file as it was unused;
 
 :volcano:
 
