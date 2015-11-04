@@ -336,7 +336,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 
 def match_filter(template_names, templates, stream, threshold,\
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,\
-                 tempdir=False, debug=0):
+                 tempdir=False, debug=0, plot_format='jpg'):
     """
     Over-arching code to run the correlations of given templates with a day of
     seismic data and output the detections based on a given threshold.
@@ -509,13 +509,17 @@ def match_filter(template_names, templates, stream, threshold,\
             cccsum_hist=cccsum_hist[0:len(stream_plot.data)]
             EQcorrscan_plotting.triple_plot(cccsum_plot, cccsum_hist, stream_plot,\
                                             rawthresh, True,\
-                                            plot_dir+'/cccsum_plot_'+template_names[i]+'_'+\
+                                            plotdir+'/cccsum_plot_'+template_names[i]+'_'+\
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
-                                        str(stream[0].stats.starttime.day)+'.pdf')
-            np.save(template_names[i]+\
-                        stream[0].stats.starttime.datetime.strftime('%Y%j'),\
-                    cccsum)
+                                        str(stream[0].stats.starttime.day)+'.'+\
+                                            plot_format)
+            if debug >= 4:
+                print 'Saved the cccsum to: '+template_names[i]+\
+                            stream[0].stats.starttime.datetime.strftime('%Y%j')
+                np.save(template_names[i]+\
+                            stream[0].stats.starttime.datetime.strftime('%Y%j'),\
+                        cccsum)
         tic=time.clock()
         if debug>=4:
             np.save('cccsum_'+str(i)+'.npy', cccsum)
