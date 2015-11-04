@@ -28,8 +28,8 @@ other functions to be called without turning off interactive plots.
 of both P and S phases.
 * Add sanity check for nyquist frequency to utils.pre_processing, now
 breaks if highcut >= samp_rate
-* Add plot_format option to match_filter
-
+* Add plot_format option to core.match_filter
+* Add multiple phase capability to utils.synth_seis
 
 :volcano:
 
