@@ -52,8 +52,12 @@ def cross_chan_coherence(st1, st2, i=0):
         if tr2:
             cccoh+=normxcorr2(tr1,tr2[0].data)[0][0]
             kchan+=1
-    cccoh=cccoh/kchan
-    return (cccoh, i)
+    if kchan:
+        cccoh=cccoh/kchan
+        return (cccoh, i)
+    else:
+        warnings.warn('No matching channels')
+        return (0, i)
 
 def distance_matrix(stream_list, cores=1):
     """
