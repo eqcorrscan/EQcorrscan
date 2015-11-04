@@ -22,6 +22,12 @@ the detection threshold after detection run;
 * Add mock modules to conf.py for ReadTheDocs, also removed
 requirements.txt file as it was unused;
 * Added parallel options to distance_matrix computation in clustering.
+* Change matplotlib import location in match_filter to allow
+other functions to be called without turning off interactive plots.
+* Add **both** option to utils.synth_seis to allow individual creation
+of both P and S phases.
+* Add sanity check for nyquist frequency to utils.pre_processing, now
+breaks if highcut >= samp_rate
 
 :volcano:
 

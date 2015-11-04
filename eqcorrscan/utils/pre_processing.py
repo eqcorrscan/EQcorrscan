@@ -65,7 +65,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
 
     :return: obspy.Stream
     """
-
+    # Add sanity check for filter
+    if highcut >= 0.5*samp_rate:
+        raise IOError('Highcut must be lower than the nyquist')
     for tr in st:
         if debug > 4:
             tr.plot()
@@ -122,7 +124,9 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
 
     :return: obspy.Stream
     """
-
+    # Add sanity check
+    if highcut >= 0.5*samp_rate:
+        raise IOError('Highcut must be lower than the nyquist')
     day=str(starttime.year)+str(starttime.month).zfill(2)+\
         str(starttime.day).zfill(2)
     if debug>=2:
