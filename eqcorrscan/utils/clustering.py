@@ -25,6 +25,7 @@ This file is part of EQcorrscan.
 # as making sure that they are similarly correlated - will cluster based on
 # cross-channel correlation sum
 import numpy as np
+import warnings
 
 def cross_chan_coherence(st1, st2, i=0):
     """
