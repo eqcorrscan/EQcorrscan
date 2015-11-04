@@ -155,8 +155,11 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
     :type flength: int
     :param flength: Length of template in samples, defaults to False
     :type phaseout: str
-    :param phaseout: Either 'S', 'P' or 'all', determines which phases to clip\
-     around
+    :param phaseout: Either 'S', 'P', 'all' or 'both', determines which phases \
+            to clip around.  'all' Encompasses both phases in one channel, but\
+            will return nothing if the flength is not long enough, 'both' will\
+            return two channels for each stations, one SYN_Z with the synthetic\
+            P-phase, and one SYN_H with the synthetic S-phase.
 
     :returns: List of :class:obspy.Stream
     """
@@ -179,11 +182,21 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
             tr.stats.channel='SYN'
             tt=travel_times[j][i]
             if phase=='P':
+                # If the input travel-time is the P-wave travel-time
                 SP_time=(tt*PS_ratio)-tt
-                tr.stats.starttime+=tt
-            else:
+                if phaseout=='S':
+                    tr.stats.starttime+=tt+SP_time
+                else:
+                    tr.stats.starttime+=tt
+            elif phase=='S':
+                # If the input travel-time is the S-wave travel-time
                 SP_time=tt-(tt/PS_ratio)
-                tr.stats.starttime+=(tt/PS_ratio)
+                if phaseout=='S':
+                    tr.stats.starttime+=tt
+                else:
+                    tr.stats.starttime+=tt-SP_time
+            else:
+                raise IOError('Input grid is not P or S')
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
             # if SP_time*samp_rate > flength-11:
@@ -198,10 +211,25 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                                 flength=flength, phaseout=phaseout)
                 st.append(tr)
+            elif phaseout=='all':
+                warnings.warn('Cannot make a bulk synthetic with this fixed '+\
+                              'length for station '+station)
             elif phaseout in ['P','S']:
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                                 flength=flength, phaseout=phaseout)
                 st.append(tr)
+            elif phaseout == 'both':
+                for _phaseout in ['P', 'S']:
+                    _tr=tr.copy()
+                    _tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
+                                flength=flength, phaseout=_phaseout)
+                    if _phaseout=='P':
+                        _tr.stats.channel='SYN_Z'
+                        # starttime defaults to S-time
+                        _tr.stats.starttime=_tr.stats.starttime-SP_time
+                    elif _phaseout=='S':
+                        _tr.stats.channel='SYN_H'
+                    st.append(_tr)
             j+=1
         templates.append(Stream(st))
         # Stream(st).plot(size=(800,600))
