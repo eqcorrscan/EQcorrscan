@@ -15,6 +15,8 @@ import glob
 import datetime as dt
 import numpy as np
 
+template_phaseout='both'
+# template_phaseout='S'
 group_max=20 # Maximum number of templates to run at once, depends on memory
 
 sys.path.insert(0, '/home/calumch/my_programs/Building/EQcorrscan')
@@ -84,7 +86,6 @@ else:
     Split=False
 
 ######### END of arguments section #######
-
 from par import template_gen_par as templatedef
 from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
@@ -141,10 +142,11 @@ del allnodes, alltravel_times
 if len(nodes) == 0:
    raise IOError("You have no nodes left")
 
-# Call the template generation function
+# Call the template generation function - generate at 100 Hz then downsample
 synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
-       PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
-       flength=int(templatedef.samp_rate*templatedef.length), phaseout='S')
+       PS_ratio=brightdef.ps_ratio, samp_rate=100,\
+       flength=int(100*templatedef.length), \
+                                         phaseout=template_phaseout)
 print 'We have '+str(len(synth_templates))+' synthetic templates'
 
 # Write out the synthetics!
@@ -164,24 +166,75 @@ for synth in synth_templates:
        tr.data=(tr.data*1000).astype(np.int32)
        tr.filter('bandpass', freqmin=templatedef.lowcut,\
                    freqmax=templatedef.highcut)
+       tr.resample(templatedef.samp_rate)
        # Name the channels so that they can be found!
        if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
-           tr.stats.channel='HHN'
-           tr.stats.network='NZ'
+           if template_phaseout=='both' and tr.stats.channel == 'SYN_H':
+               tr.stats.channel='HHN'
+               tr.stats.network='NZ'
+           elif template_phaseout=='both' and tr.stats.channel == 'SYN_Z':
+               tr.stats.channel='HHZ'
+               tr.stats.network='NZ'
+           elif template_phaseout=='S':
+               tr.stats.channel='HHN'
+               tr.stats.network='NZ'
+           elif template_phaseout=='P':
+               tr.stats.channel='HHZ'
+               tr.stats.network='NZ'
        elif tr.stats.station == 'GCSZ':
-           tr.stats.channel='EH1'
-           tr.stats.network='NZ'
+           if template_phaseout=='both' and tr.stats.channel == 'SYN_H':
+               tr.stats.channel='EH1'
+               tr.stats.network='NZ'
+           elif template_phaseout=='both' and tr.stats.channel == 'SYN_Z':
+               tr.stats.channel='EHZ'
+               tr.stats.network='NZ'
+           elif template_phaseout=='S':
+               tr.stats.channel='EH1'
+               tr.stats.network='NZ'
+           elif template_phaseout=='P':
+               tr.stats.channel='EHZ'
+               tr.stats.network='NZ'
        elif tr.stats.station == 'RPZ':
-           tr.stats.channel='HH1'
-           tr.stats.network='NZ'
+           if template_phaseout=='both' and tr.stats.channel == 'SYN_H':
+               tr.stats.channel='HH1'
+               tr.stats.network='NZ'
+           elif template_phaseout=='both' and tr.stats.channel == 'SYN_Z':
+               tr.stats.channel='HHZ'
+               tr.stats.network='NZ'
+           elif template_phaseout=='S':
+               tr.stats.channel='HH1'
+               tr.stats.network='NZ'
+           elif template_phaseout=='P':
+               tr.stats.channel='HHZ'
+               tr.stats.network='NZ'
        elif tr.stats.station in ['EORO','WHYM','COSA','GOVA','LABE','MTFO',\
                                    'COVA','POCR','SOLU','WHAT',\
-                                   'MTBA','SOLU']:
-           tr.stats.channel='SHN'
-           tr.stats.network='AF'
+                                   'MTBA','SOLU','LARB']:
+           if template_phaseout=='both' and tr.stats.channel == 'SYN_H':
+               tr.stats.channel='SHN'
+               tr.stats.network='AF'
+           elif template_phaseout=='both' and tr.stats.channel == 'SYN_Z':
+               tr.stats.channel='SHZ'
+               tr.stats.network='AF'
+           elif template_phaseout=='S':
+               tr.stats.channel='SHN'
+               tr.stats.network='AF'
+           elif template_phaseout=='P':
+               tr.stats.channel='SHZ'
+               tr.stats.network='AF'
        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
-           tr.stats.channel='SH2'
-           tr.stats.network='AF'
+           if template_phaseout=='both' and tr.stats.channel == 'SYN_H':
+               tr.stats.channel='SH2'
+               tr.stats.network='AF'
+           elif template_phaseout=='both' and tr.stats.channel == 'SYN_Z':
+               tr.stats.channel='SH1'
+               tr.stats.network='AF'
+           elif template_phaseout=='S':
+               tr.stats.channel='SH2'
+               tr.stats.network='AF'
+           elif template_phaseout=='P':
+               tr.stats.channel='SH1'
+               tr.stats.network='AF'
    synth.write('templates/synthetics/swarm/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
                #encoding='STEIM2', reclen=512)
@@ -193,10 +246,10 @@ for synth in synth_templates:
 del nodes, travel_times
 
 
-template_names=glob.glob('templates/synthetics/swarm/*_template.ms')
-templates=[obsread(tfile) for tfile in template_names]
-template_names=[t.split('/')[-1].split('_template.ms')[0] \
-                for t in template_names]
+# template_names=glob.glob('templates/synthetics/swarm/*_template.ms')
+# templates=[obsread(tfile) for tfile in template_names]
+# template_names=[t.split('/')[-1].split('_template.ms')[0] \
+                # for t in template_names]
 
 print 'We have '+str(len(templates))+' templates with at least five stations'
 print 'Working out what stations we have'
@@ -225,6 +278,7 @@ for template in templates:
             stations.append(tr.stats.station+'.'+tr.stats.channel[0]+\
                             '*'+tr.stats.channel[1]+'.'+tr.stats.network)
         else:
+            print tr.stats.station+' '+tr.stats.channel
             raise ValueError('Channels are not named with either three or two characters')
 stations=list(set(stations))
 # Use the templates to scan through the datas!
@@ -363,7 +417,7 @@ for day in dates:
                                                                    matchdef.debug, day)\
                                 for tr in st)
         if not Prep:
-            # For some reason st is now a list rather than a stream
+            # st is now a list rather than a stream
             if 'stream_st' in locals():
                 del stream_st
             for tr in st:
@@ -372,6 +426,7 @@ for day in dates:
                 else:
                     stream_st=Stream(tr)
             st=stream_st
+            # st.plot(size=(800,600), equal_scale=False)
             # Call the match_filter module - returns detections, a list of detections
             # containted within the detection class with elements, time, template,
             # number of channels used and cross-channel correlation sum.
@@ -394,7 +449,7 @@ for day in dates:
                 detections+=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot,
-                                                 matchdef.cores,
+                                                 plotdir='.', cores=matchdef.cores,
                                                  tempdir='temp_'+str(instance))
 
             for detection in detections:
