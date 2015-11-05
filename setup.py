@@ -16,20 +16,37 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
+import eqcorrscan
 # To use a consistent encoding
 from codecs import open
 from os import path
+import warnings
+import glob
+try:
+    from pypandoc import convert
+    read_md = lambda f: convert(f, 'rst')
+except ImportError:
+    print("warning: pypandoc module not found, could not convert Markdown to RST")
+    read_md = lambda f: open(f, 'r').read()
 
-# try:
-    # import cv2
-# except:
-    # raise ImportError('No cv2 module, openCV, you need to install this yourself')
+try:
+    import cv2
+except:
+    warnings.warn('##### No cv2 module, openCV, you need to install this yourself')
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+long_description = read_md('README.md')
+
+# Get a list of all the scripts not to be installed
+scriptfiles=glob.glob('eqcorrscan/scripts/*.py')
+scriptfiles+=glob.glob('eqcorrscan/*.sl')
+scriptfiles+=glob.glob('eqcorrscan/tutorial.py')
+scriptfiles+=glob.glob('eqcorrscan/WHATVsearch.py')
+scriptfiles+=glob.glob('eqcorrscan/LFE_brightness_search.py')
+scriptfiles+=glob.glob('eqcorrscan/synth_test.py')
+
 
 setup(
     name='EQcorrscan',
@@ -37,7 +54,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.3',
+    version=eqcorrscan.__version__,
 
     description='EQcorrscan - correlation earthquake detection',
     long_description=long_description,
@@ -61,11 +78,11 @@ setup(
         'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Seismologists',
-        'Topic :: Seismology :: Earthquake Detection',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: LGPL License',
+        'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
@@ -77,16 +94,18 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['docs', 'tests*', 'scripts', 'test_data',\
+    packages=find_packages(exclude=['docs', 'tests', 'test_data',\
                                     'grid', 'detections', 'templates',\
                                     'stack_templates', 'par']),
+
+    scripts = scriptfiles,
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy', 'numpy', 'matplotlib', 'joblib',\
-     'scipy>=0.14'],
+    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0', \
+    'joblib>=0.8.4', 'scipy>=0.14'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -100,15 +119,15 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    # package_data={
-    #     'sample': ['package_data.dat'],
-    # },
+    #package_data={
+    #   'tutorial_data': ['test_data'],
+    #},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    # data_files=[('my_data', ['data/data_file'])],
+    #data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow

@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>lag_calc &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>lag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -201,7 +201,7 @@
 
 <span class="sd">    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
     <span class="n">picks</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)):</span>
         <span class="n">image</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">template</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
@@ -275,7 +275,7 @@
 <span class="sd">    :param min_cc: Minimum cross-correlation value to be considered a pick,</span>
 <span class="sd">                    default=0.4</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
     <span class="c"># First work out the delays for each template</span>
     <span class="n">delays</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of tuples</span>
@@ -352,7 +352,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

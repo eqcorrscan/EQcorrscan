@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script to utilise the match_filter routines of EQcorrscan and the synth_seis
 routines in the utils of EQcorrscan.  This script will read in a grid of
@@ -8,9 +9,13 @@ routine to detect similar, real-earthquakes in coninuous seismic data.
 These detected events can then be stacked and used as further templates...
 ad infinitium...
 """
-import os, sys, glob, datetime as dt, numpy as np
-sys.path.append('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/Building/EQcorrscan')
-sys.path.append('/Users/goride42/Desktop/EQcorrscan')
+import os
+import sys
+import glob
+import datetime as dt
+import numpy as np
+
+sys.path.append('/projects/nesi00219/EQcorrscan')
 instance=0
 Split=False
 startdate=False
@@ -77,10 +82,10 @@ else:
 
 ######### END of arguments section #######
 
-from par import LFE_template_gen_par as templatedef
-from par import match_filter_par_LFEs as matchdef
+from par import template_gen_par as templatedef
+from par import match_filter_par as matchdef
 from par import bright_lights_par as brightdef
-from utils import seismo_logs
+from eqcorrscan.utils import seismo_logs
 if brightdef.plotsave:
     import matplotlib
     matplotlib.use('Agg')
@@ -89,9 +94,9 @@ if brightdef.plotsave:
 #from par import lagcalc as lagdef
 from obspy import UTCDateTime, Stream, read as obsread
 # First generate the templates
-from core import bright_lights, match_filter
-from utils import pre_processing, synth_seis
-from utils import EQcorrscan_plotting as plotting
+from eqcorrscan.core import bright_lights, match_filter
+from eqcorrscan.utils import pre_processing, synth_seis
+from eqcorrscan.utils import EQcorrscan_plotting as plotting
 from obspy.signal.filter import bandpass
 from joblib import Parallel, delayed
 import warnings
@@ -106,90 +111,86 @@ print '     lowcut: '+str(templatedef.lowcut)+' Hz'
 print '     highcut: '+str(templatedef.highcut)+' Hz'
 print '     length: '+str(templatedef.length)+' s'
 print '     swin: '+templatedef.swin+'\n'
+#
+#
+## Use the brightness function to search for possible templates
+## First read in the travel times
+#print 'Reading in the original grids'
+#stations, allnodes, alltravel_times = \
+#            bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
+#                                    brightdef.phase, phaseout='S', \
+#                                    ps_ratio=brightdef.ps_ratio, lags_switch=False)
+#print 'I have read in '+str(len(allnodes))+' nodes'
+#
+## We now have a grid of travel-times which can then be used to generate synthetic\
+## seismograms using the utils.synth_seis functions.
+#
+## We should trim the grid to the area we want to work in
+#print 'Cutting the grid'
+#stations, nodes, travel_times = bright_lights._resample_grid(stations, allnodes,
+#                                                     alltravel_times,
+#                                                     brightdef.mindepth,
+#                                                     brightdef.maxdepth,
+#                                                     brightdef.corners,
+#                                                     brightdef.resolution)
+#del allnodes, alltravel_times
+## Check that we still have a grid!
+#if len(nodes) == 0:
+#    raise IOError("You have no nodes left")
+#
+## Call the template generation function
+#synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'S', \
+#        PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
+#        flength=int(templatedef.samp_rate*templatedef.length))
+#print 'We have '+str(len(synth_templates))+' synthetic templates'
+#
+## Write out the synthetics!
+#i=0
+#template_names=[] # List of the template names, which will be the node location
+#templates=[]
+#for synth in synth_templates:
+#    # We need the data to be in int32
+#    stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
+#    if len(list(set(stations))) < 5:
+#        # Only write and use templates with at least five stations
+#        i+=1
+#        continue
+#    for tr in synth:
+#        tr.data=(tr.data*1000).astype(np.int32)
+#        tr.filter('bandpass', freqmin=templatedef.lowcut,\
+#                    freqmax=templatedef.highcut)
+#        # Name the channels so that they can be found!
+#        if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
+#            tr.stats.channel='HHN'
+#            tr.stats.network='NZ'
+#        elif tr.stats.station == 'GCSZ':
+#            tr.stats.channel='EH1'
+#            tr.stats.network='NZ'
+#        elif tr.stats.station == 'RPZ':
+#            tr.stats.channel='HH1'
+#            tr.stats.network='NZ'
+#        elif tr.stats.station in ['EORO','WHYM','COSA','GOVA','LABE','MTFO',\
+#                                    'COVA','POCR','SOLU','WHAT',\
+#                                    'MTBA','SOLU']:
+#            tr.stats.channel='SHN'
+#            tr.stats.network='AF'
+#        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
+#            tr.stats.channel='SH2'
+#            tr.stats.network='AF'
+#    synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
+#                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
+#                #encoding='STEIM2', reclen=512)
+#    template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
+#                '_'+str(nodes[i][2]))
+#    templates.append(synth)
+#    i+=1
 
+#del nodes, travel_time
 
-# Use the brightness function to search for possible templates
-# First read in the travel times
-print 'Reading in the original grids'
-stations, allnodes, alltravel_times = \
-            bright_lights._read_tt(brightdef.nllpath,brightdef.stations,\
-                                    brightdef.phase, phaseout='P', \
-                                    ps_ratio=brightdef.ps_ratio, lags_switch=False)
-print 'I have read in '+str(len(allnodes))+' nodes'
-
-# We now have a grid of travel-times which can then be used to generate synthetic\
-# seismograms using the utils.synth_seis functions.
-
-# We should trim the grid to the area we want to work in
-print 'Cutting the grid'
-stations, nodes, travel_times = bright_lights._resample_grid(stations, allnodes,
-                                                     alltravel_times,
-                                                     brightdef.mindepth,
-                                                     brightdef.maxdepth,
-                                                     brightdef.corners,
-                                                     brightdef.resolution)
-del allnodes, alltravel_times
-# Check that we still have a grid!
-if len(nodes) == 0:
-    raise IOError("You have no nodes left")
-
-print "Removing simlar lags"
-stations, nodes, travel_times = bright_lights._rm_similarlags(stations, nodes,\
-                                                              travel_times,
-                                                      brightdef.nodesimthresh)
-
-# Call the template generation function
-synth_templates=synth_seis.template_grid(stations, nodes, travel_times, 'P', \
-        PS_ratio=brightdef.ps_ratio, samp_rate=templatedef.samp_rate,\
-        flength=int(templatedef.samp_rate*templatedef.length), phaseout='S')
-print 'We have '+str(len(synth_templates))+' synthetic templates'
-
-# Write out the synthetics!
-i=0
-template_names=[] # List of the template names, which will be the node location
-templates=[]
-for synth in synth_templates:
-    # We need the data to be in int32
-    stations=[tr.stats.station for tr in synth if tr.stats.station not in ['WHAT','POCR']]
-    if len(list(set(stations))) < 5:
-        # Only write and use templates with at least five stations
-        i+=1
-        continue
-    for tr in synth:
-        tr.filter('bandpass', freqmin=templatedef.lowcut,\
-                    freqmax=templatedef.highcut)
-        tr.data=(tr.data*1000).astype(np.int32)
-        # Name the channels so that they can be found!
-        if tr.stats.station in ['FOZ','JCZ','LBZ','WVZ']:
-            tr.stats.channel='HHN'
-            tr.stats.network='NZ'
-        elif tr.stats.station == 'GCSZ':
-            tr.stats.channel='EH1'
-            tr.stats.network='NZ'
-        elif tr.stats.station == 'RPZ':
-            tr.stats.channel='HH1'
-            tr.stats.network='NZ'
-        elif tr.stats.station in ['EORO','WHYM','COSA','GOVA','LABE','MTFO',\
-                                    'COVA','POCR','SOLU','WHAT',\
-                                    'MTBA','SOLU','LARB']:
-            tr.stats.channel='SHN'
-            tr.stats.network='AF'
-        elif tr.stats.station in ['FRAN','POCR2','WHAT2']:
-            tr.stats.channel='SH2'
-            tr.stats.network='AF'
-    synth.write('templates/synthetics/'+str(nodes[i][0])+'_'+str(nodes[i][1])+\
-                '_'+str(nodes[i][2])+'_template.ms', format='MSEED')#,\
-                #encoding='STEIM2', reclen=512)
-    template_names.append(str(nodes[i][0])+'_'+str(nodes[i][1])+\
-                '_'+str(nodes[i][2]))
-    templates.append(synth)
-    i+=1
-
-del nodes, travel_times
-# template_names=glob.glob('templates/synthetics/*_template.ms')
-# templates=[obsread(tfile) for tfile in template_names]
-# template_names=[t.split('/')[-1].split('_template.ms')[0] \
-                # for t in template_names]
+template_names=glob.glob('templates/synthetics/*_template.ms')
+templates=[obsread(tfile) for tfile in template_names]
+template_names=[t.split('/')[-1].split('_template.ms')[0] \
+                for t in template_names]
 
 print 'We have '+str(len(templates))+' templates with at least five stations'
 print 'Working out what stations we have'
@@ -220,7 +221,6 @@ for template in templates:
         else:
             raise ValueError('Channels are not named with either three or two characters')
 stations=list(set(stations))
-print stations
 # Use the templates to scan through the datas!
 # Work out what days are to be scanned through
 if startdate:
@@ -243,14 +243,16 @@ if Split:
     print 'This instance will run from '+str(min(dates))
 
 
-f=open('detections/synthetics_'+str(min(dates).year)+\
+f=open('detections/synth_'+str(min(dates).year)+\
        str(min(dates).month).zfill(2)+\
        str(min(dates).day).zfill(2)+'_'+\
        str(max(dates).year)+str(max(dates).month).zfill(2)+\
        str(max(dates).day).zfill(2),'w')
 f.write('template, detect-time, cccsum, threshold, number of channels\n')
 
-# Loop taken from LFEsearch.py script
+all_templates=templates
+all_template_names=template_names
+
 for day in dates:
     if 'st' in locals():
         del st
@@ -264,8 +266,10 @@ for day in dates:
         station=stachan.split('.')[0]
         channel=stachan.split('.')[1]
         netcode=stachan.split('.')[2]
-        rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+        rawdir='/projects/nesi00219/logfiles/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
                     str(day.year)+str(day.julday).zfill(3)
+        #rawdir='/Volumes/Taranaki_01/data/boseca/SAMBA_mar09/'+station+'/'+\
+        #            str(day.year)+str(day.julday).zfill(3)
         errors, full = seismo_logs.check_all_logs(rawdir, \
                                                   1.0/templatedef.samp_rate)
         if len(errors) > 1:
@@ -368,23 +372,32 @@ for day in dates:
             print 'Running the detection routine'
             if not os.path.isdir('temp_'+str(instance)):
                 os.makedirs('temp_'+str(instance))
-            detections=match_filter.match_filter(template_names, templates, st,
+            groups=0
+            detections=[]
+            # Cope with having heaps of templates
+            if len(all_templates) > 100:
+                groups=int(len(all_templates)/100)
+            for i in xrange(groups):
+                if i==groups:
+                    templates=all_templates[i*100:]
+                    template_names=all_template_names[i*100:]
+                else:
+                    templates=all_templates[i*100:(i+1)*100]
+                    template_names=all_template_names[i*100:(i+1)*100]
+                    
+                detections+=match_filter.match_filter(template_names, templates, st,
                                                  matchdef.threshold, matchdef.threshtype,
                                                  matchdef.trig_int,  matchdef.plot,
-                                                 'temp_'+str(instance))
+                                                 matchdef=matchdef,
+                                                 tempdir='temp_'+str(instance))
 
             for detection in detections:
-                # Check that at least the minimum number of stations have been
-                # used
-                if detection.no_chans < matchdef.minsta:
-                    print 'Too few stations for this detection: '+str(no_chans)
-                else:
-                    # output detections to file
-                    f.write(detection.template_name+', '+str(detection.detect_time)+\
-                            ', '+str(detection.detect_val)+', '+str(detection.threshold)+\
-                            ', '+str(detection.no_chans)+'\n')
-                    print 'template: '+detection.template_name+' detection at: '\
-                        +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
+                # output detections to file
+                f.write(detection.template_name+', '+str(detection.detect_time)+\
+                        ', '+str(detection.detect_val)+', '+str(detection.threshold)+\
+                        ', '+str(detection.no_chans)+'\n')
+                print 'template: '+detection.template_name+' detection at: '\
+                    +str(detection.detect_time)+' with a cccsum of: '+str(detection.detect_val)
             if detections:
                 f.write('\n')
         else:

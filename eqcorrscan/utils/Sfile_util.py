@@ -31,14 +31,20 @@ This file is part of EQcorrscan.
 
 from obspy import UTCDateTime
 import numpy as np
+
 class PICK:
     """
     Pick information for seisan implimentation
     """
     pickcount=0
-    def __init__(self, station, channel, impulsivity, phase, weight, polarity,
-                 time, coda, amplitude, peri, azimuth, velocity, AIN, SNR,
-                 azimuthres, timeres, finalweight, distance, CAZ):
+    def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
+                 weight=999, polarity=' ', time=UTCDateTime(0),
+                 coda=999, amplitude=float('NaN'),
+                 peri=float('NaN'), azimuth=float('NaN'),
+                 velocity=float('NaN'), AIN=' ', SNR=999,
+                 azimuthres=999, timeres=float('NaN'),
+                 finalweight=999, distance=float('NaN'),
+                 CAZ=999):
         self.station=station
         self.channel=channel
         self.impulsivity=impulsivity
@@ -97,10 +103,13 @@ class EVENTINFO:
     """
     Header information for seisan events
     """
-    def __init__(self, time, loc_mod_ind, dist_ind, ev_id, latitude, longitude,
-                 depth, depth_ind, loc_ind, agency, nsta, t_RMS, Mag_1,
-                 Mag_1_type, Mag_1_agency, Mag_2, Mag_2_type, Mag_2_agency,
-                 Mag_3, Mag_3_type, Mag_3_agency):
+    def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
+                 ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
+                 depth=float('NaN'), depth_ind=' ', loc_ind=' ', agency=' ',
+                 nsta=0, t_RMS=float('NaN'), Mag_1=float('NaN'),
+                 Mag_1_type=' ', Mag_1_agency=' ', Mag_2=float('NaN'),
+                 Mag_2_type=' ', Mag_2_agency=' ', Mag_3=float('NaN'),
+                 Mag_3_type=' ', Mag_3_agency=' '):
         self.time=time
         self.loc_mod_ind=loc_mod_ind
         self.dist_ind=dist_ind
@@ -180,10 +189,7 @@ def readheader(sfilename):
     import warnings
     f=open(sfilename,'r')
     # Base populate to allow for empty parts of file
-    sfilename_header=EVENTINFO(UTCDateTime(), '', '', '',  float('NaN'),
-                               float('NaN'), float('NaN'), '', '', '', 0,
-                               float('NaN'), float('NaN'), '', '', float('NaN'),
-                               '', '', float('NaN'), '', '')
+    sfilename_header=EVENTINFO()
     topline=f.readline()
     if topline[79]==' ' or topline[79]=='1':
         # Topline contains event information
@@ -276,7 +282,8 @@ def readpicks(sfilename):
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if len(line.rstrip('\n').rstrip('\r'))==80 and (line[79]==' ' or line[79]=='4'):
+            if len(line.rstrip('\n').rstrip('\r')) in [80,79] and \
+               (line[79]==' ' or line[79]=='4' or line [79]=='\n'):
                 pickline+=[line]
         elif line[79]=='7':
             header=line
@@ -312,7 +319,7 @@ def readpicks(sfilename):
         velocity=_float_conv(line[52:56])
         if header[57:60]=='AIN':
             SNR=''
-            AIN=_int_conv(line[57:60])
+            AIN=_float_conv(line[57:60])
         elif header[57:60]=='SNR':
             AIN=''
             SNR=_float_conv(line[57:60])
@@ -369,7 +376,10 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     """
 
     from obspy import read as obsread
-    import sys,os, datetime
+    import sys
+    import os
+    import datetime
+    
     if not evtime:
         try:
             st=obsread(wavefile)
@@ -539,7 +549,7 @@ def test_rw():
     assert readpicks(sfilename)[0].CAZ == test_pick.CAZ
     header = readheader(sfilename)
     os.remove(sfilename)
-    return header
+    return True
 
 if __name__=='__main__':
     # Read arguments

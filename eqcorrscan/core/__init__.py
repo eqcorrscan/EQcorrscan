@@ -36,9 +36,6 @@ Pre-requisites:
     python-pylab    - used for plotting
 """
 
-import sys
-sys.path.insert(0,"/home/processor/Desktop/EQcorrscan/core")
-
 __all__ = ['template_gen', 'match_filter', 'bright_lights']
 
 if __name__ == '__main__':

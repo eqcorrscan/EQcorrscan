@@ -29,7 +29,7 @@ def volume_plot(stationpath, database, limits):
     :type stationpath: str
     :type databse: str
     """
-    from utils import Sfile_util
+    from eqcorrscan.utils import Sfile_util
     import glob
     sfiles = glob.glob(database+'/*/*/*')
     eqlocs=[]
