@@ -45,7 +45,7 @@ def cross_chan_coherence(st1, st2):
 
     :returns: cross channel coherence, float - normalized by number of channels
     """
-    from core.match_filter import normxcorr2
+    from eqcorrscan.core.match_filter import normxcorr2
     cccoh=0.0
     kchan=0
     for tr in st1:
@@ -98,7 +98,8 @@ def cluster(templates, show=True):
                 each number relating to a cluster
     .. rubric:: Note:
         Not fully feautured yet, returns the Z matrix, but doesn't tell you what\
-        can be clustered.
+        can be clustered. It would be good to use the scikits clustering\
+        routines: http://scikit-learn.org/stable/modules/clustering.html
     """
     from scipy.spatial.distance import squareform
     from scipy.cluster.hierarchy import linkage, dendrogram
@@ -244,7 +245,7 @@ def empirical_SVD(templates, linear=True):
 
     :returns: list of two streams
     """
-    import stacking
+    from eqcorrscan.utils import stacking
     if linear:
         first_subspace=stacking.linstack(templates)
     second_subspace=first_subspace.copy()
@@ -296,7 +297,7 @@ def corr_cluster(traces, thresh=0.9):
 
     :returns: np.ndarray of bool
     """
-    import stacking
+    from eqcorrscan.utils import stacking
     from obspy import Stream
     from core.match_filter import normxcorr2
     stack=stacking.linstack([Stream(tr) for tr in traces])[0]
@@ -316,7 +317,7 @@ def corr_cluster(traces, thresh=0.9):
             output[i]=False
     return output
 
-def extract_detections(detections, templates, extract_len=90.0, \
+def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
                         outdir=None, extract_Z=True, additional_stations=[]):
     """
     Function to extract the waveforms associated with each detection in a list
@@ -331,6 +332,12 @@ def extract_detections(detections, templates, extract_len=90.0, \
     :type templates: List of tuple of string and :class: obspy.Stream
     :param templates: A list of the tuples of the template name and the template\
             Stream used to detect detections.
+    :type contbase_list: List of tuple of string
+    :param contbase_list: List of tuples of the form ['path', 'type', 'network']\
+                    Where path is the path to the continuous database, type is\
+                    the directory structure, which can be either Yyyyy/Rjjj.01,\
+                    which is the standard IRIS Year, julian day structure, or,\
+                    yyyymmdd which is a single directory for every day.
     :type extract_len: float
     :param extract_len: Length to extract around the detection (will be equally\
             cut around the detection time) in seconds.  Default is 90.0.
@@ -350,10 +357,8 @@ def extract_detections(detections, templates, extract_len=90.0, \
     :returns: List of :class: obspy.Stream
     """
     from obspy import read, UTCDateTime, Stream
-    from utils import pre_processing
+    from eqcorrscan.utils import pre_processing
     import datetime as dt
-    from par import match_filter_par as matchdef
-    from par import template_gen_par as templatedef
     import os
     from joblib import Parallel, delayed
     # Sort the template according to starttimes, needed so that stachan[i]
@@ -421,7 +426,7 @@ def extract_detections(detections, templates, extract_len=90.0, \
         stachans=list(set([stachans[1] for stachans in all_stachans][0]))
         # List of all unique stachans - read in all data
         for stachan in stachans:
-            contbase=[base for base in matchdef.contbase\
+            contbase=[base for base in contbase_list\
                       if base[2]==stachan[2]][0]
             if contbase[1]=='yyyymmdd':
                 dayfile=detection_day.strftime('%Y%m%d')+'/*'+stachan[0]+\
@@ -441,11 +446,11 @@ def extract_detections(detections, templates, extract_len=90.0, \
                     print 'No data for '+contbase[0]+'/'+dayfile
         st.merge(fill_value='interpolate')
         # We now have a stream of day long data, we should process it!
-        # st=Parallel(n_jobs=3)(delayed(pre_processing.dayproc)(tr, templatedef.lowcut,\
-                                                               # templatedef.highcut,\
-                                                               # templatedef.filter_order,\
-                                                               # templatedef.samp_rate,\
-                                                               # matchdef.debug, detection_day)\
+        # st=Parallel(n_jobs=3)(delayed(pre_processing.dayproc)(tr, lowcut,\
+                                                               # highcut,\
+                                                               # filter_order,\
+                                                               # samp_rate,\
+                                                               # debug, detection_day)\
                                 # for tr in st)
         # st=Stream(st)
         # for tr in st:

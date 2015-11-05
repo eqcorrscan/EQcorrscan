@@ -8,7 +8,7 @@ the match_filter.py routine
 import numpy as np
 # def _channel_loop(np.ndarray templates, np.ndarray stream, \
                   #np.ndarray delays, int ktemplates):
-def _channel_loop( templates, stream, delays, ktemplates, savedir=False):
+def _channel_loop( templates, stream, delays, ktemplates, savedir=False, cores=10):
     """
     Loop to generate cross channel correaltion sums for a series of templates
     hands off the actual correlations to a sister function which can be run in
@@ -30,6 +30,8 @@ def _channel_loop( templates, stream, delays, ktemplates, savedir=False):
     :type savedir: Str or bool
     :param savedir: If false, data will be kept in memory, otherwise, data will\
             be stored on disk if memory is tight.
+    :type cores: int
+    :param cores: Number of cores to use.
 
     :return: :class: 'numpy.ndarray' objects.  These will contain the\
     correlation sums for each template for this day of data.
@@ -47,8 +49,7 @@ def _channel_loop( templates, stream, delays, ktemplates, savedir=False):
     import os, multiprocessing as mp
     DTYPE = np.float32
     # ctypedef np.float32_t DTYPE_t
-    from par import match_filter_par as matchdef
-    num_cores=matchdef.cores
+    num_core=cores
     if len(templates) < num_cores:
         num_cores = len(templates)
 

@@ -12,3 +12,5 @@ stdout_*
 matchout_*
 stderr_*
 matcherr_*
+build
+dist

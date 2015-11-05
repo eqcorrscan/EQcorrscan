@@ -1,18 +1,18 @@
-#!/bin/bash - 
+#!/bin/env bash
 #===============================================================================
 #
 #          FILE: run_all_time_matches.sh
-# 
-#         USAGE: ./run_all_time_matches.sh 
-# 
-#   DESCRIPTION: 
-# 
+#
+#         USAGE: ./run_all_time_matches.sh
+#
+#   DESCRIPTION:
+#
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
 #          BUGS: ---
 #         NOTES: ---
-#        AUTHOR: YOUR NAME (), 
-#  ORGANIZATION: 
+#        AUTHOR: YOUR NAME (),
+#  ORGANIZATION:
 #       CREATED: 20/07/15 02:15:10 UTC
 #      REVISION:  ---
 #===============================================================================
