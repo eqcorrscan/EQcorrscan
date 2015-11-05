@@ -34,14 +34,58 @@ import numpy as np
 
 class PICK:
     """
-    Pick information for seisan implimentation
+    Pick information for seisan implimentation, note all fields can be left\
+    blank to obtain a default pick: picks have a print function which will\
+    print them as they would be seen in an S-file.
+
+    Attributes:
+        :type station: str
+        :param station: Station name, less than five charectars required as\
+         standard
+        :type channel: str
+        :param channel: Two or three charactar channel name, stored as two\
+            charactars in S-file
+        :type impulsivity: str
+        :param impulsivity: either 'C' or 'D' for compressive and dilatational
+        :type phase: str
+        :param phase: Any allowable phase name in two characters
+        :type weight: int
+        :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing
+        :type polarity: str
+        :param polarity:
+        :type time: obspy.UTCDateTime()
+        :param time: Pick time as an obspy.UTCDateTime object
+        :type coda: int
+        :param coda: Length of coda in seconds
+        :type amplitude: float
+        :param amplitude: Amplitude, type is given in phase
+        :type peri: float
+        :param peri: Period of amplitude
+        :type azimuth: float
+        :param azimuth:
+        :type velocity: float
+        :param velocity:
+        :type AIN: int
+        :param AIN:
+        :type SNR: int
+        :param SNR: Signal to noise ratio
+        :type azimuthres: int
+        :param azimuthres: Residual azimuth
+        :type timeres: float
+        :param timeres: Time residual in seconds
+        :type finalweight: int
+        :param finalweight: Final weight used in location
+        :type distance: float
+        :param distance: Source-reciever distance in km
+        :type CAZ: int
+        :param CAZ: back-azimuth.
     """
     pickcount=0
     def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
                  weight=999, polarity=' ', time=UTCDateTime(0),
                  coda=999, amplitude=float('NaN'),
                  peri=float('NaN'), azimuth=float('NaN'),
-                 velocity=float('NaN'), AIN=' ', SNR=999,
+                 velocity=float('NaN'), AIN=999, SNR=999,
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
                  CAZ=999):
@@ -104,7 +148,56 @@ class PICK:
 
 class EVENTINFO:
     """
-    Header information for seisan events
+    Header information for seisan events, again all fields can be left blank for\
+    a default empty header.  The print function for header will print important\
+    information, but not as seen in an S-file.
+
+    For more information on parameters see the seisan manual.
+
+    Attributes:
+        :type time: obspy.UTCDateTime
+        :param time: Event origin time
+        :type loc_mod_ind: str
+        :param loc_mod_ind:
+        :type dist_ind: str
+        :param dist_ind: Distance flag, usually 'L' for local, 'R' for regional\
+            and 'D' for distant
+        :type ev_id: str
+        :param ev_id: Often blank, 'E' denotes explosion and fixes depth to 0km
+        :type latitude: float
+        :param latitude: Hypocentre latitude in decimal degrees
+        :type longitude: float
+        :param lognitude: Hypocentre longitude in decimal degrees
+        :type depth: float
+        :param depth: hypocentre depth in km
+        :type depth_ind: str
+        :param depth_ind:
+        :type loc_ind: str
+        :param loc_ind:
+        :type agency: str
+        :param agency: Reporting agency, three letters
+        :type nsta: int
+        :param nsta: Number of stations recording
+        :type t_RMS: float
+        :param t_RMS: Root-mean-squared time residual
+        :type Mag_1: float
+        :param Mag_1: first magnitude
+        :type Mag_1_type: str
+        :param Mag_1_type: Type of magnitude for Mag_1 ('L', 'C', 'W')
+        :type Mag_1_agency: str
+        :param Mag_1_agency: Reporting agency for Mag_1
+        :type Mag_2: float
+        :param Mag_2: second magnitude
+        :type Mag_2_type: str
+        :param Mag_2_type: Type of magnitude for Mag_2 ('L', 'C', 'W')
+        :type Mag_2_agency: str
+        :param Mag_2_agency: Reporting agency for Mag_2
+        :type Mag_3: float
+        :param Mag_3: third magnitude
+        :type Mag_3_type: str
+        :param Mag_3_type: Type of magnitude for Mag_3 ('L', 'C', 'W')
+        :type Mag_3_agency: str
+        :param Mag_3_agency: Reporting agency for Mag_3
     """
     def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
                  ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
