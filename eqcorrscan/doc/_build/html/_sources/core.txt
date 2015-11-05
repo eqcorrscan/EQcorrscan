@@ -3,26 +3,10 @@ Core
 
 Core programs for the EQcorrscan project.
 
-bright_lights
--------------
-.. automodule:: bright_lights
-    :members:
-    :private-members:
+.. toctree::
+   :maxdepth: 4
 
-template_gen
-------------
-.. automodule:: template_gen
-    :members:
-    :private-members:
-
-match_filter
-------------
-.. automodule:: match_filter
-    :members:
-    :private-members:
-
-lag_calc
---------
-.. automodule:: lag_calc
-    :members:
-    :private-members:
+   submodules/core.bright_lights
+   submodules/core.template_gen
+   submodules/core.match_filter
+   submodules/core.lag_calc
