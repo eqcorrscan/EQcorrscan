@@ -183,9 +183,10 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,\
         for ind in indeces:
             if ind[0] == group_id:
                 group.append(stream_list[ind[1]])
-            else:
-                # Because we have sorted by group id, when it stops matching
-                # we can break the inner loop
+            elif ind[0] > group_id:
+                # Because we have sorted by group id, when the index is greater
+                # than the group_id we can break the inner loop.
+                # Patch applied by CJC 05/11/2015
                 groups.append(group)
                 break
     return groups
