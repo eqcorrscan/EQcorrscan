@@ -21,4 +21,3 @@ class Timer(object):
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
             print 'elapsed time: %f ms' % self.msecs
-

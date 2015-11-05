@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Utils &mdash; EQcorrscan 0.1.1-alpha documentation</title>
+  <title>Utils &mdash; EQcorrscan 0.0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1-alpha documentation" href="index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="index.html"/>
         <link rel="next" title="Par" href="par.html"/>
         <link rel="prev" title="Core" href="core.html"/> 
 
@@ -159,13 +159,13 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time</em>, <em>loc_mod_ind</em>, <em>dist_ind</em>, <em>ev_id</em>, <em>latitude</em>, <em>longitude</em>, <em>depth</em>, <em>depth_ind</em>, <em>loc_ind</em>, <em>agency</em>, <em>nsta</em>, <em>t_RMS</em>, <em>Mag_1</em>, <em>Mag_1_type</em>, <em>Mag_1_agency</em>, <em>Mag_2</em>, <em>Mag_2_type</em>, <em>Mag_2_agency</em>, <em>Mag_3</em>, <em>Mag_3_type</em>, <em>Mag_3_agency</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station</em>, <em>channel</em>, <em>impulsivity</em>, <em>phase</em>, <em>weight</em>, <em>polarity</em>, <em>time</em>, <em>coda</em>, <em>amplitude</em>, <em>peri</em>, <em>azimuth</em>, <em>velocity</em>, <em>AIN</em>, <em>SNR</em>, <em>azimuthres</em>, <em>timeres</em>, <em>finalweight</em>, <em>distance</em>, <em>CAZ</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=UTCDateTime(1970</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=' '</em>, <em>SNR=999</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation</p>
 </dd></dl>
 
@@ -490,7 +490,7 @@ each number relating to a cluster</p>
 </tbody>
 </table>
 <p class="rubric">Note:
-Not fully feautured yet, returns the Z matrix, but doesn&#8217;t tell you what        can be clustered.</p>
+Not fully feautured yet, returns the Z matrix, but doesn&#8217;t tell you what        can be clustered. It would be good to use the scikits clustering        routines: <a class="reference external" href="http://scikit-learn.org/stable/modules/clustering.html">http://scikit-learn.org/stable/modules/clustering.html</a></p>
 </dd></dl>
 
 <dl class="function">
@@ -583,7 +583,7 @@ the emprical subspace method of Barrett &amp; Beroza, 2014 - SRL.</p>
 
 <dl class="function">
 <dt id="clustering.extract_detections">
-<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>templates</em>, <em>extract_len=90.0</em>, <em>outdir=None</em>, <em>extract_Z=True</em>, <em>additional_stations=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">clustering.</code><code class="descname">extract_detections</code><span class="sig-paren">(</span><em>detections</em>, <em>templates</em>, <em>contbase_list</em>, <em>extract_len=90.0</em>, <em>outdir=None</em>, <em>extract_Z=True</em>, <em>additional_stations=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/clustering.html#extract_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#clustering.extract_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to extract the waveforms associated with each detection in a list
 of detections for the template, template.  Waveforms will be returned as
 a list of obspy.Streams containing segments of extract_len.  They will also
@@ -596,6 +596,7 @@ is 90 seconds per channel.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>detections</strong> (<em>List tuple of of :class: datetime.datetime, string</em>) &#8211; List of datetime objects, and their associated template            name</li>
 <li><strong>templates</strong> (<em>List of tuple of string and :class: obspy.Stream</em>) &#8211; A list of the tuples of the template name and the template            Stream used to detect detections.</li>
+<li><strong>contbase_list</strong> (<em>List of tuple of string</em>) &#8211; List of tuples of the form [&#8216;path&#8217;, &#8216;type&#8217;, &#8216;network&#8217;]                    Where path is the path to the continuous database, type is                    the directory structure, which can be either Yyyyy/Rjjj.01,                    which is the standard IRIS Year, julian day structure, or,                    yyyymmdd which is a single directory for every day.</li>
 <li><strong>extract_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length to extract around the detection (will be equally            cut around the detection time) in seconds.  Default is 90.0.</li>
 <li><strong>outdir</strong> (<em>Bool or String</em>) &#8211; Default is None, with None set, no files will be saved,            if set each detection will be saved into this directory with files            named according to the detection time, NOT than the waveform            start time. Detections will be saved into template subdirectories.</li>
 <li><strong>extract_Z</strong> (<em>Bool</em>) &#8211; Set to True to also extract Z channels for detections            delays will be the same as horizontal channels, only applies if            only horizontal channels were used in the template.</li>
@@ -812,6 +813,38 @@ plot for each stachan</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="EQcorrscan_plotting.chunk_data">
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">chunk_data</code><span class="sig-paren">(</span><em>tr</em>, <em>samp_rate</em>, <em>state='mean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#chunk_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.chunk_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to downsample data for plotting by computing the maximum of
+data within chunks, usefil for plotting waveforms or cccsums, large datasets
+that ould otherwise exceed the complexity allowed, and overflow.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> &#8211; Trace to be chunked</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>state</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;Min&#8217;, &#8216;Max&#8217;, &#8216;Mean&#8217; or &#8216;Maxabs&#8217; to return one of            these for the chunks. Maxabs will return the largest (positive or            negative) for that chunk.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">obspy.Trace</td>
+</tr>
+</tbody>
+</table>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="EQcorrscan_plotting.cumulative_detections">
 <code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple plotting function to take a list of datetime objects and plot
@@ -880,7 +913,8 @@ and magnitudes.</p>
 <dl class="function">
 <dt id="EQcorrscan_plotting.interev_mag_sfiles">
 <code class="descclassname">EQcorrscan_plotting.</code><code class="descname">interev_mag_sfiles</code><span class="sig-paren">(</span><em>sfiles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#interev_mag_sfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.interev_mag_sfiles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to plot interevent-time versus magnitude for series of events.</p>
+<dd><p>Function to plot interevent-time versus magnitude for series of events.
+Wrapper for interev_mag.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1009,7 +1043,7 @@ positive</li>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.triple_plot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>cccsum_hist</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function to make a triple plot with a day-long seismogram, day-long
 correlation sum trace and histogram of the correlation sum to show normality</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1017,7 +1051,8 @@ correlation sum trace and histogram of the correlation sum to show normality</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cccsum</strong> (<em>numpy.array</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>cccsum</strong> (<em>numpy.ndarray</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>ccsum_hist</strong> &#8211; cccsum for histogram plotting, can be the same as cccsum                    but included if cccsum is just an envelope.</li>
 <li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A sample trace from the same time as cccsum</li>
 <li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Detection threshold within cccsum</li>
 <li><strong>save</strong> (<em>Bool, optional</em>) &#8211; If True will svae and not plot to screen, vice-versa if False</li>
@@ -1369,27 +1404,6 @@ to return a string</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="catalogue2DD._separation">
-<code class="descclassname">catalogue2DD.</code><code class="descname">_separation</code><span class="sig-paren">(</span><em>loc1</em>, <em>loc2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#_separation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD._separation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to calculate the distance between two points in the earth</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>loc1</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
-<li><strong>loc2</strong> (<em>tuple (float, float, float)</em>) &#8211; First point location as lat, long, depth in deg, deg, km</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">distance in km (float)</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
 <dt id="catalogue2DD.readSTATION0">
 <code class="descclassname">catalogue2DD.</code><code class="descname">readSTATION0</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/catalogue2DD.html#readSTATION0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalogue2DD.readSTATION0" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read the STATION0.HYP file on the path given.  Outputs written
@@ -1522,7 +1536,7 @@ S-files are stored</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1-alpha',
+            VERSION:'0.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

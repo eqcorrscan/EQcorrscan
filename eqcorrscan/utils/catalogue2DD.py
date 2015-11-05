@@ -38,7 +38,8 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import Sfile_util, os
+from eqcorrscan.utils import Sfile_util
+import os
 import numpy as np
 
 def _cc_round(num, dp):
@@ -82,26 +83,6 @@ def _av_weight(W1, W2):
         W2=1-int(W2)/4.0
     W=(W1+W2)/2
     return _cc_round(W,4)
-
-def _separation(loc1, loc2):
-    """
-    Function to calculate the distance between two points in the earth
-
-    :type loc1: tuple (float, float, float)
-    :param loc1: First point location as lat, long, depth in deg, deg, km
-    :type loc2: tuple (float, float, float)
-    :param loc2: First point location as lat, long, depth in deg, deg, km
-
-    :returns: distance in km (float)
-    """
-    R=6371.009  # Radius of the Earth in km
-    dlat=np.radians(abs(loc1[0]-loc2[0]))
-    dlong=np.radians(abs(loc1[1]-loc2[1]))
-    ddepth=abs(loc1[2]-loc2[2])
-    mean_lat=np.radians((loc1[0]+loc2[0])/2)
-    dist=R*np.sqrt(dlat**2+(np.cos(mean_lat)*dlong)**2)
-    dist=np.sqrt(dist**2+ddepth**2)
-    return dist
 
 def readSTATION0(path, stations):
     """
@@ -198,6 +179,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
 
     :returns: List stations
     """
+    from eqcorrscan.utils.mag_calc import dist_conv
     f=open('dt.ct','w')
     fphase=open('phase.dat','w')
     stations=[]
@@ -228,7 +210,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
             slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
                          Sfile_util.readheader(slave_sfile).longitude,\
                          Sfile_util.readheader(slave_sfile).depth)
-            if _separation(master_location, slave_location) > max_sep:
+            if dist_calc(master_location, slave_location) > max_sep:
                 break
             links=0 # Count the number of linkages
             for pick in master_picks:
@@ -287,6 +269,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
     from obspy.signal.cross_correlation import xcorrPickCorrection
     import matplotlib.pyplot as plt
     from obspy import read
+    from eqcorrscan.utils.mag_conv import dist_calc
     import glob
     corr_list=[]
     f=open('dt.cc','w')
@@ -329,7 +312,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
             slave_location=(Sfile_util.readheader(slave_sfile).latitude,\
                          Sfile_util.readheader(slave_sfile).longitude,\
                          Sfile_util.readheader(slave_sfile).depth)
-            if _separation(master_location, slave_location) > max_sep:
+            if dist_calc(master_location, slave_location) > max_sep:
                 break
             links=0
             phases=0
