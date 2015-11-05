@@ -17,10 +17,12 @@ import os
 import shlex
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
-MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'matplotlib.dates', 'numpy',
+MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'matplotlib.pylab',
+                'matplotlib.dates', 'numpy',
                 'scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
                 'joblib', 'obspy', 'obspy.read', 'obspy.signal',
-                'obspy.signal.cross_correlation', 'cv2', 'scipy.signal']
+                'obspy.signal.cross_correlation', 'obspy.signal.filter',
+                'cv2', 'scipy.signal']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -35,7 +37,7 @@ sys.path.insert(0, os.path.abspath('../utils'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.1'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -47,6 +49,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.autosummary',
 ]
 
 # automodule:: core

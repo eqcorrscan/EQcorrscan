@@ -5,7 +5,7 @@ data and output the detecitons.  The main component of this script is the\
 normxcorr2 function from the openCV image processing package.  This is a highly\
 optimized and accurate normalized cross-correlation routine.  The details of\
 this code can be found here:\
-    - http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\
+* http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\
 The cpp code was first tested using the Matlab mex wrapper, and has since been\
 ported to a python callable dynamic library.
 
@@ -113,11 +113,11 @@ def normxcorr2(template, image):
     Base function to call the c++ correlation routine from the openCV image
     processing suite.  Requires you to have installed the openCV python
     bindings, which can be downloaded on Linux machines using:
-        - sudo apt-get install python-openCV
+    **sudo apt-get install python-openCV**
     Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the
     normalized cross-correaltion.  Documentation on this function can be
     found here:
-        - http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate
+    **http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate**
 
     :type template: :class: 'numpy.array'
     :param template: Template array
