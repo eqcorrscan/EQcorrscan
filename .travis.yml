@@ -83,3 +83,9 @@ script:
 
 notifications:
     email: false
+    webhooks:
+      urls:
+        - https://webhooks.gitter.im/e/10122f10ed5043c58ae7
+      on_success: never  # options: [always|never|change] default: always
+      on_failure: always  # options: [always|never|change] default: always
+      on_start: never     # options: [always|never|change] default: always
