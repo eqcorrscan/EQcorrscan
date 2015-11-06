@@ -20,7 +20,6 @@ This file is part of EQcorrscan.
 All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
-import numpy as np
 
 def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
@@ -46,6 +45,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 
     :returns: np.ndarray
     """
+    import numpy as np
     if flength and 2.5*SP < flength and 100 < flength:
         additional_length=flength
     elif 2.5*SP < 100.0:
@@ -62,7 +62,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     S_spikes=np.arange(amp_ratio, 0, -(amp_ratio/S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
-    for i in xrange(len(S_spikes)):
+    for i in range(len(S_spikes)):
         if i in np.arange(1,len(S_spikes),2):
             S_spikes[i]=0
         if i in np.arange(2, len(S_spikes),4):
@@ -170,12 +170,10 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
     #Initialize empty list for templates
     templates=[]
     # Loop through the nodes, for every node generate a template!
-    i=0
-    for node in nodes:
+    for i, node in enumerate(nodes):
         st=[] # Empty list to be filled with synthetics
         # Loop through stations
-        j=0
-        for station in stations:
+        for j, station in enumerate(stations):
             tr=Trace()
             tr.stats.sampling_rate=samp_rate
             tr.stats.station=station
@@ -230,8 +228,6 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                     elif _phaseout=='S':
                         _tr.stats.channel='SYN_H'
                     st.append(_tr)
-            j+=1
         templates.append(Stream(st))
         # Stream(st).plot(size=(800,600))
-        i+=1
     return templates

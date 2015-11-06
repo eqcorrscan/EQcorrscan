@@ -269,7 +269,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                                                         tr_data, station,\
                                                                 channel, i,\
                                                                 debug))\
-                                  for i in xrange(len(templates))]
+                                  for i in range(len(templates))]
             pool.close()
         if debug >=1:
             print "--------- TIMER:    Correlation loop took: %s s" % t.secs
@@ -310,7 +310,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         if debug >=2:
             print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
         # First work out how many channels were used
-        for i in xrange(0,len(templates)):
+        for i in range(0,len(templates)):
             if not np.all(cccs_matrix[1][i]==0):
                 # Check that there are some real numbers in the vector rather
                 # than being all 0, which is the default case for no match

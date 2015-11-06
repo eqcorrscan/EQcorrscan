@@ -109,7 +109,7 @@ def _max_p2t(data, delta):
     import matplotlib.pyplot as plt
     debug_plot=False
     turning_points=[] # A list of tuples of (amplitude, sample)
-    for i in xrange(1,len(data)-1):
+    for i in range(1,len(data)-1):
         if (data[i] < data[i-1] and data[i] < data[i+1]) or\
            (data[i] > data[i-1] and data[i] > data[i+1]):
             turning_points.append((data[i], i))
@@ -122,7 +122,7 @@ def _max_p2t(data, delta):
         print 'Turning points has length: '+str(len(turning_points))+\
                          ' data have length: '+str(len(data))
         return (0.0, 0.0, 0.0)
-    for i in xrange(1,len(turning_points)):
+    for i in range(1,len(turning_points)):
         half_periods[i-1]=(delta*(turning_points[i][1]-turning_points[i-1][1]))
         amplitudes[i-1]=np.abs(turning_points[i][0]-turning_points[i-1][0])
     amplitude=np.max(amplitudes)
@@ -166,11 +166,11 @@ def _GSE2_PAZ_read(GSEfile):
     kpoles=int(header.split()[4])
     kzeros=int(header.split()[5])
     poles=[]
-    for i in xrange(kpoles):
+    for i in range(kpoles):
         pole=f.readline()
         poles.append(complex(float(pole.split()[0]),float(pole.split()[1])))
     zeros=[]
-    for i in xrange(kzeros):
+    for i in range(kzeros):
         zero=f.readline()
         zeros.append(complex(float(zero.split()[0]),float(zero.split()[1])))
     # Have Poles and Zeros, but need Gain and Sensitivity
@@ -559,8 +559,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     # Sometimes the randomisation generates a singular matrix - rather than
     # attempting to regulerize this matrix I propose undertaking the randomisation
     # step a further time
-    i=0
-    for stachan in stachans:
+    for i, stachan in enumerate(stachans):
         k = [] # Small kernel matrix for one station - channel
         # Copy the relevant vectors so as not to detroy them
         U_working=copy.deepcopy(U[i])
@@ -626,15 +625,12 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
         # k is now a square matrix, we need to flesh it out to be K_width
         k_filled=np.zeros([len(k), K_width])
         for j in range(len(k)):
-            l=0
-            for ev in ev_list:
+            for l, ev in enumerate(ev_list):
                 k_filled[j,ev]=k[j][l]
-                l+=1
         if not 'K' in locals():
             K=k_filled
         else:
             K=np.concatenate([K,k_filled])
-        i+=1
     # Remove any empty rows
     K_nonempty=[]
     events_out=[]
@@ -657,7 +653,6 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     W[-1,-1] = len(K)-1
     # Make K into a matrix
     K = np.matrix(K)
-    np.save('/home/calumch/Dropbox/Manuscripts/EQcrosscorr_detection_paper/Scripts/K.npy', K)
 
     ############
 
