@@ -52,22 +52,21 @@ class PICK:
         :type weight: int
         :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing
         :type polarity: str
-        :param polarity:
         :type time: obspy.UTCDateTime()
         :param time: Pick time as an obspy.UTCDateTime object
         :type coda: int
         :param coda: Length of coda in seconds
         :type amplitude: float
-        :param amplitude: Amplitude, type is given in phase
+        :param amplitude: Amplitude (zero-peak), type is given in phase
         :type peri: float
         :param peri: Period of amplitude
         :type azimuth: float
-        :param azimuth:
+        :param azimuth: Direction of approach in degrees
         :type velocity: float
-        :param velocity:
+        :param velocity: Phase velocity (km/s)
         :type AIN: int
-        :param AIN:
-        :type SNR: int
+        :param AIN: Angle of incidence.
+        :type SNR: float
         :param SNR: Signal to noise ratio
         :type azimuthres: int
         :param azimuthres: Residual azimuth
@@ -78,14 +77,14 @@ class PICK:
         :type distance: float
         :param distance: Source-reciever distance in km
         :type CAZ: int
-        :param CAZ: back-azimuth.
+        :param CAZ: Azimuth at source.
     """
     pickcount=0
     def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
                  weight=999, polarity=' ', time=UTCDateTime(0),
                  coda=999, amplitude=float('NaN'),
                  peri=float('NaN'), azimuth=float('NaN'),
-                 velocity=float('NaN'), AIN=999, SNR=999,
+                 velocity=float('NaN'), AIN=999, SNR=float('NaN'),
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
                  CAZ=999):
@@ -145,6 +144,26 @@ class PICK:
                 _str_conv(self.distance).rjust(5)+\
                 _str_conv(int(self.CAZ)).rjust(4)
         return print_str
+    def write(self, filename):
+        """
+        Public function to write the pick to a file
+
+        :type filename: str
+        :param filename: Path to file to write to - will append to file
+        """
+        import os
+        import warnings
+        if os.path.isfile(filename):
+            open_as='a'
+        else:
+            warnings.warn('File does not exist, no header')
+            open_as='w'
+
+        with open(filename,open_as) as f:
+            pickstr=self.__str__()
+            f.write(pickstr+'\n')
+        return
+
 
 class EVENTINFO:
     """
@@ -613,7 +632,7 @@ def test_rw():
     import os
     test_pick=PICK('FOZ', 'SZ', 'I', 'P', '1', 'C', UTCDateTime("2012-03-26")+1,
                  coda=10, amplitude=0.2, peri=0.1,
-                 azimuth=10.0, velocity=20.0, AIN=0.1, SNR='',
+                 azimuth=10.0, velocity=20.0, AIN=10, SNR='',
                  azimuthres=1, timeres=0.1,
                  finalweight=4, distance=10.0,
                  CAZ=2)
