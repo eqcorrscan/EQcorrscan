@@ -145,14 +145,15 @@ def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners, resolutio
     nodes[n][n] is a tuple of latitude, longitude and depth.
     """
     import sys
+    import numpy as np
     resamp_nodes=[]
     resamp_lags=[]
     # Cut the volume
-    for i in xrange(0,len(nodes)):
+    for i, node in enumerate(nodes):
         # If the node is within the volume range, keep it
-        if mindepth < float(nodes[i][2]) < maxdepth and\
-           corners.contains_point(nodes[i][0:2]):
-                resamp_nodes.append(nodes[i])
+        if mindepth < float(node[2]) < maxdepth and\
+           corners.contains_point(node[0:2]):
+                resamp_nodes.append(node)
                 resamp_lags.append([lags[:,i]])
     # Reshape the lags
     print np.shape(resamp_lags)
@@ -192,7 +193,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     """
     import sys
     netdif=abs((lags.T-lags.T[0]).sum(axis=1).reshape(1,len(nodes)))>threshold
-    for i in xrange(len(nodes)):
+    for i in range(len(nodes)):
         netdif=np.concatenate((netdif, \
                                abs((lags.T-lags.T[i]).sum(axis=1).reshape(1,len(nodes)))>threshold),\
                               axis=0)
@@ -240,10 +241,9 @@ def _node_loop(stations, lags, stream, clip_level, \
         import matplotlib.pyplot as plt
         fig, axes = plt.subplots(len(stream)+1, 1, sharex=True)
         axes=axes.ravel()
-    l=0
-    warnings.warn
-    for tr in stream:
-        j = [k for k in xrange(len(stations)) if stations[k]==tr.stats.station]
+
+    for l, tr in enumerate(stream):
+        j = [k for k in range(len(stations)) if stations[k]==tr.stats.station]
         # Check that there is only one matching station
         if len(j)>1:
             warnings.warn('Too many stations')
@@ -293,7 +293,6 @@ def _node_loop(stations, lags, stream, clip_level, \
                 energy_stream=Stream(energy_tr)
             else:
                 energy_stream+=energy_tr
-        l+=1
     energy=np.sum(energy, axis=0).reshape(1,len(lagged_energy))
     energy=energy.astype(np.uint16)
     # Convert any nans to zeros
@@ -446,8 +445,8 @@ def coherence(stream_in, stations=['all'], clip=False):
     from match_filter import normxcorr2
     # Loop through channels and generate a correlation value for each
     # unique cross-channel pairing
-    for i in xrange(len(stream)):
-        for j in xrange(i+1,len(stream)):
+    for i in range(len(stream)):
+        for j in range(i+1,len(stream)):
             coherence+=np.abs(normxcorr2(stream[i].data, stream[j].data))[0][0]
     coherence=2 * coherence / (len(stream) * (len(stream) - 1))
     return coherence, len(stream)
@@ -564,7 +563,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
     # Linear run
     print 'Computing the energy stacks'
     if not parallel:
-        for i in xrange(0,len(nodes)):
+        for i in range(0,len(nodes)):
             print i
             if not mem_issue:
                 j, a=_node_loop(stations, lags[:,i], stream, plot=True)
@@ -589,7 +588,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
                                                     lags[:,i], stream, i,\
                                                     clip_level,\
                                                     mem_issue, instance))\
-                                  for i in xrange(len(nodes))]
+                                  for i in range(len(nodes))]
         pool.close()
         if not mem_issue:
             print 'Computing the cumulative network response from memory'
@@ -609,7 +608,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         cum_net_resp=np.array([np.nan] * len(indeces))
         cum_net_resp[0]=energy[indeces[0]][0]
         peak_nodes=[nodes[indeces[0]]]
-        for i in xrange(1, len(indeces)):
+        for i in range(1, len(indeces)):
             cum_net_resp[i]=energy[indeces[i]][i]
             peak_nodes.append(nodes[indeces[i]])
         del energy, indeces
@@ -617,12 +616,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         print 'Reading the temp files and computing network response'
         node_splits=len(nodes)/num_cores
         indeces=[range(node_splits)]
-        for i in xrange(1,num_cores-1):
+        for i in range(1,num_cores-1):
             indeces.append(range(node_splits * i, node_splits * (i + 1)))
         indeces.append(range(node_splits * (i + 1), len(nodes)))
         pool=Pool(processes=num_cores, maxtasksperchild=None)
         results=[pool.apply_async(_cum_net_resp, args=(indeces[i], instance))\
-                                  for i in xrange(num_cores)]
+                                  for i in range(num_cores)]
         pool.close()
         results=[p.get() for p in results]
         pool.join()
@@ -634,9 +633,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
         print indeces.shape
         print cum_net_resp.shape
         cum_net_resp=np.array([cum_net_resp[indeces[j]][j]\
-                               for j in xrange(len(indeces))])
+                               for j in range(len(indeces))])
         peak_nodes=[nodes[node_indeces[indeces[i]][i]] \
-                          for i in xrange(len(indeces))]
+                          for i in range(len(indeces))]
         del indeces, node_indeces
     if plotvar:
         cum_net_trace=deepcopy(stream[0])
@@ -662,12 +661,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
     templates=[]
     nodesout=[]
     good_detections=[]
-    j=0
     if detections:
         print 'Converting detections in to templates'
-        for detection in detections:
+        for j, detection in enumerate(detections):
             print 'Converting for detection '+str(j)+' of '+str(len(detections))
-            j+=1
             copy_of_stream=deepcopy(stream_copy)
             # Convert detections to PICK type - name of detection template
             # is the node.
@@ -678,9 +675,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,\
             # Look up node in nodes and find the associated lags
             index=nodes.index(node)
             detect_lags=lags[:,index]
-            i=0
             picks=[]
-            for detect_lag in detect_lags:
+            for i, detect_lag in enumerate(detect_lags):
                 station=stations[i]
                 st=copy_of_stream.select(station=station)
                 if len(st) != 0:
