@@ -41,7 +41,7 @@ def linstack(streams):
     for tr in stack:
         tr.data=tr.data/np.sqrt(np.mean(np.square(tr.data)))
         tr.data=np.nan_to_num(tr.data)
-    for i in xrange(1,len(streams)):
+    for i in range(1,len(streams)):
         # print "Stacking stream "+str(i)
         for tr in stack:
             # print tr.stats.station+'.'+tr.stats.channel
@@ -122,7 +122,7 @@ def align_traces(trace_list, shift_len, master=False):
         print 'Using master given by user'
     shifts=[]
     ccs=[]
-    for i in xrange(len(traces)):
+    for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
         shift, cc=xcorr(master, traces[i], shift_len)

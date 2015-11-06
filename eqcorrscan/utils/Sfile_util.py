@@ -574,12 +574,11 @@ def populateSfile(sfilename, picks):
     f=open(sfilename, 'r')
     # Find type 7 line, under which picks should be - if there are already
     # picks there we should preserve them
-    lineno=0
     body=''
     header=''
     if 'headerend' in locals():
         del headerend
-    for line in f:
+    for lineno, line in enumerate(f):
         identifier=line[79]
         if 'headerend' in locals():
             body+=line
@@ -587,7 +586,6 @@ def populateSfile(sfilename, picks):
             header+=line
         if identifier=='7':
             headerend=lineno
-        lineno+=1
     f.close()
     #
     # Now generate lines for the new picks
