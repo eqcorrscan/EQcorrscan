@@ -64,6 +64,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     :param debug: Debug flag from 0-5, higher numbers = more output
 
     :return: obspy.Stream
+
+    ..rubric:: Note
+        Will convert channel names to two charectars long
     """
     # Add sanity check for filter
     if highcut >= 0.5*samp_rate:
@@ -85,16 +88,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
         tr=tr.detrend('simple')    # Detrend data before filtering
         tr.data=bandpass(tr.data, lowcut, highcut,
                     tr.stats.sampling_rate, filt_order, True)
-        # Correct FRAN N,E channels to 1,2 as this is correct
-        # if tr.stats.station=='FRAN' and tr.stats.channel=='SHN':
-            # print 'Correcting FRAN SHN to SH1'
-            # tr.stats.channel='SH1'
-        # if tr.stats.station=='FRAN' and tr.stats.channel=='SHE':
-            # print 'Correcting FRAN SHE to SH2'
-            # tr.stats.channel='SH2'
-        # Account for two letter channel names in s-files and therefore templates
-        tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
-
+        # Convert to two charectar channel names
+        tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[-1]
         # Final visual check for debug
         if debug > 4:
             tr.plot()
@@ -123,6 +118,9 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     :param starttime: Desired start of trace
 
     :return: obspy.Stream
+
+    ..rubric:: Note
+        Will convert channel names to two charectars long
     """
     # Add sanity check
     if highcut >= 0.5*samp_rate:
@@ -186,24 +184,8 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     tr.data=bandpass(tr.data, lowcut, highcut,
                 tr.stats.sampling_rate, filt_order, True)
 
-    ################### CHANNEL renaming, does not need to be in the main codes!
-    # Correct FRAN N,E channels to 1,2 as this is correct
-    if tr.stats.station=='FRAN' and tr.stats.channel=='SHN':
-        print 'Correcting FRAN SHN to SH1'
-        tr.stats.channel='SH1'
-    if tr.stats.station=='FRAN' and tr.stats.channel=='SHE':
-        print 'Correcting FRAN SHE to SH2'
-        tr.stats.channel='SH2'
-
-    # Correct FOZ channels
-    if tr.stats.station=='FOZ':
-        if len(tr.stats.channel)==3:
-            tr.stats.channel='HH'+tr.stats.channel[2]
-        else:
-            tr.stats.channel='HH'+tr.stats.channel[1]
     # Account for two letter channel names in s-files and therefore templates
-    if len(tr.stats.channel)==3:
-        tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[2]
+    tr.stats.channel=tr.stats.channel[0]+tr.stats.channel[-1]
 
     # Sanity check the time header
     if str(tr.stats.starttime.year)+str(tr.stats.starttime.month).zfill(2)+\
