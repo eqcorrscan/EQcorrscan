@@ -76,28 +76,36 @@ def distance_matrix(stream_list, cores=1):
     """
     from multiprocessing import Pool
 
+    # Define an internal function for parallel processing
+    def _master_loop(master, streams, i=0):
+        """
+        Internal loop for parallel processing at a master level
+        """
+        # Creat empty zero array
+        dists=np.zeros(len(streams))
+        # Loop through the bottom of the streams, will make a bottom tri
+        # matrix
+        for j, slave in enumerate(streams):
+            dists[j] = (cross_chan_coherance(master, slave)[0])
+        return (dists, i)
+
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
-    for i, master in enumerate(stream_list):
-        # Start a parallel processing pool
-        pool=Pool(processes=cores)
-        # Parallel processing
-        results=[pool.apply_async(cross_chan_coherence, args=(master,\
-                                                        stream_list[j], j))\
-                            for j in range(len(stream_list))]
-        pool.close()
-        # Extract the results when they are done
-        dist_list=[p.get() for p in results]
-        # Close and join all the processes back to the master process
-        pool.join()
-        # Sort the results by the input j
-        dist_list.sort(key=lambda tup:tup[1])
-        # Sort the list into the dist_mat structure
-        for j in range(i,len(stream_list)):
-            if i==j:
-                dist_mat[i,j]=0.0
-            else:
-                dist_mat[i,j]=1-dist_list[j][0]
+
+    pool = Pool(processes=cores)
+    results = [pool.apply_async(_master_loop, args = (master, stream_list,\
+                                                i))\
+                                for i, master in enumerate(stream_list)]
+    pool.close()
+    # Close the workers and get the results in a list of lists
+    dist_lists = [p.get() for p in results]
+    # Join all the workers back to a central core
+    pool.join
+    dist_lists.sort(key=lambda tup:tup[1])
+    # Sort into dist_mat
+    for i in range(len(stream_list)):
+        dist_mat[i] = [1 - cc for cc in dist_lists[i][0]]
+        dist_mat[i][i] = 0.0
     # Reshape the distance matrix
     for i in range(1,len(stream_list)):
         for j in range(i):
