@@ -20,7 +20,7 @@ This file is part of EQcorrscan.
 All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
-
+import numpy as np
 def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.
@@ -45,7 +45,6 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 
     :returns: np.ndarray
     """
-    import numpy as np
     if flength and 2.5*SP < flength and 100 < flength:
         additional_length=flength
     elif 2.5*SP < 100.0:
