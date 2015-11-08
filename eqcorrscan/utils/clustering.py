@@ -93,9 +93,9 @@ def distance_matrix(stream_list, cores=1):
     dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
 
     pool = Pool(processes=cores)
-    results = [pool.apply_async(_master_loop, args = (master, stream_list,\
+    results = [pool.apply_async(_master_loop, args = (stream_list[i], stream_list,\
                                                 i))\
-                                for i, master in enumerate(stream_list)]
+                                for i in range(len((stream_list))]
     pool.close()
     # Close the workers and get the results in a list of lists
     dist_lists = [p.get() for p in results]
