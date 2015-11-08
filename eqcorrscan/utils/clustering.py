@@ -60,6 +60,19 @@ def cross_chan_coherence(st1, st2, i=0):
         warnings.warn('No matching channels')
         return (0, i)
 
+def _master_loop(master, streams, i=0):
+    """
+    Internal loop for parallel processing at a master level
+    """
+    # Create empty zero array
+    dists=np.zeros(len(streams))
+    # Loop through the bottom of the streams, will make a bottom tri
+    # matrix
+    for j, slave in enumerate(streams):
+        cc, dummy = cross_chan_coherence(master, slave)
+        dists[j] = cc
+    return (dists, i)
+
 def distance_matrix(stream_list, cores=1):
     """
     Function to compute the distance matrix for all templates - will give
@@ -76,18 +89,6 @@ def distance_matrix(stream_list, cores=1):
     """
     from multiprocessing import Pool
 
-    # Define an internal function for parallel processing
-    def _master_loop(master, streams, i=0):
-        """
-        Internal loop for parallel processing at a master level
-        """
-        # Creat empty zero array
-        dists=np.zeros(len(streams))
-        # Loop through the bottom of the streams, will make a bottom tri
-        # matrix
-        for j, slave in enumerate(streams):
-            dists[j] = (cross_chan_coherance(master, slave)[0])
-        return (dists, i)
 
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
@@ -95,7 +96,7 @@ def distance_matrix(stream_list, cores=1):
     pool = Pool(processes=cores)
     results = [pool.apply_async(_master_loop, args = (stream_list[i], stream_list,\
                                                 i))\
-                                for i in range(len((stream_list))]
+                                for i in range(len(stream_list))]
     pool.close()
     # Close the workers and get the results in a list of lists
     dist_lists = [p.get() for p in results]
