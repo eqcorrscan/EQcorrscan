@@ -236,7 +236,6 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,\
     st1=_template_gen(picks, st, length, swin, prepick=prepick)
     return st1
 
-
 def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     """
     Function to generate a cut template in the obspy
@@ -336,6 +335,82 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     # st1.plot(size=(800,600))
     return st1
 
+def extract_from_stack(stack, template, length, pre_pick, pre_pad, Z_include=False,\
+                        pre_processed=True, samp_rate=False,\
+                        lowcut=False, highcut=False, filt_order=False):
+    """
+    Function to extract a new template from a stack of previous detections.
+    Requires the stack, the template used to make the detections for the stack,
+    and we need to know if the stack has been pre-processed.
+
+    :type stack: :class:obspy.Stream
+    :param stack: Waveform stack from detections.  Can be of any length and can\
+        have delays already included, or not.
+    :type template: :class:obspy.Stream
+    :param template: Template used to make the detections in the stack. Will use\
+        the delays of this for the new template.
+    :type length: float
+    :param length: Length of new template in seconds
+    :type pre_pick: float
+    :param pre_pick: Extract additional data before the detection, seconds
+    :type pre_pad: float
+    :param pre_pad: Pad used in seconds when extracting the data, e.g. the time\
+        before the detection extracted.  If using clustering.extract_detections\
+        this half the length of the extracted waveform.
+    :type Z_include: bool
+    :param Z_include: If True will include any Z-channels even if there is no\
+        template for this channel, as long as there is a template for this station\
+        at a different channel.  If this is False and Z channels are included in\
+        the template Z channels will be included in the new_template any-way.
+    :type pre_processed: bool
+    :param pre_processed: Have the data been pre-processed, if True (default)\
+        then we will only cut the data here.
+    :type samp_rate: float
+    :param samp_rate: If pre_processed=False then this is required, desired\
+        sampling rate in Hz, defaults to False.
+    :type lowcut: float
+    :param lowcut: If pre_processed=False then this is required, lowcut in Hz,\
+        defaults to False
+    :type highcut: float
+    :param highcut: If pre_processed=False then this is required, highcut in Hz,\
+        defaults to False
+    :type filt_order: int
+    :param filt_order: If pre_processed=False then this is required, filter\
+        order, defaults to False
+
+    :returns: :class:obspy.Stream Newly cut template
+    """
+    from eqcorrscan.utils import pre_processing
+    import warnings
+    new_template=stack.copy() # Copy the data before we trim it to keep the stack safe
+    # Get the earliest time in the template as this is when the detection is
+    # taken.
+    mintime = min([tr.stats.starttime for tr in template])
+    # Generate a list of tuples of (station, channel, delay) with delay in seconds
+    delays=[(tr.stats.station, tr.stats.channel[-1], mintime-tr.stats.starttime)\
+            for tr in template]
+    # Loop through the stack and trim!
+    for tr in new_template:
+        # Process the data if necessary
+        if not pre_processed:
+            new_template=pre_processing.shortproc(new_template, lowcut, highcut,\
+                                                filt_order, samp_rate, 0)
+        # Find the matching delay
+        delay=[d[2] for d in delays if d[0]==tr.stats.station and\
+                                        d[1]==tr.stats.channel[-1]]
+        if Z_include and len(delay) == 0:
+            delay=[d[2] for d in delays if d[0]==tr.stats.station]
+        if len(delay)==0:
+            warnings.warn('No matching template channel found for stack '+\
+                        'channel '+tr.stats.station+' '+tr.stats.channel)
+            new_template.remove(tr)
+        elif len(delay) > 1:
+            warnings.warn('Multiple delays found for stack channel '+\
+                            tr.stats.station+' '+tr.stats.channel)
+        else:
+            tr.trim(starttime=tr.stats.starttime + delay[0] + pre_pad - pre_pick,\
+                    endtime=tr.stats.starttime + delay[0] + pre_pad + length - pre_pick)
+    return new_template
 
 if __name__=='__main__':
     import sys, os
