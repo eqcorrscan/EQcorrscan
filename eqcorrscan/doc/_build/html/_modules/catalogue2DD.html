@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>catalogue2DD &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>catalogue2DD &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -275,10 +275,8 @@
     <span class="n">sort_list</span><span class="o">=</span><span class="p">[(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">sfile</span><span class="p">)</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfile_list</span><span class="p">]</span>
     <span class="n">sort_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">sfile_list</span><span class="o">=</span><span class="p">[</span><span class="n">sfile</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sort_list</span><span class="p">]</span>
-    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
     <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;event.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfile_list</span><span class="p">:</span>
-        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
         <span class="n">event_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">sfile</span><span class="p">))</span>
         <span class="n">evinfo</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
@@ -316,9 +314,9 @@
     <span class="n">fphase</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;phase.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
     <span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">evcount</span><span class="o">=</span><span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
-        <span class="n">master_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">master_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">master</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">event_list</span><span class="p">):</span>
+        <span class="n">master_sfile</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">master_event_id</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">master_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span>
         <span class="n">master_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
         <span class="c"># print &#39;Master origin time: &#39;+str(master_ori_time)</span>
@@ -330,7 +328,7 @@
         <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">master_picks</span><span class="p">:</span>
             <span class="n">fphase</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;  &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span>\
                          <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
             <span class="c"># Use this tactic to only output unique event pairings</span>
             <span class="n">slave_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">slave_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -405,9 +403,9 @@
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="n">corr_list</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;dt.cc&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
-        <span class="n">master_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">master_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">master</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">event_list</span><span class="p">):</span>
+        <span class="n">master_sfile</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">master_event_id</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">master_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span>
         <span class="n">master_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
         <span class="n">master_location</span><span class="o">=</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>\
@@ -496,7 +494,8 @@
                                     <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
                             <span class="c"># links+=1</span>
                         <span class="n">corr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cc</span><span class="o">*</span><span class="n">cc</span><span class="p">)</span>
-                    <span class="k">except</span><span class="p">:</span>
+                    <span class="k">except</span><span class="p">:</span> <span class="c"># Should warn here</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Couldn&#39;t compute correlation correction&quot;</span><span class="p">)</span>
                         <span class="k">continue</span>
             <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span> <span class="ow">and</span> <span class="n">phases</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
@@ -537,7 +536,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
