@@ -66,6 +66,7 @@
           
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
@@ -76,24 +77,23 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -137,7 +137,7 @@
 <span class="sd">normxcorr2 function from the openCV image processing package.  This is a highly\</span>
 <span class="sd">optimized and accurate normalized cross-correlation routine.  The details of\</span>
 <span class="sd">this code can be found here:\</span>
-<span class="sd">    - http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\</span>
+<span class="sd">* http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\</span>
 <span class="sd">The cpp code was first tested using the Matlab mex wrapper, and has since been\</span>
 <span class="sd">ported to a python callable dynamic library.</span>
 
@@ -193,13 +193,9 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span><span class="o">,</span> <span class="nn">warnings</span>
-<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-
-<div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../modules.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Information required for a full detection based on cross-channel</span>
 <span class="sd">    correlation sums.</span>
@@ -244,16 +240,16 @@
         <span class="n">print_str</span><span class="o">=</span><span class="s">&quot;Detection on &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">template_name</span><span class="o">+</span><span class="s">&quot; at &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">print_str</span>
 </div>
-<div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../modules.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+<div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base function to call the c++ correlation routine from the openCV image</span>
 <span class="sd">    processing suite.  Requires you to have installed the openCV python</span>
 <span class="sd">    bindings, which can be downloaded on Linux machines using:</span>
-<span class="sd">        - sudo apt-get install python-openCV</span>
+<span class="sd">    **sudo apt-get install python-openCV**</span>
 <span class="sd">    Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the</span>
 <span class="sd">    normalized cross-correaltion.  Documentation on this function can be</span>
 <span class="sd">    found here:</span>
-<span class="sd">        - http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate</span>
+<span class="sd">    **http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate**</span>
 
 <span class="sd">    :type template: :class: &#39;numpy.array&#39;</span>
 <span class="sd">    :param template: Template array</span>
@@ -284,7 +280,7 @@
     <span class="n">ccc</span><span class="o">=</span><span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">ccc</span>
 </div>
-<div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../modules.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sister loop to handle the correlation of a single template (of multiple</span>
 <span class="sd">    channels) with a single channel of data.</span>
@@ -349,7 +345,7 @@
         <span class="k">print</span> <span class="s">&quot;Parallel worker &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&quot; complete&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ccc</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../modules.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Loop to generate cross channel correaltion sums for a series of templates</span>
 <span class="sd">    hands off the actual correlations to a sister function which can be run in</span>
@@ -470,9 +466,9 @@
     <span class="n">cccsums</span><span class="o">=</span><span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
 </div>
-<div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../modules.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>\
-                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>\
-                 <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>\
+                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>\
+                 <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Over-arching code to run the correlations of given templates with a day of</span>
 <span class="sd">    seismic data and output the detections based on a given threshold.</span>
@@ -500,6 +496,11 @@
 <span class="sd">        number of channels within this template.</span>
 <span class="sd">    :type trig_int: float</span>
 <span class="sd">    :param trig_int: Minimum gap between detections in seconds.</span>
+<span class="sd">    :type plotvar: bool</span>
+<span class="sd">    :param plotvar: Turn plotting on or off</span>
+<span class="sd">    :type plotdir: str</span>
+<span class="sd">    :param plotdir: Path to plotting folder, plots will be output here, defaults\</span>
+<span class="sd">        to run location.</span>
 <span class="sd">    :type tempdir: String or False</span>
 <span class="sd">    :param tempdir: Directory to put temporary files, or False</span>
 <span class="sd">    :type cores: int</span>
@@ -510,7 +511,20 @@
 <span class="sd">    :return: :class: &#39;DETECTIONS&#39; detections for each channel formatted as\</span>
 <span class="sd">    :class: &#39;obspy.UTCDateTime&#39; objects.</span>
 
+<span class="sd">    .. rubric:: Note</span>
+<span class="sd">        Plotting within the match-filter routine uses the Agg backend with\</span>
+<span class="sd">        interactive plotting turned off.  This is because the function is\</span>
+<span class="sd">        designed to work in bulk.  If you wish to turn interactive plotting on\</span>
+<span class="sd">        you must import matplotlib in your script first, when you them import\</span>
+<span class="sd">        match_filter you will get the warning that this call to matplotlib has\</span>
+<span class="sd">        no effect, which will mean that match_filter has not changed the plotting\</span>
+<span class="sd">        behaviour.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">findpeaks</span><span class="p">,</span> <span class="n">EQcorrscan_plotting</span>
     <span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">copy</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Trace</span>
@@ -613,26 +627,31 @@
         <span class="k">if</span> <span class="n">plotvar</span><span class="p">:</span>
             <span class="n">stream_plot</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="c"># Downsample for plotting</span>
-            <span class="n">stream_plot</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span>
+            <span class="n">stream_plot</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">/</span> <span class="mi">10</span><span class="p">))</span>
             <span class="n">cccsum_plot</span><span class="o">=</span><span class="n">Trace</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span>
             <span class="n">cccsum_plot</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">=</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
             <span class="c"># Resample here to maintain shape better</span>
             <span class="n">cccsum_hist</span><span class="o">=</span><span class="n">cccsum_plot</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">cccsum_hist</span><span class="o">=</span><span class="n">cccsum_hist</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span><span class="o">.</span><span class="n">data</span>
-            <span class="n">cccsum_plot</span><span class="o">=</span><span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">chunk_data</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s">&#39;Maxabs&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">cccsum_hist</span><span class="o">=</span><span class="n">cccsum_hist</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>\
+                                                <span class="o">/</span> <span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">cccsum_plot</span><span class="o">=</span><span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">chunk_data</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s">&#39;Maxabs&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
             <span class="c"># Enforce same length</span>
             <span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">)]</span>
             <span class="n">cccsum_plot</span><span class="o">=</span><span class="n">cccsum_plot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
             <span class="n">cccsum_hist</span><span class="o">=</span><span class="n">cccsum_hist</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
             <span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">triple_plot</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">,</span> <span class="n">cccsum_hist</span><span class="p">,</span> <span class="n">stream_plot</span><span class="p">,</span>\
                                             <span class="n">rawthresh</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>\
-                                            <span class="s">&#39;plot/cccsum_plot_&#39;</span><span class="o">+</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="o">+</span>\
+                                            <span class="n">plotdir</span><span class="o">+</span><span class="s">&#39;/cccsum_plot_&#39;</span><span class="o">+</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
                                         <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">+</span>\
-                                        <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.jpg&#39;</span><span class="p">)</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>\
-                        <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">),</span>\
-                    <span class="n">cccsum</span><span class="p">)</span>
+                                        <span class="nb">str</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
+                                            <span class="n">plot_format</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Saved the cccsum to: &#39;</span><span class="o">+</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>\
+                            <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>\
+                            <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">),</span>\
+                        <span class="n">cccsum</span><span class="p">)</span>
         <span class="n">tic</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span><span class="o">&gt;=</span><span class="mi">4</span><span class="p">:</span>
             <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;cccsum_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.npy&#39;</span><span class="p">,</span> <span class="n">cccsum</span><span class="p">)</span>
