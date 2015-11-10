@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Sfile_util &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>Sfile_util &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -184,22 +184,21 @@
 <span class="sd">        :type weight: int</span>
 <span class="sd">        :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing</span>
 <span class="sd">        :type polarity: str</span>
-<span class="sd">        :param polarity:</span>
 <span class="sd">        :type time: obspy.UTCDateTime()</span>
 <span class="sd">        :param time: Pick time as an obspy.UTCDateTime object</span>
 <span class="sd">        :type coda: int</span>
 <span class="sd">        :param coda: Length of coda in seconds</span>
 <span class="sd">        :type amplitude: float</span>
-<span class="sd">        :param amplitude: Amplitude, type is given in phase</span>
+<span class="sd">        :param amplitude: Amplitude (zero-peak), type is given in phase</span>
 <span class="sd">        :type peri: float</span>
 <span class="sd">        :param peri: Period of amplitude</span>
 <span class="sd">        :type azimuth: float</span>
-<span class="sd">        :param azimuth:</span>
+<span class="sd">        :param azimuth: Direction of approach in degrees</span>
 <span class="sd">        :type velocity: float</span>
-<span class="sd">        :param velocity:</span>
+<span class="sd">        :param velocity: Phase velocity (km/s)</span>
 <span class="sd">        :type AIN: int</span>
-<span class="sd">        :param AIN:</span>
-<span class="sd">        :type SNR: int</span>
+<span class="sd">        :param AIN: Angle of incidence.</span>
+<span class="sd">        :type SNR: float</span>
 <span class="sd">        :param SNR: Signal to noise ratio</span>
 <span class="sd">        :type azimuthres: int</span>
 <span class="sd">        :param azimuthres: Residual azimuth</span>
@@ -210,14 +209,14 @@
 <span class="sd">        :type distance: float</span>
 <span class="sd">        :param distance: Source-reciever distance in km</span>
 <span class="sd">        :type CAZ: int</span>
-<span class="sd">        :param CAZ: back-azimuth.</span>
+<span class="sd">        :param CAZ: Azimuth at source.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">pickcount</span><span class="o">=</span><span class="mi">0</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">impulsivity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
                  <span class="n">weight</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">polarity</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
                  <span class="n">coda</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
                  <span class="n">peri</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="n">azimuth</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
-                 <span class="n">velocity</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="n">AIN</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span>
+                 <span class="n">velocity</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="n">AIN</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
                  <span class="n">azimuthres</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">timeres</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
                  <span class="n">finalweight</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span>
                  <span class="n">CAZ</span><span class="o">=</span><span class="mi">999</span><span class="p">):</span>
@@ -277,7 +276,27 @@
                 <span class="n">_str_conv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span>\
                 <span class="n">_str_conv</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CAZ</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">print_str</span>
-</div>
+<div class="viewcode-block" id="PICK.write"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.PICK.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Public function to write the pick to a file</span>
+
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param filename: Path to file to write to - will append to file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">open_as</span><span class="o">=</span><span class="s">&#39;a&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;File does not exist, no header&#39;</span><span class="p">)</span>
+            <span class="n">open_as</span><span class="o">=</span><span class="s">&#39;w&#39;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">open_as</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickstr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pickstr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+</div></div>
 <div class="viewcode-block" id="EVENTINFO"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.EVENTINFO">[docs]</a><span class="k">class</span> <span class="nc">EVENTINFO</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Header information for seisan events, again all fields can be left blank for\</span>
@@ -706,12 +725,11 @@
     <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
     <span class="c"># Find type 7 line, under which picks should be - if there are already</span>
     <span class="c"># picks there we should preserve them</span>
-    <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span>
     <span class="n">body</span><span class="o">=</span><span class="s">&#39;&#39;</span>
     <span class="n">header</span><span class="o">=</span><span class="s">&#39;&#39;</span>
     <span class="k">if</span> <span class="s">&#39;headerend&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
         <span class="k">del</span> <span class="n">headerend</span>
-    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
         <span class="n">identifier</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">79</span><span class="p">]</span>
         <span class="k">if</span> <span class="s">&#39;headerend&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
             <span class="n">body</span><span class="o">+=</span><span class="n">line</span>
@@ -719,7 +737,6 @@
             <span class="n">header</span><span class="o">+=</span><span class="n">line</span>
         <span class="k">if</span> <span class="n">identifier</span><span class="o">==</span><span class="s">&#39;7&#39;</span><span class="p">:</span>
             <span class="n">headerend</span><span class="o">=</span><span class="n">lineno</span>
-        <span class="n">lineno</span><span class="o">+=</span><span class="mi">1</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="c">#</span>
     <span class="c"># Now generate lines for the new picks</span>
@@ -747,7 +764,7 @@
     <span class="kn">import</span> <span class="nn">os</span>
     <span class="n">test_pick</span><span class="o">=</span><span class="n">PICK</span><span class="p">(</span><span class="s">&#39;FOZ&#39;</span><span class="p">,</span> <span class="s">&#39;SZ&#39;</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">,</span> <span class="s">&#39;P&#39;</span><span class="p">,</span> <span class="s">&#39;1&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&quot;2012-03-26&quot;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">coda</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">peri</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-                 <span class="n">azimuth</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">AIN</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                 <span class="n">azimuth</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">AIN</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">SNR</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
                  <span class="n">azimuthres</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">timeres</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
                  <span class="n">finalweight</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
                  <span class="n">CAZ</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -824,7 +841,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
