@@ -334,7 +334,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     cccsums=cccs_matrix[0]
     return cccsums, no_chans
 
-def match_filter(template_names, templates, stream, threshold,\
+def match_filter(template_names, templates, st, threshold,\
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,\
                  tempdir=False, debug=0, plot_format='jpg'):
     """
@@ -344,11 +344,13 @@ def match_filter(template_names, templates, stream, threshold,\
     :type templates: list :class: 'obspy.Stream'
     :param templates: A list of templates of which each template is a Stream of\
         obspy traces containing seismic data and header information.
-    :type stream: :class: 'obspy.Stream'
-    :param stream: An obspy.Stream object containing all the data available and\
+    :type st: :class: 'obspy.Stream'
+    :param st: An obspy.Stream object containing all the data available and\
         required for the correlations with templates given.  For efficiency this\
         should contain no excess traces which are not in one or more of the\
-        templates.
+        templates.  This will now remove excess traces internally, but will\
+        copy the stream and work on the copy, leaving the stream you input\
+        untouched.
     :type threshold: float
     :param threshold: A threshold value set based on the threshold_type
     :type threshold_type: str
@@ -399,6 +401,8 @@ def match_filter(template_names, templates, stream, threshold,\
     match_internal=False # Set to True if memory is an issue, if True, will only
                           # use about the same amount of memory as the seismic dat
                           # take up.  If False, it will use 20-100GB per instance
+    # Copy the stream here because we will fuck about with it
+    stream=st.copy()
     # Debug option to confirm that the channel names match those in the templates
     if debug>=2:
         template_stachan=[]
@@ -444,6 +448,10 @@ def match_filter(template_names, templates, stream, threshold,\
             nulltrace.stats.starttime=stream[0].stats.starttime
             nulltrace.data=np.array([np.NaN]*len(stream[0].data), dtype=np.float32)
             stream+=nulltrace
+    # Remove un-needed channels
+    for tr in stream:
+        if not (tr.stats.station, tr.stats.channel) in template_stachan:
+            stream.remove(tr)
     # Also pad out templates to have all channels
     for template in templates:
         for stachan in template_stachan:
