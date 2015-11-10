@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Sfile_util &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>Sfile_util &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Utils" href="../utils.html"/>
         <link rel="next" title="findpeaks" href="utils.findpeaks.html"/>
         <link rel="prev" title="Utils" href="../utils.html"/> 
@@ -158,7 +158,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x43e3c10&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x4091810&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events, again all fields can be left blank for    a default empty header.  The print function for header will print important    information, but not as seen in an S-file.</p>
 <p>For more information on parameters see the seisan manual.</p>
 <dl class="docutils">
@@ -275,7 +275,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="class">
 <dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x43e3c10&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=999</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x4091810&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -307,69 +307,81 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </tr>
 <tr class="field-odd field"><th class="field-name">type polarity:</th><td class="field-body">str</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param polarity:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">type time:</th><td class="field-body">obspy.UTCDateTime()</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type time:</th><td class="field-body">obspy.UTCDateTime()</td>
+<tr class="field-odd field"><th class="field-name">param time:</th><td class="field-body">Pick time as an obspy.UTCDateTime object</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param time:</th><td class="field-body">Pick time as an obspy.UTCDateTime object</td>
+<tr class="field-even field"><th class="field-name">type coda:</th><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type coda:</th><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name">param coda:</th><td class="field-body">Length of coda in seconds</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param coda:</th><td class="field-body">Length of coda in seconds</td>
+<tr class="field-even field"><th class="field-name">type amplitude:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type amplitude:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name" colspan="2">param amplitude:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Amplitude (zero-peak), type is given in phase</td>
 </tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param amplitude:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Amplitude, type is given in phase</td>
+<tr class="field-even field"><th class="field-name">type peri:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type peri:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name">param peri:</th><td class="field-body">Period of amplitude</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param peri:</th><td class="field-body">Period of amplitude</td>
+<tr class="field-even field"><th class="field-name">type azimuth:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type azimuth:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name">param azimuth:</th><td class="field-body">Direction of approach in degrees</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param azimuth:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">type velocity:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type velocity:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name">param velocity:</th><td class="field-body">Phase velocity (km/s)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param velocity:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">type AIN:</th><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type AIN:</th><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name">param AIN:</th><td class="field-body">Angle of incidence.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param AIN:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">type SNR:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type SNR:</th><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name">param SNR:</th><td class="field-body">Signal to noise ratio</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param SNR:</th><td class="field-body">Signal to noise ratio</td>
+<tr class="field-even field"><th class="field-name" colspan="2">type azimuthres:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name" colspan="2">type azimuthres:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name" colspan="2">param azimuthres:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Residual azimuth</td>
 </tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param azimuthres:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Residual azimuth</td>
+<tr class="field-even field"><th class="field-name">type timeres:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type timeres:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name">param timeres:</th><td class="field-body">Time residual in seconds</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param timeres:</th><td class="field-body">Time residual in seconds</td>
+<tr class="field-even field"><th class="field-name" colspan="2">type finalweight:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name" colspan="2">type finalweight:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name" colspan="2">param finalweight:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Final weight used in location</td>
 </tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param finalweight:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Final weight used in location</td>
+<tr class="field-even field"><th class="field-name">type distance:</th><td class="field-body">float</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type distance:</th><td class="field-body">float</td>
+<tr class="field-odd field"><th class="field-name">param distance:</th><td class="field-body">Source-reciever distance in km</td>
 </tr>
-<tr class="field-even field"><th class="field-name">param distance:</th><td class="field-body">Source-reciever distance in km</td>
+<tr class="field-even field"><th class="field-name">type CAZ:</th><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">type CAZ:</th><td class="field-body">int</td>
-</tr>
-<tr class="field-even field"><th class="field-name">param CAZ:</th><td class="field-body">back-azimuth.</td>
+<tr class="field-odd field"><th class="field-name">param CAZ:</th><td class="field-body">Azimuth at source.</td>
 </tr>
 </tbody>
 </table>
 </dd>
 </dl>
+<dl class="method">
+<dt id="Sfile_util.PICK.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Public function to write the pick to a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to file to write to - will append to file</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="function">
@@ -549,7 +561,7 @@ be present.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
