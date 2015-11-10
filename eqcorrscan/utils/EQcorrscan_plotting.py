@@ -297,32 +297,32 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     # Keep input safe
     plist=copy.deepcopy(picks)
     st_list=copy.deepcopy(streams)
-    for i in xrange(len(plist)):
-        if st_list[i].select(station=plist[i].station, \
-            channel='*'+plist[i].channel[-1]):
-            tr=st_list[i].select(station=plist[i].station, \
-                channel='*'+plist[i].channel[-1])[0]
+    for i, pick in enumerate(plist):
+        if st_list[i].select(station=pick.station, \
+            channel='*'+pick.channel[-1]):
+            tr=st_list[i].select(station=pick.station, \
+                channel='*'+pick.channel[-1])[0]
         else:
-            print 'No data for '+plist[i].station+'.'+plist[i].channel
+            print 'No data for '+pick.station+'.'+pick.channel
             continue
         tr.detrend('linear')
         if freqmin:
             tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
         if realign:
             tr_cut=tr.copy()
-            tr_cut.trim(plist[i].time+cut[0], plist[i].time+cut[1],\
+            tr_cut.trim(pick.time+cut[0], pick.time+cut[1],\
                         nearest_sample=False)
             if len(tr_cut.data)<=0.5*(cut[1]-cut[0])*tr_cut.stats.sampling_rate:
-                print 'Not enough in the trace for '+plist[i].station+'.'+plist[i].channel
-                print 'Suggest removing pick from sfile at time '+str(plist[i].time)
+                print 'Not enough in the trace for '+pick.station+'.'+pick.channel
+                print 'Suggest removing pick from sfile at time '+str(pick.time)
             else:
                 al_traces.append(tr_cut)
         else:
-            tr.trim(plist[i].time-pre_pick, plist[i].time+clip-pre_pick,\
+            tr.trim(pick.time-pre_pick, pick.time+clip-pre_pick,\
                     nearest_sample=False)
         if len(tr.data)==0:
-            print 'No data in the trace for '+plist[i].station+'.'+plist[i].channel
-            print 'Suggest removing pick from sfile at time '+str(plist[i].time)
+            print 'No data in the trace for '+pick.station+'.'+pick.channel
+            print 'Suggest removing pick from sfile at time '+str(pick.time)
             continue
         traces.append(tr)
     if realign:
@@ -330,16 +330,15 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
         shifts=stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print 'Shifting by '+str(shifts[i])+' seconds'
-            plist[i].time-=shifts[i]
-            traces[i].trim(plist[i].time - pre_pick, plist[i].time + clip-pre_pick,\
+            pick.time-=shifts[i]
+            traces[i].trim(pick.time - pre_pick, pick.time + clip-pre_pick,\
                            nearest_sample=False)
     # We now have a list of traces
     traces=[(trace, trace.stats.starttime.datetime) for trace in traces]
     traces.sort(key=lambda tup:tup[1])
     traces=[trace[0] for trace in traces]
     # Plot the traces
-    for i in xrange(len(traces)):
-        tr=traces[i]
+    for i, tr in enumerate(traces):
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate # convert to seconds
@@ -347,7 +346,6 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
         # axes[i+1].set_ylabel(tr.stats.starttime.datetime.strftime('%Y/%m/%d %H:%M'),\
                              # rotation=0)
         axes[i+1].yaxis.set_ticks([])
-        i+=1
     traces=[Stream(trace) for trace in traces]
     if PWS:
         linstack=stacking.PWS_stack(traces)
@@ -361,13 +359,13 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     axes[0].plot(x, y, 'r', linewidth=2.0)
     axes[0].set_ylabel('Stack', rotation=0)
     axes[0].yaxis.set_ticks([])
-    for i in xrange(len(traces)):
-        cc=normxcorr2(tr.data, traces[i][0].data)
+    for i, slave in enumerate(traces):
+        cc=normxcorr2(tr.data, slave[0].data)
         axes[i+1].set_ylabel('cc='+str(round(np.max(cc),2)), rotation=0)
-        axes[i+1].text(0.9, 0.15, str(round(np.max(traces[i][0].data))), \
+        axes[i+1].text(0.9, 0.15, str(round(np.max(slave[0].data))), \
                        bbox=dict(facecolor='white', alpha=0.95),\
                        transform=axes[i+1].transAxes)
-        axes[i+1].text(0.7, 0.85, traces[i][0].stats.starttime.datetime.strftime('%Y/%m/%d %H:%M:%S'), \
+        axes[i+1].text(0.7, 0.85, slave[0].stats.starttime.datetime.strftime('%Y/%m/%d %H:%M:%S'), \
                        bbox=dict(facecolor='white', alpha=0.95),\
                        transform=axes[i+1].transAxes)
     axes[-1].set_xlabel('Time (s)')
@@ -400,8 +398,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     axes = axes.ravel()
     print 'Template has '+str(len(template))+' channels'
-    for i in xrange(len(template)):
-        template_tr=template[i]
+    for i, template_tr in enumerate(template):
         print 'Working on: '+template_tr.stats.station+' '+\
                 template_tr.stats.channel
         image=stream.select(station=template_tr.stats.station,\
@@ -419,10 +416,10 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
         if template_tr.stats.sampling_rate > 20:
             template_tr.decimate(int(template_tr.stats.sampling_rate/20))
         image_times=[image.stats.starttime.datetime+dt.timedelta((j*image.stats.delta)/86400)\
-                for j in xrange(len(image.data))] # Give list of datetime objects
+                for j in range(len(image.data))] # Give list of datetime objects
         t_start=t_start+image.stats.starttime.datetime
         template_times=[t_start+dt.timedelta((j*template_tr.stats.delta)/86400)\
-                for j in xrange(len(template_tr.data))]
+                for j in range(len(template_tr.data))]
         print image_times[0]
         print template_times[0]
         axes[i].plot(image_times, image.data,'k')
@@ -464,7 +461,7 @@ def interev_mag(times, mags):
     axes = axes.ravel()
     pre_times=[]
     post_times=[]
-    for i in xrange(len(times)):
+    for i in range(len(times)):
         if i > 0:
             pre_times.append((times[i]-times[i-1])/60)
         if i < len(times)-1:
@@ -587,9 +584,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         mintime=template.sort(['starttime'])[0].stats.starttime
     else:
         mintime=background.sort(['starttime'])[0].stats.starttime
-    i=0
     template.sort(['network','station', 'starttime'])
-    for tr in template:
+    for i, tr in enumerate(template):
         delay=tr.stats.starttime-mintime
         delay*=tr.stats.sampling_rate
         y=tr.data
@@ -614,7 +610,6 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         print tr.stats.station+' '+str(len(x))+' '+str(len(y))
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
         axes[i].yaxis.set_ticks([])
-        i+=1
     axes[i-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0)
     if title:
@@ -656,9 +651,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
     else:
         return
     mintime=stream.sort(['starttime'])[0].stats.starttime
-    i=0
     stream.sort(['network','station', 'starttime'])
-    for tr in stream:
+    for i, tr in enumerate(stream):
         delay=tr.stats.starttime-mintime
         delay*=tr.stats.sampling_rate
         y=tr.data
@@ -669,14 +663,13 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
         axes[i].yaxis.set_ticks([])
         axes[i].set_xlim(x[0], x[-1])
-        i+=1
     # Plot the network response
     tr=NR_stream[0]
     delay=tr.stats.starttime-mintime
     delay*=tr.stats.sampling_rate
     y=tr.data
     x=[tr.stats.starttime + dt.timedelta(seconds=s/tr.stats.sampling_rate)\
-        for s in xrange(len(y))]
+        for s in range(len(y))]
     x=mdates.date2num(x)
     axes[i].plot(x, y, 'k', linewidth=1.1)
     axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
@@ -742,8 +735,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
                      for SVStream in SVStreams]
         fig, axes = plt.subplots(len(plot_traces), 1, sharex=True)
         axes = axes.ravel()
-        i=0
-        for tr in plot_traces:
+        for i, tr in enumerate(plot_traces):
             y = tr.data
             x = np.arange(len(y))
             x = x*tr.stats.delta
@@ -752,7 +744,6 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
                 str(round(SValues[i]/len(SValues),2)), rotation=0)
             axes[i].yaxis.set_ticks([])
             print i
-            i+=1
         axes[-1].set_xlabel('Time (s)')
         plt.subplots_adjust(hspace=0)
         if title:
@@ -761,3 +752,65 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
             axes[0].set_title(stachan)
         plt.show()
     return
+
+def plot_synth_real(real_template, synthetic, channels=False):
+    """
+    Plot multiple channels of data for real data and synthetic
+
+    :type real_template: obspy.Stream
+    :param real_template: Stream of the real template
+    :type synthetic: obspy.Stream
+    :param synthetic: Stream of synthetic template
+    :type channels: List of str
+    :param channels: List of tuples of (station, channel) to plot, default is\
+            False, which plots all.
+    """
+    from obspy.signal.cross_correlation import xcorr
+    from obspy import Stream
+    colours=['k', 'r']
+    labels=['Real', 'Synthetic']
+    if channels:
+        real=[]
+        synth=[]
+        for stachan in channels:
+            real.append(real_template.select(station=stachan[0],\
+                                             channel=stachan[1]))
+            synth.append(synthetic.select(station=stachan[0],\
+                                          channel=stachan[1]))
+        real_template=Stream(real)
+        synthetic=Stream(synth)
+
+    # Extract the station and channels
+    stachans = list(set([(tr.stats.station, tr.stats.channel)\
+                         for tr in real_stream]))
+    fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=(5,10))
+    axes=axes.ravel()
+    for i, stachan in enumerate(stachans):
+        real_tr=real_template.select(station=stachan[0],\
+                                     channel=stachan[1])[0]
+        synth_tr=synthetic.select(station=stachan[0],\
+                                           channel=stachan[1])[0]
+        shift, corr = xcorr(real_tr, synth_tr, 2)
+        print 'Shifting by: '+str(shift)+' samples'
+        if corr < 0:
+            synth_tr.data = synth_tr.data * -1
+            corr = corr * -1
+        if shift < 0:
+            synth_tr.data = synth_tr.data[abs(shift):]
+            real_tr.data = real_tr.data[0:len(synth_tr.data)]
+        elif shift > 0:
+            real_tr.data = real_tr.data[abs(shift):]
+            synth_tr.data = synth_tr.data[0:len(real_tr.data)]
+        for j, tr in enumerate([real_tr, synth_tr]):
+            y = tr.data
+            y = y / float(max(abs(y)))
+            x = np.arange(0, len(y))
+            x = x / tr.stats.sampling_rate
+            axes[i].plot(x, y, colours[j], linewidth=2.0, label=labels[j])
+            axes[i].get_yaxis().set_ticks([])
+        axes[i].set_ylabel(stachan[0]+'.'+stachan[1]+' cc='+str(round(corr,2)),\
+                           rotation=0)
+    plt.subplots_adjust(hspace=0)
+    # axes[0].legend()
+    axes[-1].set_xlabel('Time (s)')
+    plt.show()

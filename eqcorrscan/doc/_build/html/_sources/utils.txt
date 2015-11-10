@@ -1,53 +1,17 @@
 Utils
 =====
 
-Codes to run basic utility functions for integration with seisan and to 
-find peaks in noisy data.
+Utility functions for integration with other software (currently only seisan),
+and for the analysis of waveforms detected by cross-correlation.
 
-Sfile_util
-----------
-.. automodule:: Sfile_util
-    :members:
+.. toctree::
+   :maxdepth: 4
 
-findpeaks
-----------
-.. automodule:: findpeaks
-    :members:
-    :private-members:
-
-clustering
-----------
-.. automodule:: clustering
-    :members:
-    :private-members:
-
-pre_processing
---------------
-.. automodule:: pre_processing
-    :members:
-    :private-members:
-
-EQcorrscan_plotting
--------------------
-.. automodule:: EQcorrscan_plotting
-    :members:
-    :private-members:
-
-mag_calc
---------
-.. automodule:: mag_calc
-    :members:
-    :private-members:
-
-stacking
---------
-.. automodule:: stacking
-    :members:
-    :private-members:
-
-catalogue2DD
-------------
-.. automodule:: catalogue2DD
-    :members:
-    :private-members:
-
+   submodules/utils.Sfile_util
+   submodules/utils.findpeaks
+   submodules/utils.clustering
+   submodules/utils.pre_processing
+   submodules/utils.EQcorrscan_plotting
+   submodules/utils.mag_calc
+   submodules/utils.stacking
+   submodules/utils.catalogue2DD

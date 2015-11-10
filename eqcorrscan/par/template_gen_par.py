@@ -38,12 +38,12 @@ sfiles=glob.glob(sfilebase+'/????/??/*L.S*')# List of s-files
 tfiles=glob.glob('/Volumes/GeoPhysics_09/users-data/chambeca/my_programs/'+\
                  'Building/EQ_correl_codes/templates/EQcorrscan/*_template.ms')  # List of pre-existing template files
 # tfiles=[]
-samp_rate=100.0                      # Desired sampling rate, will be carried
+samp_rate=20.0                      # Desired sampling rate, will be carried
                                     # through entire process, float in Hz
 
-lowcut=5.0                          # Lowcut for bandpass filter in Hz, float
+lowcut=2.0                          # Lowcut for bandpass filter in Hz, float
 
-highcut=15.0                         # Highcut for bandpass filter in Hz, float
+highcut=8.0                          # Highcut for bandpass filter in Hz, float
 
 filter_order=3                      # Number of corners for the filter
 

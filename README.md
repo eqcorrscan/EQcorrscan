@@ -1,6 +1,7 @@
 # EQcorrscan
-A python package to conduct match-filter earthquake detections.
+## A python package to conduct match-filter earthquake detections.
 
+[![Join the chat at https://gitter.im/calum-chamberlain/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/calum-chamberlain/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
@@ -15,7 +16,10 @@ If upgrading from a previous version, rather than running install --upgrade, I r
 
 *pip install -U --no-deps EQcorrscan*
 
-This will not try to upgrade your dependencies, which is not needed for 0.0.7.
+This will not try to upgrade your dependencies, which is not needed for 0.0.8.
+
+If you want to be kept informed about releases, bug-tracking and enhancements
+without having to keep looking on github, subscribe to our [google group](https://groups.google.com/forum/#!forum/eqcorrscan-users).
 
 You will likely need sudo permissions to run this command.  This installation
 method is quite new to the package (as of v0.0.4), so there are some things that
