@@ -143,10 +143,8 @@ def write_event(sfile_list):
     sort_list=[(Sfile_util.readheader(sfile).time, sfile) for sfile in sfile_list]
     sort_list.sort(key=lambda tup:tup[0])
     sfile_list=[sfile[1] for sfile in sort_list]
-    i=0
     f=open('event.dat','w')
-    for sfile in sfile_list:
-        i+=1
+    for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
         evinfo=Sfile_util.readheader(sfile)
         f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2)+\
@@ -184,9 +182,9 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
     fphase=open('phase.dat','w')
     stations=[]
     evcount=0
-    for i in xrange(len(event_list)):
-        master_sfile=event_list[i][1]
-        master_event_id=event_list[i][0]
+    for i, master in enumerate(event_list):
+        master_sfile=master[1]
+        master_event_id=master[0]
         master_picks=Sfile_util.readpicks(master_sfile)
         master_ori_time=Sfile_util.readheader(master_sfile).time
         # print 'Master origin time: '+str(master_ori_time)
@@ -198,7 +196,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
         for pick in master_picks:
             fphase.write(pick.station+'  '+_cc_round(pick.time-master_ori_time,3)+\
                          '   '+'\n')
-        for j in xrange(i+1,len(event_list)):
+        for j in range(i+1,len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile=event_list[j][1]
             slave_event_id=event_list[j][0]
@@ -273,9 +271,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
     import glob
     corr_list=[]
     f=open('dt.cc','w')
-    for i in xrange(len(event_list)):
-        master_sfile=event_list[i][1]
-        master_event_id=event_list[i][0]
+    for i, master in enumerate(event_list):
+        master_sfile=master[1]
+        master_event_id=master[0]
         master_picks=Sfile_util.readpicks(master_sfile)
         master_ori_time=Sfile_util.readheader(master_sfile).time
         master_location=(Sfile_util.readheader(master_sfile).latitude,\
@@ -364,7 +362,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,\
                                     ' '+pick.phase+'\n'
                             # links+=1
                         corr_list.append(cc*cc)
-                    except:
+                    except: # Should warn here
+                        warnings.warn("Couldn't compute correlation correction")
                         continue
             if links >= min_link and phases > 0:
                 f.write(event_text)

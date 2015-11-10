@@ -66,6 +66,7 @@
           
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
@@ -76,24 +77,23 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -135,8 +135,6 @@
 <span class="sd">Utility module of the EQcorrscan package to allow for different methods of</span>
 <span class="sd">stacking of seismic signal in one place.</span>
 
-<span class="sd">In alpha stages and only with linear stacking implimented thusfar</span>
-
 <span class="sd">Calum Chamberlain 24/06/2015</span>
 
 <span class="sd">Copyright 2015 Calum Chamberlain</span>
@@ -160,7 +158,7 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="linstack"><a class="viewcode-back" href="../utils.html#stacking.linstack">[docs]</a><span class="k">def</span> <span class="nf">linstack</span><span class="p">(</span><span class="n">streams</span><span class="p">):</span>
+<div class="viewcode-block" id="linstack"><a class="viewcode-back" href="../submodules/utils.stacking.html#stacking.linstack">[docs]</a><span class="k">def</span> <span class="nf">linstack</span><span class="p">(</span><span class="n">streams</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the linear stack of a series of seismic streams of</span>
 <span class="sd">    multiplexed data</span>
@@ -188,7 +186,7 @@
                                <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">stack</span>
 </div>
-<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../utils.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<div class="viewcode-block" id="PWS_stack"><a class="viewcode-back" href="../submodules/utils.stacking.html#stacking.PWS_stack">[docs]</a><span class="k">def</span> <span class="nf">PWS_stack</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the phase weighted stack of a series of streams.</span>
 <span class="sd">    Recommend aligning the traces before stacking.</span>
@@ -224,7 +222,7 @@
                 <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="n">weight</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Phasestack</span>
 </div>
-<div class="viewcode-block" id="align_traces"><a class="viewcode-back" href="../utils.html#stacking.align_traces">[docs]</a><span class="k">def</span> <span class="nf">align_traces</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">):</span>
+<div class="viewcode-block" id="align_traces"><a class="viewcode-back" href="../submodules/utils.stacking.html#stacking.align_traces">[docs]</a><span class="k">def</span> <span class="nf">align_traces</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span> <span class="n">master</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to allign traces relative to each other based on their</span>
 <span class="sd">    cross-correlation value</span>
@@ -233,28 +231,36 @@
 <span class="sd">    :param trace_list: List of traces to allign</span>
 <span class="sd">    :type shift_len: int</span>
 <span class="sd">    :param shift_len: Length to allow shifting within in samples</span>
+<span class="sd">    :type master: obspy.Trace</span>
+<span class="sd">    :param master: Master trace to align to, if set to False will align to the\</span>
+<span class="sd">        largest amplitude trace (default)</span>
 
 <span class="sd">    :returns: list of shifts for best allignment in seconds</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorr</span>
     <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
     <span class="n">traces</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)</span>
-    <span class="c"># Use trace with largest MAD amplitude as master</span>
-    <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
-    <span class="n">master_no</span><span class="o">=</span><span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="n">MAD_master</span><span class="p">:</span>
-            <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
-            <span class="n">master_no</span><span class="o">=</span><span class="n">i</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="p">:</span>
+        <span class="c"># Use trace with largest MAD amplitude as master</span>
+        <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">master_no</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="n">MAD_master</span><span class="p">:</span>
+                <span class="n">master</span><span class="o">=</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">MAD_master</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+                <span class="n">master_no</span><span class="o">=</span><span class="n">i</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Using master given by user&#39;</span>
     <span class="n">shifts</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">ccs</span><span class="o">=</span><span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traces</span><span class="p">)):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">==</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Sampling rates not the same&#39;</span><span class="p">)</span>
         <span class="n">shift</span><span class="p">,</span> <span class="n">cc</span><span class="o">=</span><span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">shift_len</span><span class="p">)</span>
         <span class="n">shifts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shift</span><span class="o">/</span><span class="n">master</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">shifts</span></div>
+        <span class="n">ccs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">shifts</span><span class="p">,</span> <span class="n">ccs</span></div>
 </pre></div>
 
           </div>
