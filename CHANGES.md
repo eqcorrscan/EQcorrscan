@@ -1,4 +1,4 @@
-## Development:
+## 0.0.8:
 * Added SVD magnitude inversion to [utils.mag_calc](EQcorrscan/eqcorrscan/utils/mag_calc.py#L530),
 tested for multi-channel;
 * Bug-fix in s-file printing when printing AIN,
