@@ -126,9 +126,6 @@ def match_synth(sfile, cont_base, freqmin=2.0, freqmax=10.0, samp_rate=100.0,\
     synth_template.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
     for tr in synth_template:
         tr.data=(tr.data*1000).astype(np.int32)
-    if save_template:
-        synth_template.write('Synthetic_'+sfile.split('/')[-1],
-                            format='MSEED', encoding='STEIM2')
     # Find the date from the sfile
     event_date=Sfile_util.readheader(sfile).time.datetime
     day=UTCDateTime(event_date.date())
@@ -171,7 +168,8 @@ def match_synth(sfile, cont_base, freqmin=2.0, freqmax=10.0, samp_rate=100.0,\
         synth_tr=synth_template.select(station=tr.stats.station,\
                                         channel=tr.stats.channel)[0]
         shift, corr = xcorr(tr.data, synth_tr.data, 20)
-        print tr.stats.station+'.'+tr.stats.channel+' shift='+str(shift)+' corr='+str(corr)
+        print tr.stats.station+'.'+tr.stats.channel+\
+            ' shift='+str(shift)+'samples corr='+str(corr)
         if corr < 0:
             synth_tr.data*=-1
         # Apply a pad
@@ -180,12 +178,9 @@ def match_synth(sfile, cont_base, freqmin=2.0, freqmax=10.0, samp_rate=100.0,\
             synth_tr.data=np.append(synth_tr.data, pad)[abs(shift):]
         elif shift > 0:
             synth_tr.data=np.append(pad, synth_tr.data)[0:-shift]
-        # plt.plot(tr.data, 'k')
-        # plt.plot(synth_tr.data*(max(tr.data)/max(synth_tr.data)), 'r')
-        # print max(tr.data)
-        # print max(synth_tr.data)
-        # plt.title(tr.stats.station+'.'+tr.stats.channel+' Correlates at '+str(corr))
-        # plt.show()
+    if save_template:
+        synth_template.write('Synthetic_'+sfile.split('/')[-1],
+                            format='MSEED', encoding='STEIM2')
     # Now we have processed data and a template, we can try and detect!
     detections=match_filter.match_filter(['Synthetic_'+sfile.split('/')[-1],
                                         'Real_'+sfile.split('/')[-1]],\
@@ -211,7 +206,16 @@ def match_synth(sfile, cont_base, freqmin=2.0, freqmax=10.0, samp_rate=100.0,\
 if __name__ =='__main__':
     import sys
     if not len(sys.argv)==10:
-        raise IOError('Insufficient arguments '+str(len(sys.argv)))
+        raise IOError('Insufficient arguments '+str(len(sys.argv))+' needs:\n\t\
+            Sfile path\n\t\
+            continuous database path\n\t\
+            Low-cut in Hz\n\t\
+            High-cut in Hz\n\t\
+            Desired sample rate in Hz\n\t\
+            Threshold\n\t\
+            Threshold type\n\t\
+            Trigger interval\n\t\
+            Plot variable')
     sfile=str(sys.argv[1])
     cont_base=str(sys.argv[2])
     freqmin=float(sys.argv[3])

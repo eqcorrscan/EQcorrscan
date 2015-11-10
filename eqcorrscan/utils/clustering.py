@@ -1,13 +1,6 @@
 #!/usr/bin/python
 """
-Code to compute the linkage between seismograms and cluster them accordingly
-
-Written by Calum Chamberlain, in alpha stages of development as of 24/06/2015
-
-Implimented to streamline templates after template detection in beamforming
-methods, employed by implimentation of Frank et al. code.
-
-As such this code is designed to work only for templates with the same channels
+Functions to cluster seismograms by a range of constraints.
 
 Copyright 2015 Calum Chamberlain
 
@@ -32,8 +25,9 @@ This file is part of EQcorrscan.
 # as making sure that they are similarly correlated - will cluster based on
 # cross-channel correlation sum
 import numpy as np
+import warnings
 
-def cross_chan_coherence(st1, st2):
+def cross_chan_coherence(st1, st2, i=0):
     """
     Function to determine the cross-channel coherancy between two streams of
     multichannel seismic data.
@@ -42,8 +36,11 @@ def cross_chan_coherence(st1, st2):
     :param st1: Stream one
     :type st2: obspy Stream
     :param st2: Stream two
+    :type i: int
+    :param i: index used for parallel async processing, returned unaltered
 
-    :returns: cross channel coherence, float - normalized by number of channels
+    :returns: cross channel coherence, float - normalized by number of channels,
+        if i, returns tuple of (cccoh, i) where i is int, as intput.
     """
     from eqcorrscan.core.match_filter import normxcorr2
     cccoh=0.0
@@ -56,69 +53,151 @@ def cross_chan_coherence(st1, st2):
         if tr2:
             cccoh+=normxcorr2(tr1,tr2[0].data)[0][0]
             kchan+=1
-    cccoh=cccoh/kchan
-    return cccoh
+    if kchan:
+        cccoh=cccoh/kchan
+        return (cccoh, i)
+    else:
+        warnings.warn('No matching channels')
+        return (0, i)
 
-def distance_matrix(templates):
+def distance_matrix(stream_list, cores=1):
     """
     Function to compute the distance matrix for all templates - will give
     distance as 1-abs(cccoh), e.g. a well correlated pair of templates will
     have small distances, and an equally well correlated reverse image will
     have the same distance as apositively correlated image - this is an issue
 
-    :type templates: List of obspy.Streams
-    :param template: List of the streams to compute the distance matrix for
+    :type stream_list: List of obspy.Streams
+    :param tream_list: List of the streams to compute the distance matrix for
+    :type core: int
+    :param cores: Number of cores to parallel process using, defaults to 1.
 
     :returns: ndarray - distance matrix
     """
+    from multiprocessing import Pool
+
     # Initialize square matrix
-    dist_mat=np.array([np.array([0.0]*len(templates))]*len(templates))
-    for i in xrange(len(templates)):
-        for j in xrange(i,len(templates)):
+    dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
+
+    for i, master in enumerate(stream_list):
+        # Start a parallel processing pool
+        pool=Pool(processes=cores)
+        # Parallel processing
+        results=[pool.apply_async(cross_chan_coherence, args=(master,\
+                                                        stream_list[j], j))\
+                            for j in range(len(stream_list))]
+        pool.close()
+        # Extract the results when they are done
+        dist_list=[p.get() for p in results]
+        # Close and join all the processes back to the master process
+        pool.join()
+        # Sort the results by the input j
+        dist_list.sort(key=lambda tup:tup[1])
+        # Sort the list into the dist_mat structure
+        for j in range(i,len(stream_list)):
             if i==j:
                 dist_mat[i,j]=0.0
             else:
-                dist_mat[i,j]=1-np.abs(cross_chan_coherence(templates[i],templates[j]))
-    for i in xrange(1,len(templates)):
-        for j in xrange(i):
+                dist_mat[i,j]=1-dist_list[j][0]
+    # Reshape the distance matrix
+    for i in range(1,len(stream_list)):
+        for j in range(i):
             dist_mat[i,j]=dist_mat.T[i,j]
     return dist_mat
 
-def cluster(templates, show=True):
+def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,\
+        cores='all', debug=1):
     """
-    Function to take a set of templates and cluster them, will return distance\
-            matrix of grouped templates
+    Function to take a set of templates and cluster them, will return groups as
+    lists of streams.  Clustering is done by computing the cross-channel
+    correlation sum of each stream in stream_list with every other stream in
+    the list.  Scipy.cluster.hierachy functions are then used to compute the
+    complete distance matrix, where distance is 1 minus the normalised
+    cross-correlation sum such that larger distances are less similar events.
+    Groups are then created by clustering the distance matrix at distances
+    less than 1 - corr_thresh.
 
-    :type templates: List of Obspy.Stream
-    :param templates: List of templates to compute clustering for
+    Will compute the distance matrix in parallel, using all available cores
+
+    :type stream_list: List of Obspy.Stream
+    :param stream_list: List of templates to compute clustering for
     :type show: bool
     :param show: plot linkage on screen if True, defaults to True
+    :type corr_thresh: float
+    :param corr_thresh: Cross-channel correlation threshold for grouping
+    :type save_corrmat: bool
+    :param save_corrmat: If True will save the distance matrix to dist_mat.npy
+    :type cores: int
+    :param cores: numebr of cores to use when computing the distance matrix,\
+            defaults to 'all' which will work out how many cpus are available\
+            and hog them.
+    :type debug: int
+    :param debug: Level of debugging from 1-5, higher is more output, currently\
+        only level 1 implimented.
 
-    :returns: List of cluster groups, array of length len(templates), with
-                each number relating to a cluster
-    .. rubric:: Note:
-        Not fully feautured yet, returns the Z matrix, but doesn't tell you what\
-        can be clustered. It would be good to use the scikits clustering\
-        routines: http://scikit-learn.org/stable/modules/clustering.html
+    :returns: List of groups with each group a list of streams making up\
+        that group.
     """
     from scipy.spatial.distance import squareform
-    from scipy.cluster.hierarchy import linkage, dendrogram
+    from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
     import matplotlib.pyplot as plt
-    dist_mat=distance_matrix(templates)
+    from multiprocessing import cpu_count
+    if cores=='all':
+        num_cores=cpu_count()
+    else:
+        num_cores=cores
+    # Compute the distance matrix
+    if debug >= 1:
+        print 'Computing the distance matrix using '+str(num_cores)+' cores'
+    dist_mat=distance_matrix(stream_list, cores=num_cores)
+    if save_corrmat:
+        np.save('dist_mat.npy', dist_mat)
+        if debug >= 1:
+            print 'Saved the distance matrix as dist_mat.npy'
     dist_vec=squareform(dist_mat)
     # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
+    if debug >= 1:
+        print 'Computing linkage'
     Z = linkage(dist_vec)
-    D = dendrogram(Z)
     if show:
+        if debug >= 1:
+            print 'Plotting the dendrogram'
+        D = dendrogram(Z, color_threshold = 1 - corr_thresh,\
+            distance_sort='ascending')
         plt.show()
-    return Z
+    # Get the indeces of the groups
+    if debug >= 1:
+        print 'Clustering'
+    indeces = fcluster(Z, 1 - corr_thresh, 'distance')
+    group_ids=list(set(indeces)) # Unique list of group ids
+    if debug >= 1:
+        print 'Found '+str(len(group_ids))+' groups'
+    # Convert to tuple of (group id, stream id)
+    indeces=[(indeces[i], i) for i in xrange(len(indeces))]
+    # Sort by group id
+    indeces.sort(key=lambda tup:tup[0])
+    groups=[]
+    if debug >= 1:
+        print 'Extracting and grouping'
+    for group_id in group_ids:
+        group=[]
+        for ind in indeces:
+            if ind[0] == group_id:
+                group.append(stream_list[ind[1]])
+            elif ind[0] > group_id:
+                # Because we have sorted by group id, when the index is greater
+                # than the group_id we can break the inner loop.
+                # Patch applied by CJC 05/11/2015
+                groups.append(group)
+                break
+    return groups
 
-def group_delays(templates):
+def group_delays(stream_list):
     """
     Function to group template waveforms according to their delays
 
-    :type templates: List of obspy.Stream
-    :param templates: List of the waveforms you want to group
+    :type stream_list: List of obspy.Stream
+    :param stream_list: List of the waveforms you want to group
 
     :returns: List of List of obspy.Streams where each initial list is a group\
             with the same delays
@@ -127,22 +206,22 @@ def group_delays(templates):
     group_delays=[]
     group_chans=[]
     # Sort templates by number of channels
-    templates=[(template, len(template)) for template in templates]
-    templates.sort(key=lambda tup:tup[1])
-    templates=[template[0] for template in templates]
-    for i in xrange(1,len(templates)):
-        print 'Working on waveform '+str(i)+' of '+str(len(templates))
+    stream_list=[(st, len(st)) for st in stream_list]
+    stream_list.sort(key=lambda tup:tup[1])
+    stream_list=[st[0] for st in stream_list]
+    for i in xrange(1,len(stream_list)):
+        print 'Working on waveform '+str(i)+' of '+str(len(stream_list))
         # Calculate the delays
         starttimes=[]
         chans=[]
-        for tr in templates[i]:
+        for tr in stream_list[i]:
             starttimes.append(tr.stats.starttime)
             chans.append((tr.stats.station, tr.stats.channel))
         # This delays calculation will be an issue if we have changes in channels
         delays=[starttimes[m]-min(starttimes) for m in xrange(len(starttimes))]
         delays=[round(d,2) for d in delays]
         if len(groups)==0:
-            groups.append([templates[i]])
+            groups.append([stream_list[i]])
             group_delays.append(delays)
             group_chans.append(chans)
         else:
@@ -171,25 +250,25 @@ def group_delays(templates):
                     if shared_delays_slave[k]==shared_delays_master[k]:
                         kmatch+=1 # increase the match index
                 if kmatch==len(shared_chans): # If all the channels match, add it to the group
-                    groups[j].append(templates[i])
+                    groups[j].append(stream_list[i])
                     match=True
                 elif j<len(groups)-1:
                     j+=1
                 else:
                     # Create a new group and break the loop
-                    groups.append([templates[i]])
+                    groups.append([stream_list[i]])
                     group_delays.append(delays)
                     group_chans.append(chans)
                     match=True # Use this to break the loop
     return groups
 
-def SVD(templates):
+def SVD(stream_list):
     """
     Function to compute the SVD of a number of templates and return the singular
     vectors and singular values of the templates.
 
-    :type templates: List of Obspy.Stream
-    :param templates: List of the templates to be analysed
+    :type stream_list: List of Obspy.Stream
+    :param stream_list: List of the templates to be analysed
 
     :return: SVector(list of ndarray), SValues(list) for each channel, \
             Uvalues(list of ndarray) for each channel, \
@@ -204,8 +283,8 @@ def SVD(templates):
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
     stachans=[]
-    for template in templates:
-        for tr in template:
+    for st in stream_list:
+        for tr in st:
             stachans.append(tr.stats.station+'.'+tr.stats.channel)
     stachans=list(set(stachans))
     # Initialize a list for the output matrices, one matrix per-channel
@@ -213,30 +292,29 @@ def SVD(templates):
     SVectors=[]
     Uvectors=[]
     for stachan in stachans:
-        chan_mat=[templates[i].select(station=stachan.split('.')[0], \
+        chan_mat=[stream_list[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])[0].data \
-                  for i in xrange(len(templates)) if \
-                  len(templates[i].select(station=stachan.split('.')[0], \
+                  for i in range(len(stream_list)) if \
+                  len(stream_list[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])) != 0]
         # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
         chan_mat=np.asarray(chan_mat)
         print chan_mat.shape
-        print stachan
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
         SVectors.append(V)
         Uvectors.append(U)
     return SVectors, SValues, Uvectors, stachans
 
-def empirical_SVD(templates, linear=True):
+def empirical_SVD(stream_list, linear=True):
     """
     Empirical subspace detector generation function.  Takes a list of templates
     and computes the stack as the first order subspace detector, and the
     differential of this as the second order subspace detector following
     the emprical subspace method of Barrett & Beroza, 2014 - SRL.
 
-    :type templates: list of stream
-    :param templates: list of template streams to compute the subspace detectors\
+    :type stream_list: list of stream
+    :param stream_list: list of template streams to compute the subspace detectors\
         from
     :type linear: Bool
     :param linear: Set to true by default to compute the linear stack as the\
@@ -247,9 +325,9 @@ def empirical_SVD(templates, linear=True):
     """
     from eqcorrscan.utils import stacking
     if linear:
-        first_subspace=stacking.linstack(templates)
+        first_subspace=stacking.linstack(stream_list)
     second_subspace=first_subspace.copy()
-    for i in xrange(len(second_subspace)):
+    for i in range(len(second_subspace)):
         second_subspace[i].data=np.diff(second_subspace[i].data)
         second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
     return [first_subspace, second_subspace]
@@ -273,25 +351,25 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
     from obspy import Stream, Trace
     SVstreams=[]
-    for i in xrange(k):
+    for i in range(k):
         SVstream=[]
-        for j in xrange(len(stachans)):
+        for j, stachan in enumerate(stachans):
             SVstream.append(Trace(SVectors[j][i], \
-                                    header={'station': stachans[j].split('.')[0],
-                                            'channel': stachans[j].split('.')[1],
+                                    header={'station': stachan.split('.')[0],
+                                            'channel': stachan.split('.')[1],
                                             'sampling_rate': sampling_rate}))
 
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
-def corr_cluster(traces, thresh=0.9):
+def corr_cluster(trace_list, thresh=0.9):
     """
     Group traces based on correlations above threshold with the stack - will
     run twice, once with a lower threshold, then again with your threshold to
     remove large outliers
 
-    :type traces: List of :class:obspy.Trace
-    :param traces: Traces to compute similarity between
+    :type trace_list: List of :class:obspy.Trace
+    :param trace_list: Traces to compute similarity between
     :type thresh: float
     :param thrsh: Correlation threshold between -1-1
 
@@ -300,17 +378,17 @@ def corr_cluster(traces, thresh=0.9):
     from eqcorrscan.utils import stacking
     from obspy import Stream
     from core.match_filter import normxcorr2
-    stack=stacking.linstack([Stream(tr) for tr in traces])[0]
-    output=np.array([False]*len(traces))
+    stack=stacking.linstack([Stream(tr) for tr in trace_list])[0]
+    output=np.array([False]*len(trace_list))
     group1=[]
-    for i in xrange(len(traces)):
-        if normxcorr2(traces[i].data,stack.data)[0][0] > 0.6:
+    for i, tr in enumerate(trace_list):
+        if normxcorr2(tr.data,stack.data)[0][0] > 0.6:
             output[i]=True
-            group1.append(traces[i])
+            group1.append(tr)
     stack=stacking.linstack([Stream(tr) for tr in group1])[0]
     group2=[]
-    for i in xrange(len(traces)):
-        if normxcorr2(traces[i].data,stack.data)[0][0] > thresh:
+    for i, tr in enumerate(trace_list):
+        if normxcorr2(tr.data,stack.data)[0][0] > thresh:
             group2.append(tr)
             output[i]=True
         else:
@@ -393,16 +471,16 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
             new_stachans=[]
             new_delays=[]
             j=0
-            for i in xrange(len(stachans)):
+            for i, stachan in enumerate(stachans):
                 if j==1:
-                    new_stachans.append((stachans[i][0], stachans[i][1][0]+'Z',\
-                                         stachans[i][2]))
+                    new_stachans.append((stachan[0], stachan[1][0]+'Z',\
+                                         stachan[2]))
                     new_delays.append(delays[i])
-                    new_stachans.append(stachans[i])
+                    new_stachans.append(stachan)
                     new_delays.append(delays[i])
                     j=0
                 else:
-                    new_stachans.append(stachans[i])
+                    new_stachans.append(stachan)
                     new_delays.append(delays[i])
                     j+=1
             new_all_stachans.append((template[0], new_stachans))
@@ -430,10 +508,10 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
                       if base[2]==stachan[2]][0]
             if contbase[1]=='yyyymmdd':
                 dayfile=detection_day.strftime('%Y%m%d')+'/*'+stachan[0]+\
-                        '.'+stachan[1][0]+'?'+stachan[1][1]+'.*'
+                        '.'+stachan[1][0]+'?'+stachan[1][-1]+'.*'
             elif contbase[1]=='Yyyyy/Rjjj.01':
                 dayfile=detection_day.strftime('Y%Y/R%j.01')+'/'+stachan[0]+\
-                        '.*.'+stachan[1][0]+'?'+stachan[1][1]+'.'+detection_day.strftime('%Y.%j')
+                        '.*.'+stachan[1][0]+'?'+stachan[1][-1]+'.'+detection_day.strftime('%Y.%j')
             if not 'st' in locals():
                 try:
                     st=read(contbase[0]+'/'+dayfile)
@@ -489,3 +567,77 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
         return detection_wavefiles
     else:
         return
+
+def space_time_cluster(detections, t_thresh, d_thresh):
+    """
+    Function to cluster detections in space and time, use to seperate repeaters
+    from other events
+
+    :type detections: List
+    :param detections: List of tuple of tuple of location (lat, lon, depth (km)),\
+            and time as a datetime object
+    :type t_thresh: float
+    :param t_thresh: Maximum inter-event time threshold in seconds
+    :type d_thresh: float
+    :param d_thresh: Maximum inter-event distance in km
+
+    :returns: List of tuple (detections, clustered) and list of indeces of\
+            clustered detections
+    """
+    from eqcorrscan.utils.mag_calc import dist_calc
+    import datetime as dt
+    # Ensure they are sorted by time first, not that we need it.
+    detections.sort(key=lambda tup:tup[1])
+    clustered=[]
+    clustered_indeces=[]
+    for master_ind, master in enumerate(detections):
+        keep=False
+        for slave in detections:
+            if not master==slave and\
+               abs((master[1] - slave[1]).total_seconds()) <= t_thresh and \
+               dist_calc(master[0], slave[0]) <= d_thresh:
+                # If the slave events is close in time and space to the master
+                # keep it and break out of the loop.
+                keep=True
+                break
+        if keep:
+            clustered.append(master)
+            clustered_indeces.append(master_ind)
+
+    return clustered, clustered_indeces
+
+def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
+    """
+    Function to remove detections by changing the threshold, can only be done
+    to remove detection by increasing threshold, threshold lowering will have
+    no affect.
+
+    :type path: Str
+    :param path: Path to the .csv detection file
+    :type old_thresh: float
+    :param old_thresh: Old threshold MAD multiplier
+    :type new_thresh: float
+    :param new_thresh: New threhsold MAD multiplier
+    :type chan_thresh: int
+    :param chan_thresh: Minimum number of channels for a detection
+
+    returns: List of detections
+    """
+    f=open(path,'r')
+    old_thresh=float(old_thresh)
+    new_thresh=float(new_thresh)
+    # Be nice, ensure that the thresholds are float
+    detections=[]
+    detections_in=0
+    detections_out=0
+    for line in f:
+        if not line.split(', ')[0]=='template' and len(line) >2:
+            detections_in+=1
+            if abs(float(line.split(', ')[3])) >=\
+               (new_thresh/old_thresh)*float(line.split(', ')[2]) and\
+               int(line.split(', ')[4]) >= chan_thresh:
+                detections_out+=1
+                detections.append(line.split(', '))
+    print 'Read in '+str(detections_in)+' detections'
+    print 'Left with '+str(detections_out)+' detections'
+    return detections

@@ -5,7 +5,7 @@ data and output the detecitons.  The main component of this script is the\
 normxcorr2 function from the openCV image processing package.  This is a highly\
 optimized and accurate normalized cross-correlation routine.  The details of\
 this code can be found here:\
-    - http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\
+* http://www.cs.ubc.ca/research/deaton/remarks_ncc.html\
 The cpp code was first tested using the Matlab mex wrapper, and has since been\
 ported to a python callable dynamic library.
 
@@ -61,11 +61,7 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
-import matplotlib, warnings
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-plt.ioff()
-
+import warnings
 
 class DETECTION(object):
     """
@@ -117,11 +113,11 @@ def normxcorr2(template, image):
     Base function to call the c++ correlation routine from the openCV image
     processing suite.  Requires you to have installed the openCV python
     bindings, which can be downloaded on Linux machines using:
-        - sudo apt-get install python-openCV
+    **sudo apt-get install python-openCV**
     Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the
     normalized cross-correaltion.  Documentation on this function can be
     found here:
-        - http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate
+    **http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate**
 
     :type template: :class: 'numpy.array'
     :param template: Template array
@@ -273,7 +269,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                                                         tr_data, station,\
                                                                 channel, i,\
                                                                 debug))\
-                                  for i in xrange(len(templates))]
+                                  for i in range(len(templates))]
             pool.close()
         if debug >=1:
             print "--------- TIMER:    Correlation loop took: %s s" % t.secs
@@ -314,7 +310,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         if debug >=2:
             print 'cccs_matrix as a np.array is shaped: '+str(np.shape(cccs_matrix))
         # First work out how many channels were used
-        for i in xrange(0,len(templates)):
+        for i in range(0,len(templates)):
             if not np.all(cccs_matrix[1][i]==0):
                 # Check that there are some real numbers in the vector rather
                 # than being all 0, which is the default case for no match
@@ -338,9 +334,9 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     cccsums=cccs_matrix[0]
     return cccsums, no_chans
 
-def match_filter(template_names, templates, stream, threshold,\
-                 threshold_type, trig_int, plotvar, cores=1,\
-                 tempdir=False, debug=0):
+def match_filter(template_names, templates, st, threshold,\
+                 threshold_type, trig_int, plotvar, plotdir='.', cores=1,\
+                 tempdir=False, debug=0, plot_format='jpg'):
     """
     Over-arching code to run the correlations of given templates with a day of
     seismic data and output the detections based on a given threshold.
@@ -348,11 +344,13 @@ def match_filter(template_names, templates, stream, threshold,\
     :type templates: list :class: 'obspy.Stream'
     :param templates: A list of templates of which each template is a Stream of\
         obspy traces containing seismic data and header information.
-    :type stream: :class: 'obspy.Stream'
-    :param stream: An obspy.Stream object containing all the data available and\
+    :type st: :class: 'obspy.Stream'
+    :param st: An obspy.Stream object containing all the data available and\
         required for the correlations with templates given.  For efficiency this\
         should contain no excess traces which are not in one or more of the\
-        templates.
+        templates.  This will now remove excess traces internally, but will\
+        copy the stream and work on the copy, leaving the stream you input\
+        untouched.
     :type threshold: float
     :param threshold: A threshold value set based on the threshold_type
     :type threshold_type: str
@@ -368,6 +366,11 @@ def match_filter(template_names, templates, stream, threshold,\
         number of channels within this template.
     :type trig_int: float
     :param trig_int: Minimum gap between detections in seconds.
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be output here, defaults\
+        to run location.
     :type tempdir: String or False
     :param tempdir: Directory to put temporary files, or False
     :type cores: int
@@ -378,13 +381,28 @@ def match_filter(template_names, templates, stream, threshold,\
     :return: :class: 'DETECTIONS' detections for each channel formatted as\
     :class: 'obspy.UTCDateTime' objects.
 
+    .. rubric:: Note
+        Plotting within the match-filter routine uses the Agg backend with\
+        interactive plotting turned off.  This is because the function is\
+        designed to work in bulk.  If you wish to turn interactive plotting on\
+        you must import matplotlib in your script first, when you them import\
+        match_filter you will get the warning that this call to matplotlib has\
+        no effect, which will mean that match_filter has not changed the plotting\
+        behaviour.
+
     """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.ioff()
     from eqcorrscan.utils import findpeaks, EQcorrscan_plotting
     import time, copy
     from obspy import Trace
     match_internal=False # Set to True if memory is an issue, if True, will only
                           # use about the same amount of memory as the seismic dat
                           # take up.  If False, it will use 20-100GB per instance
+    # Copy the stream here because we will fuck about with it
+    stream=st.copy()
     # Debug option to confirm that the channel names match those in the templates
     if debug>=2:
         template_stachan=[]
@@ -430,6 +448,10 @@ def match_filter(template_names, templates, stream, threshold,\
             nulltrace.stats.starttime=stream[0].stats.starttime
             nulltrace.data=np.array([np.NaN]*len(stream[0].data), dtype=np.float32)
             stream+=nulltrace
+    # Remove un-needed channels
+    for tr in stream:
+        if not (tr.stats.station, tr.stats.channel) in template_stachan:
+            stream.remove(tr)
     # Also pad out templates to have all channels
     for template in templates:
         for stachan in template_stachan:
@@ -481,26 +503,31 @@ def match_filter(template_names, templates, stream, threshold,\
         if plotvar:
             stream_plot=copy.deepcopy(stream[0])
             # Downsample for plotting
-            stream_plot.decimate(int(stream[0].stats.sampling_rate/20))
+            stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
             cccsum_plot=Trace(cccsum)
             cccsum_plot.stats.sampling_rate=stream[0].stats.sampling_rate
             # Resample here to maintain shape better
             cccsum_hist=cccsum_plot.copy()
-            cccsum_hist=cccsum_hist.decimate(int(stream[0].stats.sampling_rate/20)).data
-            cccsum_plot=EQcorrscan_plotting.chunk_data(cccsum_plot, 20, 'Maxabs').data
+            cccsum_hist=cccsum_hist.decimate(int(stream[0].stats.sampling_rate\
+                                                / 10)).data
+            cccsum_plot=EQcorrscan_plotting.chunk_data(cccsum_plot, 10, 'Maxabs').data
             # Enforce same length
             stream_plot.data=stream_plot.data[0:len(cccsum_plot)]
             cccsum_plot=cccsum_plot[0:len(stream_plot.data)]
             cccsum_hist=cccsum_hist[0:len(stream_plot.data)]
             EQcorrscan_plotting.triple_plot(cccsum_plot, cccsum_hist, stream_plot,\
                                             rawthresh, True,\
-                                            'plot/cccsum_plot_'+template_names[i]+'_'+\
+                                            plotdir+'/cccsum_plot_'+template_names[i]+'_'+\
                                         str(stream[0].stats.starttime.year)+'-'+\
                                         str(stream[0].stats.starttime.month)+'-'+\
-                                        str(stream[0].stats.starttime.day)+'.jpg')
-            np.save(template_names[i]+\
-                        stream[0].stats.starttime.datetime.strftime('%Y%j'),\
-                    cccsum)
+                                        str(stream[0].stats.starttime.day)+'.'+\
+                                            plot_format)
+            if debug >= 4:
+                print 'Saved the cccsum to: '+template_names[i]+\
+                            stream[0].stats.starttime.datetime.strftime('%Y%j')
+                np.save(template_names[i]+\
+                            stream[0].stats.starttime.datetime.strftime('%Y%j'),\
+                        cccsum)
         tic=time.clock()
         if debug>=4:
             np.save('cccsum_'+str(i)+'.npy', cccsum)

@@ -78,11 +78,11 @@ def _channel_loop( templates, stream, delays, ktemplates, savedir=False, cores=1
         results=[pool.apply_async(_template_loop, args=(templates[i], stream[j_ind[i]], \
                                                         delays[i],\
                                                         savedir+'/'+str(i), i))
-                 for i in xrange(len(templates))]
+                 for i in range(len(templates))]
     else:
         results=[pool.apply_async(_template_loop, args=(templates[i], stream[j_ind[i]], \
                                                         delays[i], False, i))
-                 for i in xrange(len(templates))]
+                 for i in range(len(templates))]
     pool.close()
     if not savedir:
         ccc_list = [p.get() for p in results]
@@ -93,7 +93,7 @@ def _channel_loop( templates, stream, delays, ktemplates, savedir=False, cores=1
         del order_list
     pool.join()
     print "Finished parallel run"
-    for i in xrange(len(templates)):
+    for i in range(len(templates)):
         # if i in range(0,len(templates),len(templates)/100):
             # print str(i/len(templates))+' % read back in'
         # Check if there was data for that station for both the
@@ -115,7 +115,7 @@ def _channel_loop( templates, stream, delays, ktemplates, savedir=False, cores=1
             image_ind=0
             template_ind+=1
     # Reshape the array to give what we want
-    for i in xrange(len(cccsums)):
+    for i in range(len(cccsums)):
         cccsums[i]=cccsums[i].reshape(len(cccsums[i],))
     return cccsums, nchans
 

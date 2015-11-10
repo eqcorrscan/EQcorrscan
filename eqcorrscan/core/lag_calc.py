@@ -71,17 +71,17 @@ def _channel_loop(detection, template, i=0):
     """
     from eqcorrscan.utils.Sfile_util import PICK
     picks=[]
-    for i in xrange(len(template)):
-        image=detection.select(station=template[i].stats.station,\
-                                channel=template[i].stats.channel)
+    for tr in template:
+        image=detection.select(station=tr.stats.station,\
+                                channel=tr.stats.channel)
         if image: #Ideally this if statement would be removed.
-            ccc = normxcorr2(template[i].data, image[0].data)
+            ccc = normxcorr2(tr.data, image[0].data)
             shiftlen = len(ccc)*image[0].stats.sample_rate
             # Convert the maximum cross-correlation time to an actual time
             picktime = image[0].stats.starttime+(np.argmax(ccc)*image[0].stats.delta)
             picks.append(PICK())
-            ((lag, np.max(ccc), template[i].stats.station, \
-                template[i].stats.channel))
+            ((lag, np.max(ccc), tr.stats.station, \
+                tr.stats.channel))
     return (i, picks)
 
 def day_loop(detection_streams, template):

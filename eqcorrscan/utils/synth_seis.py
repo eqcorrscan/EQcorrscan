@@ -2,14 +2,26 @@
 Test function to do a **very** basic simulation of a seismogram to see how well
 a simple model would fit with real data.
 
-Written as part of the EQcorrscan project, but not yet distributed.
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
 import numpy as np
-
-def seis_sim(SP, amp_ratio=1.5, flength=False,phaseout='all'):
+def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.
     Will generate spikes separated by a given S-P time, which are then convolved
@@ -49,7 +61,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False,phaseout='all'):
     S_spikes=np.arange(amp_ratio, 0, -(amp_ratio/S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
-    for i in xrange(len(S_spikes)):
+    for i in range(len(S_spikes)):
         if i in np.arange(1,len(S_spikes),2):
             S_spikes[i]=0
         if i in np.arange(2, len(S_spikes),4):
@@ -142,8 +154,11 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
     :type flength: int
     :param flength: Length of template in samples, defaults to False
     :type phaseout: str
-    :param phaseout: Either 'S', 'P' or 'all', determines which phases to clip\
-     around
+    :param phaseout: Either 'S', 'P', 'all' or 'both', determines which phases \
+            to clip around.  'all' Encompasses both phases in one channel, but\
+            will return nothing if the flength is not long enough, 'both' will\
+            return two channels for each stations, one SYN_Z with the synthetic\
+            P-phase, and one SYN_H with the synthetic S-phase.
 
     :returns: List of :class:obspy.Stream
     """
@@ -154,23 +169,31 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
     #Initialize empty list for templates
     templates=[]
     # Loop through the nodes, for every node generate a template!
-    i=0
-    for node in nodes:
+    for i, node in enumerate(nodes):
         st=[] # Empty list to be filled with synthetics
         # Loop through stations
-        j=0
-        for station in stations:
+        for j, station in enumerate(stations):
             tr=Trace()
             tr.stats.sampling_rate=samp_rate
             tr.stats.station=station
             tr.stats.channel='SYN'
             tt=travel_times[j][i]
             if phase=='P':
+                # If the input travel-time is the P-wave travel-time
                 SP_time=(tt*PS_ratio)-tt
-                tr.stats.starttime+=tt
-            else:
+                if phaseout=='S':
+                    tr.stats.starttime+=tt+SP_time
+                else:
+                    tr.stats.starttime+=tt
+            elif phase=='S':
+                # If the input travel-time is the S-wave travel-time
                 SP_time=tt-(tt/PS_ratio)
-                tr.stats.starttime+=(tt/PS_ratio)
+                if phaseout=='S':
+                    tr.stats.starttime+=tt
+                else:
+                    tr.stats.starttime+=tt-SP_time
+            else:
+                raise IOError('Input grid is not P or S')
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
             # if SP_time*samp_rate > flength-11:
@@ -185,12 +208,25 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68, \
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                                 flength=flength, phaseout=phaseout)
                 st.append(tr)
+            elif phaseout=='all':
+                warnings.warn('Cannot make a bulk synthetic with this fixed '+\
+                              'length for station '+station)
             elif phaseout in ['P','S']:
                 tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
                                 flength=flength, phaseout=phaseout)
                 st.append(tr)
-            j+=1
+            elif phaseout == 'both':
+                for _phaseout in ['P', 'S']:
+                    _tr=tr.copy()
+                    _tr.data=seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,\
+                                flength=flength, phaseout=_phaseout)
+                    if _phaseout=='P':
+                        _tr.stats.channel='SYN_Z'
+                        # starttime defaults to S-time
+                        _tr.stats.starttime=_tr.stats.starttime-SP_time
+                    elif _phaseout=='S':
+                        _tr.stats.channel='SYN_H'
+                    st.append(_tr)
         templates.append(Stream(st))
         # Stream(st).plot(size=(800,600))
-        i+=1
     return templates
