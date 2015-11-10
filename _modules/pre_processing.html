@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>pre_processing &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>pre_processing &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -196,6 +196,9 @@
 <span class="sd">    :param debug: Debug flag from 0-5, higher numbers = more output</span>
 
 <span class="sd">    :return: obspy.Stream</span>
+
+<span class="sd">    ..rubric:: Note</span>
+<span class="sd">        Will convert channel names to two charectars long</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Add sanity check for filter</span>
     <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
@@ -217,16 +220,8 @@
         <span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
                     <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
-        <span class="c"># Correct FRAN N,E channels to 1,2 as this is correct</span>
-        <span class="c"># if tr.stats.station==&#39;FRAN&#39; and tr.stats.channel==&#39;SHN&#39;:</span>
-            <span class="c"># print &#39;Correcting FRAN SHN to SH1&#39;</span>
-            <span class="c"># tr.stats.channel=&#39;SH1&#39;</span>
-        <span class="c"># if tr.stats.station==&#39;FRAN&#39; and tr.stats.channel==&#39;SHE&#39;:</span>
-            <span class="c"># print &#39;Correcting FRAN SHE to SH2&#39;</span>
-            <span class="c"># tr.stats.channel=&#39;SH2&#39;</span>
-        <span class="c"># Account for two letter channel names in s-files and therefore templates</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-
+        <span class="c"># Convert to two charectar channel names</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="c"># Final visual check for debug</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -255,6 +250,9 @@
 <span class="sd">    :param starttime: Desired start of trace</span>
 
 <span class="sd">    :return: obspy.Stream</span>
+
+<span class="sd">    ..rubric:: Note</span>
+<span class="sd">        Will convert channel names to two charectars long</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Add sanity check</span>
     <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
@@ -318,24 +316,8 @@
     <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
                 <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
 
-    <span class="c">################### CHANNEL renaming, does not need to be in the main codes!</span>
-    <span class="c"># Correct FRAN N,E channels to 1,2 as this is correct</span>
-    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FRAN&#39;</span> <span class="ow">and</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="s">&#39;SHN&#39;</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Correcting FRAN SHN to SH1&#39;</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;SH1&#39;</span>
-    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FRAN&#39;</span> <span class="ow">and</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">==</span><span class="s">&#39;SHE&#39;</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Correcting FRAN SHE to SH2&#39;</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;SH2&#39;</span>
-
-    <span class="c"># Correct FOZ channels</span>
-    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="s">&#39;FOZ&#39;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
-            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="s">&#39;HH&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="c"># Account for two letter channel names in s-files and therefore templates</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c"># Sanity check the time header</span>
     <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
@@ -400,7 +382,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

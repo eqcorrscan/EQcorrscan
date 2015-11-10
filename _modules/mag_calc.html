@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>mag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>mag_calc &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -241,7 +241,7 @@
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
     <span class="n">debug_plot</span><span class="o">=</span><span class="bp">False</span>
     <span class="n">turning_points</span><span class="o">=</span><span class="p">[]</span> <span class="c"># A list of tuples of (amplitude, sample)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span>\
            <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]):</span>
             <span class="n">turning_points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">))</span>
@@ -254,7 +254,7 @@
         <span class="k">print</span> <span class="s">&#39;Turning points has length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">))</span><span class="o">+</span>\
                          <span class="s">&#39; data have length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
         <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
         <span class="n">half_periods</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="n">delta</span><span class="o">*</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
         <span class="n">amplitudes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">amplitude</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)</span>
@@ -298,11 +298,11 @@
     <span class="n">kpoles</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">4</span><span class="p">])</span>
     <span class="n">kzeros</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">5</span><span class="p">])</span>
     <span class="n">poles</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kpoles</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kpoles</span><span class="p">):</span>
         <span class="n">pole</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">poles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">float</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])))</span>
     <span class="n">zeros</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kzeros</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kzeros</span><span class="p">):</span>
         <span class="n">zero</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">zeros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">zero</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">float</span><span class="p">(</span><span class="n">zero</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])))</span>
     <span class="c"># Have Poles and Zeros, but need Gain and Sensitivity</span>
@@ -691,8 +691,7 @@
     <span class="c"># Sometimes the randomisation generates a singular matrix - rather than</span>
     <span class="c"># attempting to regulerize this matrix I propose undertaking the randomisation</span>
     <span class="c"># step a further time</span>
-    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
-    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stachans</span><span class="p">):</span>
         <span class="n">k</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># Small kernel matrix for one station - channel</span>
         <span class="c"># Copy the relevant vectors so as not to detroy them</span>
         <span class="n">U_working</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">U</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
@@ -758,15 +757,12 @@
         <span class="c"># k is now a square matrix, we need to flesh it out to be K_width</span>
         <span class="n">k_filled</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">K_width</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)):</span>
-            <span class="n">l</span><span class="o">=</span><span class="mi">0</span>
-            <span class="k">for</span> <span class="n">ev</span> <span class="ow">in</span> <span class="n">ev_list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">ev</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ev_list</span><span class="p">):</span>
                 <span class="n">k_filled</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">ev</span><span class="p">]</span><span class="o">=</span><span class="n">k</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">l</span><span class="p">]</span>
-                <span class="n">l</span><span class="o">+=</span><span class="mi">1</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;K&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
             <span class="n">K</span><span class="o">=</span><span class="n">k_filled</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">K</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">K</span><span class="p">,</span><span class="n">k_filled</span><span class="p">])</span>
-        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
     <span class="c"># Remove any empty rows</span>
     <span class="n">K_nonempty</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">events_out</span><span class="o">=</span><span class="p">[]</span>
@@ -789,7 +785,6 @@
     <span class="n">W</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
     <span class="c"># Make K into a matrix</span>
     <span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
-    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;/home/calumch/Dropbox/Manuscripts/EQcrosscorr_detection_paper/Scripts/K.npy&#39;</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
 
     <span class="c">############</span>
 
@@ -891,7 +886,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
