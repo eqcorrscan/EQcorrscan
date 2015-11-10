@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>template_gen &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>template_gen &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Core" href="../core.html"/>
         <link rel="next" title="match_filter" href="core.match_filter.html"/>
         <link rel="prev" title="bright_lights" href="core.bright_lights.html"/> 
@@ -211,6 +211,38 @@ class.  Should be given pre-processed data (downsampled and filtered)</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="template_gen.extract_from_stack">
+<code class="descclassname">template_gen.</code><code class="descname">extract_from_stack</code><span class="sig-paren">(</span><em>stack</em>, <em>template</em>, <em>length</em>, <em>pre_pick</em>, <em>pre_pad</em>, <em>Z_include=False</em>, <em>pre_processed=True</em>, <em>samp_rate=False</em>, <em>lowcut=False</em>, <em>highcut=False</em>, <em>filt_order=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#extract_from_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.extract_from_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to extract a new template from a stack of previous detections.
+Requires the stack, the template used to make the detections for the stack,
+and we need to know if the stack has been pre-processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stack</strong> (<em>:class:obspy.Stream</em>) &#8211; Waveform stack from detections.  Can be of any length and can        have delays already included, or not.</li>
+<li><strong>template</strong> (<em>:class:obspy.Stream</em>) &#8211; Template used to make the detections in the stack. Will use        the delays of this for the new template.</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of new template in seconds</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract additional data before the detection, seconds</li>
+<li><strong>pre_pad</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pad used in seconds when extracting the data, e.g. the time        before the detection extracted.  If using clustering.extract_detections        this half the length of the extracted waveform.</li>
+<li><strong>Z_include</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will include any Z-channels even if there is no        template for this channel, as long as there is a template for this station        at a different channel.  If this is False and Z channels are included in        the template Z channels will be included in the new_template any-way.</li>
+<li><strong>pre_processed</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Have the data been pre-processed, if True (default)        then we will only cut the data here.</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, desired        sampling rate in Hz, defaults to False.</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, lowcut in Hz,        defaults to False</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, highcut in Hz,        defaults to False</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; If pre_processed=False then this is required, filter        order, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">:class:obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="template_gen.from_contbase">
 <code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>contbase_list</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in picks from sfile then generate the template from the
@@ -307,7 +339,7 @@ picks within this and the wavefile found in the pick file.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

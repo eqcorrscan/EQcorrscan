@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>template_gen &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>template_gen &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -367,7 +367,6 @@
     <span class="c"># Cut and extract the templates</span>
     <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="n">prepick</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
-
 </div>
 <div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../submodules/core.template_gen.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -467,7 +466,83 @@
     <span class="k">del</span> <span class="n">st</span>
     <span class="c"># st1.plot(size=(800,600))</span>
     <span class="k">return</span> <span class="n">st1</span>
+</div>
+<div class="viewcode-block" id="extract_from_stack"><a class="viewcode-back" href="../submodules/core.template_gen.html#template_gen.extract_from_stack">[docs]</a><span class="k">def</span> <span class="nf">extract_from_stack</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">pre_pad</span><span class="p">,</span> <span class="n">Z_include</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>\
+                        <span class="n">pre_processed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>\
+                        <span class="n">lowcut</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to extract a new template from a stack of previous detections.</span>
+<span class="sd">    Requires the stack, the template used to make the detections for the stack,</span>
+<span class="sd">    and we need to know if the stack has been pre-processed.</span>
 
+<span class="sd">    :type stack: :class:obspy.Stream</span>
+<span class="sd">    :param stack: Waveform stack from detections.  Can be of any length and can\</span>
+<span class="sd">        have delays already included, or not.</span>
+<span class="sd">    :type template: :class:obspy.Stream</span>
+<span class="sd">    :param template: Template used to make the detections in the stack. Will use\</span>
+<span class="sd">        the delays of this for the new template.</span>
+<span class="sd">    :type length: float</span>
+<span class="sd">    :param length: Length of new template in seconds</span>
+<span class="sd">    :type pre_pick: float</span>
+<span class="sd">    :param pre_pick: Extract additional data before the detection, seconds</span>
+<span class="sd">    :type pre_pad: float</span>
+<span class="sd">    :param pre_pad: Pad used in seconds when extracting the data, e.g. the time\</span>
+<span class="sd">        before the detection extracted.  If using clustering.extract_detections\</span>
+<span class="sd">        this half the length of the extracted waveform.</span>
+<span class="sd">    :type Z_include: bool</span>
+<span class="sd">    :param Z_include: If True will include any Z-channels even if there is no\</span>
+<span class="sd">        template for this channel, as long as there is a template for this station\</span>
+<span class="sd">        at a different channel.  If this is False and Z channels are included in\</span>
+<span class="sd">        the template Z channels will be included in the new_template any-way.</span>
+<span class="sd">    :type pre_processed: bool</span>
+<span class="sd">    :param pre_processed: Have the data been pre-processed, if True (default)\</span>
+<span class="sd">        then we will only cut the data here.</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: If pre_processed=False then this is required, desired\</span>
+<span class="sd">        sampling rate in Hz, defaults to False.</span>
+<span class="sd">    :type lowcut: float</span>
+<span class="sd">    :param lowcut: If pre_processed=False then this is required, lowcut in Hz,\</span>
+<span class="sd">        defaults to False</span>
+<span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: If pre_processed=False then this is required, highcut in Hz,\</span>
+<span class="sd">        defaults to False</span>
+<span class="sd">    :type filt_order: int</span>
+<span class="sd">    :param filt_order: If pre_processed=False then this is required, filter\</span>
+<span class="sd">        order, defaults to False</span>
+
+<span class="sd">    :returns: :class:obspy.Stream Newly cut template</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="n">new_template</span><span class="o">=</span><span class="n">stack</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c"># Copy the data before we trim it to keep the stack safe</span>
+    <span class="c"># Get the earliest time in the template as this is when the detection is</span>
+    <span class="c"># taken.</span>
+    <span class="n">mintime</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
+    <span class="c"># Generate a list of tuples of (station, channel, delay) with delay in seconds</span>
+    <span class="n">delays</span><span class="o">=</span><span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mintime</span><span class="o">-</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span>\
+            <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">]</span>
+    <span class="c"># Loop through the stack and trim!</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">new_template</span><span class="p">:</span>
+        <span class="c"># Process the data if necessary</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pre_processed</span><span class="p">:</span>
+            <span class="n">new_template</span><span class="o">=</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">shortproc</span><span class="p">(</span><span class="n">new_template</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>\
+                                                <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c"># Find the matching delay</span>
+        <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">delays</span> <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span>\
+                                        <span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">Z_include</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">delays</span> <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;No matching template channel found for stack &#39;</span><span class="o">+</span>\
+                        <span class="s">&#39;channel &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+            <span class="n">new_template</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Multiple delays found for stack channel &#39;</span><span class="o">+</span>\
+                            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">delay</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pre_pad</span> <span class="o">-</span> <span class="n">pre_pick</span><span class="p">,</span>\
+                    <span class="n">endtime</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">delay</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pre_pad</span> <span class="o">+</span> <span class="n">length</span> <span class="o">-</span> <span class="n">pre_pick</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_template</span>
 </div>
 <span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
@@ -510,7 +585,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
