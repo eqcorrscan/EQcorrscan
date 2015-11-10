@@ -16,7 +16,7 @@ If upgrading from a previous version, rather than running install --upgrade, I r
 
 *pip install -U --no-deps EQcorrscan*
 
-This will not try to upgrade your dependencies, which is not needed for 0.0.7.
+This will not try to upgrade your dependencies, which is not needed for 0.0.8.
 
 If you want to be kept informed about releases, bug-tracking and enhancements
 without having to keep looking on github, subscribe to our [google group](https://groups.google.com/forum/#!forum/eqcorrscan-users).
