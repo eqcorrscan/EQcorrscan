@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>findpeaks &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>findpeaks &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Utils" href="../utils.html"/>
         <link rel="next" title="clustering" href="utils.clustering.html"/>
         <link rel="prev" title="Sfile_util" href="utils.Sfile_util.html"/> 
@@ -154,7 +154,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="function">
 <dt id="findpeaks.find_peaks2">
-<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>maxwidth=10</em>, <em>starttime=&lt;mock.Mock object at 0x43e3c10&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>maxwidth=10</em>, <em>starttime=&lt;mock.Mock object at 0x4091810&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to determine peaks in an array of data using scipy find_peaks_cwt,
 works fast in certain cases, but for match_filter cccsum peak finding,
 find_peaks2_short works better.  Test it out and see which works best for
@@ -181,7 +181,7 @@ your application.</p>
 
 <dl class="function">
 <dt id="findpeaks.find_peaks2_short">
-<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2_short</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=&lt;mock.Mock object at 0x43e3c10&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks2_short"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2_short" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks2_short</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=&lt;mock.Mock object at 0x4091810&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks2_short"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks2_short" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to determine peaks in an array of data above a certain threshold.
 Uses a mask to remove data below threshold and finds peaks in what is left.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -205,7 +205,7 @@ Uses a mask to remove data below threshold and finds peaks in what is left.</p>
 
 <dl class="function">
 <dt id="findpeaks.find_peaks_dep">
-<code class="descclassname">findpeaks.</code><code class="descname">find_peaks_dep</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=&lt;mock.Mock object at 0x43e3c10&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks_dep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks_dep" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">findpeaks.</code><code class="descname">find_peaks_dep</code><span class="sig-paren">(</span><em>arr</em>, <em>thresh</em>, <em>trig_int</em>, <em>debug=0</em>, <em>starttime=&lt;mock.Mock object at 0x4091810&gt;</em>, <em>samp_rate=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/findpeaks.html#find_peaks_dep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#findpeaks.find_peaks_dep" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to determine peaks in an array of data above a certain threshold.</p>
 <p>Depreciated peak-finding routine, very slow, but accurate.  If all else fails
 this one should work.</p>
@@ -290,7 +290,7 @@ licensed under The Code Project Open License (CPOL)</dd>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

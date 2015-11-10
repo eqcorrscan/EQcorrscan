@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>clustering &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>clustering &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -210,11 +210,12 @@
 
     <span class="c"># Initialize square matrix</span>
     <span class="n">dist_mat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)):</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">master</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stream_list</span><span class="p">):</span>
         <span class="c"># Start a parallel processing pool</span>
         <span class="n">pool</span><span class="o">=</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">cores</span><span class="p">)</span>
         <span class="c"># Parallel processing</span>
-        <span class="n">results</span><span class="o">=</span><span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">cross_chan_coherence</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">stream_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>\
+        <span class="n">results</span><span class="o">=</span><span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">cross_chan_coherence</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">master</span><span class="p">,</span>\
                                                         <span class="n">stream_list</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">j</span><span class="p">))</span>\
                             <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))]</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -225,14 +226,14 @@
         <span class="c"># Sort the results by the input j</span>
         <span class="n">dist_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="c"># Sort the list into the dist_mat structure</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="n">j</span><span class="p">:</span>
                 <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">dist_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="c"># Reshape the distance matrix</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
             <span class="n">dist_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">dist_mat</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">dist_mat</span>
 </div>
@@ -425,7 +426,7 @@
     <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
         <span class="n">chan_mat</span><span class="o">=</span><span class="p">[</span><span class="n">stream_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
                                   <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> \
-                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))</span> <span class="k">if</span> \
+                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))</span> <span class="k">if</span> \
                   <span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> \
                                   <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
         <span class="c"># chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]</span>
@@ -458,7 +459,7 @@
     <span class="k">if</span> <span class="n">linear</span><span class="p">:</span>
         <span class="n">first_subspace</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)</span>
     <span class="n">second_subspace</span><span class="o">=</span><span class="n">first_subspace</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">second_subspace</span><span class="p">)):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">second_subspace</span><span class="p">)):</span>
         <span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">+=</span><span class="mf">0.5</span><span class="o">*</span><span class="n">second_subspace</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">first_subspace</span><span class="p">,</span> <span class="n">second_subspace</span><span class="p">]</span>
@@ -482,12 +483,12 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
     <span class="n">SVstreams</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
         <span class="n">SVstream</span><span class="o">=</span><span class="p">[]</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stachans</span><span class="p">):</span>
             <span class="n">SVstream</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trace</span><span class="p">(</span><span class="n">SVectors</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> \
-                                    <span class="n">header</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;station&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-                                            <span class="s">&#39;channel&#39;</span><span class="p">:</span> <span class="n">stachans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                                    <span class="n">header</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;station&#39;</span><span class="p">:</span> <span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                                            <span class="s">&#39;channel&#39;</span><span class="p">:</span> <span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
                                             <span class="s">&#39;sampling_rate&#39;</span><span class="p">:</span> <span class="n">sampling_rate</span><span class="p">}))</span>
 
         <span class="n">SVstreams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">SVstream</span><span class="p">))</span>
@@ -512,14 +513,14 @@
     <span class="n">stack</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">([</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">trace_list</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">output</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">False</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">trace_list</span><span class="p">))</span>
     <span class="n">group1</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">stack</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.6</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace_list</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">stack</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.6</span><span class="p">:</span>
             <span class="n">output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="bp">True</span>
-            <span class="n">group1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">group1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
     <span class="n">stack</span><span class="o">=</span><span class="n">stacking</span><span class="o">.</span><span class="n">linstack</span><span class="p">([</span><span class="n">Stream</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">group1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">group2</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace_list</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">traces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">stack</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trace_list</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">stack</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">:</span>
             <span class="n">group2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
             <span class="n">output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="bp">True</span>
         <span class="k">else</span><span class="p">:</span>
@@ -602,16 +603,16 @@
             <span class="n">new_stachans</span><span class="o">=</span><span class="p">[]</span>
             <span class="n">new_delays</span><span class="o">=</span><span class="p">[]</span>
             <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stachans</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stachans</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">j</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
-                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;Z&#39;</span><span class="p">,</span>\
-                                         <span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]))</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;Z&#39;</span><span class="p">,</span>\
+                                         <span class="n">stachan</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
                     <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachan</span><span class="p">)</span>
                     <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                     <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachans</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">new_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stachan</span><span class="p">)</span>
                     <span class="n">new_delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                     <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
             <span class="n">new_all_stachans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_stachans</span><span class="p">))</span>
@@ -803,7 +804,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
