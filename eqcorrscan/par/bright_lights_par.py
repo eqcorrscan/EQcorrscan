@@ -47,10 +47,10 @@ nllpath='./grid/Caro_larger_grid/3D'    # Path to nonlinloc .csv grid files of
 #                           [169.55, -43.7],\
 #                           [170.1, -43.35],\
 #                           [170.4, -43.65]]))
-corners=mplPath.Path(np.array([[170.2, -43.57],\
-                          [170.3, -43.57],\
-                          [170.3, -43.47],\
-                          [170.2, -43.47]]))
+corners=mplPath.Path(np.array([[170.30, -43.5],\
+                          [170.45, -43.55],\
+                          [170.45, -43.40],\
+                          [170.30, -43.40]]))
 # corners=mplPath.Path(np.array([[169.55, -44.2],\
                                # [170.8, -43.6],\
                                # [170.5, -43.16],\
@@ -61,8 +61,8 @@ corners=mplPath.Path(np.array([[170.2, -43.57],\
                                         # the horizontal polygon to search within
                                         # Where coordinates are decimal degrees
                                         # in lat and long
-mindepth=0
-maxdepth=15
+mindepth=-1
+maxdepth=10
 # maxdepth=20                             # Depth cuts in km, cannot use these polygonally
 resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # for resampled grid in decimal
