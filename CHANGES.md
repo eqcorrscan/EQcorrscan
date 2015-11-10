@@ -30,6 +30,11 @@ of both P and S phases.
 breaks if highcut >= samp_rate
 * Add plot_format option to core.match_filter
 * Add multiple phase capability to utils.synth_seis
+* **BUG-FIX** Change match-filter data stream handling to copy the stream and
+keep it safe before adding null-traces or removing excess traces.  Match_filter
+will now remove excess, un-needed traces from the copied stream.  This is specifically
+necessary when splitting a large template set, with a range of channels, into smaller
+groups to be run serially.
 
 :volcano:
 
