@@ -66,6 +66,7 @@
           
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
@@ -76,24 +77,23 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -186,7 +186,7 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../modules.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span>\
+<div class="viewcode-block" id="from_sfile"><a class="viewcode-back" href="../submodules/core.template_gen.html#template_gen.from_sfile">[docs]</a><span class="k">def</span> <span class="nf">from_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span>\
                <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
@@ -258,7 +258,7 @@
     <span class="n">st1</span><span class="o">=</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">st1</span>
 </div>
-<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../modules.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">contbase_list</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
+<div class="viewcode-block" id="from_contbase"><a class="viewcode-back" href="../submodules/core.template_gen.html#template_gen.from_contbase">[docs]</a><span class="k">def</span> <span class="nf">from_contbase</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">contbase_list</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>\
                  <span class="n">length</span><span class="p">,</span> <span class="n">prepick</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read in picks from sfile then generate the template from the</span>
@@ -369,7 +369,7 @@
     <span class="k">return</span> <span class="n">st1</span>
 
 </div>
-<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../modules.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="_template_gen"><a class="viewcode-back" href="../submodules/core.template_gen.html#template_gen._template_gen">[docs]</a><span class="k">def</span> <span class="nf">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to generate a cut template in the obspy</span>
 <span class="sd">    Stream class from a given set of picks and data, also in an obspy stream</span>
