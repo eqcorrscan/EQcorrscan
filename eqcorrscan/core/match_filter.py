@@ -446,7 +446,8 @@ def match_filter(template_names, templates, st, threshold,\
             nulltrace.stats.channel=stachan[1]
             nulltrace.stats.sampling_rate=stream[0].stats.sampling_rate
             nulltrace.stats.starttime=stream[0].stats.starttime
-            nulltrace.data=np.array([np.NaN]*len(stream[0].data), dtype=np.float32)
+            nulltrace.data=np.array([np.NaN]*len(stream[0].data),\
+                                    dtype=np.float32)
             stream+=nulltrace
     # Remove un-needed channels
     for tr in stream:
@@ -461,7 +462,8 @@ def match_filter(template_names, templates, st, threshold,\
                 nulltrace.stats.channel=stachan[1]
                 nulltrace.stats.sampling_rate=template[0].stats.sampling_rate
                 nulltrace.stats.starttime=template[0].stats.starttime
-                nulltrace.data=np.array([np.NaN]*len(template[0].data), dtype=np.float32)
+                nulltrace.data=np.array([np.NaN]*len(template[0].data), \
+                                        dtype=np.float32)
                 template+=nulltrace
 
     if debug >= 2:
