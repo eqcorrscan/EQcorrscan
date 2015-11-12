@@ -501,7 +501,6 @@ def match_filter(template_names, templates, st, threshold,
                 nulltrace.data = np.array([np.NaN]*len(template[0].data),
                                           dtype=np.float32)
                 template += nulltrace
-
     if debug >= 2:
         print 'Starting the correlation run for this day'
     if match_internal:
