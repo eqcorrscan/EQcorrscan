@@ -367,16 +367,19 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     return cccsums, no_chans
 
 
-def match_filter(template_names, templates, st, threshold,
+def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='jpg'):
     r"""
     Over-arching code to run the correlations of given templates with a day of\
     seismic data and output the detections based on a given threshold.
 
-    :type templates: list :class: 'obspy.Stream'
-    :param templates: A list of templates of which each template is a Stream\
-        of obspy traces containing seismic data and header information.
+    :type template_names: list
+    :param template_names: List of template names in the same order as\
+     template_list
+    :type template_list: list :class: 'obspy.Stream'
+    :param template_list: A list of templates of which each template is a\
+        Stream of obspy traces containing seismic data and header information.
     :type st: :class: 'obspy.Stream'
     :param st: An obspy.Stream object containing all the data available and\
         required for the correlations with templates given.  For efficiency\
@@ -441,6 +444,7 @@ def match_filter(template_names, templates, st, threshold,
     match_internal = False
     # Copy the stream here because we will fuck about with it
     stream = st.copy()
+    templates = copy.deepcopy(template_list)
     # Debug option to confirm that the channel names match those in the
     # templates
     if debug >= 2:
@@ -596,5 +600,5 @@ def match_filter(template_names, templates, st, threshold,
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
                                             'corr'))
-
+    del stream, templates
     return detections
