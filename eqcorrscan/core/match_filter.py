@@ -484,15 +484,12 @@ def match_filter(template_names, template_list, st, threshold,
     # Copy this here to keep it safe
     for stachan in template_stachan:
         if not stream.select(station=stachan[0], channel=stachan[1]):
-            # Add a trace of NaN's
-            nulltrace = Trace()
-            nulltrace.stats.station = stachan[0]
-            nulltrace.stats.channel = stachan[1]
-            nulltrace.stats.sampling_rate = stream[0].stats.sampling_rate
-            nulltrace.stats.starttime = stream[0].stats.starttime
-            nulltrace.data = np.array([np.NaN]*len(stream[0].data),
-                                      dtype=np.float32)
-            stream += nulltrace
+            # Remove template traces rather than adding NaN data
+            for template in templates:
+                if template.select(station=stachan[0], channel=stachan[1]):
+                    for tr in template.select(station=stachan[0],
+                                              channel=stachan[1]):
+                        template.remove(tr)
     # Remove un-needed channels
     for tr in stream:
         if not (tr.stats.station, tr.stats.channel) in template_stachan:
