@@ -1,3 +1,10 @@
+## Development
+* Working towards following pep8
+* Change how match_filter handles missing data - now remove template traces (which have been copied)
+rather than adding null traces to the data stream - more memory efficient, and faster
+* Change float handling for large amplitudes in Sfile_utils
+* Change distance decimal handling in Sfile_utils
+
 ## 0.0.8:
 * Added SVD magnitude inversion to [utils.mag_calc](EQcorrscan/eqcorrscan/utils/mag_calc.py#L530),
 tested for multi-channel;
