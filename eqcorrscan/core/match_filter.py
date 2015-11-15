@@ -367,9 +367,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='jpg'):
-    r"""
-    Over-arching code to run the correlations of given templates with a day of\
-    seismic data and output the detections based on a given threshold.
+    r"""Over-arching code to run the correlations of given templates with a\
+    day of seismic data and output the detections based on a given threshold.
 
     :type template_names: list
     :param template_names: List of template names in the same order as\
@@ -428,10 +427,11 @@ def match_filter(template_names, template_list, st, threshold,
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     plt.ioff()
-    from eqcorrscan.utils import findpeaks, EQcorrscan_plotting
     import copy
-    import time
+    from eqcorrscan.utils import EQcorrscan_plotting
+    from eqcorrscan.utils import findpeaks
     from obspy import Trace
+    import time
 
     # Copy the stream here because we will fuck about with it
     stream = st.copy()
@@ -457,8 +457,9 @@ def match_filter(template_names, template_list, st, threshold,
     # Perform a check that the daylong vectors are daylong
     for tr in stream:
         if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
-            raise ValueError('Data are not daylong for ' + tr.stats.station +
-                             '.' + tr.stats.channel)
+            msg = ' '.join(['Data are not daylong for', tr.stats.station,
+                            tr.stats.channel])
+            raise ValueError(msg)
     # Call the _template_loop function to do all the correlation work
     outtic = time.clock()
     # Edit here from previous, stable, but slow match_filter
@@ -504,12 +505,14 @@ def match_filter(template_names, template_list, st, threshold,
     if len(cccsums[0]) == 0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
-    print 'Looping over templates and streams took: ' + str(outtoc - outtic) +\
-        ' s'
+    print ' '.join(['Looping over templates and streams took:',
+                    str(outtoc - outtic), 's'])
     if debug >= 2:
-        print 'The shape of the returned cccsums is: ' + str(np.shape(cccsums))
-        print 'This is from ' + str(len(templates)) + ' templates'
-        print 'Correlated with ' + str(len(stream)) + ' channels of data'
+        print ' '.join(['The shape of the returned cccsums is:',
+                        str(np.shape(cccsums))])
+        print ' '.join(['This is from', str(len(templates)), 'templates'])
+        print ' '.join(['Correlated with', str(len(stream)),
+                        'channels of data'])
     detections = []
     for i, cccsum in enumerate(cccsums):
         template = templates[i]
@@ -524,9 +527,9 @@ def match_filter(template_names, template_list, st, threshold,
                   'use MAD as I like it'
             rawthresh = threshold * np.mean(np.abs(cccsum))
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
-        print 'Threshold is set at: ' + str(rawthresh)
-        print 'Max of data is: ' + str(max(cccsum))
-        print 'Mean of data is: ' + str(np.mean(cccsum))
+        print ' '.join(['Threshold is set at:', str(rawthresh)])
+        print ' '.join(['Max of data is:', str(max(cccsum))])
+        print ' '.join(['Mean of data is:', str(np.mean(cccsum))])
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
@@ -554,8 +557,8 @@ def match_filter(template_names, template_list, st, threshold,
                                             stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
                                             '.' + plot_format)
             if debug >= 4:
-                print 'Saved the cccsum to: ' + template_names[i] +\
-                    stream[0].stats.starttime.datetime.strftime('%Y%j')
+                print ' '.join(['Saved the cccsum to:', template_names[i],
+                                stream[0].stats.starttime.datetime.strftime('%Y%j')])
                 np.save(template_names[i] +
                         stream[0].stats.starttime.datetime.strftime('%Y%j'),
                         cccsum)
@@ -577,7 +580,7 @@ def match_filter(template_names, template_list, st, threshold,
             peaks = False
         toc = time.clock()
         if debug >= 1:
-            print 'Finding peaks took: ' + str(toc - tic) + ' s'
+            print ' '.join(['Finding peaks took:', str(toc - tic), 's'])
         if peaks:
             for peak in peaks:
                 detecttime = stream[0].stats.starttime +\
