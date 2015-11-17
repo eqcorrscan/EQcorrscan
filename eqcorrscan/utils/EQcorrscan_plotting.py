@@ -70,10 +70,12 @@ def chunk_data(tr, samp_rate, state='mean'):
     trout.stats.sampling_rate=samp_rate
     return trout
 
-def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
-    """
-    Main function to make a triple plot with a day-long seismogram, day-long
-    correlation sum trace and histogram of the correlation sum to show normality
+
+def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
+                savefile=''):
+    r"""Main function to make a triple plot with a day-long seismogram,\
+    day-long correlation sum trace and histogram of the correlation sum to\
+    show normality.
 
     :type cccsum: numpy.ndarray
     :param cccsum: Array of the cross-channel cross-correlation sum
@@ -125,7 +127,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False, savefile=''):
         plt.savefig(savefile)
     return
 
-def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
+
+def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
                savefile=''):
     """
     Simple utility code to plot the correlation peaks to check that the peak
@@ -163,6 +166,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0,0)], \
     else:
         plt.savefig(savefile)
     return
+
 
 def cumulative_detections(dates, template_names, save=False, savefile=''):
     """
@@ -219,6 +223,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
         plt.show()
     return
 
+
 def threeD_gridplot(nodes, save=False, savefile=''):
     """
     Function to plot in 3D a series of grid points.
@@ -253,6 +258,7 @@ def threeD_gridplot(nodes, save=False, savefile=''):
     else:
         plt.savefig(savefile)
     return
+
 
 def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
                            freqmin=False, freqmax=False, realign=False, \
@@ -375,8 +381,9 @@ def multi_event_singlechan(streams, picks, clip=10.0, pre_pick=2.0,\
     plt.show()
     return traces, plist
 
-def detection_multiplot(stream, template, times, streamcolour='k',\
-        templatecolour='r'):
+
+def detection_multiplot(stream, template, times, streamcolour='k',
+                        templatecolour='r'):
     """
     Function to plot the stream of data that has been detected in, with the
     template on top of it timed according to a list of given times, just a
@@ -429,6 +436,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',\
     plt.show()
     return
 
+
 def interev_mag_sfiles(sfiles):
     """
     Function to plot interevent-time versus magnitude for series of events.
@@ -441,6 +449,7 @@ def interev_mag_sfiles(sfiles):
     times=[Sfile_util.readheader(sfile).time for sfile in sfiles]
     mags=[Sfile_util.readheader(sfile).Mag_1 for sfile in sfiles]
     interev_mag(times, mags)
+
 
 def interev_mag(times, mags):
     """
@@ -478,6 +487,7 @@ def interev_mag(times, mags):
     # axes[1].set_xlim([0, max(post_times)+(0.1*(max(post_times)-min(post_times)))])
     plt.setp(axes[1].xaxis.get_majorticklabels(), rotation=30 )
     plt.show()
+
 
 def threeD_seismplot(stations, nodes):
     """
@@ -518,6 +528,7 @@ def threeD_seismplot(stations, nodes):
     plt.show()
     return
 
+
 def Noise_plotting(station, channel, PAZ, datasource):
     """
     Function to make use of obspy's PPSD functionality to read in data from
@@ -557,6 +568,7 @@ def Noise_plotting(station, channel, PAZ, datasource):
     # Plot the PPSD
     ppsd.plot()
     return ppsd
+
 
 def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
                         background=False):
@@ -619,6 +631,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
         plt.close()
     else:
         plt.savefig(save)
+
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,\
             size=(18.5,10), save=False, title=False):
@@ -715,6 +728,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,\
         plt.savefig(save)
     return
 
+
 def SVD_plot(SVStreams, SValues, stachans, title=False):
     """
     Function to plot the singular vectors from the clustering routines, one
@@ -752,6 +766,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
             axes[0].set_title(stachan)
         plt.show()
     return
+
 
 def plot_synth_real(real_template, synthetic, channels=False):
     """
@@ -813,4 +828,52 @@ def plot_synth_real(real_template, synthetic, channels=False):
     plt.subplots_adjust(hspace=0)
     # axes[0].legend()
     axes[-1].set_xlabel('Time (s)')
+    plt.show()
+
+
+def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
+    r"""Function to make a frequency-magnitude histogram and cumulative density
+    plot.  This can compute a b-value, but not a completeness at the moment.
+
+    :type magnitudes: list
+    :param magnitude: list of float of magnitudes
+    :type completeness: float
+    :param completeness: Level to compute the b-value above
+    :type max_mag: float
+    :param max_mag: Maximum magnitude to try and fit a b-value to
+    :type binsize: float
+    :param binsize: Width of histogram bins, defaults to 0.2
+    """
+    # Ensure magnitudes are sorted
+    magnitudes.sort()
+    fig, ax1 = plt.subplots()
+    # Set up the bins, the bin-size could be a variables
+    bins = np.arange(min(magnitudes), max(magnitudes), binsize)
+    n, bins, patches = ax1.hist(magnitudes, bins, facecolor='Black',
+                                alpha=0.5, label='Magnitudes')
+    ax1.set_ylabel('Frequency')
+    ax1.set_ylim([0, max(n) + 0.5 * max(n)])
+    plt.xlabel('Magnitude')
+    # Now make the cumulative density function
+    cdf = np.arange(len(magnitudes)) / float(len(magnitudes))
+    cdf = ((cdf * -1.0) + 1.0) * len(magnitudes)
+    ax2 = ax1.twinx()
+    ax2.scatter(magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
+                label='Magnitude cumulative density')
+    # Now we want to calculate the b-value and plot the fit
+    x = []
+    y = []
+    for i, magnitude in enumerate(magnitudes):
+        if magnitude >= completeness <= max_mag:
+            x.append(magnitude)
+            y.append(cdf[i])
+    fit = np.polyfit(x, np.log10(y), 1)
+    fit_fn = np.poly1d(fit)
+    ax2.plot(magnitudes, fit_fn(magnitudes), '--k',
+             label='GR trend, b-value = ' + str(abs(fit[0]))[0:4] +
+             '\n $M_C$ = ' + str(completeness))
+    ax2.set_ylabel('$Log_{10}$ of cumulative density')
+    plt.xlim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 0.2])
+    plt.ylim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 1.0])
+    plt.legend(loc=2)
     plt.show()
