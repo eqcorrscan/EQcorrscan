@@ -4,6 +4,8 @@
 rather than adding null traces to the data stream - more memory efficient, and faster
 * Change float handling for large amplitudes in Sfile_utils
 * Change distance decimal handling in Sfile_utils
+* Add magnitude-frequency plotting to EQcorrscan_plotting
+* Update tutorial and docs for tutorial
 
 ## 0.0.8:
 * Added SVD magnitude inversion to [utils.mag_calc](EQcorrscan/eqcorrscan/utils/mag_calc.py#L530),
