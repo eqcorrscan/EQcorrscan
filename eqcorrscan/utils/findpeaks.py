@@ -44,7 +44,7 @@ def is_prime(number):
             ''' Draw a RANDOM number in range of number ( Z_number )  '''
             randomNumber = random.randint(2, number)-1
             ''' Test if a^(n-1) = 1 mod n '''
-            if ( pow(randomNumber, number-1, number) != 1 ):
+            if (pow(randomNumber, number-1, number) != 1):
                 return False
         return True
     else:
@@ -80,7 +80,6 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
     """
     from scipy.signal import find_peaks_cwt
     import numpy as np
-    import os
     from obspy import UTCDateTime
     if not starttime:
         starttime = UTCDateTime(0)
@@ -99,7 +98,7 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
         print 'No values over threshold found'
         return []
     if debug > 0:
-        msg = ' '.join(['Found', str(len(image[image>thresh])),
+        msg = ' '.join(['Found', str(len(image[image > thresh])),
                         'samples above the threshold'])
         print msg
     initial_peaks = []
@@ -116,14 +115,16 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
         for peak in initial_peaks:
             print peak
     if initial_peaks:
-        peaks.append(peaks_sort[0]) # Definitely take the biggest peak
+        peaks.append(peaks_sort[0])  # Definitely take the biggest peak
         if debug > 3:
             msg = ' '.join(['Added the biggest peak of', str(peaks[0][0]),
                             'at sample', str(peaks[0][1])])
             print msg
         if len(initial_peaks) > 1:
             if debug > 3:
-                print 'Multiple peaks found, checking them now to see if they overlap'
+                msg = ' '.join(['Multiple peaks found, checking them',
+                                'now to see if they overlap'])
+                print msg
             for next_peak in peaks_sort:
                 # i in xrange(1,len(peaks_sort)):
                 # Loop through the amplitude sorted peaks
@@ -133,7 +134,8 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
                 if debug > 3:
                     print next_peak
                 for peak in peaks:
-                    add = False # Use add as a switch for whether or not to append
+                    add = False
+                    # Use add as a switch for whether or not to append
                     # next peak to peaks, if once gone through all the peaks
                     # it is True, then we will add it, otherwise we won't!
                     if abs(next_peak[1] - peak[1]) < trig_int:
@@ -165,7 +167,6 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
-            _fname = os.path.join('debug_output', _fname)
             print ' '.join(['Saving plot to', _fname])
             EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True,
                                            peaks, _fname)
@@ -176,8 +177,8 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
         return peaks
 
 
-def find_peaks2_short(arr, thresh, trig_int, debug=0, \
-                starttime=False, samp_rate=1.0):
+def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
+                      samp_rate=1.0):
     r"""Function to determine peaks in an array of data above a certain \
     threshold. Uses a mask to remove data below threshold and finds peaks in \
     what is left.
@@ -185,8 +186,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
     :type arr: ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and peaks\
-    will not be found in.
+    :param thresh: The threshold below which will be considered noise and \
+    peaks will not be found in.
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
     if multiple peaks within this window this code will find the highest.
@@ -201,7 +202,6 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
     """
     from scipy import ndimage
     import numpy as np
-    import os
     from obspy import UTCDateTime
     if not starttime:
         starttime = UTCDateTime(0)
@@ -213,7 +213,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
         print 'No values over threshold found'
         return []
     if debug > 0:
-        print ' '.join(['Found', str(len(image[image>thresh])),
+        print ' '.join(['Found', str(len(image[image > thresh])),
                         'samples above the threshold'])
     initial_peaks = []
     peaks = []
@@ -221,7 +221,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
     labeled_image, number_of_objects = ndimage.label(image)
     peak_slices = ndimage.find_objects(labeled_image)
     for peak_slice in peak_slices:
-        #print 'Width of peak='+str(peak_slice[0].stop-peak_slice[0].start)
+        # print 'Width of peak='+str(peak_slice[0].stop-peak_slice[0].start)
         window = arr[peak_slice[0].start: peak_slice[0].stop]
         initial_peaks.append((max(window),
                               peak_slice[0].start + np.argmax(window)))
@@ -233,7 +233,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
         for peak in initial_peaks:
             print peak
     if initial_peaks:
-        peaks.append(peaks_sort[0]) # Definitely take the biggest peak
+        peaks.append(peaks_sort[0])  # Definitely take the biggest peak
         if debug > 3:
             print ' '.join(['Added the biggest peak of', str(peaks[0][0]),
                             'at sample', str(peaks[0][1])])
@@ -242,10 +242,12 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
                 msg = ' '.join(['Multiple peaks found, checking',
                                 'them now to see if they overlap'])
                 print msg
-            for next_peak in peaks_sort:#i in xrange(1,len(peaks_sort)): # Loop through the amplitude sorted peaks
+            for next_peak in peaks_sort:
+                # i in xrange(1,len(peaks_sort)):
+                # Loop through the amplitude sorted peaks
                 # if the next highest amplitude peak is within trig_int of any
                 # peak already in peaks then we don't want it, else, add it
-                #next_peak=peaks_sort[i]
+                # next_peak=peaks_sort[i]
                 if debug > 3:
                     print next_peak
                 for peak in peaks:
@@ -281,7 +283,6 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
-            _fname = os.path.join('debug_output', _fname)
             EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True,
                                            peaks, _fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
@@ -290,8 +291,9 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, \
         print 'No peaks for you!'
         return peaks
 
-def find_peaks_dep(arr, thresh, trig_int, debug=0,\
-               starttime=False, samp_rate=1.0):
+
+def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
+                   samp_rate=1.0):
     r"""Function to determine peaks in an array of data above a certain \
     threshold.
 
@@ -301,8 +303,8 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0,\
     :type arr: ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and peaks\
-    will not be found in.
+    :param thresh: The threshold below which will be considered noise and \
+    peaks will not be found in.
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
     if multiple peaks within this window this code will find the highest.
@@ -314,16 +316,15 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0,\
     :return: peaks: Lists of tuples of peak values and locations.
     """
     import numpy as np
-    import os
     from obspy import UTCDateTime
     if not starttime:
         starttime = UTCDateTime(0)
     # Perform some checks
     if trig_int < 3:
         import sys
-        print 'Trigger interval must be greater than two samples to find maxima'
+        print 'Trigger interval must be greater than 2 samples to find maxima'
         sys.exit()
-    #from joblib import Parallel, delayed
+    # from joblib import Parallel, delayed
     # Will find peaks in the absolute then transfer these to the true values
     sig = np.abs(arr) - thresh
     true_peaks = []
@@ -335,7 +336,7 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0,\
         for j in xrange(1, len(window) - 1):
             # Find all turning points within the window
             if window[j] > 0.0 and window[j] > window[j+1] and\
-                window[j] > window[j-1]:
+               window[j] > window[j - 1]:
                 peaks.append(window[j])
                 locs.append(i - trig_int + j)
         # Find maximum peak in window
@@ -362,7 +363,6 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0,\
         _fname = ''.join(['peaks_',
                           starttime.datetime.strftime('%Y-%m-%d'),
                           '.pdf'])
-        _fname = os.path.join('debug_output', _fname)
         EQcorrscan_plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
                                        _fname)
     return peaks
