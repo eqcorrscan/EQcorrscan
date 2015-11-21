@@ -19,7 +19,8 @@ the full API can be found
 [here](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest).
 
 This project is an open source, Python project for the detection and analysis
-of repeating and near-repeating earthquakes.
+of repeating and near-repeating earthquakes.  To do this it requires either
+data from a single, or a network of, seimographs.
 
 The codes are hosted on [github](https://github.com/calum-chamberlain/EQcorrscan), with the
 latest release also available on
