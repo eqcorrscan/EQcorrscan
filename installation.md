@@ -1,10 +1,9 @@
 ---
 layout: page
-title: "Installation"
-description: "How to install EQcorrscan"
+title: Installation
 permalink: /installation/
+group: navigation
 ---
-{% include JB/setup %}
 
 Since October 2015 EQcorrscan has been listed on [pypi](https://pypi.python.org/pypi/EQcorrscan/0.0.8); as such installation
 is as simple as:

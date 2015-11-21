@@ -1,22 +1,44 @@
 ---
 layout: page
 title: About
+tagline: Why EQcorrscan?
 description: Why EQcorrscan?
 permalink: /about/
+group: navigation
 ---
 {% include JB/setup %}
 
 EQcorrscan is an earthquake detection package written in Python for OS X and Linux,
 and distributed under the LGPL.  The purpose of this package is to detect repeating and
-near-repeating earthquakes from continuous seismic data.  The codes are optimized
-for large-scale problems with multiple (hundreds to thousands) templates,
-run over multiple days of data.  At the heart of the routine, multiple templates
-are correlated with the same day of data in parallel.  To what extent you get
-a parallel speed-up depends on the number of cores available to you.  However,
-this package has been tested on machines ranging from small dual-core laptops
+near-repeating earthquakes from continuous seismic data.  
+
+The codes are designed for large-scale problems with multiple (hundreds to
+thousands of) templates, run over multiple days of data.  However, it works
+equally well for simple problems, with few templates and not much data - you just
+don't see the benefit of the parallel processing so much.
+
+At the heart of the routine, multiple templates are correlated with the same
+day of data in parallel. using the Python
+[multiprocessing](https://docs.python.org/2/library/multiprocessing.html) module.  
+As such the parallel processing at this level is CPU bound (you can run as many
+templates in parallel as your machine has CPUs).  
+
+In addition to this CPU bound parallel computation, our correlation routines take
+advantage of multi-threading by using the matchTemplate routine of the
+[openCV](http://opencv.org/) image processing library.
+
+At the top level, multiple days can be run in parallel on multiple nodes, or
+machines.  For this, I have taken advantage of the [NeSi](https://www.nesi.org.nz/)
+PAN HPC cluster.
+
+This package has been tested on machines ranging from small dual-core laptops
 and desktops, to large (multi-thousand core) cluster computers.  The codes
 scale well when increasing the processing power, resulting in the ability to
-use **600 templates, through 6.5 years of data in less than 10 hours clock time**.
+use (tested) **600 templates, through 6.5 years of data in less than 10 hours clock time**.
+
+
+
+## Design
 
 These codes have been developed by Calum Chamberlain, during his time as a graduate
 student at Victoria University of Wellington, New Zealand.  The codes have been
