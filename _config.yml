@@ -71,6 +71,7 @@ JB :
   about_path: /about/
   installation_path: /installation/
   contributing_path: /contributing/
+  api_path: http://eqcorrscan.readthedocs.org/en/latest/?badge=latest
   archive_path: /archive.html
   categories_path : /categories.html
   tags_path : /tags.html
