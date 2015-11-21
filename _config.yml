@@ -1,0 +1,12 @@
+# Site settings
+title: EQcorrscan
+email: calum.chamberlain@vuw.ac.nz
+description: > # this means to ignore newlines until "baseurl:"
+  Multi-paralleled matched-filter earthquake detection and analysis
+  for large-scale continuous seismic datasets containing repeating and
+  near-repeating earthquakes.
+github_username:  calum-chamberlain
+
+# Build settings
+markdown: kramdown
+highlighter: pygments
