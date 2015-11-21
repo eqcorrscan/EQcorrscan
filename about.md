@@ -1,8 +1,10 @@
 ---
 layout: page
 title: About
+description: Why EQcorrscan?
 permalink: /about/
 ---
+{% include JB/setup %}
 
 EQcorrscan is an earthquake detection package written in Python for OS X and Linux,
 and distributed under the LGPL.  The purpose of this package is to detect repeating and
