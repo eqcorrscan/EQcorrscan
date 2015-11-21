@@ -6,8 +6,8 @@ description: > # this means to ignore newlines until "baseurl:"
   for large-scale continuous seismic datasets containing repeating and
   near-repeating earthquakes.
 github_username:  calum-chamberlain
-baseurl: ""
-url: "http://calum-chamberlain.github.io/EQcorrscan/"
+baseurl: "EQcorrscan"
+url: "http://calum-chamberlain.github.io/"
 # Build settings
 markdown: kramdown
 highlighter: pygments
