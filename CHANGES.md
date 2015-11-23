@@ -1,3 +1,15 @@
+## 0.0.9
+* Working towards following pep8
+* Change how match_filter handles missing data - now remove template traces (which have been copied)
+rather than adding null traces to the data stream - more memory efficient, and faster
+* Change float handling for large amplitudes in Sfile_utils
+* Change distance decimal handling in Sfile_utils
+* Add magnitude-frequency plotting to EQcorrscan_plotting
+* Update tutorial and docs for tutorial
+* **Major bug-fix** Change in match_filter - debug and index were the wrong way
+round from version 0.0.5 onwards, hence for multiple templates, cross-correlation
+vectors were not matched for templates. Will push a release because of this.
+
 ## 0.0.8:
 * Added SVD magnitude inversion to [utils.mag_calc](EQcorrscan/eqcorrscan/utils/mag_calc.py#L530),
 tested for multi-channel;

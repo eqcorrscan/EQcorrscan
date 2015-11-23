@@ -112,38 +112,52 @@ class PICK:
         return "PICK()"
     def __str__(self):
         if self.distance >= 100.0:
-            self.distance=_int_conv(self.distance)
-        elif self.distance < 100.0:
-            self.distance=int(round(self.distance,1))
-        if not self.AIN=='':
-            if not np.isnan(self.AIN):
-                dummy=int(self.AIN)
-            else:
-                dummy=self.AIN
+            self.distance = _int_conv(self.distance)
+        elif 10.0 < self.distance < 100.0:
+            self.distance = round(self.distance, 1)
+            round_len = 1
+        elif self.distance < 10.0:
+            self.distance = round(self.distance, 2)
+            round_len = 2
         else:
-            dummy=self.SNR
-        print_str=' '+self.station.ljust(5)+\
-                self.channel[0]+self.channel[len(self.channel)-1]+\
-                ' '+self.impulsivity+\
-                self.phase.ljust(4)+\
-                _str_conv(self.weight).rjust(1)+' '+\
-                self.polarity.rjust(1)+' '+\
-                str(self.time.hour).rjust(2)+\
-                str(self.time.minute).rjust(2)+\
-                str(self.time.second).rjust(3)+'.'+\
-                str(float(self.time.microsecond)/(10**4)).split('.')[0].zfill(2)+\
-                _str_conv(int(self.coda)).rjust(5)[0:5]+\
-                _str_conv(round(self.amplitude,1)).rjust(7)[0:7]+\
-                _str_conv(self.peri).rjust(5)+\
-                _str_conv(self.azimuth).rjust(6)+\
-                _str_conv(self.velocity).rjust(5)+\
-                _str_conv(dummy).rjust(4)+\
-                _str_conv(int(self.azimuthres)).rjust(3)+\
-                _str_conv(self.timeres, rounded=2).rjust(5)+\
-                _str_conv(int(self.finalweight)).rjust(2)+\
-                _str_conv(self.distance).rjust(5)+\
-                _str_conv(int(self.CAZ)).rjust(4)
+            round_len = False
+        if self.peri < 10.0:
+            peri_round = 2
+        elif self.peri >= 10.0:
+            peri_round = 1
+        else:
+            peri_round = False
+        if not self.AIN == '':
+            if not np.isnan(self.AIN):
+                dummy = int(self.AIN)
+            else:
+                dummy = self.AIN
+        else:
+            dummy = self.SNR
+        print_str = ' ' + self.station.ljust(5) +\
+            self.channel[0]+self.channel[len(self.channel)-1] +\
+            ' ' + self.impulsivity +\
+            self.phase.ljust(4) +\
+            _str_conv(self.weight).rjust(1) + ' ' +\
+            self.polarity.rjust(1) + ' ' +\
+            str(self.time.hour).rjust(2) +\
+            str(self.time.minute).rjust(2) +\
+            str(self.time.second).rjust(3) + '.' +\
+            str(float(self.time.microsecond) /
+                (10 ** 4)).split('.')[0].zfill(2) +\
+            _str_conv(int(self.coda)).rjust(5)[0:5] +\
+            _str_conv(round(self.amplitude, 1)).rjust(7)[0:7] +\
+            _str_conv(self.peri, rounded=peri_round).rjust(5) +\
+            _str_conv(self.azimuth).rjust(6) +\
+            _str_conv(self.velocity).rjust(5) +\
+            _str_conv(dummy).rjust(4) +\
+            _str_conv(int(self.azimuthres)).rjust(3) +\
+            _str_conv(self.timeres, rounded=2).rjust(5) +\
+            _str_conv(int(self.finalweight)).rjust(2) +\
+            _str_conv(self.distance, rounded=round_len).rjust(5) +\
+            _str_conv(int(self.CAZ)).rjust(4)+' '
         return print_str
+
     def write(self, filename):
         """
         Public function to write the pick to a file
@@ -282,14 +296,21 @@ def _str_conv(number, rounded=False):
     Convenience tool to convert a number, either float or into into a string,
     if the int is 999, or the float is NaN, returns empty string.
     """
-    if (type(number)==float and np.isnan(number)) or number==999:
-        string=' '
-    elif type(number)==str:
+    if (type(number) == float and np.isnan(number)) or number == 999:
+        string = ' '
+    elif type(number) == str:
         return number
     elif not rounded:
-        string=str(number)
-    elif rounded==2:
-        string='{0:.2f}'.format(number)
+        if number < 100000:
+            string = str(number)
+        else:
+            exponant = int('{0:.2E}'.format(number).split('E+')[-1]) - 1
+            divisor = 10 ** exponant
+            string = '{0:.1f}'.format(number / divisor) + 'e' + str(exponant)
+    elif rounded == 2:
+        string = '{0:.2f}'.format(number)
+    elif rounded == 1:
+        string = '{0:.1f}'.format(number)
     return string
 
 def readheader(sfilename):
@@ -428,7 +449,7 @@ def readpicks(sfilename):
                              int(line[18:20]),int(line[20:22]),0,0)
             time+=60 # Add 60 seconds on to the time, this copes with s-file
         coda=_int_conv(line[28:33])
-        amplitude=_float_conv(line[34:40])
+        amplitude=_float_conv(line[33:40])
         peri=_float_conv(line[41:45])
         azimuth=_float_conv(line[46:51])
         velocity=_float_conv(line[52:56])
