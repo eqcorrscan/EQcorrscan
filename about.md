@@ -10,7 +10,9 @@ group: navigation
 
 EQcorrscan is an earthquake detection package written in Python for OS X and Linux,
 and distributed under the LGPL.  The purpose of this package is to detect repeating and
-near-repeating earthquakes from continuous seismic data.  
+near-repeating earthquakes from continuous seismic data.  Although this package
+is designed first-and-foremost to use data from a seismic network, it works
+equally well when using a single station.
 
 The codes are designed for large-scale problems with multiple (hundreds to
 thousands of) templates, run over multiple days of data.  However, it works
@@ -35,8 +37,6 @@ This package has been tested on machines ranging from small dual-core laptops
 and desktops, to large (multi-thousand core) cluster computers.  The codes
 scale well when increasing the processing power, resulting in the ability to
 use (tested) **600 templates, through 6.5 years of data in less than 10 hours clock time**.
-
-
 
 ## Design
 
