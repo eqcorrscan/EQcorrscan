@@ -18,6 +18,16 @@ function.  The net result is that these functions are *very* scalable, we have
 obtained a speed-up from 2 months to 10 hours by migrating from a small cluster
 to a large one (for a 6.5 year long continuous dataset and 800 templates).
 
+The authors of EQcorrscan foresee this project as an open repository for the
+development of software for the detection and analysis of repeating and
+near-repeating earthquakes.  This repository will continue to grow and develop
+and any and all help/criticism will be appreciated.
+
+We have a long way to go with this project - if you want to get involved the
+best place to start, and the most valuable thing for your understanding, and
+for the health of this repository would be to contribute tests and
+documentation.  Ideally we would like to have one test for every function!
+
 Installation
 ------------
 A fresh install should be as simple as:
@@ -32,8 +42,9 @@ should be prepared for small differences in the results of your correlations
 relating to foating-point truncation differences between 32 and 64-Bit
 machines.
 
-If you plan to run the bright_lights.py routines you will need to have
-NonLinLoc installed on your machine.  This is not provided here and should
+If you plan to run the bright_lights or generating a synthetic grid of
+templates you will need to have grid csv files, which the authors have
+previously used NonLinLoc to generate.  This is not provided here and should
 be sourced from `NonLinLoc <http://alomax.free.fr/nlloc/>`_ This will provide
 the Grid2Time routine which is required to set-up a lag-time grid for your
 velocity model.  You should read the NonLinLoc documentation for more
