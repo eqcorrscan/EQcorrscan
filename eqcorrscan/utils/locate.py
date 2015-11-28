@@ -84,7 +84,7 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
     return index, cccsum
 
 
-def cross_net(stream, envelope=True, debug=0):
+def cross_net(stream, env=False, debug=0):
     r"""Function to generate picks for each channel based on optimal moveout
     defined by maximum cross-correaltion with master trace.  Master trace will
     be the first trace in the stream.
@@ -105,7 +105,9 @@ def cross_net(stream, envelope=True, debug=0):
     import numpy as np
     picks = []
     samp_rate = stream[0].stats.sampling_rate
-    if not envelope:
+    if not env:
+        if debug > 2:
+            print 'Using the raw data'
         st = stream.copy()
         st.resample(samp_rate)
     else:
@@ -115,6 +117,8 @@ def cross_net(stream, envelope=True, debug=0):
         for tr in st:
             tr.resample(samp_rate)
             tr.data = envelope(tr.data)
+    if debug > 2:
+        st.plot(equal_scale=False, size=(800, 600))
     master = st[0]
     master.data = np.nan_to_num(master.data)
     for tr in st:
@@ -123,23 +127,27 @@ def cross_net(stream, envelope=True, debug=0):
             msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
                             'with the master'])
             print msg
-        shift_len = int(0.49 * len(tr))
+        shift_len = int(0.3 * len(tr))
         if debug > 2:
             print 'Shift length is set to ' + str(shift_len) + ' samples'
         if debug > 3:
             index, cc, cc_vec = xcorr(master, tr, shift_len, full_xcorr=True)
+            cc_vec = np.nan_to_num(cc_vec)
+            if debug > 4:
+                print cc_vec
             fig = plt.figure()
             ax1 = fig.add_subplot(211)
             x = np.linspace(0, len(master) / samp_rate,
                             len(master))
             ax1.plot(x, master.data / float(master.data.max()), 'k',
                      label='Master')
-            ax1.plot(x + (index * samp_rate), tr.data / float(tr.data.max()),
+            ax1.plot(x + (index / samp_rate), tr.data / float(tr.data.max()),
                      'r', label='Slave shifted')
             ax1.legend(loc="lower right", prop={'size': "small"})
             ax1.set_xlabel("time [s]")
             ax1.set_ylabel("norm. amplitude")
             ax2 = fig.add_subplot(212)
+            print len(cc_vec)
             x = np.linspace(0, len(cc_vec) / samp_rate, len(cc_vec))
             ax2.plot(x, cc_vec, label='xcorr')
             # ax2.set_ylim(-1, 1)
@@ -151,8 +159,7 @@ def cross_net(stream, envelope=True, debug=0):
                     impulsivity='E',
                     phase='S',
                     weight='1',
-                    time=tr.stats.starttime + (tr.stats.sampling_rate *
-                                               index))
+                    time=tr.stats.starttime + (index / tr.stats.sampling_rate))
         if debug > 2:
             print pick
         picks.append(pick)
