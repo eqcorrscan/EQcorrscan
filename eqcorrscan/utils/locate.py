@@ -84,7 +84,7 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
     return index, cccsum
 
 
-def cross_net(stream, env=False, debug=0):
+def cross_net(stream, env=False, debug=0, master=False):
     r"""Function to generate picks for each channel based on optimal moveout
     defined by maximum cross-correaltion with master trace.  Master trace will
     be the first trace in the stream.
@@ -95,6 +95,9 @@ def cross_net(stream, env=False, debug=0):
     :param envelope: To compute cross-correlations on the envelope or not.
     :type debug: int
     :param debug: Debug level from 0-5
+    :type master: obspy.Trace
+    :param master: Trace to use as master, if False, will use the first trace\
+            in stream.
 
     :returns: picks
     """
@@ -119,7 +122,10 @@ def cross_net(stream, env=False, debug=0):
             tr.data = envelope(tr.data)
     if debug > 2:
         st.plot(equal_scale=False, size=(800, 600))
-    master = st[0]
+    if not master:
+        master = st[0]
+    else:
+        master = master
     master.data = np.nan_to_num(master.data)
     for tr in st:
         tr.data = np.nan_to_num(tr.data)
