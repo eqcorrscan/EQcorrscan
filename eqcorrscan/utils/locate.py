@@ -82,3 +82,79 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
     index = np.argmax(cccsums)
     cccsum = cccsums[index]
     return index, cccsum
+
+
+def cross_net(stream, envelope=True, debug=0):
+    r"""Function to generate picks for each channel based on optimal moveout
+    defined by maximum cross-correaltion with master trace.  Master trace will
+    be the first trace in the stream.
+
+    :type stream: :class: obspy.Stream
+    :param stream: Stream to pick
+    :type envelope: bool
+    :param envelope: To compute cross-correlations on the envelope or not.
+    :type debug: int
+    :param debug: Debug level from 0-5
+
+    :returns: picks
+    """
+    from obspy.signal.cross_correlation import xcorr
+    from obspy.signal.filter import envelope
+    from eqcorrscan.utils.Sfile_util import PICK
+    import matplotlib.pyplot as plt
+    import numpy as np
+    picks = []
+    samp_rate = stream[0].stats.sampling_rate
+    if not envelope:
+        st = stream.copy()
+        st.resample(samp_rate)
+    else:
+        st = stream.copy()
+        if debug > 2:
+            print 'Computing envelope'
+        for tr in st:
+            tr.resample(samp_rate)
+            tr.data = envelope(tr.data)
+    master = st[0]
+    master.data = np.nan_to_num(master.data)
+    for tr in st:
+        tr.data = np.nan_to_num(tr.data)
+        if debug > 2:
+            msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
+                            'with the master'])
+            print msg
+        shift_len = int(0.49 * len(tr))
+        if debug > 2:
+            print 'Shift length is set to ' + str(shift_len) + ' samples'
+        if debug > 3:
+            index, cc, cc_vec = xcorr(master, tr, shift_len, full_xcorr=True)
+            fig = plt.figure()
+            ax1 = fig.add_subplot(211)
+            x = np.linspace(0, len(master) / samp_rate,
+                            len(master))
+            ax1.plot(x, master.data / float(master.data.max()), 'k',
+                     label='Master')
+            ax1.plot(x + (index * samp_rate), tr.data / float(tr.data.max()),
+                     'r', label='Slave shifted')
+            ax1.legend(loc="lower right", prop={'size': "small"})
+            ax1.set_xlabel("time [s]")
+            ax1.set_ylabel("norm. amplitude")
+            ax2 = fig.add_subplot(212)
+            x = np.linspace(0, len(cc_vec) / samp_rate, len(cc_vec))
+            ax2.plot(x, cc_vec, label='xcorr')
+            # ax2.set_ylim(-1, 1)
+            # ax2.set_xlim(0, len(master))
+            plt.show()
+        index, cc = xcorr(master, tr, shift_len)
+        pick = PICK(station=tr.stats.station,
+                    channel=tr.stats.channel,
+                    impulsivity='E',
+                    phase='S',
+                    weight='1',
+                    time=tr.stats.starttime + (tr.stats.sampling_rate *
+                                               index))
+        if debug > 2:
+            print pick
+        picks.append(pick)
+    del st
+    return picks
