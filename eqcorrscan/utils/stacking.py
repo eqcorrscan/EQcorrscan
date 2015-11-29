@@ -40,7 +40,7 @@ def linstack(streams):
     # import matplotlib.pyplot as plt
     stack = streams[np.argmax([len(stream) for stream in streams])].copy()
     for tr in stack:
-        tr.data = tr.data/np.sqrt(np.mean(np.square(tr.data)))
+        tr.data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
         tr.data = np.nan_to_num(tr.data)
     for i in range(1, len(streams)):
         # print "Stacking stream "+str(i)
