@@ -26,13 +26,17 @@ try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
 except ImportError:
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
+    msg = ' '.join([])
+    msg = ' '.join(["warning: pypandoc module not found,",
+                    " could not convert Markdown to RST"])
+    print(msg)
     read_md = lambda f: open(f, 'r').read()
 
 try:
     import cv2
 except:
-    warnings.warn('##### No cv2 module, openCV, you need to install this yourself')
+    msg = '##### No cv2 module, openCV, you need to install this yourself'
+    warnings.warn(msg)
 
 here = path.abspath(path.dirname(__file__))
 
@@ -40,12 +44,12 @@ here = path.abspath(path.dirname(__file__))
 long_description = read_md('README.md')
 
 # Get a list of all the scripts not to be installed
-scriptfiles=glob.glob('eqcorrscan/scripts/*.py')
-scriptfiles+=glob.glob('eqcorrscan/*.sl')
-scriptfiles+=glob.glob('eqcorrscan/tutorial.py')
-scriptfiles+=glob.glob('eqcorrscan/WHATVsearch.py')
-scriptfiles+=glob.glob('eqcorrscan/LFE_brightness_search.py')
-scriptfiles+=glob.glob('eqcorrscan/synth_test.py')
+scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
+# scriptfiles += glob.glob('eqcorrscan/*.sl')
+scriptfiles += glob.glob('eqcorrscan/tutorial.py')
+# scriptfiles += glob.glob('eqcorrscan/WHATVsearch.py')
+# scriptfiles += glob.glob('eqcorrscan/LFE_brightness_search.py')
+# scriptfiles += glob.glob('eqcorrscan/synth_test.py')
 
 
 setup(
@@ -94,18 +98,18 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['docs', 'tests', 'test_data',\
-                                    'grid', 'detections', 'templates',\
+    packages=find_packages(exclude=['docs', 'tests', 'test_data',
+                                    'grid', 'detections', 'templates',
                                     'stack_templates', 'par']),
 
-    scripts = scriptfiles,
+    scripts=scriptfiles,
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0', \
-    'joblib>=0.8.4', 'scipy>=0.14'],
+    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0',
+                      'joblib>=0.8.4', 'scipy>=0.14'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -119,15 +123,15 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    #package_data={
-    #   'tutorial_data': ['test_data'],
-    #},
+    # package_data={
+    #    'tutorial_data': ['test_data'],
+    # },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    #data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
+    # data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
