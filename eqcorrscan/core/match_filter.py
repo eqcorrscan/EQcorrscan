@@ -169,7 +169,7 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
     :param i: Optional argument, used to keep track of which process is being\
     run.
 
-    :returns: tuple of (i,ccc) with ccc as an ndarray
+    :returns: tuple of (i, ccc) with ccc as an ndarray
 
     .. rubric:: Note
     ..This function currently assumes only one template-channel per\
