@@ -402,7 +402,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     # Generate a list of tuples of (station, channel, delay) with delay in
     # seconds
     delays = [(tr.stats.station, tr.stats.channel[-1],
-               mintime - tr.stats.starttime) for tr in template]
+               tr.stats.starttime - mintime) for tr in template]
     # Loop through the stack and trim!
     for tr in new_template:
         # Process the data if necessary
