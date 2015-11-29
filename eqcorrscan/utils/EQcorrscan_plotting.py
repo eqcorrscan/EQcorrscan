@@ -593,34 +593,37 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,\
     else:
         return
     if not background:
-        mintime=template.sort(['starttime'])[0].stats.starttime
+        mintime = template.sort(['starttime'])[0].stats.starttime
     else:
-        mintime=background.sort(['starttime'])[0].stats.starttime
-    template.sort(['network','station', 'starttime'])
+        mintime = background.sort(['starttime'])[0].stats.starttime
+    template.sort(['network', 'station', 'starttime'])
     for i, tr in enumerate(template):
-        delay=tr.stats.starttime-mintime
-        delay*=tr.stats.sampling_rate
-        y=tr.data
-        x=np.arange(len(y))
-        x+=delay
-        x=x/tr.stats.sampling_rate
+        delay = tr.stats.starttime - mintime
+        delay *= tr.stats.sampling_rate
+        delay = int(delay)
+        y = tr.data
+        x = np.arange(len(y))
+        x += delay
+        x = x / tr.stats.sampling_rate
         # x=np.arange(delay, (len(y)*tr.stats.sampling_rate)+delay,\
             # tr.stats.sampling_rate)
         if background:
-            btr=background.select(station=tr.stats.station, \
-                                channel=tr.stats.channel)[0]
-            bdelay=btr.stats.starttime-mintime
-            bdelay*=btr.stats.sampling_rate
-            by=btr.data
-            bx=np.arange(len(by))
-            bx+=bdelay
-            bx=bx/btr.stats.sampling_rate
-            axes[i].plot(bx,by,'k',linewidth=1)
+            btr = background.select(station=tr.stats.station,
+                                    channel=tr.stats.channel)[0]
+            bdelay = btr.stats.starttime - mintime
+            bdelay *= btr.stats.sampling_rate
+            bdelay = int(bdelay)
+            by = btr.data
+            bx = np.arange(len(by))
+            bx += bdelay
+            bx = bx / btr.stats.sampling_rate
+            axes[i].plot(bx, by, 'k', linewidth=1)
             axes[i].plot(x, y, 'r', linewidth=1.1)
         else:
             axes[i].plot(x, y, 'k', linewidth=1.1)
-        print tr.stats.station+' '+str(len(x))+' '+str(len(y))
-        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+        print ' '.join([tr.stats.station, str(len(x)), str(len(y))])
+        axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+                           rotation=0)
         axes[i].yaxis.set_ticks([])
     axes[i-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0)
