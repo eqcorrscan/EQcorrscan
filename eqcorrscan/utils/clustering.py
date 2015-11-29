@@ -462,7 +462,7 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         stachans = [(tr.stats.station, tr.stats.channel, tr.stats.network)
                     for tr in templatestream]
         mintime = templatestream[0].stats.starttime
-        delays = [tr.stats.starttime-mintime for tr in templatestream]
+        delays = [tr.stats.starttime - mintime for tr in templatestream]
         all_delays.append((template[0], delays))
         all_stachans.append((template[0], stachans))
     # Sort the detections and group by day
