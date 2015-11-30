@@ -880,3 +880,36 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
     plt.ylim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 1.0])
     plt.legend(loc=2)
     plt.show()
+
+
+def spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
+               tralpha=0.9):
+    r"""Function to plot a trace over that traces spectrogram.
+    Uses obspys spectrogram routine.
+
+    :type trace: :class: obspy.Trace
+    :param trace: trace to plot
+    :type cmap: str
+    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/colormaps_reference.html)
+    :type wlen: float
+    :param wlen: Window length for fft in seconds
+    :type log: bool
+    :param log: Use a log frequency scale
+    :type trc: str
+    :param trc: Color for the trace.
+    :type tralpha: float
+    :param tralpha: Opacity level for the seismogram, from transparent (0.0)\
+        to opaque (1.0).
+    """
+    Fig = trace.spectrogram(wlen=wlen, log=log, show=False, cmap=cmap)
+    ax1 = Fig.gca()
+    ax2 = ax1.twinx()
+    y = trace.data
+    x = np.linspace(0, len(y) / trace.stats.sampling_rate, len(y))
+    ax2.plot(x, y, color=trc, linewidth=2.0, alpha=tralpha)
+    ax2.set_xlim(min(x), max(x))
+    ax2.set_ylim(min(y) * 2, max(y) * 2)
+    ax1.set_title(' '.join([trace.stats.station, trace.stats.channel,
+                            trace.stats.starttime.datetime.
+                            strftime('%Y/%m/%d %H:%M:%S')]))
+    Fig.show()
