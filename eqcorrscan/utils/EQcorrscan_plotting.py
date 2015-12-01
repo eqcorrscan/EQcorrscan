@@ -883,7 +883,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
 
 
 def spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
-               tralpha=0.9):
+               tralpha=0.9, size=(10,2.5), axes=None, title=None):
     r"""Function to plot a trace over that traces spectrogram.
     Uses obspys spectrogram routine.
 
@@ -900,16 +900,30 @@ def spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     :type tralpha: float
     :param tralpha: Opacity level for the seismogram, from transparent (0.0)\
         to opaque (1.0).
+    :type size: tuple
+    :param size: Plot size, tuple of floats, inches
+    :type axes: matplotlib axes
+    :param axes: Axes to plot onto, defaults to self generating.
     """
-    Fig = trace.spectrogram(wlen=wlen, log=log, show=False, cmap=cmap)
-    ax1 = Fig.gca()
+    if not axes:
+        Fig = plt.figure(figsize=size)
+        ax1 = Fig.add_subplot(111)
+    else:
+        ax1 = axes
+    trace.spectrogram(wlen=wlen, log=log, show=False, cmap=cmap, axes=ax1)
+    Fig = plt.gcf()
     ax2 = ax1.twinx()
     y = trace.data
     x = np.linspace(0, len(y) / trace.stats.sampling_rate, len(y))
     ax2.plot(x, y, color=trc, linewidth=2.0, alpha=tralpha)
     ax2.set_xlim(min(x), max(x))
     ax2.set_ylim(min(y) * 2, max(y) * 2)
-    ax1.set_title(' '.join([trace.stats.station, trace.stats.channel,
-                            trace.stats.starttime.datetime.
-                            strftime('%Y/%m/%d %H:%M:%S')]))
-    Fig.show()
+    if title:
+        ax1.set_title(' '.join([trace.stats.station, trace.stats.channel,
+                                trace.stats.starttime.datetime.
+                                strftime('%Y/%m/%d %H:%M:%S')]))
+    if not axes:
+        Fig.set_size_inches(size)
+        Fig.show()
+    else:
+        return Fig
