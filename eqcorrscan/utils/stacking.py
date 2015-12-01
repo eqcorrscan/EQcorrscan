@@ -3,8 +3,6 @@
 Utility module of the EQcorrscan package to allow for different methods of
 stacking of seismic signal in one place.
 
-In alpha stages and only with linear stacking implimented thusfar
-
 Calum Chamberlain 24/06/2015
 
 Copyright 2015 Calum Chamberlain
@@ -43,7 +41,7 @@ def linstack(streams):
     for tr in stack:
         tr.data=tr.data/np.sqrt(np.mean(np.square(tr.data)))
         tr.data=np.nan_to_num(tr.data)
-    for i in xrange(1,len(streams)):
+    for i in range(1,len(streams)):
         # print "Stacking stream "+str(i)
         for tr in stack:
             # print tr.stats.station+'.'+tr.stats.channel
@@ -92,7 +90,7 @@ def PWS_stack(streams, weight=2):
                 np.abs(tr.data**weight)
     return Phasestack
 
-def align_traces(trace_list, shift_len):
+def align_traces(trace_list, shift_len, master=False):
     """
     Function to allign traces relative to each other based on their
     cross-correlation value
@@ -101,25 +99,33 @@ def align_traces(trace_list, shift_len):
     :param trace_list: List of traces to allign
     :type shift_len: int
     :param shift_len: Length to allow shifting within in samples
+    :type master: obspy.Trace
+    :param master: Master trace to align to, if set to False will align to the\
+        largest amplitude trace (default)
 
     :returns: list of shifts for best allignment in seconds
     """
     from obspy.signal.cross_correlation import xcorr
     from copy import deepcopy
     traces=deepcopy(trace_list)
-    # Use trace with largest MAD amplitude as master
-    master=traces[0]
-    MAD_master=np.median(np.abs(master.data))
-    master_no=0
-    for i in xrange(1,len(traces)):
-        if np.median(np.abs(traces[i])) > MAD_master:
-            master=traces[i]
-            MAD_master=np.median(np.abs(master.data))
-            master_no=i
+    if not master:
+        # Use trace with largest MAD amplitude as master
+        master=traces[0]
+        MAD_master=np.median(np.abs(master.data))
+        master_no=0
+        for i in xrange(1,len(traces)):
+            if np.median(np.abs(traces[i])) > MAD_master:
+                master=traces[i]
+                MAD_master=np.median(np.abs(master.data))
+                master_no=i
+    else:
+        print 'Using master given by user'
     shifts=[]
-    for i in xrange(len(traces)):
+    ccs=[]
+    for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
         shift, cc=xcorr(master, traces[i], shift_len)
         shifts.append(shift/master.stats.sampling_rate)
-    return shifts
+        ccs.append(cc)
+    return shifts, ccs

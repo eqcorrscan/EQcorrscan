@@ -43,10 +43,14 @@ nllpath='./grid/Caro_larger_grid/3D'    # Path to nonlinloc .csv grid files of
                           # [170.1, -44.],\
                           # [170.1, -43.8],\
                           # [170, -43.8]]))
-corners=mplPath.Path(np.array([[169.85, -43.9],\
-                          [169.55, -43.7],\
-                          [170.1, -43.35],\
-                          [170.4, -43.65]]))
+# corners=mplPath.Path(np.array([[169.85, -43.9],\
+#                           [169.55, -43.7],\
+#                           [170.1, -43.35],\
+#                           [170.4, -43.65]]))
+corners=mplPath.Path(np.array([[170.30, -43.5],\
+                          [170.45, -43.55],\
+                          [170.45, -43.40],\
+                          [170.30, -43.40]]))
 # corners=mplPath.Path(np.array([[169.55, -44.2],\
                                # [170.8, -43.6],\
                                # [170.5, -43.16],\
@@ -57,15 +61,15 @@ corners=mplPath.Path(np.array([[169.85, -43.9],\
                                         # the horizontal polygon to search within
                                         # Where coordinates are decimal degrees
                                         # in lat and long
-mindepth=15
-maxdepth=45
+mindepth=-1
+maxdepth=10
 # maxdepth=20                             # Depth cuts in km, cannot use these polygonally
 resolution=(0.02,2)                     # Horizontal and vertical resolution
                                         # for resampled grid in decimal
                                         # degrees and km respectively.
                                         # with depth increasing down
-dates=[UTCDateTime('2013-03-28')+i \
- for i in xrange(0, int(UTCDateTime('2013-05-09') - UTCDateTime('2013-03-28')),\
+dates=[UTCDateTime('2009-07-17')+i \
+ for i in xrange(0, int(UTCDateTime('2009-07-19') - UTCDateTime('2009-07-17')),\
                  86400)] # Example of a generator expression for all-time
 trem_dates=[UTCDateTime('2009-05-12'), UTCDateTime('2009-07-14'),\
        UTCDateTime('2009-07-15'), UTCDateTime('2009-11-15'),\

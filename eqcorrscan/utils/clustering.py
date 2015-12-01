@@ -57,7 +57,11 @@ def cross_chan_coherence(st1, st2, i=0):
         cccoh=cccoh/kchan
         return (cccoh, i)
     else:
+<<<<<<< HEAD
         warnings.warn('No channels match')
+=======
+        warnings.warn('No matching channels')
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
         return (0, i)
 
 def distance_matrix(stream_list, cores=1):
@@ -78,11 +82,20 @@ def distance_matrix(stream_list, cores=1):
 
     # Initialize square matrix
     dist_mat=np.array([np.array([0.0]*len(stream_list))]*len(stream_list))
+<<<<<<< HEAD
     for i in xrange(len(stream_list)):
         # Start a parallel processing pool
         pool=Pool(processes=cores)
         # Parallel processing
         results=[pool.apply_async(cross_chan_coherence, args=(stream_list[i],\
+=======
+
+    for i, master in enumerate(stream_list):
+        # Start a parallel processing pool
+        pool=Pool(processes=cores)
+        # Parallel processing
+        results=[pool.apply_async(cross_chan_coherence, args=(master,\
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
                                                         stream_list[j], j))\
                             for j in range(len(stream_list))]
         pool.close()
@@ -93,14 +106,23 @@ def distance_matrix(stream_list, cores=1):
         # Sort the results by the input j
         dist_list.sort(key=lambda tup:tup[1])
         # Sort the list into the dist_mat structure
+<<<<<<< HEAD
         for j in xrange(i,len(stream_list)):
+=======
+        for j in range(i,len(stream_list)):
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
             if i==j:
                 dist_mat[i,j]=0.0
             else:
                 dist_mat[i,j]=1-dist_list[j][0]
     # Reshape the distance matrix
+<<<<<<< HEAD
     for i in xrange(1,len(stream_list)):
         for j in xrange(i):
+=======
+    for i in range(1,len(stream_list)):
+        for j in range(i):
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
             dist_mat[i,j]=dist_mat.T[i,j]
     return dist_mat
 
@@ -293,7 +315,11 @@ def SVD(stream_list):
     for stachan in stachans:
         chan_mat=[stream_list[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])[0].data \
+<<<<<<< HEAD
                   for i in xrange(len(stream_list)) if \
+=======
+                  for i in range(len(stream_list)) if \
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
                   len(stream_list[i].select(station=stachan.split('.')[0], \
                                   channel=stachan.split('.')[1])) != 0]
         # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
@@ -326,7 +352,7 @@ def empirical_SVD(stream_list, linear=True):
     if linear:
         first_subspace=stacking.linstack(stream_list)
     second_subspace=first_subspace.copy()
-    for i in xrange(len(second_subspace)):
+    for i in range(len(second_subspace)):
         second_subspace[i].data=np.diff(second_subspace[i].data)
         second_subspace[i].stats.starttime+=0.5*second_subspace[i].stats.delta
     return [first_subspace, second_subspace]
@@ -350,14 +376,23 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
     from obspy import Stream, Trace
     SVstreams=[]
-    for i in xrange(k):
+    for i in range(k):
         SVstream=[]
+<<<<<<< HEAD
         for j in xrange(len(stachans)):
             if len(SVectors[j]) >= k:
                 SVstream.append(Trace(SVectors[j][i], \
                                         header={'station': stachans[j].split('.')[0],\
                                                 'channel': stachans[j].split('.')[1],\
                                                 'sampling_rate': sampling_rate}))
+=======
+        for j, stachan in enumerate(stachans):
+            SVstream.append(Trace(SVectors[j][i], \
+                                    header={'station': stachan.split('.')[0],
+                                            'channel': stachan.split('.')[1],
+                                            'sampling_rate': sampling_rate}))
+
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
@@ -380,6 +415,7 @@ def corr_cluster(trace_list, thresh=0.9):
     stack=stacking.linstack([Stream(tr) for tr in trace_list])[0]
     output=np.array([False]*len(trace_list))
     group1=[]
+<<<<<<< HEAD
     for i in xrange(len(trace_list)):
         if normxcorr2(traces[i].data,stack.data)[0][0] > 0.6:
             output[i]=True
@@ -388,6 +424,16 @@ def corr_cluster(trace_list, thresh=0.9):
     group2=[]
     for i in xrange(len(trace_list)):
         if normxcorr2(traces[i].data,stack.data)[0][0] > thresh:
+=======
+    for i, tr in enumerate(trace_list):
+        if normxcorr2(tr.data,stack.data)[0][0] > 0.6:
+            output[i]=True
+            group1.append(tr)
+    stack=stacking.linstack([Stream(tr) for tr in group1])[0]
+    group2=[]
+    for i, tr in enumerate(trace_list):
+        if normxcorr2(tr.data,stack.data)[0][0] > thresh:
+>>>>>>> fb62e8649c817e1db34c4d84f0934a832be6971f
             group2.append(tr)
             output[i]=True
         else:
@@ -470,16 +516,16 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0, \
             new_stachans=[]
             new_delays=[]
             j=0
-            for i in xrange(len(stachans)):
+            for i, stachan in enumerate(stachans):
                 if j==1:
-                    new_stachans.append((stachans[i][0], stachans[i][1][0]+'Z',\
-                                         stachans[i][2]))
+                    new_stachans.append((stachan[0], stachan[1][0]+'Z',\
+                                         stachan[2]))
                     new_delays.append(delays[i])
-                    new_stachans.append(stachans[i])
+                    new_stachans.append(stachan)
                     new_delays.append(delays[i])
                     j=0
                 else:
-                    new_stachans.append(stachans[i])
+                    new_stachans.append(stachan)
                     new_delays.append(delays[i])
                     j+=1
             new_all_stachans.append((template[0], new_stachans))
