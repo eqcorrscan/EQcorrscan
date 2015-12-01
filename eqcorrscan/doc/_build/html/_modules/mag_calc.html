@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>mag_calc &mdash; EQcorrscan 0.0.5 documentation</title>
+  <title>mag_calc &mdash; EQcorrscan 0.0.8 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.5 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -66,34 +66,34 @@
           
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#match-filter-detection">Match-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#matched-filter-detection">Matched-filter detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-bright_lights">bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-template_gen">template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-match_filter">match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core.html#module-lag_calc">lag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-Sfile_util">Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-findpeaks">findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-clustering">clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-pre_processing">pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-EQcorrscan_plotting">EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-mag_calc">mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-stacking">stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-catalogue2DD">catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../par.html">Par</a></li>
 </ul>
 
           
@@ -159,8 +159,9 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../utils.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
+<div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
 <span class="sd">    Earth approximation</span>
@@ -179,7 +180,7 @@
     <span class="n">dist</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">dist</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">ddepth</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span>
     <span class="k">return</span> <span class="n">dist</span>
 </div>
-<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../utils.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
+<div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove the insturment response from a trace and return a</span>
 <span class="sd">    de-meaned, de-trended, Wood Anderson simulated trace in it&#39;s place.</span>
@@ -222,7 +223,7 @@
                             <span class="n">water_level</span><span class="o">=</span><span class="n">water_level</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">trace</span>
 </div>
-<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../utils.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+<div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to find the maximum peak to trough amplitude and period of this</span>
 <span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by</span>
@@ -240,7 +241,7 @@
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
     <span class="n">debug_plot</span><span class="o">=</span><span class="bp">False</span>
     <span class="n">turning_points</span><span class="o">=</span><span class="p">[]</span> <span class="c"># A list of tuples of (amplitude, sample)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span>\
            <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]):</span>
             <span class="n">turning_points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">))</span>
@@ -253,7 +254,7 @@
         <span class="k">print</span> <span class="s">&#39;Turning points has length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">))</span><span class="o">+</span>\
                          <span class="s">&#39; data have length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
         <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
         <span class="n">half_periods</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="n">delta</span><span class="o">*</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
         <span class="n">amplitudes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">amplitude</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)</span>
@@ -267,7 +268,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delta</span><span class="o">*</span><span class="n">turning_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">amplitudes</span><span class="p">)][</span><span class="mi">1</span><span class="p">])</span>
 </div>
-<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../utils.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
+<div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the instrument response information from a GSE Poles and</span>
 <span class="sd">    Zeros file as generated by the SEISAN program RESP.</span>
@@ -297,11 +298,11 @@
     <span class="n">kpoles</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">4</span><span class="p">])</span>
     <span class="n">kzeros</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">5</span><span class="p">])</span>
     <span class="n">poles</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kpoles</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kpoles</span><span class="p">):</span>
         <span class="n">pole</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">poles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">float</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])))</span>
     <span class="n">zeros</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kzeros</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kzeros</span><span class="p">):</span>
         <span class="n">zero</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">zeros</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">complex</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">zero</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">float</span><span class="p">(</span><span class="n">zero</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])))</span>
     <span class="c"># Have Poles and Zeros, but need Gain and Sensitivity</span>
@@ -314,7 +315,7 @@
          <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="n">sensitivity</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">sensor</span>
 </div>
-<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../utils.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
+<div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to find the response information for a given station and</span>
 <span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
@@ -391,7 +392,16 @@
     <span class="k">elif</span> <span class="n">seedresp</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">seedresp</span>
 </div>
-<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../utils.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+<div class="viewcode-block" id="_pairwise"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._pairwise">[docs]</a><span class="k">def</span> <span class="nf">_pairwise</span><span class="p">(</span><span class="n">iterable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper on itertools for SVD_magnitude</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">itertools</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">tee</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    <span class="nb">next</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">itertools</span><span class="o">.</span><span class="n">izip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Amp_pick_sfile"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.Amp_pick_sfile">[docs]</a><span class="k">def</span> <span class="nf">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">datapath</span><span class="p">,</span> <span class="n">respdir</span><span class="p">,</span> <span class="n">chans</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;Z&#39;</span><span class="p">],</span> <span class="n">var_wintype</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
                    <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>\
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -649,6 +659,143 @@
     <span class="n">Sfile_util</span><span class="o">.</span><span class="n">populateSfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span><span class="n">picks_out</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">picks</span>
 </div>
+<div class="viewcode-block" id="SVD_moments"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.SVD_moments">[docs]</a><span class="k">def</span> <span class="nf">SVD_moments</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">event_list</span><span class="p">,</span> <span class="n">n_SVs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to convert basis vectors calculated by singular value decomposition\</span>
+<span class="sd">    (see the SVD functions in clustering) into relative magnitudes.</span>
+
+<span class="sd">    :type U: List of np.ndarray</span>
+<span class="sd">    :param U: List of the input basis vectors from the SVD, one array for each\</span>
+<span class="sd">            channel used.</span>
+<span class="sd">    :type s: List of nd.array</span>
+<span class="sd">    :param s: List of the singular values, one array for each channel</span>
+<span class="sd">    :type V: List of np.ndarry</span>
+<span class="sd">    :param V: List of output basis vectors from SVD, one array per channel.</span>
+<span class="sd">    :type stachans: List of string</span>
+<span class="sd">    :param stachans: List of station.channel input</span>
+<span class="sd">    :type event_list: List of list</span>
+<span class="sd">    :param event_list: List of events for which you have data, such that\</span>
+<span class="sd">                event_list[i] corresponds to stachans[i], U[i] etc. and\</span>
+<span class="sd">                event_list[i][j] corresponds to event j in U[i]</span>
+<span class="sd">    type n_SVs: int</span>
+<span class="sd">    :param n_SVs: Number of singular values to use, defaults to 4.</span>
+
+<span class="sd">    :returns: M, np.array of relative moments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">copy</span>
+    <span class="kn">import</span> <span class="nn">random</span>
+
+    <span class="c"># Copying script from one obtained from John Townend.</span>
+    <span class="c"># Define maximum number of events, will be the width of K</span>
+    <span class="n">K_width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">ev_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">ev_list</span> <span class="ow">in</span> <span class="n">event_list</span><span class="p">])</span><span class="o">+</span><span class="mi">1</span>
+    <span class="c"># Sometimes the randomisation generates a singular matrix - rather than</span>
+    <span class="c"># attempting to regulerize this matrix I propose undertaking the randomisation</span>
+    <span class="c"># step a further time</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stachans</span><span class="p">):</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># Small kernel matrix for one station - channel</span>
+        <span class="c"># Copy the relevant vectors so as not to detroy them</span>
+        <span class="n">U_working</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">U</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">V_working</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">s_working</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">ev_list</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ev_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">V_working</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;V is : &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">V_working</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Not the same number of events as V&#39;</span><span class="p">)</span>
+        <span class="c"># Set all non-important singular values to zero</span>
+        <span class="n">s_working</span><span class="p">[</span><span class="n">n_SVs</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">s_working</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">s_working</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s_working</span><span class="p">)</span>
+        <span class="c"># Convert to numpy matrices</span>
+        <span class="n">U_working</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">U_working</span><span class="p">)</span>
+        <span class="n">V_working</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">V_working</span><span class="p">)</span>
+        <span class="n">s_working</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">s_working</span><span class="p">)</span>
+
+        <span class="n">SVD_weights</span> <span class="o">=</span> <span class="n">U_working</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># If all the weights are negative take the abs</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">SVD_weights</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;All weights are negative - flipping them&#39;</span><span class="p">)</span>
+            <span class="n">SVD_weights</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">SVD_weights</span><span class="p">)</span>
+        <span class="n">SVD_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">SVD_weights</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="c"># Shuffle the SVD_weights prior to pairing - will give one of multiple</span>
+        <span class="c"># pairwise options - see p1956 of Rubinstein &amp; Ellsworth 2010</span>
+        <span class="c"># We need to keep the real indexes though, otherwise, if there are multiple</span>
+        <span class="c"># events with the same weight we will end up with multiple -1 values</span>
+        <span class="n">random_SVD_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">SVD_weights</span><span class="p">)</span>
+        <span class="c"># Tack on the indexes</span>
+        <span class="n">random_SVD_weights</span> <span class="o">=</span> <span class="n">random_SVD_weights</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">random_SVD_weights</span> <span class="o">=</span> <span class="p">[(</span><span class="n">random_SVD_weights</span><span class="p">[</span><span class="n">_i</span><span class="p">],</span> <span class="n">_i</span><span class="p">)</span>\
+            <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">random_SVD_weights</span><span class="p">))]</span>
+        <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">random_SVD_weights</span><span class="p">)</span>
+        <span class="c"># Add the first element to the end so all elements will be paired twice</span>
+        <span class="n">random_SVD_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">random_SVD_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c"># Take pairs of all the SVD_weights (each weight appears in 2 pairs)</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">_pairwise</span><span class="p">(</span><span class="n">random_SVD_weights</span><span class="p">):</span>
+            <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+        <span class="c"># Deciding values for each place in kernel matrix using the pairs</span>
+        <span class="k">for</span> <span class="n">pairsIndex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pairs</span><span class="p">)):</span>
+            <span class="c"># We will normalize by the minimum weight</span>
+            <span class="n">_weights</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">pairs</span><span class="p">[</span><span class="n">pairsIndex</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">_indeces</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">pairs</span><span class="p">[</span><span class="n">pairsIndex</span><span class="p">]))[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">min_weight</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">_weights</span><span class="p">)</span>
+            <span class="n">max_weight</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">_weights</span><span class="p">)</span>
+            <span class="n">min_index</span> <span class="o">=</span> <span class="n">_indeces</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">_weights</span><span class="p">)]</span>
+            <span class="n">max_index</span> <span class="o">=</span> <span class="n">_indeces</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">_weights</span><span class="p">)]</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c"># Working out values for each row of kernel matrix</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">SVD_weights</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">max_index</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">j</span> <span class="o">==</span> <span class="n">min_index</span><span class="p">:</span>
+                    <span class="n">normalised</span> <span class="o">=</span> <span class="n">max_weight</span><span class="o">/</span><span class="n">min_weight</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">normalised</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">row</span>
+            <span class="c"># Add each row to the K matrix</span>
+            <span class="n">k</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c"># k is now a square matrix, we need to flesh it out to be K_width</span>
+        <span class="n">k_filled</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">K_width</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">ev</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ev_list</span><span class="p">):</span>
+                <span class="n">k_filled</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">ev</span><span class="p">]</span><span class="o">=</span><span class="n">k</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">l</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;K&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="n">K</span><span class="o">=</span><span class="n">k_filled</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">K</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">K</span><span class="p">,</span><span class="n">k_filled</span><span class="p">])</span>
+    <span class="c"># Remove any empty rows</span>
+    <span class="n">K_nonempty</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">events_out</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">K_width</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">K</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">K_nonempty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">K</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">events_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">K</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">K_nonempty</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">K_width</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c"># Add an extra row to K, so average moment = 1</span>
+    <span class="n">K</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">K_width</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">K_width</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Created Kernel matrix: &quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">),</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>\
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">row</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">K</span><span class="p">]))</span>
+    <span class="n">Krounded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">decimals</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="c"># Create a weighting matrix to put emphasis on the final row.</span>
+    <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">)))</span>
+    <span class="c"># the final element of W = the number of stations*number of events</span>
+    <span class="n">W</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+    <span class="c"># Make K into a matrix</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+
+    <span class="c">############</span>
+
+    <span class="c"># Solve using the weighted least squares equation, K.T is K transpose</span>
+    <span class="n">Kinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">W</span><span class="o">*</span><span class="n">K</span><span class="p">)</span> <span class="o">*</span> <span class="n">K</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">W</span><span class="p">)</span>
+
+    <span class="c"># M are the relative moments of the events</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">Kinv</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">events_out</span>
+</div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Code to loop through a database and make a shit-tonne of magnitude picks-boi!</span>
@@ -739,7 +886,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.5',
+            VERSION:'0.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

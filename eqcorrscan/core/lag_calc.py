@@ -53,7 +53,8 @@ This file is part of EQcorrscan.
 
 """
 import numpy as np
-from match_filter import DETECTION, normxcorr2
+from match_filter import normxcorr2
+
 
 def _channel_loop(detection, template, i=0):
     """
@@ -61,28 +62,33 @@ def _channel_loop(detection, template, i=0):
     the correct data to lag_gen
 
     :type detection: obspy.Stream
-    :param detection: Stream of data for the slave event detected using template
+    :param detection: Stream of data for the slave event detected using \
+    template
     :type template: obspy.Stream
     :param template: Stream of data as the template for the detection.
     :type i: int, optional
     :param i: Used to track which process has occured when running in parallel
 
-    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)
+    :returns: picks, a tuple of (lag in s, cross-correlation value, station,\
+     chan)
     """
     from eqcorrscan.utils.Sfile_util import PICK
-    picks=[]
-    for i in xrange(len(template)):
-        image=detection.select(station=template[i].stats.station,\
-                                channel=template[i].stats.channel)
-        if image: #Ideally this if statement would be removed.
-            ccc = normxcorr2(template[i].data, image[0].data)
+    picks = []
+    for tr in template:
+        image = detection.select(station=tr.stats.station,
+                                 channel=tr.stats.channel)
+        if image:  # Ideally this if statement would be removed.
+            ccc = normxcorr2(tr.data, image[0].data)
             shiftlen = len(ccc)*image[0].stats.sample_rate
             # Convert the maximum cross-correlation time to an actual time
-            picktime = image[0].stats.starttime+(np.argmax(ccc)*image[0].stats.delta)
-            picks.append(PICK())
-            ((lag, np.max(ccc), template[i].stats.station, \
-                template[i].stats.channel))
+            picktime = image[0].stats.starttime + (np.argmax(ccc) *
+                                                   image[0].stats.delta)
+            # Note, this function is incomplete!
+            # picks.append(PICK())
+            # ((lag, np.max(ccc), tr.stats.station,
+            #     tr.stats.channel))
     return (i, picks)
+
 
 def day_loop(detection_streams, template):
     """

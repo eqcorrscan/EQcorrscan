@@ -34,14 +34,57 @@ import numpy as np
 
 class PICK:
     """
-    Pick information for seisan implimentation
+    Pick information for seisan implimentation, note all fields can be left\
+    blank to obtain a default pick: picks have a print function which will\
+    print them as they would be seen in an S-file.
+
+    Attributes:
+        :type station: str
+        :param station: Station name, less than five charectars required as\
+         standard
+        :type channel: str
+        :param channel: Two or three charactar channel name, stored as two\
+            charactars in S-file
+        :type impulsivity: str
+        :param impulsivity: either 'C' or 'D' for compressive and dilatational
+        :type phase: str
+        :param phase: Any allowable phase name in two characters
+        :type weight: int
+        :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing
+        :type polarity: str
+        :type time: obspy.UTCDateTime()
+        :param time: Pick time as an obspy.UTCDateTime object
+        :type coda: int
+        :param coda: Length of coda in seconds
+        :type amplitude: float
+        :param amplitude: Amplitude (zero-peak), type is given in phase
+        :type peri: float
+        :param peri: Period of amplitude
+        :type azimuth: float
+        :param azimuth: Direction of approach in degrees
+        :type velocity: float
+        :param velocity: Phase velocity (km/s)
+        :type AIN: int
+        :param AIN: Angle of incidence.
+        :type SNR: float
+        :param SNR: Signal to noise ratio
+        :type azimuthres: int
+        :param azimuthres: Residual azimuth
+        :type timeres: float
+        :param timeres: Time residual in seconds
+        :type finalweight: int
+        :param finalweight: Final weight used in location
+        :type distance: float
+        :param distance: Source-reciever distance in km
+        :type CAZ: int
+        :param CAZ: Azimuth at source.
     """
     pickcount=0
     def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
                  weight=999, polarity=' ', time=UTCDateTime(0),
                  coda=999, amplitude=float('NaN'),
                  peri=float('NaN'), azimuth=float('NaN'),
-                 velocity=float('NaN'), AIN=' ', SNR=999,
+                 velocity=float('NaN'), AIN=999, SNR=float('NaN'),
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
                  CAZ=999):
@@ -69,39 +112,125 @@ class PICK:
         return "PICK()"
     def __str__(self):
         if self.distance >= 100.0:
-            self.distance=_int_conv(self.distance)
-        elif self.distance < 100.0:
-            self.distance=int(round(self.distance,1))
-        if not self.AIN=='':
-            dummy=self.AIN
+            self.distance = _int_conv(self.distance)
+        elif 10.0 < self.distance < 100.0:
+            self.distance = round(self.distance, 1)
+            round_len = 1
+        elif self.distance < 10.0:
+            self.distance = round(self.distance, 2)
+            round_len = 2
         else:
-            dummy=self.SNR
-        print_str=' '+self.station.ljust(5)+\
-                self.channel[0]+self.channel[len(self.channel)-1]+\
-                ' '+self.impulsivity+\
-                self.phase.ljust(4)+\
-                _str_conv(self.weight).rjust(1)+' '+\
-                self.polarity.rjust(1)+' '+\
-                str(self.time.hour).rjust(2)+\
-                str(self.time.minute).rjust(2)+\
-                str(self.time.second).rjust(3)+'.'+\
-                str(float(self.time.microsecond)/(10**4)).split('.')[0].zfill(2)+\
-                _str_conv(int(self.coda)).rjust(5)[0:5]+\
-                _str_conv(round(self.amplitude,1)).rjust(7)[0:7]+\
-                _str_conv(self.peri).rjust(5)+\
-                _str_conv(self.azimuth).rjust(6)+\
-                _str_conv(self.velocity).rjust(5)+\
-                _str_conv(dummy).rjust(4)+\
-                _str_conv(int(self.azimuthres)).rjust(3)+\
-                _str_conv(self.timeres, rounded=2).rjust(5)+\
-                _str_conv(int(self.finalweight)).rjust(2)+\
-                _str_conv(self.distance).rjust(5)+\
-                _str_conv(int(self.CAZ)).rjust(4)
+            round_len = False
+        if self.peri < 10.0:
+            peri_round = 2
+        elif self.peri >= 10.0:
+            peri_round = 1
+        else:
+            peri_round = False
+        if not self.AIN == '':
+            if not np.isnan(self.AIN):
+                dummy = int(self.AIN)
+            else:
+                dummy = self.AIN
+        else:
+            dummy = self.SNR
+        print_str = ' ' + self.station.ljust(5) +\
+            self.channel[0]+self.channel[len(self.channel)-1] +\
+            ' ' + self.impulsivity +\
+            self.phase.ljust(4) +\
+            _str_conv(self.weight).rjust(1) + ' ' +\
+            self.polarity.rjust(1) + ' ' +\
+            str(self.time.hour).rjust(2) +\
+            str(self.time.minute).rjust(2) +\
+            str(self.time.second).rjust(3) + '.' +\
+            str(float(self.time.microsecond) /
+                (10 ** 4)).split('.')[0].zfill(2) +\
+            _str_conv(int(self.coda)).rjust(5)[0:5] +\
+            _str_conv(round(self.amplitude, 1)).rjust(7)[0:7] +\
+            _str_conv(self.peri, rounded=peri_round).rjust(5) +\
+            _str_conv(self.azimuth).rjust(6) +\
+            _str_conv(self.velocity).rjust(5) +\
+            _str_conv(dummy).rjust(4) +\
+            _str_conv(int(self.azimuthres)).rjust(3) +\
+            _str_conv(self.timeres, rounded=2).rjust(5) +\
+            _str_conv(int(self.finalweight)).rjust(2) +\
+            _str_conv(self.distance, rounded=round_len).rjust(5) +\
+            _str_conv(int(self.CAZ)).rjust(4)+' '
         return print_str
+
+    def write(self, filename):
+        """
+        Public function to write the pick to a file
+
+        :type filename: str
+        :param filename: Path to file to write to - will append to file
+        """
+        import os
+        import warnings
+        if os.path.isfile(filename):
+            open_as='a'
+        else:
+            warnings.warn('File does not exist, no header')
+            open_as='w'
+
+        with open(filename,open_as) as f:
+            pickstr=self.__str__()
+            f.write(pickstr+'\n')
+        return
+
 
 class EVENTINFO:
     """
-    Header information for seisan events
+    Header information for seisan events, again all fields can be left blank for\
+    a default empty header.  The print function for header will print important\
+    information, but not as seen in an S-file.
+
+    For more information on parameters see the seisan manual.
+
+    Attributes:
+        :type time: obspy.UTCDateTime
+        :param time: Event origin time
+        :type loc_mod_ind: str
+        :param loc_mod_ind:
+        :type dist_ind: str
+        :param dist_ind: Distance flag, usually 'L' for local, 'R' for regional\
+            and 'D' for distant
+        :type ev_id: str
+        :param ev_id: Often blank, 'E' denotes explosion and fixes depth to 0km
+        :type latitude: float
+        :param latitude: Hypocentre latitude in decimal degrees
+        :type longitude: float
+        :param lognitude: Hypocentre longitude in decimal degrees
+        :type depth: float
+        :param depth: hypocentre depth in km
+        :type depth_ind: str
+        :param depth_ind:
+        :type loc_ind: str
+        :param loc_ind:
+        :type agency: str
+        :param agency: Reporting agency, three letters
+        :type nsta: int
+        :param nsta: Number of stations recording
+        :type t_RMS: float
+        :param t_RMS: Root-mean-squared time residual
+        :type Mag_1: float
+        :param Mag_1: first magnitude
+        :type Mag_1_type: str
+        :param Mag_1_type: Type of magnitude for Mag_1 ('L', 'C', 'W')
+        :type Mag_1_agency: str
+        :param Mag_1_agency: Reporting agency for Mag_1
+        :type Mag_2: float
+        :param Mag_2: second magnitude
+        :type Mag_2_type: str
+        :param Mag_2_type: Type of magnitude for Mag_2 ('L', 'C', 'W')
+        :type Mag_2_agency: str
+        :param Mag_2_agency: Reporting agency for Mag_2
+        :type Mag_3: float
+        :param Mag_3: third magnitude
+        :type Mag_3_type: str
+        :param Mag_3_type: Type of magnitude for Mag_3 ('L', 'C', 'W')
+        :type Mag_3_agency: str
+        :param Mag_3_agency: Reporting agency for Mag_3
     """
     def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
                  ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
@@ -167,14 +296,21 @@ def _str_conv(number, rounded=False):
     Convenience tool to convert a number, either float or into into a string,
     if the int is 999, or the float is NaN, returns empty string.
     """
-    if (type(number)==float and np.isnan(number)) or number==999:
-        string=' '
-    elif type(number)==str:
+    if (type(number) == float and np.isnan(number)) or number == 999:
+        string = ' '
+    elif type(number) == str:
         return number
     elif not rounded:
-        string=str(number)
-    elif rounded==2:
-        string='{0:.2f}'.format(number)
+        if number < 100000:
+            string = str(number)
+        else:
+            exponant = int('{0:.2E}'.format(number).split('E+')[-1]) - 1
+            divisor = 10 ** exponant
+            string = '{0:.1f}'.format(number / divisor) + 'e' + str(exponant)
+    elif rounded == 2:
+        string = '{0:.2f}'.format(number)
+    elif rounded == 1:
+        string = '{0:.1f}'.format(number)
     return string
 
 def readheader(sfilename):
@@ -313,7 +449,7 @@ def readpicks(sfilename):
                              int(line[18:20]),int(line[20:22]),0,0)
             time+=60 # Add 60 seconds on to the time, this copes with s-file
         coda=_int_conv(line[28:33])
-        amplitude=_float_conv(line[34:40])
+        amplitude=_float_conv(line[33:40])
         peri=_float_conv(line[41:45])
         azimuth=_float_conv(line[46:51])
         velocity=_float_conv(line[52:56])
@@ -379,7 +515,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     import sys
     import os
     import datetime
-    
+
     if not evtime:
         try:
             st=obsread(wavefile)
@@ -478,12 +614,11 @@ def populateSfile(sfilename, picks):
     f=open(sfilename, 'r')
     # Find type 7 line, under which picks should be - if there are already
     # picks there we should preserve them
-    lineno=0
     body=''
     header=''
     if 'headerend' in locals():
         del headerend
-    for line in f:
+    for lineno, line in enumerate(f):
         identifier=line[79]
         if 'headerend' in locals():
             body+=line
@@ -491,7 +626,6 @@ def populateSfile(sfilename, picks):
             header+=line
         if identifier=='7':
             headerend=lineno
-        lineno+=1
     f.close()
     #
     # Now generate lines for the new picks
@@ -519,7 +653,7 @@ def test_rw():
     import os
     test_pick=PICK('FOZ', 'SZ', 'I', 'P', '1', 'C', UTCDateTime("2012-03-26")+1,
                  coda=10, amplitude=0.2, peri=0.1,
-                 azimuth=10.0, velocity=20.0, AIN=0.1, SNR='',
+                 azimuth=10.0, velocity=20.0, AIN=10, SNR='',
                  azimuthres=1, timeres=0.1,
                  finalweight=4, distance=10.0,
                  CAZ=2)
