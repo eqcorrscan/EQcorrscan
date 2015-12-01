@@ -883,14 +883,15 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
 
 
 def spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
-               tralpha=0.9, size=(10,2.5), axes=None, title=None):
+               tralpha=0.9, size=(10, 2.5), axes=None, title=None):
     r"""Function to plot a trace over that traces spectrogram.
     Uses obspys spectrogram routine.
 
     :type trace: :class: obspy.Trace
     :param trace: trace to plot
     :type cmap: str
-    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/colormaps_reference.html)
+    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/
+        colormaps_reference.html)
     :type wlen: float
     :param wlen: Window length for fft in seconds
     :type log: bool
@@ -926,4 +927,4 @@ def spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
         Fig.set_size_inches(size)
         Fig.show()
     else:
-        return Fig
+        return ax1, ax2
