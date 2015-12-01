@@ -55,5 +55,3 @@ Contents:
    tutorial
    core
    utils
-   par
-

@@ -36,15 +36,17 @@ from obspy import UTCDateTime
        # for i in xrange(0,int(UTCDateTime('2013-12-17') - UTCDateTime('2013-09-05')),\
                        # 86400)]
 
-
-dates=[UTCDateTime('2009-03-26')+i \
- for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2009-03-26')),\
+dates=[UTCDateTime('2009-05-24')+i \
+ for i in xrange(0, int(UTCDateTime('2009-05-25') - UTCDateTime('2009-05-24')),\
                  86400)] # Example of a generator expression for all-time
+# dates=[UTCDateTime('2009-03-26')+i \
+#  for i in xrange(0, int(UTCDateTime('2015-03-09') - UTCDateTime('2009-03-26')),\
+#                  86400)] # Example of a generator expression for all-time
                                         # List of dates to run through, can be
                                         # made in any pythonic way, but must be
                                         # a list of obspy.UTCDateTime objects
 
-threshold=10.00                     # Threshold to declare a detection at, type
+threshold=8.00                      # Threshold to declare a detection at, type
                                     # of threshold is set below
 
 threshtype='MAD'                    # Type of threshold, can be either MAD or
@@ -82,8 +84,8 @@ contbase=[('/Volumes/GeoPhysics_09/users-data/chambeca/SAMBA_archive/day_volumes
                                     # of tuples of the form
                                     # [(path, directory format, netcode)]
 
-plot=False                          # boolean, True for plotting the daily
+plot=True                           # boolean, True for plotting the daily
                                     # cccsum values for each template.
-cores=10                            # Value for number of parallel jobs to run
+cores=4                             # Value for number of parallel jobs to run
                                     # must be int
 debug=1                             # Debug level, 0-5 with 0 being less verbose

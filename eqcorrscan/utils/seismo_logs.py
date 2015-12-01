@@ -99,13 +99,11 @@ def check_all_logs(directory, time_thresh):
     log_files=glob.glob(directory+'/*/0/000000000_00000000')
     print 'I have '+str(len(log_files))+' log files to scan'
     total_phase_errs=[]
-    i=0
-    for log_file in log_files:
+    for i, log_file in enumerate(log_files):
         startdate=dt.datetime.strptime(log_file.split('/')[-4][0:7], '%Y%j').date()
         total_phase_errs+=Read_RT_log(log_file, startdate)
         sys.stdout.write("\r"+str(float(i)/len(log_files)*100)+"% \r")
         sys.stdout.flush()
-        i+=1
     time_errs=Flag_time_err(total_phase_errs, time_thresh)
     time_errs.sort()
     return time_errs, total_phase_errs
