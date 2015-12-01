@@ -7,3 +7,5 @@ To do:
 2. Obspy catalog create from scratch
 3. Catalog write to QuakeML (or whatever supported formats, I guess)
 """
+
+def build_Catalog(locations, arrivals, magnitudes, etc):
