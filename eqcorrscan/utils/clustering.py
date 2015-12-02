@@ -501,10 +501,12 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         all_delays = new_all_delays
         all_stachans = new_all_stachans
     if not len(additional_stations) == 0:
+        print('Adding additional stations')
         for t, template in enumerate(all_stachans):
             av_delay = np.mean(all_delays[t][1])
             for sta in additional_stations:
                 if sta not in template[1]:
+                    print('Added station ' + '.'.join(sta))
                     template[1].append(sta)
                     all_delays[t][1].append(av_delay)
 
