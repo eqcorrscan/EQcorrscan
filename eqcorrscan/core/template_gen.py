@@ -233,7 +233,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
             st = obsread(wavefile)
         else:
             st += obsread(wavefile)
-    # Porcess waveform data
+    # Process waveform data
     st.merge(fill_value='interpolate')
     for tr in st:
         tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
@@ -241,6 +241,83 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     # Cut and extract the templates
     st1 = _template_gen(picks, st, length, swin, prepick=prepick)
     return st1
+
+
+def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
+                 length, prepick, swin, debug=0):
+    r"""Function to generate a template from a local quakeml file
+    and an obspy.Stream object
+
+    :type quakeml: string
+    :param quakeml: QuakeML file containing pick information
+    :type st: class: obspy.Stream
+    :param st: Stream containing waveform data for template (hopefully)
+    :type lowcut: float
+    :param lowcut: Low cut (Hz), if set to None will look in template\
+            defaults file
+    :type highcut: float
+    :param lowcut: High cut (Hz), if set to None will look in template\
+            defaults file
+    :type samp_rate: float
+    :param samp_rate: New sampling rate in Hz, if set to None will look in\
+            template defaults file
+    :type filt_order: int
+    :param filt_order: Filter level, if set to None will look in\
+            template defaults file
+    :type length: float
+    :param length: Extract length in seconds, if None will look in template\
+            defaults file.
+    :type prepick: float
+    :param prepick: Pre-pick time in seconds
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
+    """
+    # Perform some checks first
+    import os
+    import warnings
+    if not os.path.isfile(quakeml):
+        raise IOError('QuakeML file does not exist')
+
+    from obspy import readEvents
+    from eqcorrscan.utils import pre_processing
+    stations = []
+    channels = []
+    st_stachans = []
+    #Read QuakeML file into Catalog class
+    catalog = readEvents(quakeml)
+    day = catalog[0].Origins
+    # Read in pick info
+    picks = catalog[0].picks
+    print "I have found the following picks"
+    for pick in picks:
+        print ' '.join([pick.waveform_id.station_code,
+                        pick.waveform_id.channel_code,
+                        pick.phase_hint, str(pick.time)])
+        stations.append(pick.waveform_id.station_code)
+        channels.append(pick.waveform_id.channel_code)
+    #Check to see if all picks have a corresponding waveform
+    for tr in st:
+        st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
+    for i in xrange(len(stations)):
+        if not '.'.join([stations[i], channels[i]]) in st_stachans:
+            warnings.warn('No data provided for ' + stations[i] + '.' +
+                          channels[i])
+    # Process waveform data
+    st.merge(fill_value='interpolate')
+    for tr in st:
+        tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
+                                    samp_rate, debug, day)
+    # Cut and extract the templates
+    st1 = _template_gen(picks, st, length, swin, prepick=prepick)
+    return st1
+
+
+def from_SeisHub(catalog, url, lowcut, highcut, samp_rate, filt_order,
+                 length, prepick, swin, debug=0):
+    r"""Function to generate templates"""
+
 
 
 def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
