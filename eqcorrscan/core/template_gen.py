@@ -309,7 +309,7 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     for tr in st:
         tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
                                     samp_rate, debug, day)
-    # Cut and extract the templates
+    Cut and extract the templates
     st1 = _template_gen(picks, st, length, swin, prepick=prepick)
     return st1
 
@@ -406,8 +406,8 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     channels = []
     st_stachans = []
     for pick in picks:
-        stations.append(pick.station)
-        channels.append(pick.channel)
+        stations.append(pick.waveform_id.station_code)
+        channels.append(pick.waveform_id.channel_code)
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i in xrange(len(stations)):
@@ -418,12 +418,17 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     for tr in st:
         if tr.stats.station in stations:
             if swin == 'all':
-                if len(tr.stats.channel) == 3:
-                    temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
-                elif len(tr.stats.channel) == 2:
-                    temp_channel = tr.stats.channel
-                # if temp_channel in channels:
-                tr.stats.channel = temp_channel
+                """cjh The following was removed as obspy.Pick class stores
+                channel names as 3-character station codes, not 2. I assume 
+                an addition will need to be made in Sfile_util to add character
+                'H' to channel code.
+                """
+                # if len(tr.stats.channel) == 3:
+                #     temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
+                # elif len(tr.stats.channel) == 2:
+                #     temp_channel = tr.stats.channel
+                # # if temp_channel in channels:
+                # tr.stats.channel = temp_channel
                 if 'st1' not in locals():
                     st1 = Stream(tr)
                 else:
@@ -443,17 +448,18 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
             del starttime
         if swin == 'all':
             for pick in picks:
-                if pick.station == tr.stats.station and \
-                        pick.channel == tr.stats.channel and\
-                        pick.phase == 'P':
+                if pick.waveform_id.station_code == tr.stats.station and \
+                        pick.waveform_id.channel_code == tr.stats.channel and\
+                        pick.phase_hint == 'P':
                     starttime = pick.time - prepick
-                elif pick.station == tr.stats.station and\
+                elif pick.waveform_id.station_code == tr.stats.station and\
                         tr.stats.channel[-1] in ['1', '2', 'N', 'E'] and\
-                        pick.phase == 'S':
+                        pick.phase_hint == 'S':
                     starttime = pick.time - prepick
         else:
             for pick in picks:
-                if pick.station == tr.stats.station and pick.phase == swin:
+                if pick.waveform_id.station_code == tr.stats.station and\
+                        pick.phase_hint == swin:
                     starttime = pick.time - prepick
         if 'starttime' in locals():
             print "Cutting " + tr.stats.station + '.' + tr.stats.channel
