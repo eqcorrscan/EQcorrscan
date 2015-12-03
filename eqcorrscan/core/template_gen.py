@@ -287,7 +287,7 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     st_stachans = []
     #Read QuakeML file into Catalog class
     catalog = readEvents(quakeml)
-    day = catalog[0].Origins
+    day = catalog[0].origins[0].time
     # Read in pick info
     picks = catalog[0].picks
     print "I have found the following picks"
@@ -316,8 +316,67 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
 def from_SeisHub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0):
-    r"""Function to generate templates"""
+    r"""Function to generate templates from a SeisHub database.Must be given an
+    obspy.Catalog class and the SeisHub url as input. The function returns a
+    list of obspy.Stream classes containting steams for each desired template.
 
+    :type catalog: obspy.Catalog
+    :param catalog: Catalog class containing desired template events
+    :type url: class: string
+    :param url: url of SeisHub database instance
+    :type lowcut: float
+    :param lowcut: Low cut (Hz), if set to None will look in template\
+            defaults file
+    :type highcut: float
+    :param lowcut: High cut (Hz), if set to None will look in template\
+            defaults file
+    :type samp_rate: float
+    :param samp_rate: New sampling rate in Hz, if set to None will look in\
+            template defaults file
+    :type filt_order: int
+    :param filt_order: Filter level, if set to None will look in\
+            template defaults file
+    :type length: float
+    :param length: Extract length in seconds, if None will look in template\
+            defaults file.
+    :type prepick: float
+    :param prepick: Pre-pick time in seconds
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
+    """
+    from obspy.seishub import Client
+    from eqcorrscan.utils import pre_processing
+    client = Client(url)
+    temp_list = []
+    for event in catalog:
+        #Figure out which picks we have
+        day = event.origins[0].time
+        picks = event.picks
+        print "Fetching the following traces from SeisHub"
+        for pick in picks:
+            net = pick.waveform_id.network_code
+            sta = pick.waveform_id.station_code
+            chan = pick.waveform_id.channel_code
+            loc = pick.waveform_id.location_code
+            starttime = pick.time - prepick
+            endtime = starttime + length
+            print '.'.join([net, sta, loc, chan])
+            if sta in client.waveform.getStationIds(network=net):
+                if 'st' not in locals():
+                    st = client.waveform.getWaveform(net, sta, loc, chan,
+                                                     starttime, endtime)
+                else:
+                    st += client.waveform.getWaveform(net, sta, loc, chan,
+                                                      starttime, endtime)
+            else:
+                print 'Station not found in SeisHub DB'
+        print('Preprocessing data for event: '+str(event.resource_id))
+        st1 = pre_processing.shortproc(st, lowcut, highcut, filt_order,
+                                        samp_rate, debug)
+    temp_list.append(st1)
+    return temp_list
 
 
 def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
