@@ -60,7 +60,7 @@ class PICK:
         :param amplitude: Amplitude (zero-peak), type is given in phase
         :type peri: float
         :param peri: Period of amplitude
-        :type azimuth: float
+         :type azimuth: float
         :param azimuth: Direction of approach in degrees
         :type velocity: float
         :param velocity: Phase velocity (km/s)
@@ -329,7 +329,7 @@ def readheader(sfile):
     from obspy.core.event import StationMagnitude, EventDescription, CreationInfo
     f = open(sfile, 'r')
     # Base populate to allow for empty parts of file
-    sfile_header=Event()
+    new_event=Event()
     topline=f.readline()
     if topline[79] == ' ' or topline[79] == '1':
         # Topline contains event information
@@ -340,8 +340,8 @@ def readheader(sfile):
                 add_seconds = 60
             else:
                 add_seconds = 0
-            sfile_header.origins.append(Origin())
-            sfile_header.origins[0].time = UTCDateTime(int(topline[1:5]),
+            new_event.origins.append(Origin())
+            new_event.origins[0].time = UTCDateTime(int(topline[1:5]),
                                                        int(topline[6:8]),
                                                        int(topline[8:10]),
                                                        int(topline[11:13]),
@@ -350,74 +350,81 @@ def readheader(sfile):
                                                        int(topline[19:20])*100000) + add_seconds
         except:
             warnings.warn("Couldn't read a date from sfile: "+sfile)
-            sfile_header.origins.append(Origin(time=UTCDateTime(0)))
-        # sfile_header.loc_mod_ind=topline[20]
-        sfile_header.event_descriptions.append(EventDescription())
-        sfile_header.event_descriptions[0].text = topline[21]
-        # sfile_header.ev_id=topline[22]
-        sfile_header.origins[0].latitude = _float_conv(topline[23:30])
-        sfile_header.origins[0].longitude = _float_conv(topline[31:38])
-        sfile_header.origins[0].depth = _float_conv(topline[39:43])
-        # sfile_header.depth_ind = topline[44]
-        # sfile_header.loc_ind = topline[45]
-        sfile_header.creation_info = CreationInfo(agency_id=topline[46:48].strip())
-        # sfile_header.origins[0].nsta??? = _int_conv(topline[49:51])
-        sfile_header.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
-        sfile_header.magnitudes.append(Magnitude())
-        sfile_header.magnitudes[0].mag = _float_conv(topline[56:59])
-        sfile_header.magnitudes[0].magnitude_type = topline[59]
-        sfile_header.magnitudes[0].creation_info = CreationInfo(agency_id=topline[60:63].strip())
-        sfile_header.magnitudes.append(Magnitude())
-        sfile_header.magnitudes[1].mag = _float_conv(topline[64:67])
-        sfile_header.magnitudes[1].magnitude_type = topline[67]
-        sfile_header.magnitudes[1].creation_info = CreationInfo(agency_id=topline[68:71].strip())
-        sfile_header.magnitudes.append(Magnitude())
-        sfile_header.magnitudes[2].mag = _float_conv(topline[72:75])
-        sfile_header.magnitudes[2].magnitude_type = topline[75]
-        sfile_header.magnitudes[2].creation_info = CreationInfo(agency_id=topline[76:79].strip())
+            new_event.origins.append(Origin(time=UTCDateTime(0)))
+        # new_event.loc_mod_ind=topline[20]
+        new_event.event_descriptions.append(EventDescription())
+        new_event.event_descriptions[0].text = topline[21]
+        # new_event.ev_id=topline[22]
+        new_event.origins[0].latitude = _float_conv(topline[23:30])
+        new_event.origins[0].longitude = _float_conv(topline[31:38])
+        new_event.origins[0].depth = _float_conv(topline[39:43])
+        # new_event.depth_ind = topline[44]
+        # new_event.loc_ind = topline[45]
+        new_event.creation_info = CreationInfo(agency_id=topline[46:48].strip())
+        # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
+        new_event.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
+        new_event.magnitudes.append(Magnitude())
+        new_event.magnitudes[0].mag = _float_conv(topline[56:59])
+        new_event.magnitudes[0].magnitude_type = topline[59]
+        new_event.magnitudes[0].creation_info = CreationInfo(agency_id=topline[60:63].strip())
+        new_event.magnitudes[0].origin_id = new_event.origins[0].resource_id
+        new_event.magnitudes.append(Magnitude())
+        new_event.magnitudes[1].mag = _float_conv(topline[64:67])
+        new_event.magnitudes[1].magnitude_type = topline[67]
+        new_event.magnitudes[1].creation_info = CreationInfo(agency_id=topline[68:71].strip())
+        new_event.magnitudes[1].origin_id = new_event.origins[0].resource_id
+        new_event.magnitudes.append(Magnitude())
+        new_event.magnitudes[2].mag = _float_conv(topline[72:75])
+        new_event.magnitudes[2].magnitude_type = topline[75]
+        new_event.magnitudes[2].creation_info = CreationInfo(agency_id=topline[76:79].strip())
+        new_event.magnitudes[2].origin_id = new_event.origins[0].resource_id
     else:
         for line in f:
             if line[79] == '1':
                 line = topline
                 try:
-                    sfile_header.origins.append(Origin())
-                    sfile_header.origins[0].time=UTCDateTime(int(topline[1:5]),
-                                                             int(topline[6:8]),
-                                                             int(topline[8:10]),
-                                                             int(topline[11:13]),
-                                                             int(topline[13:15]),
-                                                             int(topline[16:18]),
-                                                             int(topline[19:20])*10)
+                    new_event.origins.append(Origin())
+                    new_event.origins[0].time=UTCDateTime(int(topline[1:5]),
+                                                          int(topline[6:8]),
+                                                          int(topline[8:10]),
+                                                          int(topline[11:13]),
+                                                          int(topline[13:15]),
+                                                          int(topline[16:18]),
+                                                          int(topline[19:20])*10)
                 except:
-                    sfile_header.origins.append(Origin(time=UTCDateTime(0)))
-                # sfile_header.loc_mod_ind=topline[21]
-                sfile_header.event_descriptions.append(EventDescription())
-                sfile_header.event_descriptions[0].text = topline[22]
-                # sfile_header.ev_id=topline[23]
-                sfile_header.origins[0].latitude = _float_conv(topline[24:30])
-                sfile_header.origins[0].longitude = _float_conv(topline[31:38])
-                sfile_header.origins[0].depth = _float_conv(topline[39:43])
-                # sfile_header.depth_ind = topline[44]
-                # sfile_header.loc_ind = topline[45]
-                sfile_header.creation_info = CreationInfo(agency_id=topline[46:48].strip())
-                # sfile_header.origins[0].nsta??? = _int_conv(topline[49:51])
-                sfile_header.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
-                sfile_header.magnitudes.append(Magnitude())
-                sfile_header.magnitudes[0].mag = _float_conv(topline[56:59])
-                sfile_header.magnitudes[0].magnitude_type = topline[60]
-                sfile_header.magnitudes[0].creation_info = CreationInfo(agency_id=topline[61:63].strip())
-                sfile_header.magnitudes.append(Magnitude())
-                sfile_header.magnitudes[1].mag = _float_conv(topline[64:67])
-                sfile_header.magnitudes[1].magnitude_type = topline[68]
-                sfile_header.magnitudes[1].creation_info = CreationInfo(agency_id=topline[69:71].strip())
-                sfile_header.magnitudes.append(Magnitude())
-                sfile_header.magnitudes[2].mag = _float_conv(topline[72:75])
-                sfile_header.magnitudes[2].magnitude_type = topline[76]
-                sfile_header.magnitudes[2].creation_info = CreationInfo(agency_id=topline[77:79].strip())
-            if line[79]=='7':
+                    new_event.origins.append(Origin(time=UTCDateTime(0)))
+                # new_event.loc_mod_ind=topline[21]
+                new_event.event_descriptions.append(EventDescription())
+                new_event.event_descriptions[0].text = topline[22]
+                # new_event.ev_id=topline[23]
+                new_event.origins[0].latitude = _float_conv(topline[24:30])
+                new_event.origins[0].longitude = _float_conv(topline[31:38])
+                new_event.origins[0].depth = _float_conv(topline[39:43])
+                # new_event.depth_ind = topline[44]
+                # new_event.loc_ind = topline[45]
+                new_event.creation_info = CreationInfo(agency_id=topline[46:48].strip())
+                # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
+                new_event.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
+                new_event.magnitudes.append(Magnitude())
+                new_event.magnitudes[0].mag = _float_conv(topline[56:59])
+                new_event.magnitudes[0].magnitude_type = topline[60]
+                new_event.magnitudes[0].creation_info = CreationInfo(agency_id=topline[61:63].strip())
+                new_event.magnitudes[0].origin_id = new_event.origins[0].resource_id
+                new_event.magnitudes.append(Magnitude())
+                new_event.magnitudes[1].mag = _float_conv(topline[64:67])
+                new_event.magnitudes[1].magnitude_type = topline[68]
+                new_event.magnitudes[1].creation_info = CreationInfo(agency_id=topline[69:71].strip())
+                new_event.magnitudes[1].origin_id = new_event.origins[0].resource_id
+                new_event.magnitudes.append(Magnitude())
+                new_event.magnitudes[2].mag = _float_conv(topline[72:75])
+                new_event.magnitudes[2].magnitude_type = topline[76]
+                new_event.magnitudes[2].creation_info = CreationInfo(agency_id=topline[77:79].strip())
+                new_event.magnitudes[2].origin_id = new_event.origins[0].resource_id
+            if line[79] == '7':
                 break
     f.close()
-    return sfile_header
+    return new_event
+
 
 def readpicks(sfile):
     """
@@ -428,67 +435,105 @@ def readpicks(sfile):
 
     :return: List of :class: PICK
     """
+    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
+    from obspy.core.event import ResourceIdentifier, Catalog
+    #Get wavefile name for use in resource_ids
+    wav_names = readwavename(sfile)
     # First we need to read the header to get the timing info
-    sfile_header=readheader(sfile)
-    evtime=sfile_header.time
-    f=open(sfile,'r')
-    pickline=[]
-    lineno=0
+    new_event = readheader(sfile)
+    evtime = new_event.origins[0].time
+    f = open(sfile, 'r')
+    pickline = []
+    lineno = 0
     if 'headerend' in locals():
         del headerend
     for line in f:
         if 'headerend' in locals():
-            if len(line.rstrip('\n').rstrip('\r')) in [80,79] and \
-               (line[79]==' ' or line[79]=='4' or line [79]=='\n'):
-                pickline+=[line]
-        elif line[79]=='7':
-            header=line
-            headerend=lineno
-        lineno+=1
-    picks=[]
+            if len(line.rstrip('\n').rstrip('\r')) in [80, 79] and \
+               (line[79] == ' ' or line[79] == '4' or line[79] == '\n'):
+                pickline += [line]
+        elif line[79] == '7':
+            header = line
+            headerend = lineno
+        lineno += 1
+    picks = []
+    pick_index = 0
     for line in pickline:
-        if line[18:28].strip()=='': # If line is empty miss it
+        if line[18:28].strip() == '':  # If line is empty miss it
             continue
-        station=line[1:6].strip()
-        channel=line[6:8].strip()
-        impulsivity=line[9]
-        weight=line[14]
-        if weight=='_':
-            phase=line[10:17]
-            weight=''
-            polarity=''
+        station = line[1:6].strip()
+        channel = line[6:8].strip()
+        network = 'NA'  #No network information provided in Sfile??
+        if line[9] == 'E':
+            impulsivity = 'emergent'
+        elif line[9] == 'I':
+            impulsivity = 'impulsive'
+        weight = line[14]
+        if weight == '_':
+            phase = line[10:17]
+            weight = ''
+            polarity = ''
         else:
-            phase=line[10:14].strip()
-            polarity=line[16]
+            phase = line[10:14].strip()
+            polarity = line[16]
+        if polarity == '':
+            polarity = "undecidable"
+        elif polarity == 'C':
+            polarity = "positive"
+        elif polarity == 'D':
+            polarity = 'negative'
+        else:
+            polarity = "undecidable"
         try:
-            time=UTCDateTime(evtime.year,evtime.month,evtime.day,
-                             int(line[18:20]),int(line[20:22]),int(line[23:25]),
-                             int(line[26:28])*10000)
+            time = UTCDateTime(evtime.year, evtime.month, evtime.day,
+                               int(line[18:20]), int(line[20:22]),
+                               int(line[23:25]), int(line[26:28])*10000)
         except (ValueError):
-            time=UTCDateTime(evtime.year,evtime.month,evtime.day,
-                             int(line[18:20]),int(line[20:22]),0,0)
-            time+=60 # Add 60 seconds on to the time, this copes with s-file
-        coda=_int_conv(line[28:33])
-        amplitude=_float_conv(line[33:40])
-        peri=_float_conv(line[41:45])
-        azimuth=_float_conv(line[46:51])
-        velocity=_float_conv(line[52:56])
-        if header[57:60]=='AIN':
-            SNR=''
-            AIN=_float_conv(line[57:60])
-        elif header[57:60]=='SNR':
-            AIN=''
-            SNR=_float_conv(line[57:60])
-        azimuthres=_int_conv(line[60:63])
-        timeres=_float_conv(line[63:68])
-        finalweight=_int_conv(line[68:70])
-        distance=_float_conv(line[70:75])
-        CAZ=_int_conv(line[76:79])
-        picks+=[PICK(station, channel, impulsivity, phase, weight, polarity,
-                 time, coda, amplitude, peri, azimuth, velocity, AIN, SNR,
-                 azimuthres, timeres, finalweight, distance, CAZ)]
+            time = UTCDateTime(evtime.year, evtime.month, evtime.day,
+                               int(line[18:20]), int(line[20:22]), 0, 0)
+            time += 60  # Add 60 seconds on to the time, this copes with s-file
+        coda = _int_conv(line[28:33])
+        amplitude = _float_conv(line[33:40])
+        peri = _float_conv(line[41:45])
+        azimuth = _float_conv(line[46:51])
+        velocity = _float_conv(line[52:56])
+        if header[57:60] == 'AIN':
+            SNR = 0.0  #Placeholder value
+            AIN = _float_conv(line[57:60])
+        elif header[57:60] == 'SNR':
+            AIN = 0.0  #Placeholder value
+            SNR = _float_conv(line[57:60])
+        azimuthres = _int_conv(line[60:63])
+        timeres = _float_conv(line[63:68])
+        finalweight = _int_conv(line[68:70])
+        distance = _float_conv(line[70:75])
+        CAZ = _int_conv(line[76:79])
+        #Create a new obspy.event.Pick class for this pick
+        new_event.picks.append(Pick(waveform_id=WaveformStreamID(station_code=station,
+                                                                 channel_code=channel,
+                                                                 network_code=network),
+                                    onset=impulsivity, phase_hint=phase,
+                                    polarity=polarity, time=time,
+                                    horizontal_slowness=(1/velocity),
+                                    backazimuth=azimuth))
+        #Create new obspy.event.Amplitude class which references above Pick
+        new_event.amplitudes.append(Amplitude(amplitude=amplitude, period=peri,
+                                              snr=SNR, pick_id=new_event.picks[pick_index].resource_id,
+                                              waveform_id=new_event.picks[pick_index].waveform_id))
+        #Create new obspy.event.Arrival class referencing above Pick
+        new_event.origins[0].arrivals.append(Arrival(time_weight=finalweight,
+                                                     phase=new_event.picks[pick_index].phase_hint,
+                                                     pick_id=new_event.picks[pick_index].resource_id,
+                                                     backazimuth_residual=azimuthres,
+                                                     time_residual=timeres,
+                                                     distance=distance,
+                                                     azimuth=CAZ))
+        pick_index += 1
     f.close()
-    return picks
+    #Write event to catalog object for ease of .write() method
+    new_cat = Catalog()
+    new_cat += new_event
+    return new_cat
 
 def readwavename(sfile):
     """
