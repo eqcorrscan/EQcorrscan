@@ -309,7 +309,7 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     for tr in st:
         tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
                                     samp_rate, debug, day)
-    Cut and extract the templates
+    # Cut and extract the templates
     st1 = _template_gen(picks, st, length, swin, prepick=prepick)
     return st1
 
@@ -419,7 +419,7 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
         if tr.stats.station in stations:
             if swin == 'all':
                 """cjh The following was removed as obspy.Pick class stores
-                channel names as 3-character station codes, not 2. I assume 
+                channel names as 3-character station codes, not 2. I assume
                 an addition will need to be made in Sfile_util to add character
                 'H' to channel code.
                 """
