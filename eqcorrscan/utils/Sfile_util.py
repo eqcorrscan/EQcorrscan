@@ -291,6 +291,7 @@ def _float_conv(string):
         floatstring=float('NaN')
     return floatstring
 
+
 def _str_conv(number, rounded=False):
     """
     Convenience tool to convert a number, either float or into into a string,
@@ -313,105 +314,124 @@ def _str_conv(number, rounded=False):
         string = '{0:.1f}'.format(number)
     return string
 
-def readheader(sfilename):
+
+def readheader(sfile):
     """
-    Fucntion to read the header information from a seisan nordic format S-file.
+    Function to read the header information from a seisan nordic format S-file.
 
-    :type sfilename: str
-    :param sfilename: Path to the s-file
+    :type sfile: str
+    :param sfile: Path to the s-file
 
-    :returns: :class: EVENTINFO
+    :returns: :class: obspy.core.event.Event
     """
     import warnings
-    f=open(sfilename,'r')
+    from obspy.core.event import Event, Origin, Pick, Amplitude, Magnitude
+    from obspy.core.event import StationMagnitude, EventDescription, CreationInfo
+    f = open(sfile, 'r')
     # Base populate to allow for empty parts of file
-    sfilename_header=EVENTINFO()
+    sfile_header=Event()
     topline=f.readline()
-    if topline[79]==' ' or topline[79]=='1':
+    if topline[79] == ' ' or topline[79] == '1':
         # Topline contains event information
         try:
-            sfile_seconds=int(topline[16:18])
-            if sfile_seconds==60:
-                sfile_seconds=0
-                add_seconds=60
+            sfile_seconds = int(topline[16:18])
+            if sfile_seconds == 60:
+                sfile_seconds = 0
+                add_seconds = 60
             else:
-                add_seconds=0
-            sfilename_header.time=UTCDateTime(int(topline[1:5]),int(topline[6:8]),
-                                        int(topline[8:10]),int(topline[11:13]),
-                                        int(topline[13:15]),sfile_seconds
-                                        ,int(topline[19:20])*100000)+add_seconds
+                add_seconds = 0
+            sfile_header.origins.append(Origin())
+            sfile_header.origins[0].time = UTCDateTime(int(topline[1:5]),
+                                                       int(topline[6:8]),
+                                                       int(topline[8:10]),
+                                                       int(topline[11:13]),
+                                                       int(topline[13:15]),
+                                                       sfile_seconds,
+                                                       int(topline[19:20])*100000) + add_seconds
         except:
-            warnings.warn("Couldn't read a date from sfile: "+sfilename)
-            sfilename_header.time=UTCDateTime(0)
-        sfilename_header.loc_mod_ind=topline[20]
-        sfilename_header.dist_ind=topline[21]
-        sfilename_header.ev_id=topline[22]
-        sfilename_header.latitude=_float_conv(topline[23:30])
-        sfilename_header.longitude=_float_conv(topline[31:38])
-        sfilename_header.depth=_float_conv(topline[39:43])
-        sfilename_header.depth_ind=topline[44]
-        sfilename_header.loc_ind=topline[45]
-        sfilename_header.agency=topline[46:48].strip()
-        sfilename_header.nsta=_int_conv(topline[49:51])
-        sfilename_header.t_RMS=_float_conv(topline[52:55])
-        sfilename_header.Mag_1=_float_conv(topline[56:59])
-        sfilename_header.Mag_1_type=topline[59]
-        sfilename_header.Mag_1_agency=topline[60:63].strip()
-        sfilename_header.Mag_2=_float_conv(topline[64:67])
-        sfilename_header.Mag_2_type=topline[67]
-        sfilename_header.Mag_2_agency=topline[68:71].strip()
-        sfilename_header.Mag_3=_float_conv(topline[72:75])
-        sfilename_header.Mag_3_type=topline[75].strip()
-        sfilename_header.Mag_3_agency=topline[76:79].strip()
+            warnings.warn("Couldn't read a date from sfile: "+sfile)
+            sfile_header.origins.append(Origin(time=UTCDateTime(0)))
+        # sfile_header.loc_mod_ind=topline[20]
+        sfile_header.event_descriptions.append(EventDescription())
+        sfile_header.event_descriptions[0].text = topline[21]
+        # sfile_header.ev_id=topline[22]
+        sfile_header.origins[0].latitude = _float_conv(topline[23:30])
+        sfile_header.origins[0].longitude = _float_conv(topline[31:38])
+        sfile_header.origins[0].depth = _float_conv(topline[39:43])
+        # sfile_header.depth_ind = topline[44]
+        # sfile_header.loc_ind = topline[45]
+        sfile_header.creation_info = CreationInfo(agency_id=topline[46:48].strip())
+        # sfile_header.origins[0].nsta??? = _int_conv(topline[49:51])
+        sfile_header.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
+        sfile_header.magnitudes.append(Magnitude())
+        sfile_header.magnitudes[0].mag = _float_conv(topline[56:59])
+        sfile_header.magnitudes[0].magnitude_type = topline[59]
+        sfile_header.magnitudes[0].creation_info = CreationInfo(agency_id=topline[60:63].strip())
+        sfile_header.magnitudes.append(Magnitude())
+        sfile_header.magnitudes[1].mag = _float_conv(topline[64:67])
+        sfile_header.magnitudes[1].magnitude_type = topline[67]
+        sfile_header.magnitudes[1].creation_info = CreationInfo(agency_id=topline[68:71].strip())
+        sfile_header.magnitudes.append(Magnitude())
+        sfile_header.magnitudes[2].mag = _float_conv(topline[72:75])
+        sfile_header.magnitudes[2].magnitude_type = topline[75]
+        sfile_header.magnitudes[2].creation_info = CreationInfo(agency_id=topline[76:79].strip())
     else:
         for line in f:
-            if line[79]=='1':
-                line=topline
+            if line[79] == '1':
+                line = topline
                 try:
-                    sfilename_header.time=UTCDateTime(int(topline[1:5]),int(topline[6:8]),
-                                                int(topline[8:10]),int(topline[11:13]),
-                                                int(topline[13:15]),int(topline[16:18])
-                                                ,int(topline[19:20])*10)
+                    sfile_header.origins.append(Origin())
+                    sfile_header.origins[0].time=UTCDateTime(int(topline[1:5]),
+                                                             int(topline[6:8]),
+                                                             int(topline[8:10]),
+                                                             int(topline[11:13]),
+                                                             int(topline[13:15]),
+                                                             int(topline[16:18]),
+                                                             int(topline[19:20])*10)
                 except:
-                    sfilename_header.time=UTCDateTime(0)
-                sfilename_header.loc_mod_ind=topline[21]
-                sfilename_header.dist_ind=topline[22]
-                sfilename_header.ev_id=topline[23]
-                sfilename_header.latitude=_float_conv(topline[24:30])
-                sfilename_header.longitude=_float_conv(topline[31:38])
-                sfilename_header.depth=_float_conv(topline[39:43])
-                sfilename_header.depth_ind=topline[44]
-                sfilename_header.loc_ind=topline[45]
-                sfilename_header.agency=topline[46:48].strip()
-                sfilename_header.nsta=_int_conv(topline[49:51])
-                sfilename_header.t_RMS=_float_conv(topline[52:55])
-                sfilename_header.Mag_1=_float_conv(topline[56:59])
-                sfilename_header.Mag_1_type=topline[60]
-                sfilename_header.Mag_1_agency=topline[61:63].strip()
-                sfilename_header.Mag_2=_float_conv(topline[64:67])
-                sfilename_header.Mag_2_type=topline[68]
-                sfilename_header.Mag_2_agency=topline[69:71].strip()
-                sfilename_header.Mag_3=_float_conv(topline[72:75])
-                sfilename_header.Mag_3_type=topline[76].strip()
-                sfilename_header.Mag_3_agency=topline[77:79].strip()
+                    sfile_header.origins.append(Origin(time=UTCDateTime(0)))
+                # sfile_header.loc_mod_ind=topline[21]
+                sfile_header.event_descriptions.append(EventDescription())
+                sfile_header.event_descriptions[0].text = topline[22]
+                # sfile_header.ev_id=topline[23]
+                sfile_header.origins[0].latitude = _float_conv(topline[24:30])
+                sfile_header.origins[0].longitude = _float_conv(topline[31:38])
+                sfile_header.origins[0].depth = _float_conv(topline[39:43])
+                # sfile_header.depth_ind = topline[44]
+                # sfile_header.loc_ind = topline[45]
+                sfile_header.creation_info = CreationInfo(agency_id=topline[46:48].strip())
+                # sfile_header.origins[0].nsta??? = _int_conv(topline[49:51])
+                sfile_header.origins[0].time_errors['Time_Residual_RMS'] = _float_conv(topline[52:55])
+                sfile_header.magnitudes.append(Magnitude())
+                sfile_header.magnitudes[0].mag = _float_conv(topline[56:59])
+                sfile_header.magnitudes[0].magnitude_type = topline[60]
+                sfile_header.magnitudes[0].creation_info = CreationInfo(agency_id=topline[61:63].strip())
+                sfile_header.magnitudes.append(Magnitude())
+                sfile_header.magnitudes[1].mag = _float_conv(topline[64:67])
+                sfile_header.magnitudes[1].magnitude_type = topline[68]
+                sfile_header.magnitudes[1].creation_info = CreationInfo(agency_id=topline[69:71].strip())
+                sfile_header.magnitudes.append(Magnitude())
+                sfile_header.magnitudes[2].mag = _float_conv(topline[72:75])
+                sfile_header.magnitudes[2].magnitude_type = topline[76]
+                sfile_header.magnitudes[2].creation_info = CreationInfo(agency_id=topline[77:79].strip())
             if line[79]=='7':
                 break
     f.close()
-    return sfilename_header
+    return sfile_header
 
-def readpicks(sfilename):
+def readpicks(sfile):
     """
     Function to read pick information from the s-file
 
-    :type sfilename: String
-    :param sfilename: Path to sfile
+    :type sfile: String
+    :param sfile: Path to sfile
 
     :return: List of :class: PICK
     """
     # First we need to read the header to get the timing info
-    sfilename_header=readheader(sfilename)
-    evtime=sfilename_header.time
-    f=open(sfilename,'r')
+    sfile_header=readheader(sfile)
+    evtime=sfile_header.time
+    f=open(sfile,'r')
     pickline=[]
     lineno=0
     if 'headerend' in locals():
@@ -470,18 +490,18 @@ def readpicks(sfilename):
     f.close()
     return picks
 
-def readwavename(sfilename):
+def readwavename(sfile):
     """
     Convenience function to extract the waveform filename from the s-file,
     returns a list of waveform names found in the s-file as multiples can
     be present.
 
-    :type sfilename: str
-    :param sfilename: Path to the sfile
+    :type sfile: str
+    :param sfile: Path to the sfile
 
     :returns: List of str
     """
-    f=open(sfilename)
+    f=open(sfile)
     wavename=[]
     for line in f:
         if len(line)==81 and line[79]=='6':
@@ -539,30 +559,30 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         sys.exit()
 
     # Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm
-    sfilename=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
+    sfile=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
             str(evtime.hour).zfill(2)+\
             str(evtime.minute).zfill(2)+'-'+\
             str(evtime.second).zfill(2)+evtype+'.S'+\
             str(evtime.year)+\
             str(evtime.month).zfill(2)
-    # Check is sfilename exists
-    if os.path.isfile(sfilename) and not overwrite:
-        print 'Desired sfilename: '+sfilename+' exists, will not overwrite'
+    # Check is sfile exists
+    if os.path.isfile(sfile) and not overwrite:
+        print 'Desired sfile: '+sfile+' exists, will not overwrite'
         for i in range(1,10):
-            sfilename=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
+            sfile=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
                     str(evtime.hour).zfill(2)+\
                     str(evtime.minute).zfill(2)+'-'+\
                     str(evtime.second+i).zfill(2)+evtype+'.S'+\
                     str(evtime.year)+\
                     str(evtime.month).zfill(2)
-            if not os.path.isfile(sfilename):
+            if not os.path.isfile(sfile):
                 break
         else:
             print 'Tried generated files up to 10s in advance and found they'
             print 'all exist, you need to clean your stuff up!'
             sys.exit()
         # sys.exit()
-    f=open(sfilename,'w')
+    f=open(sfile,'w')
     # Write line 1 of s-file
     f.write(' '+str(evtime.year)+' '+\
             str(evtime.month).rjust(2)+\
@@ -591,10 +611,10 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU'+\
             ' VELO AIN AR TRES W  DIS CAZ7\n')
     f.close()
-    print 'Written s-file: '+sfilename
-    return sfilename
+    print 'Written s-file: '+sfile
+    return sfile
 
-def populateSfile(sfilename, picks):
+def populateSfile(sfile, picks):
     """
     Module to populate a blank nordic format S-file with pick information,
     arguments required are the filename of the blank s-file and the picks
@@ -605,13 +625,13 @@ def populateSfile(sfilename, picks):
 
     This is a full pick line information from the seisan manual, P. 341
 
-    :type sfilename: str
-    :param sfilename: Path to S-file to populate, must have a header already
+    :type sfile: str
+    :param sfile: Path to S-file to populate, must have a header already
     :type picks: List of :class: PICK
     :param picks: List of the picks to be written out
     """
 
-    f=open(sfilename, 'r')
+    f=open(sfile, 'r')
     # Find type 7 line, under which picks should be - if there are already
     # picks there we should preserve them
     body=''
@@ -638,7 +658,7 @@ def populateSfile(sfilename, picks):
         newpicks+=pick.__str__()
         newpicks+='\n'
     # Write all new and old info back in
-    f=open(sfilename, 'w')
+    f=open(sfile, 'w')
     f.write(header)
     f.write(newpicks)
     f.write(body)
@@ -658,31 +678,31 @@ def test_rw():
                  finalweight=4, distance=10.0,
                  CAZ=2)
     print test_pick
-    sfilename=blanksfile('test', 'L', 'TEST', '.', overwrite=True,\
+    sfile=blanksfile('test', 'L', 'TEST', '.', overwrite=True,\
      evtime=UTCDateTime("2012-03-26")+1)
-    populateSfile(sfilename, [test_pick])
-    assert readwavename(sfilename) == ['test']
-    assert readpicks(sfilename)[0].station == test_pick.station
-    assert readpicks(sfilename)[0].channel == test_pick.channel
-    assert readpicks(sfilename)[0].impulsivity == test_pick.impulsivity
-    assert readpicks(sfilename)[0].phase == test_pick.phase
-    assert readpicks(sfilename)[0].weight == test_pick.weight
-    assert readpicks(sfilename)[0].polarity== test_pick.polarity
-    assert readpicks(sfilename)[0].time == test_pick.time
-    assert readpicks(sfilename)[0].coda == test_pick.coda
-    assert readpicks(sfilename)[0].amplitude == test_pick.amplitude
-    assert readpicks(sfilename)[0].peri == test_pick.peri
-    assert readpicks(sfilename)[0].azimuth == test_pick.azimuth
-    assert readpicks(sfilename)[0].velocity == test_pick.velocity
-    assert readpicks(sfilename)[0].AIN == test_pick.AIN
-    assert readpicks(sfilename)[0].SNR == test_pick.SNR
-    assert readpicks(sfilename)[0].azimuthres == test_pick.azimuthres
-    assert readpicks(sfilename)[0].timeres == test_pick.timeres
-    assert readpicks(sfilename)[0].finalweight == test_pick.finalweight
-    assert readpicks(sfilename)[0].distance == test_pick.distance
-    assert readpicks(sfilename)[0].CAZ == test_pick.CAZ
-    header = readheader(sfilename)
-    os.remove(sfilename)
+    populateSfile(sfile, [test_pick])
+    assert readwavename(sfile) == ['test']
+    assert readpicks(sfile)[0].station == test_pick.station
+    assert readpicks(sfile)[0].channel == test_pick.channel
+    assert readpicks(sfile)[0].impulsivity == test_pick.impulsivity
+    assert readpicks(sfile)[0].phase == test_pick.phase
+    assert readpicks(sfile)[0].weight == test_pick.weight
+    assert readpicks(sfile)[0].polarity== test_pick.polarity
+    assert readpicks(sfile)[0].time == test_pick.time
+    assert readpicks(sfile)[0].coda == test_pick.coda
+    assert readpicks(sfile)[0].amplitude == test_pick.amplitude
+    assert readpicks(sfile)[0].peri == test_pick.peri
+    assert readpicks(sfile)[0].azimuth == test_pick.azimuth
+    assert readpicks(sfile)[0].velocity == test_pick.velocity
+    assert readpicks(sfile)[0].AIN == test_pick.AIN
+    assert readpicks(sfile)[0].SNR == test_pick.SNR
+    assert readpicks(sfile)[0].azimuthres == test_pick.azimuthres
+    assert readpicks(sfile)[0].timeres == test_pick.timeres
+    assert readpicks(sfile)[0].finalweight == test_pick.finalweight
+    assert readpicks(sfile)[0].distance == test_pick.distance
+    assert readpicks(sfile)[0].CAZ == test_pick.CAZ
+    header = readheader(sfile)
+    os.remove(sfile)
     return True
 
 if __name__=='__main__':
@@ -697,5 +717,5 @@ if __name__=='__main__':
         userID=str(sys.argv[3])
         outdir=str(sys.argv[4])
         overwrite=str(sys.argv[5])
-    sfilename=blanksfile(wavefile,evtype,userID,outdir,overwrite)
-    print sfilename
+    sfile=blanksfile(wavefile,evtype,userID,outdir,overwrite)
+    print sfile
