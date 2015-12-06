@@ -288,7 +288,7 @@ def _float_conv(string):
     try:
         floatstring=float(string)
     except:
-        floatstring=float('NaN')
+        floatstring=float('999')
     return floatstring
 
 
@@ -456,7 +456,7 @@ def readpicks(sfile):
             header = line
             headerend = lineno
         lineno += 1
-    picks = []
+    # picks = []
     pick_index = 0
     for line in pickline:
         if line[18:28].strip() == '':  # If line is empty miss it
