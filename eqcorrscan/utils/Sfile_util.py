@@ -32,6 +32,7 @@ This file is part of EQcorrscan.
 from obspy import UTCDateTime
 import numpy as np
 
+
 class PICK:
     """
     Pick information for seisan implimentation, note all fields can be left\
@@ -79,7 +80,8 @@ class PICK:
         :type CAZ: int
         :param CAZ: Azimuth at source.
     """
-    pickcount=0
+    pickcount = 0
+
     def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
                  weight=999, polarity=' ', time=UTCDateTime(0),
                  coda=999, amplitude=float('NaN'),
@@ -88,28 +90,30 @@ class PICK:
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
                  CAZ=999):
-        self.station=station
-        self.channel=channel
-        self.impulsivity=impulsivity
-        self.phase=phase
-        self.weight=weight
-        self.polarity=polarity
-        self.time=time
-        self.coda=coda
-        self.amplitude=amplitude
-        self.peri=peri
-        self.azimuth=azimuth
-        self.velocity=velocity
-        self.AIN=AIN
-        self.SNR=SNR
-        self.azimuthres=azimuthres
-        self.timeres=timeres
-        self.finalweight=finalweight
-        self.distance=distance
-        self.CAZ=CAZ
-        self.pickcount+=1
+        self.station = station
+        self.channel = channel
+        self.impulsivity = impulsivity
+        self.phase = phase
+        self.weight = weight
+        self.polarity = polarity
+        self.time = time
+        self.coda = coda
+        self.amplitude = amplitude
+        self.peri = peri
+        self.azimuth = azimuth
+        self.velocity = velocity
+        self.AIN = AIN
+        self.SNR = SNR
+        self.azimuthres = azimuthres
+        self.timeres = timeres
+        self.finalweight = finalweight
+        self.distance = distance
+        self.CAZ = CAZ
+        self.pickcount += 1
+
     def __repr__(self):
         return "PICK()"
+
     def __str__(self):
         if self.distance >= 100.0:
             self.distance = _int_conv(self.distance)
@@ -168,13 +172,13 @@ class PICK:
         import os
         import warnings
         if os.path.isfile(filename):
-            open_as='a'
+            open_as = 'a'
         else:
             warnings.warn('File does not exist, no header')
-            open_as='w'
+            open_as = 'w'
 
-        with open(filename,open_as) as f:
-            pickstr=self.__str__()
+        with open(filename, open_as) as f:
+            pickstr = self.__str__()
             f.write(pickstr+'\n')
         return
 
@@ -239,35 +243,39 @@ class EVENTINFO:
                  Mag_1_type=' ', Mag_1_agency=' ', Mag_2=float('NaN'),
                  Mag_2_type=' ', Mag_2_agency=' ', Mag_3=float('NaN'),
                  Mag_3_type=' ', Mag_3_agency=' '):
-        self.time=time
-        self.loc_mod_ind=loc_mod_ind
-        self.dist_ind=dist_ind
-        self.ev_id=ev_id
-        self.latitude=latitude
-        self.longitude=longitude
-        self.depth=depth
-        self.depth_ind=depth_ind
-        self.loc_ind=loc_ind
-        self.agency=agency
-        self.nsta=nsta
-        self.t_RMS=t_RMS
-        self.Mag_1=Mag_1
-        self.Mag_1_type=Mag_1_type
-        self.Mag_1_agency=Mag_1_agency
-        self.Mag_2=Mag_2
-        self.Mag_2_type=Mag_2_type
-        self.Mag_2_agency=Mag_2_agency
-        self.Mag_3=Mag_3
-        self.Mag_3_type=Mag_3_type
-        self.Mag_3_agency=Mag_3_agency
+        self.time = time
+        self.loc_mod_ind = loc_mod_ind
+        self.dist_ind = dist_ind
+        self.ev_id = ev_id
+        self.latitude = latitude
+        self.longitude = longitude
+        self.depth = depth
+        self.depth_ind = depth_ind
+        self.loc_ind = loc_ind
+        self.agency = agency
+        self.nsta = nsta
+        self.t_RMS = t_RMS
+        self.Mag_1 = Mag_1
+        self.Mag_1_type = Mag_1_type
+        self.Mag_1_agency = Mag_1_agency
+        self.Mag_2 = Mag_2
+        self.Mag_2_type = Mag_2_type
+        self.Mag_2_agency = Mag_2_agency
+        self.Mag_3 = Mag_3
+        self.Mag_3_type = Mag_3_type
+        self.Mag_3_agency = Mag_3_agency
+
     def __repr__(self):
         return "HEADER()"
+
     def __str__(self):
-        print_str=str(self.time)+' '+str(self.latitude)+','+str(self.longitude)\
-        +' '+str(self.depth)+' '+self.Mag_1_type+':'+str(self.Mag_1)+\
-        self.Mag_2_type+':'+str(self.Mag_2)+\
-        self.Mag_3_type+':'+str(self.Mag_3)+'  '+self.agency
+        print_str = str(self.time) + ' ' + str(self.latitude) + ',' +\
+            str(self.longitude) + ' ' + str(self.depth) + ' ' +\
+            self.Mag_1_type + ':' + str(self.Mag_1) + self.Mag_2_type + ':' +\
+            str(self.Mag_2) + self.Mag_3_type + ':' + str(self.Mag_3) + '  '\
+            + self.agency
         return print_str
+
 
 def _int_conv(string):
     """
@@ -275,10 +283,11 @@ def _int_conv(string):
     a 999 rather than an error
     """
     try:
-        intstring=int(string)
+        intstring = int(string)
     except:
-        intstring=999
+        intstring = 999
     return intstring
+
 
 def _float_conv(string):
     """
@@ -286,9 +295,10 @@ def _float_conv(string):
     NaN rather than an error
     """
     try:
-        floatstring=float(string)
+        floatstring = float(string)
     except:
-        floatstring=float('999')
+        #cjh Changed this to deal with QuakeML validation issues with 'NaN'
+        floatstring = float('999')
     return floatstring
 
 
@@ -322,15 +332,15 @@ def readheader(sfile):
     :type sfile: str
     :param sfile: Path to the s-file
 
-    :returns: :class: obspy.core.event.Event
+    :returns: :class: obspy.core.event.Catalog
     """
     import warnings
-    from obspy.core.event import Event, Origin, Pick, Amplitude, Magnitude
-    from obspy.core.event import StationMagnitude, EventDescription, CreationInfo
+    from obspy.core.event import Event, Origin, Magnitude
+    from obspy.core.event import EventDescription, CreationInfo
     f = open(sfile, 'r')
     # Base populate to allow for empty parts of file
-    new_event=Event()
-    topline=f.readline()
+    new_event = Event()
+    topline = f.readline()
     if topline[79] == ' ' or topline[79] == '1':
         # Topline contains event information
         try:
@@ -342,12 +352,12 @@ def readheader(sfile):
                 add_seconds = 0
             new_event.origins.append(Origin())
             new_event.origins[0].time = UTCDateTime(int(topline[1:5]),
-                                                       int(topline[6:8]),
-                                                       int(topline[8:10]),
-                                                       int(topline[11:13]),
-                                                       int(topline[13:15]),
-                                                       sfile_seconds,
-                                                       int(topline[19:20])*100000) + add_seconds
+                                                    int(topline[6:8]),
+                                                    int(topline[8:10]),
+                                                    int(topline[11:13]),
+                                                    int(topline[13:15]),
+                                                    sfile_seconds,
+                                                    int(topline[19:20])*100000) + add_seconds
         except:
             warnings.warn("Couldn't read a date from sfile: "+sfile)
             new_event.origins.append(Origin(time=UTCDateTime(0)))
@@ -384,13 +394,13 @@ def readheader(sfile):
                 line = topline
                 try:
                     new_event.origins.append(Origin())
-                    new_event.origins[0].time=UTCDateTime(int(topline[1:5]),
-                                                          int(topline[6:8]),
-                                                          int(topline[8:10]),
-                                                          int(topline[11:13]),
-                                                          int(topline[13:15]),
-                                                          int(topline[16:18]),
-                                                          int(topline[19:20])*10)
+                    new_event.origins[0].time = UTCDateTime(int(topline[1:5]),
+                                                            int(topline[6:8]),
+                                                            int(topline[8:10]),
+                                                            int(topline[11:13]),
+                                                            int(topline[13:15]),
+                                                            int(topline[16:18]),
+                                                            int(topline[19:20])*10)
                 except:
                     new_event.origins.append(Origin(time=UTCDateTime(0)))
                 # new_event.loc_mod_ind=topline[21]
@@ -436,7 +446,7 @@ def readpicks(sfile):
     :return: List of :class: PICK
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    from obspy.core.event import ResourceIdentifier, Catalog
+    from obspy.core.event import Catalog
     #Get wavefile name for use in resource_ids
     wav_names = readwavename(sfile)
     # First we need to read the header to get the timing info
@@ -463,7 +473,7 @@ def readpicks(sfile):
             continue
         station = line[1:6].strip()
         channel = line[6:8].strip()
-        network = 'NA'  #No network information provided in Sfile??
+        network = 'NA'  # No network information provided in Sfile??
         if line[9] == 'E':
             impulsivity = 'emergent'
         elif line[9] == 'I':
@@ -498,10 +508,10 @@ def readpicks(sfile):
         azimuth = _float_conv(line[46:51])
         velocity = _float_conv(line[52:56])
         if header[57:60] == 'AIN':
-            SNR = 0.0  #Placeholder value
+            SNR = 0.0  # Placeholder value
             AIN = _float_conv(line[57:60])
         elif header[57:60] == 'SNR':
-            AIN = 0.0  #Placeholder value
+            AIN = 0.0  # Placeholder value
             SNR = _float_conv(line[57:60])
         azimuthres = _int_conv(line[60:63])
         timeres = _float_conv(line[63:68])
@@ -535,6 +545,7 @@ def readpicks(sfile):
     new_cat += new_event
     return new_cat
 
+
 def readwavename(sfile):
     """
     Convenience function to extract the waveform filename from the s-file,
@@ -546,15 +557,16 @@ def readwavename(sfile):
 
     :returns: List of str
     """
-    f=open(sfile)
-    wavename=[]
+    f = open(sfile)
+    wavename = []
     for line in f:
-        if len(line)==81 and line[79]=='6':
+        if len(line) == 81 and line[79] == '6':
             wavename.append(line[1:79].strip())
     f.close()
     return wavename
 
-def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
+
+def blanksfile(wavefile, evtype, userID, outdir, overwrite=False, evtime=False):
     """
     Module to generate an empty s-file with a populated header for a given
     waveform.
@@ -583,13 +595,13 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
 
     if not evtime:
         try:
-            st=obsread(wavefile)
-            evtime=st[0].stats.starttime
+            st = obsread(wavefile)
+            evtime = st[0].stats.starttime
         except:
             print 'Wavefile: '+wavefile+' is invalid, try again with real data.'
             sys.exit()
     else:
-        starttime=evtime
+        starttime = evtime
     # Check that user ID is the correct length
     if len(userID) != 4:
         print 'User ID must be 4 characters long'
@@ -599,27 +611,27 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
         print 'Out path does not exist, I will not create this: '+outdir
         sys.exit()
     # Check that evtype is one of L,R,D
-    if evtype not in ['L','R','D']:
+    if evtype not in ['L', 'R', 'D']:
         print 'Event type must be either L, R or D'
         sys.exit()
 
     # Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm
-    sfile=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
-            str(evtime.hour).zfill(2)+\
-            str(evtime.minute).zfill(2)+'-'+\
-            str(evtime.second).zfill(2)+evtype+'.S'+\
-            str(evtime.year)+\
-            str(evtime.month).zfill(2)
+    sfile = outdir + '/' + str(evtime.day).zfill(2) + '-' +\
+        str(evtime.hour).zfill(2) +\
+        str(evtime.minute).zfill(2) + '-' +\
+        str(evtime.second).zfill(2) + evtype + '.S' +\
+        str(evtime.year) +\
+        str(evtime.month).zfill(2)
     # Check is sfile exists
     if os.path.isfile(sfile) and not overwrite:
-        print 'Desired sfile: '+sfile+' exists, will not overwrite'
-        for i in range(1,10):
-            sfile=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
-                    str(evtime.hour).zfill(2)+\
-                    str(evtime.minute).zfill(2)+'-'+\
-                    str(evtime.second+i).zfill(2)+evtype+'.S'+\
-                    str(evtime.year)+\
-                    str(evtime.month).zfill(2)
+        print 'Desired sfile: ' + sfile + ' exists, will not overwrite'
+        for i in range(1, 10):
+            sfile = outdir + '/' + str(evtime.day).zfill(2) + '-' +\
+                str(evtime.hour).zfill(2) +\
+                str(evtime.minute).zfill(2) + '-' +\
+                str(evtime.second+i).zfill(2) + evtype + '.S' +\
+                str(evtime.year) +\
+                str(evtime.month).zfill(2)
             if not os.path.isfile(sfile):
                 break
         else:
@@ -627,37 +639,38 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
             print 'all exist, you need to clean your stuff up!'
             sys.exit()
         # sys.exit()
-    f=open(sfile,'w')
+    f = open(sfile, 'w')
     # Write line 1 of s-file
-    f.write(' '+str(evtime.year)+' '+\
-            str(evtime.month).rjust(2)+\
-            str(evtime.day).rjust(2)+' '+\
-            str(evtime.hour).rjust(2)+\
-            str(evtime.minute).rjust(2)+' '+\
-            str(float(evtime.second)).rjust(4)+' '+\
-            evtype+'1'.rjust(58)+'\n')
+    f.write(' ' + str(evtime.year) + ' ' +
+            str(evtime.month).rjust(2) +
+            str(evtime.day).rjust(2) + ' ' +
+            str(evtime.hour).rjust(2) +
+            str(evtime.minute).rjust(2) + ' ' +
+            str(float(evtime.second)).rjust(4) + ' ' +
+            evtype + '1'.rjust(58) + '\n')
     # Write line 2 of s-file
-    f.write(' ACTION:ARG '+str(datetime.datetime.now().year)[2:4]+'-'+\
-            str(datetime.datetime.now().month).zfill(2)+'-'+\
-            str(datetime.datetime.now().day).zfill(2)+' '+\
-            str(datetime.datetime.now().hour).zfill(2)+':'+\
-            str(datetime.datetime.now().minute).zfill(2)+' OP:'+\
-            userID.ljust(4)+' STATUS:'+'ID:'.rjust(18)+\
-            str(evtime.year)+\
-            str(evtime.month).zfill(2)+\
-            str(evtime.day).zfill(2)+\
-            str(evtime.hour).zfill(2)+\
-            str(evtime.minute).zfill(2)+\
-            str(evtime.second).zfill(2)+\
-            'I'.rjust(6)+'\n')
+    f.write(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
+            str(datetime.datetime.now().month).zfill(2) + '-' +
+            str(datetime.datetime.now().day).zfill(2) + ' ' +
+            str(datetime.datetime.now().hour).zfill(2) + ':' +
+            str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
+            userID.ljust(4) + ' STATUS:'+'ID:'.rjust(18) +
+            str(evtime.year) +
+            str(evtime.month).zfill(2) +
+            str(evtime.day).zfill(2) +
+            str(evtime.hour).zfill(2) +
+            str(evtime.minute).zfill(2) +
+            str(evtime.second).zfill(2) +
+            'I'.rjust(6) + '\n')
     # Write line 3 of s-file
-    f.write(' '+wavefile+'6'.rjust(79-len(wavefile))+'\n')
+    f.write(' ' + wavefile + '6'.rjust(79-len(wavefile)) + '\n')
     # Write final line of s-file
-    f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU'+\
+    f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
             ' VELO AIN AR TRES W  DIS CAZ7\n')
     f.close()
-    print 'Written s-file: '+sfile
+    print 'Written s-file: ' + sfile
     return sfile
+
 
 def populateSfile(sfile, picks):
     """
@@ -676,34 +689,34 @@ def populateSfile(sfile, picks):
     :param picks: List of the picks to be written out
     """
 
-    f=open(sfile, 'r')
+    f = open(sfile, 'r')
     # Find type 7 line, under which picks should be - if there are already
     # picks there we should preserve them
-    body=''
-    header=''
+    body = ''
+    header = ''
     if 'headerend' in locals():
         del headerend
     for lineno, line in enumerate(f):
-        identifier=line[79]
+        identifier = line[79]
         if 'headerend' in locals():
-            body+=line
+            body += line
         else:
-            header+=line
-        if identifier=='7':
-            headerend=lineno
+            header += line
+        if identifier == '7':
+            headerend = lineno
     f.close()
     #
     # Now generate lines for the new picks
-    newpicks=''
+    newpicks = ''
     for pick in picks:
         if pick.distance >= 100.0:
-            pick.distance=_int_conv(pick.distance)
+            pick.distance = _int_conv(pick.distance)
         elif pick.distance < 100.0:
-            pick.distance=int(round(pick.distance,1))
-        newpicks+=pick.__str__()
-        newpicks+='\n'
+            pick.distance = int(round(pick.distance, 1))
+        newpicks += pick.__str__()
+        newpicks += '\n'
     # Write all new and old info back in
-    f=open(sfile, 'w')
+    f = open(sfile, 'w')
     f.write(header)
     f.write(newpicks)
     f.write(body)
@@ -711,20 +724,22 @@ def populateSfile(sfile, picks):
     f.close()
     return
 
+
 def test_rw():
     """
     Function to test the functions herein.
     """
     import os
-    test_pick=PICK('FOZ', 'SZ', 'I', 'P', '1', 'C', UTCDateTime("2012-03-26")+1,
-                 coda=10, amplitude=0.2, peri=0.1,
-                 azimuth=10.0, velocity=20.0, AIN=10, SNR='',
-                 azimuthres=1, timeres=0.1,
-                 finalweight=4, distance=10.0,
-                 CAZ=2)
+    test_pick = PICK('FOZ', 'SZ', 'I', 'P', '1', 'C',
+                     UTCDateTime("2012-03-26")+1,
+                     coda=10, amplitude=0.2, peri=0.1,
+                     azimuth=10.0, velocity=20.0, AIN=10, SNR='',
+                     azimuthres=1, timeres=0.1,
+                     finalweight=4, distance=10.0,
+                     CAZ=2)
     print test_pick
-    sfile=blanksfile('test', 'L', 'TEST', '.', overwrite=True,\
-     evtime=UTCDateTime("2012-03-26")+1)
+    sfile = blanksfile('test', 'L', 'TEST', '.', overwrite=True,
+                       evtime=UTCDateTime("2012-03-26") + 1)
     populateSfile(sfile, [test_pick])
     assert readwavename(sfile) == ['test']
     assert readpicks(sfile)[0].station == test_pick.station
@@ -732,7 +747,7 @@ def test_rw():
     assert readpicks(sfile)[0].impulsivity == test_pick.impulsivity
     assert readpicks(sfile)[0].phase == test_pick.phase
     assert readpicks(sfile)[0].weight == test_pick.weight
-    assert readpicks(sfile)[0].polarity== test_pick.polarity
+    assert readpicks(sfile)[0].polarity == test_pick.polarity
     assert readpicks(sfile)[0].time == test_pick.time
     assert readpicks(sfile)[0].coda == test_pick.coda
     assert readpicks(sfile)[0].amplitude == test_pick.amplitude
@@ -750,17 +765,17 @@ def test_rw():
     os.remove(sfile)
     return True
 
-if __name__=='__main__':
+if __name__ == '__main__':
     # Read arguments
     import sys, os
     if len(sys.argv) != 6:
         print 'Requires 5 arguments: wavefile, evtype, userID, outdir, overwrite'
         sys.exit()
     else:
-        wavefile=str(sys.argv[1])
-        evtype=str(sys.argv[2])
-        userID=str(sys.argv[3])
-        outdir=str(sys.argv[4])
-        overwrite=str(sys.argv[5])
-    sfile=blanksfile(wavefile,evtype,userID,outdir,overwrite)
+        wavefile = str(sys.argv[1])
+        evtype = str(sys.argv[2])
+        userID = str(sys.argv[3])
+        outdir = str(sys.argv[4])
+        overwrite = str(sys.argv[5])
+    sfile = blanksfile(wavefile, evtype, userID, outdir, overwrite)
     print sfile
