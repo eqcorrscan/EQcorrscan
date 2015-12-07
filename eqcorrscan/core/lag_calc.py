@@ -72,8 +72,8 @@ def _channel_loop(detection, template, i=0):
     :returns: picks, a tuple of (lag in s, cross-correlation value, station,\
      chan)
     """
-    from eqcorrscan.utils.Sfile_util import PICK
-    picks = []
+    from obspy.core.event import Event, Pick, WaveformStreamID, ResourceIdentifier
+    event = Event()
     for tr in template:
         image = detection.select(station=tr.stats.station,
                                  channel=tr.stats.channel)
@@ -83,13 +83,14 @@ def _channel_loop(detection, template, i=0):
             # Convert the maximum cross-correlation time to an actual time
             picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                    image[0].stats.delta)
-            # Note, this function is incomplete!
-            # picks.append(PICK())
-            # ((lag, np.max(ccc), tr.stats.station,
-            #     tr.stats.channel))
-    return (i, picks)
+            event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network
+                                                                 station_code=tr.stats.station
+                                                                 channel_code=tr.stats.channel),
+                                    time=picktime,
+                                    method_id=ResourceIdentifier('EQcorrscan')))
+    return (i, event)
 
-
+###################Stopped working here: 7/12 6:30
 def day_loop(detection_streams, template):
     """
     Function to loop through multiple detections for one template - ostensibly
@@ -108,27 +109,29 @@ def day_loop(detection_streams, template):
                 this tuple is the lag (in seconds), normalised correlation,
                 station and channel.
     """
-    from multiprocessing import Pool, cpu_count # Used to run detections in parallel
-    lags=[]
-    num_cores=cpu_count()
+    from multiprocessing import Pool, cpu_count  # Used to run detections in parallel
+    lags = []
+    num_cores = cpu_count()
     if num_cores > len(detection_streams):
-        num_cores=len(detection_streams)
-    pool=Pool(processes=num_cores, maxtasksperchild=None)
-    results=[pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))\
-                        for i in xrange(len(detection_streams))]
+        num_cores = len(detection_streams)
+    pool = Pool(processes=num_cores, maxtasksperchild=None)
+    results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))\
+               for i in xrange(len(detection_streams))]
     pool.close()
-    lags=[p.get() for p in results]
-    lags.sort(key=lambda tup: tup[0]) # Sort based on i
-    lags=[lag[1] for lag in lags]
+    lags = [p.get() for p in results]
+    lags.sort(key=lambda tup: tup[0])  # Sort based on i
+    lags = [lag[1] for lag in lags]
     # Convert lag time to moveout time
-    mintime=template.sort(['starttime'])[0].stats.starttime
+    mintime = template.sort(['starttime'])[0].stats.starttime
     for lag in lags:
-        delay=template.select(station=lag[2], channel=lag[3])[0].stats.starttime-\
+        delay = template.select(station=lag[2], channel=lag[3])[0].stats.starttime-\
             mintime
-        lag[0]+=delay
+        lag[0] += delay
     return lags
 
-def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4):
+
+def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
+             out_format="QuakeML"):
     """
     Overseer function to take a list of detection objects, cut the data for
     them to lengths of the same length of the template + shift_len on
@@ -148,50 +151,54 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4):
     :type min_cc: float
     :param min_cc: Minimum cross-correlation value to be considered a pick,
                     default=0.4
+    :type format: string
+    :param format: Specify if you want lag_calc to write to QuakeML or Sfile
+                   Options are "QuakeML" or "Sfile".
     """
     from eqcorrscan.utils import Sfile_util
     from obspy import Stream
     # First work out the delays for each template
-    delays=[] # List of tuples
+    delays = []  # List of tuples
     for template in templates:
-        temp_delays=[]
-        for tr in tempate[1]:
-            temp_delays.append((tr.stats.station, tr.stats.channel,\
-                    tr.stats.starttime-template.sort['starttime'][0].stats.starttime))
+        temp_delays = []
+        for tr in template[1]:
+            temp_delays.append((tr.stats.station, tr.stats.channel,
+                                tr.stats.starttime-template.sort['starttime'][0].stats.starttime))
         delays.append((template[0], temp_delays))
-    detect_streams=[]
+    detect_streams = []
     for detection in detections:
-        detect_stream=[]
+        detect_stream = []
         for tr in detect_data:
-            tr_copy=tr.copy()
-            template=[t for t in templates if t[0]==detection.template_name][0]
-            template=template.select(station=tr.stats.station,
-                            channel=tr.stats.channel)
+            tr_copy = tr.copy()
+            template = [t for t in templates if t[0]==detection.template_name][0]
+            template = template.select(station=tr.stats.station,
+                                       channel=tr.stats.channel)
             if template:
-                template_len=len(template[0])
+                template_len = len(template[0])
             else:
-                continue # If there is no template-data match then skip the rest
-                         # of the trace loop.
-            delay=[delay for delay in delays if delay[0]==detection.template_name][0]
-            delay=[d for d in delay if d[0]==tr.stats.station and \
-                    d[1]==tr.stats.channel][0]
-            detect_stream.append(tr_copy.trim(starttime=detection.detect_time-\
-                        shift_len+delay, endtime=detection.detect_time+delay+\
-                        shift_len+template_len))
+                continue  # If there is no template-data match then skip the rest
+                          # of the trace loop.
+            delay = [delay for delay in delays if delay[0] == detection.template_name][0]
+            delay = [d for d in delay if d[0] == tr.stats.station and
+                     d[1] == tr.stats.channel][0]
+            detect_stream.append(tr_copy.trim(starttime=detection.detect_time -
+                        shift_len + delay, endtime=detection.detect_time +
+                        delay + shift_len + template_len))
         detect_streams.append((detection.template_name, Stream(detect_stream)))
         # Tuple of template name and data stream
     # Segregate detections by template
-    lags=[]
+    lags = []
     for template in templates:
-        template_detections=[detect[1] for detect in detect_streams\
-                if detect[0]==template[0]]
+        template_detections = [detect[1] for detect in detect_streams
+                               if detect[0] == template[0]]
         lags.append(day_loop(template_detections, template[1]))
-
     # Write out the lags!
     for event in lags:
         # I think I have an old version of Sfile_util here
-        sfilename=Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
-        picks=[]
-        for pick in event:
-            picks.append(Sfile_util.PICK())
-        Sfile_util.populateSfile(sfilename, picks)
+        if out_format == 'Sfile':
+            sfilename = Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
+            picks = []
+            for pick in event:
+                picks.append(Sfile_util.PICK())
+            Sfile_util.populateSfile(sfilename, picks)
+        elif out_format == 'QuakeML':
