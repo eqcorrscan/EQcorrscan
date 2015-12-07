@@ -94,10 +94,16 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     # Read in the header of the sfile
     wavefiles = Sfile_util.readwavename(sfile)
     pathparts = sfile.split('/')[0:-1]
+    new_path_parts = []
     for part in pathparts:
         if part == 'REA':
             part = 'WAV'
-    wavpath = os.path.join(pathparts)
+        new_path_parts.append(part)
+    # * argument to allow .join() to accept a list
+    wavpath = os.path.join(*new_path_parts) + '/'
+    #In case of absolute paths (not handled with .split() --> .join())
+    if sfile[0] == '/':
+        wavpath = '/' + wavpath
     # Read in waveform file
     for wavefile in wavefiles:
         print ''.join(["I am going to read waveform data from: ", wavpath,
@@ -113,10 +119,13 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             raise ValueError("Trace: " + tr.stats.station +
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
-    picks = Sfile_util.readpicks(sfile)
+    catalog = Sfile_util.readpicks(sfile)
+    #Read the list of Picks for this event
+    picks = catalog[0].picks
     print "I have found the following picks"
     for pick in picks:
-        print ' '.join([pick.station, pick.channel, pick.phase,
+        print ' '.join([pick.waveform_id.station_code,
+                        pick.waveform_id.channel_code, pick.phase_hint,
                         str(pick.time)])
 
     # Process waveform data
@@ -177,26 +186,28 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     from eqcorrscan.utils import pre_processing
     from eqcorrscan.utils import Sfile_util
     import glob
-    from obspy import UTCDateTime
     from obspy import read as obsread
 
     # Read in the header of the sfile
-    header = Sfile_util.readheader(sfile)
-    day = UTCDateTime('-'.join([str(header.time.year),
-                                str(header.time.month).zfill(2),
-                                str(header.time.day).zfill(2)]))
+    event = Sfile_util.readheader(sfile)
+    day = event.origins[0].time
 
     # Read in pick info
-    picks = Sfile_util.readpicks(sfile)
+    catalog = Sfile_util.readpicks(sfile)
+    picks = catalog[0].picks
     print "I have found the following picks"
     pick_chans = []
     used_picks = []
     for pick in picks:
-        if pick.station + pick.channel not in pick_chans\
-                and pick.phase in ['P', 'S']:
-            pick_chans.append(pick.station + pick.channel)
+        station = pick.waveform_id.station_code
+        channel = pick.waveform_id.channel_code
+        phase = pick.phase_hint
+        pcktime = pick.time
+        if station + channel not in pick_chans and phase in ['P', 'S']:
+            pick_chans.append(station + channel)
             used_picks.append(pick)
             print pick
+            ##########Left off here
             for contbase in contbase_list:
                 if contbase[1] == 'yyyy/mm/dd':
                     daydir = os.path.join([str(day.year),
@@ -210,18 +221,18 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                     daydir = day.datetime.strftime('%Y%m%d')
                 if 'wavefiles' not in locals():
                     wavefiles = (glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + pick.station +
+                                                         '*' + station +
                                                          '.*'])))
                 else:
                     wavefiles += glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + pick.station +
+                                                         '*' + station +
                                                          '.*']))
-        elif pick.phase in ['P', 'S']:
-            print ' '.join(['Duplicate pick', pick.station, pick.channel,
-                            pick.phase, str(pick.time)])
-        elif pick.phase == 'IAML':
-            print ' '.join(['Amplitude pick', pick.station, pick.channel,
-                            pick.phase, str(pick.time)])
+        elif phase in ['P', 'S']:
+            print ' '.join(['Duplicate pick', station, channel,
+                            phase, str(pcktime)])
+        elif phase == 'IAML':
+            print ' '.join(['Amplitude pick', station, channel,
+                            phase, str(pcktime)])
     picks = used_picks
     wavefiles = list(set(wavefiles))
 
@@ -374,7 +385,7 @@ def from_SeisHub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                 print 'Station not found in SeisHub DB'
         print('Preprocessing data for event: '+str(event.resource_id))
         st1 = pre_processing.shortproc(st, lowcut, highcut, filt_order,
-                                        samp_rate, debug)
+                                       samp_rate, debug)
     temp_list.append(st1)
     return temp_list
 
@@ -384,7 +395,7 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     Stream class from a given set of picks and data, also in an obspy stream\
     class.  Should be given pre-processed data (downsampled and filtered)
 
-    :type picks: :class: 'makesfile.pick'
+    :type picks: :class: obspy.core.event.Pick
     :param picks: Picks to extract data around
     :type st: :class: 'obspy.Stream'
     :param st: Stream to etract templates from
