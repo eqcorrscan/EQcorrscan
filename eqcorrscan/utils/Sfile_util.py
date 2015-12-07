@@ -443,7 +443,7 @@ def readpicks(sfile):
     :type sfile: String
     :param sfile: Path to sfile
 
-    :return: List of :class: PICK
+    :return: obspy.core.event.Catalog
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog
