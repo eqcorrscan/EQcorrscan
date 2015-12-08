@@ -90,7 +90,7 @@ def _channel_loop(detection, template, i=0):
                                     method_id=ResourceIdentifier('EQcorrscan')))
     return (i, event)
 
-###################Stopped working here: 7/12 6:30
+
 def day_loop(detection_streams, template):
     """
     Function to loop through multiple detections for one template - ostensibly
@@ -99,8 +99,8 @@ def day_loop(detection_streams, template):
     as you have the RAM!
 
     :type detection_streams: List of obspy.Stream
-    :param detection_streams: List of all the detections for this template that you
-                    want to compute the optimum pick for.
+    :param detection_streams: List of all the detections for this template that
+                              you want to compute the optimum pick for.
     :type template: obspy.Stream
     :param template: The original template used to detect the detections passed
 
@@ -115,13 +115,14 @@ def day_loop(detection_streams, template):
     if num_cores > len(detection_streams):
         num_cores = len(detection_streams)
     pool = Pool(processes=num_cores, maxtasksperchild=None)
-    results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))\
+    results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))
                for i in xrange(len(detection_streams))]
     pool.close()
     lags = [p.get() for p in results]
     lags.sort(key=lambda tup: tup[0])  # Sort based on i
     lags = [lag[1] for lag in lags]
     # Convert lag time to moveout time
+    # cjh I'm a little confused here.
     mintime = template.sort(['starttime'])[0].stats.starttime
     for lag in lags:
         delay = template.select(station=lag[2], channel=lag[3])[0].stats.starttime-\
@@ -153,7 +154,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                     default=0.4
     :type format: string
     :param format: Specify if you want lag_calc to write to QuakeML or Sfile
-                   Options are "QuakeML" or "Sfile".
+                   Options are "QuakeML", "Sfile", "lags"
     """
     from eqcorrscan.utils import Sfile_util
     from obspy import Stream
@@ -182,8 +183,9 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
             delay = [d for d in delay if d[0] == tr.stats.station and
                      d[1] == tr.stats.channel][0]
             detect_stream.append(tr_copy.trim(starttime=detection.detect_time -
-                        shift_len + delay, endtime=detection.detect_time +
-                        delay + shift_len + template_len))
+                                              shift_len + delay,
+                                              endtime=detection.detect_time +
+                                              delay + shift_len + template_len))
         detect_streams.append((detection.template_name, Stream(detect_stream)))
         # Tuple of template name and data stream
     # Segregate detections by template
@@ -202,3 +204,5 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                 picks.append(Sfile_util.PICK())
             Sfile_util.populateSfile(sfilename, picks)
         elif out_format == 'QuakeML':
+
+        elif out_format == 'lags':
