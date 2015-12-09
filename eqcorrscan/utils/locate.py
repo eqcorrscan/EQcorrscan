@@ -16,13 +16,27 @@ Copyright (C) 2010 Tobias Megies, Lion Krischer
 These functions have been adapted to allow them to run in the absence of an
 Obspyck instance.
 """
+#Create PROGRAMS dictionary as per ObsPyck/utils.py (ln. 194)
+PROGRAMS = {
+    'nlloc': {'filenames': {'exe': "NLLoc", 'phases': "nlloc.obs",
+                            'summary': "nlloc.hyp",
+                            'scatter': "nlloc.scat"}},
+    'hyp_2000': {'filenames': {'exe': "hyp2000", 'control': "bay2000.inp",
+                               'phases': "hyp2000.pha",
+                               'stations': "stations.dat",
+                               'summary': "hypo.prt"}},
+    'focmec': {'filenames': {'exe': "rfocmec", 'phases': "focmec.dat",
+                             'stdout': "focmec.stdout",
+                             'summary': "focmec.out"}}}
 
 
-def doHyp2000(event):
+def doHyp2000(event, plugindir):
     """
     Writes input files for hyp2000 and starts the hyp2000 program via a
     system call.
     """
+    setup_external_programs(plugindir)
+
     # Removes the station/phase files in directory if they already exist
     prog_dict = PROGRAMS['hyp_2000']
     files = prog_dict['files']
@@ -417,19 +431,6 @@ def setup_external_programs(pluginpath):
     import shutil
     import subprocess
     import glob
-
-    #Create PROGRAMS dictionary as per ObsPyck/utils.py (ln. 194)
-    PROGRAMS = {
-        'nlloc': {'filenames': {'exe': "NLLoc", 'phases': "nlloc.obs",
-                                'summary': "nlloc.hyp",
-                                'scatter': "nlloc.scat"}},
-        'hyp_2000': {'filenames': {'exe': "hyp2000",'control': "bay2000.inp",
-                                   'phases': "hyp2000.pha",
-                                   'stations': "stations.dat",
-                                   'summary': "hypo.prt"}},
-        'focmec': {'filenames': {'exe': "rfocmec", 'phases': "focmec.dat",
-                                 'stdout': "focmec.stdout",
-                                 'summary': "focmec.out"}}}
 
     if pluginpath is None:
         pluginpath = os.path.dirname(os.path.abspath(__file__))
