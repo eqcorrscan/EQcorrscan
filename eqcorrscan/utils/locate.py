@@ -30,7 +30,7 @@ PROGRAMS = {
                              'summary': "focmec.out"}}}
 
 
-def doHyp2000(event, plugindir):
+def doHyp2000(event, stations, plugindir):
     """
     Writes input files for hyp2000 and starts the hyp2000 program via a
     system call.
@@ -45,13 +45,13 @@ def doHyp2000(event, plugindir):
     # Writes phase file for hyp2000
     print 'Phases for Hypo2000:'
     f = open(files['phases'], 'wt')
-    phases_hypo71 = dicts2hypo71Phases()
+    phases_hypo71 = dicts2hypo71Phases(event)
     f.write(phases_hypo71)
     f.close()
     # Writes station file for hyp2000
     print 'Stations for Hypo2000:'
     f2 = open(files['stations'], 'wt')
-    stations_hypo71 = dicts2hypo71Stations()
+    stations_hypo71 = dicts2hypo71Stations(stations)
     f2.write(stations_hypo71)
     f2.close()
     # Call hyp2000
@@ -63,7 +63,7 @@ def doHyp2000(event, plugindir):
     self.catFile(files['summary'], self.critical)
 
 
-def dicts2hypo71Stations(self):
+def dicts2hypo71Stations(inventory):
     """
     Returns the station location information in hypo71
     stations file format as a string. This string can then be written to
@@ -71,27 +71,25 @@ def dicts2hypo71Stations(self):
     """
     fmt = "%6s%02i%05.2f%1s%03i%05.2f%1s%4i\n"
     hypo71_string = ""
-
-    for st in self.streams:
-        stats = st[0].stats
-        sta = stats.station
-        lon = stats.coordinates.longitude
-        lon_deg = int(lon)
-        lon_min = (lon - lon_deg) * 60.
-        lat = stats.coordinates.latitude
-        lat_deg = int(abs(lat))
-        lat_min = (abs(lat) - abs(lat_deg)) * 60.
-        hem_NS = 'N'
-        hem_EW = 'E'
-        if lat < 0:
-            hem_NS = 'S'
-        if lon < 0:
-            hem_NS = 'W'
-        # hypo 71 format uses elevation in meters not kilometers
-        ele = stats.coordinates.elevation
-        hypo71_string += fmt % (sta, lat_deg, lat_min, hem_NS, lon_deg,
-                                lon_min, hem_EW, ele)
-    print hypo71_string
+    for network in inventory:
+        for station in network:
+            sta = station.code
+            lon = station.longitude
+            lon_deg = int(lon)
+            lon_min = (lon - lon_deg) * 60.
+            lat = station.latitude
+            lat_deg = int(abs(lat))
+            lat_min = (abs(lat) - abs(lat_deg)) * 60.
+            hem_NS = 'N'
+            hem_EW = 'E'
+            if lat < 0:
+                hem_NS = 'S'
+            if lon < 0:
+                hem_NS = 'W'
+            # hypo 71 format uses elevation in meters not kilometers
+            ele = station.elevation
+            hypo71_string += fmt % (sta, lat_deg, lat_min, hem_NS, lon_deg,
+                                    lon_min, hem_EW, ele)
     return hypo71_string
 
 
