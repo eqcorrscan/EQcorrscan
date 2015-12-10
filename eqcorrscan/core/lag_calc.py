@@ -166,8 +166,10 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
             temp_delays.append((tr.stats.station, tr.stats.channel,
                                 tr.stats.starttime-template.sort['starttime'][0].stats.starttime))
         delays.append((template[0], temp_delays))
+    # List of tuples of (template name, Stream()) for each detection
     detect_streams = []
     for detection in detections:
+        # Stream to be saved for new detection
         detect_stream = []
         for tr in detect_data:
             tr_copy = tr.copy()
@@ -196,6 +198,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         lags.append(day_loop(template_detections, template[1]))
     # Write out the lags!
     for event in lags:
+        ###### Somewhere in here put a call to locate.py to populate headers ##
         # I think I have an old version of Sfile_util here
         if out_format == 'Sfile':
             sfilename = Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
