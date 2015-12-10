@@ -30,7 +30,7 @@ PROGRAMS = {
                              'summary': "focmec.out"}}}
 
 
-def doHyp2000(event, stations, plugindir):
+def doHyp2000(events, inventory, plugindir):
     """
     Writes input files for hyp2000 and starts the hyp2000 program via a
     system call.
@@ -93,7 +93,7 @@ def dicts2hypo71Stations(inventory):
     return hypo71_string
 
 
-def dicts2hypo71Phases(self):
+def dicts2hypo71Phases(events, stream):
     """
     Returns the pick information in hypo71 phase file format
     as a string. This string can then be written to a file.
