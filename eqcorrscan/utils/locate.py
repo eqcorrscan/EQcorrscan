@@ -30,11 +30,13 @@ PROGRAMS = {
                              'summary': "focmec.out"}}}
 
 
-def doHyp2000(events, inventory, plugindir):
+def doHyp2000(event, plugindir, sta_inventory='', url=''):
     """
     Writes input files for hyp2000 and starts the hyp2000 program via a
     system call.
     """
+    import logging
+
     setup_external_programs(plugindir)
 
     # Removes the station/phase files in directory if they already exist
@@ -42,6 +44,12 @@ def doHyp2000(events, inventory, plugindir):
     files = prog_dict['files']
     precall = prog_dict['PreCall']
     precall(prog_dict)
+
+    # If given a FDSN url, retrieve pertinent station info
+    if url != '':
+        networks, stations = get_pick_stations(event)
+        inventory = get_fdsn_stations(url, networks=networks,
+                                      stations=stations)
     # Writes phase file for hyp2000
     print 'Phases for Hypo2000:'
     f = open(files['phases'], 'wt')
@@ -51,16 +59,54 @@ def doHyp2000(events, inventory, plugindir):
     # Writes station file for hyp2000
     print 'Stations for Hypo2000:'
     f2 = open(files['stations'], 'wt')
-    stations_hypo71 = dicts2hypo71Stations(stations)
+    stations_hypo71 = dicts2hypo71Stations(inventory)
     f2.write(stations_hypo71)
     f2.close()
     # Call hyp2000
     call = prog_dict['Call']
     (msg, err, returncode) = call(prog_dict)
-    self.info(msg)
-    self.error(err)
-    self.critical('--> hyp2000 finished')
-    self.catFile(files['summary'], self.critical)
+    logging.info(msg)
+    logging.error(err)
+    logging.critical('--> hyp2000 finished')
+    catFile(files['summary'], logging.critical)
+
+
+def catFile(file, logfunct):
+    # Concatenate lines from file for terminal output
+    lines = open(file, "rt").readlines()
+    msg = ""
+    for line in lines:
+        msg += line
+    logfunct(msg)
+
+
+def get_fdsn_stations(url, networks, stations):
+    r"""Function to retrieve an obspy.Inventory class from a known FDSN url
+    Requires a known FDSN service url, desired network(s), and desired
+    station(s) both as lists"""
+    from obspy.fdsn import Client
+
+    client = Client(url)
+    net_str = ",".join(networks)
+    sta_str = ",".join(stations)
+    inventory = client.get_stations(network=net_str, station=sta_str,
+                                    level="response")
+    return inventory
+
+
+def get_pick_stations(event):
+    r"""Function which returns a list of networks and list of stations for
+    which picks have been made.
+    Note: this assumes that there are no common stations between networks"""
+
+    networks = []
+    stations = []
+    for pick in event.picks:
+        stations.append(pick.waveform_id.station_code)
+        net = pick.waveform_id.network_code
+        if net not in networks:
+            networks.append(pick.waveform_id.network_code)
+    return networks, stations
 
 
 def dicts2hypo71Stations(inventory):
@@ -90,10 +136,11 @@ def dicts2hypo71Stations(inventory):
             ele = station.elevation
             hypo71_string += fmt % (sta, lat_deg, lat_min, hem_NS, lon_deg,
                                     lon_min, hem_EW, ele)
+    print hypo71_string
     return hypo71_string
 
 
-def dicts2hypo71Phases(events, stream):
+def dicts2hypo71Phases(event):
     """
     Returns the pick information in hypo71 phase file format
     as a string. This string can then be written to a file.
@@ -153,95 +200,95 @@ def dicts2hypo71Phases(events, stream):
     fmtP = "%4s%1sP%1s%1i %15s"
     fmtS = "%12s%1sS%1s%1i\n"
     hypo71_string = ""
-
-    for st in self.streams:
-        net = st[0].stats.network
-        sta = st[0].stats.station
-        pick_p = self.getPick(network=net, station=sta, phase_hint='P')
-        pick_s = self.getPick(network=net, station=sta, phase_hint='S')
-        if not pick_p and not pick_s:
-            continue
-        if not pick_p:
-            msg = ("Hypo2000 phase file format does not support S pick "
-                   "without P pick. Skipping station: %s") % sta
-            self.error(msg)
-            continue
-
-        # P Pick
-        pick = pick_p
-        t = pick.time
-        hundredth = int(round(t.microsecond / 1e4))
-        if hundredth == 100:  # XXX check!!
-            t_p = t + 1
-            hundredth = 0
-        else:
-            t_p = t
-        date = t_p.strftime("%y%m%d%H%M%S") + ".%02d" % hundredth
-        if pick.onset == 'impulsive':
-            onset = 'I'
-        elif pick.onset == 'emergent':
-            onset = 'E'
-        else:
-            onset = '?'
-        if pick.polarity == "positive":
-            polarity = "U"
-        elif pick.polarity == "negative":
-            polarity = "D"
-        else:
-            polarity = "?"
-        try:
-            weight = int(pick.extra.weight.value)
-        except:
-            weight = 0
-        hypo71_string += fmtP % (sta, onset, polarity, weight, date)
-
-        # S Pick
-        if pick_s:
-            if not pick_p:
-                err = "Warning: Trying to print a Hypo2000 phase file " + \
-                      "with an S phase without P phase.\n" + \
-                      "This case might not be covered correctly and " + \
-                      "could screw our file up!"
-                self.error(err)
-            pick = pick_s
-            t2 = pick.time
-            # if the S time's absolute minute is higher than that of the
-            # P pick, we have to add 60 to the S second count for the
-            # hypo 2000 output file
-            # +60 %60 is necessary if t.min = 57, t2.min = 2 e.g.
-            mindiff = (t2.minute - t.minute + 60) % 60
-            abs_sec = t2.second + (mindiff * 60)
-            if abs_sec > 99:
-                err = "Warning: S phase seconds are greater than 99 " + \
-                      "which is not covered by the hypo phase file " + \
-                      "format! Omitting S phase of station %s!" % sta
-                self.error(err)
-                hypo71_string += "\n"
+    # Dict of networks:stations with available picks
+    netsta = get_pick_stations(event)
+    for net in netsta:
+        for sta in netsta[net]:
+            # Assumes only one P or S picks per station
+            pick_p = [x for x in event.picks if x.waveform_id.station_code == sta
+                      and x.phase_hint == 'P']
+            pick_s = [x for x in event.picks if x.waveform_id.station_code == sta
+                      and x.phase_hint == 'S']
+            if len(pick_p) == 0 and len(pick_s) == 0:
                 continue
-            hundredth = int(round(t2.microsecond / 1e4))
-            if hundredth == 100:
-                abs_sec += 1
+            if len(pick_p) == 0:
+                print("Hypo2000 phase file format does not support S pick \
+                      without P pick. Skipping station: %s" % sta)
+                continue
+            # P Pick
+            pick = pick_p[0]
+            t = pick.time
+            hundredth = int(round(t.microsecond / 1e4))
+            if hundredth == 100:  # XXX check!!
+                t_p = t + 1
                 hundredth = 0
-            date2 = "%s.%02d" % (abs_sec, hundredth)
+            else:
+                t_p = t
+            date = t_p.strftime("%y%m%d%H%M%S") + ".%02d" % hundredth
             if pick.onset == 'impulsive':
-                onset2 = 'I'
+                onset = 'I'
             elif pick.onset == 'emergent':
-                onset2 = 'E'
+                onset = 'E'
             else:
-                onset2 = '?'
+                onset = '?'
             if pick.polarity == "positive":
-                polarity2 = "U"
+                polarity = "U"
             elif pick.polarity == "negative":
-                polarity2 = "D"
+                polarity = "D"
             else:
-                polarity2 = "?"
+                polarity = "?"
             try:
-                weight2 = int(pick.extra.weight.value)
+                weight = int(pick.extra.weight.value)
             except:
-                weight2 = 0
-            hypo71_string += fmtS % (date2, onset2, polarity2, weight2)
-        else:
-            hypo71_string += "\n"
+                weight = 0
+            hypo71_string += fmtP % (sta, onset, polarity, weight, date)
+
+            # S Pick
+            if len(pick_s) > 0:
+                if len(pick_p) == 0:
+                    print("Warning: Trying to print a Hypo2000 phase file \
+                          with an S phase without P phase.\n" +
+                          "This case might not be covered correctly and \
+                          could screw our file up!")
+                pick = pick_s[0]
+                t2 = pick.time
+                # if the S time's absolute minute is higher than that of the
+                # P pick, we have to add 60 to the S second count for the
+                # hypo 2000 output file
+                # +60 %60 is necessary if t.min = 57, t2.min = 2 e.g.
+                mindiff = (t2.minute - t.minute + 60) % 60
+                abs_sec = t2.second + (mindiff * 60)
+                if abs_sec > 99:
+                    err = "Warning: S phase seconds are greater than 99 " + \
+                          "which is not covered by the hypo phase file " + \
+                          "format! Omitting S phase of station %s!" % sta
+                    self.error(err)
+                    hypo71_string += "\n"
+                    continue
+                hundredth = int(round(t2.microsecond / 1e4))
+                if hundredth == 100:
+                    abs_sec += 1
+                    hundredth = 0
+                date2 = "%s.%02d" % (abs_sec, hundredth)
+                if pick.onset == 'impulsive':
+                    onset2 = 'I'
+                elif pick.onset == 'emergent':
+                    onset2 = 'E'
+                else:
+                    onset2 = '?'
+                if pick.polarity == "positive":
+                    polarity2 = "U"
+                elif pick.polarity == "negative":
+                    polarity2 = "D"
+                else:
+                    polarity2 = "?"
+                try:
+                    weight2 = int(pick.extra.weight.value)
+                except:
+                    weight2 = 0
+                hypo71_string += fmtS % (date2, onset2, polarity2, weight2)
+            else:
+                hypo71_string += "\n"
     print hypo71_string
     return hypo71_string
 
