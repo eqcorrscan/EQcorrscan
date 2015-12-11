@@ -46,6 +46,12 @@ def _check_daylong(tr):
     return qual
 
 
+# def despike(tr):
+#     r"""Function to remove spikes above a certain amplitude
+#     """
+#     return
+
+
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     r"""Basic function to bandpass and downsample.
 
