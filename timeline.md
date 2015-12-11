@@ -34,4 +34,4 @@ practices including picking of templates, and locations.
 * Port to Windows systems;
 * Provide Python 3.0 modules.
 
-{% include JB/comments %}
+<!-- {% include JB/comments %} -->

@@ -22,9 +22,9 @@
       </ul>
     </div>
     <hr>
-    {% include JB/comments %}
+    <!-- {% include JB/comments %} -->
   </div>
-  
+
   <div class="span4">
     <h4>Published</h4>
     <div class="date"><span>{{ page.date | date_to_long_string }}</span></div>
@@ -35,6 +35,6 @@
     {% assign tags_list = page.tags %}
     {% include JB/tags_list %}
     </ul>
-  {% endunless %}  
+  {% endunless %}
   </div>
 </div>
