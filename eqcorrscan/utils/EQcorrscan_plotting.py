@@ -554,10 +554,9 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     else:
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
+    lengths = []
     for i, tr in enumerate(template):
         delay = tr.stats.starttime - mintime
-        delay *= tr.stats.sampling_rate
-        delay = int(delay)
         y = tr.data
         x = np.linspace(0, len(y) * tr.stats.delta, len(y))
         x += delay
@@ -565,20 +564,21 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
             btr = background.select(station=tr.stats.station,
                                     channel=tr.stats.channel)[0]
             bdelay = btr.stats.starttime - mintime
-            bdelay *= btr.stats.sampling_rate
-            bdelay = int(bdelay)
             by = btr.data
             bx = np.linspace(0, len(by) * btr.stats.delta, len(by))
             bx += bdelay
             axes[i].plot(bx, by, 'k', linewidth=1)
             axes[i].plot(x, y, 'r', linewidth=1.1)
+            lengths.append(max(bx[-1], x[-1]))
         else:
             axes[i].plot(x, y, 'k', linewidth=1.1)
+            lengths.append(x[-1])
         print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
                            rotation=0)
         axes[i].yaxis.set_ticks([])
-    axes[i-1].set_xlabel('Time (s) from start of template')
+    axes[i].set_xlim([0, max(lengths)])
+    axes[len(template)-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0)
     if title:
         axes[0].set_title(title)
@@ -858,15 +858,21 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     :type show: bool
     :param show: To show plot or not, if false, will return Fig.
     """
+    from obspy import Stream
+    if isinstance(traces, Stream):
+        traces.sort(['station', 'channel'])
     if not Fig:
         Fig = plt.figure(figsize=size)
     for i, tr in enumerate(traces):
-        ax = Fig.add_subplot(len(traces), 1, i+1)
+        if i == 0:
+            ax = Fig.add_subplot(len(traces), 1, i+1)
+        else:
+            ax = Fig.add_subplot(len(traces), 1, i+1, sharex=ax)
         ax1, ax2 = _spec_trace(tr, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
         ax2.set_yticks([])
         if i < len(traces) - 1:
-            ax1.set_xticks([])
+            plt.setp(ax1.get_xticklabels(), visible=False)
         if type(traces) == list:
             ax2.text(0.005, 0.85, tr.stats.starttime.datetime.
                      strftime('%Y/%m/%d %H:%M:%S'),
