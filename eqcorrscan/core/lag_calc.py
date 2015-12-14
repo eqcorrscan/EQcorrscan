@@ -158,6 +158,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
     """
     from eqcorrscan.utils import Sfile_util
     from obspy import Stream
+    from obspy.core.event import Event, Catalog
     # First work out the delays for each template
     delays = []  # List of tuples
     for template in templates:
@@ -207,5 +208,8 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                 picks.append(Sfile_util.PICK())
             Sfile_util.populateSfile(sfilename, picks)
         elif out_format == 'QuakeML':
-
+            # Create a simple obspy.core.event.Event class with just picks
+r"""
+###########START WORK HERE WITH CALLING locate.py##############################
+"""
         elif out_format == 'lags':
