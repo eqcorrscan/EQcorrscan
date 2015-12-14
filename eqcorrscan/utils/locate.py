@@ -1,7 +1,7 @@
 #!/usr/bin/python
 r"""Functions to locate newly detected events or re-locate events using hyp2000
 
-The functions herein are borrowed from Tobias Megies and Lion Krischer's GUI
+The functions herein are borrowed from Tobias Megies' and Lion Krischer's GUI
 picking application, Obspyck, the repository for which can be found at
 https://github.com/megies/obspyck, and which is licensed under GPLv2. See the
 following information:
@@ -36,8 +36,10 @@ def doHyp2000(event, plugindir, sta_inventory='', url=''):
     system call.
     """
     import logging
+    import shutil
 
-    setup_external_programs(plugindir)
+    # Create /tmp/ dir containing external program files
+    tmp_dir = setup_external_programs(plugindir)
 
     # Removes the station/phase files in directory if they already exist
     prog_dict = PROGRAMS['hyp_2000']
@@ -69,6 +71,12 @@ def doHyp2000(event, plugindir, sta_inventory='', url=''):
     logging.error(err)
     logging.critical('--> hyp2000 finished')
     catFile(files['summary'], logging.critical)
+
+    #Overwrite original event parameters with hyp2000 output
+    new_event = loadHyp2000Data(event)
+    # Finally, delete the tempdir created by setup_external_programs
+    shutil.rmtree(tmp_dir)
+    return new_event
 
 
 def catFile(file, logfunct):
@@ -196,14 +204,15 @@ def dicts2hypo71Phases(event):
     82    2  A2       Station network code.
     84-85 2  A2     2-letter station location code (component extension).
     """
+    import logging
 
     fmtP = "%4s%1sP%1s%1i %15s"
     fmtS = "%12s%1sS%1s%1i\n"
     hypo71_string = ""
     # Dict of networks:stations with available picks
-    netsta = get_pick_stations(event)
-    for net in netsta:
-        for sta in netsta[net]:
+    networks, stations = get_pick_stations(event)
+    for net in networks:
+        for sta in stations:
             # Assumes only one P or S picks per station
             pick_p = [x for x in event.picks if x.waveform_id.station_code == sta
                       and x.phase_hint == 'P']
@@ -262,7 +271,7 @@ def dicts2hypo71Phases(event):
                     err = "Warning: S phase seconds are greater than 99 " + \
                           "which is not covered by the hypo phase file " + \
                           "format! Omitting S phase of station %s!" % sta
-                    self.error(err)
+                    logging.error(err)
                     hypo71_string += "\n"
                     continue
                 hundredth = int(round(t2.microsecond / 1e4))
@@ -293,13 +302,26 @@ def dicts2hypo71Phases(event):
     return hypo71_string
 
 
-def loadHyp2000Data(self):
+def loadHyp2000Data(event):
+    import logging
+    import re
+    import warnings
+    from obspy import UTCDateTime
+    from obspy.core.event import Origin, OriginQuality, OriginUncertainty
+    from obspy.core.event import AttribDict, Event, Arrival
+    from obspy.core.util.geodetics import kilometer2degrees
+
+    ID_ROOT = "smi:some_agency.org"
+    # AGENCY_ID = "VUW Wellington"
+    # AGENCY_URI = "%s/agency" % ID_ROOT
+    NAMESPACE = "http://erdbeben-in-bayern.de/xmlns/0.1"
+
     files = PROGRAMS['hyp_2000']['files']
     lines = open(files['summary'], "rt").readlines()
     if lines == []:
         err = "Error: Hypo2000 output file (%s) does not exist!" % \
-                files['summary']
-        self.error(err)
+              files['summary']
+        logging.error(err)
         return
     # goto origin info line
     while True:
@@ -314,7 +336,7 @@ def loadHyp2000Data(self):
     except:
         err = "Error: No location info found in Hypo2000 outputfile " + \
               "(%s)!" % files['summary']
-        self.error(err)
+        logging.error(err)
         return
 
     year = int(line[1:5])
@@ -334,7 +356,7 @@ def loadHyp2000Data(self):
     lon = lon_deg + (lon_min / 60.)
     if line[38] == " ":
         lon = -lon
-    depth = -float(line[46:51]) # depth: negative down!
+    depth = -float(line[46:51])  # depth: negative down!
     rms = float(line[52:57])
     errXY = float(line[58:63])
     errZ = float(line[64:69])
@@ -360,7 +382,8 @@ def loadHyp2000Data(self):
 
     # assign origin info
     o = Origin()
-    self.catalog[0].origins = [o]
+    ev = Event()
+    ev.origins = [o]
     o.clear()
     o.method_id = "/".join([ID_ROOT, "location_method", "hyp2000", "2"])
     o.origin_uncertainty = OriginUncertainty()
@@ -373,7 +396,7 @@ def loadHyp2000Data(self):
     ou.horizontal_uncertainty = errXY
     ou.preferred_description = "horizontal uncertainty"
     o.depth_errors.uncertainty = errZ * 1e3
-    oq.standard_error = rms #XXX stimmt diese Zuordnung!!!?!
+    oq.standard_error = rms  # XXX stimmt diese Zuordnung!!!?!
     oq.azimuthal_gap = gap
     o.depth_type = "from location"
     o.earth_model_id = "%s/earth_model/%s" % (ID_ROOT, model)
@@ -432,11 +455,14 @@ def loadHyp2000Data(self):
         weight = float(lines[i][68:72])
 
         # assign synthetic phase info
-        pick = self.getPick(station=station, phase_hint=type)
+        pick = [x for x in event.picks if x.waveform_id.station_code == station
+                and x.phase_hint == type][0]
+        # pick = self.getPick(station=station, phase_hint=type)
         if pick is None:
             msg = "This should not happen! Location output was read and a corresponding pick is missing!"
             warnings.warn(msg)
-        arrival = Arrival(origin=o, pick=pick)
+        arrival = Arrival(pick_id=pick.resource_id)
+        # arrival = Arrival(origin=o, pick=pick)
         # residual is defined as P-Psynth by NLLOC!
         # XXX does this also hold for hyp2000???
         arrival.time_residual = res
@@ -455,9 +481,13 @@ def loadHyp2000Data(self):
         elif type == "S":
             o.quality.extra.usedPhaseCountS['value'] += 1
         else:
-            self.error("Phase '%s' not recognized as P or S. " % type +
-                       "Not incrementing P nor S phase count.")
+            logging.error("Phase '%s' not recognized as P or S. " % type +
+                          "Not incrementing P nor S phase count.")
+        # Add pick and arrival populated above to event
+        o.arrivals.append(arrival)
+        ev.picks.append(pick)
     o.used_station_count = len(used_stations)
+    return ev
 
 
 def setup_external_programs(pluginpath):
