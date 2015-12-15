@@ -33,7 +33,8 @@ PROGRAMS = {
 def doHyp2000(event, plugindir, sta_inventory='', url=''):
     """
     Writes input files for hyp2000 and starts the hyp2000 program via a
-    system call.
+    system call. Returns a single obspy.core.event.Event class populated
+    with the resulting location information.
     """
     import logging
     import shutil

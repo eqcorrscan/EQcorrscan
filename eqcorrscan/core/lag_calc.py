@@ -83,8 +83,8 @@ def _channel_loop(detection, template, i=0):
             # Convert the maximum cross-correlation time to an actual time
             picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                    image[0].stats.delta)
-            event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network
-                                                                 station_code=tr.stats.station
+            event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network,
+                                                                 station_code=tr.stats.station,
                                                                  channel_code=tr.stats.channel),
                                     time=picktime,
                                     method_id=ResourceIdentifier('EQcorrscan')))
@@ -157,15 +157,16 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                    Options are "QuakeML", "Sfile", "lags"
     """
     from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import locate
     from obspy import Stream
     from obspy.core.event import Event, Catalog
     # First work out the delays for each template
-    delays = []  # List of tuples
+    delays = []  # List of tuples of (tempname, (sta, chan, delay))
     for template in templates:
         temp_delays = []
         for tr in template[1]:
             temp_delays.append((tr.stats.station, tr.stats.channel,
-                                tr.stats.starttime-template.sort['starttime'][0].stats.starttime))
+                                tr.stats.starttime-template[1].sort(['starttime'])[0].stats.starttime))
         delays.append((template[0], temp_delays))
     # List of tuples of (template name, Stream()) for each detection
     detect_streams = []
@@ -174,23 +175,26 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         detect_stream = []
         for tr in detect_data:
             tr_copy = tr.copy()
-            template = [t for t in templates if t[0]==detection.template_name][0]
-            template = template.select(station=tr.stats.station,
-                                       channel=tr.stats.channel)
+            template = [t for t in templates if t[0] == detection.template_name][0]
+            template = template[1].select(station=tr.stats.station,
+                                          channel=tr.stats.channel)
             if template:
-                template_len = len(template[0])
+                # Save template trace length in seconds
+                template_len = len(template[0]) / template[0].stats.sampling_rate
             else:
                 continue  # If there is no template-data match then skip the rest
                           # of the trace loop.
-            delay = [delay for delay in delays if delay[0] == detection.template_name][0]
+            # Grab the delays for the desired template: [(sta, chan, delay)]
+            delay = [delay for delay in delays if delay[0] == detection.template_name][0][1]
+            # Now grab the delay for the desired trace for this template
             delay = [d for d in delay if d[0] == tr.stats.station and
-                     d[1] == tr.stats.channel][0]
+                     d[1] == tr.stats.channel][0][2]
             detect_stream.append(tr_copy.trim(starttime=detection.detect_time -
                                               shift_len + delay,
                                               endtime=detection.detect_time +
                                               delay + shift_len + template_len))
+        # Create tuple of (template name, data stream)
         detect_streams.append((detection.template_name, Stream(detect_stream)))
-        # Tuple of template name and data stream
     # Segregate detections by template
     lags = []
     for template in templates:
@@ -199,8 +203,6 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         lags.append(day_loop(template_detections, template[1]))
     # Write out the lags!
     for event in lags:
-        ###### Somewhere in here put a call to locate.py to populate headers ##
-        # I think I have an old version of Sfile_util here
         if out_format == 'Sfile':
             sfilename = Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
             picks = []
@@ -209,7 +211,12 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
             Sfile_util.populateSfile(sfilename, picks)
         elif out_format == 'QuakeML':
             # Create a simple obspy.core.event.Event class with just picks
-r"""
-###########START WORK HERE WITH CALLING locate.py##############################
-"""
-        elif out_format == 'lags':
+            catalog = Catalog()
+            pre_loc_event = Event()
+            for pick in event:
+                pre_loc_event.picks.append(Pick(pick))
+            post_loc_event = locate.doHyp2000(pre_loc_event, '/home/chet/EQcorrscan/eqcorrscan/plugins',
+                                              url='http://service.geonet.org.nz')
+            catalog.events.append(post_loc_event)
+            catalog.write('cat_test.xml', format="QuakeML")
+        # elif out_format == 'lags':
