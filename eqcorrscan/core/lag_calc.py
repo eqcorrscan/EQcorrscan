@@ -58,8 +58,9 @@ from match_filter import normxcorr2
 
 def _channel_loop(detection, template, i=0):
     """
-    Utility function to take a stream of data for the detected event and parse
-    the correct data to lag_gen
+    Utility function to take a stream of data for the detected event and write
+    maximum correlation to absolute time as picks in an obspy.core.event.Event
+    object
 
     :type detection: obspy.Stream
     :param detection: Stream of data for the slave event detected using \
@@ -69,8 +70,7 @@ def _channel_loop(detection, template, i=0):
     :type i: int, optional
     :param i: Used to track which process has occured when running in parallel
 
-    :returns: picks, a tuple of (lag in s, cross-correlation value, station,\
-     chan)
+    :returns: Event object containing net, sta, chan information
     """
     from obspy.core.event import Event, Pick, WaveformStreamID, ResourceIdentifier
     event = Event()
@@ -79,10 +79,11 @@ def _channel_loop(detection, template, i=0):
                                  channel=tr.stats.channel)
         if image:  # Ideally this if statement would be removed.
             ccc = normxcorr2(tr.data, image[0].data)
-            shiftlen = len(ccc)*image[0].stats.sample_rate
+            # shiftlen = len(ccc)*image[0].stats.sampling_rate
             # Convert the maximum cross-correlation time to an actual time
             picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                    image[0].stats.delta)
+            ### Perhaps weight each pick by the cc val or cc val^2?
             event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network,
                                                                  station_code=tr.stats.station,
                                                                  channel_code=tr.stats.channel),
@@ -104,36 +105,36 @@ def day_loop(detection_streams, template):
     :type template: obspy.Stream
     :param template: The original template used to detect the detections passed
 
-    :returns: lags - List of List of tuple: lags[i] corresponds to detection[i],
-                lags[i][j] corresponds to a channel of detection[i], within
-                this tuple is the lag (in seconds), normalised correlation,
-                station and channel.
+    :returns: Catalog object containing Event objects for each detection
+              created by this template.
     """
     from multiprocessing import Pool, cpu_count  # Used to run detections in parallel
-    lags = []
+    from obspy.core.event import Catalog
     num_cores = cpu_count()
     if num_cores > len(detection_streams):
         num_cores = len(detection_streams)
     pool = Pool(processes=num_cores, maxtasksperchild=None)
+    # Parallelize generation of events for each detection:
+    # results is a list of (i, event class)
     results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))
                for i in xrange(len(detection_streams))]
     pool.close()
-    lags = [p.get() for p in results]
-    lags.sort(key=lambda tup: tup[0])  # Sort based on i
-    lags = [lag[1] for lag in lags]
-    # Convert lag time to moveout time
-    # cjh I'm a little confused here.
-    mintime = template.sort(['starttime'])[0].stats.starttime
-    for lag in lags:
-        delay = template.select(station=lag[2], channel=lag[3])[0].stats.starttime-\
-            mintime
-        lag[0] += delay
-    return lags
+    events_list = [p.get() for p in results]
+    events_list.sort(key=lambda tup: tup[0])  # Sort based on i. cjh Why?
+    temp_catalog = Catalog()
+    temp_catalog.events = [event_tup[1] for event_tup in events_list]
+    # Generates moveout times from event.picks. cjh But why?
+    # mintime = template.sort(['starttime'])[0].stats.starttime
+    # lags = []
+    # for event in events:
+    #     delay = template.select(station=lag, channel=lag[3])[0].stats.starttime - mintime
+    #     lag[0] += delay
+    return temp_catalog
 
 
 def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
              out_format="QuakeML"):
-    """
+    r"""
     Overseer function to take a list of detection objects, cut the data for
     them to lengths of the same length of the template + shift_len on
     either side. This will then write out SEISAN s-file for the detections
@@ -174,7 +175,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         # Stream to be saved for new detection
         detect_stream = []
         for tr in detect_data:
-            tr_copy = tr.copy()
+            tr_copy = tr.copy()  # Right now, copying each trace hundreds of times...
             template = [t for t in templates if t[0] == detection.template_name][0]
             template = template[1].select(station=tr.stats.station,
                                           channel=tr.stats.channel)
@@ -195,14 +196,19 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                                               delay + shift_len + template_len))
         # Create tuple of (template name, data stream)
         detect_streams.append((detection.template_name, Stream(detect_stream)))
-    # Segregate detections by template
-    lags = []
+    # Segregate detections by template, then feed to day_loop
+    r"""
+    At some point min_cc needs to be fed to day_loop and/or channel_loop
+    """
+    initial_cat = Catalog()
     for template in templates:
         template_detections = [detect[1] for detect in detect_streams
                                if detect[0] == template[0]]
-        lags.append(day_loop(template_detections, template[1]))
-    # Write out the lags!
-    for event in lags:
+        if len(template_detections) > 0:  # Way to remove this?
+            initial_cat += day_loop(template_detections, template[1])
+    # Do something with catalog of bare-bones events
+    final_cat = Catalog()
+    for event in initial_cat.events:
         if out_format == 'Sfile':
             sfilename = Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
             picks = []
@@ -211,12 +217,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
             Sfile_util.populateSfile(sfilename, picks)
         elif out_format == 'QuakeML':
             # Create a simple obspy.core.event.Event class with just picks
-            catalog = Catalog()
-            pre_loc_event = Event()
-            for pick in event:
-                pre_loc_event.picks.append(Pick(pick))
-            post_loc_event = locate.doHyp2000(pre_loc_event, '/home/chet/EQcorrscan/eqcorrscan/plugins',
+            print event.picks
+            post_loc_event = locate.doHyp2000(event, '/home/chet/EQcorrscan/eqcorrscan/plugins',
                                               url='http://service.geonet.org.nz')
-            catalog.events.append(post_loc_event)
-            catalog.write('cat_test.xml', format="QuakeML")
-        # elif out_format == 'lags':
+            final_cat.events.append(post_loc_event)
