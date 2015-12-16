@@ -214,7 +214,7 @@ def dicts2hypo71Phases(event):
     networks, stations = get_pick_stations(event)
     for net in networks:
         for sta in stations:
-            # Assumes only one P or S picks per station
+            # Assumes only one P or S pick per station
             pick_p = [x for x in event.picks if x.waveform_id.station_code == sta
                       and x.phase_hint == 'P']
             pick_s = [x for x in event.picks if x.waveform_id.station_code == sta
