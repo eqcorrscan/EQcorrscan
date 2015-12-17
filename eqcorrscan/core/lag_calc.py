@@ -56,7 +56,7 @@ import numpy as np
 from match_filter import normxcorr2
 
 
-def _channel_loop(detection, template, i=0):
+def _channel_loop(detection, template, min_cc, i=0):
     """
     Utility function to take a stream of data for the detected event and write
     maximum correlation to absolute time as picks in an obspy.core.event.Event
@@ -81,18 +81,27 @@ def _channel_loop(detection, template, i=0):
             ccc = normxcorr2(tr.data, image[0].data)
             # shiftlen = len(ccc)*image[0].stats.sampling_rate
             # Convert the maximum cross-correlation time to an actual time
-            picktime = image[0].stats.starttime + (np.argmax(ccc) *
-                                                   image[0].stats.delta)
+            if np.amax(ccc) > min_cc:
+                picktime = image[0].stats.starttime + (np.argmax(ccc) *
+                                                       image[0].stats.delta)
+            else:
+                picktime = image[0].stats.starttime
             ### Perhaps weight each pick by the cc val or cc val^2?
+            # weight = np.amax(ccc) ** 2
+            if tr.stats.channel[-1:] == 'Z':
+                phase = 'P'
+            elif tr.stats.channel[-1:] in ['E', 'N']:
+                phase = 'S'
             event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network,
                                                                  station_code=tr.stats.station,
                                                                  channel_code=tr.stats.channel),
                                     time=picktime,
-                                    method_id=ResourceIdentifier('EQcorrscan')))
+                                    method_id=ResourceIdentifier('EQcorrscan'),
+                                    phase_hint=phase))
     return (i, event)
 
 
-def day_loop(detection_streams, template):
+def day_loop(detection_streams, template, min_cc):
     """
     Function to loop through multiple detections for one template - ostensibly
     designed to run for the same day of data for I/O simplicity, but as you
@@ -116,7 +125,7 @@ def day_loop(detection_streams, template):
     pool = Pool(processes=num_cores, maxtasksperchild=None)
     # Parallelize generation of events for each detection:
     # results is a list of (i, event class)
-    results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, i))
+    results = [pool.apply_async(_channel_loop, args=(detection_streams[i], template, min_cc, i))
                for i in xrange(len(detection_streams))]
     pool.close()
     events_list = [p.get() for p in results]
@@ -205,7 +214,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         template_detections = [detect[1] for detect in detect_streams
                                if detect[0] == template[0]]
         if len(template_detections) > 0:  # Way to remove this?
-            initial_cat += day_loop(template_detections, template[1])
+            initial_cat += day_loop(template_detections, template[1], min_cc)
     # Do something with catalog of bare-bones events
     final_cat = Catalog()
     for event in initial_cat.events:
@@ -218,6 +227,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         elif out_format == 'QuakeML':
             # Create a simple obspy.core.event.Event class with just picks
             print event.picks
-            post_loc_event = locate.doHyp2000(event, '/home/chet/EQcorrscan/eqcorrscan/plugins',
-                                              url='http://service.geonet.org.nz')
-            final_cat.events.append(post_loc_event)
+            final_cat.events.append(locate.doHyp2000(event,
+                                                     '/home/chet/EQcorrscan/eqcorrscan/plugins',
+                                                     url='http://service.geonet.org.nz'))
+    return final_cat
