@@ -74,9 +74,14 @@ def _channel_loop(detection, template, min_cc, i=0):
     """
     from obspy.core.event import Event, Pick, WaveformStreamID, ResourceIdentifier
     event = Event()
+    s_stachans = {}
+    used_s_sta = []
     for tr in template:
-        image = detection.select(station=tr.stats.station,
-                                 channel=tr.stats.channel)
+        temp_net = tr.stats.network
+        temp_sta = tr.stats.station
+        temp_chan = tr.stats.channel
+        image = detection.select(station=temp_sta,
+                                 channel=temp_chan)
         if image:  # Ideally this if statement would be removed.
             ccc = normxcorr2(tr.data, image[0].data)
             # shiftlen = len(ccc)*image[0].stats.sampling_rate
@@ -88,13 +93,26 @@ def _channel_loop(detection, template, min_cc, i=0):
                 picktime = image[0].stats.starttime
             ### Perhaps weight each pick by the cc val or cc val^2?
             # weight = np.amax(ccc) ** 2
-            if tr.stats.channel[-1:] == 'Z':
+            if temp_chan[-1:] == 'Z':
                 phase = 'P'
-            elif tr.stats.channel[-1:] in ['E', 'N']:
+            # Only take the S-pick with the best correlation
+            elif temp_chan[-1:] in ['E', 'N']:
                 phase = 'S'
-            event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=tr.stats.network,
-                                                                 station_code=tr.stats.station,
-                                                                 channel_code=tr.stats.channel),
+                if temp_sta not in s_stachans and np.amax(ccc) > min_cc:
+                    s_stachans[temp_sta] = ((temp_chan, np.amax(ccc), picktime))
+                elif temp_sta in s_stachans and np.amax(ccc) > min_cc:
+                    if np.amax(ccc) > s_stachans[temp_sta][1]:
+                        picktime = picktime
+                    else:
+                        picktime = s_stachans[temp_sta][2]
+                        temp_chan = s_stachans[temp_sta][0]
+                elif np.amax(ccc) < min_cc and temp_sta not in used_s_sta:
+                    used_s_sta.append(temp_sta)
+                else:
+                    continue
+            event.picks.append(Pick(waveform_id=WaveformStreamID(network_code=temp_net,
+                                                                 station_code=temp_sta,
+                                                                 channel_code=temp_chan),
                                     time=picktime,
                                     method_id=ResourceIdentifier('EQcorrscan'),
                                     phase_hint=phase))
@@ -166,10 +184,16 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
     :param format: Specify if you want lag_calc to write to QuakeML or Sfile
                    Options are "QuakeML", "Sfile", "lags"
     """
+    import os
     from eqcorrscan.utils import Sfile_util
     from eqcorrscan.utils import locate
     from obspy import Stream
-    from obspy.core.event import Event, Catalog
+    from obspy.core.event import Catalog
+
+    # Establish plugin directory relative to this module
+    eqcs_dir = os.path.abspath(__file__).split('/')[:-2]
+    plugin_dir = '/'+os.path.join(*eqcs_dir)+'/plugins'
+
     # First work out the delays for each template
     delays = []  # List of tuples of (tempname, (sta, chan, delay))
     for template in templates:
@@ -203,6 +227,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                                               shift_len + delay,
                                               endtime=detection.detect_time +
                                               delay + shift_len + template_len))
+            del tr_copy
         # Create tuple of (template name, data stream)
         detect_streams.append((detection.template_name, Stream(detect_stream)))
     # Segregate detections by template, then feed to day_loop
@@ -225,9 +250,7 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
                 picks.append(Sfile_util.PICK())
             Sfile_util.populateSfile(sfilename, picks)
         elif out_format == 'QuakeML':
-            # Create a simple obspy.core.event.Event class with just picks
-            print event.picks
-            final_cat.events.append(locate.doHyp2000(event,
-                                                     '/home/chet/EQcorrscan/eqcorrscan/plugins',
+            # Locate event with hyp2000 and add it to final catalog
+            final_cat.events.append(locate.doHyp2000(event, plugin_dir,
                                                      url='http://service.geonet.org.nz'))
     return final_cat
