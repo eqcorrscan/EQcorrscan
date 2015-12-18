@@ -111,10 +111,12 @@ def get_pick_stations(event):
     networks = []
     stations = []
     for pick in event.picks:
-        stations.append(pick.waveform_id.station_code)
+        sta = pick.waveform_id.station_code
         net = pick.waveform_id.network_code
+        if sta not in stations:
+            stations.append(sta)
         if net not in networks:
-            networks.append(pick.waveform_id.network_code)
+            networks.append(net)
     return networks, stations
 
 
