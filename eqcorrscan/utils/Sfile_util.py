@@ -548,7 +548,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
     # Check is sfilename exists
     if os.path.isfile(sfilename) and not overwrite:
         print 'Desired sfilename: '+sfilename+' exists, will not overwrite'
-        for i in range(1,10):
+        for i in range(1,20):
             sfilename=outdir+'/'+str(evtime.day).zfill(2)+'-'+\
                     str(evtime.hour).zfill(2)+\
                     str(evtime.minute).zfill(2)+'-'+\
@@ -558,7 +558,7 @@ def blanksfile(wavefile,evtype,userID,outdir,overwrite=False, evtime=False):
             if not os.path.isfile(sfilename):
                 break
         else:
-            print 'Tried generated files up to 10s in advance and found they'
+            print 'Tried generated files up to 20s in advance and found they'
             print 'all exist, you need to clean your stuff up!'
             sys.exit()
         # sys.exit()
