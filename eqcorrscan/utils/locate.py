@@ -99,7 +99,7 @@ def cross_net(stream, env=False, debug=0, master=False):
     :param master: Trace to use as master, if False, will use the first trace\
             in stream.
 
-    :returns: picks
+    :returns: list of pick class
     """
     from obspy.signal.cross_correlation import xcorr
     from obspy.signal.filter import envelope
@@ -170,4 +170,65 @@ def cross_net(stream, env=False, debug=0, master=False):
             print pick
         picks.append(pick)
     del st
+    return picks
+
+
+def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
+                freqmax=False, debug=0):
+    r"""Simple sta-lta (short-term average/long-term average) picker, using
+    obspy's stalta routine to generate the characteristic function.
+
+    Currently very basic quick wrapper, there are many other (better) options
+    in obspy, found
+    (here)[http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html].
+
+    :type stream: obspy.Stream
+    :param stream: The stream to pick on, can be any number of channels.
+    :type stalen: float
+    :param stalen: Length of the short-term average window in seconds.
+    :type ltalen: float
+    :param ltalen: Length of the long-term average window in seconds.
+    :type trig_on: float
+    :param trig_on: sta/lta ratio to trigger a detection/pick
+    :type trig_off: float
+    :param trig_off: sta/lta ratio to turn the trigger off - no further picks\
+        will be made between exceeding trig_on until trig_off is reached.
+    :type freqmin: float
+    :param freqmin: Low-cut frequency in Hz for bandpass filter
+    :type freqmax: float
+    :param freqmax: High-cut frequency in Hz for bandpass filter
+    :type debug: int
+    :param debug: Debug output level from 0-5.
+
+    :returns: list of pick class.
+    """
+    from obspy.signal.trigger import classicSTALTA, triggerOnset, plotTrigger
+    from Sfile_util import PICK
+    picks = []
+    for tr in stream:
+        # We are going to assume, for now, that if the pick is made on the
+        # horizontal channel then it is an S, otherwise we will assume it is
+        # a P-phase: obviously a bad assumption...
+        if tr.stats.channel[-1] == 'Z':
+            phase = 'P'
+        else:
+            phase = 'S'
+        if freqmin and freqmax:
+            tr.detrend('simple')
+            tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax,
+                      corners=3, zerophase=True)
+        df = tr.stats.sampling_rate
+        cft = classicSTALTA(tr.data, int(stalen * df), int(ltalen * df))
+        if debug > 3:
+            plotTrigger(tr, cft, trig_on, trig_off)
+        triggers = triggerOnset(cft, trig_on, trig_off)
+        for trigger in triggers:
+            on = tr.stats.starttime + (trigger[0] / df)
+            off = tr.stats.starttime + (trigger[1] / df)
+            pick = PICK(station=tr.stats.station, channel=tr.stats.channel,
+                        time=on, phase=phase)
+            if debug > 2:
+                print 'Pick made:'
+                print pick
+            picks.append(pick)
     return picks
