@@ -575,13 +575,15 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
             lengths.append(x[-1])
         print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
-                           rotation=0)
+                           rotation=0, horizontalalignment='right')
         axes[i].yaxis.set_ticks([])
     axes[i].set_xlim([0, max(lengths)])
     axes[len(template)-1].set_xlabel('Time (s) from start of template')
-    plt.subplots_adjust(hspace=0)
+    plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
     if title:
         axes[0].set_title(title)
+    else:
+        plt.subplots_adjust(top=0.98)
     if not save:
         plt.show()
         plt.close()
