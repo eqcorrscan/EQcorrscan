@@ -529,7 +529,7 @@ def threeD_seismplot(stations, nodes):
 
 
 def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
-                         background=False):
+                         background=False, picks=False):
     r"""Function to make a pretty plot of a single template, designed to work\
     better than the default obspy plotting routine for short data lengths.
 
@@ -543,6 +543,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :param title: String if set will be the plot title
     :type backrgound: :class: obspy.stream
     :param background: Stream to plot the template within.
+    :type picks: list of :class: eqcorrscan.utils.Sfile_util.PICK
+    :param picks: List of eqcorrscan type picks.
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
@@ -573,10 +575,27 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         else:
             axes[i].plot(x, y, 'k', linewidth=1.1)
             lengths.append(x[-1])
-        print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
+        # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
                            rotation=0, horizontalalignment='right')
         axes[i].yaxis.set_ticks([])
+        # Plot the picks if they are given
+        if picks:
+            tr_picks = [pick for pick in picks if
+                        pick.station == tr.stats.station and
+                        pick.channel[0] + pick.channel[-1] ==
+                        tr.stats.channel[0] + tr.stats.channel[-1]]
+            for pick in tr_picks:
+                if pick.phase == 'P':
+                    pcolor = 'red'
+                elif pick.phase == 'S':
+                    pcolor = 'blue'
+                else:
+                    pcolor = 'k'
+                pdelay = pick.time - mintime
+                # print(pdelay)
+                axes[i].axvline(x=pdelay, color=pcolor, linewidth=2)
+                # axes[i].plot([pdelay, pdelay], [])
     axes[i].set_xlim([0, max(lengths)])
     axes[len(template)-1].set_xlabel('Time (s) from start of template')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)

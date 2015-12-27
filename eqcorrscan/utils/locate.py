@@ -174,7 +174,7 @@ def cross_net(stream, env=False, debug=0, master=False):
 
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
-                freqmax=False, debug=0):
+                freqmax=False, debug=0, show=False):
     r"""Simple sta-lta (short-term average/long-term average) picker, using
     obspy's stalta routine to generate the characteristic function.
 
@@ -199,11 +199,14 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :param freqmax: High-cut frequency in Hz for bandpass filter
     :type debug: int
     :param debug: Debug output level from 0-5.
+    :type show: bool
+    :param show: Show picks on waveform.
 
     :returns: list of pick class.
     """
     from obspy.signal.trigger import classicSTALTA, triggerOnset, plotTrigger
     from Sfile_util import PICK
+    import EQcorrscan_plotting as plotting
     picks = []
     for tr in stream:
         # We are going to assume, for now, that if the pick is made on the
@@ -231,4 +234,19 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 print 'Pick made:'
                 print pick
             picks.append(pick)
+    # QC picks
+    pick_stations = list(set([pick.station for pick in picks]))
+    for pick_station in pick_stations:
+        station_picks = [pick for pick in picks if pick.station == pick_station]
+        # If P-pick is after S-picks, remove it.
+        p_time = [pick.time for pick in station_picks if pick.phase == 'P']
+        s_time = [pick.time for pick in station_picks if pick.phase == 'S']
+        if p_time > s_time:
+            p_pick = [pick for pick in station_picks if pick.phase == 'P']
+            for pick in p_pick:
+                print('P pick after S pick, removing P pick')
+                picks.remove(pick)
+    if show:
+        plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',
+                                      size=(8,9))
     return picks
