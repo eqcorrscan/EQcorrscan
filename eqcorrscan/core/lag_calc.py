@@ -147,10 +147,10 @@ def day_loop(detection_streams, template, min_cc):
                for i in xrange(len(detection_streams))]
     pool.close()
     events_list = [p.get() for p in results]
-    events_list.sort(key=lambda tup: tup[0])  # Sort based on i. cjh Why?
+    events_list.sort(key=lambda tup: tup[0])  # Sort based on i.
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
-    # Generates moveout times from event.picks. cjh But why?
+    # Generates moveout times from event.picks.
     # mintime = template.sort(['starttime'])[0].stats.starttime
     # lags = []
     # for event in events:
@@ -164,9 +164,9 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
     r"""
     Overseer function to take a list of detection objects, cut the data for
     them to lengths of the same length of the template + shift_len on
-    either side. This will then write out SEISAN s-file for the detections
-    with pick times based on the lag-times found at the maximum correlation,
-    providing that correlation is above the min_cc.
+    either side. This will then write out SEISAN s-file or QuakeML for the
+    detections with pick times based on the lag-times found at the maximum
+    correlation, providing that correlation is above the min_cc.
 
     :type detections: List of DETECTION
     :param detections: List of DETECTION objects
@@ -231,9 +231,6 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
         # Create tuple of (template name, data stream)
         detect_streams.append((detection.template_name, Stream(detect_stream)))
     # Segregate detections by template, then feed to day_loop
-    r"""
-    At some point min_cc needs to be fed to day_loop and/or channel_loop
-    """
     initial_cat = Catalog()
     for template in templates:
         template_detections = [detect[1] for detect in detect_streams
@@ -243,6 +240,10 @@ def lag_calc(detections, detect_data, templates, shift_len=0.2, min_cc=0.4,
     # Do something with catalog of bare-bones events
     final_cat = Catalog()
     for event in initial_cat.events:
+        """r
+        out_format == 'Sfile' doesn't work at this point. Need a way to feed
+        a wavefile name to Sfile_util.blanksfile() in this context
+        """
         if out_format == 'Sfile':
             sfilename = Sfile_util.blanksfile(wavefile, 'L', 'PYTH', 'out', True)
             picks = []
