@@ -158,7 +158,7 @@ def normxcorr2(template, image):
 
 
 def _template_loop(template, chan, station, channel, debug=0, i=0):
-    r"""Sister loop to handle the correlation of a single template (of multiple\
+    r"""Sister loop to handle the correlation of a single template (of multiple
     channels) with a single channel of data.
 
     :type template: obspy.Stream
