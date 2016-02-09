@@ -209,7 +209,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
                          Sfile_util.readheader(slave_sfile).longitude,\
                          Sfile_util.readheader(slave_sfile).depth)
             if dist_calc(master_location, slave_location) > max_sep:
-                break
+                continue
             links=0 # Count the number of linkages
             for pick in master_picks:
                 if pick.phase not in ['P','S']:
