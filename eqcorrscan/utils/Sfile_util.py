@@ -335,6 +335,30 @@ def _str_conv(number, rounded=False):
     return string
 
 
+def _evmagtonor(mag_type):
+    """
+    Convenience tool to switch from obspy event magnitude types to seisan
+    syntax
+    """
+    if mag_type == 'ML':
+        mag = 'L'
+    elif mag_type == 'mB':
+        mag = 'b'
+    elif mag_type == 'Ms':
+        mag = 's'
+    elif mag_type == 'MS':
+        mag = 'S'
+    elif mag_type == 'MW':
+        mag = 'W'
+    elif mag_type == 'MbLg':
+        mag = 'G'
+    elif mag_type == 'Mc':
+        mag = 'C'
+    else:
+        raise IOError(mag_type + ' is not convertable')
+    return mag
+
+
 def readheader(sfile):
     """
     Function to read the header information from a seisan nordic format S-file.
@@ -378,9 +402,10 @@ def readheader(sfile):
         new_event.event_descriptions.append(EventDescription())
         new_event.event_descriptions[0].text = topline[21:23]
         # new_event.ev_id=topline[22]
-        new_event.origins[0].latitude = _float_conv(topline[23:30])
-        new_event.origins[0].longitude = _float_conv(topline[31:38])
-        new_event.origins[0].depth = _float_conv(topline[39:43])
+        if not _float_conv(topline[23:30]) == 999:
+            new_event.origins[0].latitude = _float_conv(topline[23:30])
+            new_event.origins[0].longitude = _float_conv(topline[31:38])
+            new_event.origins[0].depth = _float_conv(topline[39:43])
         # new_event.depth_ind = topline[44]
         # new_event.loc_ind = topline[45]
         new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -495,6 +520,12 @@ def readpicks(sfile):
     :param sfile: Path to sfile
 
     :return: obspy.core.event.Catalog
+
+    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or
+        angle of incidence.  This is because obspy.event stores slowness in
+        s/deg and takeoff angle, which would require computation from the
+        values stored in seisan.  Multiple weights are also not supported in
+        Obspy.event
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog
@@ -505,6 +536,8 @@ def readpicks(sfile):
     evtime = new_event.origins[0].time
     f = open(sfile, 'r')
     pickline = []
+    # Set a default, ignored later unless overwritten
+    SNR = 999
     if 'headerend' in locals():
         del headerend
     for lineno, line in enumerate(f):
@@ -522,10 +555,6 @@ def readpicks(sfile):
         station = line[1:6].strip()
         channel = line[6:8].strip()
         network = 'NA'  # No network information provided in Sfile.
-        if line[9] == 'E':
-            impulsivity = 'emergent'
-        elif line[9] == 'I':
-            impulsivity = 'impulsive'
         weight = line[14]
         if weight == '_':
             phase = line[10:17]
@@ -558,10 +587,8 @@ def readpicks(sfile):
         azimuth = _float_conv(line[46:51])
         velocity = _float_conv(line[52:56])
         if header[57:60] == 'AIN':
-            SNR = 0.0  # Placeholder value
             AIN = _float_conv(line[57:60])
         elif header[57:60] == 'SNR':
-            AIN = 0.0  # Placeholder value
             SNR = _float_conv(line[57:60])
         azimuthres = _int_conv(line[60:63])
         timeres = _float_conv(line[63:68])
@@ -573,8 +600,12 @@ def readpicks(sfile):
                                         channel_code=channel,
                                         network_code=network)
         new_event.picks.append(Pick(waveform_id=_waveform_id,
-                                    onset=impulsivity, phase_hint=phase,
+                                    phase_hint=phase,
                                     polarity=polarity, time=time))
+        if line[9] == 'I':
+            new_event.picks[pick_index].onset = 'impulsive'
+        elif line[9] == 'E':
+            new_event.picks[pick_index].onset = 'emergent'
         if line[15] == 'A':
             new_event.picks[pick_index].evaluation_mode = 'automatic'
         else:
@@ -582,7 +613,7 @@ def readpicks(sfile):
         # Note these two are not always filled - velocity conversion not yet
         # implimented, needs to be converted from km/s to s/deg
         # if not velocity == 999.0:
-        #     new_event.picks[pick_index].horizontal_slowness = 1.0 / velocity
+            # new_event.picks[pick_index].horizontal_slowness = 1.0 / velocity
         if not azimuth == 999:
             new_event.picks[pick_index].backazimuth = azimuth
         del _waveform_id
@@ -612,6 +643,31 @@ def readpicks(sfile):
             if not SNR == 999.0:
                 new_event.amplitudes[amplitude_index].snr = SNR
             amplitude_index += 1
+        elif not coda == 999:
+            # Create an amplitude instance for code duration also
+            new_event.amplitudes.append(Amplitude(generic_amplitude=coda,
+                                                  period=peri,
+                                                  pick_id=new_event.
+                                                  picks[pick_index].resource_id,
+                                                  waveform_id=new_event.
+                                                  picks[pick_index].waveform_id))
+            if new_event.picks[pick_index].phase_hint == 'IAML':
+                # Amplitude for local magnitude
+                new_event.amplitudes[amplitude_index].type = 'AML'
+                # Set to be evaluating a point in the trace
+                new_event.amplitudes[amplitude_index].category = 'point'
+                # Default AML unit in seisan is nm (Page 139 of seisan
+                # documentation, version 10.0)
+                new_event.amplitudes[amplitude_index].generic_amplitude /=\
+                    10**9
+                new_event.amplitudes[amplitude_index].unit = 'm'
+                new_event.amplitudes[amplitude_index].magnitude_hint = 'ML'
+            else:
+                # Generic amplitude type
+                new_event.amplitudes[amplitude_index].type = 'A'
+            if SNR and not SNR == 999.0:
+                new_event.amplitudes[amplitude_index].snr = SNR
+            amplitude_index += 1
         # Create new obspy.event.Arrival class referencing above Pick
         new_event.origins[0].arrivals.append(Arrival(phase=new_event.
                                                      picks[pick_index].
@@ -619,7 +675,7 @@ def readpicks(sfile):
                                                      pick_id=new_event.
                                                      picks[pick_index].
                                                      resource_id))
-        if finalweight != 999:
+        if weight != 999:
             new_event.origins[0].arrivals[pick_index].time_weight =\
                 weight
         if azimuthres != 999:
@@ -767,6 +823,121 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     return sfile
 
 
+def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
+    """
+    Function to take an obspy.event and write the relevant information to a\
+    nordic formatted s-file
+
+    :type event: obspy.event.core.Catalog
+    :param event: A single obspy event
+    :type userID: str
+    :param userID: Up to 4 character user ID
+    :type evtype: str
+    :param evtype: Single character string to describe the event, either L, R\
+        or D.
+    :type outdir: str
+    :param outdir: Path to directory to write to
+    :type wavefiles: list of str
+    :param wavefiles: Waveforms to associate the sfile with
+    :type overwrite: bool
+    :param overwrite: force to overwrite old files, defaults to False
+
+    :returns: str: name of sfile written
+    """
+    import datetime
+    import os
+    from obspy.core.event import Catalog, Event
+    # First we need to work out what to call the s-file and open it
+    # Check that user ID is the correct length
+    if len(userID) != 4:
+        raise IOError('User ID must be 4 characters long')
+    # Check that outdir exists
+    if not os.path.isdir(outdir):
+        raise IOError('Out path does not exist, I will not create this: ' +
+                      outdir)
+    # Check that evtype is one of L,R,D
+    if evtype not in ['L', 'R', 'D']:
+        raise IOError('Event type must be either L, R or D')
+    # Check that there is one event
+    if isinstance(event, Catalog) and len(event) == 1:
+        event = event[0]
+    elif isinstance(event, Event):
+        event = event
+    else:
+        raise IOError('Needs a single event')
+    # Determine name from origin time
+    sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\
+        evtype + '.S' + event.origins[0].time.datetime.strftime('%Y%m')
+    evtime = event.origins[0].time
+    # Check that the file doesn't exist
+    if not overwrite and os.path.isfile(outdir+'/'+sfilename):
+        raise IOError(outdir+'/'+sfilename +
+                      ' already exists, will not overwrite')
+    sfile = open(outdir + '/' + sfilename, 'w')
+    # Write the header info.
+    lat = '{0:.3f}'.format(event.origins[0].get('latitude')) or ''
+    lon = '{0:.3f}'.format(event.origins[0].get('longitude')) or ''
+    depth = '{0:.1f}'.format(event.origins[0].get('depth')) or ''
+    agency = event.creation_info.get('agency_id') or ''
+    timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
+        or ''
+    mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
+    mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
+    mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+    mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
+    mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
+    mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
+    mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
+    mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
+    mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+    # Work out how many stations were used
+    if len(event.picks) > 0:
+        stations = [pick.waveform_id.station_code for pick in event.picks]
+        ksta = str(len(list(set(stations))))
+    else:
+        ksta = ''
+    sfile.write(' ' + str(evtime.year) + ' ' +
+                str(evtime.month).rjust(2) +
+                str(evtime.day).rjust(2) + ' ' +
+                str(evtime.hour).rjust(2) +
+                str(evtime.minute).rjust(2) + ' ' +
+                str(float(evtime.second)).rjust(4) + ' ' +
+                evtype + ' ' + lat.rjust(7) + ' ' + lon.rjust(7) +
+                depth.rjust(5) + agency.rjust(5) + ksta.rjust(3) +
+                timerms.rjust(4) +
+                mag_1.rjust(4) + mag_1_type.rjust(1) +
+                mag_1_agency[0:3].rjust(3) +
+                mag_2.rjust(4) + mag_2_type.rjust(1) +
+                mag_2_agency[0:3].rjust(3) +
+                mag_3.rjust(4) + mag_3_type.rjust(1) +
+                mag_3_agency[0:3].rjust(3) + '1' + '\n')
+    # Write line 2 of s-file
+    sfile.write(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
+                str(datetime.datetime.now().month).zfill(2) + '-' +
+                str(datetime.datetime.now().day).zfill(2) + ' ' +
+                str(datetime.datetime.now().hour).zfill(2) + ':' +
+                str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
+                userID.ljust(4) + ' STATUS:'+'ID:'.rjust(18) +
+                str(evtime.year) +
+                str(evtime.month).zfill(2) +
+                str(evtime.day).zfill(2) +
+                str(evtime.hour).zfill(2) +
+                str(evtime.minute).zfill(2) +
+                str(evtime.second).zfill(2) +
+                'I'.rjust(6) + '\n')
+    # Write line 3 of s-file
+    for wavefile in wavefiles:
+        sfile.write(' ' + wavefile + '6'.rjust(79-len(wavefile)) + '\n')
+    # Write final line of s-file
+    sfile.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
+                ' VELO AIN AR TRES W  DIS CAZ7\n')
+    sfile.close()
+    # Now call the populateSfile function
+    if len(event.picks) > 0:
+        populateSfile(sfilename, event)
+    return sfilename
+
+
 def populateSfile(sfile, event):
     """
     Module to populate a blank nordic format S-file with pick information,
@@ -783,9 +954,13 @@ def populateSfile(sfile, event):
     :type event: :class: obspy.event.core.Catalog
     :param picks: A single event to be written to a single S-file.
     """
-
+    from obspy.core.event import Catalog, Event
     # first check that the event is only one event
-    if not len(event) == 1:
+    if isinstance(event, Catalog) and len(event) == 1:
+        event = event[0]
+    elif isinstance(event, Event):
+        event = event
+    else:
         raise AttributeError('More than one event in the catalog, use a ' +
                              ' different method')
     f = open(sfile, 'r')
@@ -806,12 +981,12 @@ def populateSfile(sfile, event):
     f.close()
     #
     # Now generate lines for the new picks
-    newpicks = '\n'.join(nordpick(event[0]))
+    newpicks = '\n'.join(nordpick(event))
     # Write all new and old info back in
     f = open(sfile, 'w')
     f.write(header)
-    f.write(newpicks)
     f.write(body)
+    f.write(newpicks)
     f.write('\n'.rjust(81))
     f.close()
     return
@@ -825,6 +1000,12 @@ def nordpick(event):
     :param event: A single obspy event.
 
     :returns: List of String
+
+    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or
+        angle of incidence.  This is because obspy.event stores slowness in
+        s/deg and takeoff angle, which would require computation from the
+        values stored in seisan.  Multiple weights are also not supported in
+        Obspy.event
     """
 
     pick_strings = []
@@ -835,7 +1016,7 @@ def nordpick(event):
         elif pick.onset == 'emergent':
             impulsivity = 'E'
         else:
-            impulsivity = 'I'
+            impulsivity = ' '
 
         # Convert string to short string
         if pick.polarity == 'positive':
@@ -844,43 +1025,140 @@ def nordpick(event):
             polarity = 'D'
         else:
             polarity = ' '
-
-        # Extract the correct arrival info for this pick
+        # Extract velocity: Note that horizontal slowness in quakeML is stored
+        # as s/deg
+        if pick.horizontal_slowness:
+            # velocity = 1.0 / pick.horizontal_slowness
+            velocity = ' '  # Currently this conversion is unsupported.
+        else:
+            velocity = ' '
+        # Extract azimuth
+        if pick.backazimuth:
+            azimuth = pick.backazimuth
+        else:
+            azimuth = ' '
+        # Extract the correct arrival info for this pick - assuming only one
+        # arrival per pick...
         arrival = [arrival for arrival in event.origins[0].arrivals
                    if arrival.pick_id == pick.resource_id]
-        # Extract weight - should be stored as 0-4, or 9 for seisan.
-        if arrival.time_weight:
-            weight = arrival.time_weight
+        if len(arrival) > 0:
+            arrival = arrival[0]
+            # Extract weight - should be stored as 0-4, or 9 for seisan.
+            if arrival.time_weight:
+                weight = int(arrival.time_weight)
+            else:
+                weight = '0'
+            # Extract azimuth residual
+            if arrival.backazimuth_residual:
+                azimuthres = int(arrival.backazimuth_res)
+            else:
+                azimuthres = ' '
+            # Extract time residual
+            if arrival.time_residual:
+                timeres = arrival.time_residual
+            else:
+                timeres = ' '
+            # Extract distance
+            if arrival.distance:
+                distance = arrival.distance
+                if distance >= 100.0:
+                    distance = _int_conv(distance)
+                elif 10.0 < distance < 100.0:
+                    distance = round(distance, 1)
+                    round_len = 1
+                elif distance < 10.0:
+                    distance = round(distance, 2)
+                    round_len = 2
+                else:
+                    round_len = False
+            else:
+                distance = ' '
+                round_len = False
+            # Extract CAZ
+            if arrival.azimuth:
+                CAZ = int(arrival.azimuth)
+            else:
+                CAZ = ' '
         else:
-            weight = '0'
-
-        # Extract amplitude
-
-
+            CAZ = ' '
+            round_len = False
+            distance = ' '
+            timeres = ' '
+            azimuthres = ' '
+            azimuth = ' '
+            weight = ' '
+        # Extract amplitude: note there can be multiple amplitudes, but they
+        # should be associated with different picks.
+        amplitude = [amplitude for amplitude in event.amplitudes
+                     if amplitude.pick_id == pick.resource_id]
+        if len(amplitude) > 0:
+            amplitude = amplitude[0]
+            # Determine type of amplitude
+            if amplitude.type != 'END':
+                # Extract period
+                if amplitude.period:
+                    peri = amplitude.period
+                    if peri < 10.0:
+                        peri_round = 2
+                    elif peri >= 10.0:
+                        peri_round = 1
+                    else:
+                        peri_round = False
+                else:
+                    peri = ' '
+                # Extract amplitude and convert units
+                if amplitude.generic_amplitude:
+                    amp = amplitude.generic_amplitude
+                    if amplitude.unit in ['m', 'm/s', 'm/(s*s)', 'm*s']:
+                        amp *= 10**9
+                    # Otherwise we will assume that the amplitude is in counts
+                else:
+                    amp = np.nan
+                coda = ' '
+            else:
+                coda = int(amplitude.generic_amplitude)
+                peri = ' '
+                amp = np.nan
+        else:
+            peri = ' '
+            peri_round = False
+            amp = np.nan
+            coda = ' '
+        # If the weight is 0 then we don't need to print it
+        if weight == 0 or weight == '0':
+            weight = 999  # this will return an empty string using _str_conv
         # Generate a print string and attach it to the list
-        pick_strings += ' ' + pick.waveform_id.station_code.ljust(5) +\
-            pick.waveform_id.channel_code[0] +\
-            pick.waveform_id.channel_code[len(pick.waveform_id.channel_code)
-                                          - 1] + ' ' + impulsivity +\
-            pick.phase_hint.ljust(4) +\
-            _str_conv(int(weight)).rjust(1) + ' ' +\
-            polarity.rjust(1) + ' ' +\
-            str(pick.time.hour).rjust(2) +\
-            str(pick.time.minute).rjust(2) +\
-            str(pick.time.second).rjust(3) + '.' +\
-            str(float(pick.time.microsecond) /
-                (10 ** 4)).split('.')[0].zfill(2) +\
-            _str_conv(int(self.coda)).rjust(5)[0:5] +\
-            _str_conv(round(self.amplitude, 1)).rjust(7)[0:7] +\
-            _str_conv(self.peri, rounded=peri_round).rjust(5) +\
-            _str_conv(self.azimuth).rjust(6) +\
-            _str_conv(self.velocity).rjust(5) +\
-            _str_conv(dummy).rjust(4) +\
-            _str_conv(int(self.azimuthres)).rjust(3) +\
-            _str_conv(self.timeres, rounded=2).rjust(5) +\
-            _str_conv(int(.finalweight)).rjust(2) +\
-            _str_conv(self.distance, rounded=round_len).rjust(5) +\
-            _str_conv(int(self.CAZ)).rjust(4)+' '
+        pick_strings.append(' ' + pick.waveform_id.station_code.ljust(5) +
+                            pick.waveform_id.channel_code[0] +
+                            pick.waveform_id.channel_code[len(pick.waveform_id.
+                                                              channel_code)
+                                                          - 1] +
+                            ' ' + impulsivity + pick.phase_hint.ljust(4) +
+                            _str_conv(int(weight)).rjust(1) + ' ' +
+                            polarity.rjust(1) + ' ' +
+                            str(pick.time.hour).rjust(2) +
+                            str(pick.time.minute).rjust(2) +
+                            str(pick.time.second).rjust(3) + '.' +
+                            str(float(pick.time.microsecond) /
+                            (10 ** 4)).split('.')[0].zfill(2) +
+                            _str_conv(coda).rjust(5)[0:5] +
+                            _str_conv(round(amp, 1)).rjust(7)[0:7] +
+                            _str_conv(peri, rounded=peri_round).rjust(5) +
+                            _str_conv(azimuth).rjust(6) +
+                            _str_conv(velocity).rjust(5) +
+                            _str_conv(' ').rjust(4) +
+                            _str_conv(azimuthres).rjust(3) +
+                            _str_conv(timeres, rounded=2).rjust(5) +
+                            _str_conv(' ').rjust(2) +
+                            _str_conv(distance, rounded=round_len).rjust(5) +
+                            _str_conv(CAZ).rjust(4)+' ')
+        # Note that currently finalweight is unsupported, nor is velocity, or
+        # angle of incidence.  This is because obspy.event stores slowness in
+        # s/deg and takeoff angle, which would require computation from the
+        # values stored in seisan.  Multiple weights are also not supported in
+        # Obspy.event
+    return pick_strings
+
 
 def test_rw():
     """
