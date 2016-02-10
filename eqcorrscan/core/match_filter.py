@@ -172,12 +172,12 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
     :returns: tuple of (i, ccc) with ccc as an ndarray
 
     .. rubric:: Note
-    ..This function currently assumes only one template-channel per\
-     data-channel, while this is normal for a standard matched-filter routine,\
-     if we wanted to impliment a subspace detector, this would be the function\
-     to change, I think.  E.g. where I currently take only the first matching\
-     channel, we could loop through all the matching channels and then sum the\
-     correlation sums - however I don't really understand how you detect based\
+    ..This function currently assumes only one template-channel per
+     data-channel, while this is normal for a standard matched-filter routine,
+     if we wanted to impliment a subspace detector, this would be the function
+     to change, I think.  E.g. where I currently take only the first matching
+     channel, we could loop through all the matching channels and then sum the
+     correlation sums - however I don't really understand how you detect based
      on that.  More reading of the Harris document required.
     """
     from eqcorrscan.utils.timer import Timer
