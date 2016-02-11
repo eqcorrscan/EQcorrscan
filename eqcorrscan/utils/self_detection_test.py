@@ -24,8 +24,9 @@ This file is part of EQcorrscan.
 
 """
 
-def self_test(template, low_cut, high_cut, filt_order, samp_rate,\
-                threshold, thresh_type, trig_int ,debug=0):
+
+def self_test(template, low_cut, high_cut, filt_order, samp_rate,
+              threshold, thresh_type, trig_int, debug=0):
     """
     :type template: :class: obspy.Stream
     :param template: Template to check for self-detectability
