@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:local/4b1be317-551f-4c31-b1bb-ba7f61c27d5b">
+    <event publicID="smi:local/89e7dfdd-48e6-4c12-918f-8e5660c31d3a">
+      <description>
+        <text>LE</text>
+      </description>
+      <creationInfo>
+        <agencyID>TES</agencyID>
+      </creationInfo>
+      <origin publicID="smi:local/f27ba93e-45ff-4bac-8b2b-af5b5f409d2f">
+        <time>
+          <value>2012-03-26T00:00:01.000000Z</value>
+        </time>
+        <latitude>
+          <value>45.0</value>
+        </latitude>
+        <longitude>
+          <value>25.0</value>
+        </longitude>
+        <depth>
+          <value>15.0</value>
+        </depth>
+        <arrival publicID="smi:local/56270f8d-8d77-435e-bb36-4f567c9250ed">
+          <pickID>smi:local/bb0c2de5-4d20-415a-a376-9feecae4b185</pickID>
+          <phase>PN</phase>
+          <azimuth>25.0</azimuth>
+          <distance>15.0</distance>
+          <timeResidual>0.2</timeResidual>
+          <backazimuthResidual>5.0</backazimuthResidual>
+          <timeWeight>2.0</timeWeight>
+        </arrival>
+      </origin>
+      <magnitude publicID="smi:local/2d5a09ff-a959-48be-9094-7d84931931eb">
+        <mag>
+          <value>0.1</value>
+        </mag>
+        <type>ML</type>
+        <originID>smi:local/f27ba93e-45ff-4bac-8b2b-af5b5f409d2f</originID>
+        <creationInfo>
+          <agencyID>TES</agencyID>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/65eb1e50-f03e-483f-be8b-99a784ba8db5">
+        <mag>
+          <value>0.5</value>
+        </mag>
+        <type>Mc</type>
+        <originID>smi:local/f27ba93e-45ff-4bac-8b2b-af5b5f409d2f</originID>
+        <creationInfo>
+          <agencyID>TES</agencyID>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/8388d504-f956-458c-972a-67bc59973bdc">
+        <mag>
+          <value>1.3</value>
+        </mag>
+        <type>Ms</type>
+        <originID>smi:local/f27ba93e-45ff-4bac-8b2b-af5b5f409d2f</originID>
+        <creationInfo>
+          <agencyID>TES</agencyID>
+        </creationInfo>
+      </magnitude>
+      <pick publicID="smi:local/bb0c2de5-4d20-415a-a376-9feecae4b185">
+        <time>
+          <value>2012-03-26T00:00:01.680000Z</value>
+        </time>
+        <waveformID channelCode="SHZ" networkCode="NZ" stationCode="FOZ"></waveformID>
+        <horizontalSlowness>
+          <value>12.0</value>
+        </horizontalSlowness>
+        <backazimuth>
+          <value>20.0</value>
+        </backazimuth>
+        <onset>impulsive</onset>
+        <phaseHint>PN</phaseHint>
+        <polarity>positive</polarity>
+      </pick>
+      <amplitude publicID="smi:local/81327950-dc51-4276-900c-031c7d45c962">
+        <genericAmplitude/>
+        <period>
+          <value>0.4</value>
+        </period>
+        <snr>1.8</snr>
+        <pickID>smi:local/bb0c2de5-4d20-415a-a376-9feecae4b185</pickID>
+        <waveformID channelCode="SHZ" networkCode="NZ" stationCode="FOZ"></waveformID>
+      </amplitude>
+    </event>
+  </eventParameters>
+</q:quakeml>
