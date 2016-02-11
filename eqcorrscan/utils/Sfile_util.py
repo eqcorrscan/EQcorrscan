@@ -43,248 +43,254 @@ from obspy import UTCDateTime
 import numpy as np
 
 
-# class PICK:
-#     """
-#     Pick information for seisan implimentation, note all fields can be left\
-#     blank to obtain a default pick: picks have a print function which will\
-#     print them as they would be seen in an S-file.
-#
-#     Attributes:
-#         :type station: str
-#         :param station: Station name, less than five charectars required as\
-#          standard
-#         :type channel: str
-#         :param channel: Two or three charactar channel name, stored as two\
-#             charactars in S-file
-#         :type impulsivity: str
-#         :param impulsivity: either 'C' or 'D' for compressive and dilatational
-#         :type phase: str
-#         :param phase: Any allowable phase name in two characters
-#         :type weight: int
-#         :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing
-#         :type polarity: str
-#         :type time: obspy.UTCDateTime()
-#         :param time: Pick time as an obspy.UTCDateTime object
-#         :type coda: int
-#         :param coda: Length of coda in seconds
-#         :type amplitude: float
-#         :param amplitude: Amplitude (zero-peak), type is given in phase
-#         :type peri: float
-#         :param peri: Period of amplitude
-#          :type azimuth: float
-#         :param azimuth: Direction of approach in degrees
-#         :type velocity: float
-#         :param velocity: Phase velocity (km/s)
-#         :type AIN: int
-#         :param AIN: Angle of incidence.
-#         :type SNR: float
-#         :param SNR: Signal to noise ratio
-#         :type azimuthres: int
-#         :param azimuthres: Residual azimuth
-#         :type timeres: float
-#         :param timeres: Time residual in seconds
-#         :type finalweight: int
-#         :param finalweight: Final weight used in location
-#         :type distance: float
-#         :param distance: Source-reciever distance in km
-#         :type CAZ: int
-#         :param CAZ: Azimuth at source.
-#     """
-#     pickcount = 0
-#
-#     def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
-#                  weight=999, polarity=' ', time=UTCDateTime(0),
-#                  coda=999, amplitude=float('NaN'),
-#                  peri=float('NaN'), azimuth=float('NaN'),
-#                  velocity=float('NaN'), AIN=999, SNR=float('NaN'),
-#                  azimuthres=999, timeres=float('NaN'),
-#                  finalweight=999, distance=float('NaN'),
-#                  CAZ=999):
-#         self.station = station
-#         self.channel = channel
-#         self.impulsivity = impulsivity
-#         self.phase = phase
-#         self.weight = weight
-#         self.polarity = polarity
-#         self.time = time
-#         self.coda = coda
-#         self.amplitude = amplitude
-#         self.peri = peri
-#         self.azimuth = azimuth
-#         self.velocity = velocity
-#         self.AIN = AIN
-#         self.SNR = SNR
-#         self.azimuthres = azimuthres
-#         self.timeres = timeres
-#         self.finalweight = finalweight
-#         self.distance = distance
-#         self.CAZ = CAZ
-#         self.pickcount += 1
-#
-#     def __repr__(self):
-#         return "PICK()"
-#
-#     def __str__(self):
-#         if self.distance >= 100.0:
-#             self.distance = _int_conv(self.distance)
-#         elif 10.0 < self.distance < 100.0:
-#             self.distance = round(self.distance, 1)
-#             round_len = 1
-#         elif self.distance < 10.0:
-#             self.distance = round(self.distance, 2)
-#             round_len = 2
-#         else:
-#             round_len = False
-#         if self.peri < 10.0:
-#             peri_round = 2
-#         elif self.peri >= 10.0:
-#             peri_round = 1
-#         else:
-#             peri_round = False
-#         if not self.AIN == '':
-#             if not np.isnan(self.AIN):
-#                 dummy = int(self.AIN)
-#             else:
-#                 dummy = self.AIN
-#         else:
-#             dummy = self.SNR
-#         print_str = ' ' + self.station.ljust(5) +\
-#             self.channel[0]+self.channel[len(self.channel)-1] +\
-#             ' ' + self.impulsivity +\
-#             self.phase.ljust(4) +\
-#             _str_conv(self.weight).rjust(1) + ' ' +\
-#             self.polarity.rjust(1) + ' ' +\
-#             str(self.time.hour).rjust(2) +\
-#             str(self.time.minute).rjust(2) +\
-#             str(self.time.second).rjust(3) + '.' +\
-#             str(float(self.time.microsecond) /
-#                 (10 ** 4)).split('.')[0].zfill(2) +\
-#             _str_conv(int(self.coda)).rjust(5)[0:5] +\
-#             _str_conv(round(self.amplitude, 1)).rjust(7)[0:7] +\
-#             _str_conv(self.peri, rounded=peri_round).rjust(5) +\
-#             _str_conv(self.azimuth).rjust(6) +\
-#             _str_conv(self.velocity).rjust(5) +\
-#             _str_conv(dummy).rjust(4) +\
-#             _str_conv(int(self.azimuthres)).rjust(3) +\
-#             _str_conv(self.timeres, rounded=2).rjust(5) +\
-#             _str_conv(int(self.finalweight)).rjust(2) +\
-#             _str_conv(self.distance, rounded=round_len).rjust(5) +\
-#             _str_conv(int(self.CAZ)).rjust(4)+' '
-#         return print_str
-#
-#     def write(self, filename):
-#         """
-#         Public function to write the pick to a file
-#
-#         :type filename: str
-#         :param filename: Path to file to write to - will append to file
-#         """
-#         import os
-#         import warnings
-#         if os.path.isfile(filename):
-#             open_as = 'a'
-#         else:
-#             warnings.warn('File does not exist, no header')
-#             open_as = 'w'
-#
-#         with open(filename, open_as) as f:
-#             pickstr = self.__str__()
-#             f.write(pickstr+'\n')
-#         return
-#
-#
-# class EVENTINFO:
-#     """
-#     Header information for seisan events, again all fields can be left blank \
-#     for a default empty header.  The print function for header will print \
-#     important information, but not as seen in an S-file.
-#
-#     For more information on parameters see the seisan manual.
-#
-#     Attributes:
-#         :type time: obspy.UTCDateTime
-#         :param time: Event origin time
-#         :type loc_mod_ind: str
-#         :param loc_mod_ind:
-#         :type dist_ind: str
-#         :param dist_ind: Distance flag, usually 'L' for local, 'R' for \
-#             regional and 'D' for distant
-#         :type ev_id: str
-#         :param ev_id: Often blank, 'E' denotes explosion and fixes depth to 0km
-#         :type latitude: float
-#         :param latitude: Hypocentre latitude in decimal degrees
-#         :type longitude: float
-#         :param lognitude: Hypocentre longitude in decimal degrees
-#         :type depth: float
-#         :param depth: hypocentre depth in km
-#         :type depth_ind: str
-#         :param depth_ind:
-#         :type loc_ind: str
-#         :param loc_ind:
-#         :type agency: str
-#         :param agency: Reporting agency, three letters
-#         :type nsta: int
-#         :param nsta: Number of stations recording
-#         :type t_RMS: float
-#         :param t_RMS: Root-mean-squared time residual
-#         :type Mag_1: float
-#         :param Mag_1: first magnitude
-#         :type Mag_1_type: str
-#         :param Mag_1_type: Type of magnitude for Mag_1 ('L', 'C', 'W')
-#         :type Mag_1_agency: str
-#         :param Mag_1_agency: Reporting agency for Mag_1
-#         :type Mag_2: float
-#         :param Mag_2: second magnitude
-#         :type Mag_2_type: str
-#         :param Mag_2_type: Type of magnitude for Mag_2 ('L', 'C', 'W')
-#         :type Mag_2_agency: str
-#         :param Mag_2_agency: Reporting agency for Mag_2
-#         :type Mag_3: float
-#         :param Mag_3: third magnitude
-#         :type Mag_3_type: str
-#         :param Mag_3_type: Type of magnitude for Mag_3 ('L', 'C', 'W')
-#         :type Mag_3_agency: str
-#         :param Mag_3_agency: Reporting agency for Mag_3
-#     """
-#     def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
-#                  ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
-#                  depth=float('NaN'), depth_ind=' ', loc_ind=' ', agency=' ',
-#                  nsta=0, t_RMS=float('NaN'), Mag_1=float('NaN'),
-#                  Mag_1_type=' ', Mag_1_agency=' ', Mag_2=float('NaN'),
-#                  Mag_2_type=' ', Mag_2_agency=' ', Mag_3=float('NaN'),
-#                  Mag_3_type=' ', Mag_3_agency=' '):
-#         self.time = time
-#         self.loc_mod_ind = loc_mod_ind
-#         self.dist_ind = dist_ind
-#         self.ev_id = ev_id
-#         self.latitude = latitude
-#         self.longitude = longitude
-#         self.depth = depth
-#         self.depth_ind = depth_ind
-#         self.loc_ind = loc_ind
-#         self.agency = agency
-#         self.nsta = nsta
-#         self.t_RMS = t_RMS
-#         self.Mag_1 = Mag_1
-#         self.Mag_1_type = Mag_1_type
-#         self.Mag_1_agency = Mag_1_agency
-#         self.Mag_2 = Mag_2
-#         self.Mag_2_type = Mag_2_type
-#         self.Mag_2_agency = Mag_2_agency
-#         self.Mag_3 = Mag_3
-#         self.Mag_3_type = Mag_3_type
-#         self.Mag_3_agency = Mag_3_agency
-#
-#     def __repr__(self):
-#         return "HEADER()"
-#
-#     def __str__(self):
-#         print_str = str(self.time) + ' ' + str(self.latitude) + ',' +\
-#             str(self.longitude) + ' ' + str(self.depth) + ' ' +\
-#             self.Mag_1_type + ':' + str(self.Mag_1) + self.Mag_2_type + ':' +\
-#             str(self.Mag_2) + self.Mag_3_type + ':' + str(self.Mag_3) + '  '\
-#             + self.agency
-#         return print_str
+class PICK:
+    """
+    Pick information for seisan implimentation, note all fields can be left\
+    blank to obtain a default pick: picks have a print function which will\
+    print them as they would be seen in an S-file.
+
+    Attributes:
+        :type station: str
+        :param station: Station name, less than five charectars required as\
+         standard
+        :type channel: str
+        :param channel: Two or three charactar channel name, stored as two\
+            charactars in S-file
+        :type impulsivity: str
+        :param impulsivity: either 'C' or 'D' for compressive and dilatational
+        :type phase: str
+        :param phase: Any allowable phase name in two characters
+        :type weight: int
+        :param weight: 0-4 with 0=100%, 4=0%, use weight=9 for unknown timing
+        :type polarity: str
+        :type time: obspy.UTCDateTime()
+        :param time: Pick time as an obspy.UTCDateTime object
+        :type coda: int
+        :param coda: Length of coda in seconds
+        :type amplitude: float
+        :param amplitude: Amplitude (zero-peak), type is given in phase
+        :type peri: float
+        :param peri: Period of amplitude
+         :type azimuth: float
+        :param azimuth: Direction of approach in degrees
+        :type velocity: float
+        :param velocity: Phase velocity (km/s)
+        :type AIN: int
+        :param AIN: Angle of incidence.
+        :type SNR: float
+        :param SNR: Signal to noise ratio
+        :type azimuthres: int
+        :param azimuthres: Residual azimuth
+        :type timeres: float
+        :param timeres: Time residual in seconds
+        :type finalweight: int
+        :param finalweight: Final weight used in location
+        :type distance: float
+        :param distance: Source-reciever distance in km
+        :type CAZ: int
+        :param CAZ: Azimuth at source.
+
+    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    classes. This will be removed in future releases.
+    """
+    pickcount = 0
+
+    def __init__(self, station=' ', channel=' ', impulsivity=' ', phase=' ',
+                 weight=999, polarity=' ', time=UTCDateTime(0),
+                 coda=999, amplitude=float('NaN'),
+                 peri=float('NaN'), azimuth=float('NaN'),
+                 velocity=float('NaN'), AIN=999, SNR=float('NaN'),
+                 azimuthres=999, timeres=float('NaN'),
+                 finalweight=999, distance=float('NaN'),
+                 CAZ=999):
+        self.station = station
+        self.channel = channel
+        self.impulsivity = impulsivity
+        self.phase = phase
+        self.weight = weight
+        self.polarity = polarity
+        self.time = time
+        self.coda = coda
+        self.amplitude = amplitude
+        self.peri = peri
+        self.azimuth = azimuth
+        self.velocity = velocity
+        self.AIN = AIN
+        self.SNR = SNR
+        self.azimuthres = azimuthres
+        self.timeres = timeres
+        self.finalweight = finalweight
+        self.distance = distance
+        self.CAZ = CAZ
+        self.pickcount += 1
+
+    def __repr__(self):
+        return "PICK()"
+
+    def __str__(self):
+        if self.distance >= 100.0:
+            self.distance = _int_conv(self.distance)
+        elif 10.0 < self.distance < 100.0:
+            self.distance = round(self.distance, 1)
+            round_len = 1
+        elif self.distance < 10.0:
+            self.distance = round(self.distance, 2)
+            round_len = 2
+        else:
+            round_len = False
+        if self.peri < 10.0:
+            peri_round = 2
+        elif self.peri >= 10.0:
+            peri_round = 1
+        else:
+            peri_round = False
+        if not self.AIN == '':
+            if not np.isnan(self.AIN):
+                dummy = int(self.AIN)
+            else:
+                dummy = self.AIN
+        else:
+            dummy = self.SNR
+        print_str = ' ' + self.station.ljust(5) +\
+            self.channel[0]+self.channel[len(self.channel)-1] +\
+            ' ' + self.impulsivity +\
+            self.phase.ljust(4) +\
+            _str_conv(self.weight).rjust(1) + ' ' +\
+            self.polarity.rjust(1) + ' ' +\
+            str(self.time.hour).rjust(2) +\
+            str(self.time.minute).rjust(2) +\
+            str(self.time.second).rjust(3) + '.' +\
+            str(float(self.time.microsecond) /
+                (10 ** 4)).split('.')[0].zfill(2) +\
+            _str_conv(int(self.coda)).rjust(5)[0:5] +\
+            _str_conv(round(self.amplitude, 1)).rjust(7)[0:7] +\
+            _str_conv(self.peri, rounded=peri_round).rjust(5) +\
+            _str_conv(self.azimuth).rjust(6) +\
+            _str_conv(self.velocity).rjust(5) +\
+            _str_conv(dummy).rjust(4) +\
+            _str_conv(int(self.azimuthres)).rjust(3) +\
+            _str_conv(self.timeres, rounded=2).rjust(5) +\
+            _str_conv(int(self.finalweight)).rjust(2) +\
+            _str_conv(self.distance, rounded=round_len).rjust(5) +\
+            _str_conv(int(self.CAZ)).rjust(4)+' '
+        return print_str
+
+    def write(self, filename):
+        """
+        Public function to write the pick to a file
+
+        :type filename: str
+        :param filename: Path to file to write to - will append to file
+        """
+        import os
+        import warnings
+        if os.path.isfile(filename):
+            open_as = 'a'
+        else:
+            warnings.warn('File does not exist, no header')
+            open_as = 'w'
+
+        with open(filename, open_as) as f:
+            pickstr = self.__str__()
+            f.write(pickstr+'\n')
+        return
+
+
+class EVENTINFO:
+    """
+    Header information for seisan events, again all fields can be left blank \
+    for a default empty header.  The print function for header will print \
+    important information, but not as seen in an S-file.
+
+    For more information on parameters see the seisan manual.
+
+    Attributes:
+        :type time: obspy.UTCDateTime
+        :param time: Event origin time
+        :type loc_mod_ind: str
+        :param loc_mod_ind:
+        :type dist_ind: str
+        :param dist_ind: Distance flag, usually 'L' for local, 'R' for \
+            regional and 'D' for distant
+        :type ev_id: str
+        :param ev_id: Often blank, 'E' denotes explosion and fixes depth to 0km
+        :type latitude: float
+        :param latitude: Hypocentre latitude in decimal degrees
+        :type longitude: float
+        :param lognitude: Hypocentre longitude in decimal degrees
+        :type depth: float
+        :param depth: hypocentre depth in km
+        :type depth_ind: str
+        :param depth_ind:
+        :type loc_ind: str
+        :param loc_ind:
+        :type agency: str
+        :param agency: Reporting agency, three letters
+        :type nsta: int
+        :param nsta: Number of stations recording
+        :type t_RMS: float
+        :param t_RMS: Root-mean-squared time residual
+        :type Mag_1: float
+        :param Mag_1: first magnitude
+        :type Mag_1_type: str
+        :param Mag_1_type: Type of magnitude for Mag_1 ('L', 'C', 'W')
+        :type Mag_1_agency: str
+        :param Mag_1_agency: Reporting agency for Mag_1
+        :type Mag_2: float
+        :param Mag_2: second magnitude
+        :type Mag_2_type: str
+        :param Mag_2_type: Type of magnitude for Mag_2 ('L', 'C', 'W')
+        :type Mag_2_agency: str
+        :param Mag_2_agency: Reporting agency for Mag_2
+        :type Mag_3: float
+        :param Mag_3: third magnitude
+        :type Mag_3_type: str
+        :param Mag_3_type: Type of magnitude for Mag_3 ('L', 'C', 'W')
+        :type Mag_3_agency: str
+        :param Mag_3_agency: Reporting agency for Mag_3
+
+    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    classes. This will be removed in future releases.
+    """
+    def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
+                 ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
+                 depth=float('NaN'), depth_ind=' ', loc_ind=' ', agency=' ',
+                 nsta=0, t_RMS=float('NaN'), Mag_1=float('NaN'),
+                 Mag_1_type=' ', Mag_1_agency=' ', Mag_2=float('NaN'),
+                 Mag_2_type=' ', Mag_2_agency=' ', Mag_3=float('NaN'),
+                 Mag_3_type=' ', Mag_3_agency=' '):
+        self.time = time
+        self.loc_mod_ind = loc_mod_ind
+        self.dist_ind = dist_ind
+        self.ev_id = ev_id
+        self.latitude = latitude
+        self.longitude = longitude
+        self.depth = depth
+        self.depth_ind = depth_ind
+        self.loc_ind = loc_ind
+        self.agency = agency
+        self.nsta = nsta
+        self.t_RMS = t_RMS
+        self.Mag_1 = Mag_1
+        self.Mag_1_type = Mag_1_type
+        self.Mag_1_agency = Mag_1_agency
+        self.Mag_2 = Mag_2
+        self.Mag_2_type = Mag_2_type
+        self.Mag_2_agency = Mag_2_agency
+        self.Mag_3 = Mag_3
+        self.Mag_3_type = Mag_3_type
+        self.Mag_3_agency = Mag_3_agency
+
+    def __repr__(self):
+        return "HEADER()"
+
+    def __str__(self):
+        print_str = str(self.time) + ' ' + str(self.latitude) + ',' +\
+            str(self.longitude) + ' ' + str(self.depth) + ' ' +\
+            self.Mag_1_type + ':' + str(self.Mag_1) + self.Mag_2_type + ':' +\
+            str(self.Mag_2) + self.Mag_3_type + ':' + str(self.Mag_3) + '  '\
+            + self.agency
+        return print_str
 
 
 def _int_conv(string):
@@ -823,7 +829,8 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     return sfile
 
 
-def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
+def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
+                 overwrite=False):
     """
     Function to take an obspy.event and write the relevant information to a\
     nordic formatted s-file
@@ -839,6 +846,8 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
     :param outdir: Path to directory to write to
     :type wavefiles: list of str
     :param wavefiles: Waveforms to associate the sfile with
+    :type explosion: bool
+    :param explosion: Note if the event is an explosion, will be marked by an E
     :type overwrite: bool
     :param overwrite: force to overwrite old files, defaults to False
 
@@ -858,6 +867,8 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
     # Check that evtype is one of L,R,D
     if evtype not in ['L', 'R', 'D']:
         raise IOError('Event type must be either L, R or D')
+    if explosion:
+        evtype += 'E'
     # Check that there is one event
     if isinstance(event, Catalog) and len(event) == 1:
         event = event[0]
@@ -865,6 +876,12 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
         event = event
     else:
         raise IOError('Needs a single event')
+    if isinstance(wavefiles, str):
+        wavefiles = [wavefiles]
+    elif isinstance(wavefiles, list):
+        wavefiles = wavefiles
+    else:
+        raise IOError(wavefiles + ' is neither string or list')
     # Determine name from origin time
     sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\
         evtype + '.S' + event.origins[0].time.datetime.strftime('%Y%m')
@@ -902,7 +919,7 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
                 str(evtime.hour).rjust(2) +
                 str(evtime.minute).rjust(2) + ' ' +
                 str(float(evtime.second)).rjust(4) + ' ' +
-                evtype + ' ' + lat.rjust(7) + ' ' + lon.rjust(7) +
+                evtype.ljust(2) + lat.rjust(7) + ' ' + lon.rjust(7) +
                 depth.rjust(5) + agency.rjust(5) + ksta.rjust(3) +
                 timerms.rjust(4) +
                 mag_1.rjust(4) + mag_1_type.rjust(1) +
@@ -986,8 +1003,9 @@ def populateSfile(sfile, event):
     f = open(sfile, 'w')
     f.write(header)
     f.write(body)
-    f.write(newpicks)
+    f.write(newpicks + '\n')
     f.write('\n'.rjust(81))
+    # f.write('\n')
     f.close()
     return
 
@@ -1050,7 +1068,7 @@ def nordpick(event):
                 weight = '0'
             # Extract azimuth residual
             if arrival.backazimuth_residual:
-                azimuthres = int(arrival.backazimuth_res)
+                azimuthres = int(arrival.backazimuth_residual)
             else:
                 azimuthres = ' '
             # Extract time residual
@@ -1167,7 +1185,7 @@ def test_rw():
     import os
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog, Event, Origin, Magnitude
-    from obspy.core.event import EventDescription, CreationInfo
+    from obspy.core.event import EventDescription, CreationInfo, readEvents
     # Set-up a test event
     test_event = Event()
     test_event.origins.append(Origin())
@@ -1177,7 +1195,7 @@ def test_rw():
     test_event.origins[0].latitude = 45.0
     test_event.origins[0].longitude = 25.0
     test_event.origins[0].depth = 15.0
-    test_event.creation_info = CreationInfo(agency_id = 'TES')
+    test_event.creation_info = CreationInfo(agency_id='TES')
     test_event.origins[0].time_errors['Time_Residual_RMS'] = 0.01
     test_event.magnitudes.append(Magnitude())
     test_event.magnitudes[0].mag = 0.1
@@ -1203,11 +1221,12 @@ def test_rw():
                                  polarity='positive',
                                  time=UTCDateTime("2012-03-26") + 1.68,
                                  horizontal_slowness=12, backazimuth=20))
-    test_event.amplitudes.append(Amplitude(amplitude=2.0, period=0.4, snr=1.8,
+    test_event.amplitudes.append(Amplitude(generic_amplitude=2.0, period=0.4,
                                            pick_id=test_event.picks[0].
                                            resource_id,
                                            waveform_id=test_event.picks[0].
-                                           waveform_id))
+                                           waveform_id,
+                                           unit='m'))
     test_event.origins[0].arrivals.append(Arrival(time_weight=2,
                                                   phase=test_event.picks[0].
                                                   phase_hint,
@@ -1220,6 +1239,80 @@ def test_rw():
     # Add the event to a catalogue which can be used for QuakeML testing
     test_cat = Catalog()
     test_cat += test_event
+    # Write the catalog
+    test_cat.write("Test_catalog.xml", format='QUAKEML')
+    # Read and check
+    read_cat = readEvents("Test_catalog.xml")
+    os.remove("Test_catalog.xml")
+    assert read_cat[0].resource_id == test_cat[0].resource_id
+    assert read_cat[0].picks == test_cat[0].picks
+    assert read_cat[0].origins[0].resource_id ==\
+        test_cat[0].origins[0].resource_id
+    assert read_cat[0].origins[0].time == test_cat[0].origins[0].time
+    # Note that time_residuel_RMS is not a quakeML format
+    assert read_cat[0].origins[0].longitude == test_cat[0].origins[0].longitude
+    assert read_cat[0].origins[0].latitude == test_cat[0].origins[0].latitude
+    assert read_cat[0].origins[0].depth == test_cat[0].origins[0].depth
+    assert read_cat[0].magnitudes == test_cat[0].magnitudes
+    assert read_cat[0].event_descriptions == test_cat[0].event_descriptions
+    assert read_cat[0].amplitudes[0].resource_id ==\
+        test_cat[0].amplitudes[0].resource_id
+    assert read_cat[0].amplitudes[0].period == test_cat[0].amplitudes[0].period
+    assert read_cat[0].amplitudes[0].unit == test_cat[0].amplitudes[0].unit
+    assert read_cat[0].amplitudes[0].generic_amplitude ==\
+        test_cat[0].amplitudes[0].generic_amplitude
+    assert read_cat[0].amplitudes[0].pick_id ==\
+        test_cat[0].amplitudes[0].pick_id
+    assert read_cat[0].amplitudes[0].waveform_id ==\
+        test_cat[0].amplitudes[0].waveform_id
+
+    # Check the read-write s-file functionality
+    sfile = eventtoSfile(test_cat[0], userID='TEST', evtype='L', outdir='.',
+                         wavefiles='test', explosion=True, overwrite=True)
+    del read_cat
+    assert readwavename(sfile) == ['test']
+    read_cat = readpicks(sfile)
+    os.remove(sfile)
+    assert read_cat[0].picks[0].time == test_cat[0].picks[0].time
+    assert read_cat[0].picks[0].backazimuth == test_cat[0].picks[0].backazimuth
+    assert read_cat[0].picks[0].onset == test_cat[0].picks[0].onset
+    assert read_cat[0].picks[0].phase_hint == test_cat[0].picks[0].phase_hint
+    assert read_cat[0].picks[0].polarity == test_cat[0].picks[0].polarity
+    assert read_cat[0].picks[0].waveform_id.station_code ==\
+        test_cat[0].picks[0].waveform_id.station_code
+    assert read_cat[0].picks[0].waveform_id.channel_code[-1] ==\
+        test_cat[0].picks[0].waveform_id.channel_code[-1]
+    # assert read_cat[0].origins[0].resource_id ==\
+    #     test_cat[0].origins[0].resource_id
+    assert read_cat[0].origins[0].time == test_cat[0].origins[0].time
+    # Note that time_residuel_RMS is not a quakeML format
+    assert read_cat[0].origins[0].longitude == test_cat[0].origins[0].longitude
+    assert read_cat[0].origins[0].latitude == test_cat[0].origins[0].latitude
+    assert read_cat[0].origins[0].depth == test_cat[0].origins[0].depth
+    assert read_cat[0].magnitudes[0].mag == test_cat[0].magnitudes[0].mag
+    assert read_cat[0].magnitudes[1].mag == test_cat[0].magnitudes[1].mag
+    assert read_cat[0].magnitudes[2].mag == test_cat[0].magnitudes[2].mag
+    assert read_cat[0].magnitudes[0].creation_info ==\
+        test_cat[0].magnitudes[0].creation_info
+    assert read_cat[0].magnitudes[1].creation_info ==\
+        test_cat[0].magnitudes[1].creation_info
+    assert read_cat[0].magnitudes[2].creation_info ==\
+        test_cat[0].magnitudes[2].creation_info
+    assert read_cat[0].magnitudes[0].magnitude_type ==\
+        test_cat[0].magnitudes[0].magnitude_type
+    assert read_cat[0].magnitudes[1].magnitude_type ==\
+        test_cat[0].magnitudes[1].magnitude_type
+    assert read_cat[0].magnitudes[2].magnitude_type ==\
+        test_cat[0].magnitudes[2].magnitude_type
+    assert read_cat[0].event_descriptions == test_cat[0].event_descriptions
+    # assert read_cat[0].amplitudes[0].resource_id ==\
+    #     test_cat[0].amplitudes[0].resource_id
+    assert read_cat[0].amplitudes[0].period == test_cat[0].amplitudes[0].period
+    assert read_cat[0].amplitudes[0].snr == test_cat[0].amplitudes[0].snr
+    # assert read_cat[0].amplitudes[0].pick_id ==\
+    #     test_cat[0].amplitudes[0].pick_id
+    # assert read_cat[0].amplitudes[0].waveform_id ==\
+    #     test_cat[0].amplitudes[0].waveform_id
     return True
 
 if __name__ == '__main__':
