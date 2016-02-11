@@ -470,8 +470,10 @@ def interev_mag_sfiles(sfiles):
     :param sfiles: List of sfiles to read from
     """
     from eqcorrscan.utils import Sfile_util
-    times = [Sfile_util.readheader(sfile).time for sfile in sfiles]
-    mags = [Sfile_util.readheader(sfile).Mag_1 for sfile in sfiles]
+    times = [Sfile_util.readheader(sfile)[0].origins[0].time
+             for sfile in sfiles]
+    mags = [Sfile_util.readheader(sfile)[0].magnitudes[0].mag
+            for sfile in sfiles]
     interev_mag(times, mags)
 
 
