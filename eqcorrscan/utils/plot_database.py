@@ -21,6 +21,7 @@ This file is part of EQcorrscan.
 
 """
 
+
 def volume_plot(stationpath, database, limits):
     """
     Function to read in station information from a file and earthquake info
@@ -32,19 +33,20 @@ def volume_plot(stationpath, database, limits):
     from eqcorrscan.utils import Sfile_util
     import glob
     sfiles = glob.glob(database+'/*/*/*')
-    eqlocs=[]
+    eqlocs = []
     for sfile in sfiles:
         try:
-            eqlocs+=[(Sfile_util.readheader(sfile).latitude,\
-                    Sfile_util.readheader(sfile).longitude,\
-                    Sfile_util.readheader(sfile).depth)]
+            event = Sfile_util.readheader(sfile)[0]
+            eqlocs += [event.origins[0].latitude,
+                       event.origins[0].longitude,
+                       event.origins[0].depth]
         except:
             continue
-    stalocs=[]
+    stalocs = []
     f = open(stationpath, 'r')
     for line in f:
-        stalocs+=[(float(line.split(',')[1]),\
-                float(line.split(',')[0]), float(line.split(',')[4])/1000)]
+        stalocs += [(float(line.split(',')[1]),
+                    float(line.split(',')[0]), float(line.split(',')[4])/1000)]
     f.close()
     from utils import EQcorrscan_plotting
     EQcorrscan_plotting.threeD_seismplot(stalocs, eqlocs, limits)
@@ -53,7 +55,8 @@ def volume_plot(stationpath, database, limits):
 if __name__ == "__main__":
     import sys
     if not len(sys.argv) == 3:
-        raise IOError("Needs two arguments, station .csv file and database path")
+        raise IOError("Needs two arguments, station .csv file and database " +
+                      "path")
     stationpath = str(sys.argv[1])
     database = str(sys.argv[2])
     import glob
