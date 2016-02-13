@@ -90,8 +90,8 @@ class PICK:
         :type CAZ: int
         :param CAZ: Azimuth at source.
 
-    ...rubric:: Note: This is a depreciated legacy class.  Users should use the
-    obspy.core.event classes. This class will be removed from later releases.
+    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    classes. This will be removed in future releases.
     """
     pickcount = 0
 
@@ -249,9 +249,8 @@ class EVENTINFO:
         :type Mag_3_agency: str
         :param Mag_3_agency: Reporting agency for Mag_3
 
-    ...rubric:: Note: This is a deprecreciated legacy class, users should make
-    use of the obspy.core.event classes.  This will be removed from later
-    releases.
+    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    classes. This will be removed in future releases.
     """
     def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
                  ev_id=' ', latitude=float('NaN'), longitude=float('NaN'),
@@ -830,7 +829,8 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     return sfile
 
 
-def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
+def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
+                 overwrite=False):
     """
     Function to take an obspy.event and write the relevant information to a\
     nordic formatted s-file
@@ -846,6 +846,8 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
     :param outdir: Path to directory to write to
     :type wavefiles: list of str
     :param wavefiles: Waveforms to associate the sfile with
+    :type explosion: bool
+    :param explosion: Note if the event is an explosion, will be marked by an E
     :type overwrite: bool
     :param overwrite: force to overwrite old files, defaults to False
 
@@ -865,6 +867,8 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
     # Check that evtype is one of L,R,D
     if evtype not in ['L', 'R', 'D']:
         raise IOError('Event type must be either L, R or D')
+    if explosion:
+        evtype += 'E'
     # Check that there is one event
     if isinstance(event, Catalog) and len(event) == 1:
         event = event[0]
@@ -872,6 +876,12 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
         event = event
     else:
         raise IOError('Needs a single event')
+    if isinstance(wavefiles, str):
+        wavefiles = [wavefiles]
+    elif isinstance(wavefiles, list):
+        wavefiles = wavefiles
+    else:
+        raise IOError(wavefiles + ' is neither string or list')
     # Determine name from origin time
     sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\
         evtype + '.S' + event.origins[0].time.datetime.strftime('%Y%m')
@@ -909,7 +919,7 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, overwrite=False):
                 str(evtime.hour).rjust(2) +
                 str(evtime.minute).rjust(2) + ' ' +
                 str(float(evtime.second)).rjust(4) + ' ' +
-                evtype + ' ' + lat.rjust(7) + ' ' + lon.rjust(7) +
+                evtype.ljust(2) + lat.rjust(7) + ' ' + lon.rjust(7) +
                 depth.rjust(5) + agency.rjust(5) + ksta.rjust(3) +
                 timerms.rjust(4) +
                 mag_1.rjust(4) + mag_1_type.rjust(1) +
@@ -993,8 +1003,9 @@ def populateSfile(sfile, event):
     f = open(sfile, 'w')
     f.write(header)
     f.write(body)
-    f.write(newpicks)
+    f.write(newpicks + '\n')
     f.write('\n'.rjust(81))
+    # f.write('\n')
     f.close()
     return
 
@@ -1057,7 +1068,7 @@ def nordpick(event):
                 weight = '0'
             # Extract azimuth residual
             if arrival.backazimuth_residual:
-                azimuthres = int(arrival.backazimuth_res)
+                azimuthres = int(arrival.backazimuth_residual)
             else:
                 azimuthres = ' '
             # Extract time residual
@@ -1184,7 +1195,7 @@ def test_rw():
     test_event.origins[0].latitude = 45.0
     test_event.origins[0].longitude = 25.0
     test_event.origins[0].depth = 15.0
-    test_event.creation_info = CreationInfo(agency_id = 'TES')
+    test_event.creation_info = CreationInfo(agency_id='TES')
     test_event.origins[0].time_errors['Time_Residual_RMS'] = 0.01
     test_event.magnitudes.append(Magnitude())
     test_event.magnitudes[0].mag = 0.1
@@ -1210,11 +1221,12 @@ def test_rw():
                                  polarity='positive',
                                  time=UTCDateTime("2012-03-26") + 1.68,
                                  horizontal_slowness=12, backazimuth=20))
-    test_event.amplitudes.append(Amplitude(amplitude=2.0, period=0.4, snr=1.8,
+    test_event.amplitudes.append(Amplitude(generic_amplitude=2.0, period=0.4,
                                            pick_id=test_event.picks[0].
                                            resource_id,
                                            waveform_id=test_event.picks[0].
-                                           waveform_id))
+                                           waveform_id,
+                                           unit='m'))
     test_event.origins[0].arrivals.append(Arrival(time_weight=2,
                                                   phase=test_event.picks[0].
                                                   phase_hint,
@@ -1227,13 +1239,80 @@ def test_rw():
     # Add the event to a catalogue which can be used for QuakeML testing
     test_cat = Catalog()
     test_cat += test_event
-    # Write event as quakeML
-    test_cat.write("test.xml", format="QUAKEML")
-    # Read that in and check that that works
-    new_cat = readEvents("test.xml")
-    print(new_cat)
-    print(test_cat)
-    assert test_cat == new_cat
+    # Write the catalog
+    test_cat.write("Test_catalog.xml", format='QUAKEML')
+    # Read and check
+    read_cat = readEvents("Test_catalog.xml")
+    os.remove("Test_catalog.xml")
+    assert read_cat[0].resource_id == test_cat[0].resource_id
+    assert read_cat[0].picks == test_cat[0].picks
+    assert read_cat[0].origins[0].resource_id ==\
+        test_cat[0].origins[0].resource_id
+    assert read_cat[0].origins[0].time == test_cat[0].origins[0].time
+    # Note that time_residuel_RMS is not a quakeML format
+    assert read_cat[0].origins[0].longitude == test_cat[0].origins[0].longitude
+    assert read_cat[0].origins[0].latitude == test_cat[0].origins[0].latitude
+    assert read_cat[0].origins[0].depth == test_cat[0].origins[0].depth
+    assert read_cat[0].magnitudes == test_cat[0].magnitudes
+    assert read_cat[0].event_descriptions == test_cat[0].event_descriptions
+    assert read_cat[0].amplitudes[0].resource_id ==\
+        test_cat[0].amplitudes[0].resource_id
+    assert read_cat[0].amplitudes[0].period == test_cat[0].amplitudes[0].period
+    assert read_cat[0].amplitudes[0].unit == test_cat[0].amplitudes[0].unit
+    assert read_cat[0].amplitudes[0].generic_amplitude ==\
+        test_cat[0].amplitudes[0].generic_amplitude
+    assert read_cat[0].amplitudes[0].pick_id ==\
+        test_cat[0].amplitudes[0].pick_id
+    assert read_cat[0].amplitudes[0].waveform_id ==\
+        test_cat[0].amplitudes[0].waveform_id
+
+    # Check the read-write s-file functionality
+    sfile = eventtoSfile(test_cat[0], userID='TEST', evtype='L', outdir='.',
+                         wavefiles='test', explosion=True, overwrite=True)
+    del read_cat
+    assert readwavename(sfile) == ['test']
+    read_cat = readpicks(sfile)
+    os.remove(sfile)
+    assert read_cat[0].picks[0].time == test_cat[0].picks[0].time
+    assert read_cat[0].picks[0].backazimuth == test_cat[0].picks[0].backazimuth
+    assert read_cat[0].picks[0].onset == test_cat[0].picks[0].onset
+    assert read_cat[0].picks[0].phase_hint == test_cat[0].picks[0].phase_hint
+    assert read_cat[0].picks[0].polarity == test_cat[0].picks[0].polarity
+    assert read_cat[0].picks[0].waveform_id.station_code ==\
+        test_cat[0].picks[0].waveform_id.station_code
+    assert read_cat[0].picks[0].waveform_id.channel_code[-1] ==\
+        test_cat[0].picks[0].waveform_id.channel_code[-1]
+    # assert read_cat[0].origins[0].resource_id ==\
+    #     test_cat[0].origins[0].resource_id
+    assert read_cat[0].origins[0].time == test_cat[0].origins[0].time
+    # Note that time_residuel_RMS is not a quakeML format
+    assert read_cat[0].origins[0].longitude == test_cat[0].origins[0].longitude
+    assert read_cat[0].origins[0].latitude == test_cat[0].origins[0].latitude
+    assert read_cat[0].origins[0].depth == test_cat[0].origins[0].depth
+    assert read_cat[0].magnitudes[0].mag == test_cat[0].magnitudes[0].mag
+    assert read_cat[0].magnitudes[1].mag == test_cat[0].magnitudes[1].mag
+    assert read_cat[0].magnitudes[2].mag == test_cat[0].magnitudes[2].mag
+    assert read_cat[0].magnitudes[0].creation_info ==\
+        test_cat[0].magnitudes[0].creation_info
+    assert read_cat[0].magnitudes[1].creation_info ==\
+        test_cat[0].magnitudes[1].creation_info
+    assert read_cat[0].magnitudes[2].creation_info ==\
+        test_cat[0].magnitudes[2].creation_info
+    assert read_cat[0].magnitudes[0].magnitude_type ==\
+        test_cat[0].magnitudes[0].magnitude_type
+    assert read_cat[0].magnitudes[1].magnitude_type ==\
+        test_cat[0].magnitudes[1].magnitude_type
+    assert read_cat[0].magnitudes[2].magnitude_type ==\
+        test_cat[0].magnitudes[2].magnitude_type
+    assert read_cat[0].event_descriptions == test_cat[0].event_descriptions
+    # assert read_cat[0].amplitudes[0].resource_id ==\
+    #     test_cat[0].amplitudes[0].resource_id
+    assert read_cat[0].amplitudes[0].period == test_cat[0].amplitudes[0].period
+    assert read_cat[0].amplitudes[0].snr == test_cat[0].amplitudes[0].snr
+    # assert read_cat[0].amplitudes[0].pick_id ==\
+    #     test_cat[0].amplitudes[0].pick_id
+    # assert read_cat[0].amplitudes[0].waveform_id ==\
+    #     test_cat[0].amplitudes[0].waveform_id
     return True
 
 if __name__ == '__main__':

@@ -20,17 +20,21 @@ This file is part of EQcorrscan.
 All copyright and ownership of this script belongs to Calum Chamberlain.
 
 """
+
 import numpy as np
+
+
 def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
     Function to generate a simulated seismogram from a given S-P time.
-    Will generate spikes separated by a given S-P time, which are then convolved
-    with a decaying sine function.  The P-phase is simulated by a positive
-    spike of value 1, the S-arrival is simulated by a decaying boxcar of
-    maximum amplitude 1.5.  These ampitude ratios can be altered by changing
+    Will generate spikes separated by a given S-P time, which are then
+    convolved with a decaying sine function.  The P-phase is simulated by a
+    positive spike of value 1, the S-arrival is simulated by a decaying boxcar
+    of maximum amplitude 1.5.  These ampitude ratios can be altered by changing
     the amp_ratio, which is the ratio S amplitude:P amplitude.
 
-    Note, in testing this can achieve 0.3 or greater cross-correlations with data
+    Note, in testing this can achieve 0.3 or greater cross-correlations with
+    data.
 
     :type SP: int
     :param SP: S-P time in samples
@@ -46,12 +50,12 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     :returns: np.ndarray
     """
     if flength and 2.5*SP < flength and 100 < flength:
-        additional_length=flength
+        additional_length = flength
     elif 2.5*SP < 100.0:
-        additional_length=100
+        additional_length = 100
     else:
-        additional_length=2.5*SP
-    synth=np.zeros(SP+10+additional_length) # Make the array begin 10 samples before the P\
+        additional_length = 2.5 * SP
+    synth = np.zeros(SP+10+additional_length) # Make the array begin 10 samples before the P\
             # and at least 2.5 times the S-P samples after the S arrival
     synth[10]=1.0 # P-spike fixed at 10 samples from start of window
     # The length of the decaying S-phase should depend on the SP time,\
