@@ -582,11 +582,14 @@ def readpicks(sfile):
         try:
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
                                int(line[18:20]), int(line[20:22]),
-                               int(line[23:25]), int(line[26:28])*10000)
+                               int(line[23:28].split('.')[0]),
+                               int(line[23:28].split('.')[1])*10000)
         except (ValueError):
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
                                int(line[18:20]), int(line[20:22]), 0, 0)
             time += 60  # Add 60 seconds on to the time, this copes with s-file
+            # preference to write seconds in 1-60 rather than 0-59 which
+            # datetime objects accept
         coda = _int_conv(line[28:33])
         amplitude = _float_conv(line[33:40])
         peri = _float_conv(line[41:45])
