@@ -55,7 +55,8 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         additional_length = 100
     else:
         additional_length = 2.5 * SP
-    synth = np.zeros(SP+10+additional_length) # Make the array begin 10 samples before the P\
+    synth = np.zeros(SP+10+additional_length)
+            # Make the array begin 10 samples before the P
             # and at least 2.5 times the S-P samples after the S arrival
     synth[10]=1.0 # P-spike fixed at 10 samples from start of window
     # The length of the decaying S-phase should depend on the SP time,\
