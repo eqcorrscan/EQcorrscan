@@ -109,7 +109,7 @@ class DETECTION(object):
         return "DETECTION()"
 
     def __str__(self):
-        """Full print in the style of a pick in an S-file."""
+        """Full print."""
         print_str = "Detection on " + self.template_name + " at " + \
                     str(self.detect_time)
         return print_str
@@ -541,8 +541,8 @@ def match_filter(template_names, template_list, st, threshold,
             cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
             # Resample here to maintain shape better
             cccsum_hist = cccsum_plot.copy()
-            cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.sampling_rate /
-                                                   10)).data
+            cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
+                                                   sampling_rate / 10)).data
             cccsum_plot = EQcorrscan_plotting.chunk_data(cccsum_plot, 10,
                                                          'Maxabs').data
             # Enforce same length
@@ -553,11 +553,13 @@ def match_filter(template_names, template_list, st, threshold,
                                             stream_plot, rawthresh, True,
                                             plotdir + '/cccsum_plot_' +
                                             template_names[i] + '_' +
-                                            stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
+                                            stream[0].stats.starttime.
+                                            datetime.strftime('%Y-%m-%d') +
                                             '.' + plot_format)
             if debug >= 4:
                 print ' '.join(['Saved the cccsum to:', template_names[i],
-                                stream[0].stats.starttime.datetime.strftime('%Y%j')])
+                                stream[0].stats.starttime.datetime.
+                                strftime('%Y%j')])
                 np.save(template_names[i] +
                         stream[0].stats.starttime.datetime.strftime('%Y%j'),
                         cccsum)
@@ -566,14 +568,14 @@ def match_filter(template_names, template_list, st, threshold,
             np.save('cccsum_' + str(i) + '.npy', cccsum)
         if debug >= 3 and max(cccsum) > rawthresh:
             peaks = findpeaks.find_peaks2_short(cccsum, rawthresh,
-                                                trig_int * stream[0].stats.sampling_rate,
-                                                debug,
+                                                trig_int * stream[0].stats.
+                                                sampling_rate, debug,
                                                 stream[0].stats.starttime,
                                                 stream[0].stats.sampling_rate)
         elif max(cccsum) > rawthresh:
             peaks = findpeaks.find_peaks2_short(cccsum, rawthresh,
-                                                trig_int * stream[0].stats.sampling_rate,
-                                                debug)
+                                                trig_int * stream[0].stats.
+                                                sampling_rate, debug)
         else:
             print 'No peaks found above threshold'
             peaks = False
