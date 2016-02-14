@@ -220,6 +220,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     print "Removed " + str(len(nodes) - len(nodes_out)) + " duplicate nodes"
     return stations, nodes_out, lags_out
 
+
 def _rms(array):
     """Calculate RMS of array
     """
@@ -552,9 +553,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         plt.ioff()
     # from joblib import Parallel, delayed
     from multiprocessing import Pool, cpu_count
-    from eqcorrscan.utils.Sfile_util import PICK
     from copy import deepcopy
     from obspy import read as obsread
+    from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
+    from obspy.core.event import EventDescription, CreationInfo, Comment
     import obspy.Stream
     import matplotlib.pyplot as plt
     from eqcorrscan.utils import EQcorrscan_plotting as plotting
@@ -693,12 +695,20 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     good_detections = []
     if detections:
         print 'Converting detections in to templates'
+        # Generate a catalog of detections
+        detections_cat = Catalog()
         for j, detection in enumerate(detections):
             print 'Converting for detection ' + str(j) + ' of ' +\
                 str(len(detections))
+            # Create an event for each detection
+            event = Event()
+            # Set up some header info for the event
+            event.event_descriptions.append(EventDescription())
+            event.event_descriptions[0].text = 'Brightness detection'
+            event.creation_info = CreationInfo(agency_id='EQcorrscan')
             copy_of_stream = deepcopy(stream_copy)
-            # Convert detections to PICK type - name of detection template
-            # is the node.
+            # Convert detections to obspy.core.event type -
+            # name of detection template is the node.
             node = (detection.template_name.split('_')[0],
                     detection.template_name.split('_')[1],
                     detection.template_name.split('_')[2])
@@ -706,27 +716,34 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             # Look up node in nodes and find the associated lags
             index = nodes.index(node)
             detect_lags = lags[:, index]
-            picks = []
+            ksta = Comment(text='Number of stations=' + len(detect_lags))
+            event.origins.append(Origin())
+            event.origins[0].comments.append(ksta)
+            event.origins[0].time = copy_of_stream[0].stats.starttime +\
+                detect_lags[0] + detection.detect_time
+            event.origins[0].latitude = node[0]
+            event.origins[0].longitude = node[1]
+            event.origins[0].depth = node[2]
             for i, detect_lag in enumerate(detect_lags):
                 station = stations[i]
                 st = copy_of_stream.select(station=station)
                 if len(st) != 0:
                     for tr in st:
-                        picks.append(PICK(station=station,
-                                          channel=tr.stats.channel,
-                                          impulsivity='E', phase='S',
-                                          weight='3', polarity='',
-                                          time=tr.stats.starttime +
-                                          detect_lag + detection.detect_time -
-                                          pre_pick,
-                                          coda='', amplitude='', peri='',
-                                          azimuth='', velocity='', AIN='',
-                                          SNR='', azimuthres='', timeres='',
-                                          finalweight='', distance='',
-                                          CAZ=''))
+                        _waveform_id = WaveformStreamID(station_code=tr.stats.
+                                                        station,
+                                                        channel_code=tr.stats.
+                                                        channel,
+                                                        network_code='NA')
+                        event.picks.append(Pick(waveform_id=_waveform_id,
+                                                time=tr.stats.starttime +
+                                                detect_lag +
+                                                detection.detect_time +
+                                                pre_pick,
+                                                onset='emergent',
+                                                evalutation_mode='automatic'))
             print 'Generating template for detection: ' + str(j)
-            template = (_template_gen(picks, copy_of_stream, template_length,
-                        'all'))
+            template = (_template_gen(event.picks, copy_of_stream,
+                        template_length, 'all'))
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
             # In the interests of RAM conservation we write then read
