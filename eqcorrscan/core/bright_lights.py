@@ -220,6 +220,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     print "Removed " + str(len(nodes) - len(nodes_out)) + " duplicate nodes"
     return stations, nodes_out, lags_out
 
+
 def _rms(array):
     """Calculate RMS of array
     """
