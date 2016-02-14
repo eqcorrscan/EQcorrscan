@@ -101,7 +101,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         new_path_parts.append(part)
     # * argument to allow .join() to accept a list
     wavpath = os.path.join(*new_path_parts) + '/'
-    #In case of absolute paths (not handled with .split() --> .join())
+    # In case of absolute paths (not handled with .split() --> .join())
     if sfile[0] == '/':
         wavpath = '/' + wavpath
     # Read in waveform file
