@@ -79,7 +79,6 @@ def distance_matrix(stream_list, cores=1):
     # Initialize square matrix
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
-
     for i, master in enumerate(stream_list):
         # Start a parallel processing pool
         pool = Pool(processes=cores)
@@ -308,7 +307,7 @@ def SVD(stream_list):
                     for i in range(len(stream_list)) if
                     len(stream_list[i].select(station=stachan.split('.')[0],
                                               channel=stachan.split('.')[1]))
-                                          != 0]
+                    != 0]
         chan_mat = np.asarray(chan_mat)
         print chan_mat.shape
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
