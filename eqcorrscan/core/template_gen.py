@@ -120,7 +120,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
     catalog = Sfile_util.readpicks(sfile)
-    #Read the list of Picks for this event
+    # Read the list of Picks for this event
     picks = catalog[0].picks
     print "I have found the following picks"
     for pick in picks:
@@ -296,7 +296,7 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     stations = []
     channels = []
     st_stachans = []
-    #Read QuakeML file into Catalog class
+    # Read QuakeML file into Catalog class
     catalog = readEvents(quakeml)
     day = catalog[0].origins[0].time
     # Read in pick info
@@ -308,7 +308,7 @@ def from_QuakeML(quakeml, st, lowcut, highcut, samp_rate, filt_order,
                         pick.phase_hint, str(pick.time)])
         stations.append(pick.waveform_id.station_code)
         channels.append(pick.waveform_id.channel_code)
-    #Check to see if all picks have a corresponding waveform
+    # Check to see if all picks have a corresponding waveform
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i in xrange(len(stations)):
@@ -390,19 +390,19 @@ def from_SeisHub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     return temp_list
 
 
-def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
+def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
     r"""Function to generate a cut template in the obspy\
     Stream class from a given set of picks and data, also in an obspy stream\
     class.  Should be given pre-processed data (downsampled and filtered)
 
-    :type picks: :class: obspy.core.event.Pick
+    :type picks: List of :class: obspy.core.event.Pick
     :param picks: Picks to extract data around
     :type st: :class: 'obspy.Stream'
     :param st: Stream to etract templates from
     :type length: float
     :param length: Length of template in seconds
     :type swin: string
-    :param swin: P, S or all
+    :param swin: P, S or all, defaults to all
     :type prepick: float
     :param prepick: Length in seconds to extract before the pick time\
             default is 0.05 seconds
@@ -410,45 +410,48 @@ def _template_gen(picks, st, length, swin, prepick=0.05, plot=False):
     :param plot: To plot the template or not, default is True
     """
     import copy
-    from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as tplot
+    from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as\
+        tplot
     from obspy import Stream
     import warnings
     stations = []
     channels = []
     st_stachans = []
     for pick in picks:
-        stations.append(pick.waveform_id.station_code)
-        channels.append(pick.waveform_id.channel_code)
+        # Check to see that we are only taking the appropriate picks
+        if swin == 'all':
+            stations.append(pick.waveform_id.station_code)
+            channels.append(pick.waveform_id.channel_code)
+        elif swin == 'P' and 'P' in pick.phase_hint.upper():
+            # Use the 'in' statement to cope with phase names like 'PN' etc.
+            stations.append(pick.waveform_id.station_code)
+            channels.append(pick.waveform_id.channel_code)
+        elif swin == 'S' and 'S' in pick.phase_hint.upper():
+            stations.append(pick.waveform_id.station_code)
+            channels.append(pick.waveform_id.channel_code)
+        else:
+            raise IOError('Phase type is not in [all, P, S]')
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
-    for i in xrange(len(stations)):
-        if not '.'.join([stations[i], channels[i]]) in st_stachans:
-            warnings.warn('No data provided for ' + stations[i] + '.' +
+    for i, station in enumerate(stations):
+        if not '.'.join([station, channels[i]]) in st_stachans:
+            warnings.warn('No data provided for ' + station + '.' +
                           channels[i])
     # Select which channels we actually have picks for
     for tr in st:
         if tr.stats.station in stations:
-            if swin == 'all':
-                """cjh The following was removed as obspy.Pick class stores
-                channel names as 3-character station codes, not 2. I assume
-                an addition will need to be made in Sfile_util to add character
-                'H' to channel code.
-                """
-                # if len(tr.stats.channel) == 3:
-                #     temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
-                # elif len(tr.stats.channel) == 2:
-                #     temp_channel = tr.stats.channel
-                # # if temp_channel in channels:
-                # tr.stats.channel = temp_channel
-                if 'st1' not in locals():
-                    st1 = Stream(tr)
-                else:
-                    st1 += tr
+            # This is used to cope with seisan handling channel codes as
+            # two charectar codes, internally we will do the same.
+            if len(tr.stats.channel) == 3:
+                temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
+            elif len(tr.stats.channel) == 2:
+                temp_channel = tr.stats.channel
+            # Take all channels
+            tr.stats.channel = temp_channel
+            if 'st1' not in locals():
+                st1 = Stream(tr)
             else:
-                if 'st1' not in locals():
-                    st1 = Stream(tr)
-                else:
-                    st1 += tr
+                st1 += tr
     st = copy.deepcopy(st1)
     del st1
     if plot:
