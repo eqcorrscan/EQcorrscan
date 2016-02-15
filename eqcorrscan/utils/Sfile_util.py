@@ -403,7 +403,7 @@ def readheader(sfile):
     :type sfile: str
     :param sfile: Path to the s-file
 
-    :returns: :class: obspy.core.event.Catalog
+    :returns: :class: obspy.core.event.Event
     """
     import warnings
     from obspy.core.event import Event, Origin, Magnitude, Comment
@@ -451,24 +451,31 @@ def readheader(sfile):
         # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
         new_event.origins[0].time_errors['Time_Residual_RMS'] = \
             _float_conv(topline[52:55])
-        new_event.magnitudes.append(Magnitude())
-        new_event.magnitudes[0].mag = _float_conv(topline[56:59])
-        new_event.magnitudes[0].magnitude_type = topline[59]
-        new_event.magnitudes[0].creation_info = \
-            CreationInfo(agency_id=topline[60:63].strip())
-        new_event.magnitudes[0].origin_id = new_event.origins[0].resource_id
-        new_event.magnitudes.append(Magnitude())
-        new_event.magnitudes[1].mag = _float_conv(topline[64:67])
-        new_event.magnitudes[1].magnitude_type = topline[67]
-        new_event.magnitudes[1].creation_info = \
-            CreationInfo(agency_id=topline[68:71].strip())
-        new_event.magnitudes[1].origin_id = new_event.origins[0].resource_id
-        new_event.magnitudes.append(Magnitude())
-        new_event.magnitudes[2].mag = _float_conv(topline[72:75])
-        new_event.magnitudes[2].magnitude_type = topline[75]
-        new_event.magnitudes[2].creation_info = \
-            CreationInfo(agency_id=topline[76:79].strip())
-        new_event.magnitudes[2].origin_id = new_event.origins[0].resource_id
+        # Read in magnitudes if they are there.
+        if len(topline[59].strip()) > 0:
+            new_event.magnitudes.append(Magnitude())
+            new_event.magnitudes[0].mag = _float_conv(topline[56:59])
+            new_event.magnitudes[0].magnitude_type = topline[59]
+            new_event.magnitudes[0].creation_info = \
+                CreationInfo(agency_id=topline[60:63].strip())
+            new_event.magnitudes[0].origin_id = new_event.origins[0].\
+                resource_id
+        if len(topline[67].strip()) > 0:
+            new_event.magnitudes.append(Magnitude())
+            new_event.magnitudes[1].mag = _float_conv(topline[64:67])
+            new_event.magnitudes[1].magnitude_type = topline[67]
+            new_event.magnitudes[1].creation_info = \
+                CreationInfo(agency_id=topline[68:71].strip())
+            new_event.magnitudes[1].origin_id = new_event.origins[0].\
+                resource_id
+        if len(topline[75].strip()) > 0:
+            new_event.magnitudes.append(Magnitude())
+            new_event.magnitudes[2].mag = _float_conv(topline[72:75])
+            new_event.magnitudes[2].magnitude_type = topline[75]
+            new_event.magnitudes[2].creation_info = \
+                CreationInfo(agency_id=topline[76:79].strip())
+            new_event.magnitudes[2].origin_id = new_event.origins[0].\
+                resource_id
     else:
         for line in f:
             if line[79] == '1':
@@ -502,27 +509,31 @@ def readheader(sfile):
                 # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
                 new_event.origins[0].time_errors['Time_Residual_RMS'] = \
                     _float_conv(topline[52:55])
-                new_event.magnitudes.append(Magnitude())
-                new_event.magnitudes[0].mag = _float_conv(topline[56:59])
-                new_event.magnitudes[0].magnitude_type = topline[60]
-                new_event.magnitudes[0].creation_info = \
-                    CreationInfo(agency_id=topline[61:63].strip())
-                new_event.magnitudes[0].origin_id = \
-                    new_event.origins[0].resource_id
-                new_event.magnitudes.append(Magnitude())
-                new_event.magnitudes[1].mag = _float_conv(topline[64:67])
-                new_event.magnitudes[1].magnitude_type = topline[68]
-                new_event.magnitudes[1].creation_info = \
-                    CreationInfo(agency_id=topline[69:71].strip())
-                new_event.magnitudes[1].origin_id = \
-                    new_event.origins[0].resource_id
-                new_event.magnitudes.append(Magnitude())
-                new_event.magnitudes[2].mag = _float_conv(topline[72:75])
-                new_event.magnitudes[2].magnitude_type = topline[76]
-                new_event.magnitudes[2].creation_info = \
-                    CreationInfo(agency_id=topline[77:79].strip())
-                new_event.magnitudes[2].origin_id = \
-                    new_event.origins[0].resource_id
+                # Read in magnitudes if they are there.
+                if len(topline[59].strip()) > 0:
+                    new_event.magnitudes.append(Magnitude())
+                    new_event.magnitudes[0].mag = _float_conv(topline[56:59])
+                    new_event.magnitudes[0].magnitude_type = topline[59]
+                    new_event.magnitudes[0].creation_info = \
+                        CreationInfo(agency_id=topline[60:63].strip())
+                    new_event.magnitudes[0].origin_id = new_event.origins[0].\
+                        resource_id
+                if len(topline[67].strip()) > 0:
+                    new_event.magnitudes.append(Magnitude())
+                    new_event.magnitudes[1].mag = _float_conv(topline[64:67])
+                    new_event.magnitudes[1].magnitude_type = topline[67]
+                    new_event.magnitudes[1].creation_info = \
+                        CreationInfo(agency_id=topline[68:71].strip())
+                    new_event.magnitudes[1].origin_id = new_event.origins[0].\
+                        resource_id
+                if len(topline[75].strip()) > 0:
+                    new_event.magnitudes.append(Magnitude())
+                    new_event.magnitudes[2].mag = _float_conv(topline[72:75])
+                    new_event.magnitudes[2].magnitude_type = topline[75]
+                    new_event.magnitudes[2].creation_info = \
+                        CreationInfo(agency_id=topline[76:79].strip())
+                    new_event.magnitudes[2].origin_id = new_event.origins[0].\
+                        resource_id
             if line[79] == '7':
                 break
     f.close()
@@ -541,7 +552,7 @@ def readpicks(sfile):
     :type sfile: String
     :param sfile: Path to sfile
 
-    :return: obspy.core.event.Catalog
+    :return: obspy.core.event.Event
 
     ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or
         angle of incidence.  This is because obspy.event stores slowness in
@@ -712,9 +723,7 @@ def readpicks(sfile):
                 CAZ
     f.close()
     # Write event to catalog object for ease of .write() method
-    new_cat = Catalog()
-    new_cat += new_event
-    return new_cat
+    return new_event
 
 
 def readwavename(sfile):
@@ -1537,7 +1546,8 @@ def test_rw():
                          wavefiles='test', explosion=True, overwrite=True)
     del read_cat
     assert readwavename(sfile) == ['test']
-    read_cat = readpicks(sfile)
+    read_cat = Catalog()
+    read_cat += readpicks(sfile)
     os.remove(sfile)
     assert read_cat[0].picks[0].time == test_cat[0].picks[0].time
     assert read_cat[0].picks[0].backazimuth == test_cat[0].picks[0].backazimuth
