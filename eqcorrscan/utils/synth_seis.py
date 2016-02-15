@@ -49,6 +49,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 
     :returns: np.ndarray
     """
+
     if flength and 2.5 * SP < flength and 100 < flength:
         additional_length = flength
     elif 2.5*SP < 100.0:
@@ -204,13 +205,18 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                 raise IOError('Input grid is not P or S')
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
-            if SP_time * samp_rate < flength - 11 and phaseout == 'all':
+            if flength and SP_time * samp_rate < flength - 11 \
+               and phaseout == 'all':
                 tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
-            elif phaseout == 'all':
+            elif flength and phaseout == 'all':
                 warnings.warn('Cannot make a bulk synthetic with this fixed ' +
                               'length for station '+station)
+            elif phaseout == 'all':
+                tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
+                                   flength=flength, phaseout=phaseout)
+                st.append(tr)
             elif phaseout in ['P', 'S']:
                 tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
