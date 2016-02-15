@@ -583,6 +583,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     """
     import copy
     import random
+    import pickle
 
     # Copying script from one obtained from John Townend.
     # Define maximum number of events, will be the width of K
@@ -597,9 +598,12 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
         V_working = copy.deepcopy(V[i])
         s_working = copy.deepcopy(s[i])
         ev_list = event_list[i]
-        if not len(ev_list) == len(V_working):
+        if len(ev_list) > len(V_working):
             print 'V is : '+str(len(V_working))
-            raise IOError('Not the same number of events as V')
+            f_dump = open('mag_calc_V_working.pkl', 'wb')
+            pickle.dump(V_working, f_dump)
+            f_dump.close()
+            raise IOError('More events than represented in V')
         # Set all non-important singular values to zero
         s_working[n_SVs:len(s_working)] = 0
         s_working = np.diag(s_working)
