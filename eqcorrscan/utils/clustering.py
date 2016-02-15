@@ -310,7 +310,7 @@ def SVD(stream_list):
                     != 0]
         chan_mat = np.asarray(chan_mat)
         print chan_mat.shape
-        U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
+        U, s, V = np.linalg.svd(chan_mat, full_matrices=True)
         SValues.append(s)
         SVectors.append(V)
         Uvectors.append(U)
