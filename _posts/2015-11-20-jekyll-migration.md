@@ -5,7 +5,7 @@ tagline: "Documenation"
 date:   2015-11-20 22:58:00
 categories: updates
 ---
-{% include_relative ../_includes/JB/setup %}
+{% include JB/setup %}
 
 We have migrated our front-page to a jekyll page, rather than directing you
 straight to our API docs (which can now be found

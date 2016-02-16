@@ -5,7 +5,7 @@ tagline: "Important changes"
 date:   2016-02-15 17:16:00
 categories: updates
 ---
-{% include_relative ../_includes/JB/setup %}
+{% include JB/setup %}
 
 Thanks to the hard work of Chet Hopp we have now integrated into the development
 branch the [obspy.core.event](http://docs.obspy.org/master/packages/autogen/obspy.core.event.html) classes.
