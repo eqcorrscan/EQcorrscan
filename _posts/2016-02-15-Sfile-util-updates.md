@@ -4,6 +4,8 @@ title:  "Sfile_util changes"
 date:   2016-02-16 17:16:00
 categories: updates
 ---
+{% include JB/setup %}
+
 Thanks to the hard work of Chet Hopp we have now integrated into the development
 branch the [obspy.core.event](http://docs.obspy.org/master/packages/autogen/obspy.core.event.html) classes.
 These allow us to read and write multiple formats, including quakeML, and NonLinLoc.
