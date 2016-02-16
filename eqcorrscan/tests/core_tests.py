@@ -2,6 +2,8 @@
 A series of test functions for the core functions in EQcorrscan.
 """
 
+from __future__ import division
+
 
 def test_lag_calc():
     """
@@ -13,6 +15,92 @@ def test_lag_calc():
     # This needs to have a list of detection objects, a day of synth data,
     # and a series of templates.
     return True
+
+
+def test_match_filter(samp_rate=20.0, debug=0):
+    """
+    Function to test the capabilities of match_filter and just check that it\
+    is working!  Uses synthetic templates and seeded, randomised data.
+
+    :type debug: int
+    :param debug: Debug level, higher the number the more output.
+    """
+    from eqcorrscan.utils import pre_processing
+    from eqcorrscan.utils import EQcorrscan_plotting as plotting
+    from eqcorrscan.core import match_filter
+    from obspy import UTCDateTime
+    import string
+    # Generate a random dataset
+    templates, data, seeds = generate_synth_data(nsta=5, ntemplates=2,
+                                                 nseeds=50,
+                                                 samp_rate=samp_rate,
+                                                 t_length=6.0, max_amp=5.0,
+                                                 debug=debug)
+    # Notes to the user: If you use more templates you should ensure they are
+    # more different, e.g. set the data to have larger moveouts, otherwise
+    # similar templates will detect events seeded by another template.
+    # Test the pre_processing functions
+    for tr in data:
+        pre_processing.dayproc(tr=tr, lowcut=2.0, highcut=8.0, filt_order=3,
+                               samp_rate=20.0, debug=0,
+                               starttime=UTCDateTime(0))
+    if debug > 0:
+        data.plot()
+    # Filter the data and the templates
+    for template in templates:
+        pre_processing.shortproc(st=template, lowcut=2.0, highcut=8.0,
+                                 filt_order=3, samp_rate=20.0)
+        if debug > 0:
+            template.plot()
+    template_names = list(string.ascii_lowercase)[0:len(templates)]
+    detections = match_filter.match_filter(template_names=template_names,
+                                           template_list=templates,
+                                           st=data, threshold=8.0,
+                                           threshold_type='MAD',
+                                           trig_int=6.0,
+                                           plotvar=False,
+                                           plotdir='.',
+                                           cores=1)
+    # Compare the detections to the seeds
+    print('This test made ' + str(len(detections)) + ' detections')
+    ktrue = 0
+    kfalse = 0
+    for detection in detections:
+        print(detection.template_name)
+        i = template_names.index(detection.template_name)
+        t_seeds = seeds[i]
+        dtime_samples = int((detection.detect_time - UTCDateTime(0)) *
+                            samp_rate)
+        if dtime_samples in t_seeds['time']:
+            j = list(t_seeds['time']).index(dtime_samples)
+            print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
+            ktrue += 1
+        else:
+            min_diff = min(abs(t_seeds['time'] - dtime_samples))
+            if min_diff < 10:
+                # If there is a match within ten samples then its good enough
+                j = list(abs(t_seeds['time'] - dtime_samples)).index(min_diff)
+                print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
+                ktrue += 1
+            else:
+                print('Detection at sample: ' + str(dtime_samples) +
+                      ' does not match anything in seed times:')
+                kfalse += 1
+            print 'Minimum difference in samples is: ' + str(min_diff)
+    # Plot the detections
+    if debug > 3:
+        for i, template in enumerate(templates):
+            times = [d.detect_time.datetime for d in detections
+                     if d.template_name == template_names[i]]
+            print(times)
+            plotting.detection_multiplot(data, template, times)
+    # Set an 'acceptable' ratio of positive to false detections
+    print(str(ktrue) + ' true detections and ' + str(kfalse) +
+          ' false detections')
+    if kfalse / ktrue < 0.25:
+        return True
+    else:
+        return False
 
 
 def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
@@ -46,9 +134,9 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
         noisy data, Seeds: dictionary of seed SNR and time with time in\
         samples.
     """
-    from obspy import Stream, Trace
     from eqcorrscan.utils import synth_seis
     import numpy as np
+    from obspy import UTCDateTime
 
     # Generate random arrival times
     t_times = np.abs(np.random.random([nsta, ntemplates])) * t_length
@@ -71,7 +159,6 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
                                          travel_times=t_times, phase='S',
                                          samp_rate=samp_rate,
                                          flength=int(t_length * samp_rate))
-    print(templates)
     if debug > 2:
         for template in templates:
             print(template)
@@ -80,9 +167,10 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     seeds = []
     data = templates[0].copy()  # Copy a template to get the correct length
     # and stats for data, we will overwrite the data on this copy
-    impulses = np.zeros(86400 * int(samp_rate))
     for tr in data:
-        tr.data = impulses  # Set all the traces to have a day of zeros
+        tr.data = np.zeros(86400 * int(samp_rate))
+        # Set all the traces to have a day of zeros
+        tr.stats.starttime = UTCDateTime(0)
     for i, template in enumerate(templates):
         impulses = np.zeros(86400 * int(samp_rate))
         # Generate a series of impulses for seeding
@@ -107,14 +195,16 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
             # Convolve this with the template trace to give the daylong seeds
             data[j].data += np.convolve(tr_impulses,
                                         template_tr.data)[0:len(impulses)]
-            if debug > 0:
-                data[j].plot()
+        if debug > 2:
+            data.plot(starttime=UTCDateTime(0) +
+                      impulse_times[0]/samp_rate - 3,
+                      endtime=UTCDateTime(0) +
+                      impulse_times[0]/samp_rate + 15)
     # Add the noise
     for tr in data:
-        tr.data += np.random.randn(86400 * int(samp_rate))
+        noise = np.random.randn(86400 * int(samp_rate))
+        tr.data += noise / max(noise)
         if debug > 2:
             tr.plot()
-    if debug > 0:
-        data.plot()
 
     return templates, data, seeds
