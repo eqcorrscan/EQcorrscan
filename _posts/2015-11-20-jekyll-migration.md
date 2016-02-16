@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: post
 title:  "Jekyll Migration"
 tagline: "Documenation"
 date:   2015-11-20 22:58:00
@@ -16,4 +16,4 @@ than the real API docs.
 
 You can always find the code on github however:
 
-[EQcorrscan-gh]:  https://github.com/calum-chamberlain/EQcorrscan
+[EQcorrscan-gh](https://github.com/calum-chamberlain/EQcorrscan):  [github.com/calum-chamberlain/EQcorrscan](https://github.com/calum-chamberlain/EQcorrscan)
