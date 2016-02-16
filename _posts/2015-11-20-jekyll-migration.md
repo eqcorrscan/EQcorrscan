@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: page
 title:  "Jekyll Migration"
 tagline: "Documenation"
 date:   2015-11-20 22:58:00
