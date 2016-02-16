@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: post
 title:  "Sfile_util changes"
 tagline: "Important changes"
 date:   2016-02-15 17:16:00
