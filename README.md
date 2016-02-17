@@ -65,6 +65,11 @@ Also within this package are:
 * Brightness based template creation based on the work of Frank et al. (2014);
 * Singular Value Decomposition derived magnitude calculations based on Rubinstein & Ellsworth (2010).
 
+We are currently hovering around 9,000 lines of code (including doc-strings) - it is probably worth
+having a look at the docs to check what functions we have.  We plan to write a series of tutorials to be
+included on the EQcorrscan API to highlight key functions, currently our tutorial only shows
+how to do the core matched-filter detection.
+
 # Licence
 
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
