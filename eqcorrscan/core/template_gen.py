@@ -420,15 +420,19 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
     for pick in picks:
         # Check to see that we are only taking the appropriate picks
         if swin == 'all':
+            # Annoying compatability with seisan two channel codes
             stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code)
+            channels.append(pick.waveform_id.channel_code[0] +
+                            pick.waveform_id.channel_code[-1])
         elif swin == 'P' and 'P' in pick.phase_hint.upper():
             # Use the 'in' statement to cope with phase names like 'PN' etc.
             stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code)
+            channels.append(pick.waveform_id.channel_code[0] +
+                            pick.waveform_id.channel_code[-1])
         elif swin == 'S' and 'S' in pick.phase_hint.upper():
             stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code)
+            channels.append(pick.waveform_id.channel_code[0] +
+                            pick.waveform_id.channel_code[-1])
         else:
             raise IOError('Phase type is not in [all, P, S]')
     for tr in st:
@@ -463,8 +467,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
         if swin == 'all':
             for pick in picks:
                 if pick.waveform_id.station_code == tr.stats.station and \
-                        pick.waveform_id.channel_code == tr.stats.channel and\
-                        pick.phase_hint == 'P':
+                        pick.waveform_id.channel_code[0] + \
+                        pick.waveform_id.channel_code[-1] == tr.stats.channel \
+                        and pick.phase_hint == 'P':
                     starttime = pick.time - prepick
                 elif pick.waveform_id.station_code == tr.stats.station and\
                         tr.stats.channel[-1] in ['1', '2', 'N', 'E'] and\
