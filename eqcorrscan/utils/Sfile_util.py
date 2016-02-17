@@ -1451,7 +1451,12 @@ def test_rw():
     import os
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog, Event, Origin, Magnitude
-    from obspy.core.event import EventDescription, CreationInfo, readEvents
+    from obspy.core.event import EventDescription, CreationInfo
+    import obspy
+    if obspy.__version__ >= 1.0:
+        from obspy.core.event import read_events
+    else:
+        from obspy.core.event import readEvents as read_events
     # Set-up a test event
     test_event = Event()
     test_event.origins.append(Origin())
@@ -1508,7 +1513,7 @@ def test_rw():
     # Write the catalog
     test_cat.write("Test_catalog.xml", format='QUAKEML')
     # Read and check
-    read_cat = readEvents("Test_catalog.xml")
+    read_cat = read_events("Test_catalog.xml")
     os.remove("Test_catalog.xml")
     assert read_cat[0].resource_id == test_cat[0].resource_id
     assert read_cat[0].picks == test_cat[0].picks
