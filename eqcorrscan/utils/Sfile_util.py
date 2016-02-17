@@ -1453,7 +1453,7 @@ def test_rw():
     from obspy.core.event import Catalog, Event, Origin, Magnitude
     from obspy.core.event import EventDescription, CreationInfo
     import obspy
-    if obspy.__version__ >= 1.0:
+    if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.core.event import read_events
     else:
         from obspy.core.event import readEvents as read_events
