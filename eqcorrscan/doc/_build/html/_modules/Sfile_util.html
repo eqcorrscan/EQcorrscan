@@ -86,14 +86,16 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -434,8 +436,8 @@
 </div>
 <div class="viewcode-block" id="_int_conv"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util._int_conv">[docs]</a><span class="k">def</span> <span class="nf">_int_conv</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience tool to convert from string to integer, if empty string return</span>
-<span class="sd">    a 999 rather than an error</span>
+<span class="sd">    Convenience tool to convert from string to integer, if empty string \</span>
+<span class="sd">    return a 999 rather than an error.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">intstring</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
@@ -446,7 +448,7 @@
 </div>
 <div class="viewcode-block" id="_float_conv"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util._float_conv">[docs]</a><span class="k">def</span> <span class="nf">_float_conv</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience tool to convert from string to float, if empty string return</span>
+<span class="sd">    Convenience tool to convert from string to float, if empty string return \</span>
 <span class="sd">    NaN rather than an error</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
@@ -459,7 +461,7 @@
 </div>
 <div class="viewcode-block" id="_str_conv"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util._str_conv">[docs]</a><span class="k">def</span> <span class="nf">_str_conv</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">rounded</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience tool to convert a number, either float or into into a string,</span>
+<span class="sd">    Convenience tool to convert a number, either float or into into a string, \</span>
 <span class="sd">    if the int is 999, or the float is NaN, returns empty string.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">number</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">number</span><span class="p">))</span> <span class="ow">or</span> <span class="n">number</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
@@ -482,7 +484,7 @@
 </div>
 <div class="viewcode-block" id="_evmagtonor"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util._evmagtonor">[docs]</a><span class="k">def</span> <span class="nf">_evmagtonor</span><span class="p">(</span><span class="n">mag_type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience tool to switch from obspy event magnitude types to seisan\</span>
+<span class="sd">    Convenience tool to switch from obspy event magnitude types to seisan \</span>
 <span class="sd">    syntax</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">mag_type</span> <span class="o">==</span> <span class="s">&#39;ML&#39;</span><span class="p">:</span>
@@ -506,7 +508,7 @@
 </div>
 <div class="viewcode-block" id="_nortoevmag"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util._nortoevmag">[docs]</a><span class="k">def</span> <span class="nf">_nortoevmag</span><span class="p">(</span><span class="n">mag_type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience tool to switch from nordic type magnitude notation to obspy\</span>
+<span class="sd">    Convenience tool to switch from nordic type magnitude notation to obspy \</span>
 <span class="sd">    event magnitudes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">mag_type</span> <span class="o">==</span> <span class="s">&#39;L&#39;</span><span class="p">:</span>
@@ -531,7 +533,7 @@
 <div class="viewcode-block" id="readheader"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.readheader">[docs]</a><span class="k">def</span> <span class="nf">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read the header information from a seisan nordic format S-file.</span>
-<span class="sd">    Returns an obspy.core.event.Catalog type: note this changed for version</span>
+<span class="sd">    Returns an obspy.core.event.Catalog type: note this changed for version \</span>
 <span class="sd">    0.1.0 from the inbuilt class types.</span>
 
 <span class="sd">    :type sfile: str</span>
@@ -679,8 +681,8 @@
 </div>
 <div class="viewcode-block" id="readpicks"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.readpicks">[docs]</a><span class="k">def</span> <span class="nf">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to read pick information from the s-file and store this in an\</span>
-<span class="sd">    obspy.event.Catalog type.  This was changed for version 0.1.0 from using</span>
+<span class="sd">    Function to read pick information from the s-file and store this in an \</span>
+<span class="sd">    obspy.event.Catalog type.  This was changed for version 0.1.0 from using \</span>
 <span class="sd">    the inbuilt PICK class.</span>
 
 <span class="sd">    :type sfile: String</span>
@@ -862,8 +864,8 @@
 </div>
 <div class="viewcode-block" id="readwavename"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.readwavename">[docs]</a><span class="k">def</span> <span class="nf">readwavename</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convenience function to extract the waveform filename from the s-file,</span>
-<span class="sd">    returns a list of waveform names found in the s-file as multiples can</span>
+<span class="sd">    Convenience function to extract the waveform filename from the s-file, \</span>
+<span class="sd">    returns a list of waveform names found in the s-file as multiples can \</span>
 <span class="sd">    be present.</span>
 
 <span class="sd">    :type sfile: str</span>
@@ -883,12 +885,12 @@
 <div class="viewcode-block" id="blanksfile"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.blanksfile">[docs]</a><span class="k">def</span> <span class="nf">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="n">userID</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                <span class="n">evtime</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Module to generate an empty s-file with a populated header for a given</span>
+<span class="sd">    Module to generate an empty s-file with a populated header for a given \</span>
 <span class="sd">    waveform.</span>
 
 <span class="sd">    :type wavefile: String</span>
-<span class="sd">    :param wavefile: Wavefile to associate with this S-file, the timing of the</span>
-<span class="sd">                    S-file will be taken from this file if evtime is not set</span>
+<span class="sd">    :param wavefile: Wavefile to associate with this S-file, the timing of \</span>
+<span class="sd">        the S-file will be taken from this file if evtime is not set.</span>
 <span class="sd">    :type evtype: String</span>
 <span class="sd">    :param evtype: L,R,D</span>
 <span class="sd">    :type userID: String</span>
@@ -989,7 +991,7 @@
 <div class="viewcode-block" id="eventtoSfile"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.eventtoSfile">[docs]</a><span class="k">def</span> <span class="nf">eventtoSfile</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">userID</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">wavefiles</span><span class="p">,</span> <span class="n">explosion</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">overwrite</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to take an obspy.event and write the relevant information to a\</span>
+<span class="sd">    Function to take an obspy.event and write the relevant information to a \</span>
 <span class="sd">    nordic formatted s-file</span>
 
 <span class="sd">    :type event: obspy.event.core.Catalog</span>
@@ -997,14 +999,15 @@
 <span class="sd">    :type userID: str</span>
 <span class="sd">    :param userID: Up to 4 character user ID</span>
 <span class="sd">    :type evtype: str</span>
-<span class="sd">    :param evtype: Single character string to describe the event, either L, R\</span>
+<span class="sd">    :param evtype: Single character string to describe the event, either L, R \</span>
 <span class="sd">        or D.</span>
 <span class="sd">    :type outdir: str</span>
 <span class="sd">    :param outdir: Path to directory to write to</span>
 <span class="sd">    :type wavefiles: list of str</span>
 <span class="sd">    :param wavefiles: Waveforms to associate the sfile with</span>
 <span class="sd">    :type explosion: bool</span>
-<span class="sd">    :param explosion: Note if the event is an explosion, will be marked by an E</span>
+<span class="sd">    :param explosion: Note if the event is an explosion, will be marked by an \</span>
+<span class="sd">        E.</span>
 <span class="sd">    :type overwrite: bool</span>
 <span class="sd">    :param overwrite: force to overwrite old files, defaults to False</span>
 
@@ -1114,11 +1117,11 @@
 </div>
 <div class="viewcode-block" id="populateSfile"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.populateSfile">[docs]</a><span class="k">def</span> <span class="nf">populateSfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Module to populate a blank nordic format S-file with pick information,</span>
-<span class="sd">    arguments required are the filename of the blank s-file and the picks</span>
-<span class="sd">    where picks is a dictionary of picks including station, channel,</span>
-<span class="sd">    impulsivity, phase, weight, polarity, time, coda, amplitude, peri, azimuth,</span>
-<span class="sd">    velocity, SNR, azimuth residual, Time-residual, final weight,</span>
+<span class="sd">    Module to populate a blank nordic format S-file with pick information, \</span>
+<span class="sd">    arguments required are the filename of the blank s-file and the picks \</span>
+<span class="sd">    where picks is a dictionary of picks including station, channel, \</span>
+<span class="sd">    impulsivity, phase, weight, polarity, time, coda, amplitude, peri, \</span>
+<span class="sd">    azimuth, velocity, SNR, azimuth residual, Time-residual, final weight, \</span>
 <span class="sd">    epicentral distance &amp; azimuth from event to station.</span>
 
 <span class="sd">    This is a full pick line information from the seisan manual, P. 341</span>
@@ -1169,8 +1172,8 @@
 </div>
 <div class="viewcode-block" id="eventtopick"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.eventtopick">[docs]</a><span class="k">def</span> <span class="nf">eventtopick</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper function to convert from obspy.core.event to legacy PICK and EVENT\</span>
-<span class="sd">    classes.</span>
+<span class="sd">    Wrapper function to convert from obspy.core.event to legacy PICK and \</span>
+<span class="sd">    EVENT classes.</span>
 
 <span class="sd">    :type event: obspy.core.event.Event</span>
 <span class="sd">    :param event: A single obspy event</span>
@@ -1278,7 +1281,7 @@
 </div>
 <div class="viewcode-block" id="picktoevent"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.picktoevent">[docs]</a><span class="k">def</span> <span class="nf">picktoevent</span><span class="p">(</span><span class="n">evinfo</span><span class="p">,</span> <span class="n">picks</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper function to convert from EVENTINFO and PICK classes to\</span>
+<span class="sd">    Wrapper function to convert from EVENTINFO and PICK classes to \</span>
 <span class="sd">    obspy.core.event.Event.</span>
 
 <span class="sd">    :type evinfo: EVENTINFO</span>
@@ -1425,7 +1428,7 @@
 </div>
 <div class="viewcode-block" id="nordpick"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.nordpick">[docs]</a><span class="k">def</span> <span class="nf">nordpick</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to print information from an obspy.event class to nordic format</span>
+<span class="sd">    Function to print information from an obspy.event class to nordic format.</span>
 
 <span class="sd">    :type event: :class: obspy.core.event.Event</span>
 <span class="sd">    :param event: A single obspy event.</span>
@@ -1593,207 +1596,25 @@
     <span class="k">return</span> <span class="n">pick_strings</span>
 
 </div>
-<div class="viewcode-block" id="test_rw"><a class="viewcode-back" href="../submodules/utils.Sfile_util.html#Sfile_util.test_rw">[docs]</a><span class="k">def</span> <span class="nf">test_rw</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to test the functions herein.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">os</span>
-    <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Pick</span><span class="p">,</span> <span class="n">WaveformStreamID</span><span class="p">,</span> <span class="n">Arrival</span><span class="p">,</span> <span class="n">Amplitude</span>
-    <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Origin</span><span class="p">,</span> <span class="n">Magnitude</span>
-    <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">EventDescription</span><span class="p">,</span> <span class="n">CreationInfo</span>
-    <span class="kn">import</span> <span class="nn">obspy</span>
-    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">read_events</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">readEvents</span> <span class="k">as</span> <span class="n">read_events</span>
-    <span class="c"># Set-up a test event</span>
-    <span class="n">test_event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Origin</span><span class="p">())</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&quot;2012-03-26&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">event_descriptions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">EventDescription</span><span class="p">())</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">event_descriptions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">&#39;LE&#39;</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="mf">45.0</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="mf">25.0</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mf">15.0</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">CreationInfo</span><span class="p">(</span><span class="n">agency_id</span><span class="o">=</span><span class="s">&#39;TES&#39;</span><span class="p">)</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time_errors</span><span class="p">[</span><span class="s">&#39;Time_Residual_RMS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Magnitude</span><span class="p">())</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="mf">0.1</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">=</span> <span class="s">&#39;ML&#39;</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">CreationInfo</span><span class="p">(</span><span class="s">&#39;TES&#39;</span><span class="p">)</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origin_id</span> <span class="o">=</span> <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Magnitude</span><span class="p">())</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="mf">0.5</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">=</span> <span class="s">&#39;Mc&#39;</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">CreationInfo</span><span class="p">(</span><span class="s">&#39;TES&#39;</span><span class="p">)</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">origin_id</span> <span class="o">=</span> <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Magnitude</span><span class="p">())</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">=</span> <span class="mf">1.3</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">=</span> <span class="s">&#39;Ms&#39;</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">CreationInfo</span><span class="p">(</span><span class="s">&#39;TES&#39;</span><span class="p">)</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">origin_id</span> <span class="o">=</span> <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 
-    <span class="c"># Define the test pick</span>
-    <span class="n">_waveform_id</span> <span class="o">=</span> <span class="n">WaveformStreamID</span><span class="p">(</span><span class="n">station_code</span><span class="o">=</span><span class="s">&#39;FOZ&#39;</span><span class="p">,</span> <span class="n">channel_code</span><span class="o">=</span><span class="s">&#39;SHZ&#39;</span><span class="p">,</span>
-                                    <span class="n">network_code</span><span class="o">=</span><span class="s">&#39;NZ&#39;</span><span class="p">)</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Pick</span><span class="p">(</span><span class="n">waveform_id</span><span class="o">=</span><span class="n">_waveform_id</span><span class="p">,</span>
-                                 <span class="n">onset</span><span class="o">=</span><span class="s">&#39;impulsive&#39;</span><span class="p">,</span> <span class="n">phase_hint</span><span class="o">=</span><span class="s">&#39;PN&#39;</span><span class="p">,</span>
-                                 <span class="n">polarity</span><span class="o">=</span><span class="s">&#39;positive&#39;</span><span class="p">,</span>
-                                 <span class="n">time</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&quot;2012-03-26&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.68</span><span class="p">,</span>
-                                 <span class="n">horizontal_slowness</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">backazimuth</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">amplitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Amplitude</span><span class="p">(</span><span class="n">generic_amplitude</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-                                           <span class="n">pick_id</span><span class="o">=</span><span class="n">test_event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
-                                           <span class="n">resource_id</span><span class="p">,</span>
-                                           <span class="n">waveform_id</span><span class="o">=</span><span class="n">test_event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
-                                           <span class="n">waveform_id</span><span class="p">,</span>
-                                           <span class="n">unit</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">))</span>
-    <span class="n">test_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Arrival</span><span class="p">(</span><span class="n">time_weight</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                                                  <span class="n">phase</span><span class="o">=</span><span class="n">test_event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
-                                                  <span class="n">phase_hint</span><span class="p">,</span>
-                                                  <span class="n">pick_id</span><span class="o">=</span><span class="n">test_event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
-                                                  <span class="n">resource_id</span><span class="p">,</span>
-                                                  <span class="n">backazimuth_residual</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                                                  <span class="n">time_residual</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
-                                                  <span class="n">distance</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-                                                  <span class="n">azimuth</span><span class="o">=</span><span class="mi">25</span><span class="p">))</span>
-    <span class="c"># Add the event to a catalogue which can be used for QuakeML testing</span>
-    <span class="n">test_cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
-    <span class="n">test_cat</span> <span class="o">+=</span> <span class="n">test_event</span>
-    <span class="c"># Write the catalog</span>
-    <span class="n">test_cat</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;Test_catalog.xml&quot;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;QUAKEML&#39;</span><span class="p">)</span>
-    <span class="c"># Read and check</span>
-    <span class="n">read_cat</span> <span class="o">=</span> <span class="n">read_events</span><span class="p">(</span><span class="s">&quot;Test_catalog.xml&quot;</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&quot;Test_catalog.xml&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
-    <span class="c"># Note that time_residuel_RMS is not a quakeML format</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">generic_amplitude</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">generic_amplitude</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pick_id</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pick_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span>
-
-    <span class="c"># Check the read-write s-file functionality</span>
-    <span class="n">sfile</span> <span class="o">=</span> <span class="n">eventtoSfile</span><span class="p">(</span><span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">userID</span><span class="o">=</span><span class="s">&#39;TEST&#39;</span><span class="p">,</span> <span class="n">evtype</span><span class="o">=</span><span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span>
-                         <span class="n">wavefiles</span><span class="o">=</span><span class="s">&#39;test&#39;</span><span class="p">,</span> <span class="n">explosion</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-    <span class="k">del</span> <span class="n">read_cat</span>
-    <span class="k">assert</span> <span class="n">readwavename</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">&#39;test&#39;</span><span class="p">]</span>
-    <span class="n">read_cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
-    <span class="n">read_cat</span> <span class="o">+=</span> <span class="n">readpicks</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backazimuth</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backazimuth</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase_hint</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase_hint</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">polarity</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">polarity</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="c"># assert read_cat[0].origins[0].resource_id ==\</span>
-    <span class="c">#     test_cat[0].origins[0].resource_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
-    <span class="c"># Note that time_residuel_RMS is not a quakeML format</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span>
-    <span class="c"># assert read_cat[0].amplitudes[0].resource_id ==\</span>
-    <span class="c">#     test_cat[0].amplitudes[0].resource_id</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span>
-    <span class="k">assert</span> <span class="n">read_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">snr</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">snr</span>
-    <span class="k">del</span> <span class="n">read_cat</span>
-    <span class="c"># assert read_cat[0].amplitudes[0].pick_id ==\</span>
-    <span class="c">#     test_cat[0].amplitudes[0].pick_id</span>
-    <span class="c"># assert read_cat[0].amplitudes[0].waveform_id ==\</span>
-    <span class="c">#     test_cat[0].amplitudes[0].waveform_id</span>
-
-    <span class="c"># Test the wrappers for PICK and EVENTINFO classes</span>
-    <span class="n">picks</span><span class="p">,</span> <span class="n">evinfo</span> <span class="o">=</span> <span class="n">eventtopick</span><span class="p">(</span><span class="n">test_cat</span><span class="p">)</span>
-    <span class="c"># Test the conversion back</span>
-    <span class="n">conv_cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
-    <span class="n">conv_cat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">picktoevent</span><span class="p">(</span><span class="n">evinfo</span><span class="p">,</span> <span class="n">picks</span><span class="p">))</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backazimuth</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backazimuth</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase_hint</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase_hint</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">polarity</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">polarity</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="c"># assert read_cat[0].origins[0].resource_id ==\</span>
-    <span class="c">#     test_cat[0].origins[0].resource_id</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
-    <span class="c"># Note that time_residuel_RMS is not a quakeML format</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mag</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">creation_info</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="o">==</span>\
-        <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude_type</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_descriptions</span>
-    <span class="c"># assert read_cat[0].amplitudes[0].resource_id ==\</span>
-    <span class="c">#     test_cat[0].amplitudes[0].resource_id</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">period</span>
-    <span class="k">assert</span> <span class="n">conv_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">snr</span> <span class="o">==</span> <span class="n">test_cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">snr</span>
-    <span class="k">return</span> <span class="bp">True</span>
-</div>
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="c"># Read arguments</span>
-    <span class="kn">import</span> <span class="nn">sys</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Requires 5 arguments: wavefile, evtype, userID, outdir,&#39;</span>
-              <span class="s">&#39; overwrite&#39;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">wavefile</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">evtype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-        <span class="n">userID</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-        <span class="n">outdir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">overwrite</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
-    <span class="n">sfile</span> <span class="o">=</span> <span class="n">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="n">userID</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
-    <span class="k">print</span> <span class="n">sfile</span>
+<span class="c"># if __name__ == &#39;__main__&#39;:</span>
+<span class="c">#     # Read arguments</span>
+<span class="c">#     import sys</span>
+<span class="c">#     if len(sys.argv) != 6:</span>
+<span class="c">#         print(&#39;Requires 5 arguments: wavefile, evtype, userID, outdir,&#39;</span>
+<span class="c">#               &#39; overwrite&#39;)</span>
+<span class="c">#         sys.exit()</span>
+<span class="c">#     else:</span>
+<span class="c">#         wavefile = str(sys.argv[1])</span>
+<span class="c">#         evtype = str(sys.argv[2])</span>
+<span class="c">#         userID = str(sys.argv[3])</span>
+<span class="c">#         outdir = str(sys.argv[4])</span>
+<span class="c">#         overwrite = str(sys.argv[5])</span>
+<span class="c">#     sfile = blanksfile(wavefile, evtype, userID, outdir, overwrite)</span>
+<span class="c">#     print sfile</span>
 </pre></div>
 
           </div>

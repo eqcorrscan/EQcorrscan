@@ -1,5 +1,5 @@
 #!/usr/bin/python
-r"""Function to find peaks in data above a certain threshold as part of the \
+r"""Functions to find peaks in data above a certain threshold as part of the \
 EQcorrscan package written by Calum Chamberlain of Victoria University of \
 Wellington in early 2015.
 
@@ -28,7 +28,7 @@ def is_prime(number):
         http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w
 
     This function is distributed under a seperate licence:
-        This article, along with any associated source code and files, is
+        This article, along with any associated source code and files, is \
         licensed under The Code Project Open License (CPOL)
 
     :type number: int
@@ -187,10 +187,10 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     :param arr: 1-D numpy array is required
     :type thresh: float
     :param thresh: The threshold below which will be considered noise and \
-    peaks will not be found in.
+        peaks will not be found in.
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
-    if multiple peaks within this window this code will find the highest.
+        if multiple peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
     :type starttime: osbpy.UTCDateTime
@@ -304,10 +304,10 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
     :param arr: 1-D numpy array is required
     :type thresh: float
     :param thresh: The threshold below which will be considered noise and \
-    peaks will not be found in.
+        peaks will not be found in.
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
-    if multiple peaks within this window this code will find the highest.
+        if multiple peaks within this window this code will find the highest.
     :type starttime: osbpy.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
@@ -366,3 +366,8 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
         EQcorrscan_plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
                                        _fname)
     return peaks
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

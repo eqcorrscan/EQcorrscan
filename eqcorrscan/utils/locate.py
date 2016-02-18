@@ -85,9 +85,9 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
 
 
 def cross_net(stream, env=False, debug=0, master=False):
-    r"""Function to generate picks for each channel based on optimal moveout
-    defined by maximum cross-correaltion with master trace.  Master trace will
-    be the first trace in the stream.
+    r"""Function to generate picks for each channel based on optimal moveout \
+    defined by maximum cross-correaltion with master trace.  Master trace \
+    will be the first trace in the stream.
 
     :type stream: :class: obspy.Stream
     :param stream: Stream to pick
@@ -96,7 +96,7 @@ def cross_net(stream, env=False, debug=0, master=False):
     :type debug: int
     :param debug: Debug level from 0-5
     :type master: obspy.Trace
-    :param master: Trace to use as master, if False, will use the first trace\
+    :param master: Trace to use as master, if False, will use the first trace \
             in stream.
 
     :returns: list of pick class
@@ -175,11 +175,11 @@ def cross_net(stream, env=False, debug=0, master=False):
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 freqmax=False, debug=0, show=False):
-    r"""Simple sta-lta (short-term average/long-term average) picker, using
+    r"""Simple sta-lta (short-term average/long-term average) picker, using \
     obspy's stalta routine to generate the characteristic function.
 
-    Currently very basic quick wrapper, there are many other (better) options
-    in obspy, found
+    Currently very basic quick wrapper, there are many other (better) options \
+    in obspy, found \
     (here)[http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html].
 
     :type stream: obspy.Stream
@@ -227,7 +227,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
         triggers = triggerOnset(cft, trig_on, trig_off)
         for trigger in triggers:
             on = tr.stats.starttime + (trigger[0] / df)
-            off = tr.stats.starttime + (trigger[1] / df)
+            # off = tr.stats.starttime + (trigger[1] / df)
             pick = PICK(station=tr.stats.station, channel=tr.stats.channel,
                         time=on, phase=phase)
             if debug > 2:
@@ -235,9 +235,11 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 print pick
             picks.append(pick)
     # QC picks
+    del pick
     pick_stations = list(set([pick.station for pick in picks]))
     for pick_station in pick_stations:
-        station_picks = [pick for pick in picks if pick.station == pick_station]
+        station_picks = [pick for pick in picks if
+                         pick.station == pick_station]
         # If P-pick is after S-picks, remove it.
         p_time = [pick.time for pick in station_picks if pick.phase == 'P']
         s_time = [pick.time for pick in station_picks if pick.phase == 'S']
@@ -248,5 +250,10 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 picks.remove(pick)
     if show:
         plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',
-                                      size=(8,9))
+                                      size=(8, 9))
     return picks
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

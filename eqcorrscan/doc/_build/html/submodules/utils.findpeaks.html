@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.2. findpeaks &mdash; EQcorrscan 0.1.0 documentation</title>
+  <title>4.3. findpeaks &mdash; EQcorrscan 0.1.0 documentation</title>
   
 
   
@@ -34,8 +34,8 @@
   
     <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
         <link rel="up" title="4. Utils" href="../utils.html"/>
-        <link rel="next" title="4.3. clustering" href="utils.clustering.html"/>
-        <link rel="prev" title="4.1. Sfile_util" href="utils.Sfile_util.html"/> 
+        <link rel="next" title="4.4. locate" href="utils.locate.html"/>
+        <link rel="prev" title="4.2. EQcorrscan_plotting" href="utils.EQcorrscan_plotting.html"/> 
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
@@ -85,18 +85,19 @@
 <li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="../utils.html">4. Utils</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -125,7 +126,7 @@
       
           <li><a href="../utils.html">4. Utils</a> &raquo;</li>
       
-    <li>4.2. findpeaks</li>
+    <li>4.3. findpeaks</li>
       <li class="wy-breadcrumbs-aside">
         
           <a href="../_sources/submodules/utils.findpeaks.txt" rel="nofollow"> View page source</a>
@@ -137,8 +138,8 @@
           <div role="main" class="document">
             
   <div class="section" id="module-findpeaks">
-<span id="findpeaks"></span><h1>4.2. findpeaks<a class="headerlink" href="#module-findpeaks" title="Permalink to this headline">¶</a></h1>
-<p>Function to find peaks in data above a certain threshold as part of the EQcorrscan package written by Calum Chamberlain of Victoria University of Wellington in early 2015.</p>
+<span id="findpeaks"></span><h1>4.3. findpeaks<a class="headerlink" href="#module-findpeaks" title="Permalink to this headline">¶</a></h1>
+<p>Functions to find peaks in data above a certain threshold as part of the EQcorrscan package written by Calum Chamberlain of Victoria University of Wellington in early 2015.</p>
 <p>Copyright 2015 Calum Chamberlain</p>
 <p>This file is part of EQcorrscan.</p>
 <blockquote>
@@ -198,28 +199,18 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>arr</strong> (<em>ndarray</em>) &#8211; 1-D numpy array is required</li>
-<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and </li>
+<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and peaks will not be found in.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The minimum difference in samples between triggers,if multiple peaks within this window this code will find the highest.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Optional, debug level 0-5</li>
+<li><strong>starttime</strong> (<em>osbpy.UTCDateTime</em>) &#8211; Starttime for plotting, only used if debug &gt; 2.</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz, only used for plotting if debug &gt; 2.</li>
 </ul>
 </td>
 </tr>
-</tbody>
-</table>
-<p>peaks will not be found in.
-:type trig_int: int
-:param trig_int: The minimum difference in samples between triggers,if multiple peaks within this window this code will find the highest.
-:type debug: int
-:param debug: Optional, debug level 0-5
-:type starttime: osbpy.UTCDateTime
-:param starttime: Starttime for plotting, only used if debug &gt; 2.
-:type samp_rate: float
-:param samp_rate: Sampling rate in Hz, only used for plotting if debug &gt; 2.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">peaks: Lists of tuples of peak values and locations.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">peaks: Lists of tuples of peak values and locations.</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -234,26 +225,17 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>arr</strong> (<em>ndarray</em>) &#8211; 1-D numpy array is required</li>
-<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and </li>
+<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The threshold below which will be considered noise and peaks will not be found in.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The minimum difference in samples between triggers,if multiple peaks within this window this code will find the highest.</li>
+<li><strong>starttime</strong> (<em>osbpy.UTCDateTime</em>) &#8211; Starttime for plotting, only used if debug &gt; 2.</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz, only used for plotting if debug &gt; 2.</li>
 </ul>
 </td>
 </tr>
-</tbody>
-</table>
-<p>peaks will not be found in.
-:type trig_int: int
-:param trig_int: The minimum difference in samples between triggers,if multiple peaks within this window this code will find the highest.
-:type starttime: osbpy.UTCDateTime
-:param starttime: Starttime for plotting, only used if debug &gt; 2.
-:type samp_rate: float
-:param samp_rate: Sampling rate in Hz, only used for plotting if debug &gt; 2.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">peaks: Lists of tuples of peak values and locations.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">peaks: Lists of tuples of peak values and locations.</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -267,8 +249,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <div><a class="reference external" href="http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w">http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w</a></div></blockquote>
 <dl class="docutils">
 <dt>This function is distributed under a seperate licence:</dt>
-<dd>This article, along with any associated source code and files, is
-licensed under The Code Project Open License (CPOL)</dd>
+<dd>This article, along with any associated source code and files, is licensed under The Code Project Open License (CPOL)</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -290,10 +271,10 @@ licensed under The Code Project Open License (CPOL)</dd>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utils.clustering.html" class="btn btn-neutral float-right" title="4.3. clustering">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="utils.locate.html" class="btn btn-neutral float-right" title="4.4. locate">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="utils.Sfile_util.html" class="btn btn-neutral" title="4.1. Sfile_util"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="utils.EQcorrscan_plotting.html" class="btn btn-neutral" title="4.2. EQcorrscan_plotting"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
