@@ -96,7 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -211,35 +211,24 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <dl class="function">
 <dt id="bright_lights._find_detections">
 <code class="descclassname">bright_lights.</code><code class="descname">_find_detections</code><span class="sig-paren">(</span><em>cum_net_resp</em>, <em>nodes</em>, <em>threshold</em>, <em>thresh_type</em>, <em>samp_rate</em>, <em>realstations</em>, <em>length</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#_find_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._find_detections" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to find detections within the cumulative network responseaccording to Frank et al. (2014).</p>
+<dd><p>Function to find detections within the cumulative network response according to Frank et al. (2014).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>cum_net_resp</strong> (<em>np.ndarray</em>) &#8211; Array of cumulative network response for nodes</li>
-<li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; Nodes associated with the source of energy in the</li>
+<li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; Nodes associated with the source of energy in the cum_net_resp</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value</li>
+<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD (Median Absolute Deviation) or abs (absolute) or RMS (Root Mean Squared)</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+<li><strong>realstations</strong> (<em>list of str</em>) &#8211; List of stations used to make the cumulative network response, will be reported in the DETECTION</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum length of peak to look for in seconds</li>
 </ul>
 </td>
 </tr>
-</tbody>
-</table>
-<p>cum_net_resp
-:type threshold: float
-:param threshold: Threshold value
-:type thresh_type: str
-:param thresh_type: Either MAD (Median Absolute Deviation) or abs(absolute) or RMS (Root Mean Squared)
-:type samp_rate: float
-:param samp_rate: Sampling rate in Hz
-:type realstations: list of str
-:param realstations: List of stations used to make the cumulative networkresponse, will be reported in the DETECTION
-:type length: float
-:param length: Maximum length of peak to look for in seconds</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">detections as :class: DETECTION</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">detections as :class: DETECTION</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -253,30 +242,20 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use.</li>
 <li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i].</li>
 <li><strong>stream</strong> &#8211; Data stream to find the brightness for.</li>
-<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit for energy as a multiplier to the mean</li>
+<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit for energy as a multiplier to the mean energy.</li>
+<li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation.</li>
+<li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM.</li>
+<li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true.</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off, defaults to False.</li>
 </ul>
 </td>
 </tr>
-</tbody>
-</table>
-<p>energy.
-:type i: int
-:param i: Index of loop for parallelisation.
-:type mem_issue: bool
-:param mem_issue: If True will write to disk rather than storing data inRAM.
-:type instance: int
-:param instance: instance for bulk parallelisation, only used ifmem_issue=true.
-:type plot: bool
-:param plot: Turn plotting on or off, defaults to False.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(i, energy (np.ndarray))</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(i, energy (np.ndarray))</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -297,19 +276,16 @@ both at the moment.</p>
 <li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names to read slowness files for.</li>
 <li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; What phase to return the lagtimes in</li>
 <li><strong>ps_ratio</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; p to s ratio for coversion</li>
-<li><strong>lags_switch</strong> (<em>Bool</em>) &#8211; Return lags or raw travel-times, if set to true willreturn lags.</li>
+<li><strong>lags_switch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Return lags or raw travel-times, if set to true willreturn lags.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list stations, list of lists of tuples nodes, </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><p class="first last">&#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and </p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, np.ndarray of lags.</p>
 </td>
 </tr>
 </tbody>
 </table>
-<p>lags[1] nodes[1][1] refers to station[1] and lags[1][1]nodes[n][n] is a tuple of latitude, longitude and depth</p>
+<p>station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, longitude and depth.</p>
 </dd></dl>
 
 <dl class="function">
@@ -322,30 +298,21 @@ scan.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is lonitude in degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds.</li>
+<li><strong>mindepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit of volume</li>
+<li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lower limit of volume</li>
+<li><strong>corners</strong> (<em>matplotlib.Path</em>) &#8211; matplotlib path of the corners for the 2D polygon to cut to in lat and long</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class: &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, longitude and depth.</p>
+</td>
 </tr>
 </tbody>
 </table>
-<p>refers to nodes[i][:] and lags[i][:]
-:type nodes: list, tuple
-:param nodes: List of node points where nodes[i] referes to stations[i]and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude indegrees, nodes[:][:][2] is depth in km.
-:type lags: :class: &#8216;numpy.array&#8217;
-:param lags: Array of arrays where lags[i][:] refers to stations[i].lags[i][j] should be the delay to the nodes[i][j] for stations[i] inseconds.
-:type mindepth: float
-:param mindepth: Upper limit of volume
-:type maxdepth: float
-:param maxdepth: Lower limit of volume
-:type corners: matplotlib.Path
-:param corners: matplotlib path of the corners for the 2D polygon to cutto in lat and long</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list stations, list of lists of tuples nodes, :class: </td>
-</tr>
-</tbody>
-</table>
-<p>&#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]nodes[1][1] refers to station[1] and lags[1][1]nodes[n][n] is a tuple of latitude, longitude and depth.</p>
 </dd></dl>
 
 <dl class="function">
@@ -361,26 +328,19 @@ the diagonal.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds</li>
+<li><strong>threshold</strong> &#8211; Threshold for removal in seconds</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list stations, list of lists of tuples nodes, :class: &#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, longitude and depth.</p>
+</td>
 </tr>
 </tbody>
 </table>
-<p>refers to nodes[i][:] and lags[i][:]
-:type nodes: list, tuple
-:param nodes: List of node points where nodes[i] referes to stations[i]and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude indegrees, nodes[:][:][2] is depth in km.
-:type lags: :class: &#8216;numpy.array&#8217;
-:param lags: Array of arrays where lags[i][:] refers to stations[i].lags[i][j] should be the delay to the nodes[i][j] for stations[i] inseconds
-:type threhsold: float
-:param threshold: Threshold for removal in seconds</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list stations, list of lists of tuples nodes, :class: </td>
-</tr>
-</tbody>
-</table>
-<p>&#8216;numpy.array&#8217; lags station[1] refers to nodes[1] and lags[1]nodes[1][1] refers to station[1] and lags[1][1]nodes[n][n] is a tuple of latitude, longitude and depth.</p>
 </dd></dl>
 
 <dl class="function">
@@ -392,47 +352,29 @@ the diagonal.</p>
 <dl class="function">
 <dt id="bright_lights.brightness">
 <code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations, nodes, lags, stream, threshold, thresh_type, template_length, template_saveloc, coherence_thresh, coherence_stations=['all'], coherence_clip=False, gap=2.0, clip_level=100, instance=0, pre_pick=0.2, plotsave=True, cores=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to calculate the brightness function in terms of energy fora day of data over the entire network for a given grid of nodes.</p>
+<dd><p>Function to calculate the brightness function in terms of energy for a day of data over the entire network for a given grid of nodes.</p>
 <p>Note data in stream must be all of the same length and have the same
 sampling rates.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i]</td>
-</tr>
-</tbody>
-</table>
-<p>refers to nodes[i][:] and lags[i][:]
-:type nodes: list, tuple
-:param nodes: List of node points where nodes[i] referes to stations[i]and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude indegrees, nodes[:][:][2] is depth in km.
-:type lags: :class: &#8216;numpy.array&#8217;
-:param lags: Array of arrays where lags[i][:] refers to stations[i].lags[i][j] should be the delay to the nodes[i][j] for stations[i] inseconds.
-:type stream: :class: <cite>obspy.Stream</cite>
-:param data: Data through which to look for detections.
-:type threshold: float
-:param threshold: Threshold value for detection of template within thebrightness function
-:type thresh_type: str
-:param thresh_type: Either MAD or abs where MAD is the Median AbsoluteDeviation and abs is an absoulte brightness.
-:type template_length: float
-:param template_length: Length of template to extract in seconds
-:type template_saveloc: str
-:param template_saveloc: Path of where to save the templates.
-:type coherence_thresh: tuple of floats
-:param coherence_thresh: Threshold for removing incoherant peaks in the</p>
-<blockquote>
-<div>network response, those below this will not be used as templates.Must be in the form of (a,b) where the coherence is given by:a-kchan/b where kchan is the number of channels used to computethe coherence</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>coherence_stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use in the coherancethresholding - defaults to &#8216;all&#8217; which uses all the stations.</li>
-<li><strong>coherence_clip</strong> (<em>Start and end in seconds of data to window around,defaults to False, which uses all the data given.</em>) &#8211; tuple</li>
+<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in degrees, nodes[:][:][2] is depth in km.</li>
+<li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds.</li>
+<li><strong>data</strong> &#8211; Data through which to look for detections.</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the brightness function</li>
+<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute Deviation and abs is an absoulte brightness.</li>
+<li><strong>template_length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of template to extract in seconds</li>
+<li><strong>template_saveloc</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path of where to save the templates.</li>
+<li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the network response, those below this will not be used as templates. Must be in the form of (a,b) where the coherence is given by: a-kchan/b where kchan is the number of channels used to compute the coherence</li>
+<li><strong>coherence_stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use in the coherance thresholding - defaults to &#8216;all&#8217; which uses all the stations.</li>
+<li><strong>coherence_clip</strong> (<em>Start and end in seconds of data to window around, defaults to False, which uses all the data given.</em>) &#8211; tuple</li>
 <li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
-<li><strong>plotsave</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save or show plots, if False will try and show the plotson screen - as this is designed for bulk use this is set toTrue to save any plots rather than show them if you createthem - changes the backend of matplotlib, so if is set toFalse you will see NO PLOTS!</li>
+<li><strong>plotsave</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save or show plots, if False will try and show the plots on screen - as this is designed for bulk use this is set to True to save any plots rather than show them if you create them - changes the backend of matplotlib, so if is set to False you will see NO PLOTS!</li>
 <li><strong>core</strong> &#8211; Number of cores to use, defaults to 1.</li>
-<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Multiplier applied to the mean deviation of the energyas an upper limit, used to remove spikes (earthquakes, lightning, electircal spikes) from the energy stack.</li>
+<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Multiplier applied to the mean deviation of the energy as an upper limit, used to remove spikes (earthquakes, lightning, electircal spikes) from the energy stack.</li>
 <li><strong>gap</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum inter-event time in seconds for detections</li>
 </ul>
 </td>
@@ -447,15 +389,15 @@ sampling rates.</p>
 <dl class="function">
 <dt id="bright_lights.coherence">
 <code class="descclassname">bright_lights.</code><code class="descname">coherence</code><span class="sig-paren">(</span><em>stream_in, stations=['all'], clip=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherence" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to determine the average network coherence of a giventemplate or detection.  You will want your stream to contain onlysignal as noise will reduce the coherence (assuming it is incoherantrandom noise).</p>
+<dd><p>Function to determine the average network coherence of a given template or detection.  You will want your stream to contain only signal as noise will reduce the coherence (assuming it is incoherant random noise).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream of seismic data you want to calculate thecoherence for.</li>
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream of seismic data you want to calculate the coherence for.</li>
 <li><strong>stations</strong> (<em>List of String</em>) &#8211; List of stations to use for coherence, default is all</li>
-<li><strong>clip</strong> (<em>Tuple of Float</em>) &#8211; Default is to use all the data given - tuple of start and end in seconds from start of trace</li>
+<li><strong>clip</strong> (<em>tuple of Float</em>) &#8211; Default is to use all the data given - tuple of start and end in seconds from start of trace</li>
 </ul>
 </td>
 </tr>

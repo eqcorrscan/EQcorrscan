@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -170,9 +169,9 @@
 <span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
 <span class="sd">    Earth approximation</span>
 
-<span class="sd">    :type loc1: Tuple</span>
+<span class="sd">    :type loc1: tuple</span>
 <span class="sd">    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)</span>
-<span class="sd">    :type loc2: Tuple</span>
+<span class="sd">    :type loc2: tuple</span>
 <span class="sd">    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">R</span> <span class="o">=</span> <span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
@@ -285,7 +284,7 @@
 <span class="sd">    Format must be CAL2, not coded for any other format at the moment, contact</span>
 <span class="sd">    the author to add others in.</span>
 
-<span class="sd">    :type GSEfile: Str</span>
+<span class="sd">    :type GSEfile: string</span>
 <span class="sd">    :param GSEfile: Path to GSE file</span>
 
 <span class="sd">    :returns: Dict of poles, zeros, gain and sensitivity</span>
@@ -331,17 +330,17 @@
 <span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
 <span class="sd">    and sensitivity.</span>
 
-<span class="sd">    :type station: String</span>
+<span class="sd">    :type station: string</span>
 <span class="sd">    :param station: Station name (as in the response files)</span>
-<span class="sd">    :type channel: String</span>
+<span class="sd">    :type channel: string</span>
 <span class="sd">    :param channel: Channel name (as in the response files)</span>
-<span class="sd">    :type network: String</span>
+<span class="sd">    :type network: string</span>
 <span class="sd">    :param network: Network to scan for, can be a wildcard</span>
 <span class="sd">    :type time: datetime.datetime</span>
 <span class="sd">    :param time: Date-time to look for repsonse information</span>
 <span class="sd">    :type delta: float</span>
 <span class="sd">    :param delta: Sample interval in seconds</span>
-<span class="sd">    :type directory: String</span>
+<span class="sd">    :type directory: string</span>
 <span class="sd">    :param directory: Directory to scan for response information</span>
 
 <span class="sd">    :returns: Dictionary</span>
@@ -425,36 +424,36 @@
 <span class="sd">    Output will be put into a mag_calc.out file which will be in full S-file</span>
 <span class="sd">    format and can be copied to a REA database.</span>
 
-<span class="sd">    :type sfile: String</span>
-<span class="sd">    :type datapath: String</span>
+<span class="sd">    :type sfile: string</span>
+<span class="sd">    :type datapath: string</span>
 <span class="sd">    :param datapath: Path to the waveform files - usually the path to the WAV\</span>
 <span class="sd">        directory</span>
-<span class="sd">    :type respdir: String</span>
+<span class="sd">    :type respdir: string</span>
 <span class="sd">    :param respdir: Path to the response information directory</span>
 <span class="sd">    :type chans: List of strings</span>
 <span class="sd">    :param chans: List of the channels to pick on, defaults to [&#39;Z&#39;] - should</span>
 <span class="sd">                just be the orientations, e.g. Z,1,2,N,E</span>
-<span class="sd">    :type var_wintype: Bool</span>
+<span class="sd">    :type var_wintype: bool</span>
 <span class="sd">    :param var_wintype: If True, the winlen will be</span>
 <span class="sd">                    multiplied by the P-S time if both P and S picks are</span>
 <span class="sd">                    available, otherwise it will be multiplied by the</span>
 <span class="sd">                    hypocentral distance*0.34 - dervided using a p-s ratio of</span>
 <span class="sd">                    1.68 and S-velocity of 1.5km/s to give a large window,</span>
 <span class="sd">                    defaults to True</span>
-<span class="sd">    :type winlen: Float</span>
+<span class="sd">    :type winlen: float</span>
 <span class="sd">    :param winlen: Length of window, see above parameter, if var_wintype is</span>
 <span class="sd">                    False then this will be in seconds, otherwise it is the</span>
 <span class="sd">                    multiplier to the p-s time, defaults to 0.5.</span>
-<span class="sd">    :type pre_pick: Float</span>
+<span class="sd">    :type pre_pick: float</span>
 <span class="sd">    :param pre_pick: Time before the s-pick to start the cut window, defaults</span>
 <span class="sd">                    to 0.2</span>
-<span class="sd">    :type pre_filt: Bool</span>
+<span class="sd">    :type pre_filt: bool</span>
 <span class="sd">    :param pre_filt: To apply a pre-filter or not, defaults to True</span>
-<span class="sd">    :type lowcut: Float</span>
+<span class="sd">    :type lowcut: float</span>
 <span class="sd">    :param lowcut: Lowcut in Hz for the pre-filter, defaults to 1.0</span>
-<span class="sd">    :type highcut: Float</span>
+<span class="sd">    :type highcut: float</span>
 <span class="sd">    :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0</span>
-<span class="sd">    :type corners: Int</span>
+<span class="sd">    :type corners: int</span>
 <span class="sd">    :param corners: Number of corners to use in the pre-filter</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of</span>

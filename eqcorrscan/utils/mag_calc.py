@@ -35,9 +35,9 @@ def dist_calc(loc1, loc2):
     Function to calcualte the distance in km between two points, uses the flat
     Earth approximation
 
-    :type loc1: Tuple
+    :type loc1: tuple
     :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
-    :type loc2: Tuple
+    :type loc2: tuple
     :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
     """
     R = 6371.009  # Radius of the Earth in km
@@ -150,7 +150,7 @@ def _GSE2_PAZ_read(GSEfile):
     Format must be CAL2, not coded for any other format at the moment, contact
     the author to add others in.
 
-    :type GSEfile: Str
+    :type GSEfile: string
     :param GSEfile: Path to GSE file
 
     :returns: Dict of poles, zeros, gain and sensitivity
@@ -196,17 +196,17 @@ def _find_resp(station, channel, network, time, delta, directory):
     channel at a given time and return a dictionary of poles and zeros, gain
     and sensitivity.
 
-    :type station: String
+    :type station: string
     :param station: Station name (as in the response files)
-    :type channel: String
+    :type channel: string
     :param channel: Channel name (as in the response files)
-    :type network: String
+    :type network: string
     :param network: Network to scan for, can be a wildcard
     :type time: datetime.datetime
     :param time: Date-time to look for repsonse information
     :type delta: float
     :param delta: Sample interval in seconds
-    :type directory: String
+    :type directory: string
     :param directory: Directory to scan for response information
 
     :returns: Dictionary
@@ -290,36 +290,36 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     Output will be put into a mag_calc.out file which will be in full S-file
     format and can be copied to a REA database.
 
-    :type sfile: String
-    :type datapath: String
+    :type sfile: string
+    :type datapath: string
     :param datapath: Path to the waveform files - usually the path to the WAV\
         directory
-    :type respdir: String
+    :type respdir: string
     :param respdir: Path to the response information directory
     :type chans: List of strings
     :param chans: List of the channels to pick on, defaults to ['Z'] - should
                 just be the orientations, e.g. Z,1,2,N,E
-    :type var_wintype: Bool
+    :type var_wintype: bool
     :param var_wintype: If True, the winlen will be
                     multiplied by the P-S time if both P and S picks are
                     available, otherwise it will be multiplied by the
                     hypocentral distance*0.34 - dervided using a p-s ratio of
                     1.68 and S-velocity of 1.5km/s to give a large window,
                     defaults to True
-    :type winlen: Float
+    :type winlen: float
     :param winlen: Length of window, see above parameter, if var_wintype is
                     False then this will be in seconds, otherwise it is the
                     multiplier to the p-s time, defaults to 0.5.
-    :type pre_pick: Float
+    :type pre_pick: float
     :param pre_pick: Time before the s-pick to start the cut window, defaults
                     to 0.2
-    :type pre_filt: Bool
+    :type pre_filt: bool
     :param pre_filt: To apply a pre-filter or not, defaults to True
-    :type lowcut: Float
+    :type lowcut: float
     :param lowcut: Lowcut in Hz for the pre-filter, defaults to 1.0
-    :type highcut: Float
+    :type highcut: float
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
-    :type corners: Int
+    :type corners: int
     :param corners: Number of corners to use in the pre-filter
     """
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of

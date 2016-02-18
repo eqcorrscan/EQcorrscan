@@ -63,14 +63,15 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     :param phaseout: What phase to return the lagtimes in
     :type ps_ratio: float
     :param ps_ratio: p to s ratio for coversion
-    :type lags_switch: Bool
+    :type lags_switch: bool
     :param lags_switch: Return lags or raw travel-times, if set to true will\
      return lags.
 
-    :return: list stations, list of lists of tuples nodes, \
-    :class: 'numpy.array' lags station[1] refers to nodes[1] and \
-    lags[1] nodes[1][1] refers to station[1] and lags[1][1]\
-    nodes[n][n] is a tuple of latitude, longitude and depth
+    :return: list stations, list of lists of tuples nodes, np.ndarray of lags.
+
+    station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to \
+    station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, longitude \
+    and depth.
     """
 
     import csv
@@ -126,28 +127,28 @@ def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners,
     scan.
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i]\
-    refers to nodes[i][:] and lags[i][:]
+    :param stations: List of station names from in the form where stations[i] \
+        refers to nodes[i][:] and lags[i][:]
     :type nodes: list, tuple
-    :param nodes: List of node points where nodes[i] referes to stations[i]\
-    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\
-    degrees, nodes[:][:][2] is depth in km.
+    :param nodes: List of node points where nodes[i] referes to stations[i] \
+        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
+        lonitude in degrees, nodes[:][:][2] is depth in km.
     :type lags: :class: 'numpy.array'
-    :param lags: Array of arrays where lags[i][:] refers to stations[i].\
-    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\
-    seconds.
+    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
+        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
+        seconds.
     :type mindepth: float
     :param mindepth: Upper limit of volume
     :type maxdepth: float
     :param maxdepth: Lower limit of volume
     :type corners: matplotlib.Path
-    :param corners: matplotlib path of the corners for the 2D polygon to cut\
-    to in lat and long
+    :param corners: matplotlib path of the corners for the 2D polygon to cut \
+        to in lat and long
 
     :return: list stations, list of lists of tuples nodes, :class: \
-    'numpy.array' lags station[1] refers to nodes[1] and lags[1]\
-    nodes[1][1] refers to station[1] and lags[1][1]\
-    nodes[n][n] is a tuple of latitude, longitude and depth.
+        'numpy.array' lags station[1] refers to nodes[1] and lags[1] \
+        nodes[1][1] refers to station[1] and lags[1][1] \
+        nodes[n][n] is a tuple of latitude, longitude and depth.
     """
     import numpy as np
 
@@ -179,23 +180,23 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     the diagonal.
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i]\
-    refers to nodes[i][:] and lags[i][:]
+    :param stations: List of station names from in the form where stations[i] \
+        refers to nodes[i][:] and lags[i][:]
     :type nodes: list, tuple
-    :param nodes: List of node points where nodes[i] referes to stations[i]\
-    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\
-    degrees, nodes[:][:][2] is depth in km.
+    :param nodes: List of node points where nodes[i] referes to stations[i] \
+        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
+        longitude in degrees, nodes[:][:][2] is depth in km.
     :type lags: :class: 'numpy.array'
-    :param lags: Array of arrays where lags[i][:] refers to stations[i].\
-    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\
-    seconds
+    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
+        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
+        seconds
     :type threhsold: float
     :param threshold: Threshold for removal in seconds
 
     :returns: list stations, list of lists of tuples nodes, :class: \
-    'numpy.array' lags station[1] refers to nodes[1] and lags[1]\
-    nodes[1][1] refers to station[1] and lags[1][1]\
-    nodes[n][n] is a tuple of latitude, longitude and depth.
+        'numpy.array' lags station[1] refers to nodes[1] and lags[1] \
+        nodes[1][1] refers to station[1] and lags[1][1] \
+        nodes[n][n] is a tuple of latitude, longitude and depth.
     """
     import sys
 
@@ -239,16 +240,16 @@ def _node_loop(stations, lags, stream, clip_level,
     :type stream: :class: `obspy.Stream`
     :param stream: Data stream to find the brightness for.
     :type clip_level: float
-    :param clip_level: Upper limit for energy as a multiplier to the mean\
-    energy.
+    :param clip_level: Upper limit for energy as a multiplier to the mean \
+        energy.
     :type i: int
     :param i: Index of loop for parallelisation.
     :type mem_issue: bool
-    :param mem_issue: If True will write to disk rather than storing data in\
-    RAM.
+    :param mem_issue: If True will write to disk rather than storing data in \
+        RAM.
     :type instance: int
-    :param instance: instance for bulk parallelisation, only used if\
-    mem_issue=true.
+    :param instance: instance for bulk parallelisation, only used if \
+        mem_issue=true.
     :type plot: bool
     :param plot: Turn plotting on or off, defaults to False.
 
@@ -368,24 +369,24 @@ def _cum_net_resp(node_lis, instance=0):
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
                      samp_rate, realstations, length):
-    r"""Function to find detections within the cumulative network response\
+    r"""Function to find detections within the cumulative network response \
     according to Frank et al. (2014).
 
     :type cum_net_resp: np.ndarray
     :param cum_net_resp: Array of cumulative network response for nodes
     :type nodes: list of tuples
-    :param nodes: Nodes associated with the source of energy in the\
-    cum_net_resp
+    :param nodes: Nodes associated with the source of energy in the \
+        cum_net_resp
     :type threshold: float
     :param threshold: Threshold value
     :type thresh_type: str
-    :param thresh_type: Either MAD (Median Absolute Deviation) or abs\
-    (absolute) or RMS (Root Mean Squared)
+    :param thresh_type: Either MAD (Median Absolute Deviation) or abs \
+        (absolute) or RMS (Root Mean Squared)
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz
     :type realstations: list of str
-    :param realstations: List of stations used to make the cumulative network\
-    response, will be reported in the DETECTION
+    :param realstations: List of stations used to make the cumulative network \
+        response, will be reported in the DETECTION
     :type length: float
     :param length: Maximum length of peak to look for in seconds
 
@@ -425,17 +426,17 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
 
 
 def coherence(stream_in, stations=['all'], clip=False):
-    r"""Function to determine the average network coherence of a given\
-    template or detection.  You will want your stream to contain only\
-    signal as noise will reduce the coherence (assuming it is incoherant\
+    r"""Function to determine the average network coherence of a given \
+    template or detection.  You will want your stream to contain only \
+    signal as noise will reduce the coherence (assuming it is incoherant \
     random noise).
 
     :type stream: obspy.Stream
-    :param stream: The stream of seismic data you want to calculate the\
+    :param stream: The stream of seismic data you want to calculate the \
             coherence for.
     :type stations: List of String
     :param stations: List of stations to use for coherence, default is all
-    :type clip: Tuple of Float
+    :type clip: tuple of Float
     :param clip: Default is to use all the data given - \
             tuple of start and end in seconds from start of trace
 
@@ -484,60 +485,60 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                coherence_stations=['all'], coherence_clip=False,
                gap=2.0, clip_level=100, instance=0, pre_pick=0.2,
                plotsave=True, cores=1):
-    r"""Function to calculate the brightness function in terms of energy for\
+    r"""Function to calculate the brightness function in terms of energy for \
     a day of data over the entire network for a given grid of nodes.
 
     Note data in stream must be all of the same length and have the same
     sampling rates.
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i]\
-    refers to nodes[i][:] and lags[i][:]
+    :param stations: List of station names from in the form where stations[i] \
+        refers to nodes[i][:] and lags[i][:]
     :type nodes: list, tuple
-    :param nodes: List of node points where nodes[i] referes to stations[i]\
-    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\
-    degrees, nodes[:][:][2] is depth in km.
+    :param nodes: List of node points where nodes[i] referes to stations[i] \
+        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
+        longitude in degrees, nodes[:][:][2] is depth in km.
     :type lags: :class: 'numpy.array'
-    :param lags: Array of arrays where lags[i][:] refers to stations[i].\
-    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\
-    seconds.
+    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
+        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
+        seconds.
     :type stream: :class: `obspy.Stream`
     :param data: Data through which to look for detections.
     :type threshold: float
-    :param threshold: Threshold value for detection of template within the\
-    brightness function
+    :param threshold: Threshold value for detection of template within the \
+        brightness function
     :type thresh_type: str
-    :param thresh_type: Either MAD or abs where MAD is the Median Absolute\
-    Deviation and abs is an absoulte brightness.
+    :param thresh_type: Either MAD or abs where MAD is the Median Absolute \
+        Deviation and abs is an absoulte brightness.
     :type template_length: float
     :param template_length: Length of template to extract in seconds
     :type template_saveloc: str
     :param template_saveloc: Path of where to save the templates.
     :type coherence_thresh: tuple of floats
-    :param coherence_thresh: Threshold for removing incoherant peaks in the\
-            network response, those below this will not be used as templates.\
-            Must be in the form of (a,b) where the coherence is given by:\
-            a-kchan/b where kchan is the number of channels used to compute\
+    :param coherence_thresh: Threshold for removing incoherant peaks in the \
+            network response, those below this will not be used as templates. \
+            Must be in the form of (a,b) where the coherence is given by: \
+            a-kchan/b where kchan is the number of channels used to compute \
             the coherence
     :type coherence_stations: list
-    :param coherence_stations: List of stations to use in the coherance\
+    :param coherence_stations: List of stations to use in the coherance \
             thresholding - defaults to 'all' which uses all the stations.
     :type coherence_clip: float
     :param coherence_clip: tuple
-    :type coherence_clip: Start and end in seconds of data to window around,\
+    :type coherence_clip: Start and end in seconds of data to window around, \
             defaults to False, which uses all the data given.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
     :type plotsave: bool
-    :param plotsave: Save or show plots, if False will try and show the plots\
-            on screen - as this is designed for bulk use this is set to\
-            True to save any plots rather than show them if you create\
-            them - changes the backend of matplotlib, so if is set to\
+    :param plotsave: Save or show plots, if False will try and show the plots \
+            on screen - as this is designed for bulk use this is set to \
+            True to save any plots rather than show them if you create \
+            them - changes the backend of matplotlib, so if is set to \
             False you will see NO PLOTS!
     :type cores: int
     :param core: Number of cores to use, defaults to 1.
     :type clip_level: float
-    :param clip_level: Multiplier applied to the mean deviation of the energy\
+    :param clip_level: Multiplier applied to the mean deviation of the energy \
                     as an upper limit, used to remove spikes (earthquakes, \
                     lightning, electircal spikes) from the energy stack.
     :type gap: float

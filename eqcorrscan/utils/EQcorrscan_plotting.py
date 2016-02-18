@@ -149,7 +149,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     :param samp_rate: Sampling rate of data in Hz
     :type save: Boolean, optional
     :param save: Save figure or plot to screen (False)
-    :type peaks: List of Tuple, optional
+    :type peaks: list of Tuple, optional
     :param peaks: List of peak locations and amplitudes (loc, amp)
     :type savefile: String, optional
     :param savefile: Path to save to, only used if save=True
@@ -233,7 +233,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
 def threeD_gridplot(nodes, save=False, savefile=''):
     r"""Function to plot in 3D a series of grid points.
 
-    :type nodes: List of tuples
+    :type nodes: list of tuples
     :param nodes: List of tuples of the form (lat, long, depth)
     :type save: bool
     :param save: if True will save without plotting to screen, if False\
@@ -271,7 +271,7 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     multiple events - data will be alligned by their pick-time given in the\
     picks.
 
-    :type streams: List of :class:obspy.stream
+    :type streams: list of :class:obspy.stream
     :param streams: List of the streams to use, can contain more traces than\
         you plan on plotting
     :type catalog: obspy.core.event.Catalog
@@ -414,7 +414,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param stream: Stream of data to be plotted as the base (black)
     :type template: obspy.Stream
     :param template: Template to be plotted on top of the base stream (red)
-    :type times: List of datetime.datetime
+    :type times: list of datetime.datetime
     :param times: list of times of detections in the order of the channels in
                 template.
     :type streamcolour: str
@@ -473,7 +473,7 @@ def interev_mag_sfiles(sfiles):
     r"""Function to plot interevent-time versus magnitude for series of events.
     **thin** Wrapper for interev_mag.
 
-    :type sfiles: List
+    :type sfiles: list
     :param sfiles: List of sfiles to read from
     """
     from eqcorrscan.utils import Sfile_util
@@ -637,9 +637,9 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     :param stream: Stream to plot
     :type NR_stream: :class: obspy.Stream
     :param NR_stream: Stream for the network response
-    :type detections: List of datetime objects
+    :type detections: list of datetime objects
     :param detections: List of the detections
-    :type false_detections: List of datetime
+    :type false_detections: list of datetime
     :param false_detections: Either False (default) or list of false detection\
      times
     :type size: tuple
@@ -727,12 +727,12 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
     r"""Function to plot the singular vectors from the clustering routines, one\
     plot for each stachan
 
-    :type SVStreams: List of :class:Obspy.Stream
+    :type SVStreams: list of :class:Obspy.Stream
     :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
             ordered by power, e.g. first singular vector in the first stream
-    :type SValues: List of float
+    :type SValues: list of float
     :param SValues: List of the singular values corresponding to the SVStreams
-    :type stachans: List
+    :type stachans: list
     :param stachans: List of station.channel
     """
     for stachan in stachans:
@@ -767,7 +767,7 @@ def plot_synth_real(real_template, synthetic, channels=False):
     :param real_template: Stream of the real template
     :type synthetic: obspy.Stream
     :param synthetic: Stream of synthetic template
-    :type channels: List of str
+    :type channels: list of str
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
     """
