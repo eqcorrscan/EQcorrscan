@@ -423,13 +423,11 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param templatecolour: Colour to plot the template in.
     """
     import datetime as dt
+    from obspy import UTCDateTime
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     axes = axes.ravel()
-    print 'Template has '+str(len(template))+' channels'
+    mintime = min([tr.stats.starttime for tr in template])
     for i, template_tr in enumerate(template):
-        msg = ' '.join(['Working on:', template_tr.stats.station,
-                        template_tr.stats.channel])
-        print(msg)
         image = stream.select(station=template_tr.stats.station,
                               channel='*'+template_tr.stats.channel[-1])
         if not image:
@@ -438,7 +436,6 @@ def detection_multiplot(stream, template, times, streamcolour='k',
             print(msg)
             continue
         image = image.merge()[0]
-        t_start = (times[i]-image.stats.starttime.datetime)  # = timedelta
         # Downsample if needed
         if image.stats.sampling_rate > 20:
             image.decimate(int(image.stats.sampling_rate/20))
@@ -448,16 +445,26 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
                        for j in range(len(image.data))]
-        t_start = t_start + image.stats.starttime.datetime
-        template_times = [t_start +
-                          dt.timedelta((j * template_tr.stats.delta) / 86400)
-                          for j in range(len(template_tr.data))]
-        axes[i].plot(image_times, image.data, 'k')
-        axes[i].plot(template_times, template_tr.data, 'r')
+        axes[i].plot(image_times, image.data / max(image.data),
+                     streamcolour, linewidth=1.2)
+        for k, time in enumerate(times):
+            lagged_time = UTCDateTime(time) + (template_tr.stats.starttime -
+                                               mintime)
+            lagged_time = lagged_time.datetime
+            template_times = [lagged_time +
+                              dt.timedelta((j * template_tr.stats.delta) /
+                                           86400)
+                              for j in range(len(template_tr.data))]
+            axes[i].plot(template_times,
+                         template_tr.data / max(template_tr.data),
+                         templatecolour, linewidth=1.2)
         ylab = '.'.join([template_tr.stats.station,
                          template_tr.stats.channel])
-        axes[i].set_ylabel(ylab)
+        axes[i].set_ylabel(ylab, rotation=0,
+                           horizontalalignment='right')
+        axes[i].yaxis.set_ticks([])
     axes[len(axes) - 1].set_xlabel('Time')
+    plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
     plt.show()
     return
 
