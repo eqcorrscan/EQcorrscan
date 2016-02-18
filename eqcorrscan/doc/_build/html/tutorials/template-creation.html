@@ -137,16 +137,36 @@
 <h1>2.1. Template creation<a class="headerlink" href="#template-creation" title="Permalink to this headline">¶</a></h1>
 <p>In this example we will download some data and picks from the New Zealand GeoNet
 database and make use of the functions in EQcorrscan to quickly and simply
-generate templates for use in matched-filter detection.</p>
+generate templates for use in matched-filter detection.  In the example we
+are looking at an earthquake sequence on the east coast of New Zealand&#8217;s North
+Island that occurred on the 4th of January 2016.  We will take a set of four
+template events from the sequence that have been picked by GeoNet, of a range
+of magnitudes.  You can decide if these were <em>good</em> templates or not.  You could
+easily extend this by choosing more template events (the mainshock in the
+sequence is a M 5 and you can get the information by clicking
+<a class="reference external" href="http://www.geonet.org.nz/quakes/region/newzealand/2016p008122">here</a>).</p>
+<p>You do not need to use data from an online server, many pick formats can be
+parsed, either by obspy, or (for seisan pick files) through the Sfile_utils
+module in EQcorrscan.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Simple tutorial detailing how to generate a series of templates from catalog\</span>
 <span class="sd">data available online.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span> <span class="nn">eqcorrscan.core</span> <span class="kn">import</span> <span class="n">template_gen</span>
-<span class="kn">from</span> <span class="nn">obspy.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
-<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">readEvents</span><span class="p">,</span> <span class="n">UTCDateTime</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+<span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+
+<span class="c"># This import section copes with namespace changes between obspy versions</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">obspy.clients.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read_events</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">obspy.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">readEvents</span> <span class="k">as</span> <span class="n">read_events</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span>
 <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Catalog</span>
 
 <span class="c"># We want to download some QuakeML files from the New Zealand GeoNet network,</span>
@@ -162,7 +182,7 @@ generate templates for use in matched-filter detection.</p>
     <span class="n">data_stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">_download</span><span class="p">(</span><span class="s">&#39;http://quakeml.geonet.org.nz/quakeml/&#39;</span> <span class="o">+</span>
                                    <span class="s">&#39;1.2/&#39;</span> <span class="o">+</span> <span class="n">publicID</span><span class="p">)</span>
     <span class="n">data_stream</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">catalog</span> <span class="o">+=</span> <span class="n">readEvents</span><span class="p">(</span><span class="n">data_stream</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&quot;quakeml&quot;</span><span class="p">)</span>
+    <span class="n">catalog</span> <span class="o">+=</span> <span class="n">read_events</span><span class="p">(</span><span class="n">data_stream</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&quot;quakeml&quot;</span><span class="p">)</span>
     <span class="n">data_stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 <span class="c"># Now we should have a catalog of a four events with pick and event information</span>
@@ -173,30 +193,59 @@ generate templates for use in matched-filter detection.</p>
 <span class="n">t1</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&quot;2016-01-04T00:00:00.000&quot;</span><span class="p">)</span>
 <span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">86400</span>
 
-<span class="n">bulk_info</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="s">&#39;BFZ&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;HH*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">),</span>
-             <span class="p">(</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="s">&#39;CPWZ&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;EH*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">),</span>
-             <span class="p">(</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="s">&#39;ANWZ&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;EH*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">),</span>
-             <span class="p">(</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="s">&#39;DVHZ&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;EH*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">),</span>
-             <span class="p">(</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="s">&#39;PRWZ&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;EH*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)]</span>
+<span class="c"># Work out what stations we have picks for all events from</span>
+
+<span class="n">all_picks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">catalog</span><span class="p">:</span>
+    <span class="n">all_picks</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span><span class="p">,</span>
+                   <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span><span class="p">)</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">]</span>
+<span class="n">all_picks</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">all_picks</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">all_picks</span> <span class="o">=</span> <span class="p">[</span><span class="n">pick</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">all_picks</span><span class="p">]</span>
+
+<span class="n">bulk_info</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">all_picks</span><span class="p">:</span>
+    <span class="n">bulk_info</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">))</span>
+
 <span class="c"># Note this will take a little while.</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Downloading seismic data, this may take a while&#39;</span><span class="p">)</span>
 <span class="n">st</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">bulk_info</span><span class="p">)</span>
+<span class="c"># Merge the stream, it will be downloaded in chunks</span>
+<span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
 <span class="c"># Work out what data we actually have to cope with possible lost data</span>
 <span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]))</span>
 
+<span class="c"># Pre-process the data to set frequency band and sampling rate</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
+                         <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                          <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
+                         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+<span class="c"># Convert from list to stream</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
 <span class="c"># Now we can generate the templates.  Note there are wrappers for generating</span>
 <span class="c"># templates from QuakeML and seisan format pick files.</span>
+<span class="n">templates</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">catalog</span><span class="p">:</span>
     <span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
             <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
-    <span class="k">print</span> <span class="n">picks</span>
     <span class="c"># Now we can generate the template, for this tutorial we will plot the</span>
     <span class="c"># templates.</span>
     <span class="c"># Note, this makes more plots than I want, I think there is an issue with</span>
     <span class="c"># this loop</span>
-    <span class="n">template</span> <span class="o">=</span> <span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
-                                          <span class="n">swin</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">templates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template_gen</span><span class="o">.</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+                                                <span class="n">swin</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+                                                <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+
+<span class="c"># We now have a series of templates! Using obspys Stream.write() method we</span>
+<span class="c"># can save these to disk for later use.  We will do that now for use in the</span>
+<span class="c"># following tutorials.</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">template</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="n">template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;tutorial_template_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
+    <span class="c"># Note that this will warn you about data types.  As we don&#39;t care</span>
+    <span class="c"># at the moment, whatever obspy chooses is fine.</span>
 </pre></div>
 </div>
 </div>
