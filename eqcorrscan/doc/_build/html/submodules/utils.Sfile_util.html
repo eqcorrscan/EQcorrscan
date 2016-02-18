@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.1. Sfile_util &mdash; EQcorrscan 0.0.9 documentation</title>
+  <title>4.1. Sfile_util &mdash; EQcorrscan 0.1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.0.9 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
         <link rel="up" title="4. Utils" href="../utils.html"/>
         <link rel="next" title="4.2. findpeaks" href="utils.findpeaks.html"/>
         <link rel="prev" title="4. Utils" href="../utils.html"/> 
@@ -76,6 +76,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">2.1. Template creation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">2.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">2.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">2.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">2.5. Clustering and stacking</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../core.html">3. Core</a><ul>
@@ -169,7 +172,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x2d24bd0&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x42d2210&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events, again all fields can be left blank     for a default empty header.  The print function for header will print     important information, but not as seen in an S-file.</p>
 <p>For more information on parameters see the seisan manual.</p>
 <dl class="docutils">
@@ -288,7 +291,7 @@ classes. This will be removed in future releases.</p>
 
 <dl class="class">
 <dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x2d24bd0&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x42d2210&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -669,7 +672,7 @@ be present.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2015, Calum John Chamberlain.
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
     </p>
   </div>
 
@@ -690,7 +693,7 @@ be present.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.0.9',
+            VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
