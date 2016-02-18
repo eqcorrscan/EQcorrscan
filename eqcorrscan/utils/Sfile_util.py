@@ -561,7 +561,6 @@ def readpicks(sfile):
     Obspy.event.
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    from obspy.core.event import Catalog
     # Get wavefile name for use in resource_ids
     wav_names = readwavename(sfile)
     # First we need to read the header to get the timing info
