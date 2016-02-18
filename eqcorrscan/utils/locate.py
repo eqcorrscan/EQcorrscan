@@ -1,6 +1,6 @@
-r"""Functions to locate earthquakes detected by EQcorrscan - designed first to\
-locate stacks of detections to give family locations.  Extensions may later be\
-written.
+r"""Functions to locate earthquakes detected by EQcorrscan.
+Designed primarily locate stacks of detections to give family locations.
+Extensions may later be written.
 
 Copyright 2015 Calum Chamberlain
 

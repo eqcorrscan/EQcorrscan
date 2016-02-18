@@ -64,26 +64,26 @@ import warnings
 
 
 class DETECTION(object):
-    r"""Information required for a full detection based on cross-channel\
+    r"""Information required for a full detection based on cross-channel \
     correlation sums.
 
     Attributes:
         :type template_name: str
-        :param template_name: The name of the template for which this\
-        detection was made.
+        :param template_name: The name of the template for which this \
+            detection was made.
         :type detect_time: :class: 'obspy.UTCDateTime'
         :param detect_time: Time of detection as an obspy UTCDateTime object
         :type no_chans: int
-        :param no_chans: The number of channels for which the cross-channel\
-        correlation sum was calculated over.
+        :param no_chans: The number of channels for which the cross-channel \
+            correlation sum was calculated over.
         :type chans: list of str
         :param chans: List of stations for the detection
         :type cccsum_val: float
-        :param cccsum_val: The raw value of the cross-channel correlation sum\
-        for this detection.
+        :param cccsum_val: The raw value of the cross-channel correlation sum \
+            for this detection.
         :type threshold: float
-        :param threshold: The value of the threshold used for this detection,\
-        will be the raw threshold value related to the cccsum.
+        :param threshold: The value of the threshold used for this detection, \
+            will be the raw threshold value related to the cccsum.
         :type typeofdet: str
         :param typeofdet: Type of detection, STA, corr, bright
     """
@@ -116,13 +116,13 @@ class DETECTION(object):
 
 
 def normxcorr2(template, image):
-    r"""Base function to call the c++ correlation routine from the openCV image\
-    processing suite.  Requires you to have installed the openCV python\
-    bindings, which can be downloaded on Linux machines using:\
+    r"""Base function to call the c++ correlation routine from the openCV \
+    image processing suite.  Requires you to have installed the openCV python \
+    bindings, which can be downloaded on Linux machines using: \
     **sudo apt-get install python-openCV**.
 
-    Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the\
-    normalized cross-correaltion.  Documentation on this function can be\
+    Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the \
+    normalized cross-correaltion.  Documentation on this function can be \
     found here:
 
     **http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate**
@@ -130,12 +130,12 @@ def normxcorr2(template, image):
     :type template: :class: 'numpy.array'
     :param template: Template array
     :type image: :class: 'numpy.array'
-    :param image: image to scan\
-    the template through.  The order of these matters, if you put the template\
-    after the image you will get a reversed correaltion matrix
+    :param image: image to scan the template through.  The order of these \
+        matters, if you put the template after the image you will get a \
+        reversed correaltion matrix
 
-    :return: New :class: 'numpy.array' object of the correlation values for\
-    the correlation of the image with the template.
+    :return: New :class: 'numpy.array' object of the correlation values for \
+        the correlation of the image with the template.
     """
     import cv2
     # Check that we have been passed numpy arrays
@@ -158,27 +158,27 @@ def normxcorr2(template, image):
 
 
 def _template_loop(template, chan, station, channel, debug=0, i=0):
-    r"""Sister loop to handle the correlation of a single template (of multiple
-    channels) with a single channel of data.
+    r"""Sister loop to handle the correlation of a single template (of \
+    multiple channels) with a single channel of data.
 
     :type template: obspy.Stream
     :type chan: np.array
     :type station: string
     :type channel: string
     :type i: int
-    :param i: Optional argument, used to keep track of which process is being\
-    run.
+    :param i: Optional argument, used to keep track of which process is being \
+        run.
 
     :returns: tuple of (i, ccc) with ccc as an ndarray
 
-    .. rubric:: Note
-    ..This function currently assumes only one template-channel per
-     data-channel, while this is normal for a standard matched-filter routine,
-     if we wanted to impliment a subspace detector, this would be the function
-     to change, I think.  E.g. where I currently take only the first matching
-     channel, we could loop through all the matching channels and then sum the
-     correlation sums - however I don't really understand how you detect based
-     on that.  More reading of the Harris document required.
+    .. note:: This function currently assumes only one template-channel per \
+        data-channel, while this is normal for a standard matched-filter \
+        routine, if we wanted to impliment a subspace detector, this would be \
+        the function to change, I think.  E.g. where I currently take only \
+        the first matching channel, we could loop through all the matching \
+        channels and then sum the correlation sums - however I haven't yet
+        implimented detection based on that.  More reading of the Harris \
+        document required.
     """
     from eqcorrscan.utils.timer import Timer
 
@@ -235,24 +235,24 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
 
 def _channel_loop(templates, stream, cores=1, debug=0):
     r"""
-    Loop to generate cross channel correaltion sums for a series of templates\
-    hands off the actual correlations to a sister function which can be run in\
-    parallel.
+    Loop to generate cross channel correaltion sums for a series of templates \
+    hands off the actual correlations to a sister function which can be run \
+    in parallel.
 
     :type templates: :class: 'obspy.Stream'
-    :param templates: A list of templates, where each one should be an\
-    obspy.Stream object containing multiple traces of seismic data and the\
-    relevant header information.
-    :param stream: A single obspy.Stream object containing daylong seismic\
-    data to be correlated through using the templates.  This is in effect the\
-    image.
+    :param templates: A list of templates, where each one should be an \
+        obspy.Stream object containing multiple traces of seismic data and \
+        the relevant header information.
+    :param stream: A single obspy.Stream object containing daylong seismic \
+        data to be correlated through using the templates.  This is in effect \
+        the image.
     :type core: int
     :param core: Number of cores to loop over
     :type debug: int
     :param debug: Debug level.
 
-    :return: New list of :class: 'numpy.array' objects.  These will contain\
-    the correlation sums for each template for this day of data.
+    :return: New list of :class: 'numpy.array' objects.  These will contain \
+        the correlation sums for each template for this day of data.
     :return: list of ints as number of channels used for each cross-correlation
     """
     import time
@@ -366,61 +366,60 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='jpg'):
-    r"""Over-arching code to run the correlations of given templates with a\
+    r"""Over-arching code to run the correlations of given templates with a \
     day of seismic data and output the detections based on a given threshold.
 
     :type template_names: list
-    :param template_names: List of template names in the same order as\
-     template_list
+    :param template_names: List of template names in the same order as \
+        template_list
     :type template_list: list :class: 'obspy.Stream'
-    :param template_list: A list of templates of which each template is a\
+    :param template_list: A list of templates of which each template is a \
         Stream of obspy traces containing seismic data and header information.
     :type st: :class: 'obspy.Stream'
-    :param st: An obspy.Stream object containing all the data available and\
-        required for the correlations with templates given.  For efficiency\
-        this should contain no excess traces which are not in one or more of\
-        the templates.  This will now remove excess traces internally, but\
-        will copy the stream and work on the copy, leaving your input stream\
+    :param st: An obspy.Stream object containing all the data available and \
+        required for the correlations with templates given.  For efficiency \
+        this should contain no excess traces which are not in one or more of \
+        the templates.  This will now remove excess traces internally, but \
+        will copy the stream and work on the copy, leaving your input stream \
         untouched.
     :type threshold: float
     :param threshold: A threshold value set based on the threshold_type
     :type threshold_type: str
-    :param threshold_type: The type of threshold to be used, can be MAD,\
-        absolute or av_chan_corr.    MAD threshold is calculated as the\
-        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation\
-        sum for a given template. absolute threhsold is a true absolute\
-        threshold based on the cccsum value av_chan_corr is based on the mean\
-        values of single-channel cross-correlations assuming all data are\
+    :param threshold_type: The type of threshold to be used, can be MAD, \
+        absolute or av_chan_corr.    MAD threshold is calculated as the \
+        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation \
+        sum for a given template. absolute threhsold is a true absolute \
+        threshold based on the cccsum value av_chan_corr is based on the mean \
+        values of single-channel cross-correlations assuming all data are \
         present as required for the template, \
-        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\
-        template is a single template from the input and the length is the\
+        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where \
+        template is a single template from the input and the length is the \
         number of channels within this template.
     :type trig_int: float
     :param trig_int: Minimum gap between detections in seconds.
     :type plotvar: bool
     :param plotvar: Turn plotting on or off
     :type plotdir: str
-    :param plotdir: Path to plotting folder, plots will be output here,\
+    :param plotdir: Path to plotting folder, plots will be output here, \
         defaults to run location.
     :type tempdir: String or False
     :param tempdir: Directory to put temporary files, or False
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
-    :param debug: Debug output level, the bigger the number, the more the\
+    :param debug: Debug output level, the bigger the number, the more the \
         output.
 
-    :return: :class: 'DETECTIONS' detections for each channel formatted as\
-    :class: 'obspy.UTCDateTime' objects.
+    :return: :class: 'DETECTIONS' detections for each channel formatted as \
+        :class: 'obspy.UTCDateTime' objects.
 
-    .. rubric:: Note
-        Plotting within the match-filter routine uses the Agg backend with\
-        interactive plotting turned off.  This is because the function is\
-        designed to work in bulk.  If you wish to turn interactive plotting on\
-        you must import matplotlib in your script first, when you them import\
-        match_filter you will get the warning that this call to matplotlib has\
-        no effect, which will mean that match_filter has not changed the\
-        plotting behaviour.
+    .. note:: Plotting within the match-filter routine uses the Agg backend \
+        with interactive plotting turned off.  This is because the function \
+        is designed to work in bulk.  If you wish to turn interactive \
+        plotting on you must import matplotlib in your script first, when you \
+        them import match_filter you will get the warning that this call to \
+        matplotlib has no effect, which will mean that match_filter has not \
+        changed the plotting behaviour.
     """
     import matplotlib
     matplotlib.use('Agg')

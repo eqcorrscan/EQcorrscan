@@ -96,7 +96,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -164,8 +164,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>stream</strong> &#8211; Stream to plot</li>
 <li><strong>NR_stream</strong> &#8211; Stream for the network response</li>
-<li><strong>detections</strong> (<em>List of datetime objects</em>) &#8211; List of the detections</li>
-<li><strong>false_detections</strong> (<em>List of datetime</em>) &#8211; Either False (default) or list of false detectiontimes</li>
+<li><strong>detections</strong> (<em>list of datetime objects</em>) &#8211; List of the detections</li>
+<li><strong>false_detections</strong> (<em>list of datetime</em>) &#8211; Either False (default) or list of false detectiontimes</li>
 <li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Size of figure, default is (18.5,10)</li>
 <li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save figure or plot to screen, if not False, must be stringof save path.</li>
 <li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String for the title of the plot, set to False</li>
@@ -185,9 +185,9 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>SVStreams</strong> (<em>List of :class:Obspy.Stream</em>) &#8211; See clustering.SVD_2_Stream - will assume these areordered by power, e.g. first singular vector in the first stream</li>
-<li><strong>SValues</strong> (<em>List of float</em>) &#8211; List of the singular values corresponding to the SVStreams</li>
-<li><strong>stachans</strong> (<em>List</em>) &#8211; List of station.channel</li>
+<li><strong>SVStreams</strong> (<em>list of :class:Obspy.Stream</em>) &#8211; See clustering.SVD_2_Stream - will assume these areordered by power, e.g. first singular vector in the first stream</li>
+<li><strong>SValues</strong> (<em>list of float</em>) &#8211; List of the singular values corresponding to the SVStreams</li>
+<li><strong>stachans</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station.channel</li>
 </ul>
 </td>
 </tr>
@@ -285,7 +285,7 @@ template it will overlay them in different colours.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; Stream of data to be plotted as the base (black)</li>
 <li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Template to be plotted on top of the base stream (red)</li>
-<li><strong>times</strong> (<em>List of datetime.datetime</em>) &#8211; list of times of detections in the order of the channels in
+<li><strong>times</strong> (<em>list of datetime.datetime</em>) &#8211; list of times of detections in the order of the channels in
 template.</li>
 <li><strong>streamcolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String of matplotlib colour types for the stream</li>
 <li><strong>templatecolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Colour to plot the template in.</li>
@@ -345,7 +345,7 @@ and magnitudes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfiles</strong> (<em>List</em>) &#8211; List of sfiles to read from</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfiles</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of sfiles to read from</td>
 </tr>
 </tbody>
 </table>
@@ -360,7 +360,7 @@ and magnitudes.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>streams</strong> (<em>List of :class:obspy.stream</em>) &#8211; List of the streams to use, can contain more traces thanyou plan on plotting</li>
+<li><strong>streams</strong> (<em>list of :class:obspy.stream</em>) &#8211; List of the streams to use, can contain more traces thanyou plan on plotting</li>
 <li><strong>catalog</strong> (<em>obspy.core.event.Catalog</em>) &#8211; Catalog of events, one for each trace, with a single pick</li>
 <li><strong>clip</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to plot, defaults to 10.0</li>
 <li><strong>pre_pick</strong> (<em>Float</em>) &#8211; Length in seconds to extract and plot before the pick,defaults to 2.0</li>
@@ -393,7 +393,7 @@ and magnitudes.</p>
 <li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Start time for the data</li>
 <li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate of data in Hz</li>
 <li><strong>save</strong> (<em>Boolean, optional</em>) &#8211; Save figure or plot to screen (False)</li>
-<li><strong>peaks</strong> (<em>List of Tuple, optional</em>) &#8211; List of peak locations and amplitudes (loc, amp)</li>
+<li><strong>peaks</strong> (<em>list of Tuple, optional</em>) &#8211; List of peak locations and amplitudes (loc, amp)</li>
 <li><strong>savefile</strong> (<em>String, optional</em>) &#8211; Path to save to, only used if save=True</li>
 </ul>
 </td>
@@ -413,7 +413,7 @@ and magnitudes.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>real_template</strong> (<em>obspy.Stream</em>) &#8211; Stream of the real template</li>
 <li><strong>synthetic</strong> (<em>obspy.Stream</em>) &#8211; Stream of synthetic template</li>
-<li><strong>channels</strong> (<em>List of str</em>) &#8211; List of tuples of (station, channel) to plot, default isFalse, which plots all.</li>
+<li><strong>channels</strong> (<em>list of str</em>) &#8211; List of tuples of (station, channel) to plot, default isFalse, which plots all.</li>
 </ul>
 </td>
 </tr>
@@ -480,7 +480,7 @@ colormaps_reference.html)</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>nodes</strong> (<em>List of tuples</em>) &#8211; List of tuples of the form (lat, long, depth)</li>
+<li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; List of tuples of the form (lat, long, depth)</li>
 <li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True will save without plotting to screen, if False(default) will plot to screen but not save</li>
 <li><strong>savefile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; required if save=True, path to save figure to.</li>
 </ul>

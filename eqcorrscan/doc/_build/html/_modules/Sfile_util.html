@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -229,7 +228,7 @@
 <span class="sd">        :type CAZ: int</span>
 <span class="sd">        :param CAZ: Azimuth at source.</span>
 
-<span class="sd">    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event</span>
+<span class="sd">    .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \</span>
 <span class="sd">    classes. This will be removed in future releases.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">pickcount</span> <span class="o">=</span> <span class="mi">0</span>
@@ -389,7 +388,7 @@
 <span class="sd">        :type Mag_3_agency: str</span>
 <span class="sd">        :param Mag_3_agency: Reporting agency for Mag_3</span>
 
-<span class="sd">    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event</span>
+<span class="sd">    .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \</span>
 <span class="sd">    classes. This will be removed in future releases.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">loc_mod_ind</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">dist_ind</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">,</span>
@@ -689,11 +688,11 @@
 
 <span class="sd">    :return: obspy.core.event.Event</span>
 
-<span class="sd">    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or</span>
-<span class="sd">        angle of incidence.  This is because obspy.event stores slowness in</span>
-<span class="sd">        s/deg and takeoff angle, which would require computation from the</span>
-<span class="sd">        values stored in seisan.  Multiple weights are also not supported in</span>
-<span class="sd">        Obspy.event</span>
+<span class="sd">    .. warning:: Currently finalweight is unsupported, nor is velocity, \</span>
+<span class="sd">    or angle of incidence.  This is because obspy.event stores slowness \</span>
+<span class="sd">    in s/deg and takeoff angle, which would require computation from the \</span>
+<span class="sd">    values stored in seisan.  Multiple weights are also not supported in \</span>
+<span class="sd">    Obspy.event.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Pick</span><span class="p">,</span> <span class="n">WaveformStreamID</span><span class="p">,</span> <span class="n">Arrival</span><span class="p">,</span> <span class="n">Amplitude</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Catalog</span>
@@ -1178,9 +1177,11 @@
 
 <span class="sd">    :returns: List of PICK(), and a single EVENTINFO()</span>
 
-<span class="sd">    ...rubric:: Note: This is a wrapper to simplify transition from PICK and</span>
-<span class="sd">    EVENT classes to obspy.core.event classes.  This will not be maintained</span>
+<span class="sd">    .. note:: This is a wrapper to simplify transition from PICK and \</span>
+<span class="sd">    EVENT classes to obspy.core.event classes.  This will not be maintained \</span>
 <span class="sd">    beyond v 0.1.0.</span>
+
+<span class="sd">    .. versionadded:: 0.1.0</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Check that the event is a single event</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span>
@@ -1287,9 +1288,11 @@
 
 <span class="sd">    :returns: obspy.core.event.Event</span>
 
-<span class="sd">    ...rubric:: Note: This is a legacy support function, users should avoid</span>
-<span class="sd">    this as it will be removed for version 0.1.0.  Written to aid transition</span>
+<span class="sd">    .. note:: This is a legacy support function, users should avoid \</span>
+<span class="sd">    this as it will be removed for version 0.1.1.  Written to aid transition \</span>
 <span class="sd">    from in-built classes to obspy.core.event classes.</span>
+
+<span class="sd">    .. versionadded:: 0.1.0</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Origin</span><span class="p">,</span> <span class="n">Magnitude</span><span class="p">,</span> <span class="n">Comment</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">EventDescription</span><span class="p">,</span> <span class="n">CreationInfo</span>
@@ -1429,11 +1432,13 @@
 
 <span class="sd">    :returns: List of String</span>
 
-<span class="sd">    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or</span>
-<span class="sd">        angle of incidence.  This is because obspy.event stores slowness in</span>
-<span class="sd">        s/deg and takeoff angle, which would require computation from the</span>
-<span class="sd">        values stored in seisan.  Multiple weights are also not supported in</span>
-<span class="sd">        Obspy.event</span>
+<span class="sd">    .. note:: Currently finalweight is unsupported, nor is velocity, or \</span>
+<span class="sd">    angle of incidence.  This is because obspy.event stores slowness in \</span>
+<span class="sd">    s/deg and takeoff angle, which would require computation from the \</span>
+<span class="sd">    values stored in seisan.  Multiple weights are also not supported in \</span>
+<span class="sd">    Obspy.event.</span>
+
+<span class="sd">    .. versionadded:: 0.1.0</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">pick_strings</span> <span class="o">=</span> <span class="p">[]</span>

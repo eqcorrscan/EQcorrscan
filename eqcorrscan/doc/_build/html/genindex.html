@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -157,23 +156,9 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD._av_weight">_av_weight() (in module catalogue2DD)</a>
+  <dt><a href="submodules/core.match_filter.html#match_filter._channel_loop">_channel_loop() (in module match_filter)</a>
   </dt>
 
-      
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD._cc_round">_cc_round() (in module catalogue2DD)</a>
-  </dt>
-
-      
-  <dt><a href="submodules/core.lag_calc.html#lag_calc._channel_loop">_channel_loop() (in module lag_calc)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="submodules/core.match_filter.html#match_filter._channel_loop">(in module match_filter)</a>
-  </dt>
-
-      </dl></dd>
       
   <dt><a href="submodules/utils.pre_processing.html#pre_processing._check_daylong">_check_daylong() (in module pre_processing)</a>
   </dt>
@@ -210,12 +195,12 @@
   <dt><a href="submodules/utils.mag_calc.html#mag_calc._max_p2t">_max_p2t() (in module mag_calc)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/core.bright_lights.html#bright_lights._node_loop">_node_loop() (in module bright_lights)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/utils.Sfile_util.html#Sfile_util._nortoevmag">_nortoevmag() (in module Sfile_util)</a>
   </dt>
@@ -303,10 +288,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/utils.catalogue2DD.html#module-catalogue2DD">catalogue2DD (module)</a>
-  </dt>
-
-      
   <dt><a href="submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.chunk_data">chunk_data() (in module EQcorrscan_plotting)</a>
   </dt>
 
@@ -318,18 +299,22 @@
   <dt><a href="submodules/utils.clustering.html#module-clustering">clustering (module)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/core.bright_lights.html#bright_lights.coherence">coherence() (in module bright_lights)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/utils.clustering.html#clustering.corr_cluster">corr_cluster() (in module clustering)</a>
   </dt>
 
       
   <dt><a href="submodules/utils.clustering.html#clustering.cross_chan_coherence">cross_chan_coherence() (in module clustering)</a>
+  </dt>
+
+      
+  <dt><a href="submodules/utils.locate.html#locate.cross_net">cross_net() (in module locate)</a>
   </dt>
 
       
@@ -343,10 +328,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/core.lag_calc.html#lag_calc.day_loop">day_loop() (in module lag_calc)</a>
-  </dt>
-
-      
   <dt><a href="submodules/utils.pre_processing.html#pre_processing.dayproc">dayproc() (in module pre_processing)</a>
   </dt>
 
@@ -354,12 +335,12 @@
   <dt><a href="submodules/core.match_filter.html#match_filter.DETECTION">DETECTION (class in match_filter)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.detection_multiplot">detection_multiplot() (in module EQcorrscan_plotting)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/utils.mag_calc.html#mag_calc.dist_calc">dist_calc() (in module mag_calc)</a>
   </dt>
@@ -485,17 +466,13 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/core.lag_calc.html#module-lag_calc">lag_calc (module)</a>
-  </dt>
-
-      
-  <dt><a href="submodules/core.lag_calc.html#lag_calc.lag_calc">lag_calc() (in module lag_calc)</a>
+  <dt><a href="submodules/utils.stacking.html#stacking.linstack">linstack() (in module stacking)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/utils.stacking.html#stacking.linstack">linstack() (in module stacking)</a>
+  <dt><a href="submodules/utils.locate.html#module-locate">locate (module)</a>
   </dt>
 
   </dl></td>
@@ -596,14 +573,10 @@
   <dt><a href="submodules/utils.Sfile_util.html#Sfile_util.readheader">readheader() (in module Sfile_util)</a>
   </dt>
 
-      
-  <dt><a href="submodules/utils.Sfile_util.html#Sfile_util.readpicks">readpicks() (in module Sfile_util)</a>
-  </dt>
-
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD.readSTATION0">readSTATION0() (in module catalogue2DD)</a>
+  <dt><a href="submodules/utils.Sfile_util.html#Sfile_util.readpicks">readpicks() (in module Sfile_util)</a>
   </dt>
 
       
@@ -636,6 +609,10 @@
   <dt><a href="submodules/utils.stacking.html#module-stacking">stacking (module)</a>
   </dt>
 
+      
+  <dt><a href="submodules/utils.locate.html#locate.stalta_pick">stalta_pick() (in module locate)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
@@ -652,6 +629,10 @@
 
       
   <dt><a href="submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.SVD_plot">SVD_plot() (in module EQcorrscan_plotting)</a>
+  </dt>
+
+      
+  <dt><a href="submodules/utils.locate.html#locate.synth_compare">synth_compare() (in module locate)</a>
   </dt>
 
   </dl></td>
@@ -690,20 +671,6 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="submodules/utils.Sfile_util.html#Sfile_util.PICK.write">write() (Sfile_util.PICK method)</a>
-  </dt>
-
-      
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD.write_catalogue">write_catalogue() (in module catalogue2DD)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD.write_correlations">write_correlations() (in module catalogue2DD)</a>
-  </dt>
-
-      
-  <dt><a href="submodules/utils.catalogue2DD.html#catalogue2DD.write_event">write_event() (in module catalogue2DD)</a>
   </dt>
 
   </dl></td>
