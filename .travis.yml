@@ -79,7 +79,8 @@ install:
   - pip install .
 script:
   # Run the tests available, more should be added
-  - python eqcorrscan/tests/runtests.py
+  # - python eqcorrscan/tests/runtests.py
+  pytest
 
 notifications:
     email: false
