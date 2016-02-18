@@ -37,7 +37,8 @@ Also within this package are:
 * Brightness based template creation based on the work of Frank et al. (2014)
 
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
-is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain 2015.
+is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain &
+Chet Hopp 2015 & 2016.
 
 References
 ----------

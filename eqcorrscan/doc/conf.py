@@ -74,15 +74,15 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'EQcorrscan'
-copyright = u'2015, Calum John Chamberlain'
-author = u'Calum John Chamberlain'
+copyright = u'2015, 2016: Calum John Chamberlain & Chet Hopp'
+author = u'Calum John Chamberlain & Chet Hopp'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = '0.0'
+version = '0.1'
 # The full version, including alpha/beta/rc tags.
 release = eqcorrscan.__version__
 
