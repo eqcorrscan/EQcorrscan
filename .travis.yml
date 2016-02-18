@@ -80,7 +80,7 @@ install:
 script:
   # Run the tests available, more should be added
   # - python eqcorrscan/tests/runtests.py
-  pytest
+  py.test
 
 notifications:
     email: false
