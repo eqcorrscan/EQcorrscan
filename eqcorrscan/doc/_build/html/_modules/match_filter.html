@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -199,26 +198,26 @@
 
 
 <div class="viewcode-block" id="DETECTION"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.DETECTION">[docs]</a><span class="k">class</span> <span class="nc">DETECTION</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Information required for a full detection based on cross-channel\</span>
+    <span class="sd">r&quot;&quot;&quot;Information required for a full detection based on cross-channel \</span>
 <span class="sd">    correlation sums.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        :type template_name: str</span>
-<span class="sd">        :param template_name: The name of the template for which this\</span>
-<span class="sd">        detection was made.</span>
+<span class="sd">        :param template_name: The name of the template for which this \</span>
+<span class="sd">            detection was made.</span>
 <span class="sd">        :type detect_time: :class: &#39;obspy.UTCDateTime&#39;</span>
 <span class="sd">        :param detect_time: Time of detection as an obspy UTCDateTime object</span>
 <span class="sd">        :type no_chans: int</span>
-<span class="sd">        :param no_chans: The number of channels for which the cross-channel\</span>
-<span class="sd">        correlation sum was calculated over.</span>
+<span class="sd">        :param no_chans: The number of channels for which the cross-channel \</span>
+<span class="sd">            correlation sum was calculated over.</span>
 <span class="sd">        :type chans: list of str</span>
 <span class="sd">        :param chans: List of stations for the detection</span>
 <span class="sd">        :type cccsum_val: float</span>
-<span class="sd">        :param cccsum_val: The raw value of the cross-channel correlation sum\</span>
-<span class="sd">        for this detection.</span>
+<span class="sd">        :param cccsum_val: The raw value of the cross-channel correlation sum \</span>
+<span class="sd">            for this detection.</span>
 <span class="sd">        :type threshold: float</span>
-<span class="sd">        :param threshold: The value of the threshold used for this detection,\</span>
-<span class="sd">        will be the raw threshold value related to the cccsum.</span>
+<span class="sd">        :param threshold: The value of the threshold used for this detection, \</span>
+<span class="sd">            will be the raw threshold value related to the cccsum.</span>
 <span class="sd">        :type typeofdet: str</span>
 <span class="sd">        :param typeofdet: Type of detection, STA, corr, bright</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -251,13 +250,13 @@
 
 </div>
 <div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Base function to call the c++ correlation routine from the openCV image\</span>
-<span class="sd">    processing suite.  Requires you to have installed the openCV python\</span>
-<span class="sd">    bindings, which can be downloaded on Linux machines using:\</span>
+    <span class="sd">r&quot;&quot;&quot;Base function to call the c++ correlation routine from the openCV \</span>
+<span class="sd">    image processing suite.  Requires you to have installed the openCV python \</span>
+<span class="sd">    bindings, which can be downloaded on Linux machines using: \</span>
 <span class="sd">    **sudo apt-get install python-openCV**.</span>
 
-<span class="sd">    Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the\</span>
-<span class="sd">    normalized cross-correaltion.  Documentation on this function can be\</span>
+<span class="sd">    Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the \</span>
+<span class="sd">    normalized cross-correaltion.  Documentation on this function can be \</span>
 <span class="sd">    found here:</span>
 
 <span class="sd">    **http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate**</span>
@@ -265,12 +264,12 @@
 <span class="sd">    :type template: :class: &#39;numpy.array&#39;</span>
 <span class="sd">    :param template: Template array</span>
 <span class="sd">    :type image: :class: &#39;numpy.array&#39;</span>
-<span class="sd">    :param image: image to scan\</span>
-<span class="sd">    the template through.  The order of these matters, if you put the template\</span>
-<span class="sd">    after the image you will get a reversed correaltion matrix</span>
+<span class="sd">    :param image: image to scan the template through.  The order of these \</span>
+<span class="sd">        matters, if you put the template after the image you will get a \</span>
+<span class="sd">        reversed correaltion matrix</span>
 
-<span class="sd">    :return: New :class: &#39;numpy.array&#39; object of the correlation values for\</span>
-<span class="sd">    the correlation of the image with the template.</span>
+<span class="sd">    :return: New :class: &#39;numpy.array&#39; object of the correlation values for \</span>
+<span class="sd">        the correlation of the image with the template.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">cv2</span>
     <span class="c"># Check that we have been passed numpy arrays</span>
@@ -293,27 +292,27 @@
 
 </div>
 <div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Sister loop to handle the correlation of a single template (of multiple</span>
-<span class="sd">    channels) with a single channel of data.</span>
+    <span class="sd">r&quot;&quot;&quot;Sister loop to handle the correlation of a single template (of \</span>
+<span class="sd">    multiple channels) with a single channel of data.</span>
 
 <span class="sd">    :type template: obspy.Stream</span>
 <span class="sd">    :type chan: np.array</span>
 <span class="sd">    :type station: string</span>
 <span class="sd">    :type channel: string</span>
 <span class="sd">    :type i: int</span>
-<span class="sd">    :param i: Optional argument, used to keep track of which process is being\</span>
-<span class="sd">    run.</span>
+<span class="sd">    :param i: Optional argument, used to keep track of which process is being \</span>
+<span class="sd">        run.</span>
 
 <span class="sd">    :returns: tuple of (i, ccc) with ccc as an ndarray</span>
 
-<span class="sd">    .. rubric:: Note</span>
-<span class="sd">    ..This function currently assumes only one template-channel per</span>
-<span class="sd">     data-channel, while this is normal for a standard matched-filter routine,</span>
-<span class="sd">     if we wanted to impliment a subspace detector, this would be the function</span>
-<span class="sd">     to change, I think.  E.g. where I currently take only the first matching</span>
-<span class="sd">     channel, we could loop through all the matching channels and then sum the</span>
-<span class="sd">     correlation sums - however I don&#39;t really understand how you detect based</span>
-<span class="sd">     on that.  More reading of the Harris document required.</span>
+<span class="sd">    .. note:: This function currently assumes only one template-channel per \</span>
+<span class="sd">        data-channel, while this is normal for a standard matched-filter \</span>
+<span class="sd">        routine, if we wanted to impliment a subspace detector, this would be \</span>
+<span class="sd">        the function to change, I think.  E.g. where I currently take only \</span>
+<span class="sd">        the first matching channel, we could loop through all the matching \</span>
+<span class="sd">        channels and then sum the correlation sums - however I haven&#39;t yet</span>
+<span class="sd">        implimented detection based on that.  More reading of the Harris \</span>
+<span class="sd">        document required.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
 
@@ -370,24 +369,24 @@
 </div>
 <div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;</span>
-<span class="sd">    Loop to generate cross channel correaltion sums for a series of templates\</span>
-<span class="sd">    hands off the actual correlations to a sister function which can be run in\</span>
-<span class="sd">    parallel.</span>
+<span class="sd">    Loop to generate cross channel correaltion sums for a series of templates \</span>
+<span class="sd">    hands off the actual correlations to a sister function which can be run \</span>
+<span class="sd">    in parallel.</span>
 
 <span class="sd">    :type templates: :class: &#39;obspy.Stream&#39;</span>
-<span class="sd">    :param templates: A list of templates, where each one should be an\</span>
-<span class="sd">    obspy.Stream object containing multiple traces of seismic data and the\</span>
-<span class="sd">    relevant header information.</span>
-<span class="sd">    :param stream: A single obspy.Stream object containing daylong seismic\</span>
-<span class="sd">    data to be correlated through using the templates.  This is in effect the\</span>
-<span class="sd">    image.</span>
+<span class="sd">    :param templates: A list of templates, where each one should be an \</span>
+<span class="sd">        obspy.Stream object containing multiple traces of seismic data and \</span>
+<span class="sd">        the relevant header information.</span>
+<span class="sd">    :param stream: A single obspy.Stream object containing daylong seismic \</span>
+<span class="sd">        data to be correlated through using the templates.  This is in effect \</span>
+<span class="sd">        the image.</span>
 <span class="sd">    :type core: int</span>
 <span class="sd">    :param core: Number of cores to loop over</span>
 <span class="sd">    :type debug: int</span>
 <span class="sd">    :param debug: Debug level.</span>
 
-<span class="sd">    :return: New list of :class: &#39;numpy.array&#39; objects.  These will contain\</span>
-<span class="sd">    the correlation sums for each template for this day of data.</span>
+<span class="sd">    :return: New list of :class: &#39;numpy.array&#39; objects.  These will contain \</span>
+<span class="sd">        the correlation sums for each template for this day of data.</span>
 <span class="sd">    :return: list of ints as number of channels used for each cross-correlation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">time</span>
@@ -501,61 +500,60 @@
 <div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">template_list</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
                  <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Over-arching code to run the correlations of given templates with a\</span>
+    <span class="sd">r&quot;&quot;&quot;Over-arching code to run the correlations of given templates with a \</span>
 <span class="sd">    day of seismic data and output the detections based on a given threshold.</span>
 
 <span class="sd">    :type template_names: list</span>
-<span class="sd">    :param template_names: List of template names in the same order as\</span>
-<span class="sd">     template_list</span>
+<span class="sd">    :param template_names: List of template names in the same order as \</span>
+<span class="sd">        template_list</span>
 <span class="sd">    :type template_list: list :class: &#39;obspy.Stream&#39;</span>
-<span class="sd">    :param template_list: A list of templates of which each template is a\</span>
+<span class="sd">    :param template_list: A list of templates of which each template is a \</span>
 <span class="sd">        Stream of obspy traces containing seismic data and header information.</span>
 <span class="sd">    :type st: :class: &#39;obspy.Stream&#39;</span>
-<span class="sd">    :param st: An obspy.Stream object containing all the data available and\</span>
-<span class="sd">        required for the correlations with templates given.  For efficiency\</span>
-<span class="sd">        this should contain no excess traces which are not in one or more of\</span>
-<span class="sd">        the templates.  This will now remove excess traces internally, but\</span>
-<span class="sd">        will copy the stream and work on the copy, leaving your input stream\</span>
+<span class="sd">    :param st: An obspy.Stream object containing all the data available and \</span>
+<span class="sd">        required for the correlations with templates given.  For efficiency \</span>
+<span class="sd">        this should contain no excess traces which are not in one or more of \</span>
+<span class="sd">        the templates.  This will now remove excess traces internally, but \</span>
+<span class="sd">        will copy the stream and work on the copy, leaving your input stream \</span>
 <span class="sd">        untouched.</span>
 <span class="sd">    :type threshold: float</span>
 <span class="sd">    :param threshold: A threshold value set based on the threshold_type</span>
 <span class="sd">    :type threshold_type: str</span>
-<span class="sd">    :param threshold_type: The type of threshold to be used, can be MAD,\</span>
-<span class="sd">        absolute or av_chan_corr.    MAD threshold is calculated as the\</span>
-<span class="sd">        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation\</span>
-<span class="sd">        sum for a given template. absolute threhsold is a true absolute\</span>
-<span class="sd">        threshold based on the cccsum value av_chan_corr is based on the mean\</span>
-<span class="sd">        values of single-channel cross-correlations assuming all data are\</span>
+<span class="sd">    :param threshold_type: The type of threshold to be used, can be MAD, \</span>
+<span class="sd">        absolute or av_chan_corr.    MAD threshold is calculated as the \</span>
+<span class="sd">        threshold*(median(abs(cccsum))) where cccsum is the cross-correlation \</span>
+<span class="sd">        sum for a given template. absolute threhsold is a true absolute \</span>
+<span class="sd">        threshold based on the cccsum value av_chan_corr is based on the mean \</span>
+<span class="sd">        values of single-channel cross-correlations assuming all data are \</span>
 <span class="sd">        present as required for the template, \</span>
-<span class="sd">        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where\</span>
-<span class="sd">        template is a single template from the input and the length is the\</span>
+<span class="sd">        e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where \</span>
+<span class="sd">        template is a single template from the input and the length is the \</span>
 <span class="sd">        number of channels within this template.</span>
 <span class="sd">    :type trig_int: float</span>
 <span class="sd">    :param trig_int: Minimum gap between detections in seconds.</span>
 <span class="sd">    :type plotvar: bool</span>
 <span class="sd">    :param plotvar: Turn plotting on or off</span>
 <span class="sd">    :type plotdir: str</span>
-<span class="sd">    :param plotdir: Path to plotting folder, plots will be output here,\</span>
+<span class="sd">    :param plotdir: Path to plotting folder, plots will be output here, \</span>
 <span class="sd">        defaults to run location.</span>
 <span class="sd">    :type tempdir: String or False</span>
 <span class="sd">    :param tempdir: Directory to put temporary files, or False</span>
 <span class="sd">    :type cores: int</span>
 <span class="sd">    :param cores: Number of cores to use</span>
 <span class="sd">    :type debug: int</span>
-<span class="sd">    :param debug: Debug output level, the bigger the number, the more the\</span>
+<span class="sd">    :param debug: Debug output level, the bigger the number, the more the \</span>
 <span class="sd">        output.</span>
 
-<span class="sd">    :return: :class: &#39;DETECTIONS&#39; detections for each channel formatted as\</span>
-<span class="sd">    :class: &#39;obspy.UTCDateTime&#39; objects.</span>
+<span class="sd">    :return: :class: &#39;DETECTIONS&#39; detections for each channel formatted as \</span>
+<span class="sd">        :class: &#39;obspy.UTCDateTime&#39; objects.</span>
 
-<span class="sd">    .. rubric:: Note</span>
-<span class="sd">        Plotting within the match-filter routine uses the Agg backend with\</span>
-<span class="sd">        interactive plotting turned off.  This is because the function is\</span>
-<span class="sd">        designed to work in bulk.  If you wish to turn interactive plotting on\</span>
-<span class="sd">        you must import matplotlib in your script first, when you them import\</span>
-<span class="sd">        match_filter you will get the warning that this call to matplotlib has\</span>
-<span class="sd">        no effect, which will mean that match_filter has not changed the\</span>
-<span class="sd">        plotting behaviour.</span>
+<span class="sd">    .. note:: Plotting within the match-filter routine uses the Agg backend \</span>
+<span class="sd">        with interactive plotting turned off.  This is because the function \</span>
+<span class="sd">        is designed to work in bulk.  If you wish to turn interactive \</span>
+<span class="sd">        plotting on you must import matplotlib in your script first, when you \</span>
+<span class="sd">        them import match_filter you will get the warning that this call to \</span>
+<span class="sd">        matplotlib has no effect, which will mean that match_filter has not \</span>
+<span class="sd">        changed the plotting behaviour.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">matplotlib</span>
     <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>

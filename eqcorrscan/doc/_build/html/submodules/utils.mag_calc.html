@@ -96,7 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -172,25 +172,25 @@ format and can be copied to a REA database.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>datapath</strong> (<em>String</em>) &#8211; Path to the waveform files - usually the path to the WAV        directory</li>
-<li><strong>respdir</strong> (<em>String</em>) &#8211; Path to the response information directory</li>
+<li><strong>datapath</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to the waveform files - usually the path to the WAV        directory</li>
+<li><strong>respdir</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to the response information directory</li>
 <li><strong>chans</strong> (<em>List of strings</em>) &#8211; List of the channels to pick on, defaults to [&#8216;Z&#8217;] - should
 just be the orientations, e.g. Z,1,2,N,E</li>
-<li><strong>var_wintype</strong> (<em>Bool</em>) &#8211; If True, the winlen will be
+<li><strong>var_wintype</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, the winlen will be
 multiplied by the P-S time if both P and S picks are
 available, otherwise it will be multiplied by the
 hypocentral distance*0.34 - dervided using a p-s ratio of
 1.68 and S-velocity of 1.5km/s to give a large window,
 defaults to True</li>
-<li><strong>winlen</strong> (<em>Float</em>) &#8211; Length of window, see above parameter, if var_wintype is
+<li><strong>winlen</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of window, see above parameter, if var_wintype is
 False then this will be in seconds, otherwise it is the
 multiplier to the p-s time, defaults to 0.5.</li>
-<li><strong>pre_pick</strong> (<em>Float</em>) &#8211; Time before the s-pick to start the cut window, defaults
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Time before the s-pick to start the cut window, defaults
 to 0.2</li>
-<li><strong>pre_filt</strong> (<em>Bool</em>) &#8211; To apply a pre-filter or not, defaults to True</li>
-<li><strong>lowcut</strong> (<em>Float</em>) &#8211; Lowcut in Hz for the pre-filter, defaults to 1.0</li>
-<li><strong>highcut</strong> (<em>Float</em>) &#8211; Highcut in Hz for the pre-filter, defaults to 20.0</li>
-<li><strong>corners</strong> (<em>Int</em>) &#8211; Number of corners to use in the pre-filter</li>
+<li><strong>pre_filt</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To apply a pre-filter or not, defaults to True</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lowcut in Hz for the pre-filter, defaults to 1.0</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Highcut in Hz for the pre-filter, defaults to 20.0</li>
+<li><strong>corners</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners to use in the pre-filter</li>
 </ul>
 </td>
 </tr>
@@ -240,7 +240,7 @@ the author to add others in.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>GSEfile</strong> (<em>Str</em>) &#8211; Path to GSE file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>GSEfile</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to GSE file</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Dict of poles, zeros, gain and sensitivity</td>
 </tr>
@@ -259,12 +259,12 @@ and sensitivity.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>station</strong> (<em>String</em>) &#8211; Station name (as in the response files)</li>
-<li><strong>channel</strong> (<em>String</em>) &#8211; Channel name (as in the response files)</li>
-<li><strong>network</strong> (<em>String</em>) &#8211; Network to scan for, can be a wildcard</li>
+<li><strong>station</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Station name (as in the response files)</li>
+<li><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Channel name (as in the response files)</li>
+<li><strong>network</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Network to scan for, can be a wildcard</li>
 <li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/library/datetime.html#datetime.datetime" title="(in Python v2.7)"><em>datetime.datetime</em></a>) &#8211; Date-time to look for repsonse information</li>
 <li><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sample interval in seconds</li>
-<li><strong>directory</strong> (<em>String</em>) &#8211; Directory to scan for response information</li>
+<li><strong>directory</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Directory to scan for response information</li>
 </ul>
 </td>
 </tr>
@@ -347,8 +347,8 @@ Earth approximation</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>loc1</strong> (<em>Tuple</em>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
-<li><strong>loc2</strong> (<em>Tuple</em>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
+<li><strong>loc1</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
+<li><strong>loc2</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Tuple of lat, lon, depth (in decimal degrees and km)</li>
 </ul>
 </td>
 </tr>

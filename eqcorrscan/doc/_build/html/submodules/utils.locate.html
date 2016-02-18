@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.4. pre_processing &mdash; EQcorrscan 0.1.0 documentation</title>
+  <title>4.8. locate &mdash; EQcorrscan 0.1.0 documentation</title>
   
 
   
@@ -34,8 +34,7 @@
   
     <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
         <link rel="up" title="4. Utils" href="../utils.html"/>
-        <link rel="next" title="4.5. EQcorrscan_plotting" href="utils.EQcorrscan_plotting.html"/>
-        <link rel="prev" title="4.3. clustering" href="utils.clustering.html"/> 
+        <link rel="prev" title="4.7. stacking" href="utils.stacking.html"/> 
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
@@ -92,10 +91,11 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.1. Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">4.2. findpeaks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="">4.4. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.4. pre_processing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -124,10 +124,10 @@
       
           <li><a href="../utils.html">4. Utils</a> &raquo;</li>
       
-    <li>4.4. pre_processing</li>
+    <li>4.8. locate</li>
       <li class="wy-breadcrumbs-aside">
         
-          <a href="../_sources/submodules/utils.pre_processing.txt" rel="nofollow"> View page source</a>
+          <a href="../_sources/submodules/utils.locate.txt" rel="nofollow"> View page source</a>
         
       </li>
   </ul>
@@ -135,9 +135,11 @@
 </div>
           <div role="main" class="document">
             
-  <div class="section" id="module-pre_processing">
-<span id="pre-processing"></span><h1>4.4. pre_processing<a class="headerlink" href="#module-pre_processing" title="Permalink to this headline">¶</a></h1>
-<p>Utilities module for the EQcorrscan package written by Calum Chamberlain ofVictoria University Wellington.  These functions are designed to do the basicprocessing of the data using obspy modules (which also rely on scipy andnumpy).</p>
+  <div class="section" id="module-locate">
+<span id="locate"></span><h1>4.8. locate<a class="headerlink" href="#module-locate" title="Permalink to this headline">¶</a></h1>
+<p>Functions to locate earthquakes detected by EQcorrscan.
+Designed primarily locate stacks of detections to give family locations.
+Extensions may later be written.</p>
 <p>Copyright 2015 Calum Chamberlain</p>
 <p>This file is part of EQcorrscan.</p>
 <blockquote>
@@ -153,79 +155,83 @@ GNU General Public License for more details.</p>
 along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
 </div></blockquote>
 <dl class="function">
-<dt id="pre_processing._check_daylong">
-<code class="descclassname">pre_processing.</code><code class="descname">_check_daylong</code><span class="sig-paren">(</span><em>tr</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#_check_daylong"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._check_daylong" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to check the data quality of the daylong file - check to seethat the day isn&#8217;t just zeros, with large steps, if it is then theresampling will hate it.</p>
+<dt id="locate.cross_net">
+<code class="descclassname">locate.</code><code class="descname">cross_net</code><span class="sig-paren">(</span><em>stream</em>, <em>env=False</em>, <em>debug=0</em>, <em>master=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/locate.html#cross_net"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#locate.cross_net" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate picks for each channel based on optimal moveout
+defined by maximum cross-correaltion with master trace.  Master trace will
+be the first trace in the stream.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to check if the data are daylong.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stream</strong> &#8211; Stream to pick</li>
+<li><strong>envelope</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To compute cross-correlations on the envelope or not.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug level from 0-5</li>
+<li><strong>master</strong> (<em>obspy.Trace</em>) &#8211; Trace to use as master, if False, will use the first tracein stream.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return qual:</th><td class="field-body">bool</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of pick class</p>
+</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="function">
-<dt id="pre_processing.dayproc">
-<code class="descclassname">pre_processing.</code><code class="descname">dayproc</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug</em>, <em>starttime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#dayproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc" title="Permalink to this definition">¶</a></dt>
-<dd><p>Basic function to bandpass, downsample and check headers and length oftrace to ensure files start at the start of a day and are daylong.</p>
-<p>Works in place on data.  This is employed to ensure all parts of the dataare processedin the same way.</p>
+<dt id="locate.stalta_pick">
+<code class="descclassname">locate.</code><code class="descname">stalta_pick</code><span class="sig-paren">(</span><em>stream</em>, <em>stalen</em>, <em>ltalen</em>, <em>trig_on</em>, <em>trig_off</em>, <em>freqmin=False</em>, <em>freqmax=False</em>, <em>debug=0</em>, <em>show=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/locate.html#stalta_pick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#locate.stalta_pick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple sta-lta (short-term average/long-term average) picker, using
+obspy&#8217;s stalta routine to generate the characteristic function.</p>
+<p>Currently very basic quick wrapper, there are many other (better) options
+in obspy, found
+(here)[<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html">http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html</a>].</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to process</li>
-<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut in Hz for bandpass</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Corners for bandpass</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
-<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; The stream to pick on, can be any number of channels.</li>
+<li><strong>stalen</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of the short-term average window in seconds.</li>
+<li><strong>ltalen</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of the long-term average window in seconds.</li>
+<li><strong>trig_on</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; sta/lta ratio to trigger a detection/pick</li>
+<li><strong>trig_off</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; sta/lta ratio to turn the trigger off - no further pickswill be made between exceeding trig_on until trig_off is reached.</li>
+<li><strong>freqmin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low-cut frequency in Hz for bandpass filter</li>
+<li><strong>freqmax</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High-cut frequency in Hz for bandpass filter</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5.</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Show picks on waveform.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of pick class.</p>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>..rubric:: Note</dt>
-<dd>Will convert channel names to two charectars long</dd>
-</dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="pre_processing.shortproc">
-<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
-<dd><p>Basic function to bandpass and downsample.</p>
-<p>Works in place on data.  This is employed to ensure all parts of thedata are processed in the same way.</p>
+<dt id="locate.synth_compare">
+<code class="descclassname">locate.</code><code class="descname">synth_compare</code><span class="sig-paren">(</span><em>stream</em>, <em>stream_list</em>, <em>cores=4</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/locate.html#synth_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#locate.synth_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare a specific stream to a list of synthetic templates, or earthquakes of known source and find the best matching event.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process</li>
-<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
-<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners for bandpass filter</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate desired in Hz</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+<li><strong>stream</strong> (<em>:class:obspy.Stream</em>) &#8211; Stream to be compared to streams with known locations.</li>
+<li><strong>stream_list</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of streams with known locations</li>
+<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of cores to parallel over</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug level, high is more debug</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">int, float: index of best match and cross-correlation sum</p>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>..rubric:: Note</dt>
-<dd>Will convert channel names to two charectars long</dd>
-</dl>
 </dd></dl>
 
 </div>
@@ -236,10 +242,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utils.EQcorrscan_plotting.html" class="btn btn-neutral float-right" title="4.5. EQcorrscan_plotting">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="utils.clustering.html" class="btn btn-neutral" title="4.3. clustering"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="utils.stacking.html" class="btn btn-neutral" title="4.7. stacking"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

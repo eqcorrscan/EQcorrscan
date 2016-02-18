@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -284,7 +283,7 @@
 <span class="sd">    :param samp_rate: Sampling rate of data in Hz</span>
 <span class="sd">    :type save: Boolean, optional</span>
 <span class="sd">    :param save: Save figure or plot to screen (False)</span>
-<span class="sd">    :type peaks: List of Tuple, optional</span>
+<span class="sd">    :type peaks: list of Tuple, optional</span>
 <span class="sd">    :param peaks: List of peak locations and amplitudes (loc, amp)</span>
 <span class="sd">    :type savefile: String, optional</span>
 <span class="sd">    :param savefile: Path to save to, only used if save=True</span>
@@ -368,7 +367,7 @@
 <div class="viewcode-block" id="threeD_gridplot"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.threeD_gridplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_gridplot</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Function to plot in 3D a series of grid points.</span>
 
-<span class="sd">    :type nodes: List of tuples</span>
+<span class="sd">    :type nodes: list of tuples</span>
 <span class="sd">    :param nodes: List of tuples of the form (lat, long, depth)</span>
 <span class="sd">    :type save: bool</span>
 <span class="sd">    :param save: if True will save without plotting to screen, if False\</span>
@@ -406,7 +405,7 @@
 <span class="sd">    multiple events - data will be alligned by their pick-time given in the\</span>
 <span class="sd">    picks.</span>
 
-<span class="sd">    :type streams: List of :class:obspy.stream</span>
+<span class="sd">    :type streams: list of :class:obspy.stream</span>
 <span class="sd">    :param streams: List of the streams to use, can contain more traces than\</span>
 <span class="sd">        you plan on plotting</span>
 <span class="sd">    :type catalog: obspy.core.event.Catalog</span>
@@ -549,7 +548,7 @@
 <span class="sd">    :param stream: Stream of data to be plotted as the base (black)</span>
 <span class="sd">    :type template: obspy.Stream</span>
 <span class="sd">    :param template: Template to be plotted on top of the base stream (red)</span>
-<span class="sd">    :type times: List of datetime.datetime</span>
+<span class="sd">    :type times: list of datetime.datetime</span>
 <span class="sd">    :param times: list of times of detections in the order of the channels in</span>
 <span class="sd">                template.</span>
 <span class="sd">    :type streamcolour: str</span>
@@ -608,7 +607,7 @@
     <span class="sd">r&quot;&quot;&quot;Function to plot interevent-time versus magnitude for series of events.</span>
 <span class="sd">    **thin** Wrapper for interev_mag.</span>
 
-<span class="sd">    :type sfiles: List</span>
+<span class="sd">    :type sfiles: list</span>
 <span class="sd">    :param sfiles: List of sfiles to read from</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
@@ -772,9 +771,9 @@
 <span class="sd">    :param stream: Stream to plot</span>
 <span class="sd">    :type NR_stream: :class: obspy.Stream</span>
 <span class="sd">    :param NR_stream: Stream for the network response</span>
-<span class="sd">    :type detections: List of datetime objects</span>
+<span class="sd">    :type detections: list of datetime objects</span>
 <span class="sd">    :param detections: List of the detections</span>
-<span class="sd">    :type false_detections: List of datetime</span>
+<span class="sd">    :type false_detections: list of datetime</span>
 <span class="sd">    :param false_detections: Either False (default) or list of false detection\</span>
 <span class="sd">     times</span>
 <span class="sd">    :type size: tuple</span>
@@ -862,12 +861,12 @@
     <span class="sd">r&quot;&quot;&quot;Function to plot the singular vectors from the clustering routines, one\</span>
 <span class="sd">    plot for each stachan</span>
 
-<span class="sd">    :type SVStreams: List of :class:Obspy.Stream</span>
+<span class="sd">    :type SVStreams: list of :class:Obspy.Stream</span>
 <span class="sd">    :param SVStreams: See clustering.SVD_2_Stream - will assume these are\</span>
 <span class="sd">            ordered by power, e.g. first singular vector in the first stream</span>
-<span class="sd">    :type SValues: List of float</span>
+<span class="sd">    :type SValues: list of float</span>
 <span class="sd">    :param SValues: List of the singular values corresponding to the SVStreams</span>
-<span class="sd">    :type stachans: List</span>
+<span class="sd">    :type stachans: list</span>
 <span class="sd">    :param stachans: List of station.channel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
@@ -902,7 +901,7 @@
 <span class="sd">    :param real_template: Stream of the real template</span>
 <span class="sd">    :type synthetic: obspy.Stream</span>
 <span class="sd">    :param synthetic: Stream of synthetic template</span>
-<span class="sd">    :type channels: List of str</span>
+<span class="sd">    :type channels: list of str</span>
 <span class="sd">    :param channels: List of tuples of (station, channel) to plot, default is\</span>
 <span class="sd">            False, which plots all.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

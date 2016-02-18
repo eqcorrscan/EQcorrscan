@@ -96,7 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -192,34 +192,72 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <dl class="class">
 <dt id="match_filter.DETECTION">
 <em class="property">class </em><code class="descclassname">match_filter.</code><code class="descname">DETECTION</code><span class="sig-paren">(</span><em>template_name</em>, <em>detect_time</em>, <em>no_chans</em>, <em>detect_val</em>, <em>threshold</em>, <em>typeofdet</em>, <em>chans=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#DETECTION"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.DETECTION" title="Permalink to this definition">¶</a></dt>
-<dd><p>Information required for a full detection based on cross-channelcorrelation sums.</p>
+<dd><p>Information required for a full detection based on cross-channel correlation sums.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
-<dd><table class="first docutils field-list" frame="void" rules="none">
+<dd><table class="first last docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">type template_name:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><p class="first">str</p>
+</td>
 </tr>
 <tr class="field-even field"><th class="field-name" colspan="2">param template_name:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body">The name of the template for which this</td>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The name of the template for which this detection was made.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type detect_time:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><table class="first docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">&#8216;obspy.UTCDateTime&#8217;</td>
 </tr>
 </tbody>
 </table>
-<p class="last">detection was made.
-:type detect_time: :class: &#8216;obspy.UTCDateTime&#8217;
-:param detect_time: Time of detection as an obspy UTCDateTime object
-:type no_chans: int
-:param no_chans: The number of channels for which the cross-channelcorrelation sum was calculated over.
-:type chans: list of str
-:param chans: List of stations for the detection
-:type cccsum_val: float
-:param cccsum_val: The raw value of the cross-channel correlation sumfor this detection.
-:type threshold: float
-:param threshold: The value of the threshold used for this detection,will be the raw threshold value related to the cccsum.
-:type typeofdet: str
-:param typeofdet: Type of detection, STA, corr, bright</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param detect_time:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">Time of detection as an obspy UTCDateTime object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type no_chans:</th><td class="field-body"><p class="first">int</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param no_chans:</th><td class="field-body"><p class="first">The number of channels for which the cross-channel correlation sum was calculated over.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type chans:</th><td class="field-body"><p class="first">list of str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param chans:</th><td class="field-body"><p class="first">List of stations for the detection</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type cccsum_val:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><p class="first">float</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param cccsum_val:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The raw value of the cross-channel correlation sum for this detection.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type threshold:</th><td class="field-body"><p class="first">float</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param threshold:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">The value of the threshold used for this detection, will be the raw threshold value related to the cccsum.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type typeofdet:</th><td class="field-body"><p class="first">str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param typeofdet:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Type of detection, STA, corr, bright</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd>
 </dl>
 </dd></dl>
@@ -227,138 +265,115 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <dl class="function">
 <dt id="match_filter._channel_loop">
 <code class="descclassname">match_filter.</code><code class="descname">_channel_loop</code><span class="sig-paren">(</span><em>templates</em>, <em>stream</em>, <em>cores=1</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#_channel_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter._channel_loop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loop to generate cross channel correaltion sums for a series of templateshands off the actual correlations to a sister function which can be run inparallel.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>templates</strong> &#8211; A list of templates, where each one should be an</td>
-</tr>
-</tbody>
-</table>
-<p>obspy.Stream object containing multiple traces of seismic data and therelevant header information.
-:param stream: A single obspy.Stream object containing daylong seismicdata to be correlated through using the templates.  This is in effect theimage.
-:type core: int
-:param core: Number of cores to loop over
-:type debug: int
-:param debug: Debug level.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">New list of :class: &#8216;numpy.array&#8217; objects.  These will contain</td>
-</tr>
-</tbody>
-</table>
-<p>the correlation sums for each template for this day of data.
-:return: list of ints as number of channels used for each cross-correlation</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="match_filter._template_loop">
-<code class="descclassname">match_filter.</code><code class="descname">_template_loop</code><span class="sig-paren">(</span><em>template</em>, <em>chan</em>, <em>station</em>, <em>channel</em>, <em>debug=0</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#_template_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter._template_loop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sister loop to handle the correlation of a single template (of multiple
-channels) with a single channel of data.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Optional argument, used to keep track of which process is being</td>
-</tr>
-</tbody>
-</table>
-<p>run.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">tuple of (i, ccc) with ccc as an ndarray</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Note</p>
-<dl class="docutils">
-<dt>..This function currently assumes only one template-channel per</dt>
-<dd>data-channel, while this is normal for a standard matched-filter routine,
-if we wanted to impliment a subspace detector, this would be the function
-to change, I think.  E.g. where I currently take only the first matching
-channel, we could loop through all the matching channels and then sum the
-correlation sums - however I don&#8217;t really understand how you detect based
-on that.  More reading of the Harris document required.</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="match_filter.match_filter">
-<code class="descclassname">match_filter.</code><code class="descname">match_filter</code><span class="sig-paren">(</span><em>template_names</em>, <em>template_list</em>, <em>st</em>, <em>threshold</em>, <em>threshold_type</em>, <em>trig_int</em>, <em>plotvar</em>, <em>plotdir='.'</em>, <em>cores=1</em>, <em>tempdir=False</em>, <em>debug=0</em>, <em>plot_format='jpg'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#match_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.match_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Over-arching code to run the correlations of given templates with aday of seismic data and output the detections based on a given threshold.</p>
+<dd><p>Loop to generate cross channel correaltion sums for a series of templates hands off the actual correlations to a sister function which can be run in parallel.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>template_names</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of template names in the same order astemplate_list</li>
-<li><strong>template_list</strong> (<em>list :class: &#8216;obspy.Stream&#8217;</em>) &#8211; A list of templates of which each template is aStream of obspy traces containing seismic data and header information.</li>
-<li><strong>st</strong> &#8211; An obspy.Stream object containing all the data available andrequired for the correlations with templates given.  For efficiencythis should contain no excess traces which are not in one or more ofthe templates.  This will now remove excess traces internally, butwill copy the stream and work on the copy, leaving your input streamuntouched.</li>
-<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; A threshold value set based on the threshold_type</li>
-<li><strong>threshold_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The type of threshold to be used, can be MAD,absolute or av_chan_corr.    MAD threshold is calculated as thethreshold*(median(abs(cccsum))) where cccsum is the cross-correlationsum for a given template. absolute threhsold is a true absolutethreshold based on the cccsum value av_chan_corr is based on the meanvalues of single-channel cross-correlations assuming all data arepresent as required for the template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) wheretemplate is a single template from the input and the length is thenumber of channels within this template.</li>
-<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum gap between detections in seconds.</li>
-<li><strong>plotvar</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off</li>
-<li><strong>plotdir</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to plotting folder, plots will be output here,defaults to run location.</li>
-<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Directory to put temporary files, or False</li>
-<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of cores to use</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level, the bigger the number, the more theoutput.</li>
+<li><strong>templates</strong> &#8211; A list of templates, where each one should be an obspy.Stream object containing multiple traces of seismic data and the relevant header information.</li>
+<li><strong>stream</strong> &#8211; A single obspy.Stream object containing daylong seismic data to be correlated through using the templates.  This is in effect the image.</li>
+<li><strong>core</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of cores to loop over</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug level.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><table class="docutils field-list" frame="void" rules="none">
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New list of :class: &#8216;numpy.array&#8217; objects.  These will contain the correlation sums for each template for this day of data.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of ints as number of channels used for each cross-correlation</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter._template_loop">
+<code class="descclassname">match_filter.</code><code class="descname">_template_loop</code><span class="sig-paren">(</span><em>template</em>, <em>chan</em>, <em>station</em>, <em>channel</em>, <em>debug=0</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#_template_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter._template_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sister loop to handle the correlation of a single template (of multiple channels) with a single channel of data.</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">&#8216;DETECTIONS&#8217; detections for each channel formatted as</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Optional argument, used to keep track of which process is being run.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple of (i, ccc) with ccc as an ndarray</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This function currently assumes only one template-channel per data-channel, while this is normal for a standard matched-filter routine, if we wanted to impliment a subspace detector, this would be the function to change, I think.  E.g. where I currently take only the first matching channel, we could loop through all the matching channels and then sum the correlation sums - however I haven&#8217;t yet
+implimented detection based on that.  More reading of the Harris document required.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="match_filter.match_filter">
+<code class="descclassname">match_filter.</code><code class="descname">match_filter</code><span class="sig-paren">(</span><em>template_names</em>, <em>template_list</em>, <em>st</em>, <em>threshold</em>, <em>threshold_type</em>, <em>trig_int</em>, <em>plotvar</em>, <em>plotdir='.'</em>, <em>cores=1</em>, <em>tempdir=False</em>, <em>debug=0</em>, <em>plot_format='jpg'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#match_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.match_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Over-arching code to run the correlations of given templates with a day of seismic data and output the detections based on a given threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>template_names</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of template names in the same order as template_list</li>
+<li><strong>template_list</strong> (<em>list :class: &#8216;obspy.Stream&#8217;</em>) &#8211; A list of templates of which each template is a Stream of obspy traces containing seismic data and header information.</li>
+<li><strong>st</strong> &#8211; An obspy.Stream object containing all the data available and required for the correlations with templates given.  For efficiency this should contain no excess traces which are not in one or more of the templates.  This will now remove excess traces internally, but will copy the stream and work on the copy, leaving your input stream untouched.</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; A threshold value set based on the threshold_type</li>
+<li><strong>threshold_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The type of threshold to be used, can be MAD, absolute or av_chan_corr.    MAD threshold is calculated as the threshold*(median(abs(cccsum))) where cccsum is the cross-correlation sum for a given template. absolute threhsold is a true absolute threshold based on the cccsum value av_chan_corr is based on the mean values of single-channel cross-correlations assuming all data are present as required for the template, e.g. av_chan_corr_thresh=threshold*(cccsum/len(template)) where template is a single template from the input and the length is the number of channels within this template.</li>
+<li><strong>trig_int</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum gap between detections in seconds.</li>
+<li><strong>plotvar</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off</li>
+<li><strong>plotdir</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to plotting folder, plots will be output here, defaults to run location.</li>
+<li><strong>tempdir</strong> (<em>String or False</em>) &#8211; Directory to put temporary files, or False</li>
+<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of cores to use</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level, the bigger the number, the more the output.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">&#8216;DETECTIONS&#8217; detections for each channel formatted as </td>
+</tr>
+<tr class="field-even field"><th class="field-name">class:</th><td class="field-body">&#8216;obspy.UTCDateTime&#8217; objects.</td>
 </tr>
 </tbody>
 </table>
 </p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Class:</th><td class="field-body"><p class="first last">&#8216;obspy.UTCDateTime&#8217; objects.</p>
-</td>
-</tr>
 </tbody>
 </table>
-<p class="rubric">Note
-Plotting within the match-filter routine uses the Agg backend withinteractive plotting turned off.  This is because the function isdesigned to work in bulk.  If you wish to turn interactive plotting onyou must import matplotlib in your script first, when you them importmatch_filter you will get the warning that this call to matplotlib hasno effect, which will mean that match_filter has not changed theplotting behaviour.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Plotting within the match-filter routine uses the Agg backend with interactive plotting turned off.  This is because the function is designed to work in bulk.  If you wish to turn interactive plotting on you must import matplotlib in your script first, when you them import match_filter you will get the warning that this call to matplotlib has no effect, which will mean that match_filter has not changed the plotting behaviour.</p>
+</div>
 </dd></dl>
 
 <dl class="function">
 <dt id="match_filter.normxcorr2">
 <code class="descclassname">match_filter.</code><code class="descname">normxcorr2</code><span class="sig-paren">(</span><em>template</em>, <em>image</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/match_filter.html#normxcorr2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#match_filter.normxcorr2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base function to call the c++ correlation routine from the openCV imageprocessing suite.  Requires you to have installed the openCV pythonbindings, which can be downloaded on Linux machines using:<strong>sudo apt-get install python-openCV</strong>.</p>
-<p>Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give thenormalized cross-correaltion.  Documentation on this function can befound here:</p>
+<dd><p>Base function to call the c++ correlation routine from the openCV image processing suite.  Requires you to have installed the openCV python bindings, which can be downloaded on Linux machines using: <strong>sudo apt-get install python-openCV</strong>.</p>
+<p>Here we use the cv2.TM_CCOEFF_NORMED method within openCV to give the normalized cross-correaltion.  Documentation on this function can be found here:</p>
 <p><strong>http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate</strong></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>template</strong> &#8211; Template array</li>
-<li><strong>image</strong> &#8211; image to scan</li>
+<li><strong>image</strong> &#8211; image to scan the template through.  The order of these matters, if you put the template after the image you will get a reversed correaltion matrix</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">New :class: &#8216;numpy.array&#8217; object of the correlation values for the correlation of the image with the template.</p>
 </td>
 </tr>
 </tbody>
 </table>
-<p>the template through.  The order of these matters, if you put the templateafter the image you will get a reversed correaltion matrix</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">New :class: &#8216;numpy.array&#8217; object of the correlation values for</td>
-</tr>
-</tbody>
-</table>
-<p>the correlation of the image with the template.</p>
 </dd></dl>
 
 </div>

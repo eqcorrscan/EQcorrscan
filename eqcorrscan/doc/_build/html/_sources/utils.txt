@@ -14,4 +14,4 @@ and for the analysis of waveforms detected by cross-correlation.
    submodules/utils.EQcorrscan_plotting
    submodules/utils.mag_calc
    submodules/utils.stacking
-   submodules/utils.catalogue2DD
+   submodules/utils.locate

@@ -5,6 +5,8 @@ University of Wellington.
 
 Functions designed to test the reosultion of templat matching cross-correlation
 function inspired by Emily Warren-Smith.
+
+** Unifinished **
 """
 
 import sys, os

@@ -83,7 +83,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
@@ -94,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -198,14 +197,15 @@
 <span class="sd">    :param phaseout: What phase to return the lagtimes in</span>
 <span class="sd">    :type ps_ratio: float</span>
 <span class="sd">    :param ps_ratio: p to s ratio for coversion</span>
-<span class="sd">    :type lags_switch: Bool</span>
+<span class="sd">    :type lags_switch: bool</span>
 <span class="sd">    :param lags_switch: Return lags or raw travel-times, if set to true will\</span>
 <span class="sd">     return lags.</span>
 
-<span class="sd">    :return: list stations, list of lists of tuples nodes, \</span>
-<span class="sd">    :class: &#39;numpy.array&#39; lags station[1] refers to nodes[1] and \</span>
-<span class="sd">    lags[1] nodes[1][1] refers to station[1] and lags[1][1]\</span>
-<span class="sd">    nodes[n][n] is a tuple of latitude, longitude and depth</span>
+<span class="sd">    :return: list stations, list of lists of tuples nodes, np.ndarray of lags.</span>
+
+<span class="sd">    station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to \</span>
+<span class="sd">    station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, longitude \</span>
+<span class="sd">    and depth.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">import</span> <span class="nn">csv</span>
@@ -261,28 +261,28 @@
 <span class="sd">    scan.</span>
 
 <span class="sd">    :type stations: list</span>
-<span class="sd">    :param stations: List of station names from in the form where stations[i]\</span>
-<span class="sd">    refers to nodes[i][:] and lags[i][:]</span>
+<span class="sd">    :param stations: List of station names from in the form where stations[i] \</span>
+<span class="sd">        refers to nodes[i][:] and lags[i][:]</span>
 <span class="sd">    :type nodes: list, tuple</span>
-<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i]\</span>
-<span class="sd">    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\</span>
-<span class="sd">    degrees, nodes[:][:][2] is depth in km.</span>
+<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i] \</span>
+<span class="sd">        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \</span>
+<span class="sd">        lonitude in degrees, nodes[:][:][2] is depth in km.</span>
 <span class="sd">    :type lags: :class: &#39;numpy.array&#39;</span>
-<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i].\</span>
-<span class="sd">    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\</span>
-<span class="sd">    seconds.</span>
+<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \</span>
+<span class="sd">        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \</span>
+<span class="sd">        seconds.</span>
 <span class="sd">    :type mindepth: float</span>
 <span class="sd">    :param mindepth: Upper limit of volume</span>
 <span class="sd">    :type maxdepth: float</span>
 <span class="sd">    :param maxdepth: Lower limit of volume</span>
 <span class="sd">    :type corners: matplotlib.Path</span>
-<span class="sd">    :param corners: matplotlib path of the corners for the 2D polygon to cut\</span>
-<span class="sd">    to in lat and long</span>
+<span class="sd">    :param corners: matplotlib path of the corners for the 2D polygon to cut \</span>
+<span class="sd">        to in lat and long</span>
 
 <span class="sd">    :return: list stations, list of lists of tuples nodes, :class: \</span>
-<span class="sd">    &#39;numpy.array&#39; lags station[1] refers to nodes[1] and lags[1]\</span>
-<span class="sd">    nodes[1][1] refers to station[1] and lags[1][1]\</span>
-<span class="sd">    nodes[n][n] is a tuple of latitude, longitude and depth.</span>
+<span class="sd">        &#39;numpy.array&#39; lags station[1] refers to nodes[1] and lags[1] \</span>
+<span class="sd">        nodes[1][1] refers to station[1] and lags[1][1] \</span>
+<span class="sd">        nodes[n][n] is a tuple of latitude, longitude and depth.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
@@ -314,23 +314,23 @@
 <span class="sd">    the diagonal.</span>
 
 <span class="sd">    :type stations: list</span>
-<span class="sd">    :param stations: List of station names from in the form where stations[i]\</span>
-<span class="sd">    refers to nodes[i][:] and lags[i][:]</span>
+<span class="sd">    :param stations: List of station names from in the form where stations[i] \</span>
+<span class="sd">        refers to nodes[i][:] and lags[i][:]</span>
 <span class="sd">    :type nodes: list, tuple</span>
-<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i]\</span>
-<span class="sd">    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\</span>
-<span class="sd">    degrees, nodes[:][:][2] is depth in km.</span>
+<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i] \</span>
+<span class="sd">        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \</span>
+<span class="sd">        longitude in degrees, nodes[:][:][2] is depth in km.</span>
 <span class="sd">    :type lags: :class: &#39;numpy.array&#39;</span>
-<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i].\</span>
-<span class="sd">    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\</span>
-<span class="sd">    seconds</span>
+<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \</span>
+<span class="sd">        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \</span>
+<span class="sd">        seconds</span>
 <span class="sd">    :type threhsold: float</span>
 <span class="sd">    :param threshold: Threshold for removal in seconds</span>
 
 <span class="sd">    :returns: list stations, list of lists of tuples nodes, :class: \</span>
-<span class="sd">    &#39;numpy.array&#39; lags station[1] refers to nodes[1] and lags[1]\</span>
-<span class="sd">    nodes[1][1] refers to station[1] and lags[1][1]\</span>
-<span class="sd">    nodes[n][n] is a tuple of latitude, longitude and depth.</span>
+<span class="sd">        &#39;numpy.array&#39; lags station[1] refers to nodes[1] and lags[1] \</span>
+<span class="sd">        nodes[1][1] refers to station[1] and lags[1][1] \</span>
+<span class="sd">        nodes[n][n] is a tuple of latitude, longitude and depth.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">sys</span>
 
@@ -374,16 +374,16 @@
 <span class="sd">    :type stream: :class: `obspy.Stream`</span>
 <span class="sd">    :param stream: Data stream to find the brightness for.</span>
 <span class="sd">    :type clip_level: float</span>
-<span class="sd">    :param clip_level: Upper limit for energy as a multiplier to the mean\</span>
-<span class="sd">    energy.</span>
+<span class="sd">    :param clip_level: Upper limit for energy as a multiplier to the mean \</span>
+<span class="sd">        energy.</span>
 <span class="sd">    :type i: int</span>
 <span class="sd">    :param i: Index of loop for parallelisation.</span>
 <span class="sd">    :type mem_issue: bool</span>
-<span class="sd">    :param mem_issue: If True will write to disk rather than storing data in\</span>
-<span class="sd">    RAM.</span>
+<span class="sd">    :param mem_issue: If True will write to disk rather than storing data in \</span>
+<span class="sd">        RAM.</span>
 <span class="sd">    :type instance: int</span>
-<span class="sd">    :param instance: instance for bulk parallelisation, only used if\</span>
-<span class="sd">    mem_issue=true.</span>
+<span class="sd">    :param instance: instance for bulk parallelisation, only used if \</span>
+<span class="sd">        mem_issue=true.</span>
 <span class="sd">    :type plot: bool</span>
 <span class="sd">    :param plot: Turn plotting on or off, defaults to False.</span>
 
@@ -503,24 +503,24 @@
 </div>
 <div class="viewcode-block" id="_find_detections"><a class="viewcode-back" href="../submodules/core.bright_lights.html#bright_lights._find_detections">[docs]</a><span class="k">def</span> <span class="nf">_find_detections</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">thresh_type</span><span class="p">,</span>
                      <span class="n">samp_rate</span><span class="p">,</span> <span class="n">realstations</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to find detections within the cumulative network response\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to find detections within the cumulative network response \</span>
 <span class="sd">    according to Frank et al. (2014).</span>
 
 <span class="sd">    :type cum_net_resp: np.ndarray</span>
 <span class="sd">    :param cum_net_resp: Array of cumulative network response for nodes</span>
 <span class="sd">    :type nodes: list of tuples</span>
-<span class="sd">    :param nodes: Nodes associated with the source of energy in the\</span>
-<span class="sd">    cum_net_resp</span>
+<span class="sd">    :param nodes: Nodes associated with the source of energy in the \</span>
+<span class="sd">        cum_net_resp</span>
 <span class="sd">    :type threshold: float</span>
 <span class="sd">    :param threshold: Threshold value</span>
 <span class="sd">    :type thresh_type: str</span>
-<span class="sd">    :param thresh_type: Either MAD (Median Absolute Deviation) or abs\</span>
-<span class="sd">    (absolute) or RMS (Root Mean Squared)</span>
+<span class="sd">    :param thresh_type: Either MAD (Median Absolute Deviation) or abs \</span>
+<span class="sd">        (absolute) or RMS (Root Mean Squared)</span>
 <span class="sd">    :type samp_rate: float</span>
 <span class="sd">    :param samp_rate: Sampling rate in Hz</span>
 <span class="sd">    :type realstations: list of str</span>
-<span class="sd">    :param realstations: List of stations used to make the cumulative network\</span>
-<span class="sd">    response, will be reported in the DETECTION</span>
+<span class="sd">    :param realstations: List of stations used to make the cumulative network \</span>
+<span class="sd">        response, will be reported in the DETECTION</span>
 <span class="sd">    :type length: float</span>
 <span class="sd">    :param length: Maximum length of peak to look for in seconds</span>
 
@@ -560,17 +560,17 @@
 
 </div>
 <div class="viewcode-block" id="coherence"><a class="viewcode-back" href="../submodules/core.bright_lights.html#bright_lights.coherence">[docs]</a><span class="k">def</span> <span class="nf">coherence</span><span class="p">(</span><span class="n">stream_in</span><span class="p">,</span> <span class="n">stations</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">],</span> <span class="n">clip</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to determine the average network coherence of a given\</span>
-<span class="sd">    template or detection.  You will want your stream to contain only\</span>
-<span class="sd">    signal as noise will reduce the coherence (assuming it is incoherant\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to determine the average network coherence of a given \</span>
+<span class="sd">    template or detection.  You will want your stream to contain only \</span>
+<span class="sd">    signal as noise will reduce the coherence (assuming it is incoherant \</span>
 <span class="sd">    random noise).</span>
 
 <span class="sd">    :type stream: obspy.Stream</span>
-<span class="sd">    :param stream: The stream of seismic data you want to calculate the\</span>
+<span class="sd">    :param stream: The stream of seismic data you want to calculate the \</span>
 <span class="sd">            coherence for.</span>
 <span class="sd">    :type stations: List of String</span>
 <span class="sd">    :param stations: List of stations to use for coherence, default is all</span>
-<span class="sd">    :type clip: Tuple of Float</span>
+<span class="sd">    :type clip: tuple of Float</span>
 <span class="sd">    :param clip: Default is to use all the data given - \</span>
 <span class="sd">            tuple of start and end in seconds from start of trace</span>
 
@@ -619,60 +619,60 @@
                <span class="n">coherence_stations</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">],</span> <span class="n">coherence_clip</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                <span class="n">gap</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">clip_level</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
                <span class="n">plotsave</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to calculate the brightness function in terms of energy for\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to calculate the brightness function in terms of energy for \</span>
 <span class="sd">    a day of data over the entire network for a given grid of nodes.</span>
 
 <span class="sd">    Note data in stream must be all of the same length and have the same</span>
 <span class="sd">    sampling rates.</span>
 
 <span class="sd">    :type stations: list</span>
-<span class="sd">    :param stations: List of station names from in the form where stations[i]\</span>
-<span class="sd">    refers to nodes[i][:] and lags[i][:]</span>
+<span class="sd">    :param stations: List of station names from in the form where stations[i] \</span>
+<span class="sd">        refers to nodes[i][:] and lags[i][:]</span>
 <span class="sd">    :type nodes: list, tuple</span>
-<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i]\</span>
-<span class="sd">    and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in\</span>
-<span class="sd">    degrees, nodes[:][:][2] is depth in km.</span>
+<span class="sd">    :param nodes: List of node points where nodes[i] referes to stations[i] \</span>
+<span class="sd">        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \</span>
+<span class="sd">        longitude in degrees, nodes[:][:][2] is depth in km.</span>
 <span class="sd">    :type lags: :class: &#39;numpy.array&#39;</span>
-<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i].\</span>
-<span class="sd">    lags[i][j] should be the delay to the nodes[i][j] for stations[i] in\</span>
-<span class="sd">    seconds.</span>
+<span class="sd">    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \</span>
+<span class="sd">        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \</span>
+<span class="sd">        seconds.</span>
 <span class="sd">    :type stream: :class: `obspy.Stream`</span>
 <span class="sd">    :param data: Data through which to look for detections.</span>
 <span class="sd">    :type threshold: float</span>
-<span class="sd">    :param threshold: Threshold value for detection of template within the\</span>
-<span class="sd">    brightness function</span>
+<span class="sd">    :param threshold: Threshold value for detection of template within the \</span>
+<span class="sd">        brightness function</span>
 <span class="sd">    :type thresh_type: str</span>
-<span class="sd">    :param thresh_type: Either MAD or abs where MAD is the Median Absolute\</span>
-<span class="sd">    Deviation and abs is an absoulte brightness.</span>
+<span class="sd">    :param thresh_type: Either MAD or abs where MAD is the Median Absolute \</span>
+<span class="sd">        Deviation and abs is an absoulte brightness.</span>
 <span class="sd">    :type template_length: float</span>
 <span class="sd">    :param template_length: Length of template to extract in seconds</span>
 <span class="sd">    :type template_saveloc: str</span>
 <span class="sd">    :param template_saveloc: Path of where to save the templates.</span>
 <span class="sd">    :type coherence_thresh: tuple of floats</span>
-<span class="sd">    :param coherence_thresh: Threshold for removing incoherant peaks in the\</span>
-<span class="sd">            network response, those below this will not be used as templates.\</span>
-<span class="sd">            Must be in the form of (a,b) where the coherence is given by:\</span>
-<span class="sd">            a-kchan/b where kchan is the number of channels used to compute\</span>
+<span class="sd">    :param coherence_thresh: Threshold for removing incoherant peaks in the \</span>
+<span class="sd">            network response, those below this will not be used as templates. \</span>
+<span class="sd">            Must be in the form of (a,b) where the coherence is given by: \</span>
+<span class="sd">            a-kchan/b where kchan is the number of channels used to compute \</span>
 <span class="sd">            the coherence</span>
 <span class="sd">    :type coherence_stations: list</span>
-<span class="sd">    :param coherence_stations: List of stations to use in the coherance\</span>
+<span class="sd">    :param coherence_stations: List of stations to use in the coherance \</span>
 <span class="sd">            thresholding - defaults to &#39;all&#39; which uses all the stations.</span>
 <span class="sd">    :type coherence_clip: float</span>
 <span class="sd">    :param coherence_clip: tuple</span>
-<span class="sd">    :type coherence_clip: Start and end in seconds of data to window around,\</span>
+<span class="sd">    :type coherence_clip: Start and end in seconds of data to window around, \</span>
 <span class="sd">            defaults to False, which uses all the data given.</span>
 <span class="sd">    :type pre_pick: float</span>
 <span class="sd">    :param pre_pick: Seconds before the detection time to include in template</span>
 <span class="sd">    :type plotsave: bool</span>
-<span class="sd">    :param plotsave: Save or show plots, if False will try and show the plots\</span>
-<span class="sd">            on screen - as this is designed for bulk use this is set to\</span>
-<span class="sd">            True to save any plots rather than show them if you create\</span>
-<span class="sd">            them - changes the backend of matplotlib, so if is set to\</span>
+<span class="sd">    :param plotsave: Save or show plots, if False will try and show the plots \</span>
+<span class="sd">            on screen - as this is designed for bulk use this is set to \</span>
+<span class="sd">            True to save any plots rather than show them if you create \</span>
+<span class="sd">            them - changes the backend of matplotlib, so if is set to \</span>
 <span class="sd">            False you will see NO PLOTS!</span>
 <span class="sd">    :type cores: int</span>
 <span class="sd">    :param core: Number of cores to use, defaults to 1.</span>
 <span class="sd">    :type clip_level: float</span>
-<span class="sd">    :param clip_level: Multiplier applied to the mean deviation of the energy\</span>
+<span class="sd">    :param clip_level: Multiplier applied to the mean deviation of the energy \</span>
 <span class="sd">                    as an upper limit, used to remove spikes (earthquakes, \</span>
 <span class="sd">                    lightning, electircal spikes) from the energy stack.</span>
 <span class="sd">    :type gap: float</span>

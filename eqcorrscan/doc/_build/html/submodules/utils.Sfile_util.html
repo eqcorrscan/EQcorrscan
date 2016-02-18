@@ -96,7 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.6. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.8. locate</a></li>
 </ul>
 </li>
 </ul>
@@ -172,7 +172,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x42d2210&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x31b9a90&gt;</em>, <em>loc_mod_ind=' '</em>, <em>dist_ind=' '</em>, <em>ev_id=' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=' '</em>, <em>loc_ind=' '</em>, <em>agency=' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=' '</em>, <em>Mag_1_agency=' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=' '</em>, <em>Mag_2_agency=' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=' '</em>, <em>Mag_3_agency=' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events, again all fields can be left blank     for a default empty header.  The print function for header will print     important information, but not as seen in an S-file.</p>
 <p>For more information on parameters see the seisan manual.</p>
 <dl class="docutils">
@@ -285,13 +285,12 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </table>
 </dd>
 </dl>
-<p>...rubric:: Note: Depreciated legacy function, use the obspy.core.event
-classes. This will be removed in future releases.</p>
+<p class="rubric">Note: Depreciated legacy function, use the obspy.core.event     classes. This will be removed in future releases.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x42d2210&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=' '</em>, <em>channel=' '</em>, <em>impulsivity=' '</em>, <em>phase=' '</em>, <em>weight=999</em>, <em>polarity=' '</em>, <em>time=&lt;mock.Mock object at 0x31b9a90&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -384,8 +383,7 @@ classes. This will be removed in future releases.</p>
 </table>
 </dd>
 </dl>
-<p>...rubric:: Note: Depreciated legacy function, use the obspy.core.event
-classes. This will be removed in future releases.</p>
+<p class="rubric">Note: Depreciated legacy function, use the obspy.core.event     classes. This will be removed in future releases.</p>
 <dl class="method">
 <dt id="Sfile_util.PICK.write">
 <code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK.write" title="Permalink to this definition">¶</a></dt>
@@ -502,9 +500,13 @@ S-file will be taken from this file if evtime is not set</li>
 </tr>
 </tbody>
 </table>
-<p>...rubric:: Note: This is a wrapper to simplify transition from PICK and
-EVENT classes to obspy.core.event classes.  This will not be maintained
-beyond v 0.1.0.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is a wrapper to simplify transition from PICK and     EVENT classes to obspy.core.event classes.  This will not be maintained     beyond v 0.1.0.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -521,13 +523,13 @@ beyond v 0.1.0.</p>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or</dt>
-<dd>angle of incidence.  This is because obspy.event stores slowness in
-s/deg and takeoff angle, which would require computation from the
-values stored in seisan.  Multiple weights are also not supported in
-Obspy.event</dd>
-</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently finalweight is unsupported, nor is velocity, or     angle of incidence.  This is because obspy.event stores slowness in     s/deg and takeoff angle, which would require computation from the     values stored in seisan.  Multiple weights are also not supported in     Obspy.event.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -549,9 +551,13 @@ Obspy.event</dd>
 </tr>
 </tbody>
 </table>
-<p>...rubric:: Note: This is a legacy support function, users should avoid
-this as it will be removed for version 0.1.0.  Written to aid transition
-from in-built classes to obspy.core.event classes.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is a legacy support function, users should avoid     this as it will be removed for version 0.1.1.  Written to aid transition     from in-built classes to obspy.core.event classes.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -619,13 +625,10 @@ the inbuilt PICK class.</p>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or</dt>
-<dd>angle of incidence.  This is because obspy.event stores slowness in
-s/deg and takeoff angle, which would require computation from the
-values stored in seisan.  Multiple weights are also not supported in
-Obspy.event</dd>
-</dl>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Currently finalweight is unsupported, nor is velocity,     or angle of incidence.  This is because obspy.event stores slowness     in s/deg and takeoff angle, which would require computation from the     values stored in seisan.  Multiple weights are also not supported in     Obspy.event.</p>
+</div>
 </dd></dl>
 
 <dl class="function">

@@ -94,7 +94,7 @@ class PICK:
         :type CAZ: int
         :param CAZ: Azimuth at source.
 
-    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \
     classes. This will be removed in future releases.
     """
     pickcount = 0
@@ -254,7 +254,7 @@ class EVENTINFO:
         :type Mag_3_agency: str
         :param Mag_3_agency: Reporting agency for Mag_3
 
-    ...rubric:: Note: Depreciated legacy function, use the obspy.core.event
+    .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \
     classes. This will be removed in future releases.
     """
     def __init__(self, time=UTCDateTime(0), loc_mod_ind=' ', dist_ind=' ',
@@ -554,11 +554,11 @@ def readpicks(sfile):
 
     :return: obspy.core.event.Event
 
-    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or
-        angle of incidence.  This is because obspy.event stores slowness in
-        s/deg and takeoff angle, which would require computation from the
-        values stored in seisan.  Multiple weights are also not supported in
-        Obspy.event
+    .. warning:: Currently finalweight is unsupported, nor is velocity, \
+    or angle of incidence.  This is because obspy.event stores slowness \
+    in s/deg and takeoff angle, which would require computation from the \
+    values stored in seisan.  Multiple weights are also not supported in \
+    Obspy.event.
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog
@@ -1043,9 +1043,11 @@ def eventtopick(event):
 
     :returns: List of PICK(), and a single EVENTINFO()
 
-    ...rubric:: Note: This is a wrapper to simplify transition from PICK and
-    EVENT classes to obspy.core.event classes.  This will not be maintained
+    .. note:: This is a wrapper to simplify transition from PICK and \
+    EVENT classes to obspy.core.event classes.  This will not be maintained \
     beyond v 0.1.0.
+
+    .. versionadded:: 0.1.0
     """
     # Check that the event is a single event
     from obspy.core.event import Catalog, Event
@@ -1152,9 +1154,11 @@ def picktoevent(evinfo, picks):
 
     :returns: obspy.core.event.Event
 
-    ...rubric:: Note: This is a legacy support function, users should avoid
-    this as it will be removed for version 0.1.0.  Written to aid transition
+    .. note:: This is a legacy support function, users should avoid \
+    this as it will be removed for version 0.1.1.  Written to aid transition \
     from in-built classes to obspy.core.event classes.
+
+    .. versionadded:: 0.1.0
     """
     from obspy.core.event import Event, Origin, Magnitude, Comment
     from obspy.core.event import EventDescription, CreationInfo
@@ -1294,11 +1298,13 @@ def nordpick(event):
 
     :returns: List of String
 
-    ...rubric: Note:: Currently finalweight is unsupported, nor is velocity, or
-        angle of incidence.  This is because obspy.event stores slowness in
-        s/deg and takeoff angle, which would require computation from the
-        values stored in seisan.  Multiple weights are also not supported in
-        Obspy.event
+    .. note:: Currently finalweight is unsupported, nor is velocity, or \
+    angle of incidence.  This is because obspy.event stores slowness in \
+    s/deg and takeoff angle, which would require computation from the \
+    values stored in seisan.  Multiple weights are also not supported in \
+    Obspy.event.
+
+    .. versionadded:: 0.1.0
     """
 
     pick_strings = []
