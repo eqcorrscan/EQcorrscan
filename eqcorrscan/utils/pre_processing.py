@@ -131,6 +131,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     ..rubric:: Note
         Will convert channel names to two charectars long
     """
+    import warnings
     # Add sanity check
     if highcut >= 0.5*samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
@@ -162,11 +163,11 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' is not of daylong length, will zero pad')
         # Work out when the trace thinks it is starting
-        traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
-                               str(tr.stats.starttime.month)+'-' +
-                               str(tr.stats.starttime.day))
+        # traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
+        #                        str(tr.stats.starttime.month)+'-' +
+        #                        str(tr.stats.starttime.day))
         # Use obspy's trim function with zero padding
-        tr = tr.trim(traceday, traceday+86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
                      nearest_sample=True)
         # If there is one sample too many after this remove the last one
         # by convention
@@ -198,23 +199,16 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     # Sanity check the time header
     if str(tr.stats.starttime.year)+str(tr.stats.starttime.month).zfill(2) +\
        str(tr.stats.starttime.day).zfill(2) != day:
-        if debug >= 2:
-            print("Time headers are wrong: "+str(tr.stats.starttime))
-            print("Correcting to: "+str(starttime))
-            tr.stats.starttime = starttime
+        warnings.warn("Time headers do not match expected date: " +
+                      str(tr.stats.starttime))
 
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' is not of daylong length, will zero pad')
-        # Work out when the trace thinks it is starting - Aaron's time headers
-        # are often wrong
-        traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
-                               str(tr.stats.starttime.month)+'-' +
-                               str(tr.stats.starttime.day))
         # Use obspy's trim function with zero padding
-        tr = tr.trim(traceday, traceday+86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
                      nearest_sample=True)
         # If there is one sample too many after this remove the last one
         # by convention
