@@ -29,10 +29,10 @@ import numpy as np
 
 def linstack(streams):
     """
-    Function to compute the linear stack of a series of seismic streams of
-    multiplexed data
+    Function to compute the linear stack of a series of seismic streams of \
+    multiplexed data.
 
-    :type streams: List of Streams
+    :type streams: list of Streams
     :param stream: List of streams to stack
 
     :returns: stack - Stream
@@ -96,16 +96,16 @@ def PWS_stack(streams, weight=2):
 
 def align_traces(trace_list, shift_len, master=False):
     """
-    Function to allign traces relative to each other based on their
-    cross-correlation value
+    Function to allign traces relative to each other based on their \
+    cross-correlation value.
 
-    :type trace_list: List of Traces
+    :type trace_list: list of Traces
     :param trace_list: List of traces to allign
     :type shift_len: int
     :param shift_len: Length to allow shifting within in samples
     :type master: obspy.Trace
-    :param master: Master trace to align to, if set to False will align to the\
-        largest amplitude trace (default)
+    :param master: Master trace to align to, if set to False will align to \
+        the largest amplitude trace (default)
 
     :returns: list of shifts for best allignment in seconds
     """
@@ -116,12 +116,10 @@ def align_traces(trace_list, shift_len, master=False):
         # Use trace with largest MAD amplitude as master
         master = traces[0]
         MAD_master = np.median(np.abs(master.data))
-        master_no = 0
-        for i in xrange(1, len(traces)):
+        for i in range(1, len(traces)):
             if np.median(np.abs(traces[i])) > MAD_master:
                 master = traces[i]
                 MAD_master = np.median(np.abs(master.data))
-                master_no = i
     else:
         print 'Using master given by user'
     shifts = []
@@ -133,3 +131,8 @@ def align_traces(trace_list, shift_len, master=False):
         shifts.append(shift/master.stats.sampling_rate)
         ccs.append(cc)
     return shifts, ccs
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

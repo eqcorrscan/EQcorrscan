@@ -86,14 +86,16 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -159,18 +161,18 @@
 
 
 <div class="viewcode-block" id="chunk_data"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.chunk_data">[docs]</a><span class="k">def</span> <span class="nf">chunk_data</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s">&#39;mean&#39;</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to downsample data for plotting by computing the maximum of\</span>
-<span class="sd">    data within chunks, useful for plotting waveforms or cccsums, large\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to downsample data for plotting by computing the maximum of \</span>
+<span class="sd">    data within chunks, useful for plotting waveforms or cccsums, large \</span>
 <span class="sd">    datasets that would otherwise exceed the complexity allowed, and overflow.</span>
 
-<span class="sd">    :type tr: :class: obspy.Trace</span>
+<span class="sd">    :type tr: obspy.Trace</span>
 <span class="sd">    :param tr: Trace to be chunked</span>
 <span class="sd">    :type samp_rate: float</span>
 <span class="sd">    :param samp_rate: Desired sampling rate in Hz</span>
 <span class="sd">    :type state: str</span>
-<span class="sd">    :param state: Either &#39;Min&#39;, &#39;Max&#39;, &#39;Mean&#39; or &#39;Maxabs&#39; to return one of\</span>
-<span class="sd">            these for the chunks. Maxabs will return the largest (positive or\</span>
-<span class="sd">            negative) for that chunk.</span>
+<span class="sd">    :param state: Either &#39;Min&#39;, &#39;Max&#39;, &#39;Mean&#39; or &#39;Maxabs&#39; to return one of \</span>
+<span class="sd">        these for the chunks. Maxabs will return the largest (positive or \</span>
+<span class="sd">        negative) for that chunk.</span>
 
 <span class="sd">    :returns: :class: obspy.Trace</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -210,22 +212,22 @@
 </div>
 <div class="viewcode-block" id="triple_plot"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.triple_plot">[docs]</a><span class="k">def</span> <span class="nf">triple_plot</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">cccsum_hist</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                 <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Main function to make a triple plot with a day-long seismogram,\</span>
-<span class="sd">    day-long correlation sum trace and histogram of the correlation sum to\</span>
+    <span class="sd">r&quot;&quot;&quot;Main function to make a triple plot with a day-long seismogram, \</span>
+<span class="sd">    day-long correlation sum trace and histogram of the correlation sum to \</span>
 <span class="sd">    show normality.</span>
 
 <span class="sd">    :type cccsum: numpy.ndarray</span>
 <span class="sd">    :param cccsum: Array of the cross-channel cross-correlation sum</span>
 <span class="sd">    :type cccsum_hist: numpy.ndarray</span>
-<span class="sd">    :param ccsum_hist: cccsum for histogram plotting, can be the same as\</span>
-<span class="sd">                    cccsum but included if cccsum is just an envelope.</span>
+<span class="sd">    :param cccsum_hist: cccsum for histogram plotting, can be the same as \</span>
+<span class="sd">        cccsum but included if cccsum is just an envelope.</span>
 <span class="sd">    :type trace: obspy.Trace</span>
 <span class="sd">    :param trace: A sample trace from the same time as cccsum</span>
 <span class="sd">    :type threshold: float</span>
 <span class="sd">    :param threshold: Detection threshold within cccsum</span>
-<span class="sd">    :type save: Bool, optional</span>
+<span class="sd">    :type save: bool, optional</span>
 <span class="sd">    :param save: If True will svae and not plot to screen, vice-versa if False</span>
-<span class="sd">    :type savefile: String, optional</span>
+<span class="sd">    :type savefile: str, optional</span>
 <span class="sd">    :param savefile: Path to save figure to, only required if save=True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
@@ -271,8 +273,8 @@
 </div>
 <div class="viewcode-block" id="peaks_plot"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.peaks_plot">[docs]</a><span class="k">def</span> <span class="nf">peaks_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">peaks</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span>
                <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Simple utility code to plot the correlation peaks to check that the\</span>
-<span class="sd">    peak finding routine is running correctly, used in debugging for the\</span>
+    <span class="sd">r&quot;&quot;&quot;Simple utility code to plot the correlation peaks to check that the \</span>
+<span class="sd">    peak finding routine is running correctly, used in debugging for the \</span>
 <span class="sd">    EQcorrscan module.</span>
 
 <span class="sd">    :type data: numpy.array</span>
@@ -310,19 +312,19 @@
 
 </div>
 <div class="viewcode-block" id="cumulative_detections"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.cumulative_detections">[docs]</a><span class="k">def</span> <span class="nf">cumulative_detections</span><span class="p">(</span><span class="n">dates</span><span class="p">,</span> <span class="n">template_names</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Simple plotting function to take a list of datetime objects and plot\</span>
-<span class="sd">    a cumulative detections list.  Can take dates as a list of lists and will</span>
-<span class="sd">    plot each list seperately, e.g. if you have dates from more than one</span>
+    <span class="sd">r&quot;&quot;&quot;Simple plotting function to take a list of datetime objects and plot \</span>
+<span class="sd">    a cumulative detections list.  Can take dates as a list of lists and will \</span>
+<span class="sd">    plot each list seperately, e.g. if you have dates from more than one \</span>
 <span class="sd">    template it will overlay them in different colours.</span>
 
 <span class="sd">    :type dates: list of lists of datetime.datetime</span>
 <span class="sd">    :param dates: Must be a list of lists of datetime.datetime objects</span>
 <span class="sd">    :type template_names: list of strings</span>
 <span class="sd">    :param template_names: List of the template names in order of the dates</span>
-<span class="sd">    :type save: Boolean, optional</span>
-<span class="sd">    :param save: Save figure or show to screen</span>
-<span class="sd">    :type savefile: String, optional</span>
-<span class="sd">    :param savefile: String to save to.</span>
+<span class="sd">    :type save: bool</span>
+<span class="sd">    :param save: Save figure or show to screen, optional</span>
+<span class="sd">    :type savefile: str</span>
+<span class="sd">    :param savefile: String to save to, optional</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Set up a default series of parameters for lines</span>
     <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;blue&#39;</span><span class="p">,</span> <span class="s">&#39;green&#39;</span><span class="p">,</span> <span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="s">&#39;cyan&#39;</span><span class="p">,</span> <span class="s">&#39;magenta&#39;</span><span class="p">,</span> <span class="s">&#39;yellow&#39;</span><span class="p">,</span> <span class="s">&#39;black&#39;</span><span class="p">,</span>
@@ -370,7 +372,7 @@
 <span class="sd">    :type nodes: list of tuples</span>
 <span class="sd">    :param nodes: List of tuples of the form (lat, long, depth)</span>
 <span class="sd">    :type save: bool</span>
-<span class="sd">    :param save: if True will save without plotting to screen, if False\</span>
+<span class="sd">    :param save: if True will save without plotting to screen, if False \</span>
 <span class="sd">        (default) will plot to screen but not save</span>
 <span class="sd">    :type savefile: str</span>
 <span class="sd">    :param savefile: required if save=True, path to save figure to.</span>
@@ -401,31 +403,31 @@
 <div class="viewcode-block" id="multi_event_singlechan"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.multi_event_singlechan">[docs]</a><span class="k">def</span> <span class="nf">multi_event_singlechan</span><span class="p">(</span><span class="n">streams</span><span class="p">,</span> <span class="n">catalog</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
                            <span class="n">freqmin</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">realign</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                            <span class="n">cut</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">),</span> <span class="n">PWS</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to plot data from a single channel at a single station for\</span>
-<span class="sd">    multiple events - data will be alligned by their pick-time given in the\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to plot data from a single channel at a single station for \</span>
+<span class="sd">    multiple events - data will be alligned by their pick-time given in the \</span>
 <span class="sd">    picks.</span>
 
 <span class="sd">    :type streams: list of :class:obspy.stream</span>
-<span class="sd">    :param streams: List of the streams to use, can contain more traces than\</span>
+<span class="sd">    :param streams: List of the streams to use, can contain more traces than \</span>
 <span class="sd">        you plan on plotting</span>
 <span class="sd">    :type catalog: obspy.core.event.Catalog</span>
 <span class="sd">    :param catalog: Catalog of events, one for each trace, with a single pick</span>
 <span class="sd">    :type clip: float</span>
 <span class="sd">    :param clip: Length in seconds to plot, defaults to 10.0</span>
-<span class="sd">    :type pre_pick: Float</span>
-<span class="sd">    :param pre_pick: Length in seconds to extract and plot before the pick,\</span>
+<span class="sd">    :type pre_pick: float</span>
+<span class="sd">    :param pre_pick: Length in seconds to extract and plot before the pick, \</span>
 <span class="sd">        defaults to 2.0</span>
 <span class="sd">    :type freqmin: float</span>
 <span class="sd">    :param freqmin: Low cut for bandpass in Hz</span>
 <span class="sd">    :type freqmax: float</span>
 <span class="sd">    :param freqmax: High cut for bandpass in Hz</span>
-<span class="sd">    :type realign: Bool</span>
+<span class="sd">    :type realign: bool</span>
 <span class="sd">    :param realign: To compute best alignement based on correlation or not.</span>
-<span class="sd">    :type cut: tuple:</span>
+<span class="sd">    :type cut: tuple</span>
 <span class="sd">    :param cut: tuple of start and end times for cut in seconds from the pick</span>
 <span class="sd">    :type PWS: bool</span>
-<span class="sd">    :param PWS: compute Phase Weighted Stack, if False, will compute linear\</span>
-<span class="sd">     stack.</span>
+<span class="sd">    :param PWS: compute Phase Weighted Stack, if False, will compute linear \</span>
+<span class="sd">        stack.</span>
 <span class="sd">    :type title: str</span>
 <span class="sd">    :param title: Plot title.</span>
 
@@ -654,15 +656,15 @@
 
 </div>
 <div class="viewcode-block" id="threeD_seismplot"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.threeD_seismplot">[docs]</a><span class="k">def</span> <span class="nf">threeD_seismplot</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to plot seismicity and stations in a 3D, movable, zoomable\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to plot seismicity and stations in a 3D, movable, zoomable \</span>
 <span class="sd">    space using matplotlibs Axes3D package.</span>
 
 <span class="sd">    :type stations: list of tuple</span>
-<span class="sd">    :param stations: list of one tuple per station of (lat, long, elevation),</span>
-<span class="sd">                    with up positive</span>
+<span class="sd">    :param stations: list of one tuple per station of (lat, long, elevation), \</span>
+<span class="sd">        with up positive.</span>
 <span class="sd">    :type nodes: list of tuple</span>
-<span class="sd">    :param nodes: list of one tuple per event of (lat, long, depth) with down</span>
-<span class="sd">                positive</span>
+<span class="sd">    :param nodes: list of one tuple per event of (lat, long, depth) with down \</span>
+<span class="sd">        positive.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stalats</span><span class="p">,</span> <span class="n">stalongs</span><span class="p">,</span> <span class="n">staelevs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">stations</span><span class="p">)</span>
     <span class="n">evlats</span><span class="p">,</span> <span class="n">evlongs</span><span class="p">,</span> <span class="n">evdepths</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">nodes</span><span class="p">)</span>
@@ -682,18 +684,18 @@
 </div>
 <div class="viewcode-block" id="pretty_template_plot"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.pretty_template_plot">[docs]</a><span class="k">def</span> <span class="nf">pretty_template_plot</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mf">18.5</span><span class="p">,</span> <span class="mf">10.5</span><span class="p">),</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                          <span class="n">background</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to make a pretty plot of a single template, designed to work\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to make a pretty plot of a single template, designed to work \</span>
 <span class="sd">    better than the default obspy plotting routine for short data lengths.</span>
 
 <span class="sd">    :type template: :class: obspy.Stream</span>
 <span class="sd">    :param template: Template stream to plot</span>
 <span class="sd">    :type size: tuple</span>
 <span class="sd">    :param size: tuple of plot size</span>
-<span class="sd">    :type save: Boolean</span>
+<span class="sd">    :type save: bool</span>
 <span class="sd">    :param save: if False will plot to screen, if True will save</span>
-<span class="sd">    :type title: Boolean</span>
+<span class="sd">    :type title: bool</span>
 <span class="sd">    :param title: String if set will be the plot title</span>
-<span class="sd">    :type backrgound: :class: obspy.stream</span>
+<span class="sd">    :type background: :class: obspy.stream</span>
 <span class="sd">    :param background: Stream to plot the template within.</span>
 <span class="sd">    :type picks: list of :class: eqcorrscan.utils.Sfile_util.PICK</span>
 <span class="sd">    :param picks: List of eqcorrscan type picks.</span>
@@ -797,8 +799,9 @@
         <span class="n">delay</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">mintime</span>
         <span class="n">delay</span> <span class="o">*=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">s</span><span class="o">/</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
-           <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">s</span> <span class="o">/</span>
+                                               <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span>
+             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
         <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -956,11 +959,13 @@
 
 </div>
 <div class="viewcode-block" id="freq_mag"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.freq_mag">[docs]</a><span class="k">def</span> <span class="nf">freq_mag</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">,</span> <span class="n">completeness</span><span class="p">,</span> <span class="n">max_mag</span><span class="p">,</span> <span class="n">binsize</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to make a frequency-magnitude histogram and cumulative density</span>
-<span class="sd">    plot.  This can compute a b-value, but not a completeness at the moment.</span>
+    <span class="sd">r&quot;&quot;&quot;Function to make a frequency-magnitude histogram and cumulative \</span>
+<span class="sd">    density plot.  This can compute a b-value, but not a completeness at \</span>
+<span class="sd">    the moment.  B-value is computed by linear fitting to section of curve \</span>
+<span class="sd">    between completeness and max_mag.</span>
 
 <span class="sd">    :type magnitudes: list</span>
-<span class="sd">    :param magnitude: list of float of magnitudes</span>
+<span class="sd">    :param magnitudes: list of float of magnitudes</span>
 <span class="sd">    :type completeness: float</span>
 <span class="sd">    :param completeness: Level to compute the b-value above</span>
 <span class="sd">    :type max_mag: float</span>
@@ -1005,15 +1010,15 @@
 </div>
 <div class="viewcode-block" id="spec_trace"><a class="viewcode-back" href="../submodules/utils.EQcorrscan_plotting.html#EQcorrscan_plotting.spec_trace">[docs]</a><span class="k">def</span> <span class="nf">spec_trace</span><span class="p">(</span><span class="n">traces</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">wlen</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">trc</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>
                <span class="n">tralpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">13</span><span class="p">),</span> <span class="n">Fig</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Wrapper for _spec_trace, take a stream or list of traces and plots</span>
-<span class="sd">    the trace with the spectra beneath it - this just does the overseeing to</span>
+    <span class="sd">r&quot;&quot;&quot;Wrapper for _spec_trace, take a stream or list of traces and plots \</span>
+<span class="sd">    the trace with the spectra beneath it - this just does the overseeing to \</span>
 <span class="sd">    work out if it needs to add subplots or not.</span>
 
 <span class="sd">    :type traces: either stream or list of traces</span>
-<span class="sd">    :param traces: Traces to be plotted, can be a single obspy.Stream, or a\</span>
+<span class="sd">    :param traces: Traces to be plotted, can be a single obspy.Stream, or a \</span>
 <span class="sd">        list of obspy.Trace</span>
 <span class="sd">    :type cmap: str</span>
-<span class="sd">    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/</span>
+<span class="sd">    :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/ \</span>
 <span class="sd">        colormaps_reference.html)</span>
 <span class="sd">    :type wlen: float</span>
 <span class="sd">    :param wlen: Window length for fft in seconds</span>
@@ -1022,7 +1027,7 @@
 <span class="sd">    :type trc: str</span>
 <span class="sd">    :param trc: Color for the trace.</span>
 <span class="sd">    :type tralpha: float</span>
-<span class="sd">    :param tralpha: Opacity level for the seismogram, from transparent (0.0)\</span>
+<span class="sd">    :param tralpha: Opacity level for the seismogram, from transparent (0.0) \</span>
 <span class="sd">        to opaque (1.0).</span>
 <span class="sd">    :type size: tuple</span>
 <span class="sd">    :param size: Plot size, tuple of floats, inches</span>
@@ -1075,10 +1080,10 @@
     <span class="sd">r&quot;&quot;&quot;Function to plot a trace over that traces spectrogram.</span>
 <span class="sd">    Uses obspys spectrogram routine.</span>
 
-<span class="sd">    :type trace: :class: obspy.Trace</span>
+<span class="sd">    :type trace: obspy.Trace</span>
 <span class="sd">    :param trace: trace to plot</span>
 <span class="sd">    :type cmap: str</span>
-<span class="sd">    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/</span>
+<span class="sd">    :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/</span>
 <span class="sd">        colormaps_reference.html)</span>
 <span class="sd">    :type wlen: float</span>
 <span class="sd">    :param wlen: Window length for fft in seconds</span>
@@ -1087,7 +1092,7 @@
 <span class="sd">    :type trc: str</span>
 <span class="sd">    :param trc: Color for the trace.</span>
 <span class="sd">    :type tralpha: float</span>
-<span class="sd">    :param tralpha: Opacity level for the seismogram, from transparent (0.0)\</span>
+<span class="sd">    :param tralpha: Opacity level for the seismogram, from transparent (0.0) \</span>
 <span class="sd">        to opaque (1.0).</span>
 <span class="sd">    :type size: tuple</span>
 <span class="sd">    :param size: Plot size, tuple of floats, inches</span>
@@ -1117,7 +1122,12 @@
         <span class="n">Fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
         <span class="n">Fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span></div>
+        <span class="k">return</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>

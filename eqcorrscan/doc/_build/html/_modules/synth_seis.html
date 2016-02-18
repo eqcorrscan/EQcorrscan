@@ -1,0 +1,442 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>synth_seis &mdash; EQcorrscan 0.1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.3. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">2.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">2.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">2.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">2.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">2.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">3. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>synth_seis</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for synth_seis</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Early development functions to do **very** basic simulations of seismograms \</span>
+<span class="sd">to be used as general matched-filter templates and see how well a simple \</span>
+<span class="sd">model would fit with real data.</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">All copyright and ownership of this module belongs to Calum Chamberlain, 2015 \</span>
+<span class="sd">&amp; 2016</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="seis_sim"><a class="viewcode-back" href="../submodules/utils.synth_seis.html#synth_seis.seis_sim">[docs]</a><span class="k">def</span> <span class="nf">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="p">,</span> <span class="n">amp_ratio</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">flength</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to generate a simulated seismogram from a given S-P time. \</span>
+<span class="sd">    Will generate spikes separated by a given S-P time, which are then \</span>
+<span class="sd">    convolved with a decaying sine function.  The P-phase is simulated by a \</span>
+<span class="sd">    positive spike of value 1, the S-arrival is simulated by a decaying \</span>
+<span class="sd">    boxcar of maximum amplitude 1.5.  These ampitude ratios can be altered by \</span>
+<span class="sd">    changing the amp_ratio, which is the ratio S amplitude:P amplitude.</span>
+
+<span class="sd">    .. note:: In testing this can achieve 0.3 or greater cross-correlations \</span>
+<span class="sd">        with data.</span>
+
+<span class="sd">    :type SP: int</span>
+<span class="sd">    :param SP: S-P time in samples</span>
+<span class="sd">    :type amp_ratio: float</span>
+<span class="sd">    :param amp_ratio: S:P amplitude ratio</span>
+<span class="sd">    :type flength: int</span>
+<span class="sd">    :param flength: Fixed length in samples, defaults to False</span>
+<span class="sd">    :type phaseout: str</span>
+<span class="sd">    :param phaseout: Either &#39;P&#39;, &#39;S&#39; or &#39;all&#39;, controls which phases to cut \</span>
+<span class="sd">        around, defaults to &#39;all&#39;. Can only be used with &#39;P&#39; or &#39;S&#39; options \</span>
+<span class="sd">        if flength is set.</span>
+
+<span class="sd">    :returns: np.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">flength</span> <span class="ow">and</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">SP</span> <span class="o">&lt;</span> <span class="n">flength</span> <span class="ow">and</span> <span class="mi">100</span> <span class="o">&lt;</span> <span class="n">flength</span><span class="p">:</span>
+        <span class="n">additional_length</span> <span class="o">=</span> <span class="n">flength</span>
+    <span class="k">elif</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">SP</span> <span class="o">&lt;</span> <span class="mf">100.0</span><span class="p">:</span>
+        <span class="n">additional_length</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">additional_length</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">SP</span>
+    <span class="n">synth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">SP</span> <span class="o">+</span> <span class="mi">10</span> <span class="o">+</span> <span class="n">additional_length</span><span class="p">)</span>
+    <span class="c"># Make the array begin 10 samples before the P</span>
+    <span class="c"># and at least 2.5 times the S-P samples after the S arrival</span>
+    <span class="n">synth</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c"># P-spike fixed at 10 samples from start of window</span>
+    <span class="c"># The length of the decaying S-phase should depend on the SP time,\</span>
+    <span class="c"># Some basic estimations suggest this should be atleast 10 samples\</span>
+    <span class="c"># and that the coda should be about 1/10 of the SP time</span>
+    <span class="n">S_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="n">SP</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
+    <span class="n">S_spikes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">amp_ratio</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">amp_ratio</span><span class="o">/</span><span class="n">S_length</span><span class="p">))</span>
+    <span class="c"># What we actually want, or what appears better is to have a series of\</span>
+    <span class="c"># individual spikes, of alternating polarity...</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">S_spikes</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">S_spikes</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">S_spikes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">S_spikes</span><span class="p">),</span> <span class="mi">4</span><span class="p">):</span>
+            <span class="n">S_spikes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="c"># Put these spikes into the synthetic</span>
+    <span class="n">synth</span><span class="p">[</span><span class="mi">10</span> <span class="o">+</span> <span class="n">SP</span><span class="p">:</span><span class="mi">10</span> <span class="o">+</span> <span class="n">SP</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">S_spikes</span><span class="p">)]</span> <span class="o">=</span> <span class="n">S_spikes</span>
+    <span class="c"># Generate a rough damped sine wave to convolve with the model spikes</span>
+    <span class="n">sine_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">damped_sine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sine_x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">sine_x</span><span class="p">)</span>
+    <span class="c"># Convolve the spike model with the damped sine!</span>
+    <span class="n">synth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">synth</span><span class="p">,</span> <span class="n">damped_sine</span><span class="p">)</span>
+    <span class="c"># Normalize snyth</span>
+    <span class="n">synth</span> <span class="o">=</span> <span class="n">synth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">synth</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">flength</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">synth</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">phaseout</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="s">&#39;P&#39;</span><span class="p">]:</span>
+            <span class="n">synth</span> <span class="o">=</span> <span class="n">synth</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">flength</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+            <span class="n">synth</span> <span class="o">=</span> <span class="n">synth</span><span class="p">[</span><span class="n">SP</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">synth</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">flength</span><span class="p">:</span>
+                <span class="c"># If this is too short, pad</span>
+                <span class="n">synth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">synth</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flength</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">synth</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">synth</span> <span class="o">=</span> <span class="n">synth</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">flength</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">synth</span>
+
+</div>
+<div class="viewcode-block" id="SVD_sim"><a class="viewcode-back" href="../submodules/utils.synth_seis.html#synth_seis.SVD_sim">[docs]</a><span class="k">def</span> <span class="nf">SVD_sim</span><span class="p">(</span><span class="n">SP</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span>
+            <span class="n">amp_range</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to generate a basis vectors of a set of simulated seismograms \</span>
+<span class="sd">    with a range of S-P amplitude ratios.</span>
+
+<span class="sd">    :type SP: int</span>
+<span class="sd">    :param SP: S-P time in seconds - will be converted to samples according \</span>
+<span class="sd">        to samp_rate.</span>
+<span class="sd">    :type lowcut: float</span>
+<span class="sd">    :param lowcut: Low-cut for bandpass filter in Hz</span>
+<span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: High-cut for bandpass filter in Hz</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Sampling rate in Hz</span>
+<span class="sd">    :type amp_range: np.ndarray</span>
+<span class="sd">    :param amp_range: Amplitude ratio range to generate synthetics for.</span>
+
+<span class="sd">    :returns: nd.ndarray, set of output basis vectors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="c"># Convert SP to samples</span>
+    <span class="n">SP</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SP</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">)</span>
+    <span class="c"># Scan through a range of amplitude ratios</span>
+    <span class="n">synthetics</span> <span class="o">=</span> <span class="p">[</span><span class="n">Stream</span><span class="p">(</span><span class="n">Trace</span><span class="p">(</span><span class="n">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="p">,</span> <span class="n">a</span><span class="p">)))</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">amp_range</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">synthetics</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="s">&#39;SYNTH&#39;</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="s">&#39;SH1&#39;</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">samp_rate</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">highcut</span><span class="p">)</span>
+    <span class="c"># We have a list of obspy Trace objects, we can pass this to EQcorrscan&#39;s\</span>
+            <span class="c"># SVD functions</span>
+    <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">clustering</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">stachans</span> <span class="o">=</span> <span class="n">clustering</span><span class="o">.</span><span class="n">SVD</span><span class="p">(</span><span class="n">synthetics</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">stachans</span>
+
+</div>
+<div class="viewcode-block" id="template_grid"><a class="viewcode-back" href="../submodules/utils.synth_seis.html#synth_seis.template_grid">[docs]</a><span class="k">def</span> <span class="nf">template_grid</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">travel_times</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">PS_ratio</span><span class="o">=</span><span class="mf">1.68</span><span class="p">,</span>
+                  <span class="n">samp_rate</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">flength</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to generate a group of synthetic seismograms to simulate phase \</span>
+<span class="sd">    arrivals from a grid of known sources in a three-dimensional model.  Lags \</span>
+<span class="sd">    must be known and supplied, these can be generated from the bright_lights \</span>
+<span class="sd">    function: read_tt, and resampled to fit the desired grid dimensions and \</span>
+<span class="sd">    spacing using other functions therein.  These synthetic seismograms are \</span>
+<span class="sd">    very simple models of seismograms using the seis_sim function herein. \</span>
+<span class="sd">    These approximate body-wave P and S first arrivals as spikes convolved \</span>
+<span class="sd">    with damped sine waves.</span>
+
+<span class="sd">    :type stations: list</span>
+<span class="sd">    :param stations: List of the station names</span>
+<span class="sd">    :type nodes: list of tuple</span>
+<span class="sd">    :param nodes: List of node locations in (lon,lat,depth)</span>
+<span class="sd">    :type travel_times: np.ndarray</span>
+<span class="sd">    :param travel_times: Array of travel times where travel_times[i][:] \</span>
+<span class="sd">        refers to the travel times for station=stations[i], and \</span>
+<span class="sd">        travel_times[i][j] refers to stations[i] for nodes[j]</span>
+<span class="sd">    :type phase: str</span>
+<span class="sd">    :param phase: Can be either &#39;P&#39; or &#39;S&#39;</span>
+<span class="sd">    :type PS_ratio: float</span>
+<span class="sd">    :param PS_ratio: P/S velocity ratio, defaults to 1.68</span>
+<span class="sd">    :type samp_rate: float</span>
+<span class="sd">    :param samp_rate: Desired sample rate in Hz, defaults to 100.0</span>
+<span class="sd">    :type flength: int</span>
+<span class="sd">    :param flength: Length of template in samples, defaults to False</span>
+<span class="sd">    :type phaseout: str</span>
+<span class="sd">    :param phaseout: Either &#39;S&#39;, &#39;P&#39;, &#39;all&#39; or &#39;both&#39;, determines which \</span>
+<span class="sd">        phases to clip around.  &#39;all&#39; Encompasses both phases in one channel, \</span>
+<span class="sd">        but will return nothing if the flength is not long enough, &#39;both&#39; \</span>
+<span class="sd">        will return two channels for each stations, one SYN_Z with the \</span>
+<span class="sd">        synthetic P-phase, and one SYN_H with the synthetic S-phase.</span>
+
+<span class="sd">    :returns: List of :class:obspy.Stream</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="k">if</span> <span class="n">phase</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;S&#39;</span><span class="p">,</span> <span class="s">&#39;P&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Phase is neither P nor S&#39;</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="c"># Initialize empty list for templates</span>
+    <span class="n">templates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># Loop through the nodes, for every node generate a template!</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nodes</span><span class="p">):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># Empty list to be filled with synthetics</span>
+        <span class="c"># Loop through stations</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">station</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stations</span><span class="p">):</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">()</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">samp_rate</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">station</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="s">&#39;SYN&#39;</span>
+            <span class="n">tt</span> <span class="o">=</span> <span class="n">travel_times</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">:</span>
+                <span class="c"># If the input travel-time is the P-wave travel-time</span>
+                <span class="n">SP_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">tt</span> <span class="o">*</span> <span class="n">PS_ratio</span><span class="p">)</span> <span class="o">-</span> <span class="n">tt</span>
+                <span class="k">if</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+=</span> <span class="n">tt</span> <span class="o">+</span> <span class="n">SP_time</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+=</span> <span class="n">tt</span>
+            <span class="k">elif</span> <span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+                <span class="c"># If the input travel-time is the S-wave travel-time</span>
+                <span class="n">SP_time</span> <span class="o">=</span> <span class="n">tt</span> <span class="o">-</span> <span class="p">(</span><span class="n">tt</span> <span class="o">/</span> <span class="n">PS_ratio</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+=</span> <span class="n">tt</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+=</span> <span class="n">tt</span> <span class="o">-</span> <span class="n">SP_time</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Input grid is not P or S&#39;</span><span class="p">)</span>
+            <span class="c"># Set start-time of trace to be travel-time for P-wave</span>
+            <span class="c"># Check that the template length is long enough to include the SP</span>
+            <span class="k">if</span> <span class="n">flength</span> <span class="ow">and</span> <span class="n">SP_time</span> <span class="o">*</span> <span class="n">samp_rate</span> <span class="o">&lt;</span> <span class="n">flength</span> <span class="o">-</span> <span class="mi">11</span> \
+               <span class="ow">and</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">SP_time</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">),</span> <span class="n">amp_ratio</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                                   <span class="n">flength</span><span class="o">=</span><span class="n">flength</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="n">phaseout</span><span class="p">)</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">flength</span> <span class="ow">and</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Cannot make a bulk synthetic with this fixed &#39;</span> <span class="o">+</span>
+                              <span class="s">&#39;length for station &#39;</span><span class="o">+</span><span class="n">station</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">SP_time</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">),</span> <span class="n">amp_ratio</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                                   <span class="n">flength</span><span class="o">=</span><span class="n">flength</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="n">phaseout</span><span class="p">)</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">phaseout</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span> <span class="s">&#39;S&#39;</span><span class="p">]:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">SP_time</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">),</span> <span class="n">amp_ratio</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                                   <span class="n">flength</span><span class="o">=</span><span class="n">flength</span><span class="p">,</span> <span class="n">phaseout</span><span class="o">=</span><span class="n">phaseout</span><span class="p">)</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">phaseout</span> <span class="o">==</span> <span class="s">&#39;both&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_phaseout</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span> <span class="s">&#39;S&#39;</span><span class="p">]:</span>
+                    <span class="n">_tr</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">_tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">seis_sim</span><span class="p">(</span><span class="n">SP</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">SP_time</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">),</span>
+                                        <span class="n">amp_ratio</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">flength</span><span class="o">=</span><span class="n">flength</span><span class="p">,</span>
+                                        <span class="n">phaseout</span><span class="o">=</span><span class="n">_phaseout</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">_phaseout</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">:</span>
+                        <span class="n">_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="s">&#39;SYN_Z&#39;</span>
+                        <span class="c"># starttime defaults to S-time</span>
+                        <span class="n">_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">=</span> <span class="n">_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">SP_time</span>
+                    <span class="k">elif</span> <span class="n">_phaseout</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+                        <span class="n">_tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="s">&#39;SYN_H&#39;</span>
+                    <span class="n">st</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_tr</span><span class="p">)</span>
+        <span class="n">templates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">))</span>
+        <span class="c"># Stream(st).plot(size=(800,600))</span>
+    <span class="k">return</span> <span class="n">templates</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

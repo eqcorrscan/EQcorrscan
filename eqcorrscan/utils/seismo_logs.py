@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
-Functions to read log-files for seismic data to acertain whether there are
-timing issues present.  Designed to be used with the EQcorrscan package and
+Functions to read log-files for seismic data to determine whether there are \
+timing issues present.  Designed to be used with the EQcorrscan package and \
 to flag data that has more than a threshold timing issue.
 
 Currently only written to read RefTek rt130 log-files.
@@ -37,13 +37,13 @@ def Read_RT_log(logfile, startdate):
     :type logfile: String
     :param logfile: The logfile to look in
     :type startdate: :class: datetime.date
-    :param startdate: The start of the file as a date - files contain timing\
-            and the julian day, but not the year.
+    :param startdate: The start of the file as a date - files contain timing \
+        and the julian day, but not the year.
     :type time_thresh: float
     :param time_thresh: Threshold to raise a flag for the data in seconds
 
-    :returns: List of tuple of :class: datetime.datetime, float as time stamps\
-            and phase error.
+    :returns: List of tuple of :class: datetime.datetime, float as time \
+        stamps and phase error.
     """
     import datetime as dt
     f = open(logfile, 'r')
@@ -69,8 +69,8 @@ def Read_RT_log(logfile, startdate):
 
 def Flag_time_err(phase_err, time_thresh=0.02):
     """
-    Fucntion to scan through a list of tuples of time stamps and phase errors
-    and return a list of time stamps with timing errors above a threshold
+    Fucntion to scan through a list of tuples of time stamps and phase errors \
+    and return a list of time stamps with timing errors above a threshold.
 
     :type phase_err: List of Tuple of float, datetime.datetime
     :type time_thresh: float
@@ -94,8 +94,8 @@ def check_all_logs(directory, time_thresh):
     :type time_thresh: float
     :param time_thresh: Time threshold in seconds
 
-    :returns: List of :class: datetime.datetime for which timing is above\
-            threshold
+    :returns: List of :class: datetime.datetime for which timing is above \
+        threshold
     """
     import glob
     import sys
@@ -112,3 +112,8 @@ def check_all_logs(directory, time_thresh):
     time_errs = Flag_time_err(total_phase_errs, time_thresh)
     time_errs.sort()
     return time_errs, total_phase_errs
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

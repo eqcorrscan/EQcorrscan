@@ -27,7 +27,7 @@ import warnings
 
 def cross_chan_coherence(st1, st2, i=0):
     """
-    Function to determine the cross-channel coherancy between two streams of
+    Function to determine the cross-channel coherancy between two streams of \
     multichannel seismic data.
 
     :type st1: obspy Stream
@@ -38,7 +38,7 @@ def cross_chan_coherence(st1, st2, i=0):
     :param i: index used for parallel async processing, returned unaltered
 
     :returns: cross channel coherence, float - normalized by number of\
-     channels, if i, returns tuple of (cccoh, i) where i is int, as intput.
+        channels, if i, returns tuple of (cccoh, i) where i is int, as intput.
     """
 
     from eqcorrscan.core.match_filter import normxcorr2
@@ -62,14 +62,14 @@ def cross_chan_coherence(st1, st2, i=0):
 
 def distance_matrix(stream_list, cores=1):
     """
-    Function to compute the distance matrix for all templates - will give\
-    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will\
-    have small distances, and an equally well correlated reverse image will\
+    Function to compute the distance matrix for all templates - will give \
+    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will \
+    have small distances, and an equally well correlated reverse image will \
     have the same distance as apositively correlated image - this is an issue.
 
     :type stream_list: List of obspy.Streams
-    :param tream_list: List of the streams to compute the distance matrix for
-    :type core: int
+    :param stream_list: List of the streams to compute the distance matrix for
+    :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
     :returns: ndarray - distance matrix
@@ -110,13 +110,13 @@ def distance_matrix(stream_list, cores=1):
 def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
             cores='all', debug=1):
     """
-    Function to take a set of templates and cluster them, will return groups\
-    as lists of streams.  Clustering is done by computing the cross-channel\
-    correlation sum of each stream in stream_list with every other stream in\
-    the list.  Scipy.cluster.hierachy functions are then used to compute the\
-    complete distance matrix, where distance is 1 minus the normalised\
-    cross-correlation sum such that larger distances are less similar events.\
-    Groups are then created by clustering the distance matrix at distances\
+    Function to take a set of templates and cluster them, will return groups \
+    as lists of streams.  Clustering is done by computing the cross-channel \
+    correlation sum of each stream in stream_list with every other stream in \
+    the list.  Scipy.cluster.hierachy functions are then used to compute the \
+    complete distance matrix, where distance is 1 minus the normalised \
+    cross-correlation sum such that larger distances are less similar events. \
+    Groups are then created by clustering the distance matrix at distances \
     less than 1 - corr_thresh.
 
     Will compute the distance matrix in parallel, using all available cores
@@ -130,14 +130,14 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
     :type save_corrmat: bool
     :param save_corrmat: If True will save the distance matrix to dist_mat.npy
     :type cores: int
-    :param cores: numebr of cores to use when computing the distance matrix,\
-            defaults to 'all' which will work out how many cpus are available\
-            and hog them.
+    :param cores: numebr of cores to use when computing the distance matrix, \
+        defaults to 'all' which will work out how many cpus are available \
+        and hog them.
     :type debug: int
-    :param debug: Level of debugging from 1-5, higher is more output,\
+    :param debug: Level of debugging from 1-5, higher is more output, \
         currently only level 1 implimented.
 
-    :returns: List of groups with each group a list of streams making up\
+    :returns: List of groups with each group a list of streams making up \
         that group.
     """
     from scipy.spatial.distance import squareform
@@ -202,11 +202,11 @@ def group_delays(stream_list):
     """
     Function to group template waveforms according to their delays.
 
-    :type stream_list: List of obspy.Stream
+    :type stream_list: list of obspy.Stream
     :param stream_list: List of the waveforms you want to group
 
-    :returns: List of List of obspy.Streams where each initial list is a group\
-            with the same delays
+    :returns: list of List of obspy.Streams where each initial list is a \
+        group with the same delays.
     """
     groups = []
     group_delays = []
@@ -247,7 +247,8 @@ def group_delays(stream_list):
                     if chan in group_chans[j]:
                         shared_chans.append(chan)
                         shared_delays_slave.append(delays[k])
-                        shared_delays_master.append(group_delays[j][group_chans[j].index(chan)])
+                        shared_delays_master.\
+                            append(group_delays[j][group_chans[j].index(chan)])
                 # Normalize master and slave delay times
                 shared_delays_slave = [delay - min(shared_delays_slave)
                                        for delay in shared_delays_slave]
@@ -274,21 +275,19 @@ def group_delays(stream_list):
 
 def SVD(stream_list):
     """
-    Function to compute the SVD of a number of templates and return the\
+    Function to compute the SVD of a number of templates and return the \
     singular vectors and singular values of the templates.
 
     :type stream_list: List of Obspy.Stream
     :param stream_list: List of the templates to be analysed
 
     :return: SVector(list of ndarray), SValues(list) for each channel, \
-            Uvalues(list of ndarray) for each channel, \
-            stachans, List of String (station.channel)
+        Uvalues(list of ndarray) for each channel, \
+        stachans, List of String (station.channel)
 
-    .. rubric:: Note
-
-    It is recommended that you align the data before computing the SVD, e.g.,
-    the P-arrival on all templates for the same channel should appear at the
-    same time in the trace.
+    .. note:: We recommend that you align the data before computing the \
+        SVD, e.g., the P-arrival on all templates for the same channel \
+        should appear at the same time in the trace.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
@@ -303,7 +302,8 @@ def SVD(stream_list):
     Uvectors = []
     for stachan in stachans:
         chan_mat = [stream_list[i].select(station=stachan.split('.')[0],
-                                          channel=stachan.split('.')[1])[0].data
+                                          channel=stachan.
+                                          split('.')[1])[0].data
                     for i in range(len(stream_list)) if
                     len(stream_list[i].select(station=stachan.split('.')[0],
                                               channel=stachan.split('.')[1]))
@@ -319,17 +319,17 @@ def SVD(stream_list):
 
 def empirical_SVD(stream_list, linear=True):
     """
-    Empirical subspace detector generation function.  Takes a list of templates
-    and computes the stack as the first order subspace detector, and the
-    differential of this as the second order subspace detector following
-    the emprical subspace method of Barrett & Beroza, 2014 - SRL.
+    Empirical subspace detector generation function.  Takes a list of \
+    templates and computes the stack as the first order subspace detector, \
+    and the differential of this as the second order subspace detector \
+    following the emprical subspace method of Barrett & Beroza, 2014 - SRL.
 
     :type stream_list: list of stream
-    :param stream_list: list of template streams to compute the subspace\
-     detectors from
-    :type linear: Bool
-    :param linear: Set to true by default to compute the linear stack as the\
-        first subspace vector, False will use the phase-weighted stack as the\
+    :param stream_list: list of template streams to compute the subspace \
+        detectors from
+    :type linear: bool
+    :param linear: Set to true by default to compute the linear stack as the \
+        first subspace vector, False will use the phase-weighted stack as the \
         first subspace vector.
 
     :returns: list of two streams
@@ -347,8 +347,8 @@ def empirical_SVD(stream_list, linear=True):
 
 def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
-    Function to convert the singular vectors output by SVD to streams, one for
-    each singular vector level, for all channels.
+    Function to convert the singular vectors output by SVD to streams, one \
+    for each singular vector level, for all channels.
 
     :type SVectors: List of np.ndarray
     :param SVectors: Singular vectors
@@ -359,8 +359,8 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     :type sampling_rate: float
     :param sampling_rate: Sampling rate in Hz
 
-    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being
-            composed of the highest rank singular vectors.
+    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being \
+        composed of the highest rank singular vectors.
     """
     from obspy import Stream, Trace
     SVstreams = []
@@ -378,14 +378,14 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
 
 def corr_cluster(trace_list, thresh=0.9):
     """
-    Group traces based on correlations above threshold with the stack - will
-    run twice, once with a lower threshold, then again with your threshold to
-    remove large outliers
+    Group traces based on correlations above threshold with the stack - will \
+    run twice, once with a lower threshold, then again with your threshold to \
+    remove large outliers.
 
-    :type trace_list: List of :class:obspy.Trace
+    :type trace_list: list of obspy.Trace
     :param trace_list: Traces to compute similarity between
     :type thresh: float
-    :param thrsh: Correlation threshold between -1-1
+    :param thresh: Correlation threshold between -1-1
 
     :returns: np.ndarray of bool
     """
@@ -413,41 +413,41 @@ def corr_cluster(trace_list, thresh=0.9):
 def extract_detections(detections, templates, contbase_list, extract_len=90.0,
                        outdir=None, extract_Z=True, additional_stations=[]):
     """
-    Function to extract the waveforms associated with each detection in a list
-    of detections for the template, template.  Waveforms will be returned as
-    a list of obspy.Streams containing segments of extract_len.  They will also
-    be saved if outdir is set.  The default is unset.  The default extract_len
-    is 90 seconds per channel.
+    Function to extract the waveforms associated with each detection in a \
+    list of detections for the template, template.  Waveforms will be \
+    returned as a list of obspy.Streams containing segments of extract_len.  \
+    They will also be saved if outdir is set.  The default is unset.  The \
+    default extract_len is 90 seconds per channel.
 
-    :type detections: List tuple of of :class: datetime.datetime, string
-    :param detections: List of datetime objects, and their associated template\
-            name
-    :type templates: List of tuple of string and :class: obspy.Stream
-    :param templates: A list of the tuples of the template name and the\
-     template Stream used to detect detections.
-    :type contbase_list: List of tuple of string
+    :type detections: list tuple of of :class: datetime.datetime, string
+    :param detections: List of datetime objects, and their associated \
+        template name.
+    :type templates: list of tuple of string and :class: obspy.Stream
+    :param templates: A list of the tuples of the template name and the \
+        template Stream used to detect detections.
+    :type contbase_list: list of tuple of string
     :param contbase_list: List of tuples of the form \
-     ['path', 'type', 'network']  Where path is the path to the continuous\
-      database, type is the directory structure, which can be either\
-      Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure,\
-      or, yyyymmdd which is a single directory for every day.
+        ['path', 'type', 'network']  Where path is the path to the continuous \
+        database, type is the directory structure, which can be either \
+        Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure, \
+        or, yyyymmdd which is a single directory for every day.
     :type extract_len: float
     :param extract_len: Length to extract around the detection (will be \
-     equally cut around the detection time) in seconds.  Default is 90.0.
-    :type outdir: Bool or String
-    :param outdir: Default is None, with None set, no files will be saved,\
-            if set each detection will be saved into this directory with files\
-            named according to the detection time, NOT than the waveform\
-            start time. Detections will be saved into template subdirectories.
-    :type extract_Z: Bool
-    :param extract_Z: Set to True to also extract Z channels for detections\
-            delays will be the same as horizontal channels, only applies if\
-            only horizontal channels were used in the template.
-    :type additional_stations: List of tuple
-    :param additional_stations: List of stations, chanels and networks to also\
-            extract data for using an average delay.
+        equally cut around the detection time) in seconds.  Default is 90.0.
+    :type outdir: bool or str
+    :param outdir: Default is None, with None set, no files will be saved, \
+        if set each detection will be saved into this directory with files \
+        named according to the detection time, NOT than the waveform \
+        start time. Detections will be saved into template subdirectories.
+    :type extract_Z: bool
+    :param extract_Z: Set to True to also extract Z channels for detections \
+        delays will be the same as horizontal channels, only applies if \
+        only horizontal channels were used in the template.
+    :type additional_stations: list of tuple
+    :param additional_stations: List of stations, chanels and networks to \
+        also extract data for using an average delay.
 
-    :returns: List of :class: obspy.Stream
+    :returns: list of :class: obspy.Stream
     """
     from obspy import read
     from obspy import UTCDateTime
@@ -573,19 +573,19 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
 
 def space_time_cluster(detections, t_thresh, d_thresh):
     """
-    Function to cluster detections in space and time, use to seperate repeaters
-    from other events
+    Function to cluster detections in space and time, use to seperate \
+    repeaters from other events.
 
-    :type detections: List
-    :param detections: List of tuple of tuple of location (lat, lon, depth\
-     (km)), and time as a datetime object
+    :type detections: list
+    :param detections: List of tuple of tuple of location (lat, lon, depth \
+        (km)), and time as a datetime object
     :type t_thresh: float
     :param t_thresh: Maximum inter-event time threshold in seconds
     :type d_thresh: float
     :param d_thresh: Maximum inter-event distance in km
 
-    :returns: List of tuple (detections, clustered) and list of indeces of\
-            clustered detections
+    :returns: List of tuple (detections, clustered) and list of indeces of \
+        clustered detections
     """
     from eqcorrscan.utils.mag_calc import dist_calc
     # Ensure they are sorted by time first, not that we need it.
@@ -611,11 +611,11 @@ def space_time_cluster(detections, t_thresh, d_thresh):
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     """
-    Function to remove detections by changing the threshold, can only be done
-    to remove detection by increasing threshold, threshold lowering will have
-    no affect.
+    Function to remove detections by changing the threshold, can only be done \
+    to remove detection by increasing threshold, threshold lowering will have \
+    no effect.
 
-    :type path: Str
+    :type path: str
     :param path: Path to the .csv detection file
     :type old_thresh: float
     :param old_thresh: Old threshold MAD multiplier
@@ -644,3 +644,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     print 'Read in '+str(detections_in)+' detections'
     print 'Left with '+str(detections_out)+' detections'
     return detections
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

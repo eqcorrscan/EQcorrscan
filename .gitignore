@@ -16,3 +16,4 @@ build
 dist
 EQcorrscan.egg-info
 *.xml
+.cache

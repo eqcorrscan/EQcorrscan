@@ -86,14 +86,16 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -134,9 +136,9 @@
   <h1>Source code for pre_processing</h1><div class="highlight"><pre>
 <span class="c">#!/usr/bin/python</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Utilities module for the EQcorrscan package written by Calum Chamberlain of\</span>
-<span class="sd">Victoria University Wellington.  These functions are designed to do the basic\</span>
-<span class="sd">processing of the data using obspy modules (which also rely on scipy and\</span>
+<span class="sd">Utilities module for the EQcorrscan package written by Calum Chamberlain of \</span>
+<span class="sd">Victoria University Wellington.  These functions are designed to do the basic \</span>
+<span class="sd">processing of the data using obspy modules (which also rely on scipy and \</span>
 <span class="sd">numpy).</span>
 
 <span class="sd">Copyright 2015 Calum Chamberlain</span>
@@ -158,13 +160,12 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">bandpass</span>
 
 
 <div class="viewcode-block" id="_check_daylong"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing._check_daylong">[docs]</a><span class="k">def</span> <span class="nf">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Function to check the data quality of the daylong file - check to see\</span>
-<span class="sd">    that the day isn&#39;t just zeros, with large steps, if it is then the\</span>
+    <span class="sd">r&quot;&quot;&quot;Function to check the data quality of the daylong file - check to see \</span>
+<span class="sd">    that the day isn&#39;t just zeros, with large steps, if it is then the \</span>
 <span class="sd">    resampling will hate it.</span>
 
 <span class="sd">    :type tr: obspy.Trace</span>
@@ -189,7 +190,7 @@
 <div class="viewcode-block" id="shortproc"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.shortproc">[docs]</a><span class="k">def</span> <span class="nf">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Basic function to bandpass and downsample.</span>
 
-<span class="sd">    Works in place on data.  This is employed to ensure all parts of the\</span>
+<span class="sd">    Works in place on data.  This is employed to ensure all parts of the \</span>
 <span class="sd">    data are processed in the same way.</span>
 
 <span class="sd">    :type st: obspy.Stream</span>
@@ -207,8 +208,7 @@
 
 <span class="sd">    :return: obspy.Stream</span>
 
-<span class="sd">    ..rubric:: Note</span>
-<span class="sd">        Will convert channel names to two charectars long</span>
+<span class="sd">    .. note:: Will convert channel names to two charecters long.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Add sanity check for filter</span>
     <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
@@ -239,11 +239,11 @@
 
 </div>
 <div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">):</span>
-    <span class="sd">r&quot;&quot;&quot;Basic function to bandpass, downsample and check headers and length of\</span>
-<span class="sd">    trace to ensure files start at the start of a day and are daylong.</span>
+    <span class="sd">r&quot;&quot;&quot;Basic function to bandpass, downsample and check headers and length \</span>
+<span class="sd">    of trace to ensure files start at the start of a day and are daylong.</span>
 
-<span class="sd">    Works in place on data.  This is employed to ensure all parts of the data\</span>
-<span class="sd">    are processedin the same way.</span>
+<span class="sd">    Works in place on data.  This is employed to ensure all parts of the data \</span>
+<span class="sd">    are processed in the same way.</span>
 
 <span class="sd">    :type tr: obspy.Trace</span>
 <span class="sd">    :param tr: Trace to process</span>
@@ -262,8 +262,7 @@
 
 <span class="sd">    :return: obspy.Stream</span>
 
-<span class="sd">    ..rubric:: Note</span>
-<span class="sd">        Will convert channel names to two charectars long</span>
+<span class="sd">    .. note:: Will convert channel names to two charecters long.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">warnings</span>
     <span class="c"># Add sanity check</span>
@@ -354,7 +353,12 @@
     <span class="c"># Final visual check for debug</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
         <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">tr</span></div>
+    <span class="k">return</span> <span class="n">tr</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>
