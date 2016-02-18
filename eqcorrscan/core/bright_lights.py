@@ -624,7 +624,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             num_cores = len(nodes)
         if num_cores > cpu_count():
             num_cores = cpu_count()
-        pool = Pool(processes=num_cores, maxtasksperchild=None)
+        pool = Pool(processes=num_cores)
         results = [pool.apply_async(_node_loop, args=(stations, lags[:, i],
                                                       stream, i, clip_level,
                                                       mem_issue, instance))
@@ -660,7 +660,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         for i in range(1, num_cores - 1):
             indeces.append(range(node_splits * i, node_splits * (i + 1)))
         indeces.append(range(node_splits * (i + 1), len(nodes)))
-        pool = Pool(processes=num_cores, maxtasksperchild=None)
+        pool = Pool(processes=num_cores)
         results = [pool.apply_async(_cum_net_resp, args=(indeces[i], instance))
                    for i in range(num_cores)]
         pool.close()

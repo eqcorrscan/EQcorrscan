@@ -256,7 +256,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         tic = time.clock()
         with Timer() as t:
             # Send off to sister function
-            pool = Pool(processes=num_cores, maxtasksperchild=None)
+            pool = Pool(processes=num_cores)
             results = [pool.apply_async(_template_loop,
                                         args=(templates[i], tr_data, station,
                                               channel, debug, i))

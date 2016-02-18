@@ -16,6 +16,8 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+import sys
 import eqcorrscan
 # To use a consistent encoding
 from codecs import open
@@ -51,6 +53,20 @@ scriptfiles += glob.glob('eqcorrscan/tutorial.py')
 # scriptfiles += glob.glob('eqcorrscan/LFE_brightness_search.py')
 # scriptfiles += glob.glob('eqcorrscan/synth_test.py')
 
+
+# Make our own testing command
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
 
 setup(
     name='EQcorrscan',
@@ -109,8 +125,11 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0',
-                      'joblib>=0.8.4', 'scipy>=0.14'],
+                      'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing'],
 
+    # Test requirements for using pytest
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'pytest-flake8'],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
