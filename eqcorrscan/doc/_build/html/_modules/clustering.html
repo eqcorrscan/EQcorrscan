@@ -86,14 +86,16 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -161,7 +163,7 @@
 
 <div class="viewcode-block" id="cross_chan_coherence"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.cross_chan_coherence">[docs]</a><span class="k">def</span> <span class="nf">cross_chan_coherence</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to determine the cross-channel coherancy between two streams of</span>
+<span class="sd">    Function to determine the cross-channel coherancy between two streams of \</span>
 <span class="sd">    multichannel seismic data.</span>
 
 <span class="sd">    :type st1: obspy Stream</span>
@@ -172,7 +174,7 @@
 <span class="sd">    :param i: index used for parallel async processing, returned unaltered</span>
 
 <span class="sd">    :returns: cross channel coherence, float - normalized by number of\</span>
-<span class="sd">     channels, if i, returns tuple of (cccoh, i) where i is int, as intput.</span>
+<span class="sd">        channels, if i, returns tuple of (cccoh, i) where i is int, as intput.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">from</span> <span class="nn">eqcorrscan.core.match_filter</span> <span class="kn">import</span> <span class="n">normxcorr2</span>
@@ -196,14 +198,14 @@
 </div>
 <div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">stream_list</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to compute the distance matrix for all templates - will give\</span>
-<span class="sd">    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will\</span>
-<span class="sd">    have small distances, and an equally well correlated reverse image will\</span>
+<span class="sd">    Function to compute the distance matrix for all templates - will give \</span>
+<span class="sd">    distance as 1-abs(cccoh), e.g. a well correlated pair of templates will \</span>
+<span class="sd">    have small distances, and an equally well correlated reverse image will \</span>
 <span class="sd">    have the same distance as apositively correlated image - this is an issue.</span>
 
 <span class="sd">    :type stream_list: List of obspy.Streams</span>
-<span class="sd">    :param tream_list: List of the streams to compute the distance matrix for</span>
-<span class="sd">    :type core: int</span>
+<span class="sd">    :param stream_list: List of the streams to compute the distance matrix for</span>
+<span class="sd">    :type cores: int</span>
 <span class="sd">    :param cores: Number of cores to parallel process using, defaults to 1.</span>
 
 <span class="sd">    :returns: ndarray - distance matrix</span>
@@ -244,13 +246,13 @@
 <div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">stream_list</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">corr_thresh</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">save_corrmat</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
             <span class="n">cores</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to take a set of templates and cluster them, will return groups\</span>
-<span class="sd">    as lists of streams.  Clustering is done by computing the cross-channel\</span>
-<span class="sd">    correlation sum of each stream in stream_list with every other stream in\</span>
-<span class="sd">    the list.  Scipy.cluster.hierachy functions are then used to compute the\</span>
-<span class="sd">    complete distance matrix, where distance is 1 minus the normalised\</span>
-<span class="sd">    cross-correlation sum such that larger distances are less similar events.\</span>
-<span class="sd">    Groups are then created by clustering the distance matrix at distances\</span>
+<span class="sd">    Function to take a set of templates and cluster them, will return groups \</span>
+<span class="sd">    as lists of streams.  Clustering is done by computing the cross-channel \</span>
+<span class="sd">    correlation sum of each stream in stream_list with every other stream in \</span>
+<span class="sd">    the list.  Scipy.cluster.hierachy functions are then used to compute the \</span>
+<span class="sd">    complete distance matrix, where distance is 1 minus the normalised \</span>
+<span class="sd">    cross-correlation sum such that larger distances are less similar events. \</span>
+<span class="sd">    Groups are then created by clustering the distance matrix at distances \</span>
 <span class="sd">    less than 1 - corr_thresh.</span>
 
 <span class="sd">    Will compute the distance matrix in parallel, using all available cores</span>
@@ -264,14 +266,14 @@
 <span class="sd">    :type save_corrmat: bool</span>
 <span class="sd">    :param save_corrmat: If True will save the distance matrix to dist_mat.npy</span>
 <span class="sd">    :type cores: int</span>
-<span class="sd">    :param cores: numebr of cores to use when computing the distance matrix,\</span>
-<span class="sd">            defaults to &#39;all&#39; which will work out how many cpus are available\</span>
-<span class="sd">            and hog them.</span>
+<span class="sd">    :param cores: numebr of cores to use when computing the distance matrix, \</span>
+<span class="sd">        defaults to &#39;all&#39; which will work out how many cpus are available \</span>
+<span class="sd">        and hog them.</span>
 <span class="sd">    :type debug: int</span>
-<span class="sd">    :param debug: Level of debugging from 1-5, higher is more output,\</span>
+<span class="sd">    :param debug: Level of debugging from 1-5, higher is more output, \</span>
 <span class="sd">        currently only level 1 implimented.</span>
 
-<span class="sd">    :returns: List of groups with each group a list of streams making up\</span>
+<span class="sd">    :returns: List of groups with each group a list of streams making up \</span>
 <span class="sd">        that group.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">squareform</span>
@@ -336,11 +338,11 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to group template waveforms according to their delays.</span>
 
-<span class="sd">    :type stream_list: List of obspy.Stream</span>
+<span class="sd">    :type stream_list: list of obspy.Stream</span>
 <span class="sd">    :param stream_list: List of the waveforms you want to group</span>
 
-<span class="sd">    :returns: List of List of obspy.Streams where each initial list is a group\</span>
-<span class="sd">            with the same delays</span>
+<span class="sd">    :returns: list of List of obspy.Streams where each initial list is a \</span>
+<span class="sd">        group with the same delays.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">group_delays</span> <span class="o">=</span> <span class="p">[]</span>
@@ -381,7 +383,8 @@
                     <span class="k">if</span> <span class="n">chan</span> <span class="ow">in</span> <span class="n">group_chans</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
                         <span class="n">shared_chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chan</span><span class="p">)</span>
                         <span class="n">shared_delays_slave</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delays</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                        <span class="n">shared_delays_master</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group_delays</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">group_chans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">chan</span><span class="p">)])</span>
+                        <span class="n">shared_delays_master</span><span class="o">.</span>\
+                            <span class="n">append</span><span class="p">(</span><span class="n">group_delays</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">group_chans</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">chan</span><span class="p">)])</span>
                 <span class="c"># Normalize master and slave delay times</span>
                 <span class="n">shared_delays_slave</span> <span class="o">=</span> <span class="p">[</span><span class="n">delay</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">shared_delays_slave</span><span class="p">)</span>
                                        <span class="k">for</span> <span class="n">delay</span> <span class="ow">in</span> <span class="n">shared_delays_slave</span><span class="p">]</span>
@@ -408,21 +411,19 @@
 </div>
 <div class="viewcode-block" id="SVD"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.SVD">[docs]</a><span class="k">def</span> <span class="nf">SVD</span><span class="p">(</span><span class="n">stream_list</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to compute the SVD of a number of templates and return the\</span>
+<span class="sd">    Function to compute the SVD of a number of templates and return the \</span>
 <span class="sd">    singular vectors and singular values of the templates.</span>
 
 <span class="sd">    :type stream_list: List of Obspy.Stream</span>
 <span class="sd">    :param stream_list: List of the templates to be analysed</span>
 
 <span class="sd">    :return: SVector(list of ndarray), SValues(list) for each channel, \</span>
-<span class="sd">            Uvalues(list of ndarray) for each channel, \</span>
-<span class="sd">            stachans, List of String (station.channel)</span>
+<span class="sd">        Uvalues(list of ndarray) for each channel, \</span>
+<span class="sd">        stachans, List of String (station.channel)</span>
 
-<span class="sd">    .. rubric:: Note</span>
-
-<span class="sd">    It is recommended that you align the data before computing the SVD, e.g.,</span>
-<span class="sd">    the P-arrival on all templates for the same channel should appear at the</span>
-<span class="sd">    same time in the trace.</span>
+<span class="sd">    .. note:: We recommend that you align the data before computing the \</span>
+<span class="sd">        SVD, e.g., the P-arrival on all templates for the same channel \</span>
+<span class="sd">        should appear at the same time in the trace.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Convert templates into ndarrays for each channel</span>
     <span class="c"># First find all unique channels:</span>
@@ -437,7 +438,8 @@
     <span class="n">Uvectors</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">stachans</span><span class="p">:</span>
         <span class="n">chan_mat</span> <span class="o">=</span> <span class="p">[</span><span class="n">stream_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-                                          <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                                          <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span>
+                                          <span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))</span> <span class="k">if</span>
                     <span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
                                               <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
@@ -453,17 +455,17 @@
 </div>
 <div class="viewcode-block" id="empirical_SVD"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.empirical_SVD">[docs]</a><span class="k">def</span> <span class="nf">empirical_SVD</span><span class="p">(</span><span class="n">stream_list</span><span class="p">,</span> <span class="n">linear</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Empirical subspace detector generation function.  Takes a list of templates</span>
-<span class="sd">    and computes the stack as the first order subspace detector, and the</span>
-<span class="sd">    differential of this as the second order subspace detector following</span>
-<span class="sd">    the emprical subspace method of Barrett &amp; Beroza, 2014 - SRL.</span>
+<span class="sd">    Empirical subspace detector generation function.  Takes a list of \</span>
+<span class="sd">    templates and computes the stack as the first order subspace detector, \</span>
+<span class="sd">    and the differential of this as the second order subspace detector \</span>
+<span class="sd">    following the emprical subspace method of Barrett &amp; Beroza, 2014 - SRL.</span>
 
 <span class="sd">    :type stream_list: list of stream</span>
-<span class="sd">    :param stream_list: list of template streams to compute the subspace\</span>
-<span class="sd">     detectors from</span>
-<span class="sd">    :type linear: Bool</span>
-<span class="sd">    :param linear: Set to true by default to compute the linear stack as the\</span>
-<span class="sd">        first subspace vector, False will use the phase-weighted stack as the\</span>
+<span class="sd">    :param stream_list: list of template streams to compute the subspace \</span>
+<span class="sd">        detectors from</span>
+<span class="sd">    :type linear: bool</span>
+<span class="sd">    :param linear: Set to true by default to compute the linear stack as the \</span>
+<span class="sd">        first subspace vector, False will use the phase-weighted stack as the \</span>
 <span class="sd">        first subspace vector.</span>
 
 <span class="sd">    :returns: list of two streams</span>
@@ -481,8 +483,8 @@
 </div>
 <div class="viewcode-block" id="SVD_2_stream"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.SVD_2_stream">[docs]</a><span class="k">def</span> <span class="nf">SVD_2_stream</span><span class="p">(</span><span class="n">SVectors</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">sampling_rate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to convert the singular vectors output by SVD to streams, one for</span>
-<span class="sd">    each singular vector level, for all channels.</span>
+<span class="sd">    Function to convert the singular vectors output by SVD to streams, one \</span>
+<span class="sd">    for each singular vector level, for all channels.</span>
 
 <span class="sd">    :type SVectors: List of np.ndarray</span>
 <span class="sd">    :param SVectors: Singular vectors</span>
@@ -493,8 +495,8 @@
 <span class="sd">    :type sampling_rate: float</span>
 <span class="sd">    :param sampling_rate: Sampling rate in Hz</span>
 
-<span class="sd">    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being</span>
-<span class="sd">            composed of the highest rank singular vectors.</span>
+<span class="sd">    :returns: SVstreams, List of Obspy.Stream, with SVStreams[0] being \</span>
+<span class="sd">        composed of the highest rank singular vectors.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
     <span class="n">SVstreams</span> <span class="o">=</span> <span class="p">[]</span>
@@ -512,14 +514,14 @@
 </div>
 <div class="viewcode-block" id="corr_cluster"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.corr_cluster">[docs]</a><span class="k">def</span> <span class="nf">corr_cluster</span><span class="p">(</span><span class="n">trace_list</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Group traces based on correlations above threshold with the stack - will</span>
-<span class="sd">    run twice, once with a lower threshold, then again with your threshold to</span>
-<span class="sd">    remove large outliers</span>
+<span class="sd">    Group traces based on correlations above threshold with the stack - will \</span>
+<span class="sd">    run twice, once with a lower threshold, then again with your threshold to \</span>
+<span class="sd">    remove large outliers.</span>
 
-<span class="sd">    :type trace_list: List of :class:obspy.Trace</span>
+<span class="sd">    :type trace_list: list of obspy.Trace</span>
 <span class="sd">    :param trace_list: Traces to compute similarity between</span>
 <span class="sd">    :type thresh: float</span>
-<span class="sd">    :param thrsh: Correlation threshold between -1-1</span>
+<span class="sd">    :param thresh: Correlation threshold between -1-1</span>
 
 <span class="sd">    :returns: np.ndarray of bool</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -547,41 +549,41 @@
 <div class="viewcode-block" id="extract_detections"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.extract_detections">[docs]</a><span class="k">def</span> <span class="nf">extract_detections</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">contbase_list</span><span class="p">,</span> <span class="n">extract_len</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span>
                        <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">extract_Z</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">additional_stations</span><span class="o">=</span><span class="p">[]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to extract the waveforms associated with each detection in a list</span>
-<span class="sd">    of detections for the template, template.  Waveforms will be returned as</span>
-<span class="sd">    a list of obspy.Streams containing segments of extract_len.  They will also</span>
-<span class="sd">    be saved if outdir is set.  The default is unset.  The default extract_len</span>
-<span class="sd">    is 90 seconds per channel.</span>
+<span class="sd">    Function to extract the waveforms associated with each detection in a \</span>
+<span class="sd">    list of detections for the template, template.  Waveforms will be \</span>
+<span class="sd">    returned as a list of obspy.Streams containing segments of extract_len.  \</span>
+<span class="sd">    They will also be saved if outdir is set.  The default is unset.  The \</span>
+<span class="sd">    default extract_len is 90 seconds per channel.</span>
 
-<span class="sd">    :type detections: List tuple of of :class: datetime.datetime, string</span>
-<span class="sd">    :param detections: List of datetime objects, and their associated template\</span>
-<span class="sd">            name</span>
-<span class="sd">    :type templates: List of tuple of string and :class: obspy.Stream</span>
-<span class="sd">    :param templates: A list of the tuples of the template name and the\</span>
-<span class="sd">     template Stream used to detect detections.</span>
-<span class="sd">    :type contbase_list: List of tuple of string</span>
+<span class="sd">    :type detections: list tuple of of :class: datetime.datetime, string</span>
+<span class="sd">    :param detections: List of datetime objects, and their associated \</span>
+<span class="sd">        template name.</span>
+<span class="sd">    :type templates: list of tuple of string and :class: obspy.Stream</span>
+<span class="sd">    :param templates: A list of the tuples of the template name and the \</span>
+<span class="sd">        template Stream used to detect detections.</span>
+<span class="sd">    :type contbase_list: list of tuple of string</span>
 <span class="sd">    :param contbase_list: List of tuples of the form \</span>
-<span class="sd">     [&#39;path&#39;, &#39;type&#39;, &#39;network&#39;]  Where path is the path to the continuous\</span>
-<span class="sd">      database, type is the directory structure, which can be either\</span>
-<span class="sd">      Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure,\</span>
-<span class="sd">      or, yyyymmdd which is a single directory for every day.</span>
+<span class="sd">        [&#39;path&#39;, &#39;type&#39;, &#39;network&#39;]  Where path is the path to the continuous \</span>
+<span class="sd">        database, type is the directory structure, which can be either \</span>
+<span class="sd">        Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure, \</span>
+<span class="sd">        or, yyyymmdd which is a single directory for every day.</span>
 <span class="sd">    :type extract_len: float</span>
 <span class="sd">    :param extract_len: Length to extract around the detection (will be \</span>
-<span class="sd">     equally cut around the detection time) in seconds.  Default is 90.0.</span>
-<span class="sd">    :type outdir: Bool or String</span>
-<span class="sd">    :param outdir: Default is None, with None set, no files will be saved,\</span>
-<span class="sd">            if set each detection will be saved into this directory with files\</span>
-<span class="sd">            named according to the detection time, NOT than the waveform\</span>
-<span class="sd">            start time. Detections will be saved into template subdirectories.</span>
-<span class="sd">    :type extract_Z: Bool</span>
-<span class="sd">    :param extract_Z: Set to True to also extract Z channels for detections\</span>
-<span class="sd">            delays will be the same as horizontal channels, only applies if\</span>
-<span class="sd">            only horizontal channels were used in the template.</span>
-<span class="sd">    :type additional_stations: List of tuple</span>
-<span class="sd">    :param additional_stations: List of stations, chanels and networks to also\</span>
-<span class="sd">            extract data for using an average delay.</span>
+<span class="sd">        equally cut around the detection time) in seconds.  Default is 90.0.</span>
+<span class="sd">    :type outdir: bool or str</span>
+<span class="sd">    :param outdir: Default is None, with None set, no files will be saved, \</span>
+<span class="sd">        if set each detection will be saved into this directory with files \</span>
+<span class="sd">        named according to the detection time, NOT than the waveform \</span>
+<span class="sd">        start time. Detections will be saved into template subdirectories.</span>
+<span class="sd">    :type extract_Z: bool</span>
+<span class="sd">    :param extract_Z: Set to True to also extract Z channels for detections \</span>
+<span class="sd">        delays will be the same as horizontal channels, only applies if \</span>
+<span class="sd">        only horizontal channels were used in the template.</span>
+<span class="sd">    :type additional_stations: list of tuple</span>
+<span class="sd">    :param additional_stations: List of stations, chanels and networks to \</span>
+<span class="sd">        also extract data for using an average delay.</span>
 
-<span class="sd">    :returns: List of :class: obspy.Stream</span>
+<span class="sd">    :returns: list of :class: obspy.Stream</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
@@ -707,19 +709,19 @@
 </div>
 <div class="viewcode-block" id="space_time_cluster"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.space_time_cluster">[docs]</a><span class="k">def</span> <span class="nf">space_time_cluster</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">t_thresh</span><span class="p">,</span> <span class="n">d_thresh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to cluster detections in space and time, use to seperate repeaters</span>
-<span class="sd">    from other events</span>
+<span class="sd">    Function to cluster detections in space and time, use to seperate \</span>
+<span class="sd">    repeaters from other events.</span>
 
-<span class="sd">    :type detections: List</span>
-<span class="sd">    :param detections: List of tuple of tuple of location (lat, lon, depth\</span>
-<span class="sd">     (km)), and time as a datetime object</span>
+<span class="sd">    :type detections: list</span>
+<span class="sd">    :param detections: List of tuple of tuple of location (lat, lon, depth \</span>
+<span class="sd">        (km)), and time as a datetime object</span>
 <span class="sd">    :type t_thresh: float</span>
 <span class="sd">    :param t_thresh: Maximum inter-event time threshold in seconds</span>
 <span class="sd">    :type d_thresh: float</span>
 <span class="sd">    :param d_thresh: Maximum inter-event distance in km</span>
 
-<span class="sd">    :returns: List of tuple (detections, clustered) and list of indeces of\</span>
-<span class="sd">            clustered detections</span>
+<span class="sd">    :returns: List of tuple (detections, clustered) and list of indeces of \</span>
+<span class="sd">        clustered detections</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils.mag_calc</span> <span class="kn">import</span> <span class="n">dist_calc</span>
     <span class="c"># Ensure they are sorted by time first, not that we need it.</span>
@@ -745,11 +747,11 @@
 </div>
 <div class="viewcode-block" id="re_thresh_csv"><a class="viewcode-back" href="../submodules/utils.clustering.html#clustering.re_thresh_csv">[docs]</a><span class="k">def</span> <span class="nf">re_thresh_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">old_thresh</span><span class="p">,</span> <span class="n">new_thresh</span><span class="p">,</span> <span class="n">chan_thresh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to remove detections by changing the threshold, can only be done</span>
-<span class="sd">    to remove detection by increasing threshold, threshold lowering will have</span>
-<span class="sd">    no affect.</span>
+<span class="sd">    Function to remove detections by changing the threshold, can only be done \</span>
+<span class="sd">    to remove detection by increasing threshold, threshold lowering will have \</span>
+<span class="sd">    no effect.</span>
 
-<span class="sd">    :type path: Str</span>
+<span class="sd">    :type path: str</span>
 <span class="sd">    :param path: Path to the .csv detection file</span>
 <span class="sd">    :type old_thresh: float</span>
 <span class="sd">    :param old_thresh: Old threshold MAD multiplier</span>
@@ -777,7 +779,12 @@
                 <span class="n">detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">))</span>
     <span class="k">print</span> <span class="s">&#39;Read in &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_in</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span>
     <span class="k">print</span> <span class="s">&#39;Left with &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_out</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span>
-    <span class="k">return</span> <span class="n">detections</span></div>
+    <span class="k">return</span> <span class="n">detections</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>

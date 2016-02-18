@@ -4,6 +4,8 @@ Script to test if all dependencies are installed and running for the EQcorrscan
 package.
 """
 
+import sys
+sys.path.insert(0, '/home/calumch/my_programs/Building/EQcorrscan')
 
 def test_import():
     import sys

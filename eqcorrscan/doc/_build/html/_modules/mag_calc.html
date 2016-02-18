@@ -86,14 +86,16 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.8. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -134,13 +136,13 @@
   <h1>Source code for mag_calc</h1><div class="highlight"><pre>
 <span class="c">#!/usr/bin/python</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Functions to simulate Wood Anderson traces, pick maximum peak-to-peak amplitudes</span>
-<span class="sd">write these amplitudes and periods to SEISAN s-files and to calculate magnitudes</span>
-<span class="sd">from this and the informaiton within SEISAN s-files.</span>
+<span class="sd">Functions to simulate Wood Anderson traces, pick maximum peak-to-peak \</span>
+<span class="sd">amplitudes write these amplitudes and periods to SEISAN s-files and to \</span>
+<span class="sd">calculate magnitudes from this and the informaiton within SEISAN s-files.</span>
 
-<span class="sd">Written as part of the EQcorrscan package by Calum Chamberlain - first written</span>
-<span class="sd">to impliment magnitudes for the 2015 Wanaka aftershock sequence, written up</span>
-<span class="sd">by Warren-Smith [2014/15].</span>
+<span class="sd">Written as part of the EQcorrscan package by Calum Chamberlain - first \</span>
+<span class="sd">written to impliment magnitudes for the 2015 Wanaka aftershock sequence, \</span>
+<span class="sd">written up by Warren-Smith [2014/15].</span>
 
 <span class="sd">Copyright 2015 Calum Chamberlain</span>
 
@@ -166,13 +168,15 @@
 
 <div class="viewcode-block" id="dist_calc"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.dist_calc">[docs]</a><span class="k">def</span> <span class="nf">dist_calc</span><span class="p">(</span><span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to calcualte the distance in km between two points, uses the flat</span>
-<span class="sd">    Earth approximation</span>
+<span class="sd">    Function to calcualte the distance in km between two points, uses the \</span>
+<span class="sd">    flat Earth approximation.</span>
 
 <span class="sd">    :type loc1: tuple</span>
 <span class="sd">    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)</span>
 <span class="sd">    :type loc2: tuple</span>
 <span class="sd">    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)</span>
+
+<span class="sd">    :returns: float, Distance between points.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">R</span> <span class="o">=</span> <span class="mf">6371.009</span>  <span class="c"># Radius of the Earth in km</span>
     <span class="n">dlat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">loc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">loc2</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
@@ -186,10 +190,10 @@
 </div>
 <div class="viewcode-block" id="_sim_WA"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._sim_WA">[docs]</a><span class="k">def</span> <span class="nf">_sim_WA</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">PAZ</span><span class="p">,</span> <span class="n">seedresp</span><span class="p">,</span> <span class="n">water_level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to remove the insturment response from a trace and return a</span>
+<span class="sd">    Function to remove the insturment response from a trace and return a \</span>
 <span class="sd">    de-meaned, de-trended, Wood Anderson simulated trace in it&#39;s place.</span>
 
-<span class="sd">    Works in-place on data and will destroy your original data, copy the</span>
+<span class="sd">    Works in-place on data and will destroy your original data, copy the \</span>
 <span class="sd">    trace before giving it to this function!</span>
 
 <span class="sd">    :type trace: obspy.Trace</span>
@@ -230,8 +234,8 @@
 </div>
 <div class="viewcode-block" id="_max_p2t"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._max_p2t">[docs]</a><span class="k">def</span> <span class="nf">_max_p2t</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to find the maximum peak to trough amplitude and period of this</span>
-<span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by</span>
+<span class="sd">    Function to find the maximum peak-to-trough amplitude and period of this \</span>
+<span class="sd">    amplitude.  Originally designed to be used to calculate magnitudes (by \</span>
 <span class="sd">    taking half of the peak-to-trough amplitude as the peak amplitude).</span>
 
 <span class="sd">    :type data: ndarray</span>
@@ -239,10 +243,9 @@
 <span class="sd">    :type delta: float</span>
 <span class="sd">    :param delta: Sampling interval in seconds</span>
 
-<span class="sd">    :returns: tuple of (amplitude, period, time) with amplitude in the same</span>
-<span class="sd">            scale as</span>
-<span class="sd">            given in the input data, and period in seconds, and time in seconds</span>
-<span class="sd">            from the start of the data window.</span>
+<span class="sd">    :returns: tuple of (amplitude, period, time) with amplitude in the same \</span>
+<span class="sd">        scale as given in the input data, and period in seconds, and time in \</span>
+<span class="sd">        seconds from the start of the data window.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
     <span class="n">debug_plot</span> <span class="o">=</span> <span class="bp">False</span>
@@ -278,11 +281,11 @@
 </div>
 <div class="viewcode-block" id="_GSE2_PAZ_read"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._GSE2_PAZ_read">[docs]</a><span class="k">def</span> <span class="nf">_GSE2_PAZ_read</span><span class="p">(</span><span class="n">GSEfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to read the instrument response information from a GSE Poles and</span>
+<span class="sd">    Function to read the instrument response information from a GSE Poles and \</span>
 <span class="sd">    Zeros file as generated by the SEISAN program RESP.</span>
 
-<span class="sd">    Format must be CAL2, not coded for any other format at the moment, contact</span>
-<span class="sd">    the author to add others in.</span>
+<span class="sd">    Format must be CAL2, not coded for any other format at the moment, \</span>
+<span class="sd">    contact the authors to add others in.</span>
 
 <span class="sd">    :type GSEfile: string</span>
 <span class="sd">    :param GSEfile: Path to GSE file</span>
@@ -326,24 +329,24 @@
 </div>
 <div class="viewcode-block" id="_find_resp"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._find_resp">[docs]</a><span class="k">def</span> <span class="nf">_find_resp</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Helper function to find the response information for a given station and</span>
-<span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain</span>
+<span class="sd">    Helper function to find the response information for a given station and \</span>
+<span class="sd">    channel at a given time and return a dictionary of poles and zeros, gain \</span>
 <span class="sd">    and sensitivity.</span>
 
-<span class="sd">    :type station: string</span>
+<span class="sd">    :type station: str</span>
 <span class="sd">    :param station: Station name (as in the response files)</span>
-<span class="sd">    :type channel: string</span>
+<span class="sd">    :type channel: str</span>
 <span class="sd">    :param channel: Channel name (as in the response files)</span>
-<span class="sd">    :type network: string</span>
+<span class="sd">    :type network: str</span>
 <span class="sd">    :param network: Network to scan for, can be a wildcard</span>
 <span class="sd">    :type time: datetime.datetime</span>
 <span class="sd">    :param time: Date-time to look for repsonse information</span>
 <span class="sd">    :type delta: float</span>
 <span class="sd">    :param delta: Sample interval in seconds</span>
-<span class="sd">    :type directory: string</span>
+<span class="sd">    :type directory: str</span>
 <span class="sd">    :param directory: Directory to scan for response information</span>
 
-<span class="sd">    :returns: Dictionary</span>
+<span class="sd">    :returns: dict, response information</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="kn">from</span> <span class="nn">obspy.signal.invsim</span> <span class="kn">import</span> <span class="n">evalresp</span>
@@ -404,7 +407,7 @@
 </div>
 <div class="viewcode-block" id="_pairwise"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc._pairwise">[docs]</a><span class="k">def</span> <span class="nf">_pairwise</span><span class="p">(</span><span class="n">iterable</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper on itertools for SVD_magnitude</span>
+<span class="sd">    Wrapper on itertools for SVD_magnitude.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">itertools</span>
     <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">tee</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
@@ -416,37 +419,37 @@
                    <span class="n">winlen</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">pre_pick</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">pre_filt</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
                    <span class="n">highcut</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to read information from a SEISAN s-file, load the data and the</span>
-<span class="sd">    picks, cut the data for the channels given around the S-window, simulate</span>
-<span class="sd">    a Wood Anderson seismometer, then pick the maximum peak-to-trough</span>
+<span class="sd">    Function to read information from a SEISAN s-file, load the data and the \</span>
+<span class="sd">    picks, cut the data for the channels given around the S-window, simulate \</span>
+<span class="sd">    a Wood Anderson seismometer, then pick the maximum peak-to-trough \</span>
 <span class="sd">    amplitude.</span>
 
-<span class="sd">    Output will be put into a mag_calc.out file which will be in full S-file</span>
+<span class="sd">    Output will be put into a mag_calc.out file which will be in full S-file \</span>
 <span class="sd">    format and can be copied to a REA database.</span>
 
 <span class="sd">    :type sfile: string</span>
 <span class="sd">    :type datapath: string</span>
-<span class="sd">    :param datapath: Path to the waveform files - usually the path to the WAV\</span>
+<span class="sd">    :param datapath: Path to the waveform files - usually the path to the WAV \</span>
 <span class="sd">        directory</span>
 <span class="sd">    :type respdir: string</span>
 <span class="sd">    :param respdir: Path to the response information directory</span>
 <span class="sd">    :type chans: List of strings</span>
-<span class="sd">    :param chans: List of the channels to pick on, defaults to [&#39;Z&#39;] - should</span>
-<span class="sd">                just be the orientations, e.g. Z,1,2,N,E</span>
+<span class="sd">    :param chans: List of the channels to pick on, defaults to [&#39;Z&#39;] - should \</span>
+<span class="sd">        just be the orientations, e.g. Z,1,2,N,E</span>
 <span class="sd">    :type var_wintype: bool</span>
-<span class="sd">    :param var_wintype: If True, the winlen will be</span>
-<span class="sd">                    multiplied by the P-S time if both P and S picks are</span>
-<span class="sd">                    available, otherwise it will be multiplied by the</span>
-<span class="sd">                    hypocentral distance*0.34 - dervided using a p-s ratio of</span>
-<span class="sd">                    1.68 and S-velocity of 1.5km/s to give a large window,</span>
-<span class="sd">                    defaults to True</span>
+<span class="sd">    :param var_wintype: If True, the winlen will be \</span>
+<span class="sd">        multiplied by the P-S time if both P and S picks are \</span>
+<span class="sd">        available, otherwise it will be multiplied by the \</span>
+<span class="sd">        hypocentral distance*0.34 - dervided using a p-s ratio of \</span>
+<span class="sd">        1.68 and S-velocity of 1.5km/s to give a large window, \</span>
+<span class="sd">        defaults to True</span>
 <span class="sd">    :type winlen: float</span>
-<span class="sd">    :param winlen: Length of window, see above parameter, if var_wintype is</span>
-<span class="sd">                    False then this will be in seconds, otherwise it is the</span>
-<span class="sd">                    multiplier to the p-s time, defaults to 0.5.</span>
+<span class="sd">    :param winlen: Length of window, see above parameter, if var_wintype is \</span>
+<span class="sd">        False then this will be in seconds, otherwise it is the \</span>
+<span class="sd">        multiplier to the p-s time, defaults to 0.5.</span>
 <span class="sd">    :type pre_pick: float</span>
-<span class="sd">    :param pre_pick: Time before the s-pick to start the cut window, defaults</span>
-<span class="sd">                    to 0.2</span>
+<span class="sd">    :param pre_pick: Time before the s-pick to start the cut window, defaults \</span>
+<span class="sd">        to 0.2</span>
 <span class="sd">    :type pre_filt: bool</span>
 <span class="sd">    :param pre_filt: To apply a pre-filter or not, defaults to True</span>
 <span class="sd">    :type lowcut: float</span>
@@ -526,7 +529,7 @@
                     <span class="c"># If there is an S-pick we can use this :D</span>
                     <span class="n">S_pick</span> <span class="o">=</span> <span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span>
                               <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">]</span>
-                    <span class="n">S_pick</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">S_pick</span><span class="p">)</span>
+                    <span class="n">S_pick</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">S_pick</span><span class="p">)</span>
                     <span class="n">P_pick</span> <span class="o">=</span> <span class="p">[</span><span class="n">picktimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sta_picks</span>
                               <span class="k">if</span> <span class="n">picktypes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">]</span>
                     <span class="n">P_pick</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">P_pick</span><span class="p">)</span>
@@ -693,13 +696,13 @@
 </div>
 <div class="viewcode-block" id="SVD_moments"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.SVD_moments">[docs]</a><span class="k">def</span> <span class="nf">SVD_moments</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">stachans</span><span class="p">,</span> <span class="n">event_list</span><span class="p">,</span> <span class="n">n_SVs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Function to convert basis vectors calculated by singular value\</span>
-<span class="sd">    decomposition (see the SVD functions in clustering) into relative\</span>
+<span class="sd">    Function to convert basis vectors calculated by singular value \</span>
+<span class="sd">    decomposition (see the SVD functions in clustering) into relative \</span>
 <span class="sd">    magnitudes.</span>
 
 <span class="sd">    :type U: List of np.ndarray</span>
-<span class="sd">    :param U: List of the input basis vectors from the SVD, one array for each\</span>
-<span class="sd">            channel used.</span>
+<span class="sd">    :param U: List of the input basis vectors from the SVD, one array for \</span>
+<span class="sd">        each channel used.</span>
 <span class="sd">    :type s: List of nd.array</span>
 <span class="sd">    :param s: List of the singular values, one array for each channel</span>
 <span class="sd">    :type V: List of np.ndarry</span>
@@ -707,9 +710,9 @@
 <span class="sd">    :type stachans: List of string</span>
 <span class="sd">    :param stachans: List of station.channel input</span>
 <span class="sd">    :type event_list: List of list</span>
-<span class="sd">    :param event_list: List of events for which you have data, such that\</span>
-<span class="sd">                event_list[i] corresponds to stachans[i], U[i] etc. and\</span>
-<span class="sd">                event_list[i][j] corresponds to event j in U[i]</span>
+<span class="sd">    :param event_list: List of events for which you have data, such that \</span>
+<span class="sd">        event_list[i] corresponds to stachans[i], U[i] etc. and \</span>
+<span class="sd">        event_list[i][j] corresponds to event j in U[i]</span>
 <span class="sd">    type n_SVs: int</span>
 <span class="sd">    :param n_SVs: Number of singular values to use, defaults to 4.</span>
 
@@ -814,6 +817,7 @@
     <span class="c"># Add an extra row to K, so average moment = 1</span>
     <span class="n">K</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">K_width</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">K_width</span><span class="p">))</span>
     <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Created Kernel matrix: &quot;</span>
+    <span class="k">del</span> <span class="n">row</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
           <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">row</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">K</span><span class="p">]))</span>
     <span class="n">Krounded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
@@ -833,43 +837,31 @@
     <span class="n">M</span> <span class="o">=</span> <span class="n">Kinv</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">events_out</span>
-</div>
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Code to loop through a database and make a lot of magnitude picks.</span>
 
-<span class="sd">    Coded to run through SEISAN databases.</span>
+</div>
+<div class="viewcode-block" id="pick_db"><a class="viewcode-back" href="../submodules/utils.mag_calc.html#mag_calc.pick_db">[docs]</a><span class="k">def</span> <span class="nf">pick_db</span><span class="p">(</span><span class="n">indir</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">calpath</span><span class="p">,</span> <span class="n">startdate</span><span class="p">,</span> <span class="n">enddate</span><span class="p">,</span> <span class="n">wavepath</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper to loop through a SEISAN database and make a lot of magnitude \</span>
+<span class="sd">    picks.</span>
+
+<span class="sd">    :type indir: str</span>
+<span class="sd">    :param indir: Path to the seisan REA directory (not including yyyy/mm)</span>
+<span class="sd">    :type outdir: str</span>
+<span class="sd">    :param outdir: Path to output seisan REA directory (not including yyyy/mm)</span>
+<span class="sd">    :type calpath: str</span>
+<span class="sd">    :param calpath: Path to the directory containing the response files</span>
+<span class="sd">    :type startdate: datetime.datetime</span>
+<span class="sd">    :param startdate: Date to start looking for S-files</span>
+<span class="sd">    :type enddate: datetime.datetime</span>
+<span class="sd">    :param enddate: Date to stop looking for S-files</span>
+<span class="sd">    :type wavepath: str</span>
+<span class="sd">    :param wavepath: Path to the seisan WAV directory (not including yyyy/mm)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">sys</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">6</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Insufficient arguments, needs the database to calculate &#39;</span> <span class="o">+</span>\
-            <span class="s">&#39;over and the ouptut database, paths to REA dir (not year/mm &#39;</span> <span class="o">+</span>\
-            <span class="s">&#39;dirs) for both please, and the path to the CAL directory, and &#39;</span> <span class="o">+</span>\
-            <span class="s">&#39;the start and stop dates as yyyymmddhhmmss&#39;</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="n">indir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">outdir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">calpath</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-    <span class="n">startdate</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
-    <span class="n">enddate</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
-        <span class="n">wavepath</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
-        <span class="n">wavepath</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="kn">import</span> <span class="nn">shutil</span>
-    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">startdate</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="s">&#39;0&#39;</span><span class="p">),</span>
-                                         <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;start date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">stopdate</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">enddate</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="s">&#39;0&#39;</span><span class="p">),</span>
-                                        <span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">%H%M%S&#39;</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;end date is not yyyymmddhhmmss form&#39;</span><span class="p">)</span>
-    <span class="n">kdays</span> <span class="o">=</span> <span class="p">((</span><span class="n">stopdate</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">startdate</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+
+    <span class="n">kdays</span> <span class="o">=</span> <span class="p">((</span><span class="n">enddate</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">startdate</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
         <span class="n">day</span> <span class="o">=</span> <span class="n">startdate</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="k">print</span> <span class="s">&#39;Working on &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
@@ -882,22 +874,27 @@
                      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sfiles</span><span class="p">))]</span>
         <span class="n">sfiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">sfiles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sfiles</span><span class="p">))</span>
                   <span class="k">if</span> <span class="n">datetimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">startdate</span> <span class="ow">and</span>
-                  <span class="n">datetimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">stopdate</span><span class="p">]</span>
+                  <span class="n">datetimes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">enddate</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">wavepath</span><span class="p">:</span>
             <span class="n">wavedir</span> <span class="o">=</span> <span class="s">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;/WAV/&#39;</span> <span class="o">+</span>\
                 <span class="n">indir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>\
                 <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
         	<span class="n">wavedir</span> <span class="o">=</span> <span class="n">wavepath</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>\
-                <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">sfiles</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">:</span>
             <span class="c"># Make the picks!</span>
             <span class="k">print</span> <span class="s">&#39;				Working on Sfile: &#39;</span><span class="o">+</span><span class="n">sfile</span>
             <span class="n">picks</span> <span class="o">=</span> <span class="n">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">wavedir</span><span class="p">,</span> <span class="n">calpath</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">picks</span>
             <span class="c"># Copy the mag_calc.out file to the correct place</span>
             <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="s">&#39;mag_calc.out&#39;</span><span class="p">,</span> <span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>
                             <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">sfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>

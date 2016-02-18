@@ -7,6 +7,7 @@ Not licenced as part of EQcorrscan
 
 import time
 
+
 class Timer(object):
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -21,3 +22,8 @@ class Timer(object):
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
             print 'elapsed time: %f ms' % self.msecs
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
