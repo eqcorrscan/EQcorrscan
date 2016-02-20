@@ -54,7 +54,6 @@ def run():
     from eqcorrscan.tests import core_tests
 
     assert test_import()
-    assert Sfile_util.test_rw()
     assert core_tests.test_match_filter(samp_rate=20.0, debug=0)
 
 if __name__ == '__main__':
