@@ -59,12 +59,13 @@ install:
         lxml
         sqlalchemy
         mock
-        nose
         gdal
         pyproj
         docopt
         coverage
         requests
+        pytest
+        pytest-flake8
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
