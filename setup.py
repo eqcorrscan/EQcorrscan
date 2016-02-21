@@ -124,7 +124,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0',
+    install_requires=['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.1.0',
                       'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing'],
 
     # Test requirements for using pytest
