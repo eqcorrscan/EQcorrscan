@@ -46,9 +46,9 @@ here = path.abspath(path.dirname(__file__))
 long_description = read_md('README.md')
 
 # Get a list of all the scripts not to be installed
-scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
+# scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
 # scriptfiles += glob.glob('eqcorrscan/*.sl')
-scriptfiles += glob.glob('eqcorrscan/tutorial.py')
+scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
 # scriptfiles += glob.glob('eqcorrscan/WHATVsearch.py')
 # scriptfiles += glob.glob('eqcorrscan/LFE_brightness_search.py')
 # scriptfiles += glob.glob('eqcorrscan/synth_test.py')
@@ -63,7 +63,7 @@ class PyTest(TestCommand):
         self.pytest_args = []
 
     def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
+        # import here: outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
@@ -124,7 +124,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0',
+    install_requires=['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.1.0',
                       'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing'],
 
     # Test requirements for using pytest
