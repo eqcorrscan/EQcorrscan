@@ -18,3 +18,4 @@ EQcorrscan.egg-info
 *.xml
 .cache
 .eggs
+.tox
