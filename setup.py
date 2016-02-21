@@ -46,9 +46,9 @@ here = path.abspath(path.dirname(__file__))
 long_description = read_md('README.md')
 
 # Get a list of all the scripts not to be installed
-scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
+# scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
 # scriptfiles += glob.glob('eqcorrscan/*.sl')
-scriptfiles += glob.glob('eqcorrscan/tutorial.py')
+scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
 # scriptfiles += glob.glob('eqcorrscan/WHATVsearch.py')
 # scriptfiles += glob.glob('eqcorrscan/LFE_brightness_search.py')
 # scriptfiles += glob.glob('eqcorrscan/synth_test.py')
@@ -63,7 +63,7 @@ class PyTest(TestCommand):
         self.pytest_args = []
 
     def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
+        # import here: outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
