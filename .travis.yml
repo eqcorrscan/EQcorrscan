@@ -1,29 +1,8 @@
 language: python
-python:
-  - "2.7"
-# virtualenv:
-#   system_site_packages: true
-# env:
-#   - TOXENV=py27
-#   - TOXENV=py33
-#   - TOXENV=py34
-#   - TOXENV=lint
-#   - TOXENV=docs
-# # install:
-#   # - pip install tox
-# # script:
-#   # - tox
-# matrix:
-#   allow_failures:
-#     - env: TOXENV=lint
-#     - env: TOXENV=docs
-# sudo: false
-
-# language: python
 os: linux
-# python: "2.7"
+python: "2.7"
 
-# sudo: false
+sudo: false
 
 addons:
   apt:
@@ -32,10 +11,6 @@ addons:
     packages:
       - python-opencv
 
-# before_install:
-#   - sudo apt-get update
-#   - sudo apt-get install python-opencv
-#   - sudo dpkg -L python-opencv
 before_install:
   - pip install pytest pytest-cov
 install:
