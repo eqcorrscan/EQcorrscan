@@ -1,7 +1,8 @@
 language: python
 os: linux
 python: "2.7"
-
+virtualenv:
+  system_site_packages: true
 sudo: false
 
 addons:
