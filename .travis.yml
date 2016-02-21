@@ -1,7 +1,7 @@
 language: python
 os: linux
-python:
-  - "2.7_with_system_site_packages"
+python: "2.7"
+
 sudo: false
 
 addons:
@@ -11,8 +11,11 @@ addons:
     packages:
       - python-opencv
 
-before_install:
-  - pip install pytest pytest-cov
+# before_install:
+#   - sudo apt-get update
+#   - sudo apt-get install python-opencv
+#   - sudo dpkg -L python-opencv
+
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
@@ -68,7 +71,6 @@ install:
   # - pip install -r requirements.txt
   - pip install coveralls
   - pip install geographiclib
-  # - pip install tox
   # current pyimgur stable release has a py2.6 incompatibility
   - pip install https://github.com/megies/PyImgur/archive/py26.zip
   - pip freeze
@@ -80,7 +82,6 @@ script:
   # Run the tests available, more should be added
   # - python eqcorrscan/tests/runtests.py
   # py.test
-  # - tox
   python setup.py test
 
 notifications:
