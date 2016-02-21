@@ -15,7 +15,8 @@ addons:
 #   - sudo apt-get update
 #   - sudo apt-get install python-opencv
 #   - sudo dpkg -L python-opencv
-
+before_install:
+  - pip install pytest pytest-cov
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
