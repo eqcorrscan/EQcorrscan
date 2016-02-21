@@ -79,9 +79,9 @@ install:
 script:
   # Run the tests available, more should be added
   # - python eqcorrscan/tests/runtests.py
-  py.test
+  # py.test
   # - tox
-  # python setup.py test
+  python setup.py test
 
 notifications:
     email: false
