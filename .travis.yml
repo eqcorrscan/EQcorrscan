@@ -1,8 +1,26 @@
 language: python
-os: linux
-python: "2.7"
-
+env:
+  - TOXENV=py26
+  - TOXENV=py27
+  - TOXENV=py33
+  - TOXENV=py34
+  - TOXENV=lint
+  - TOXENV=docs
+# install:
+  # - pip install tox
+# script:
+  # - tox
+matrix:
+  allow_failures:
+    - env: TOXENV=lint
+    - env: TOXENV=docs
 sudo: false
+
+# language: python
+# os: linux
+# python: "2.7"
+
+# sudo: false
 
 addons:
   apt:
@@ -60,17 +78,19 @@ install:
         lxml
         sqlalchemy
         mock
-        nose
         gdal
         pyproj
         docopt
         coverage
         requests
+        pytest
+        pytest-pep8
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
   - pip install coveralls
   - pip install geographiclib
+  - pip install tox
   # current pyimgur stable release has a py2.6 incompatibility
   - pip install https://github.com/megies/PyImgur/archive/py26.zip
   - pip freeze
@@ -82,12 +102,14 @@ script:
   # Run the tests available, more should be added
   # - python eqcorrscan/tests/runtests.py
   py.test
+  # - tox
+  # python setup.py test
 
 notifications:
     email: false
     webhooks:
       urls:
         - https://webhooks.gitter.im/e/10122f10ed5043c58ae7
-      on_success: never  # options: [always|never|change] default: always
+      on_success: change  # options: [always|never|change] default: always
       on_failure: always  # options: [always|never|change] default: always
       on_start: never     # options: [always|never|change] default: always
