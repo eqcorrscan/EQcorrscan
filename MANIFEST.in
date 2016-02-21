@@ -3,19 +3,20 @@
 
 include README.md
 # include eqcorrscan/test_data/tutorial_data.tgz
-include eqcorrscan/tutorial.py
+# include eqcorrscan/tutorial.py
 recursive-include eqcorrscan/utils *.py
-recursive-include eqcorrscan/par *.py
-recursive-include eqcorrscan/scripts *.py
+# recursive-include eqcorrscan/par *.py
+# recursive-include eqcorrscan/scripts *.py
+recursive-include eqcorrscan/tutorials *.py
 recursive-include eqcorrscan/doc *
 recursive-include eqcorrscan/core *.py
 recursive-include eqcorrscan/tests *.py
 
 # exclude rules
-global-exclude *.pyc *.ms *.tgz
+# global-exclude *.pyc *.ms *.tgz
 prune eqcorrscan/doc/_build/latex
 prune eqcorrscan/plot
 prune eqcorrscan/detections
 prune eqcorrscan/grid
-prune eqcorrscan/stack_templates
-prune eqcorrscan/templates
+# prune eqcorrscan/stack_templates
+# prune eqcorrscan/templates

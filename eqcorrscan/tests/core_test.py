@@ -208,3 +208,9 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
             tr.plot()
 
     return templates, data, seeds
+
+if __name__ == '__main__':
+    """
+    Run core tests
+    """
+    test_match_filter()

@@ -4,9 +4,6 @@ Script to test if all dependencies are installed and running for the EQcorrscan
 package.
 """
 
-import sys
-sys.path.insert(0, '/home/calumch/my_programs/Building/EQcorrscan')
-
 def test_import():
     import sys
     sys.path.insert(0, '/usr/lib/pyshared/python2.7') # Insert path for travis
@@ -50,11 +47,8 @@ def run():
     """
     Where we call all the available tests from
     """
-    from eqcorrscan.utils import Sfile_util
-    from eqcorrscan.tests import core_tests
 
     assert test_import()
-    assert core_tests.test_match_filter(samp_rate=20.0, debug=0)
 
 if __name__ == '__main__':
     run()

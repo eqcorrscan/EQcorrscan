@@ -193,3 +193,6 @@ def test_read_write():
     assert conv_cat[0].amplitudes[0].period == test_cat[0].amplitudes[0].period
     assert conv_cat[0].amplitudes[0].snr == test_cat[0].amplitudes[0].snr
     return True
+
+if __name__ == '__main__':
+    test_read_write()
