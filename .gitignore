@@ -19,3 +19,5 @@ EQcorrscan.egg-info
 .cache
 .eggs
 .tox
+eqcorrscan/tutorials/*.jpg
+pytest_runner*
