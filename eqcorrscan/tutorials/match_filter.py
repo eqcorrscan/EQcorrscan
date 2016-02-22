@@ -4,8 +4,6 @@ matched-filter detection routine.  This builds on the template generation
 tutorial and uses those templates.  If you haven't run that tutorial script
 then you will need to before you can run this script.
 """
-import sys
-sys.path.insert(0, '/home/calumch/my_programs/Building/EQcorrscan')
 
 from eqcorrscan.utils import pre_processing
 from eqcorrscan.utils import EQcorrscan_plotting as plotting
