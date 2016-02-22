@@ -63,6 +63,7 @@ install:
         requests
         pytest
         pytest-pep8
+        opencv
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
