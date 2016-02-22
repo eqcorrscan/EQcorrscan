@@ -1,7 +1,8 @@
 language: python
 os: linux
 python: "2.7"
-
+virtualenv:
+    system_site_packages: true
 sudo: false
 
 addons:
@@ -10,11 +11,7 @@ addons:
       - lucid
     packages:
       - python-opencv
-
-# before_install:
-#   - sudo apt-get update
-#   - sudo apt-get install python-opencv
-#   - sudo dpkg -L python-opencv
+      - pandoc
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -71,6 +68,7 @@ install:
   # - pip install -r requirements.txt
   - pip install coveralls
   - pip install geographiclib
+  - pip install pypandoc
   # current pyimgur stable release has a py2.6 incompatibility
   - pip install https://github.com/megies/PyImgur/archive/py26.zip
   - pip freeze
