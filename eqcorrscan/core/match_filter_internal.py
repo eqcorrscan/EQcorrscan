@@ -52,7 +52,7 @@ def _channel_loop(templates, stream, delays, ktemplates, savedir=False,
     import multiprocessing as mp
     DTYPE = np.float32
     # ctypedef np.float32_t DTYPE_t
-    num_core = cores
+    num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
 

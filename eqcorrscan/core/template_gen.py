@@ -277,22 +277,26 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     import warnings
     if not os.path.isfile(quakeml):
         raise IOError('QuakeML file does not exist')
-
-    from obspy import readEvents
+    import obspy
+    if int(obspy.__version__.split('.')[0]) >= 1:
+        from obspy import read_events
+    else:
+        from obspy import readEvents as read_events
+    from obspy import UTCDateTime
     from eqcorrscan.utils import pre_processing
     stations = []
     channels = []
     st_stachans = []
     # Process waveform data
-    st1.merge(fill_value='interpolate')
-    for tr in st1:
+    st.merge(fill_value='interpolate')
+    for tr in st:
         tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
-                                    samp_rate, debug, day)
+                                    samp_rate, debug,
+                                    UTCDateTime(tr.stats.starttime.date))
     # Read QuakeML file into Catalog class
-    catalog = readEvents(quakeml)
+    catalog = read_events(quakeml)
     templates = []
     for event in catalog:
-        day = event.origins[0].time
         # Read in pick info
         print("I have found the following picks")
         for pick in event.picks:
@@ -310,8 +314,8 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
                               channels[i])
         st1 = st.copy()
         # Cut and extract the templates
-        template = _template_gen(picks, st1, length, swin, prepick=prepick,
-                                 plot=plot)
+        template = _template_gen(event.picks, st1, length, swin,
+                                 prepick=prepick, plot=plot)
         templates.append(template)
     return templates
 
@@ -443,8 +447,10 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.clients.fdsn import Client
+        from obspy.clients.fdsn.header import FDSNexception
     else:
         from obspy.fdsn import Client
+        from obspy.fdsn.header import FDSNexception
     from eqcorrscan.utils import pre_processing
     import warnings
 
