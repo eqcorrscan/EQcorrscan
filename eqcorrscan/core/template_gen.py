@@ -447,10 +447,10 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.clients.fdsn import Client
-        from obspy.clients.fdsn.header import FDSNexception
+        from obspy.clients.fdsn.header import FDSNException
     else:
         from obspy.fdsn import Client
-        from obspy.fdsn.header import FDSNexception
+        from obspy.fdsn.header import FDSNException
     from eqcorrscan.utils import pre_processing
     import warnings
 
@@ -477,13 +477,13 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 try:
                     st = client.get_waveforms(net, sta, loc, chan,
                                               starttime, endtime)
-                except FDSNexception:
+                except FDSNException:
                     warnings.warn('Found no data for this station')
             else:
                 try:
                     st += client.get_waveforms(net, sta, loc, chan,
                                                starttime, endtime)
-                except FDSNexception:
+                except FDSNException:
                     warnings.warn('Found no data for this station')
         if debug > 0:
             st.plot()
