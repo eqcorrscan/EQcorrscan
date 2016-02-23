@@ -16,4 +16,14 @@ You do not need to use data from an online server, many pick formats can be
 parsed, either by obspy, or (for seisan pick files) through the Sfile_utils
 module in EQcorrscan.
 
+This template script is written to be general, so you should be able to give
+command line arguments to the script to generate templates from other
+FDSN databases.  Note that some datacentres do not support full FDSN quakeml
+files, and working out which do is quite painful.
+
+Try this example for another, Northern California Data Centre earthquake:
+
+``python template_creation.py NCEDC 72572665``
+
+
 .. literalinclude:: ../../tutorials/template_creation.py
