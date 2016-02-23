@@ -94,9 +94,10 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.4. locate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.5. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.6. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.7. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.8. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.9. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -197,7 +198,7 @@ Requires the stack, the template used to make the detections for the stack, and 
 <li><strong>Z_include</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will include any Z-channels even if there is no template for this channel, as long as there is a template for this station at a different channel.  If this is False and Z channels are included in the template Z channels will be included in the new_template anyway.</li>
 <li><strong>pre_processed</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Have the data been pre-processed, if True (default) then we will only cut the data here.</li>
 <li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, desired sampling rate in Hz, defaults to False.</li>
-<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, lowcut in Hz, defaults to False</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, lowcut in Hz, defaults to False.</li>
 <li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; If pre_processed=False then this is required, highcut in Hz, defaults to False</li>
 <li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; If pre_processed=False then this is required, filter order, defaults to False</li>
 </ul>
@@ -211,38 +212,8 @@ Requires the stack, the template used to make the detections for the stack, and 
 </dd></dl>
 
 <dl class="function">
-<dt id="template_gen.from_QuakeML">
-<code class="descclassname">template_gen.</code><code class="descname">from_QuakeML</code><span class="sig-paren">(</span><em>quakeml</em>, <em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_QuakeML"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_QuakeML" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to generate a template from a local quakeml file
-and an obspy.Stream object</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>quakeml</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; QuakeML file containing pick information</li>
-<li><strong>st</strong> (<em>class: obspy.Stream</em>) &#8211; Stream containing waveform data for template (hopefully)</li>
-<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in templatedefaults file</li>
-<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in templatedefaults file</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look intemplate defaults file</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look intemplate defaults file</li>
-<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in templatedefaults file.</li>
-<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
-<li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging output, higher=more</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="template_gen.from_SeisHub">
-<code class="descclassname">template_gen.</code><code class="descname">from_SeisHub</code><span class="sig-paren">(</span><em>catalog</em>, <em>url</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_SeisHub"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_SeisHub" title="Permalink to this definition">¶</a></dt>
+<dt id="template_gen.from_client">
+<code class="descclassname">template_gen.</code><code class="descname">from_client</code><span class="sig-paren">(</span><em>catalog</em>, <em>client_id</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_client" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate templates from a SeisHub database.Must be given an obspy.Catalog class and the SeisHub url as input. The function returns a list of obspy.Stream classes containting steams for each desired template.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -259,6 +230,7 @@ and an obspy.Stream object</p>
 <li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
 <li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
 <li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot templates or not.</li>
 </ul>
 </td>
 </tr>
@@ -271,7 +243,7 @@ and an obspy.Stream object</p>
 
 <dl class="function">
 <dt id="template_gen.from_contbase">
-<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>contbase_list</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>contbase_list</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in picks from sfile then generate the template from the picks within this and the wavefiles from the continous database of day-long files.  Included is a section to sanity check that the files are daylong and that they start at the start of the day.  You should ensure this is the case otherwise this may alter your data if your data are daylong but the headers are incorrectly set.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -288,6 +260,67 @@ and an obspy.Stream object</p>
 <li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
 <li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
 <li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turns template plotting on or off.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_quakeml">
+<code class="descclassname">template_gen.</code><code class="descname">from_quakeml</code><span class="sig-paren">(</span><em>quakeml</em>, <em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_quakeml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_quakeml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a template from a local quakeml file and an obspy.Stream object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>quakeml</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; QuakeML file containing pick information, can contain multiple events.</li>
+<li><strong>st</strong> (<em>class: obspy.Stream</em>) &#8211; Stream containing waveform data for template (hopefully)</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Display template plots or not</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of obspy.Stream Newly cut templates</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_seishub">
+<code class="descclassname">template_gen.</code><code class="descname">from_seishub</code><span class="sig-paren">(</span><em>catalog</em>, <em>url</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_seishub"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_seishub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate templates from a SeisHub database.Must be given an obspy.Catalog class and the SeisHub url as input. The function returns a list of obspy.Stream classes containting steams for each desired template.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>catalog</strong> (<em>obspy.Catalog</em>) &#8211; Catalog class containing desired template events</li>
+<li><strong>url</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; url of SeisHub database instance</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot templates or not.</li>
 </ul>
 </td>
 </tr>
@@ -300,7 +333,7 @@ and an obspy.Stream object</p>
 
 <dl class="function">
 <dt id="template_gen.from_sfile">
-<code class="descclassname">template_gen.</code><code class="descname">from_sfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>swin</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_sfile" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">template_gen.</code><code class="descname">from_sfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_sfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in picks from sfile then generate the template from the picks within this and the wavefile found in the pick file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -315,6 +348,7 @@ and an obspy.Stream object</p>
 <li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
 <li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
 <li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug level, higher number=more output.</li>
+<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turns template plotting on or off.</li>
 </ul>
 </td>
 </tr>

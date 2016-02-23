@@ -392,7 +392,7 @@
         <span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="c"># Send off to sister function</span>
-            <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">)</span>
             <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_template_loop</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tr_data</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span>
                                               <span class="n">channel</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
@@ -697,7 +697,12 @@
                                             <span class="n">no_chans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">peak</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rawthresh</span><span class="p">,</span>
                                             <span class="s">&#39;corr&#39;</span><span class="p">))</span>
     <span class="k">del</span> <span class="n">stream</span><span class="p">,</span> <span class="n">templates</span>
-    <span class="k">return</span> <span class="n">detections</span></div>
+    <span class="k">return</span> <span class="n">detections</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>
