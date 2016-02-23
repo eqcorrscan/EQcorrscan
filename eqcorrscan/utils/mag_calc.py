@@ -359,6 +359,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     stream.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
+    del arrival
     for sta in uniq_stas:
         for chan in chans:
             print 'Working on '+sta+' '+chan
@@ -385,8 +386,11 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                           corners=corners)
             sta_picks = [i for i in xrange(len(stations))
                          if stations[i] == sta]
-            hypo_dist = picks[sta_picks[0]].distance
-            CAZ = picks[sta_picks[0]].CAZ
+            pick_id = event.picks[sta_picks[0]].resource_id
+            arrival = [arrival for arrival in event.origins[0].arrivals
+                       if arrival.pick_id == pick_id]
+            hypo_dist = arrival.distance
+            CAZ = arrival.azimuth
             if var_wintype:
                 if 'S' in [picktypes[i] for i in sta_picks] and\
                    'P' in [picktypes[i] for i in sta_picks]:
@@ -555,7 +559,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     for pick in picks_out:
         print pick
     # Sfile_util.populateSfile('mag_calc.out', picks_out)
-    return picks
+    return picks_out
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):

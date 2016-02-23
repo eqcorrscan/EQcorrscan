@@ -1,14 +1,6 @@
-#!/usr/bin/python
-
-#------------------------------------------------------------------------------
-#   Purpose:    Convenience imports for EQcorrscan.utils module
-#   Author:     Calum John Chamberlain
-#------------------------------------------------------------------------------
-
-"""
-EQcorrscan is a python module designed to run match filter routines for
-seismology, within it are routines for integration to seisan and obspy.
-With obspy integration (which is necessary) all main waveform formats can be
+"""EQcorrscan is a python module designed to run match filter routines for \
+seismology, within it are routines for integration to seisan and obspy. \
+With obspy integration (which is necessary) all main waveform formats can be \
 read in and output.
 
 This main section contains a script, LFE_search.py which demonstrates the usage
@@ -36,9 +28,9 @@ Pre-requisites:
     python-pylab    - used for plotting
 """
 
-__all__ = ['Sfile_util', 'pre_processing', 'findpeaks', 'EQcorrscan_plotting',\
-            'mag_calc', 'catalogue2DD', 'clustering', 'plot_database',\
-            'seismo_logs','stacking','synth_seis','timer']
+__all__ = ['Sfile_util', 'pre_processing', 'findpeaks', 'EQcorrscan_plotting',
+           'mag_calc', 'catalogue2DD', 'clustering', 'plot_database',
+           'seismo_logs', 'stacking', 'synth_seis', 'timer']
 
 if __name__ == '__main__':
     import doctest
