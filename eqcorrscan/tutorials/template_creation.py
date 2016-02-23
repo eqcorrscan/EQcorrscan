@@ -11,8 +11,6 @@ def mktemplates(network_code='GEONET',
 
     from collections import Counter
     from eqcorrscan.core import template_gen
-    from eqcorrscan.utils import pre_processing
-    from joblib import Parallel, delayed
 
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -22,7 +20,6 @@ def mktemplates(network_code='GEONET',
     else:
         from obspy.fdsn import Client
         from obspy import readEvents as read_events
-    from obspy import UTCDateTime, Stream
     from obspy.core.event import Catalog
 
     # We want to download some QuakeML files from the New Zealand GeoNet

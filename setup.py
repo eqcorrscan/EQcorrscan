@@ -35,7 +35,7 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 try:
-    import cv2
+    import cv2  # NOQA
 except:
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)

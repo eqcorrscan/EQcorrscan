@@ -166,8 +166,8 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
     if show:
         if debug >= 1:
             print 'Plotting the dendrogram'
-        D = dendrogram(Z, color_threshold=1 - corr_thresh,
-                       distance_sort='ascending')
+        dendrogram(Z, color_threshold=1 - corr_thresh,
+                   distance_sort='ascending')
         plt.show()
     # Get the indeces of the groups
     if debug >= 1:
@@ -508,7 +508,7 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
                     print('Added station ' + '.'.join(sta))
                     template[1].append(sta)
                     all_delays[t][1].append(av_delay)
-
+    del stachans
     # Loop through the days
     for detection_day in detection_days:
         print('Working on detections for day: ' + str(detection_day))
@@ -539,6 +539,7 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         st.merge(fill_value='interpolate')
         day_detections = [detection for detection in detections
                           if detection[0].date() == detection_day]
+        del stachans, delays
         for detection in day_detections:
             template = detection[1]
             t_stachans = [stachans[1] for stachans in all_stachans
