@@ -47,7 +47,6 @@ def run():
     """
     Where we call all the available tests from
     """
-
     assert test_import()
 
 if __name__ == '__main__':

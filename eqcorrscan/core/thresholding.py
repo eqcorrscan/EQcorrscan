@@ -5,6 +5,10 @@ use in various detection routines within the core modules.
 ** Unfinished **
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 
 
@@ -88,12 +92,12 @@ def coherence_test(stream, stations, nodes, lags, wlen):
 #                 # Use the brightness function to search for possible
 #                 # templates
 #                 # First read in the travel times
-#                 print 'Reading in the original grids'
+#                 print('Reading in the original grids')
 #                 stations, allnodes, alllags = \
 #                     bright_lights._read_tt(nllpath, stations,
 #                                            brightdef.phase)
 #                 # Resample the grid to allow us to run it quickly!
-#                 print 'Cutting the grid'
+#                 print('Cutting the grid')
 #                 stations, nodes, lags = \
 #                     bright_lights._resample_grid(stations, allnodes,
 #                                                  alllags,
@@ -101,11 +105,11 @@ def coherence_test(stream, stations, nodes, lags, wlen):
 #                                                  brightdef.resolution)
 #                 # Remove lags that have a similar network moveout, e.g.
 #                 # the sum of the differences in moveouts is small.
-#                 print "Removing simlar lags"
+#                 print("Removing simlar lags")
 #                 stations, nodes, lags = \
 #                     bright_lights._rm_similarlags(stations, nodes, lags,
 #                                                   brightdef.nodesimthresh)
-#                 print "Plotting new grid"
+#                 print("Plotting new grid")
 #                 plotting.threeD_gridplot(nodes)
 #                 dailycoherence = coherence_test(stream, stations, nodes,
 #                                                 lags,
