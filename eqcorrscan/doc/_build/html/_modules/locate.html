@@ -155,6 +155,10 @@
 <span class="sd">    You should have received a copy of the GNU General Public License</span>
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 
 
 <div class="viewcode-block" id="synth_compare"><a class="viewcode-back" href="../submodules/utils.locate.html#locate.synth_compare">[docs]</a><span class="k">def</span> <span class="nf">synth_compare</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">stream_list</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -246,13 +250,13 @@
     <span class="n">samp_rate</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">env</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Using the raw data&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Using the raw data&#39;</span><span class="p">)</span>
         <span class="n">st</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">st</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">st</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Computing envelope&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Computing envelope&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
             <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">envelope</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
@@ -268,15 +272,15 @@
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Comparing&#39;</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
                             <span class="s">&#39;with the master&#39;</span><span class="p">])</span>
-            <span class="k">print</span> <span class="n">msg</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="n">shift_len</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.3</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Shift length is set to &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">shift_len</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; samples&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Shift length is set to &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">shift_len</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; samples&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
             <span class="n">index</span><span class="p">,</span> <span class="n">cc</span><span class="p">,</span> <span class="n">cc_vec</span> <span class="o">=</span> <span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span> <span class="n">full_xcorr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
             <span class="n">cc_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
-                <span class="k">print</span> <span class="n">cc_vec</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
             <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">master</span><span class="p">)</span> <span class="o">/</span> <span class="n">samp_rate</span><span class="p">,</span>
@@ -289,7 +293,7 @@
             <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;time [s]&quot;</span><span class="p">)</span>
             <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;norm. amplitude&quot;</span><span class="p">)</span>
             <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
-            <span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">))</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span> <span class="o">/</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">))</span>
             <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cc_vec</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;xcorr&#39;</span><span class="p">)</span>
             <span class="c"># ax2.set_ylim(-1, 1)</span>
@@ -303,7 +307,7 @@
                     <span class="n">weight</span><span class="o">=</span><span class="s">&#39;1&#39;</span><span class="p">,</span>
                     <span class="n">time</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="p">(</span><span class="n">index</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span> <span class="n">pick</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
         <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
     <span class="k">del</span> <span class="n">st</span>
     <span class="k">return</span> <span class="n">picks</span>
@@ -367,8 +371,8 @@
             <span class="n">pick</span> <span class="o">=</span> <span class="n">PICK</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
                         <span class="n">time</span><span class="o">=</span><span class="n">on</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;Pick made:&#39;</span>
-                <span class="k">print</span> <span class="n">pick</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Pick made:&#39;</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
             <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
     <span class="c"># QC picks</span>
     <span class="k">del</span> <span class="n">pick</span>

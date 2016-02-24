@@ -134,7 +134,6 @@
           <div role="main" class="document">
             
   <h1>Source code for clustering</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/python</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Functions to cluster seismograms by a range of constraints.</span>
 
@@ -156,7 +155,10 @@
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
@@ -288,38 +290,38 @@
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Computing the distance matrix using&#39;</span><span class="p">,</span>
                         <span class="nb">str</span><span class="p">(</span><span class="n">num_cores</span><span class="p">),</span> <span class="s">&#39;cores&#39;</span><span class="p">])</span>
-        <span class="k">print</span> <span class="n">msg</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
     <span class="n">dist_mat</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="n">stream_list</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">num_cores</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">save_corrmat</span><span class="p">:</span>
         <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;dist_mat.npy&#39;</span><span class="p">,</span> <span class="n">dist_mat</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Saved the distance matrix as dist_mat.npy&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Saved the distance matrix as dist_mat.npy&#39;</span><span class="p">)</span>
     <span class="n">dist_vec</span> <span class="o">=</span> <span class="n">squareform</span><span class="p">(</span><span class="n">dist_mat</span><span class="p">)</span>
     <span class="c"># plt.matshow(dist_mat, aspect=&#39;auto&#39;, origin=&#39;lower&#39;, cmap=pylab.cm.YlGnB)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Computing linkage&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Computing linkage&#39;</span><span class="p">)</span>
     <span class="n">Z</span> <span class="o">=</span> <span class="n">linkage</span><span class="p">(</span><span class="n">dist_vec</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Plotting the dendrogram&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Plotting the dendrogram&#39;</span><span class="p">)</span>
         <span class="n">dendrogram</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">color_threshold</span><span class="o">=</span><span class="mi">1</span> <span class="o">-</span> <span class="n">corr_thresh</span><span class="p">,</span>
                    <span class="n">distance_sort</span><span class="o">=</span><span class="s">&#39;ascending&#39;</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="c"># Get the indeces of the groups</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Clustering&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Clustering&#39;</span><span class="p">)</span>
     <span class="n">indeces</span> <span class="o">=</span> <span class="n">fcluster</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">corr_thresh</span><span class="p">,</span> <span class="s">&#39;distance&#39;</span><span class="p">)</span>
     <span class="n">group_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">indeces</span><span class="p">))</span>  <span class="c"># Unique list of group ids</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Found&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">group_ids</span><span class="p">)),</span> <span class="s">&#39;groups&#39;</span><span class="p">])</span>
-        <span class="k">print</span> <span class="n">msg</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
     <span class="c"># Convert to tuple of (group id, stream id)</span>
     <span class="n">indeces</span> <span class="o">=</span> <span class="p">[(</span><span class="n">indeces</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indeces</span><span class="p">))]</span>
     <span class="c"># Sort by group id</span>
     <span class="n">indeces</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Extracting and grouping&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Extracting and grouping&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">group_id</span> <span class="ow">in</span> <span class="n">group_ids</span><span class="p">:</span>
         <span class="n">group</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">indeces</span><span class="p">:</span>
@@ -354,7 +356,7 @@
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stream_list</span><span class="p">):</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Working on waveform&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s">&#39;of&#39;</span><span class="p">,</span>
                         <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_list</span><span class="p">))])</span>
-        <span class="k">print</span> <span class="n">msg</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="c"># Calculate the delays</span>
         <span class="n">starttimes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">chans</span> <span class="o">=</span> <span class="p">[]</span>
@@ -445,7 +447,7 @@
                                               <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
                     <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">chan_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">)</span>
-        <span class="k">print</span> <span class="n">chan_mat</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">chan_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">chan_mat</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
         <span class="n">SValues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
         <span class="n">SVectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
@@ -666,12 +668,12 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">st</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span><span class="p">)</span>
                 <span class="k">except</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">st</span> <span class="o">+=</span> <span class="n">read</span><span class="p">(</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span><span class="p">)</span>
                 <span class="k">except</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&#39;No data for &#39;</span><span class="o">+</span><span class="n">contbase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">dayfile</span><span class="p">)</span>
         <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
         <span class="n">day_detections</span> <span class="o">=</span> <span class="p">[</span><span class="n">detection</span> <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span>
                           <span class="k">if</span> <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">==</span> <span class="n">detection_day</span><span class="p">]</span>
@@ -682,8 +684,8 @@
                           <span class="k">if</span> <span class="n">stachans</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">template</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">t_delays</span> <span class="o">=</span> <span class="p">[</span><span class="n">delays</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">delays</span> <span class="ow">in</span> <span class="n">all_delays</span>
                         <span class="k">if</span> <span class="n">delays</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">template</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">print</span> <span class="s">&#39;Cutting for detections at: &#39;</span> <span class="o">+</span>\
-                <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Cutting for detections at: &#39;</span> <span class="o">+</span>
+                  <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&#39;</span><span class="p">))</span>
             <span class="n">detect_wav</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">detect_wav</span><span class="p">:</span>
                 <span class="n">tr</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">extract_len</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
@@ -694,8 +696,8 @@
                 <span class="n">detect_wav</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>
                                  <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span> <span class="o">+</span>
                                  <span class="s">&#39;.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;STEIM2&#39;</span><span class="p">)</span>
-                <span class="k">print</span> <span class="s">&#39;Written file: &#39;</span><span class="o">+</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>\
-                    <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.ms&#39;</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Written file: &#39;</span><span class="o">+</span><span class="n">outdir</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">template</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span>
+                      <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">_%H-%M-%S&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.ms&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">outdir</span><span class="p">:</span>
                 <span class="n">detection_wavefiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">detect_wav</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">detect_wav</span>
@@ -774,12 +776,12 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;template&#39;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">detections_in</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">)[</span><span class="mi">3</span><span class="p">]))</span> <span class="o">&gt;=</span>\
-               <span class="p">(</span><span class="n">new_thresh</span><span class="o">/</span><span class="n">old_thresh</span><span class="p">)</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">])</span> <span class="ow">and</span>\
+               <span class="p">(</span><span class="n">new_thresh</span> <span class="o">/</span> <span class="n">old_thresh</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">])</span> <span class="ow">and</span>\
                <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">)[</span><span class="mi">4</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">chan_thresh</span><span class="p">:</span>
                 <span class="n">detections_out</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">))</span>
-    <span class="k">print</span> <span class="s">&#39;Read in &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_in</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span>
-    <span class="k">print</span> <span class="s">&#39;Left with &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_out</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Read in &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_in</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Left with &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">detections_out</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; detections&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">detections</span>
 
 </div>

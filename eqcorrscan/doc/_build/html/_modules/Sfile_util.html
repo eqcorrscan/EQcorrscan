@@ -134,7 +134,6 @@
           <div role="main" class="document">
             
   <h1>Source code for Sfile_util</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/python</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Part of the EQcorrscan module to read nordic format s-files and write them</span>
 <span class="sd">EQcorrscan is a python module designed to run match filter routines for</span>
@@ -177,8 +176,10 @@
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-
-
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
@@ -464,10 +465,12 @@
 <span class="sd">    Convenience tool to convert a number, either float or into into a string, \</span>
 <span class="sd">    if the int is 999, or the float is NaN, returns empty string.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">number</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">number</span><span class="p">))</span> <span class="ow">or</span> <span class="n">number</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">number</span><span class="p">))</span> <span class="ow">or</span> <span class="n">number</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
         <span class="n">string</span> <span class="o">=</span> <span class="s">&#39; &#39;</span>
-    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">number</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">number</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">)</span>
     <span class="k">elif</span> <span class="ow">not</span> <span class="n">rounded</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">number</span> <span class="o">&lt;</span> <span class="mi">100000</span><span class="p">:</span>
             <span class="n">string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">)</span>
@@ -919,16 +922,14 @@
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
     <span class="c"># Check that user ID is the correct length</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">userID</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;User ID must be 4 characters long&#39;</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;User ID must be 4 characters long&#39;</span><span class="p">)</span>
     <span class="c"># Check that outdir exists</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">):</span>
-        <span class="k">print</span> <span class="s">&#39;Out path does not exist, I will not create this: &#39;</span><span class="o">+</span><span class="n">outdir</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Out path does not exist, I will not create this: &#39;</span> <span class="o">+</span>
+                      <span class="n">outdir</span><span class="p">)</span>
     <span class="c"># Check that evtype is one of L,R,D</span>
     <span class="k">if</span> <span class="n">evtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="s">&#39;R&#39;</span><span class="p">,</span> <span class="s">&#39;D&#39;</span><span class="p">]:</span>
-        <span class="k">print</span> <span class="s">&#39;Event type must be either L, R or D&#39;</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Event type must be either L, R or D&#39;</span><span class="p">)</span>
 
     <span class="c"># Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm</span>
     <span class="n">sfile</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">evtime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span> <span class="o">+</span>\
@@ -939,7 +940,7 @@
         <span class="nb">str</span><span class="p">(</span><span class="n">evtime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     <span class="c"># Check is sfile exists</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Desired sfile: &#39;</span> <span class="o">+</span> <span class="n">sfile</span> <span class="o">+</span> <span class="s">&#39; exists, will not overwrite&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Desired sfile: &#39;</span> <span class="o">+</span> <span class="n">sfile</span> <span class="o">+</span> <span class="s">&#39; exists, will not overwrite&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
             <span class="n">sfile</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">evtime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span> <span class="o">+</span>\
                 <span class="nb">str</span><span class="p">(</span><span class="n">evtime</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>\
@@ -950,9 +951,9 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
                 <span class="k">break</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Tried generated files up to 20s in advance and found they&#39;</span>
-            <span class="k">print</span> <span class="s">&#39;all exist, you need to clean your stuff up!&#39;</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Tried generated files up to 20s in advance and found &#39;</span> <span class="o">+</span>\
+                <span class="s">&#39;all exist, you need to clean your stuff up!&#39;</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="c"># sys.exit()</span>
     <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
     <span class="c"># Write line 1 of s-file</span>
@@ -983,7 +984,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU&#39;</span> <span class="o">+</span>
             <span class="s">&#39; VELO AIN AR TRES W  DIS CAZ7</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">print</span> <span class="s">&#39;Written s-file: &#39;</span> <span class="o">+</span> <span class="n">sfile</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Written s-file: &#39;</span> <span class="o">+</span> <span class="n">sfile</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">sfile</span>
 
 </div>
@@ -1037,9 +1038,12 @@
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Needs a single event&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">wavefiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">wavefiles</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="n">wavefiles</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">)]</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">wavefiles</span> <span class="o">=</span> <span class="n">wavefiles</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">wavefiles</span><span class="p">))</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">wavefiles</span> <span class="o">+</span> <span class="s">&#39; is neither string or list&#39;</span><span class="p">)</span>
     <span class="c"># Determine name from origin time</span>
     <span class="n">sfilename</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">-%H%M-%S&#39;</span><span class="p">)</span> <span class="o">+</span>\
