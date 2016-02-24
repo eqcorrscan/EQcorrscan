@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Utility module of the EQcorrscan package to allow for different methods of
 stacking of seismic signal in one place.
@@ -23,7 +22,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 
 
@@ -43,9 +45,9 @@ def linstack(streams):
         tr.data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
         tr.data = np.nan_to_num(tr.data)
     for i in range(1, len(streams)):
-        # print "Stacking stream "+str(i)
+        # print("Stacking stream "+str(i))
         for tr in stack:
-            # print tr.stats.station+'.'+tr.stats.channel
+            # print(tr.stats.station+'.'+tr.stats.channel)
             matchtr = streams[i].select(station=tr.stats.station,
                                         channel=tr.stats.channel)
             if matchtr:
@@ -74,7 +76,7 @@ def PWS_stack(streams, weight=2):
     Linstack = linstack(streams)
     # Compute the instantaneous phase
     instaphases = []
-    print "Computing instantaneous phase"
+    print("Computing instantaneous phase")
     for stream in streams:
         instaphase = stream.copy()
         for tr in instaphase:
@@ -84,9 +86,9 @@ def PWS_stack(streams, weight=2):
             tr.data = analytic / envelope
         instaphases.append(instaphase)
     # Compute the phase stack
-    print "Computing the phase stack"
+    print("Computing the phase stack")
     Phasestack = linstack(instaphases)
-    # print type(Phasestack)
+    # print(type(Phasestack))
     # Compute the phase-weighted stack
     for tr in Phasestack:
         tr.data = Linstack.select(station=tr.stats.station)[0].data *\
@@ -121,14 +123,14 @@ def align_traces(trace_list, shift_len, master=False):
                 master = traces[i]
                 MAD_master = np.median(np.abs(master.data))
     else:
-        print 'Using master given by user'
+        print('Using master given by user')
     shifts = []
     ccs = []
     for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
         shift, cc = xcorr(master, traces[i], shift_len)
-        shifts.append(shift/master.stats.sampling_rate)
+        shifts.append(shift / master.stats.sampling_rate)
         ccs.append(cc)
     return shifts, ccs
 

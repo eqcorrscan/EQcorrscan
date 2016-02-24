@@ -32,7 +32,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 # First we import the required modules:
 import os
 from obspy import read
@@ -51,7 +54,7 @@ trig_int = 6.0  # Minimum trigger interval for one template in seconds
 # Now we find the s-file we want to use to generate a template from
 data_directory = os.path.join('test_data', 'tutorial_data')
 sfiles = glob.glob(os.path.join(data_directory, '*L.S*'))
-print sfiles
+print(sfiles)
 
 templates = []
 template_names = []
@@ -64,7 +67,7 @@ for i, sfile in enumerate(sfiles):
     # the seismic data once and cut it multiple times.
     event = Sfile_util.readpicks(sfile)
     for pick in event.picks:
-        print pick
+        print(pick)
         if 'wavefiles' not in locals():
             wavefiles = glob.glob(os.path.join(data_directory,
                                                '.'.join([pick.waveform_id.
@@ -75,7 +78,7 @@ for i, sfile in enumerate(sfiles):
                                                           station_code, '*'])))
     wavefiles = list(set(wavefiles))
     for wavefile in wavefiles:
-        print ' '.join(['Reading data from', wavefile])
+        print(' '.join(['Reading data from', wavefile]))
         if 'st' not in locals():
             st = read(wavefile)
         else:
@@ -124,7 +127,7 @@ stachans = list(set(stachans))
 for stachan in stachans:
     data_file = ''.join([stachan[0], '.*..*', stachan[1][-1], '.*'])
     data_file = os.path.join(data_directory, data_file)
-    print ' '.join(['Reading data from:', data_file])
+    print(' '.join(['Reading data from:', data_file]))
     # Generate a new stream object and add to it
     if 'st' not in locals():
         st = read(data_file)
@@ -158,6 +161,6 @@ for detection in detections:
                       str(detection.detect_val), str(detection.threshold),
                       str(detection.no_chans)])
     f.write(line)
-    print line
+    print(line)
     f.write(os.linesep)
 f.close()

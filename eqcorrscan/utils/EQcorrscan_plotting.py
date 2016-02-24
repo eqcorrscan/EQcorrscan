@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Utility code for most of the plots used as part of the EQcorrscan package.
 
@@ -20,6 +19,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
 
@@ -95,7 +98,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :param savefile: Path to save figure to, only required if save=True
     """
     if len(cccsum) != len(trace.data):
-        print 'cccsum is: '+str(len(cccsum))+' trace is: '+str(len(trace.data))
+        print('cccsum is: ' +
+              str(len(cccsum))+' trace is: '+str(len(trace.data)))
         msg = ' '.join(['cccsum and trace must have the',
                         'same number of data points'])
         raise ValueError(msg)
@@ -205,7 +209,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         counts = np.arange(0, len(template_dates))
-        print str(i)+' '+str(j)+' '+str(k)
+        print(str(i)+' '+str(j)+' '+str(k))
         filename = plt.plot(template_dates, counts, linestyles[j],
                             color=colors[i], label=template_names[k],
                             linewidth=3.0)
@@ -319,7 +323,7 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                                    event.picks[0].waveform_id.
                                    channel_code[-1])[0]
         else:
-            print 'No data for '+event.pick[0].waveform_id
+            print('No data for '+event.pick[0].waveform_id)
             continue
         tr.detrend('linear')
         if freqmin:
@@ -356,7 +360,7 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                         al_traces[0].stats.sampling_rate)
         shifts = stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
-            print 'Shifting by '+str(shifts[i])+' seconds'
+            print('Shifting by '+str(shifts[i])+' seconds')
             event.picks[0].time -= shifts[i]
             traces[i].trim(event.picks[0].time - pre_pick,
                            event.picks[0].time + clip-pre_pick,
@@ -438,9 +442,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image = image.merge()[0]
         # Downsample if needed
         if image.stats.sampling_rate > 20:
-            image.decimate(int(image.stats.sampling_rate/20))
+            image.decimate(image.stats.sampling_rate // 20)
         if template_tr.stats.sampling_rate > 20:
-            template_tr.decimate(int(template_tr.stats.sampling_rate/20))
+            template_tr.decimate(template_tr.stats.sampling_rate // 20)
         # Get a list of datetime objects
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
@@ -798,7 +802,7 @@ def plot_synth_real(real_template, synthetic, channels=False):
         synth_tr = synthetic.select(station=stachan[0],
                                     channel=stachan[1])[0]
         shift, corr = xcorr(real_tr, synth_tr, 2)
-        print 'Shifting by: '+str(shift)+' samples'
+        print('Shifting by: '+str(shift)+' samples')
         if corr < 0:
             synth_tr.data = synth_tr.data * -1
             corr = corr * -1

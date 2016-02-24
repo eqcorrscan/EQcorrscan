@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Functions to read log-files for seismic data to determine whether there are \
 timing issues present.  Designed to be used with the EQcorrscan package and \
@@ -26,6 +25,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def Read_RT_log(logfile, startdate):
@@ -101,13 +104,13 @@ def check_all_logs(directory, time_thresh):
     import sys
     import datetime as dt
     log_files = glob.glob(directory+'/*/0/000000000_00000000')
-    print 'I have '+str(len(log_files))+' log files to scan'
+    print('I have '+str(len(log_files))+' log files to scan')
     total_phase_errs = []
     for i, log_file in enumerate(log_files):
         startdate = dt.datetime.strptime(log_file.split('/')[-4][0:7],
                                          '%Y%j').date()
         total_phase_errs += Read_RT_log(log_file, startdate)
-        sys.stdout.write("\r"+str(float(i)/len(log_files)*100)+"% \r")
+        sys.stdout.write("\r"+str(float(i) / len(log_files) * 100)+"% \r")
         sys.stdout.flush()
     time_errs = Flag_time_err(total_phase_errs, time_thresh)
     time_errs.sort()

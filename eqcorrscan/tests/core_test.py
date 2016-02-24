@@ -1,8 +1,10 @@
 """
 A series of test functions for the core functions in EQcorrscan.
 """
-
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def test_lag_calc():
@@ -86,7 +88,7 @@ def test_match_filter(samp_rate=20.0, debug=0):
                 print('Detection at sample: ' + str(dtime_samples) +
                       ' does not match anything in seed times:')
                 kfalse += 1
-            print 'Minimum difference in samples is: ' + str(min_diff)
+            print('Minimum difference in samples is: ' + str(min_diff))
     # Plot the detections
     if debug > 3:
         for i, template in enumerate(templates):
@@ -197,9 +199,9 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
                                         template_tr.data)[0:len(impulses)]
         if debug > 2:
             data.plot(starttime=UTCDateTime(0) +
-                      impulse_times[0]/samp_rate - 3,
+                      impulse_times[0] / samp_rate - 3,
                       endtime=UTCDateTime(0) +
-                      impulse_times[0]/samp_rate + 15)
+                      impulse_times[0] / samp_rate + 15)
     # Add the noise
     for tr in data:
         noise = np.random.randn(86400 * int(samp_rate))
