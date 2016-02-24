@@ -21,12 +21,18 @@ module in EQcorrscan.
 
 This template script is written to be general, so you should be able to give
 command line arguments to the script to generate templates from other
-FDSN databases.  Note that some datacentres do not support full FDSN quakeml
+FDSN databases.  Note that some data-centers do not support full FDSN quakeml
 files, and working out which do is quite painful.
 
-Try this example for another, Northern California Data Centre earthquake:
+Try this example for another, Northern California Data Center earthquake:
 
 ``python template_creation.py NCEDC 72572665``
+
+This will (unfortunately for you) generate a warning about un-labelled picks,
+as many data-centers do not provide phase-hints with their picks.  We care about
+which phase is which when we have to run our cross-correlation re-picker
+(yet to be completed), which means that we, by convention, assign P-picks
+to the vertical channel and S-picks to both horizontal channels.
 
 **Note:** To run this script and for all map plotting you will need to install
 matplotlib-toolkits basemap package.  Install instructions and a link to the

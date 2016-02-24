@@ -198,7 +198,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="function">
 <dt id="EQcorrscan_plotting._spec_trace">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">_spec_trace</code><span class="sig-paren">(</span><em>trace</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc='k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>2.5)</em>, <em>axes=None</em>, <em>title=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#_spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting._spec_trace" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">_spec_trace</code><span class="sig-paren">(</span><em>trace</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc=u'k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>2.5)</em>, <em>axes=None</em>, <em>title=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#_spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting._spec_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to plot a trace over that traces spectrogram.
 Uses obspys spectrogram routine.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -225,7 +225,7 @@ colormaps_reference.html)</li>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.chunk_data">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">chunk_data</code><span class="sig-paren">(</span><em>tr</em>, <em>samp_rate</em>, <em>state='mean'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#chunk_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.chunk_data" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">chunk_data</code><span class="sig-paren">(</span><em>tr</em>, <em>samp_rate</em>, <em>state=u'mean'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#chunk_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.chunk_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to downsample data for plotting by computing the maximum of data within chunks, useful for plotting waveforms or cccsums, large datasets that would otherwise exceed the complexity allowed, and overflow.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -255,7 +255,7 @@ colormaps_reference.html)</li>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.cumulative_detections">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple plotting function to take a list of datetime objects and plot a cumulative detections list.  Can take dates as a list of lists and will plot each list seperately, e.g. if you have dates from more than one template it will overlay them in different colours.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -275,7 +275,7 @@ colormaps_reference.html)</li>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.detection_multiplot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">detection_multiplot</code><span class="sig-paren">(</span><em>stream</em>, <em>template</em>, <em>times</em>, <em>streamcolour='k'</em>, <em>templatecolour='r'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#detection_multiplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.detection_multiplot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">detection_multiplot</code><span class="sig-paren">(</span><em>stream</em>, <em>template</em>, <em>times</em>, <em>streamcolour=u'k'</em>, <em>templatecolour=u'r'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#detection_multiplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.detection_multiplot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to plot the stream of data that has been detected in, withthe template on top of it timed according to a list of given times, justa pretty way to show a detection!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -380,7 +380,7 @@ and magnitudes.</p>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.peaks_plot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">peaks_plot</code><span class="sig-paren">(</span><em>data, starttime, samp_rate, save=False, peaks=[(0, 0)], savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#peaks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.peaks_plot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">peaks_plot</code><span class="sig-paren">(</span><em>data, starttime, samp_rate, save=False, peaks=[(0, 0)], savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#peaks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.peaks_plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple utility code to plot the correlation peaks to check that the peak finding routine is running correctly, used in debugging for the EQcorrscan module.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -443,7 +443,7 @@ and magnitudes.</p>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.spec_trace">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">spec_trace</code><span class="sig-paren">(</span><em>traces</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc='k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>13)</em>, <em>Fig=None</em>, <em>title=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.spec_trace" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">spec_trace</code><span class="sig-paren">(</span><em>traces</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc=u'k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>13)</em>, <em>Fig=None</em>, <em>title=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.spec_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper for _spec_trace, take a stream or list of traces and plots the trace with the spectra beneath it - this just does the overseeing to work out if it needs to add subplots or not.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -468,7 +468,7 @@ and magnitudes.</p>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.threeD_gridplot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to plot in 3D a series of grid points.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -505,7 +505,7 @@ and magnitudes.</p>
 
 <dl class="function">
 <dt id="EQcorrscan_plotting.triple_plot">
-<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>cccsum_hist</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">EQcorrscan_plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>cccsum_hist</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/EQcorrscan_plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#EQcorrscan_plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function to make a triple plot with a day-long seismogram, day-long correlation sum trace and histogram of the correlation sum to show normality.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

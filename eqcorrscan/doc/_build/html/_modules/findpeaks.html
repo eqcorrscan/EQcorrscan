@@ -134,7 +134,6 @@
           <div role="main" class="document">
             
   <h1>Source code for findpeaks</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/python</span>
 <span class="sd">r&quot;&quot;&quot;Functions to find peaks in data above a certain threshold as part of the \</span>
 <span class="sd">EQcorrscan package written by Calum Chamberlain of Victoria University of \</span>
 <span class="sd">Wellington in early 2015.</span>
@@ -156,6 +155,10 @@
 <span class="sd">    You should have received a copy of the GNU General Public License</span>
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 
 
 <div class="viewcode-block" id="is_prime"><a class="viewcode-back" href="../submodules/utils.findpeaks.html#findpeaks.is_prime">[docs]</a><span class="k">def</span> <span class="nf">is_prime</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
@@ -228,39 +231,39 @@
     <span class="c"># it not of prime length!</span>
     <span class="k">if</span> <span class="n">is_prime</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">)):</span>
         <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-        <span class="k">print</span> <span class="s">&#39;Input array has a prime number of samples, appending a zero&#39;</span>
-        <span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Input array has a prime number of samples, appending a zero&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">))</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;No values over threshold found&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No values over threshold found&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Found&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">])),</span>
                         <span class="s">&#39;samples above the threshold&#39;</span><span class="p">])</span>
-        <span class="k">print</span> <span class="n">msg</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
     <span class="n">initial_peaks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">peaks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c"># Find the peaks</span>
-    <span class="k">print</span> <span class="s">&#39;Finding peaks&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Finding peaks&#39;</span><span class="p">)</span>
     <span class="n">peakinds</span> <span class="o">=</span> <span class="n">find_peaks_cwt</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">maxwidth</span><span class="p">))</span>
     <span class="n">initial_peaks</span> <span class="o">=</span> <span class="p">[(</span><span class="n">image</span><span class="p">[</span><span class="n">peakind</span><span class="p">],</span> <span class="n">peakind</span><span class="p">)</span> <span class="k">for</span> <span class="n">peakind</span> <span class="ow">in</span> <span class="n">peakinds</span><span class="p">]</span>
     <span class="c"># Sort initial peaks according to amplitude</span>
-    <span class="k">print</span> <span class="s">&#39;sorting peaks&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;sorting peaks&#39;</span><span class="p">)</span>
     <span class="n">peaks_sort</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">initial_peaks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">amplitude</span><span class="p">:</span> <span class="n">amplitude</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                         <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">initial_peaks</span><span class="p">:</span>
-            <span class="k">print</span> <span class="n">peak</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">peak</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">initial_peaks</span><span class="p">:</span>
         <span class="n">peaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peaks_sort</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c"># Definitely take the biggest peak</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Added the biggest peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
                             <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])])</span>
-            <span class="k">print</span> <span class="n">msg</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_peaks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Multiple peaks found, checking them&#39;</span><span class="p">,</span>
                                 <span class="s">&#39;now to see if they overlap&#39;</span><span class="p">])</span>
-                <span class="k">print</span> <span class="n">msg</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">next_peak</span> <span class="ow">in</span> <span class="n">peaks_sort</span><span class="p">:</span>
                 <span class="c"># i in xrange(1,len(peaks_sort)):</span>
                 <span class="c"># Loop through the amplitude sorted peaks</span>
@@ -268,7 +271,7 @@
                 <span class="c"># peak already in peaks then we don&#39;t want it, else, add it</span>
                 <span class="c"># next_peak = peaks_sort[i]</span>
                 <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="n">next_peak</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">next_peak</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">peaks</span><span class="p">:</span>
                     <span class="n">add</span> <span class="o">=</span> <span class="bp">False</span>
                     <span class="c"># Use add as a switch for whether or not to append</span>
@@ -280,7 +283,7 @@
                                             <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">peak</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
                                             <span class="s">&#39;Which is less than&#39;</span><span class="p">,</span>
                                             <span class="nb">str</span><span class="p">(</span><span class="n">trig_int</span><span class="p">)])</span>
-                            <span class="k">print</span> <span class="n">msg</span>
+                            <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                         <span class="n">add</span> <span class="o">=</span> <span class="bp">False</span>
                         <span class="c"># Need to exit the loop here if false</span>
                         <span class="k">break</span>
@@ -290,26 +293,26 @@
                     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Adding peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                                         <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
-                        <span class="k">print</span> <span class="n">msg</span>
+                        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                     <span class="n">peaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_peak</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;I did not add peak of&#39;</span><span class="p">,</span>
                                     <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s">&#39;at sample&#39;</span><span class="p">,</span>
                                     <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
-                    <span class="k">print</span> <span class="n">msg</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span>
             <span class="n">_fname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;peaks_&#39;</span><span class="p">,</span>
                               <span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">),</span>
                               <span class="s">&#39;.pdf&#39;</span><span class="p">])</span>
-            <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Saving plot to&#39;</span><span class="p">,</span> <span class="n">_fname</span><span class="p">])</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Saving plot to&#39;</span><span class="p">,</span> <span class="n">_fname</span><span class="p">]))</span>
             <span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
                                            <span class="n">peaks</span><span class="p">,</span> <span class="n">_fname</span><span class="p">)</span>
         <span class="n">peaks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">time</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;No peaks for you!&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No peaks for you!&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
 
 </div>
@@ -346,18 +349,18 @@
     <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
     <span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&lt;</span> <span class="n">thresh</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;No values over threshold found&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No values over threshold found&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Found&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">])),</span>
-                        <span class="s">&#39;samples above the threshold&#39;</span><span class="p">])</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Found&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">image</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">])),</span>
+                        <span class="s">&#39;samples above the threshold&#39;</span><span class="p">]))</span>
     <span class="n">initial_peaks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">peaks</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c"># Find the peaks</span>
     <span class="n">labeled_image</span><span class="p">,</span> <span class="n">number_of_objects</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
     <span class="n">peak_slices</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">find_objects</span><span class="p">(</span><span class="n">labeled_image</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">peak_slice</span> <span class="ow">in</span> <span class="n">peak_slices</span><span class="p">:</span>
-        <span class="c"># print &#39;Width of peak=&#39;+str(peak_slice[0].stop-peak_slice[0].start)</span>
+        <span class="c"># print(&#39;Width of peak=&#39;+str(peak_slice[0].stop-peak_slice[0].start)</span>
         <span class="n">window</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">peak_slice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="p">:</span> <span class="n">peak_slice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span><span class="p">]</span>
         <span class="n">initial_peaks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">max</span><span class="p">(</span><span class="n">window</span><span class="p">),</span>
                               <span class="n">peak_slice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">start</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">window</span><span class="p">)))</span>
@@ -367,17 +370,17 @@
     <span class="c"># Debugging</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">initial_peaks</span><span class="p">:</span>
-            <span class="k">print</span> <span class="n">peak</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">peak</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">initial_peaks</span><span class="p">:</span>
         <span class="n">peaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peaks_sort</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c"># Definitely take the biggest peak</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Added the biggest peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
-                            <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])])</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Added the biggest peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                            <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">peaks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])]))</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_peaks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Multiple peaks found, checking&#39;</span><span class="p">,</span>
                                 <span class="s">&#39;them now to see if they overlap&#39;</span><span class="p">])</span>
-                <span class="k">print</span> <span class="n">msg</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">next_peak</span> <span class="ow">in</span> <span class="n">peaks_sort</span><span class="p">:</span>
                 <span class="c"># i in xrange(1,len(peaks_sort)):</span>
                 <span class="c"># Loop through the amplitude sorted peaks</span>
@@ -385,7 +388,7 @@
                 <span class="c"># peak already in peaks then we don&#39;t want it, else, add it</span>
                 <span class="c"># next_peak=peaks_sort[i]</span>
                 <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="n">next_peak</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">next_peak</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">peaks</span><span class="p">:</span>
                     <span class="n">add</span> <span class="o">=</span> <span class="bp">False</span>
                     <span class="c"># Use add as a switch for whether or not to append</span>
@@ -397,7 +400,7 @@
                                             <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">peak</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span>
                                             <span class="s">&#39;Which is less than&#39;</span><span class="p">,</span>
                                             <span class="nb">str</span><span class="p">(</span><span class="n">trig_int</span><span class="p">)])</span>
-                            <span class="k">print</span> <span class="n">msg</span>
+                            <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                         <span class="n">add</span> <span class="o">=</span> <span class="bp">False</span>
                         <span class="c"># Need to exit the loop here if false</span>
                         <span class="k">break</span>
@@ -407,12 +410,12 @@
                     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Adding peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                                         <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
-                        <span class="k">print</span> <span class="n">msg</span>
+                        <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                     <span class="n">peaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_peak</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;I did not add peak of&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                                     <span class="s">&#39;at sample&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">next_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
-                    <span class="k">print</span> <span class="n">msg</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span>
@@ -424,7 +427,7 @@
         <span class="n">peaks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">time</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;No peaks for you!&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No peaks for you!&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
 
 </div>
@@ -457,9 +460,8 @@
         <span class="n">starttime</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="c"># Perform some checks</span>
     <span class="k">if</span> <span class="n">trig_int</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">sys</span>
-        <span class="k">print</span> <span class="s">&#39;Trigger interval must be greater than 2 samples to find maxima&#39;</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Trigger interval must be greater than 2 samples to find maxima&#39;</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
     <span class="c"># from joblib import Parallel, delayed</span>
     <span class="c"># Will find peaks in the absolute then transfer these to the true values</span>
     <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">-</span> <span class="n">thresh</span>

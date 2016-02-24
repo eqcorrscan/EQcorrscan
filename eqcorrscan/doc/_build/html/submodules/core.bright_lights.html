@@ -244,7 +244,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="function">
 <dt id="bright_lights._read_tt">
-<code class="descclassname">bright_lights.</code><code class="descname">_read_tt</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em>, <em>phase</em>, <em>phaseout='S'</em>, <em>ps_ratio=1.68</em>, <em>lags_switch=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#_read_tt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._read_tt" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">_read_tt</code><span class="sig-paren">(</span><em>path</em>, <em>stations</em>, <em>phase</em>, <em>phaseout=u'S'</em>, <em>ps_ratio=1.68</em>, <em>lags_switch=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#_read_tt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._read_tt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read in .csv files of slowness generated from Grid2Time (part of NonLinLoc by Anthony Lomax) and convert this to a useful format here.</p>
 <p>It should be noted that this can read either P or S travel-time grids, not
 both at the moment.</p>
@@ -341,7 +341,7 @@ both at the moment.</p>
 
 <dl class="function">
 <dt id="bright_lights.brightness">
-<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations, nodes, lags, stream, threshold, thresh_type, template_length, template_saveloc, coherence_thresh, coherence_stations=['all'], coherence_clip=False, gap=2.0, clip_level=100, instance=0, pre_pick=0.2, plotsave=True, cores=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">brightness</code><span class="sig-paren">(</span><em>stations, nodes, lags, stream, threshold, thresh_type, template_length, template_saveloc, coherence_thresh, coherence_stations=[u'all'], coherence_clip=False, gap=2.0, clip_level=100, instance=0, pre_pick=0.2, plotsave=True, cores=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#brightness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.brightness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to calculate the brightness function in terms of energy for a day of data over the entire network for a given grid of nodes.</p>
 <p>Note data in stream must be all of the same length and have the same
 sampling rates.</p>
@@ -378,7 +378,7 @@ sampling rates.</p>
 
 <dl class="function">
 <dt id="bright_lights.coherence">
-<code class="descclassname">bright_lights.</code><code class="descname">coherence</code><span class="sig-paren">(</span><em>stream_in, stations=['all'], clip=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherence" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">bright_lights.</code><code class="descname">coherence</code><span class="sig-paren">(</span><em>stream_in, stations=[u'all'], clip=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#coherence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights.coherence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to determine the average network coherence of a given template or detection.  You will want your stream to contain only signal as noise will reduce the coherence (assuming it is incoherant random noise).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

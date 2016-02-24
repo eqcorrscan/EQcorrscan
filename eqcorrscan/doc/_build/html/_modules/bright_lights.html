@@ -165,6 +165,10 @@
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
@@ -218,7 +222,7 @@
     <span class="c"># Read the files</span>
     <span class="n">allnodes</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">gridfile</span> <span class="ow">in</span> <span class="n">gridfiles</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;     Reading slowness from: &#39;</span> <span class="o">+</span> <span class="n">gridfile</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;     Reading slowness from: &#39;</span> <span class="o">+</span> <span class="n">gridfile</span><span class="p">)</span>
         <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">gridfile</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
         <span class="n">grid</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">)</span>
         <span class="n">traveltime</span> <span class="o">=</span> <span class="p">[]</span>
@@ -293,11 +297,11 @@
                 <span class="n">resamp_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
                 <span class="n">resamp_lags</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">lags</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]])</span>
     <span class="c"># Reshape the lags</span>
-    <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">resamp_lags</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">resamp_lags</span><span class="p">))</span>
     <span class="n">resamp_lags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resamp_lags</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">resamp_lags</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">stations</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
     <span class="c"># Resample the nodes - they are sorted in order of size with largest long</span>
     <span class="c"># then largest lat, then depth.</span>
-    <span class="k">print</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Grid now has &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">resamp_nodes</span><span class="p">)),</span> <span class="s">&#39;nodes&#39;</span><span class="p">])</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Grid now has &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">resamp_nodes</span><span class="p">)),</span> <span class="s">&#39;nodes&#39;</span><span class="p">]))</span>
     <span class="k">return</span> <span class="n">stations</span><span class="p">,</span> <span class="n">resamp_nodes</span><span class="p">,</span> <span class="n">resamp_lags</span>
 
 </div>
@@ -341,18 +345,18 @@
                        <span class="n">lags</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)))</span>\
             <span class="o">&gt;</span> <span class="n">threshold</span>
         <span class="n">netdif</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">netdif</span><span class="p">,</span> <span class="n">_netdif</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;% </span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\r</span><span class="s">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">//</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;% </span><span class="se">\r</span><span class="s">&quot;</span><span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
     <span class="n">nodes_out</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
     <span class="n">node_indeces</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
-    <span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">netdif</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">node_indeces</span><span class="p">]):</span>
             <span class="n">node_indeces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
             <span class="n">nodes_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
     <span class="n">lags_out</span> <span class="o">=</span> <span class="n">lags</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">node_indeces</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
-    <span class="k">print</span> <span class="s">&quot;Removed &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes_out</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot; duplicate nodes&quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;Removed &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes_out</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot; duplicate nodes&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">stations</span><span class="p">,</span> <span class="n">nodes_out</span><span class="p">,</span> <span class="n">lags_out</span>
 
 </div>
@@ -543,17 +547,17 @@
     <span class="n">cum_net_resp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)</span>  <span class="c"># Force no NaNs</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Nans present&quot;</span><span class="p">)</span>
-    <span class="k">print</span> <span class="s">&#39;Mean of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">))</span>
-    <span class="k">print</span> <span class="s">&#39;RMS of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">))))</span>
-    <span class="k">print</span> <span class="s">&#39;MAD of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Mean of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;RMS of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)))))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;MAD of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">))))</span>
     <span class="k">if</span> <span class="n">thresh_type</span> <span class="o">==</span> <span class="s">&#39;MAD&#39;</span><span class="p">:</span>
         <span class="n">thresh</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">))</span> <span class="o">*</span> <span class="n">threshold</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">thresh_type</span> <span class="o">==</span> <span class="s">&#39;abs&#39;</span><span class="p">:</span>
         <span class="n">thresh</span> <span class="o">=</span> <span class="n">threshold</span>
     <span class="k">elif</span> <span class="n">thresh_type</span> <span class="o">==</span> <span class="s">&#39;RMS&#39;</span><span class="p">:</span>
         <span class="n">thresh</span> <span class="o">=</span> <span class="n">_rms</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)</span> <span class="o">*</span> <span class="n">threshold</span>
-    <span class="k">print</span> <span class="s">&#39;Threshold is set to: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">thresh</span><span class="p">)</span>
-    <span class="k">print</span> <span class="s">&#39;Max of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Threshold is set to: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">thresh</span><span class="p">))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Max of data is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">)))</span>
     <span class="n">peaks</span> <span class="o">=</span> <span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span>
                                   <span class="n">length</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxwidth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
     <span class="n">detections</span> <span class="o">=</span> <span class="p">[]</span>
@@ -566,7 +570,7 @@
                                         <span class="s">&#39;brightness&#39;</span><span class="p">,</span> <span class="n">realstations</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">detections</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">print</span> <span class="s">&#39;I have found &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39; possible detections&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;I have found &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39; possible detections&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">detections</span>
 
 </div>
@@ -737,22 +741,22 @@
     <span class="n">mem_issue</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="c"># Loop through each node in the input</span>
     <span class="c"># Linear run</span>
-    <span class="k">print</span> <span class="s">&#39;Computing the energy stacks&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Computing the energy stacks&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parallel</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
-            <span class="k">print</span> <span class="n">i</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">mem_issue</span><span class="p">:</span>
                 <span class="n">j</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">_node_loop</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">lags</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">stream</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
                 <span class="k">if</span> <span class="s">&#39;energy&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
                     <span class="n">energy</span> <span class="o">=</span> <span class="n">a</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">energy</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                <span class="k">print</span> <span class="s">&#39;energy: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">energy</span><span class="p">))</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;energy: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">energy</span><span class="p">)))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">j</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">_node_loop</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">lags</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">stream</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span>
                                          <span class="n">mem_issue</span><span class="p">)</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
-        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">energy</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c"># Parallel run</span>
         <span class="n">num_cores</span> <span class="o">=</span> <span class="n">cores</span>
@@ -767,21 +771,21 @@
                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))]</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">mem_issue</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Computing the cumulative network response from memory&#39;</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Computing the cumulative network response from memory&#39;</span><span class="p">)</span>
             <span class="n">energy</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
             <span class="n">energy</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">energy</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">energy</span><span class="p">]</span>
             <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="k">print</span> <span class="n">energy</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
     <span class="c"># Now compute the cumulative network response and then detect possible</span>
     <span class="c"># events</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">mem_issue</span><span class="p">:</span>
-        <span class="k">print</span> <span class="n">energy</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">indeces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c"># Indeces of maximum energy</span>
-        <span class="k">print</span> <span class="n">indeces</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">indeces</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">cum_net_resp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">indeces</span><span class="p">))</span>
         <span class="n">cum_net_resp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">energy</span><span class="p">[</span><span class="n">indeces</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">peak_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">indeces</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
@@ -790,8 +794,8 @@
             <span class="n">peak_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="n">indeces</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
         <span class="k">del</span> <span class="n">energy</span><span class="p">,</span> <span class="n">indeces</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Reading the temp files and computing network response&#39;</span>
-        <span class="n">node_splits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_cores</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Reading the temp files and computing network response&#39;</span><span class="p">)</span>
+        <span class="n">node_splits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">//</span> <span class="n">num_cores</span>
         <span class="n">indeces</span> <span class="o">=</span> <span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">node_splits</span><span class="p">)]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_cores</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">indeces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">node_splits</span> <span class="o">*</span> <span class="n">i</span><span class="p">,</span> <span class="n">node_splits</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
@@ -803,12 +807,12 @@
         <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
         <span class="n">responses</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
-        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">responses</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">responses</span><span class="p">))</span>
         <span class="n">node_indeces</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
         <span class="n">cum_net_resp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">responses</span><span class="p">)</span>
         <span class="n">indeces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="k">print</span> <span class="n">indeces</span><span class="o">.</span><span class="n">shape</span>
-        <span class="k">print</span> <span class="n">cum_net_resp</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">indeces</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">cum_net_resp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cum_net_resp</span><span class="p">[</span><span class="n">indeces</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">i</span><span class="p">]</span>
                                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indeces</span><span class="p">))])</span>
         <span class="n">peak_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">node_indeces</span><span class="p">[</span><span class="n">indeces</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">i</span><span class="p">]]</span>
@@ -831,7 +835,7 @@
         <span class="c">#                        outfile=&#39;NR_timeseries.eps&#39;)</span>
 
     <span class="c"># Find detection within this network response</span>
-    <span class="k">print</span> <span class="s">&#39;Finding detections in the cumulatve network response&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Finding detections in the cumulatve network response&#39;</span><span class="p">)</span>
     <span class="n">detections</span> <span class="o">=</span> <span class="n">_find_detections</span><span class="p">(</span><span class="n">cum_net_resp</span><span class="p">,</span> <span class="n">peak_nodes</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
                                   <span class="n">thresh_type</span><span class="p">,</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span>
                                   <span class="n">realstations</span><span class="p">,</span> <span class="n">gap</span><span class="p">)</span>
@@ -840,12 +844,12 @@
     <span class="n">nodesout</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">good_detections</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">detections</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Converting detections in to templates&#39;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Converting detections in to templates&#39;</span><span class="p">)</span>
         <span class="c"># Generate a catalog of detections</span>
         <span class="n">detections_cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">detection</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">detections</span><span class="p">):</span>
-            <span class="k">print</span> <span class="s">&#39;Converting for detection &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; of &#39;</span> <span class="o">+</span>\
-                <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Converting for detection &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; of &#39;</span> <span class="o">+</span>
+                  <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">)))</span>
             <span class="c"># Create an event for each detection</span>
             <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
             <span class="c"># Set up some header info for the event</span>
@@ -858,7 +862,7 @@
             <span class="n">node</span> <span class="o">=</span> <span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
                     <span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
                     <span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">])</span>
-            <span class="k">print</span> <span class="n">node</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
             <span class="c"># Look up node in nodes and find the associated lags</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
             <span class="n">detect_lags</span> <span class="o">=</span> <span class="n">lags</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
@@ -887,7 +891,7 @@
                                                 <span class="n">pre_pick</span><span class="p">,</span>
                                                 <span class="n">onset</span><span class="o">=</span><span class="s">&#39;emergent&#39;</span><span class="p">,</span>
                                                 <span class="n">evalutation_mode</span><span class="o">=</span><span class="s">&#39;automatic&#39;</span><span class="p">))</span>
-            <span class="k">print</span> <span class="s">&#39;Generating template for detection: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Generating template for detection: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">))</span>
             <span class="n">template</span> <span class="o">=</span> <span class="p">(</span><span class="n">_template_gen</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">,</span> <span class="n">copy_of_stream</span><span class="p">,</span>
                         <span class="n">template_length</span><span class="p">,</span> <span class="s">&#39;all&#39;</span><span class="p">))</span>
             <span class="n">template_name</span> <span class="o">=</span> <span class="n">template_saveloc</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span>\
@@ -900,13 +904,13 @@
                 <span class="nb">float</span><span class="p">(</span><span class="n">coherence_thresh</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="k">if</span> <span class="n">temp_coher</span> <span class="o">&gt;</span> <span class="n">coh_thresh</span><span class="p">:</span>
                 <span class="n">template</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">template_name</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&quot;MSEED&quot;</span><span class="p">)</span>
-                <span class="k">print</span> <span class="s">&#39;Written template as: &#39;</span> <span class="o">+</span> <span class="n">template_name</span>
-                <span class="k">print</span> <span class="s">&#39;---------------------------------coherence LEVEL: &#39;</span> <span class="o">+</span>\
-                    <span class="nb">str</span><span class="p">(</span><span class="n">temp_coher</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Written template as: &#39;</span> <span class="o">+</span> <span class="n">template_name</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;---------------------------------coherence LEVEL: &#39;</span> <span class="o">+</span>
+                      <span class="nb">str</span><span class="p">(</span><span class="n">temp_coher</span><span class="p">))</span>
                 <span class="n">coherant</span> <span class="o">=</span> <span class="bp">True</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;Template was incoherant, coherence level: &#39;</span> <span class="o">+</span>\
-                    <span class="nb">str</span><span class="p">(</span><span class="n">temp_coher</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Template was incoherant, coherence level: &#39;</span> <span class="o">+</span>
+                      <span class="nb">str</span><span class="p">(</span><span class="n">temp_coher</span><span class="p">))</span>
                 <span class="n">coherant</span> <span class="o">=</span> <span class="bp">False</span>
             <span class="k">del</span> <span class="n">copy_of_stream</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">template</span>
             <span class="k">if</span> <span class="n">coherant</span><span class="p">:</span>
@@ -914,7 +918,7 @@
                 <span class="n">nodesout</span> <span class="o">+=</span> <span class="p">[</span><span class="n">node</span><span class="p">]</span>
                 <span class="n">good_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">detection</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;No template for you&#39;</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;No template for you&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">plotvar</span><span class="p">:</span>
         <span class="n">all_detections</span> <span class="o">=</span> <span class="p">[(</span><span class="n">cum_net_trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span>
                            <span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span><span class="o">.</span><span class="n">datetime</span>

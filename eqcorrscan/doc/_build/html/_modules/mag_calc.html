@@ -134,7 +134,6 @@
           <div role="main" class="document">
             
   <h1>Source code for mag_calc</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/python</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Functions to simulate Wood Anderson traces, pick maximum peak-to-peak \</span>
 <span class="sd">amplitudes write these amplitudes and periods to SEISAN s-files and to \</span>
@@ -162,6 +161,10 @@
 <span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
@@ -260,8 +263,8 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-        <span class="k">print</span> <span class="s">&#39;Turning points has length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">))</span> <span class="o">+</span>\
-            <span class="s">&#39; data have length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Turning points has length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">))</span> <span class="o">+</span>
+              <span class="s">&#39; data have length: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
         <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">turning_points</span><span class="p">)):</span>
         <span class="n">half_periods</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">delta</span> <span class="o">*</span> <span class="p">(</span><span class="n">turning_points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span>
@@ -365,7 +368,7 @@
     <span class="n">PAZ</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">seedresp</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">respfile</span> <span class="ow">in</span> <span class="n">possible_respfiles</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">&#39;Reading response from: &#39;</span><span class="o">+</span><span class="n">respfile</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Reading response from: &#39;</span><span class="o">+</span><span class="n">respfile</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">respfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;RESP&#39;</span><span class="p">:</span>
             <span class="c"># Read from a resp file</span>
             <span class="n">seedresp</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;filename&#39;</span><span class="p">:</span> <span class="n">respfile</span><span class="p">,</span> <span class="s">&#39;date&#39;</span><span class="p">:</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">time</span><span class="p">),</span>
@@ -381,7 +384,7 @@
                                             <span class="n">station</span><span class="o">=</span><span class="n">seedresp</span><span class="p">[</span><span class="s">&#39;station&#39;</span><span class="p">],</span>
                                             <span class="n">channel</span><span class="o">=</span><span class="n">seedresp</span><span class="p">[</span><span class="s">&#39;channel&#39;</span><span class="p">])</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;Issues with RESP file&#39;</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Issues with RESP file&#39;</span><span class="p">)</span>
                 <span class="n">seedresp</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">continue</span>
         <span class="k">elif</span> <span class="n">respfile</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;GSE&#39;</span><span class="p">:</span>
@@ -390,9 +393,9 @@
             <span class="c"># check that the date is good!</span>
             <span class="k">if</span> <span class="n">pazdate</span> <span class="o">&gt;=</span> <span class="n">time</span> <span class="ow">and</span> <span class="n">pazchannel</span> <span class="o">!=</span> <span class="n">channel</span> <span class="ow">and</span>\
                <span class="n">pazstation</span> <span class="o">!=</span> <span class="n">station</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;Issue with GSE file&#39;</span>
-                <span class="k">print</span> <span class="s">&#39;date: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pazdate</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; channel: &#39;</span><span class="o">+</span><span class="n">pazchannel</span> <span class="o">+</span>\
-                    <span class="s">&#39; station: &#39;</span><span class="o">+</span><span class="n">pazstation</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Issue with GSE file&#39;</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;date: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">pazdate</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; channel: &#39;</span><span class="o">+</span><span class="n">pazchannel</span> <span class="o">+</span>
+                      <span class="s">&#39; station: &#39;</span><span class="o">+</span><span class="n">pazstation</span><span class="p">)</span>
                 <span class="n">PAZ</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">continue</span>
@@ -498,7 +501,7 @@
     <span class="k">del</span> <span class="n">arrival</span>
     <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">uniq_stas</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">chan</span> <span class="ow">in</span> <span class="n">chans</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&#39;Working on &#39;</span><span class="o">+</span><span class="n">sta</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">chan</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Working on &#39;</span><span class="o">+</span><span class="n">sta</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)</span>
             <span class="n">tr</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">sta</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">chan</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="p">:</span>
                 <span class="c"># Remove picks from file</span>
@@ -630,7 +633,7 @@
             <span class="n">amplitude</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">delay</span> <span class="o">=</span> <span class="n">_max_p2t</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">amplitude</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
                 <span class="k">break</span>
-            <span class="k">print</span> <span class="s">&#39;Amplitude picked: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Amplitude picked: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">amplitude</span><span class="p">))</span>
             <span class="c"># Note, amplitude should be in meters at the moment!</span>
             <span class="c"># Remove the pre-filter response</span>
             <span class="k">if</span> <span class="n">pre_filt</span><span class="p">:</span>
@@ -648,7 +651,7 @@
                             <span class="s">&#39;zeros&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">z</span><span class="p">),</span>
                             <span class="s">&#39;gain&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span>
                             <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>  <span class="mf">1.0</span><span class="p">}</span>
-                <span class="n">amplitude</span> <span class="o">/=</span> <span class="p">(</span><span class="n">paz2AmpValueOfFreqResp</span><span class="p">(</span><span class="n">filt_paz</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">period</span><span class="p">)</span> <span class="o">*</span>
+                <span class="n">amplitude</span> <span class="o">/=</span> <span class="p">(</span><span class="n">paz2AmpValueOfFreqResp</span><span class="p">(</span><span class="n">filt_paz</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">period</span><span class="p">)</span> <span class="o">*</span>
                               <span class="n">filt_paz</span><span class="p">[</span><span class="s">&#39;sensitivity&#39;</span><span class="p">])</span>
             <span class="c"># Convert amplitude to mm</span>
             <span class="k">if</span> <span class="n">PAZ</span><span class="p">:</span>  <span class="c"># Divide by Gain to get to nm (returns pm? 10^-12)</span>
@@ -693,7 +696,7 @@
     <span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="c"># Write picks out to new s-file</span>
     <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks_out</span><span class="p">:</span>
-        <span class="k">print</span> <span class="n">pick</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
     <span class="c"># Sfile_util.populateSfile(&#39;mag_calc.out&#39;, picks_out)</span>
     <span class="k">return</span> <span class="n">picks_out</span>
 
@@ -740,7 +743,7 @@
         <span class="n">s_working</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="n">ev_list</span> <span class="o">=</span> <span class="n">event_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ev_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">V_working</span><span class="p">):</span>
-            <span class="k">print</span> <span class="s">&#39;V is : &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">V_working</span><span class="p">))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;V is : &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">V_working</span><span class="p">)))</span>
             <span class="n">f_dump</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;mag_calc_V_working.pkl&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
             <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">V_working</span><span class="p">,</span> <span class="n">f_dump</span><span class="p">)</span>
             <span class="n">f_dump</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -791,12 +794,12 @@
                 <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">max_index</span><span class="p">:</span>
                     <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
                 <span class="k">elif</span> <span class="n">j</span> <span class="o">==</span> <span class="n">min_index</span><span class="p">:</span>
-                    <span class="n">normalised</span> <span class="o">=</span> <span class="n">max_weight</span><span class="o">/</span><span class="n">min_weight</span>
+                    <span class="n">normalised</span> <span class="o">=</span> <span class="n">max_weight</span> <span class="o">/</span> <span class="n">min_weight</span>
                     <span class="n">result</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">normalised</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-            <span class="k">print</span> <span class="n">row</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
             <span class="c"># Add each row to the K matrix</span>
             <span class="n">k</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
         <span class="c"># k is now a square matrix, we need to flesh it out to be K_width</span>
@@ -820,7 +823,7 @@
     <span class="n">K_width</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="c"># Add an extra row to K, so average moment = 1</span>
     <span class="n">K</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">K_width</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">K_width</span><span class="p">))</span>
-    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Created Kernel matrix: &quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Created Kernel matrix: &quot;</span><span class="p">)</span>
     <span class="k">del</span> <span class="n">row</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
           <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">row</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">K</span><span class="p">]))</span>
@@ -868,7 +871,7 @@
     <span class="n">kdays</span> <span class="o">=</span> <span class="p">((</span><span class="n">enddate</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">startdate</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
         <span class="n">day</span> <span class="o">=</span> <span class="n">startdate</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="k">print</span> <span class="s">&#39;Working on &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Working on &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">))</span>
         <span class="n">sfiles</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">indir</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span>
                            <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span>
                            <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;-*L.S&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span>
@@ -889,7 +892,7 @@
         <span class="n">sfiles</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfiles</span><span class="p">:</span>
             <span class="c"># Make the picks!</span>
-            <span class="k">print</span> <span class="s">&#39;				Working on Sfile: &#39;</span><span class="o">+</span><span class="n">sfile</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;				Working on Sfile: &#39;</span><span class="o">+</span><span class="n">sfile</span><span class="p">)</span>
             <span class="n">picks</span> <span class="o">=</span> <span class="n">Amp_pick_sfile</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="n">wavedir</span><span class="p">,</span> <span class="n">calpath</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">picks</span>
             <span class="c"># Copy the mag_calc.out file to the correct place</span>
