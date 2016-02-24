@@ -1,3 +1,8 @@
+## 0.1.1
+* Cope with events not always having time_errors in them in eventtoSfile
+* Convert quakeml depths from m to km
+* Multiple little fixes to make Sfile conversion play well with GeoNet QuakeML files
+
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions
 * Developed new tutorials that download from GeoNet and are much clearer
