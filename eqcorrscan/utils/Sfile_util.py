@@ -46,6 +46,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from obspy import UTCDateTime
 import numpy as np
+import warnings
 
 
 class PICK:
@@ -354,7 +355,8 @@ def _evmagtonor(mag_type):
     Convenience tool to switch from obspy event magnitude types to seisan \
     syntax
     """
-    if mag_type == 'ML':
+    if mag_type in ['ML', 'MLv']:
+        # MLv is local magnitude on vertical component
         mag = 'L'
     elif mag_type == 'mB':
         mag = 'b'
@@ -368,8 +370,13 @@ def _evmagtonor(mag_type):
         mag = 'G'
     elif mag_type == 'Mc':
         mag = 'C'
+    elif mag_type == 'M':
+        mag = 'W'  # Convert generic magnitude to moment magnitude
+        msg = ('Converting generic magnitude to being stored as moment mag')
+        warnings.warn(msg)
     else:
-        raise IOError(mag_type + ' is not convertable')
+        warnings.warn(mag_type + ' is not convertable')
+        return ''
     return mag
 
 
@@ -393,7 +400,8 @@ def _nortoevmag(mag_type):
     elif mag_type == 'C':
         mag = 'Mc'
     else:
-        raise IOError(mag_type + ' is not convertable')
+        warnings.warn(mag_type + ' is not convertable')
+        return ''
     return mag
 
 
@@ -443,7 +451,7 @@ def readheader(sfile):
         if not _float_conv(topline[23:30]) == 999:
             new_event.origins[0].latitude = _float_conv(topline[23:30])
             new_event.origins[0].longitude = _float_conv(topline[31:38])
-            new_event.origins[0].depth = _float_conv(topline[39:43])
+            new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
         # new_event.depth_ind = topline[44]
         # new_event.loc_ind = topline[45]
         new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -921,10 +929,16 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     # Write the header info.
     lat = '{0:.3f}'.format(event.origins[0].get('latitude')) or ''
     lon = '{0:.3f}'.format(event.origins[0].get('longitude')) or ''
-    depth = '{0:.1f}'.format(event.origins[0].get('depth')) or ''
+    depth = '{0:.1f}'.format(event.origins[0].get('depth')/1000) or ''
     agency = event.creation_info.get('agency_id') or ''
-    timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
-        or ''
+    if len(agency) > 4:
+        agency = agency[0:4]
+    # Cope with differences in event uncertainty naming
+    if event.origins[0].time_errors:
+        timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
+            or ''
+    else:
+        timerms = ''
     mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
     mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
     mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
@@ -1075,7 +1089,7 @@ def eventtopick(event):
                        ev_id=event_descriptions[2],
                        latitude=event.origins[0].latitude,
                        longitude=event.origins[0].longitude,
-                       depth=event.origins[0].depth,
+                       depth=event.origins[0].depth / 1000,
                        depth_ind=' ',
                        loc_ind=' ',
                        agency=event.creation_info.get('agency_id') or ' ',
@@ -1180,7 +1194,7 @@ def picktoevent(evinfo, picks):
                                                 evinfo.ev_id]).strip()
     event.origins[0].latitude = evinfo.latitude
     event.origins[0].longitude = evinfo.longitude
-    event.origins[0].depth = evinfo.depth
+    event.origins[0].depth = evinfo.depth * 1000
     event.creation_info = CreationInfo(agency_id=evinfo.agency)
     event.origins[0].comments.append(Comment(text='Number of stations=' +
                                              str(evinfo.nsta)))
@@ -1409,6 +1423,7 @@ def nordpick(event):
                         peri_round = False
                 else:
                     peri = ' '
+                    peri_round = False
                 # Extract amplitude and convert units
                 if amplitude.generic_amplitude:
                     amp = amplitude.generic_amplitude
@@ -1421,6 +1436,7 @@ def nordpick(event):
             else:
                 coda = int(amplitude.generic_amplitude)
                 peri = ' '
+                peri_round = False
                 amp = np.nan
         else:
             peri = ' '
