@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2.2. Matched-filter detection &mdash; EQcorrscan 0.1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
+        <link rel="up" title="2. EQcorrscan tutorial" href="../tutorial.html"/>
+        <link rel="next" title="2.3. Lag time calculation and pick correction" href="lag-calc.html"/>
+        <link rel="prev" title="2.1. Template creation" href="template-creation.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.3. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="template-creation.html">2.1. Template creation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">2.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lag-calc.html">2.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mag-calc.html">2.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clustering.html">2.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">3. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../tutorial.html">2. EQcorrscan tutorial</a> &raquo;</li>
+      
+    <li>2.2. Matched-filter detection</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/tutorials/matched-filter.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="matched-filter-detection">
+<h1>2.2. Matched-filter detection<a class="headerlink" href="#matched-filter-detection" title="Permalink to this headline">¶</a></h1>
+<p>In this section we will outline using the templates generated in the first tutorial
+to scan for similar earthquakes within a day of data.  This small example does not truly exploit the parallel
+operations within this package however, so you would be encouraged to think
+about where parallel operations occur (<em>hint, the code can run one template
+per cpu</em>), and why there are &#8211;instance and&#8211;splits flags in the other
+scripts in the github repository (<em>hint, if you have heaps of memory
+and cpus you can do some brute force day parallelisation!</em>).</p>
+<p>The main processing flow is outlined in the figure below, note the main speedups
+in this process are achieved by running multiple templates at once, however this
+increases memory usage.  If memory is a problem there are flags (mem_issue) in the
+match_filter.py source that can be turned on - the codes will then write temporary
+files, which is slower, but can allow for more data crunching at once, your trade-off,
+your call.</p>
+<a class="reference internal image-reference" href="../_images/processing_flow.png"><img alt="processing_flow.png" class="align-center" src="../_images/processing_flow.png" style="width: 600px;" /></a>
+<div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Simple tutorial to demonstrate some of the basic capabilities of the EQcorrscan</span>
+<span class="sd">matched-filter detection routine.  This builds on the template generation</span>
+<span class="sd">tutorial and uses those templates.  If you haven&#39;t run that tutorial script</span>
+<span class="sd">then you will need to before you can run this script.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span> <span class="k">as</span> <span class="n">plotting</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.core</span> <span class="kn">import</span> <span class="n">match_filter</span>
+<span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="c"># This import section copes with namespace changes between obspy versions</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">obspy.clients.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">obspy.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">read</span>
+
+<span class="c"># First we want to load our templates</span>
+<span class="n">template_names</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;tutorial_template_*.ms&#39;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">template_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Template files not found, have you run the template &#39;</span> <span class="o">+</span>
+                  <span class="s">&#39;creation tutorial?&#39;</span><span class="p">)</span>
+
+<span class="n">templates</span> <span class="o">=</span> <span class="p">[</span><span class="n">read</span><span class="p">(</span><span class="n">template_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">template_name</span> <span class="ow">in</span> <span class="n">template_names</span><span class="p">]</span>
+
+<span class="c"># Work out what stations we have and get the data for them</span>
+<span class="n">stations</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+<span class="c"># Get a unique list of stations</span>
+<span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
+
+<span class="c"># We are going to look for detections on the day of our template, however, to</span>
+<span class="c"># generalize, we will write a loop through the days between our templates, in</span>
+<span class="c"># this case that is only one day.</span>
+
+<span class="n">template_days</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+    <span class="n">template_days</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+<span class="n">template_days</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">template_days</span><span class="p">)</span>
+<span class="n">kdays</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_days</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">template_days</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="n">unique_detections</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">template_days</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="mi">86400</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">86400</span>
+
+    <span class="c"># Generate the bulk information to query the GeoNet database</span>
+    <span class="n">bulk_info</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+        <span class="n">bulk_info</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;H*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">))</span>
+        <span class="c"># Note that we are only using the first letter of the channel code to</span>
+        <span class="c"># download all channels from that sensor at that site, e.g. if the</span>
+        <span class="c"># channel code is HHZ we will download HHE and HHN as well.</span>
+
+    <span class="c"># Set up a client to access the GeoNet database</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s">&quot;GEONET&quot;</span><span class="p">)</span>
+
+    <span class="c"># Note this will take a little while.</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Downloading seismic data, this may take a while&#39;</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">bulk_info</span><span class="p">)</span>
+    <span class="c"># Merge the stream, it will be downloaded in chunks</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
+
+    <span class="c"># Work out what data we actually have to cope with possible lost data</span>
+    <span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]))</span>
+
+    <span class="c"># Pre-process the data to set frequency band and sampling rate</span>
+    <span class="c"># Note that this is, and MUST BE the same as the parameters used for the</span>
+    <span class="c"># template creation.</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
+                             <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                              <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+    <span class="c"># Convert from list to stream</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
+    <span class="c"># Set how many cores we want to parallel across, we will set this to four</span>
+    <span class="c"># as this is the number of templates, if your machine has fewer than four</span>
+    <span class="c"># cores/CPUs the multiprocessing will wait until there is a free core.</span>
+    <span class="c"># Setting this to be higher than the number of templates will have no i</span>
+    <span class="c"># increase in speed as only detections for each template are computed in</span>
+    <span class="c"># parallel.</span>
+    <span class="n">ncores</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="c"># Now we can conduct the matched-filter detection</span>
+    <span class="n">detections</span> <span class="o">=</span> <span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="o">=</span><span class="n">template_names</span><span class="p">,</span>
+                                           <span class="n">template_list</span><span class="o">=</span><span class="n">templates</span><span class="p">,</span>
+                                           <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
+                                           <span class="n">threshold_type</span><span class="o">=</span><span class="s">&#39;MAD&#39;</span><span class="p">,</span>
+                                           <span class="n">trig_int</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">plotvar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                           <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">ncores</span><span class="p">,</span>
+                                           <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                           <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">)</span>
+
+    <span class="c"># Now lets try and work out how many unique events we have just to compare</span>
+    <span class="c"># with the GeoNet catalog of 20 events on this day in this sequence</span>
+    <span class="k">for</span> <span class="n">master</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">slave</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span> <span class="o">==</span> <span class="n">slave</span> <span class="ow">and</span>\
+               <span class="nb">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">6.0</span><span class="p">:</span>
+                <span class="c"># If the events are within 6s of each other then test which</span>
+                <span class="c"># was the &#39;best&#39; match, strongest detection</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">detect_val</span> <span class="o">&gt;</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_val</span><span class="p">:</span>
+                    <span class="n">keep</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">break</span>
+        <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
+            <span class="n">unique_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">master</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;We made a total of &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_detections</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39; detections&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">unique_detections</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Detection at :&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; for template &#39;</span> <span class="o">+</span>
+          <span class="n">detection</span><span class="o">.</span><span class="n">template_name</span> <span class="o">+</span> <span class="s">&#39; with a cross-correlation sum of: &#39;</span> <span class="o">+</span>
+          <span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">))</span>
+    <span class="c"># We can plot these too</span>
+    <span class="n">stplot</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">template_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="p">)]</span>
+    <span class="n">lags</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
+    <span class="n">maxlag</span> <span class="o">=</span> <span class="n">lags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lags</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">stplot</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">endtime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">+</span> <span class="n">maxlag</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">plotting</span><span class="o">.</span><span class="n">detection_multiplot</span><span class="p">(</span><span class="n">stplot</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span>
+                                 <span class="p">[</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="o">.</span><span class="n">datetime</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="section" id="references">
+<h2>2.2.1. References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>CM Boese, J Townend, E Smith, T Stern (2012). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1029/2011JB008460/full">Microseismicity and stress in the vicinity of the Alpine Fault, central Southern Alps, New Zealand</a>, <em>JGR</em>, doi:10.1029/2011JB008460</li>
+<li>CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). <a class="reference external" href="http://onlinelibrary.wiley.com/doi/10.1002/2013GC005171/full">Background and delayed-triggered swarms in the central Southern Alps, South Island, New Zealand</a>, <em>G-cubed</em>, doi:10.1002/2013GC005171</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="lag-calc.html" class="btn btn-neutral float-right" title="2.3. Lag time calculation and pick correction">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="template-creation.html" class="btn btn-neutral" title="2.1. Template creation"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

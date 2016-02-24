@@ -16,28 +16,49 @@ EQcorrscan
 ----------
 
 A python package to conduct match-filter earthquake detections.  Codes are stored
-on github, the bleeding edge master is `here <https://github.com/calum-chamberlain/EQcorrscan>`_, or the latest stable(ish) release
-can be found `here <https://github.com/calum-chamberlain/EQcorrscan/releases>`_
+on github, the master and development branches are |github_link|, or the latest stable(ish) release
+can be found |releases_link|
+
+.. |releases_link| raw:: html
+
+  <a href="https://github.com/calum-chamberlain/EQcorrscan/releases" target="_blank">here</a>
+
+.. |github_link| raw:: html
+
+  <a href="https://github.com/calum-chamberlain/EQcorrscan" target="_blank">on github</a>
 
 This package contains routines to enable the user to conduct match-filter earthquake
-detections using `Obspy <https://github.com/obspy/obspy/wiki>`_ bindings when reading
-and writing seismic data, and the correlation routine in `openCV <http://opencv.org/>`_.
+detections using |Obspy_link| bindings when reading
+and writing seismic data, and the correlation routine in |opencv_link|.
 Neither of these packages are installed by this software, due to a range of
-licences being implimented.  However, both are open-source and should be installed
-before using this package.  This package was written to impliment the matlab routines
+licenses being implemented.  However, both are open-source and should be installed
+before using this package.  This package was written to implement the matlab routines
 used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
+
+.. |Obspy_link| raw:: html
+
+  <a href="https://github.com/obspy/obspy/wiki" target="_blank">Obspy</a>
+
+.. |opencv_link| raw:: html
+
+  <a href="http://opencv.org/" target="_blank">openCV</a>
 
 Also within this package are:
 
 * Clustering routines for seismic data;
 * Peak finding algorithm (basic);
 * Automatic amplitude picker for local magnitude scale;
-* `Seisan <http://seisan.info/>`_ S-file integration for database management and routine earthquake location;
+* |seisan_link| S-file integration for database management and routine earthquake location;
 * Stacking routines including phase-weighted stacking based on Thurber at al. (2014);
 * Brightness based template creation based on the work of Frank et al. (2014)
 
+.. |seisan_link| raw:: html
+
+  <a href="http://seisan.info/" target="_blank">Seisan</a>
+
 This package is written by Calum Chamberlain of Victoria University of Wellington, and
-is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain 2015.
+is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain &
+Chet Hopp 2015 & 2016.
 
 References
 ----------
@@ -49,6 +70,7 @@ Contents:
 ---------
 
 .. toctree::
+   :numbered:
    :maxdepth: 4
 
    intro

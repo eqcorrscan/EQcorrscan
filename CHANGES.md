@@ -1,3 +1,15 @@
+## 0.1.0
+* Implimented tests for synthetic generation and match-filter functions
+* Developed new tutorials that download from GeoNet and are much clearer
+* Changed from PICK and EVENTINFO classes to obspy.core.event classes, note
+this will break some previous scripts, however wrappers are included for this,
+this ended up being the biggy, and is the reason for ceasing the 0.0.x line.
+* Added synthetic seismogram generation, very basic seismograms, but they work
+as templates for the detection of *some* seismicity.
+* Added compatibility with Obspy v.1.0.0.
+* All files now follow pep8.
+* Removed parameter files completely, and redundant scripts.
+
 ## 0.0.9
 * Working towards following pep8
 * Change how match_filter handles missing data - now remove template traces (which have been copied)
