@@ -157,7 +157,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="function">
 <dt id="template_gen._template_gen">
-<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin='all'</em>, <em>prepick=0.05</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin=u'all'</em>, <em>prepick=0.05</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate a cut template in the obspy Stream class from a given set of picks and data, also in an obspy stream class.  Should be given pre-processed data (downsampled and filtered).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -168,16 +168,24 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <li><strong>st</strong> &#8211; Stream to etract templates from</li>
 <li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of template in seconds</li>
 <li><strong>swin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; P, S or all, defaults to all</li>
-<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract before the pick timedefault is 0.05 seconds</li>
+<li><strong>prepick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract before the pick time default is 0.05 seconds</li>
 <li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To plot the template or not, default is True</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template.</p>
 </td>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">By convention templates are generated with P-phases on the vertical channel and S-phases on the horizontal channels, normal seismograph naming conventions are assumed, where Z denotes vertical and N, E, R, T, 1 and 2 denote horizontal channels, either oriented or not.  To this end we will <strong>only</strong> use Z channels if they have a P-pick, and will use one or other horizontal channels <strong>only</strong> if there is an S-pick on it.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If there is no phase_hint included in picks, and swin=all, all channels with picks will be used.</p>
+</div>
 </dd></dl>
 
 <dl class="function">

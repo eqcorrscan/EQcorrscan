@@ -155,7 +155,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <p>All copyright and ownership of this module belongs to Calum Chamberlain, 2015 &amp; 2016</p>
 <dl class="function">
 <dt id="synth_seis.SVD_sim">
-<code class="descclassname">synth_seis.</code><code class="descname">SVD_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>amp_range=&lt;mock.Mock object at 0x2989650&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#SVD_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.SVD_sim" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">synth_seis.</code><code class="descname">SVD_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>amp_range=&lt;mock.Mock object at 0x50355d0&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#SVD_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.SVD_sim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate a basis vectors of a set of simulated seismograms     with a range of S-P amplitude ratios.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -179,7 +179,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="function">
 <dt id="synth_seis.seis_sim">
-<code class="descclassname">synth_seis.</code><code class="descname">seis_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>amp_ratio=1.5</em>, <em>flength=False</em>, <em>phaseout='all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#seis_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.seis_sim" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">synth_seis.</code><code class="descname">seis_sim</code><span class="sig-paren">(</span><em>SP</em>, <em>amp_ratio=1.5</em>, <em>flength=False</em>, <em>phaseout=u'all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#seis_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.seis_sim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate a simulated seismogram from a given S-P time.     Will generate spikes separated by a given S-P time, which are then     convolved with a decaying sine function.  The P-phase is simulated by a     positive spike of value 1, the S-arrival is simulated by a decaying     boxcar of maximum amplitude 1.5.  These ampitude ratios can be altered by     changing the amp_ratio, which is the ratio S amplitude:P amplitude.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -206,7 +206,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="function">
 <dt id="synth_seis.template_grid">
-<code class="descclassname">synth_seis.</code><code class="descname">template_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>travel_times</em>, <em>phase</em>, <em>PS_ratio=1.68</em>, <em>samp_rate=100</em>, <em>flength=False</em>, <em>phaseout='all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#template_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.template_grid" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">synth_seis.</code><code class="descname">template_grid</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em>, <em>travel_times</em>, <em>phase</em>, <em>PS_ratio=1.68</em>, <em>samp_rate=100</em>, <em>flength=False</em>, <em>phaseout=u'all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/synth_seis.html#template_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#synth_seis.template_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate a group of synthetic seismograms to simulate phase     arrivals from a grid of known sources in a three-dimensional model.  Lags     must be known and supplied, these can be generated from the bright_lights     function: read_tt, and resampled to fit the desired grid dimensions and     spacing using other functions therein.  These synthetic seismograms are     very simple models of seismograms using the seis_sim function herein.     These approximate body-wave P and S first arrivals as spikes convolved     with damped sine waves.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

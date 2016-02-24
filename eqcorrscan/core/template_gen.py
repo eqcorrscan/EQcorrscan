@@ -518,12 +518,23 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
     :type swin: string
     :param swin: P, S or all, defaults to all
     :type prepick: float
-    :param prepick: Length in seconds to extract before the pick time\
+    :param prepick: Length in seconds to extract before the pick time \
             default is 0.05 seconds
     :type plot: bool
     :param plot: To plot the template or not, default is True
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.Stream Newly cut template.
+
+    .. note:: By convention templates are generated with P-phases on the \
+        vertical channel and S-phases on the horizontal channels, normal \
+        seismograph naming conventions are assumed, where Z denotes vertical \
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
+        or not.  To this end we will **only** use Z channels if they have a \
+        P-pick, and will use one or other horizontal channels **only** if \
+        there is an S-pick on it.
+
+    .. warning:: If there is no phase_hint included in picks, and swin=all, \
+        all channels with picks will be used.
     """
     import copy
     from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as\
@@ -587,23 +598,35 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
             del starttime
         if swin == 'all':
             for pick in picks:
-                if pick.waveform_id.station_code == tr.stats.station and \
-                        pick.waveform_id.channel_code[0] + \
-                        pick.waveform_id.channel_code[-1] == tr.stats.channel \
-                        and pick.phase_hint[0] == 'P':
-                    starttime = pick.time - prepick
-                elif pick.waveform_id.station_code == tr.stats.station and\
-                        tr.stats.channel[-1] in ['1', '2', 'N', 'E'] and\
-                        pick.phase_hint[0] == 'S':
-                    starttime = pick.time - prepick
-                # elif pick.waveform_id.station_code == tr.stats.station and \
-                #         pick.waveform_id.channel_code[0] + \
-                #         pick.waveform_id.channel_code[-1] == tr.stats.channel:
-                #     starttime = pick.time - prepick
+                if not pick.phase_hint:
+                    msg = 'Pick for ' + pick.waveform_id.station_code + '.' +\
+                        pick.waveform_id.channel_code + ' has no phase ' +\
+                        'hint given, you should not use this template for ' +\
+                        'cross-correlation re-picking!'
+                    warnings.warn(msg)
+                    if pick.waveform_id.station_code == tr.stats.station and \
+                            pick.waveform_id.channel_code[0] + \
+                            pick.waveform_id.channel_code[-1] == \
+                            tr.stats.channel:
+                        starttime = pick.time - prepick
+                else:
+                    # If there is phase information then we should use our
+                    # convention.
+                    if pick.waveform_id.station_code == tr.stats.station and \
+                            pick.waveform_id.channel_code[0] + \
+                            pick.waveform_id.channel_code[-1] ==\
+                            tr.stats.channel \
+                            and 'P' in pick.phase_hint.upper():
+                        starttime = pick.time - prepick
+                    elif pick.waveform_id.station_code == tr.stats.station and\
+                            tr.stats.channel[-1] in ['1', '2', 'N',
+                                                     'E', 'R', 'T'] and\
+                            'S' in pick.phase_hint.upper():
+                        starttime = pick.time - prepick
         else:
             for pick in picks:
                 if pick.waveform_id.station_code == tr.stats.station and\
-                        pick.phase_hint[0] == swin:
+                        swin in pick.phase_hint.upper():
                     starttime = pick.time - prepick
         if 'starttime' in locals():
             print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
