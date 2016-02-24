@@ -30,6 +30,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import warnings
 
@@ -111,7 +115,7 @@ def normxcorr2(template, image):
     import cv2
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
-        print 'You have not provided numpy arrays, I will not convert them'
+        print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     # Convert numpy arrays to float 32
     cv_template = template.astype(np.float32)
@@ -177,17 +181,17 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
         # Convert to float16 to save memory for large problems - lose some
         # accuracy which will affect detections very close to threshold
     if debug >= 2 and t.secs > 4:
-        print "Single if statement took %s s" % t.secs
+        print("Single if statement took %s s" % t.secs)
         if not template_data:
-            print "Didn't even correlate!"
-        print station + ' ' + channel
+            print("Didn't even correlate!")
+        print(station + ' ' + channel)
     elif debug >= 2:
-        print "If statement without correlation took %s s" % t.secs
+        print("If statement without correlation took %s s" % t.secs)
     if debug >= 3:
-        print '********* DEBUG:  ' + station + '.' +\
-            channel + ' ccc MAX: ' + str(np.max(ccc[0]))
-        print '********* DEBUG:  ' + station + '.' +\
-            channel + ' ccc MEAN: ' + str(np.mean(ccc[0]))
+        print('********* DEBUG:  ' + station + '.' +
+              channel + ' ccc MAX: ' + str(np.max(ccc[0])))
+        print('********* DEBUG:  ' + station + '.' +
+              channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
         if debug >= 3:
@@ -195,12 +199,12 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
             np.save('inf_cccmean_template.npy', template_data.data)
             np.save('inf_cccmean_image.npy', image)
     if debug >= 3:
-        print 'shape of ccc: ' + str(np.shape(ccc))
-        print 'A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB'
-        print 'ccc type is: ' + str(type(ccc))
+        print('shape of ccc: ' + str(np.shape(ccc)))
+        print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
+        print('ccc type is: ' + str(type(ccc)))
     if debug >= 3:
-        print 'shape of ccc: ' + str(np.shape(ccc))
-        print "Parallel worker " + str(i) + " complete"
+        print('shape of ccc: ' + str(np.shape(ccc)))
+        print("Parallel worker " + str(i) + " complete")
     return (i, ccc)
 
 
@@ -251,8 +255,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         station = tr.stats.station
         channel = tr.stats.channel
         if debug >= 1:
-            print "Starting parallel run for station " + station + " channel " +\
-                channel
+            print("Starting parallel run for station " + station +
+                  " channel " + channel)
         tic = time.clock()
         with Timer() as t:
             # Send off to sister function
@@ -263,41 +267,41 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                        for i in range(len(templates))]
             pool.close()
         if debug >= 1:
-            print "--------- TIMER:    Correlation loop took: %s s" % t.secs
-            print " I have " + str(len(results)) + " results"
+            print("--------- TIMER:    Correlation loop took: %s s" % t.secs)
+            print(" I have " + str(len(results)) + " results")
         with Timer() as t:
             cccs_list = [p.get() for p in results]
             pool.join()
         if debug >= 1:
-            print "--------- TIMER:    Getting results took: %s s" % t.secs
+            print("--------- TIMER:    Getting results took: %s s" % t.secs)
         with Timer() as t:
             # Sort by placeholder returned from _template_loop
             cccs_list.sort(key=lambda tup: tup[0])
         if debug >= 1:
-            print "--------- TIMER:    Sorting took: %s s" % t.secs
+            print("--------- TIMER:    Sorting took: %s s" % t.secs)
         with Timer() as t:
             cccs_list = [ccc[1] for ccc in cccs_list]
         if debug >= 1:
-            print "--------- TIMER:    Extracting arrays took: %s s" % t.secs
+            print("--------- TIMER:    Extracting arrays took: %s s" % t.secs)
         if debug >= 3:
-            print 'cccs_list is shaped: ' + str(np.shape(cccs_list))
+            print('cccs_list is shaped: ' + str(np.shape(cccs_list)))
         with Timer() as t:
             cccs = np.concatenate(cccs_list, axis=0)
         if debug >= 1:
-            print "--------- TIMER:    cccs_list conversion: %s s" % t.secs
+            print("--------- TIMER:    cccs_list conversion: %s s" % t.secs)
         del cccs_list
         if debug >= 2:
-            print 'After looping through templates the cccs is shaped: ' +\
-                str(np.shape(cccs))
-            print 'cccs is using: ' + str(cccs.nbytes / 1000000) +\
-                ' MB of memory'
+            print('After looping through templates the cccs is shaped: ' +
+                  str(np.shape(cccs)))
+            print('cccs is using: ' + str(cccs.nbytes / 1000000) +
+                  ' MB of memory')
         cccs_matrix[1] = np.reshape(cccs, (1, len(templates),
                                     max(np.shape(cccs))))
         del cccs
         if debug >= 2:
-            print 'cccs_matrix shaped: ' + str(np.shape(cccs_matrix))
-            print 'cccs_matrix is using ' + str(cccs_matrix.nbytes / 1000000) +\
-                ' MB of memory'
+            print('cccs_matrix shaped: ' + str(np.shape(cccs_matrix)))
+            print('cccs_matrix is using ' + str(cccs_matrix.nbytes / 1000000) +
+                  ' MB of memory')
         # Now we have an array of arrays with the first dimensional index
         # giving the channel, the second dimensional index giving the
         # template and the third dimensional index giving the position
@@ -305,8 +309,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         # np.shape(cccsums)=(len(stream), len(templates), len(ccc))
 
         if debug >= 2:
-            print 'cccs_matrix as a np.array is shaped: ' +\
-                str(np.shape(cccs_matrix))
+            print('cccs_matrix as a np.array is shaped: ' +
+                  str(np.shape(cccs_matrix)))
         # First work out how many channels were used
         for i in range(0, len(templates)):
             if not np.all(cccs_matrix[1][i] == 0):
@@ -319,17 +323,17 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         with Timer() as t:
             cccsums = cccs_matrix.sum(axis=0).astype(np.float32)
         if debug >= 1:
-            print "--------- TIMER:    Summing took %s s" % t.secs
+            print("--------- TIMER:    Summing took %s s" % t.secs)
         if debug >= 2:
-            print 'cccsums is shaped thus: ' + str(np.shape(cccsums))
+            print('cccsums is shaped thus: ' + str(np.shape(cccsums)))
         cccs_matrix[0] = cccsums
         del cccsums
         toc = time.clock()
         if debug >= 1:
-            print "--------- TIMER:    Trace loop took " + str(toc - tic) +\
-                " s"
+            print("--------- TIMER:    Trace loop took " + str(toc - tic) +
+                  " s")
     if debug >= 2:
-        print 'cccs_matrix is shaped: ' + str(np.shape(cccs_matrix))
+        print('cccs_matrix is shaped: ' + str(np.shape(cccs_matrix)))
     cccsums = cccs_matrix[0]
     return cccsums, no_chans
 
@@ -419,10 +423,10 @@ def match_filter(template_names, template_list, st, threshold,
         template_stachan = list(set(template_stachan))
         data_stachan = list(set(data_stachan))
         if debug >= 3:
-            print 'I have template info for these stations:'
-            print template_stachan
-            print 'I have daylong data for these stations:'
-            print data_stachan
+            print('I have template info for these stations:')
+            print(template_stachan)
+            print('I have daylong data for these stations:')
+            print(data_stachan)
     # Perform a check that the daylong vectors are daylong
     for tr in stream:
         if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
@@ -437,7 +441,7 @@ def match_filter(template_names, template_list, st, threshold,
     # data make the data NaN to return NaN ccc_sum
     # Note: this works
     if debug >= 2:
-        print 'Ensuring all template channels have matches in daylong data'
+        print('Ensuring all template channels have matches in daylong data')
     template_stachan = []
     for template in templates:
         for tr in template:
@@ -469,19 +473,19 @@ def match_filter(template_names, template_list, st, threshold,
                                           dtype=np.float32)
                 template += nulltrace
     if debug >= 2:
-        print 'Starting the correlation run for this day'
+        print('Starting the correlation run for this day')
     [cccsums, no_chans] = _channel_loop(templates, stream, cores, debug)
     if len(cccsums[0]) == 0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
-    print ' '.join(['Looping over templates and streams took:',
-                    str(outtoc - outtic), 's'])
+    print(' '.join(['Looping over templates and streams took:',
+                    str(outtoc - outtic), 's']))
     if debug >= 2:
-        print ' '.join(['The shape of the returned cccsums is:',
-                        str(np.shape(cccsums))])
-        print ' '.join(['This is from', str(len(templates)), 'templates'])
-        print ' '.join(['Correlated with', str(len(stream)),
-                        'channels of data'])
+        print(' '.join(['The shape of the returned cccsums is:',
+                        str(np.shape(cccsums))]))
+        print(' '.join(['This is from', str(len(templates)), 'templates']))
+        print(' '.join(['Correlated with', str(len(stream)),
+                        'channels of data']))
     detections = []
     for i, cccsum in enumerate(cccsums):
         template = templates[i]
@@ -492,13 +496,13 @@ def match_filter(template_names, template_list, st, threshold,
         elif threshold == 'av_chan_corr':
             rawthresh = threshold * (cccsum / len(template))
         else:
-            print 'You have not selected the correct threshold type, I will' +\
-                  'use MAD as I like it'
+            print('You have not selected the correct threshold type, I will' +
+                  'use MAD as I like it')
             rawthresh = threshold * np.mean(np.abs(cccsum))
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
-        print ' '.join(['Threshold is set at:', str(rawthresh)])
-        print ' '.join(['Max of data is:', str(max(cccsum))])
-        print ' '.join(['Mean of data is:', str(np.mean(cccsum))])
+        print(' '.join(['Threshold is set at:', str(rawthresh)]))
+        print(' '.join(['Max of data is:', str(max(cccsum))]))
+        print(' '.join(['Mean of data is:', str(np.mean(cccsum))]))
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
@@ -527,9 +531,9 @@ def match_filter(template_names, template_list, st, threshold,
                                             datetime.strftime('%Y-%m-%d') +
                                             '.' + plot_format)
             if debug >= 4:
-                print ' '.join(['Saved the cccsum to:', template_names[i],
+                print(' '.join(['Saved the cccsum to:', template_names[i],
                                 stream[0].stats.starttime.datetime.
-                                strftime('%Y%j')])
+                                strftime('%Y%j')]))
                 np.save(template_names[i] +
                         stream[0].stats.starttime.datetime.strftime('%Y%j'),
                         cccsum)
@@ -547,11 +551,11 @@ def match_filter(template_names, template_list, st, threshold,
                                                 trig_int * stream[0].stats.
                                                 sampling_rate, debug)
         else:
-            print 'No peaks found above threshold'
+            print('No peaks found above threshold')
             peaks = False
         toc = time.clock()
         if debug >= 1:
-            print ' '.join(['Finding peaks took:', str(toc - tic), 's'])
+            print(' '.join(['Finding peaks took:', str(toc - tic), 's']))
         if peaks:
             for peak in peaks:
                 detecttime = stream[0].stats.starttime +\

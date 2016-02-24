@@ -1,10 +1,11 @@
-#!/usr/bin/python
 """
 Functions written to be compilled by Cython as the inner loops of
 the match_filter.py routine
 """
-
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 
 
@@ -99,10 +100,10 @@ def _channel_loop(templates, stream, delays, ktemplates, savedir=False,
         # order_list = [p.get() for p in results]
         del order_list
     pool.join()
-    print "Finished parallel run"
+    print("Finished parallel run")
     for i in range(len(templates)):
         # if i in range(0,len(templates),len(templates)/100):
-            # print str(i/len(templates))+' % read back in'
+            # print(str(i/len(templates))+' % read back in')
         # Check if there was data for that station for both the
         if not (np.all(np.isnan(stream[image_ind])) or
                 np.all(np.isnan(templates[i]))):

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Part of the EQcorrscan module to read nordic format s-files and write them
 EQcorrscan is a python module designed to run match filter routines for
@@ -41,8 +40,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from obspy import UTCDateTime
 import numpy as np
 
@@ -328,10 +329,12 @@ def _str_conv(number, rounded=False):
     Convenience tool to convert a number, either float or into into a string, \
     if the int is 999, or the float is NaN, returns empty string.
     """
-    if (type(number) == float and np.isnan(number)) or number == 999:
+    if (isinstance(number, float) and np.isnan(number)) or number == 999:
         string = ' '
-    elif type(number) == str:
+    elif isinstance(number, str):
         return number
+    elif isinstance(number, unicode):
+        return str(number)
     elif not rounded:
         if number < 100000:
             string = str(number)
@@ -783,16 +786,14 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
             sys.exit()
     # Check that user ID is the correct length
     if len(userID) != 4:
-        print 'User ID must be 4 characters long'
-        sys.exit()
+        raise IOError('User ID must be 4 characters long')
     # Check that outdir exists
     if not os.path.isdir(outdir):
-        print 'Out path does not exist, I will not create this: '+outdir
-        sys.exit()
+        raise IOError('Out path does not exist, I will not create this: ' +
+                      outdir)
     # Check that evtype is one of L,R,D
     if evtype not in ['L', 'R', 'D']:
-        print 'Event type must be either L, R or D'
-        sys.exit()
+        raise IOError('Event type must be either L, R or D')
 
     # Generate s-file name in the format dd-hhmm-ss[L,R,D].Syyyymm
     sfile = outdir + '/' + str(evtime.day).zfill(2) + '-' +\
@@ -803,7 +804,7 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
         str(evtime.month).zfill(2)
     # Check is sfile exists
     if os.path.isfile(sfile) and not overwrite:
-        print 'Desired sfile: ' + sfile + ' exists, will not overwrite'
+        print('Desired sfile: ' + sfile + ' exists, will not overwrite')
         for i in range(1, 10):
             sfile = outdir + '/' + str(evtime.day).zfill(2) + '-' +\
                 str(evtime.hour).zfill(2) +\
@@ -814,9 +815,9 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
             if not os.path.isfile(sfile):
                 break
         else:
-            print 'Tried generated files up to 20s in advance and found they'
-            print 'all exist, you need to clean your stuff up!'
-            sys.exit()
+            msg = 'Tried generated files up to 20s in advance and found ' +\
+                'all exist, you need to clean your stuff up!'
+            raise IOError(msg)
         # sys.exit()
     f = open(sfile, 'w')
     # Write line 1 of s-file
@@ -847,7 +848,7 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
             ' VELO AIN AR TRES W  DIS CAZ7\n')
     f.close()
-    print 'Written s-file: ' + sfile
+    print('Written s-file: ' + sfile)
     return sfile
 
 
@@ -901,9 +902,12 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         raise IOError('Needs a single event')
     if isinstance(wavefiles, str):
         wavefiles = [wavefiles]
+    if isinstance(wavefiles, unicode):
+        wavefiles = [str(wavefiles)]
     elif isinstance(wavefiles, list):
         wavefiles = wavefiles
     else:
+        print(type(wavefiles))
         raise IOError(wavefiles + ' is neither string or list')
     # Determine name from origin time
     sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\

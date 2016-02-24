@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Functions to cluster seismograms by a range of constraints.
 
@@ -20,7 +19,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import warnings
 
@@ -152,38 +154,38 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
     if debug >= 1:
         msg = ' '.join(['Computing the distance matrix using',
                         str(num_cores), 'cores'])
-        print msg
+        print(msg)
     dist_mat = distance_matrix(stream_list, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         if debug >= 1:
-            print 'Saved the distance matrix as dist_mat.npy'
+            print('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
     # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
     if debug >= 1:
-        print 'Computing linkage'
+        print('Computing linkage')
     Z = linkage(dist_vec)
     if show:
         if debug >= 1:
-            print 'Plotting the dendrogram'
+            print('Plotting the dendrogram')
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
     # Get the indeces of the groups
     if debug >= 1:
-        print 'Clustering'
+        print('Clustering')
     indeces = fcluster(Z, 1 - corr_thresh, 'distance')
     group_ids = list(set(indeces))  # Unique list of group ids
     if debug >= 1:
         msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
-        print msg
+        print(msg)
     # Convert to tuple of (group id, stream id)
     indeces = [(indeces[i], i) for i in xrange(len(indeces))]
     # Sort by group id
     indeces.sort(key=lambda tup: tup[0])
     groups = []
     if debug >= 1:
-        print 'Extracting and grouping'
+        print('Extracting and grouping')
     for group_id in group_ids:
         group = []
         for ind in indeces:
@@ -218,7 +220,7 @@ def group_delays(stream_list):
     for i, st in enumerate(stream_list):
         msg = ' '.join(['Working on waveform', str(i), 'of',
                         str(len(stream_list))])
-        print msg
+        print(msg)
         # Calculate the delays
         starttimes = []
         chans = []
@@ -309,7 +311,7 @@ def SVD(stream_list):
                                               channel=stachan.split('.')[1]))
                     != 0]
         chan_mat = np.asarray(chan_mat)
-        print chan_mat.shape
+        print(chan_mat.shape)
         U, s, V = np.linalg.svd(chan_mat, full_matrices=True)
         SValues.append(s)
         SVectors.append(V)
@@ -530,12 +532,12 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
                 try:
                     st = read(contbase[0]+'/'+dayfile)
                 except:
-                    print 'No data for '+contbase[0]+'/'+dayfile
+                    print('No data for '+contbase[0]+'/'+dayfile)
             else:
                 try:
                     st += read(contbase[0]+'/'+dayfile)
                 except:
-                    print 'No data for '+contbase[0]+'/'+dayfile
+                    print('No data for '+contbase[0]+'/'+dayfile)
         st.merge(fill_value='interpolate')
         day_detections = [detection for detection in detections
                           if detection[0].date() == detection_day]
@@ -546,8 +548,8 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
                           if stachans[0] == template][0]
             t_delays = [delays[1] for delays in all_delays
                         if delays[0] == template][0]
-            print 'Cutting for detections at: ' +\
-                detection[0].strftime('%Y/%m/%d %H:%M:%S')
+            print('Cutting for detections at: ' +
+                  detection[0].strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
                 tr.trim(starttime=UTCDateTime(detection[0]) - extract_len / 2,
@@ -558,8 +560,8 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
                 detect_wav.write(outdir+'/'+template+'/' +
                                  detection[0].strftime('%Y-%m-%d_%H-%M-%S') +
                                  '.ms', format='MSEED', encoding='STEIM2')
-                print 'Written file: '+outdir+'/'+template+'/' +\
-                    detection[0].strftime('%Y-%m-%d_%H-%M-%S')+'.ms'
+                print('Written file: '+outdir+'/'+template+'/' +
+                      detection[0].strftime('%Y-%m-%d_%H-%M-%S')+'.ms')
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -638,12 +640,12 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
         if not line.split(', ')[0] == 'template' and len(line) > 2:
             detections_in += 1
             if abs(float(line.split(', ')[3])) >=\
-               (new_thresh/old_thresh)*float(line.split(', ')[2]) and\
+               (new_thresh / old_thresh) * float(line.split(', ')[2]) and\
                int(line.split(', ')[4]) >= chan_thresh:
                 detections_out += 1
                 detections.append(line.split(', '))
-    print 'Read in '+str(detections_in)+' detections'
-    print 'Left with '+str(detections_out)+' detections'
+    print('Read in '+str(detections_in)+' detections')
+    print('Left with '+str(detections_out)+' detections')
     return detections
 
 

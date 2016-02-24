@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Utilities module for the EQcorrscan package written by Calum Chamberlain of \
 Victoria University Wellington.  These functions are designed to do the basic \
@@ -23,7 +22,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from obspy.signal.filter import bandpass
 
 
@@ -155,7 +157,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
           '.'+tr.stats.channel+' before processing')
 
     # Sanity check to ensure files are daylong
-    if float(tr.stats.npts/tr.stats.sampling_rate) != 86400.0:
+    if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' is not of daylong length, will zero pad')

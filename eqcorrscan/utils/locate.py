@@ -19,6 +19,10 @@ This file is part of EQcorrscan.
     You should have received a copy of the GNU General Public License
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def synth_compare(stream, stream_list, cores=4, debug=0):
@@ -110,13 +114,13 @@ def cross_net(stream, env=False, debug=0, master=False):
     samp_rate = stream[0].stats.sampling_rate
     if not env:
         if debug > 2:
-            print 'Using the raw data'
+            print('Using the raw data')
         st = stream.copy()
         st.resample(samp_rate)
     else:
         st = stream.copy()
         if debug > 2:
-            print 'Computing envelope'
+            print('Computing envelope')
         for tr in st:
             tr.resample(samp_rate)
             tr.data = envelope(tr.data)
@@ -132,15 +136,15 @@ def cross_net(stream, env=False, debug=0, master=False):
         if debug > 2:
             msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
                             'with the master'])
-            print msg
+            print(msg)
         shift_len = int(0.3 * len(tr))
         if debug > 2:
-            print 'Shift length is set to ' + str(shift_len) + ' samples'
+            print('Shift length is set to ' + str(shift_len) + ' samples')
         if debug > 3:
             index, cc, cc_vec = xcorr(master, tr, shift_len, full_xcorr=True)
             cc_vec = np.nan_to_num(cc_vec)
             if debug > 4:
-                print cc_vec
+                print(cc_vec)
             fig = plt.figure()
             ax1 = fig.add_subplot(211)
             x = np.linspace(0, len(master) / samp_rate,
@@ -153,7 +157,7 @@ def cross_net(stream, env=False, debug=0, master=False):
             ax1.set_xlabel("time [s]")
             ax1.set_ylabel("norm. amplitude")
             ax2 = fig.add_subplot(212)
-            print len(cc_vec)
+            print(len(cc_vec))
             x = np.linspace(0, len(cc_vec) / samp_rate, len(cc_vec))
             ax2.plot(x, cc_vec, label='xcorr')
             # ax2.set_ylim(-1, 1)
@@ -167,7 +171,7 @@ def cross_net(stream, env=False, debug=0, master=False):
                     weight='1',
                     time=tr.stats.starttime + (index / tr.stats.sampling_rate))
         if debug > 2:
-            print pick
+            print(pick)
         picks.append(pick)
     del st
     return picks
@@ -231,8 +235,8 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
             pick = PICK(station=tr.stats.station, channel=tr.stats.channel,
                         time=on, phase=phase)
             if debug > 2:
-                print 'Pick made:'
-                print pick
+                print('Pick made:')
+                print(pick)
             picks.append(pick)
     # QC picks
     del pick

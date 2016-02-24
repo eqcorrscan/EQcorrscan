@@ -24,6 +24,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
@@ -82,8 +86,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         wavpath = '/' + wavpath
     # Read in waveform file
     for wavefile in wavefiles:
-        print ''.join(["I am going to read waveform data from: ", wavpath,
-                       wavefile])
+        print(''.join(["I am going to read waveform data from: ", wavpath,
+                       wavefile]))
         if 'st' not in locals():
             st = obsread(wavpath + wavefile)
         else:
@@ -101,9 +105,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     picks = catalog[0].picks
     print("I have found the following picks")
     for pick in picks:
-        print ' '.join([pick.waveform_id.station_code,
+        print(' '.join([pick.waveform_id.station_code,
                         pick.waveform_id.channel_code, pick.phase_hint,
-                        str(pick.time)])
+                        str(pick.time)]))
 
     # Process waveform data
     st.merge(fill_value='interpolate')
@@ -188,7 +192,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
         if station + channel not in pick_chans and phase in ['P', 'S']:
             pick_chans.append(station + channel)
             used_picks.append(pick)
-            print pick
+            print(pick)
             # #########Left off here
             for contbase in contbase_list:
                 if contbase[1] == 'yyyy/mm/dd':
@@ -210,11 +214,11 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                                                          '*' + station +
                                                          '.*']))
         elif phase in ['P', 'S']:
-            print ' '.join(['Duplicate pick', station, channel,
-                            phase, str(pcktime)])
+            print(' '.join(['Duplicate pick', station, channel,
+                            phase, str(pcktime)]))
         elif phase == 'IAML':
-            print ' '.join(['Amplitude pick', station, channel,
-                            phase, str(pcktime)])
+            print(' '.join(['Amplitude pick', station, channel,
+                            phase, str(pcktime)]))
     picks = used_picks
     wavefiles = list(set(wavefiles))
 
@@ -300,9 +304,9 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
         # Read in pick info
         print("I have found the following picks")
         for pick in event.picks:
-            print ' '.join([pick.waveform_id.station_code,
+            print(' '.join([pick.waveform_id.station_code,
                             pick.waveform_id.channel_code,
-                            pick.phase_hint, str(pick.time)])
+                            pick.phase_hint, str(pick.time)]))
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code)
         # Check to see if all picks have a corresponding waveform
@@ -472,7 +476,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
                 print('pick-time: ' + str(pick.time))
-            print '.'.join([net, sta, loc, chan])
+            print('.'.join([net, sta, loc, chan]))
             if 'st' not in locals():
                 try:
                     st = client.get_waveforms(net, sta, loc, chan,
@@ -568,6 +572,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
                 st1 = Stream(tr)
             else:
                 st1 += tr
+    if 'st1' not in locals():
+        msg = ('No data available for these picks or no picks match ' +
+               'these data!  Will not error, but you should check yo self')
+        warnings.warn(msg)
+        return
     st = copy.deepcopy(st1)
     del st1
     if plot:
@@ -581,27 +590,27 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
                 if pick.waveform_id.station_code == tr.stats.station and \
                         pick.waveform_id.channel_code[0] + \
                         pick.waveform_id.channel_code[-1] == tr.stats.channel \
-                        and pick.phase_hint == 'P':
+                        and pick.phase_hint[0] == 'P':
                     starttime = pick.time - prepick
                 elif pick.waveform_id.station_code == tr.stats.station and\
                         tr.stats.channel[-1] in ['1', '2', 'N', 'E'] and\
-                        pick.phase_hint == 'S':
+                        pick.phase_hint[0] == 'S':
                     starttime = pick.time - prepick
-                elif pick.waveform_id.station_code == tr.stats.station and \
-                        pick.waveform_id.channel_code[0] + \
-                        pick.waveform_id.channel_code[-1] == tr.stats.channel:
-                    starttime = pick.time - prepick
+                # elif pick.waveform_id.station_code == tr.stats.station and \
+                #         pick.waveform_id.channel_code[0] + \
+                #         pick.waveform_id.channel_code[-1] == tr.stats.channel:
+                #     starttime = pick.time - prepick
         else:
             for pick in picks:
                 if pick.waveform_id.station_code == tr.stats.station and\
-                        pick.phase_hint == swin:
+                        pick.phase_hint[0] == swin:
                     starttime = pick.time - prepick
         if 'starttime' in locals():
             print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
             tr.trim(starttime=starttime, endtime=starttime + length,
                     nearest_sample=False)
-            print tr.stats.starttime
-            print tr.stats.endtime
+            print(tr.stats.starttime)
+            print(tr.stats.endtime)
             if 'st1' not in locals():
                 st1 = Stream(tr)
             else:

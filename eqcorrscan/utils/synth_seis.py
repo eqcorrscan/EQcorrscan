@@ -22,7 +22,10 @@ All copyright and ownership of this module belongs to Calum Chamberlain, 2015 \
 & 2016
 
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 
 
@@ -65,8 +68,8 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     # The length of the decaying S-phase should depend on the SP time,\
     # Some basic estimations suggest this should be atleast 10 samples\
     # and that the coda should be about 1/10 of the SP time
-    S_length = int(10 + SP / 3.0)
-    S_spikes = np.arange(amp_ratio, 0, -(amp_ratio/S_length))
+    S_length = 10 + SP // 3
+    S_spikes = np.arange(amp_ratio, 0, -(amp_ratio / S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
     for i in range(len(S_spikes)):

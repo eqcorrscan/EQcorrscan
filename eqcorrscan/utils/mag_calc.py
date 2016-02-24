@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Functions to simulate Wood Anderson traces, pick maximum peak-to-peak \
 amplitudes write these amplitudes and periods to SEISAN s-files and to \
@@ -26,6 +25,10 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import warnings
 
@@ -124,8 +127,8 @@ def _max_p2t(data, delta):
     else:
         plt.plot(data)
         plt.show()
-        print 'Turning points has length: '+str(len(turning_points)) +\
-            ' data have length: '+str(len(data))
+        print('Turning points has length: '+str(len(turning_points)) +
+              ' data have length: '+str(len(data)))
         return (0.0, 0.0, 0.0)
     for i in range(1, len(turning_points)):
         half_periods[i-1] = (delta * (turning_points[i][1] -
@@ -229,7 +232,7 @@ def _find_resp(station, channel, network, time, delta, directory):
     PAZ = []
     seedresp = []
     for respfile in possible_respfiles:
-        print 'Reading response from: '+respfile
+        print('Reading response from: '+respfile)
         if respfile.split('/')[-1][0:4] == 'RESP':
             # Read from a resp file
             seedresp = {'filename': respfile, 'date': UTCDateTime(time),
@@ -245,7 +248,7 @@ def _find_resp(station, channel, network, time, delta, directory):
                                             station=seedresp['station'],
                                             channel=seedresp['channel'])
             except:
-                print 'Issues with RESP file'
+                print('Issues with RESP file')
                 seedresp = []
                 continue
         elif respfile[-3:] == 'GSE':
@@ -254,9 +257,9 @@ def _find_resp(station, channel, network, time, delta, directory):
             # check that the date is good!
             if pazdate >= time and pazchannel != channel and\
                pazstation != station:
-                print 'Issue with GSE file'
-                print 'date: '+str(pazdate)+' channel: '+pazchannel +\
-                    ' station: '+pazstation
+                print('Issue with GSE file')
+                print('date: '+str(pazdate)+' channel: '+pazchannel +
+                      ' station: '+pazstation)
                 PAZ = []
         else:
             continue
@@ -362,7 +365,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     del arrival
     for sta in uniq_stas:
         for chan in chans:
-            print 'Working on '+sta+' '+chan
+            print('Working on '+sta+' '+chan)
             tr = stream.select(station=sta, channel='*'+chan)
             if not tr:
                 # Remove picks from file
@@ -494,7 +497,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
             amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
             if amplitude == 0.0:
                 break
-            print 'Amplitude picked: ' + str(amplitude)
+            print('Amplitude picked: ' + str(amplitude))
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
             if pre_filt:
@@ -512,7 +515,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                             'zeros': list(z),
                             'gain': k,
                             'sensitivity':  1.0}
-                amplitude /= (paz2AmpValueOfFreqResp(filt_paz, 1/period) *
+                amplitude /= (paz2AmpValueOfFreqResp(filt_paz, 1 / period) *
                               filt_paz['sensitivity'])
             # Convert amplitude to mm
             if PAZ:  # Divide by Gain to get to nm (returns pm? 10^-12)
@@ -557,7 +560,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     fout.close()
     # Write picks out to new s-file
     for pick in picks_out:
-        print pick
+        print(pick)
     # Sfile_util.populateSfile('mag_calc.out', picks_out)
     return picks_out
 
@@ -604,7 +607,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
         s_working = copy.deepcopy(s[i])
         ev_list = event_list[i]
         if len(ev_list) > len(V_working):
-            print 'V is : '+str(len(V_working))
+            print('V is : '+str(len(V_working)))
             f_dump = open('mag_calc_V_working.pkl', 'wb')
             pickle.dump(V_working, f_dump)
             f_dump.close()
@@ -655,12 +658,12 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
                 if j == max_index:
                     result = -1
                 elif j == min_index:
-                    normalised = max_weight/min_weight
+                    normalised = max_weight / min_weight
                     result = float(normalised)
                 else:
                     result = 0
                 row.append(result)
-            print row
+            print(row)
             # Add each row to the K matrix
             k.append(row)
         # k is now a square matrix, we need to flesh it out to be K_width
@@ -684,7 +687,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     K_width = len(K[0])
     # Add an extra row to K, so average moment = 1
     K.append(np.ones(K_width) * (1. / K_width))
-    print "\nCreated Kernel matrix: "
+    print("\nCreated Kernel matrix: ")
     del row
     print('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
           for item in row]) for row in K]))
@@ -732,7 +735,7 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
     kdays = ((enddate + dt.timedelta(1)) - startdate).days
     for i in xrange(kdays):
         day = startdate + dt.timedelta(i)
-        print 'Working on ' + str(day)
+        print('Working on ' + str(day))
         sfiles = glob.glob(indir + '/' + str(day.year) + '/' +
                            str(day.month).zfill(2) + '/' +
                            str(day.day).zfill(2) + '-*L.S' + str(day.year) +
@@ -753,7 +756,7 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
         sfiles.sort()
         for sfile in sfiles:
             # Make the picks!
-            print '				Working on Sfile: '+sfile
+            print('				Working on Sfile: '+sfile)
             picks = Amp_pick_sfile(sfile, wavedir, calpath)
             del picks
             # Copy the mag_calc.out file to the correct place
