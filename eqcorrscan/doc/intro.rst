@@ -55,6 +55,16 @@ required to give.
 
   <a href="http://alomax.free.fr/nlloc/" target="_blank">NonLinLoc</a>
 
+Supported environments
+----------------------
+
+Currently we only support Linux and OSX environments running Python 2.7.  We
+do not yet support Python 3.x as the multiprocessing package we rely on, called
+multiprocessing, has not been ported to Python 3.x.  EQcorrscan is mostly ready
+to go syntax-wise for 3.x, so when the dependencies get ported we should be
+good to go.
+
+
 Functions
 ---------
 
