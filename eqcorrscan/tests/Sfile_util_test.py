@@ -32,7 +32,7 @@ def test_read_write():
     test_event.event_descriptions[0].text = 'LE'
     test_event.origins[0].latitude = 45.0
     test_event.origins[0].longitude = 25.0
-    test_event.origins[0].depth = 15.0
+    test_event.origins[0].depth = 15000
     test_event.creation_info = CreationInfo(agency_id='TES')
     test_event.origins[0].time_errors['Time_Residual_RMS'] = 0.01
     test_event.magnitudes.append(Magnitude())
