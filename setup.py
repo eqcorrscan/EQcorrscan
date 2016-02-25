@@ -126,7 +126,8 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.1.0',
-                      'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing'],
+                      'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing',
+                      'LatLon'],
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],

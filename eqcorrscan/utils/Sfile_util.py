@@ -931,14 +931,14 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     lon = '{0:.3f}'.format(event.origins[0].get('longitude')) or ''
     depth = '{0:.1f}'.format(event.origins[0].get('depth')/1000) or ''
     agency = event.creation_info.get('agency_id') or ''
-    if len(agency) > 4:
-        agency = agency[0:4]
+    if len(agency) > 3:
+        agency = agency[0:3]
     # Cope with differences in event uncertainty naming
     if event.origins[0].time_errors:
         timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
-            or ''
+            or '0.0'
     else:
-        timerms = ''
+        timerms = '0.0'
     mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
     mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
     mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
@@ -1477,6 +1477,51 @@ def nordpick(event):
         # values stored in seisan.  Multiple weights are also not supported in
         # Obspy.event
     return pick_strings
+
+
+def stationtoseisan(station):
+    """
+    Convert obspy station inventory to simple string to copy in to \
+    STATION0.HYP file for seisan locations.
+
+    :type station: obspy.core.inventory.station.Station
+    :param station: Inventory containing a single station.
+
+    :returns: str
+
+    .. note:: Only works to the low-precision level at the moment (see seisan \
+        manual for explanation).
+    """
+    import LatLon
+
+    if station.latitude < 0:
+        lat_str = 'S'
+    else:
+        lat_str = 'N'
+    if station.longitude < 0:  # Stored in =/- 180, not 0-360
+        lon_str = 'W'
+    else:
+        lon_str = 'E'
+    if len(station.code) > 4:
+        sta_str = station.code[0:4]
+    else:
+        sta_str = station.code.ljust(4)
+    if len(station.channels) > 0:
+        depth = station.channels[0].depth
+    else:
+        msg = 'No depth found in station.channels, have you set the level ' +\
+              'of stationXML download to channel if using obspy.get_stations?'
+        raise IOError(msg)
+    elev = str(int(round(station.elevation - depth))).rjust(4)
+    # lat and long are written in STATION0.HYP in deg,decimal mins
+    lat = LatLon.Latitude(station.latitude)
+    lon = LatLon.Longitude(station.longitude)
+    lat = ''.join([str(int(abs(lat.degree))),
+                   '{0:.2f}'.format(lat.decimal_minute).rjust(5)])
+    lon = ''.join([str(int(abs(lon.degree))),
+                   '{0:.2f}'.format(lon.decimal_minute).rjust(5)])
+    station_str = ''.join(['  ', sta_str, lat, lat_str, lon, lon_str, elev])
+    return station_str
 
 
 if __name__ == "__main__":
