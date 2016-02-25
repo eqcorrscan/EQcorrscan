@@ -364,11 +364,11 @@ def _evmagtonor(mag_type):
         mag = 's'
     elif mag_type == 'MS':
         mag = 'S'
-    elif mag_type == 'MW':
+    elif mag_type in ['MW', 'Mw']:
         mag = 'W'
     elif mag_type == 'MbLg':
         mag = 'G'
-    elif mag_type == 'Mc':
+    elif mag_type in ['Mc', 'MC']:
         mag = 'C'
     elif mag_type == 'M':
         mag = 'W'  # Convert generic magnitude to moment magnitude
@@ -935,19 +935,32 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         agency = agency[0:3]
     # Cope with differences in event uncertainty naming
     if event.origins[0].time_errors:
-        timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
-            or '0.0'
+        try:
+            timerms = '{0:.1f}'.format(event.origins[0].
+                                       time_errors.Time_Residual_RMS)
+        except AttributeError:
+            timerms = '0.0'
     else:
         timerms = '0.0'
     mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
     mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
     mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
-    mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
-    mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
-    mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
-    mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
-    mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
-    mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+    try:
+        mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
+        mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
+        mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
+    except IndexError:
+        mag_2 = ''
+        mag_2_type = ''
+        mag_2_agency = ''
+    try:
+        mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
+        mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
+        mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+    except IndexError:
+        mag_3 = ''
+        mag_3_type = ''
+        mag_3_agency = ''
     # Work out how many stations were used
     if len(event.picks) > 0:
         stations = [pick.waveform_id.station_code for pick in event.picks]
@@ -1403,7 +1416,7 @@ def nordpick(event):
             timeres = ' '
             azimuthres = ' '
             azimuth = ' '
-            weight = ' '
+            weight = 0
         # Extract amplitude: note there can be multiple amplitudes, but they
         # should be associated with different picks.
         amplitude = [amplitude for amplitude in event.amplitudes
@@ -1447,12 +1460,17 @@ def nordpick(event):
         if weight == 0 or weight == '0':
             weight = 999  # this will return an empty string using _str_conv
         # Generate a print string and attach it to the list
+        if not pick.phase_hint:
+            # Cope with some authorities not providing phase hints :(
+            phase_hint = ' '
+        else:
+            phase_hint = pick.phase_hint
         pick_strings.append(' ' + pick.waveform_id.station_code.ljust(5) +
                             pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[len(pick.waveform_id.
                                                               channel_code)
                                                           - 1] +
-                            ' ' + impulsivity + pick.phase_hint.ljust(4) +
+                            ' ' + impulsivity + phase_hint.ljust(4) +
                             _str_conv(int(weight)).rjust(1) + ' ' +
                             polarity.rjust(1) + ' ' +
                             str(pick.time.hour).rjust(2) +

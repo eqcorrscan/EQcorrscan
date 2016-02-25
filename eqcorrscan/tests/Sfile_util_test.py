@@ -8,23 +8,61 @@ from __future__ import unicode_literals
 from eqcorrscan.utils.Sfile_util import eventtoSfile, readwavename, readpicks
 from eqcorrscan.utils.Sfile_util import eventtopick, picktoevent
 
-
-def test_read_write():
+def test_download_write():
     """
-    Function to test the read and write capabilities of Sfile_util.
+    Function to download quakeML files from a range of datacenters and \
+    attempt to write miniseed files
     """
     import os
+    from eqcorrscan.utils import Sfile_util
+    import obspy
+    if int(obspy.__version__.split('.')[0]) >= 1:
+        from obspy.clients.fdsn import Client
+        from obspy import read_events
+        from obspy.clients.fdsn.header import FDSNException
+    else:
+        from obspy.fdsn import Client
+        from obspy import readEvents as read_events
+        from obspy.fdsn.header import FDSNException
+    import warnings
+
+    event_list = [('GEONET', '2016p008122'),
+                  ('NCEDC', '72572665'),
+                  ('USGS', 'nc72597260')]
+    for event_info in event_list:
+        client = Client(event_info[0])
+        if event_info[0] == 'GEONET':
+            try:
+                data_stream = client._download('http://quakeml.geonet.org.nz/' +
+                                               'quakeml/1.2/' + event_info[1])
+                data_stream.seek(0, 0)
+                event = read_events(data_stream, format="quakeml")
+                data_stream.close()
+            except FDSNException:
+                warnings.warn('FDSNException')
+                continue
+        else:
+            try:
+                event = client.get_events(eventid=event_info[1],
+                                          includearrivals=True)
+            except FDSNException:
+                warnings.warn('FDSNException')
+                continue
+        test_Sfile_name = Sfile_util.eventtoSfile(event, 'test', 'L', '.',
+                                                  'null', overwrite=True)
+        os.remove(test_Sfile_name)
+    return True
+
+
+def basic_test_event():
+    """
+    Function to generate a basic, full test event
+    """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     from obspy.core.event import Catalog, Event, Origin, Magnitude
     from obspy.core.event import EventDescription, CreationInfo
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.core.event import read_events
-    else:
-        from obspy.core.event import readEvents as read_events
     from obspy import UTCDateTime
 
-    # Set-up a test event
     test_event = Event()
     test_event.origins.append(Origin())
     test_event.origins[0].time = UTCDateTime("2012-03-26") + 1
@@ -74,6 +112,26 @@ def test_read_write():
                                                   time_residual=0.2,
                                                   distance=15,
                                                   azimuth=25))
+    return test_event
+
+
+def test_read_write():
+    """
+    Function to test the read and write capabilities of Sfile_util.
+    """
+    import os
+    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
+    from obspy.core.event import Catalog, Event, Origin, Magnitude
+    from obspy.core.event import EventDescription, CreationInfo
+    import obspy
+    if int(obspy.__version__.split('.')[0]) >= 1:
+        from obspy.core.event import read_events
+    else:
+        from obspy.core.event import readEvents as read_events
+    from obspy import UTCDateTime
+
+    # Set-up a test event
+    test_event = basic_test_event()
     # Add the event to a catalogue which can be used for QuakeML testing
     test_cat = Catalog()
     test_cat += test_event
@@ -199,3 +257,4 @@ def test_read_write():
 
 if __name__ == '__main__':
     test_read_write()
+    test_download_write()
