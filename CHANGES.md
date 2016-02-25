@@ -1,7 +1,9 @@
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile
-* Convert quakeml depths from m to km
+* Convert Quakeml depths from m to km
 * Multiple little fixes to make Sfile conversion play well with GeoNet QuakeML files
+* Add function to convert from obspy.core.inventory.station.Station to string format
+for Seisan STATION0.HYP file.
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions
