@@ -16,12 +16,14 @@ If upgrading from a previous version, rather than running install --upgrade, I r
 
 ```pip install -U --no-deps EQcorrscan```
 
-This will not try to upgrade your dependencies, which is not needed for 0.0.8.
+This will not try to upgrade your dependencies, which is not needed.  You may wish
+to update your obspy version to 1.0.0 which was recently released.  We have tested
+this and support it, nevertheless, if you find any issues then let us know.
 
 *You will likely need sudo permissions to run this command.*
 
 If you have any issues installing please let me know.  You will need to install openCV
-seperately using (on Linux):
+separately using (on Linux):
 
 ```apt-get install python-opencv```
 
@@ -32,7 +34,7 @@ Or, for Mac users, this is available on Macports or other similar package manage
 If you want to be kept informed about releases, bug-tracking and enhancements
 without having to keep looking on github, subscribe to our [google group](https://groups.google.com/forum/#!forum/eqcorrscan-users).
 
-# Documenation
+# Documentation
 
 The full documentation for this package can be found here:
 [Docs](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest).
@@ -72,8 +74,8 @@ how to do the core matched-filter detection.
 
 # Licence
 
-This package is written by Calum Chamberlain of Victoria University of Wellington, and
-is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015.
+This package is written by Calum Chamberlain and Chet Hopp of Victoria University of Wellington, and
+is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015, 2016.
 
 
 # Contributing
@@ -106,3 +108,4 @@ will keep us all branching in the same way.
 * Thurber, C. H., Zeng, X., Thomas, A. M., & Audet, P. (2014). [Phase‐Weighted Stacking Applied to Low‐Frequency Earthquakes](http://www.bssaonline.org/content/early/2014/08/12/0120140077.abstract), __BSSA__, doi:10.1785/0120140077.
 * Frank, W. B., & Shapiro, N. M. (2014). [Automatic detection of low-frequency earthquakes (LFEs) based on a beamformed network response](http://gji.oxfordjournals.org/content/197/2/1215.short), __Geophysical Journal International__, 197(2), 1215-1223, doi:10.1093/gji/ggu058.
 * Rubinstein, J. L., & Ellsworth, W. L. (2010). [Precise estimation of repeating earthquake moment: Example from Parkfield, California](http://www.bssaonline.org/content/100/5A/1952.short), __BSSA__, doi:10.1785/0120100007
+fa66e06971b2dd1e4bf766

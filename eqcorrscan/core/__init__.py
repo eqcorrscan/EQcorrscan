@@ -1,12 +1,4 @@
-#!/usr/bin/python
-
-#------------------------------------------------------------------------------
-#   Purpose:    Convenience imports for EQcorrscan.core module
-#   Author:     Calum John Chamberlain
-#------------------------------------------------------------------------------
-
-"""
-EQcorrscan is a python module designed to run match filter routines for
+"""EQcorrscan is a python module designed to run match filter routines for \
 seismology, within it are routines for integration to seisan and obspy.
 With obspy integration (which is necessary) all main waveform formats can be
 read in and output.
