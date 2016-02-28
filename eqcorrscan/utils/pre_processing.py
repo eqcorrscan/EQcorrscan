@@ -1,8 +1,7 @@
-#!/usr/bin/python
 """
-Utilities module for the EQcorrscan package written by Calum Chamberlain of\
-Victoria University Wellington.  These functions are designed to do the basic\
-processing of the data using obspy modules (which also rely on scipy and\
+Utilities module for the EQcorrscan package written by Calum Chamberlain of \
+Victoria University Wellington.  These functions are designed to do the basic \
+processing of the data using obspy modules (which also rely on scipy and \
 numpy).
 
 Copyright 2015 Calum Chamberlain
@@ -23,14 +22,16 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
-from obspy import UTCDateTime
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from obspy.signal.filter import bandpass
 
 
 def _check_daylong(tr):
-    r"""Function to check the data quality of the daylong file - check to see\
-    that the day isn't just zeros, with large steps, if it is then the\
+    r"""Function to check the data quality of the daylong file - check to see \
+    that the day isn't just zeros, with large steps, if it is then the \
     resampling will hate it.
 
     :type tr: obspy.Trace
@@ -55,7 +56,7 @@ def _check_daylong(tr):
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     r"""Basic function to bandpass and downsample.
 
-    Works in place on data.  This is employed to ensure all parts of the\
+    Works in place on data.  This is employed to ensure all parts of the \
     data are processed in the same way.
 
     :type st: obspy.Stream
@@ -73,8 +74,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
 
     :return: obspy.Stream
 
-    ..rubric:: Note
-        Will convert channel names to two charectars long
+    .. note:: Will convert channel names to two charecters long.
     """
     # Add sanity check for filter
     if highcut >= 0.5*samp_rate:
@@ -105,11 +105,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
 
 
 def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
-    r"""Basic function to bandpass, downsample and check headers and length of\
-    trace to ensure files start at the start of a day and are daylong.
+    r"""Basic function to bandpass, downsample and check headers and length \
+    of trace to ensure files start at the start of a day and are daylong.
 
-    Works in place on data.  This is employed to ensure all parts of the data\
-    are processedin the same way.
+    Works in place on data.  This is employed to ensure all parts of the data \
+    are processed in the same way.
 
     :type tr: obspy.Trace
     :param tr: Trace to process
@@ -128,8 +128,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
 
     :return: obspy.Stream
 
-    ..rubric:: Note
-        Will convert channel names to two charectars long
+    .. note:: Will convert channel names to two charecters long.
     """
     import warnings
     # Add sanity check
@@ -158,7 +157,7 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
           '.'+tr.stats.channel+' before processing')
 
     # Sanity check to ensure files are daylong
-    if float(tr.stats.npts/tr.stats.sampling_rate) != 86400.0:
+    if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' is not of daylong length, will zero pad')
@@ -221,3 +220,8 @@ def dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug, starttime):
     if debug >= 4:
         tr.plot()
     return tr
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

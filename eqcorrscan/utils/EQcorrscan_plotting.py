@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Utility code for most of the plots used as part of the EQcorrscan package.
 
@@ -20,23 +19,27 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
 
 
 def chunk_data(tr, samp_rate, state='mean'):
-    r"""Function to downsample data for plotting by computing the maximum of\
-    data within chunks, useful for plotting waveforms or cccsums, large\
+    r"""Function to downsample data for plotting by computing the maximum of \
+    data within chunks, useful for plotting waveforms or cccsums, large \
     datasets that would otherwise exceed the complexity allowed, and overflow.
 
-    :type tr: :class: obspy.Trace
+    :type tr: obspy.Trace
     :param tr: Trace to be chunked
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
     :type state: str
-    :param state: Either 'Min', 'Max', 'Mean' or 'Maxabs' to return one of\
-            these for the chunks. Maxabs will return the largest (positive or\
-            negative) for that chunk.
+    :param state: Either 'Min', 'Max', 'Mean' or 'Maxabs' to return one of \
+        these for the chunks. Maxabs will return the largest (positive or \
+        negative) for that chunk.
 
     :returns: :class: obspy.Trace
     """
@@ -76,26 +79,27 @@ def chunk_data(tr, samp_rate, state='mean'):
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
                 savefile=''):
-    r"""Main function to make a triple plot with a day-long seismogram,\
-    day-long correlation sum trace and histogram of the correlation sum to\
+    r"""Main function to make a triple plot with a day-long seismogram, \
+    day-long correlation sum trace and histogram of the correlation sum to \
     show normality.
 
     :type cccsum: numpy.ndarray
     :param cccsum: Array of the cross-channel cross-correlation sum
     :type cccsum_hist: numpy.ndarray
-    :param ccsum_hist: cccsum for histogram plotting, can be the same as\
-                    cccsum but included if cccsum is just an envelope.
+    :param cccsum_hist: cccsum for histogram plotting, can be the same as \
+        cccsum but included if cccsum is just an envelope.
     :type trace: obspy.Trace
     :param trace: A sample trace from the same time as cccsum
     :type threshold: float
     :param threshold: Detection threshold within cccsum
-    :type save: Bool, optional
+    :type save: bool, optional
     :param save: If True will svae and not plot to screen, vice-versa if False
-    :type savefile: String, optional
+    :type savefile: str, optional
     :param savefile: Path to save figure to, only required if save=True
     """
     if len(cccsum) != len(trace.data):
-        print 'cccsum is: '+str(len(cccsum))+' trace is: '+str(len(trace.data))
+        print('cccsum is: ' +
+              str(len(cccsum))+' trace is: '+str(len(trace.data)))
         msg = ' '.join(['cccsum and trace must have the',
                         'same number of data points'])
         raise ValueError(msg)
@@ -137,8 +141,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
                savefile=''):
-    r"""Simple utility code to plot the correlation peaks to check that the\
-    peak finding routine is running correctly, used in debugging for the\
+    r"""Simple utility code to plot the correlation peaks to check that the \
+    peak finding routine is running correctly, used in debugging for the \
     EQcorrscan module.
 
     :type data: numpy.array
@@ -149,7 +153,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     :param samp_rate: Sampling rate of data in Hz
     :type save: Boolean, optional
     :param save: Save figure or plot to screen (False)
-    :type peaks: List of Tuple, optional
+    :type peaks: list of Tuple, optional
     :param peaks: List of peak locations and amplitudes (loc, amp)
     :type savefile: String, optional
     :param savefile: Path to save to, only used if save=True
@@ -176,19 +180,19 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
 
 def cumulative_detections(dates, template_names, save=False, savefile=''):
-    r"""Simple plotting function to take a list of datetime objects and plot\
-    a cumulative detections list.  Can take dates as a list of lists and will
-    plot each list seperately, e.g. if you have dates from more than one
+    r"""Simple plotting function to take a list of datetime objects and plot \
+    a cumulative detections list.  Can take dates as a list of lists and will \
+    plot each list seperately, e.g. if you have dates from more than one \
     template it will overlay them in different colours.
 
     :type dates: list of lists of datetime.datetime
     :param dates: Must be a list of lists of datetime.datetime objects
     :type template_names: list of strings
     :param template_names: List of the template names in order of the dates
-    :type save: Boolean, optional
-    :param save: Save figure or show to screen
-    :type savefile: String, optional
-    :param savefile: String to save to.
+    :type save: bool
+    :param save: Save figure or show to screen, optional
+    :type savefile: str
+    :param savefile: String to save to, optional
     """
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -205,7 +209,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         counts = np.arange(0, len(template_dates))
-        print str(i)+' '+str(j)+' '+str(k)
+        print(str(i)+' '+str(j)+' '+str(k))
         filename = plt.plot(template_dates, counts, linestyles[j],
                             color=colors[i], label=template_names[k],
                             linewidth=3.0)
@@ -233,10 +237,10 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
 def threeD_gridplot(nodes, save=False, savefile=''):
     r"""Function to plot in 3D a series of grid points.
 
-    :type nodes: List of tuples
+    :type nodes: list of tuples
     :param nodes: List of tuples of the form (lat, long, depth)
     :type save: bool
-    :param save: if True will save without plotting to screen, if False\
+    :param save: if True will save without plotting to screen, if False \
         (default) will plot to screen but not save
     :type savefile: str
     :param savefile: required if save=True, path to save figure to.
@@ -267,31 +271,31 @@ def threeD_gridplot(nodes, save=False, savefile=''):
 def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                            freqmin=False, freqmax=False, realign=False,
                            cut=(-3.0, 5.0), PWS=False, title=False):
-    r"""Function to plot data from a single channel at a single station for\
-    multiple events - data will be alligned by their pick-time given in the\
+    r"""Function to plot data from a single channel at a single station for \
+    multiple events - data will be alligned by their pick-time given in the \
     picks.
 
-    :type streams: List of :class:obspy.stream
-    :param streams: List of the streams to use, can contain more traces than\
+    :type streams: list of :class:obspy.stream
+    :param streams: List of the streams to use, can contain more traces than \
         you plan on plotting
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog of events, one for each trace, with a single pick
     :type clip: float
     :param clip: Length in seconds to plot, defaults to 10.0
-    :type pre_pick: Float
-    :param pre_pick: Length in seconds to extract and plot before the pick,\
+    :type pre_pick: float
+    :param pre_pick: Length in seconds to extract and plot before the pick, \
         defaults to 2.0
     :type freqmin: float
     :param freqmin: Low cut for bandpass in Hz
     :type freqmax: float
     :param freqmax: High cut for bandpass in Hz
-    :type realign: Bool
+    :type realign: bool
     :param realign: To compute best alignement based on correlation or not.
-    :type cut: tuple:
+    :type cut: tuple
     :param cut: tuple of start and end times for cut in seconds from the pick
     :type PWS: bool
-    :param PWS: compute Phase Weighted Stack, if False, will compute linear\
-     stack.
+    :param PWS: compute Phase Weighted Stack, if False, will compute linear \
+        stack.
     :type title: str
     :param title: Plot title.
 
@@ -319,7 +323,7 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                                    event.picks[0].waveform_id.
                                    channel_code[-1])[0]
         else:
-            print 'No data for '+event.pick[0].waveform_id
+            print('No data for '+event.pick[0].waveform_id)
             continue
         tr.detrend('linear')
         if freqmin:
@@ -356,7 +360,7 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                         al_traces[0].stats.sampling_rate)
         shifts = stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
-            print 'Shifting by '+str(shifts[i])+' seconds'
+            print('Shifting by '+str(shifts[i])+' seconds')
             event.picks[0].time -= shifts[i]
             traces[i].trim(event.picks[0].time - pre_pick,
                            event.picks[0].time + clip-pre_pick,
@@ -414,7 +418,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param stream: Stream of data to be plotted as the base (black)
     :type template: obspy.Stream
     :param template: Template to be plotted on top of the base stream (red)
-    :type times: List of datetime.datetime
+    :type times: list of datetime.datetime
     :param times: list of times of detections in the order of the channels in
                 template.
     :type streamcolour: str
@@ -438,9 +442,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image = image.merge()[0]
         # Downsample if needed
         if image.stats.sampling_rate > 20:
-            image.decimate(int(image.stats.sampling_rate/20))
+            image.decimate(image.stats.sampling_rate // 20)
         if template_tr.stats.sampling_rate > 20:
-            template_tr.decimate(int(template_tr.stats.sampling_rate/20))
+            template_tr.decimate(template_tr.stats.sampling_rate // 20)
         # Get a list of datetime objects
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
@@ -473,7 +477,7 @@ def interev_mag_sfiles(sfiles):
     r"""Function to plot interevent-time versus magnitude for series of events.
     **thin** Wrapper for interev_mag.
 
-    :type sfiles: List
+    :type sfiles: list
     :param sfiles: List of sfiles to read from
     """
     from eqcorrscan.utils import Sfile_util
@@ -520,15 +524,15 @@ def interev_mag(times, mags):
 
 
 def threeD_seismplot(stations, nodes):
-    r"""Function to plot seismicity and stations in a 3D, movable, zoomable\
+    r"""Function to plot seismicity and stations in a 3D, movable, zoomable \
     space using matplotlibs Axes3D package.
 
     :type stations: list of tuple
-    :param stations: list of one tuple per station of (lat, long, elevation),
-                    with up positive
+    :param stations: list of one tuple per station of (lat, long, elevation), \
+        with up positive.
     :type nodes: list of tuple
-    :param nodes: list of one tuple per event of (lat, long, depth) with down
-                positive
+    :param nodes: list of one tuple per event of (lat, long, depth) with down \
+        positive.
     """
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
@@ -548,18 +552,18 @@ def threeD_seismplot(stations, nodes):
 
 def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
                          background=False, picks=False):
-    r"""Function to make a pretty plot of a single template, designed to work\
+    r"""Function to make a pretty plot of a single template, designed to work \
     better than the default obspy plotting routine for short data lengths.
 
     :type template: :class: obspy.Stream
     :param template: Template stream to plot
     :type size: tuple
     :param size: tuple of plot size
-    :type save: Boolean
+    :type save: bool
     :param save: if False will plot to screen, if True will save
-    :type title: Boolean
+    :type title: bool
     :param title: String if set will be the plot title
-    :type backrgound: :class: obspy.stream
+    :type background: :class: obspy.stream
     :param background: Stream to plot the template within.
     :type picks: list of :class: eqcorrscan.utils.Sfile_util.PICK
     :param picks: List of eqcorrscan type picks.
@@ -637,9 +641,9 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     :param stream: Stream to plot
     :type NR_stream: :class: obspy.Stream
     :param NR_stream: Stream for the network response
-    :type detections: List of datetime objects
+    :type detections: list of datetime objects
     :param detections: List of the detections
-    :type false_detections: List of datetime
+    :type false_detections: list of datetime
     :param false_detections: Either False (default) or list of false detection\
      times
     :type size: tuple
@@ -663,8 +667,9 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         delay = tr.stats.starttime - mintime
         delay *= tr.stats.sampling_rate
         y = tr.data
-        x=[tr.stats.starttime + dt.timedelta(seconds=s/tr.stats.sampling_rate)
-           for s in xrange(len(y))]
+        x = [tr.stats.starttime + dt.timedelta(seconds=s /
+                                               tr.stats.sampling_rate)
+             for s in xrange(len(y))]
         x = mdates.date2num(x)
         axes[i].plot(x, y, 'k', linewidth=1.1)
         axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
@@ -727,12 +732,12 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
     r"""Function to plot the singular vectors from the clustering routines, one\
     plot for each stachan
 
-    :type SVStreams: List of :class:Obspy.Stream
+    :type SVStreams: list of :class:Obspy.Stream
     :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
             ordered by power, e.g. first singular vector in the first stream
-    :type SValues: List of float
+    :type SValues: list of float
     :param SValues: List of the singular values corresponding to the SVStreams
-    :type stachans: List
+    :type stachans: list
     :param stachans: List of station.channel
     """
     for stachan in stachans:
@@ -767,7 +772,7 @@ def plot_synth_real(real_template, synthetic, channels=False):
     :param real_template: Stream of the real template
     :type synthetic: obspy.Stream
     :param synthetic: Stream of synthetic template
-    :type channels: List of str
+    :type channels: list of str
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
     """
@@ -797,7 +802,7 @@ def plot_synth_real(real_template, synthetic, channels=False):
         synth_tr = synthetic.select(station=stachan[0],
                                     channel=stachan[1])[0]
         shift, corr = xcorr(real_tr, synth_tr, 2)
-        print 'Shifting by: '+str(shift)+' samples'
+        print('Shifting by: '+str(shift)+' samples')
         if corr < 0:
             synth_tr.data = synth_tr.data * -1
             corr = corr * -1
@@ -822,11 +827,13 @@ def plot_synth_real(real_template, synthetic, channels=False):
 
 
 def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
-    r"""Function to make a frequency-magnitude histogram and cumulative density
-    plot.  This can compute a b-value, but not a completeness at the moment.
+    r"""Function to make a frequency-magnitude histogram and cumulative \
+    density plot.  This can compute a b-value, but not a completeness at \
+    the moment.  B-value is computed by linear fitting to section of curve \
+    between completeness and max_mag.
 
     :type magnitudes: list
-    :param magnitude: list of float of magnitudes
+    :param magnitudes: list of float of magnitudes
     :type completeness: float
     :param completeness: Level to compute the b-value above
     :type max_mag: float
@@ -871,15 +878,15 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
 
 def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
                tralpha=0.9, size=(10, 13), Fig=None, title=None, show=True):
-    r"""Wrapper for _spec_trace, take a stream or list of traces and plots
-    the trace with the spectra beneath it - this just does the overseeing to
+    r"""Wrapper for _spec_trace, take a stream or list of traces and plots \
+    the trace with the spectra beneath it - this just does the overseeing to \
     work out if it needs to add subplots or not.
 
     :type traces: either stream or list of traces
-    :param traces: Traces to be plotted, can be a single obspy.Stream, or a\
+    :param traces: Traces to be plotted, can be a single obspy.Stream, or a \
         list of obspy.Trace
     :type cmap: str
-    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/
+    :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/ \
         colormaps_reference.html)
     :type wlen: float
     :param wlen: Window length for fft in seconds
@@ -888,7 +895,7 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     :type trc: str
     :param trc: Color for the trace.
     :type tralpha: float
-    :param tralpha: Opacity level for the seismogram, from transparent (0.0)\
+    :param tralpha: Opacity level for the seismogram, from transparent (0.0) \
         to opaque (1.0).
     :type size: tuple
     :param size: Plot size, tuple of floats, inches
@@ -941,10 +948,10 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     r"""Function to plot a trace over that traces spectrogram.
     Uses obspys spectrogram routine.
 
-    :type trace: :class: obspy.Trace
+    :type trace: obspy.Trace
     :param trace: trace to plot
     :type cmap: str
-    :param cmp: [Matplotlib colormap](http://matplotlib.org/examples/color/
+    :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/
         colormaps_reference.html)
     :type wlen: float
     :param wlen: Window length for fft in seconds
@@ -953,7 +960,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     :type trc: str
     :param trc: Color for the trace.
     :type tralpha: float
-    :param tralpha: Opacity level for the seismogram, from transparent (0.0)\
+    :param tralpha: Opacity level for the seismogram, from transparent (0.0) \
         to opaque (1.0).
     :type size: tuple
     :param size: Plot size, tuple of floats, inches
@@ -984,3 +991,8 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
         Fig.show()
     else:
         return ax1, ax2
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

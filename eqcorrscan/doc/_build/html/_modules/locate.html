@@ -1,0 +1,460 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>locate &mdash; EQcorrscan 0.1.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">2.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">2.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">2.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">2.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">2.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">3. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>locate</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for locate</h1><div class="highlight"><pre>
+<span class="sd">r&quot;&quot;&quot;Functions to locate earthquakes detected by EQcorrscan.</span>
+<span class="sd">Designed primarily locate stacks of detections to give family locations.</span>
+<span class="sd">Extensions may later be written.</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+
+<div class="viewcode-block" id="synth_compare"><a class="viewcode-back" href="../submodules/utils.locate.html#locate.synth_compare">[docs]</a><span class="k">def</span> <span class="nf">synth_compare</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">stream_list</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Compare a specific stream to a list of synthetic templates, or \</span>
+<span class="sd">    earthquakes of known source and find the best matching event.</span>
+
+<span class="sd">    :type stream: :class:obspy.Stream</span>
+<span class="sd">    :param stream: Stream to be compared to streams with known locations.</span>
+<span class="sd">    :type stream_list: list</span>
+<span class="sd">    :param stream_list: List of streams with known locations</span>
+<span class="sd">    :type cores: int</span>
+<span class="sd">    :param cores: Number of cores to parallel over</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug level, high is more debug</span>
+
+<span class="sd">    :returns: int, float: index of best match and cross-correlation sum</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">eqcorrscan.core.match_filter</span> <span class="kn">import</span> <span class="n">_channel_loop</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="kn">import</span> <span class="nn">copy</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Trace</span>
+
+    <span class="n">stream_copy</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">templates</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)</span>
+    <span class="c"># Need to fill the stream_list - template - channels</span>
+    <span class="n">template_stachan</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+            <span class="n">template_stachan</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)]</span>
+    <span class="n">template_stachan</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">template_stachan</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stream_copy</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="c"># Remove template traces rather than adding NaN data</span>
+            <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                              <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                        <span class="n">template</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+    <span class="c"># Remove un-needed channels</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream_copy</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
+            <span class="n">stream_copy</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+    <span class="c"># Also pad out templates to have all channels</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">nulltrace</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">()</span>
+                <span class="n">nulltrace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">nulltrace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">nulltrace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+                <span class="n">nulltrace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">=</span> <span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+                <span class="n">nulltrace</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">),</span>
+                                          <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+                <span class="n">template</span> <span class="o">+=</span> <span class="n">nulltrace</span>
+    <span class="c"># Hand off  cross-correaltion to _channel_loop, which runs in parallel</span>
+    <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">]</span> <span class="o">=</span> <span class="n">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream_copy</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+    <span class="n">cccsums</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span> <span class="k">for</span> <span class="n">cccsum</span> <span class="ow">in</span> <span class="n">cccsums</span><span class="p">]</span>
+    <span class="c"># Find the maximum cccsum and index thereof</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">cccsums</span><span class="p">)</span>
+    <span class="n">cccsum</span> <span class="o">=</span> <span class="n">cccsums</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">index</span><span class="p">,</span> <span class="n">cccsum</span>
+
+</div>
+<div class="viewcode-block" id="cross_net"><a class="viewcode-back" href="../submodules/utils.locate.html#locate.cross_net">[docs]</a><span class="k">def</span> <span class="nf">cross_net</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">master</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Function to generate picks for each channel based on optimal moveout \</span>
+<span class="sd">    defined by maximum cross-correaltion with master trace.  Master trace \</span>
+<span class="sd">    will be the first trace in the stream.</span>
+
+<span class="sd">    :type stream: :class: obspy.Stream</span>
+<span class="sd">    :param stream: Stream to pick</span>
+<span class="sd">    :type envelope: bool</span>
+<span class="sd">    :param envelope: To compute cross-correlations on the envelope or not.</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug level from 0-5</span>
+<span class="sd">    :type master: obspy.Trace</span>
+<span class="sd">    :param master: Trace to use as master, if False, will use the first trace \</span>
+<span class="sd">            in stream.</span>
+
+<span class="sd">    :returns: list of pick class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorr</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">envelope</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">samp_rate</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">env</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Using the raw data&#39;</span><span class="p">)</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Computing envelope&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">envelope</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">equal_scale</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="p">:</span>
+        <span class="n">master</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">master</span> <span class="o">=</span> <span class="n">master</span>
+    <span class="n">master</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Comparing&#39;</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                            <span class="s">&#39;with the master&#39;</span><span class="p">])</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">shift_len</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.3</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Shift length is set to &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">shift_len</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; samples&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">index</span><span class="p">,</span> <span class="n">cc</span><span class="p">,</span> <span class="n">cc_vec</span> <span class="o">=</span> <span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span> <span class="n">full_xcorr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">cc_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">master</span><span class="p">)</span> <span class="o">/</span> <span class="n">samp_rate</span><span class="p">,</span>
+                            <span class="nb">len</span><span class="p">(</span><span class="n">master</span><span class="p">))</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">master</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="s">&#39;k&#39;</span><span class="p">,</span>
+                     <span class="n">label</span><span class="o">=</span><span class="s">&#39;Master&#39;</span><span class="p">)</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">index</span> <span class="o">/</span> <span class="n">samp_rate</span><span class="p">),</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+                     <span class="s">&#39;r&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Slave shifted&#39;</span><span class="p">)</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&quot;lower right&quot;</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span> <span class="s">&quot;small&quot;</span><span class="p">})</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;time [s]&quot;</span><span class="p">)</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;norm. amplitude&quot;</span><span class="p">)</span>
+            <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">)</span> <span class="o">/</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_vec</span><span class="p">))</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cc_vec</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;xcorr&#39;</span><span class="p">)</span>
+            <span class="c"># ax2.set_ylim(-1, 1)</span>
+            <span class="c"># ax2.set_xlim(0, len(master))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">index</span><span class="p">,</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">xcorr</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">)</span>
+        <span class="n">pick</span> <span class="o">=</span> <span class="n">PICK</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                    <span class="n">impulsivity</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span>
+                    <span class="n">phase</span><span class="o">=</span><span class="s">&#39;S&#39;</span><span class="p">,</span>
+                    <span class="n">weight</span><span class="o">=</span><span class="s">&#39;1&#39;</span><span class="p">,</span>
+                    <span class="n">time</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="p">(</span><span class="n">index</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+        <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">st</span>
+    <span class="k">return</span> <span class="n">picks</span>
+
+</div>
+<div class="viewcode-block" id="stalta_pick"><a class="viewcode-back" href="../submodules/utils.locate.html#locate.stalta_pick">[docs]</a><span class="k">def</span> <span class="nf">stalta_pick</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">stalen</span><span class="p">,</span> <span class="n">ltalen</span><span class="p">,</span> <span class="n">trig_on</span><span class="p">,</span> <span class="n">trig_off</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">freqmax</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Simple sta-lta (short-term average/long-term average) picker, using \</span>
+<span class="sd">    obspy&#39;s stalta routine to generate the characteristic function.</span>
+
+<span class="sd">    Currently very basic quick wrapper, there are many other (better) options \</span>
+<span class="sd">    in obspy, found \</span>
+<span class="sd">    (here)[http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html].</span>
+
+<span class="sd">    :type stream: obspy.Stream</span>
+<span class="sd">    :param stream: The stream to pick on, can be any number of channels.</span>
+<span class="sd">    :type stalen: float</span>
+<span class="sd">    :param stalen: Length of the short-term average window in seconds.</span>
+<span class="sd">    :type ltalen: float</span>
+<span class="sd">    :param ltalen: Length of the long-term average window in seconds.</span>
+<span class="sd">    :type trig_on: float</span>
+<span class="sd">    :param trig_on: sta/lta ratio to trigger a detection/pick</span>
+<span class="sd">    :type trig_off: float</span>
+<span class="sd">    :param trig_off: sta/lta ratio to turn the trigger off - no further picks\</span>
+<span class="sd">        will be made between exceeding trig_on until trig_off is reached.</span>
+<span class="sd">    :type freqmin: float</span>
+<span class="sd">    :param freqmin: Low-cut frequency in Hz for bandpass filter</span>
+<span class="sd">    :type freqmax: float</span>
+<span class="sd">    :param freqmax: High-cut frequency in Hz for bandpass filter</span>
+<span class="sd">    :type debug: int</span>
+<span class="sd">    :param debug: Debug output level from 0-5.</span>
+<span class="sd">    :type show: bool</span>
+<span class="sd">    :param show: Show picks on waveform.</span>
+
+<span class="sd">    :returns: list of pick class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.trigger</span> <span class="kn">import</span> <span class="n">classicSTALTA</span><span class="p">,</span> <span class="n">triggerOnset</span><span class="p">,</span> <span class="n">plotTrigger</span>
+    <span class="kn">from</span> <span class="nn">Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="kn">import</span> <span class="nn">EQcorrscan_plotting</span> <span class="kn">as</span> <span class="nn">plotting</span>
+    <span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="c"># We are going to assume, for now, that if the pick is made on the</span>
+        <span class="c"># horizontal channel then it is an S, otherwise we will assume it is</span>
+        <span class="c"># a P-phase: obviously a bad assumption...</span>
+        <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;Z&#39;</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="s">&#39;P&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="s">&#39;S&#39;</span>
+        <span class="k">if</span> <span class="n">freqmin</span> <span class="ow">and</span> <span class="n">freqmax</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">freqmin</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">freqmax</span><span class="p">,</span>
+                      <span class="n">corners</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="n">cft</span> <span class="o">=</span> <span class="n">classicSTALTA</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">stalen</span> <span class="o">*</span> <span class="n">df</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ltalen</span> <span class="o">*</span> <span class="n">df</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">plotTrigger</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">cft</span><span class="p">,</span> <span class="n">trig_on</span><span class="p">,</span> <span class="n">trig_off</span><span class="p">)</span>
+        <span class="n">triggers</span> <span class="o">=</span> <span class="n">triggerOnset</span><span class="p">(</span><span class="n">cft</span><span class="p">,</span> <span class="n">trig_on</span><span class="p">,</span> <span class="n">trig_off</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">trigger</span> <span class="ow">in</span> <span class="n">triggers</span><span class="p">:</span>
+            <span class="n">on</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span> <span class="p">(</span><span class="n">trigger</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">df</span><span class="p">)</span>
+            <span class="c"># off = tr.stats.starttime + (trigger[1] / df)</span>
+            <span class="n">pick</span> <span class="o">=</span> <span class="n">PICK</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                        <span class="n">time</span><span class="o">=</span><span class="n">on</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;Pick made:&#39;</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+            <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+    <span class="c"># QC picks</span>
+    <span class="k">del</span> <span class="n">pick</span>
+    <span class="n">pick_stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">pick_station</span> <span class="ow">in</span> <span class="n">pick_stations</span><span class="p">:</span>
+        <span class="n">station_picks</span> <span class="o">=</span> <span class="p">[</span><span class="n">pick</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">picks</span> <span class="k">if</span>
+                         <span class="n">pick</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="n">pick_station</span><span class="p">]</span>
+        <span class="c"># If P-pick is after S-picks, remove it.</span>
+        <span class="n">p_time</span> <span class="o">=</span> <span class="p">[</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">station_picks</span> <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">]</span>
+        <span class="n">s_time</span> <span class="o">=</span> <span class="p">[</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">station_picks</span> <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">p_time</span> <span class="o">&gt;</span> <span class="n">s_time</span><span class="p">:</span>
+            <span class="n">p_pick</span> <span class="o">=</span> <span class="p">[</span><span class="n">pick</span> <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">station_picks</span> <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s">&#39;P&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">p_pick</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;P pick after S pick, removing P pick&#39;</span><span class="p">)</span>
+                <span class="n">picks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plotting</span><span class="o">.</span><span class="n">pretty_template_plot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s">&#39;Autopicks&#39;</span><span class="p">,</span>
+                                      <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">picks</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
