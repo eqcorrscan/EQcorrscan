@@ -85,18 +85,19 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">3.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">3.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">3.3. match_filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">3.4. lag_calc</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.1. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.2. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.3. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.4. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.5. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.6. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.7. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">4.8. catalogue2DD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">4.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">4.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">4.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">4.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">4.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">4.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -158,8 +159,6 @@ your call.</p>
 <span class="sd">tutorial and uses those templates.  If you haven&#39;t run that tutorial script</span>
 <span class="sd">then you will need to before you can run this script.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;/home/calumch/my_programs/Building/EQcorrscan&#39;</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
 <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span> <span class="k">as</span> <span class="n">plotting</span>
@@ -192,73 +191,85 @@ your call.</p>
 <span class="c"># Get a unique list of stations</span>
 <span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
 
-<span class="c"># We are going to look for detections within one day of data on the 4th of</span>
-<span class="c"># Jan 2016, which is the same day as our templates</span>
-<span class="n">t1</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="s">&quot;2016-01-04T00:00:00.000&quot;</span><span class="p">)</span>
-<span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">86400</span>
+<span class="c"># We are going to look for detections on the day of our template, however, to</span>
+<span class="c"># generalize, we will write a loop through the days between our templates, in</span>
+<span class="c"># this case that is only one day.</span>
 
-<span class="c"># Generate the bulk information to query the GeoNet database</span>
-<span class="n">bulk_info</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
-    <span class="n">bulk_info</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;H*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">))</span>
-    <span class="c"># Note that we are only using the first letter of the channel code to</span>
-    <span class="c"># download all channels from that sensor at that site, e.g. if the</span>
-    <span class="c"># channel code is HHZ we will download HHE and HHN as well.</span>
+<span class="n">template_days</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+    <span class="n">template_days</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+<span class="n">template_days</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">template_days</span><span class="p">)</span>
+<span class="n">kdays</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_days</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">template_days</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span>
 
-<span class="c"># Set up a client to access the GeoNet database</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s">&quot;GEONET&quot;</span><span class="p">)</span>
-
-<span class="c"># Note this will take a little while.</span>
-<span class="k">print</span><span class="p">(</span><span class="s">&#39;Downloading seismic data, this may take a while&#39;</span><span class="p">)</span>
-<span class="n">st</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">bulk_info</span><span class="p">)</span>
-<span class="c"># Merge the stream, it will be downloaded in chunks</span>
-<span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
-
-<span class="c"># Work out what data we actually have to cope with possible lost data</span>
-<span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]))</span>
-
-<span class="c"># Pre-process the data to set frequency band and sampling rate</span>
-<span class="c"># Note that this is, and MUST BE the same as the parameters used for the</span>
-<span class="c"># template creation.</span>
-<span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
-<span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
-                         <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                          <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
-                         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
-<span class="c"># Convert from list to stream</span>
-<span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
-
-<span class="c"># Set how many cores we want to parallel across, we will set this to four</span>
-<span class="c"># as this is the number of templates, if your machine has fewer than four</span>
-<span class="c"># cores/CPUs the multiprocessing will wait until there is a free core.</span>
-<span class="c"># Setting this to be higher than the number of templates will have no increase</span>
-<span class="c"># in speed as only detections for each template are computed in parallel.</span>
-<span class="n">ncores</span> <span class="o">=</span> <span class="mi">4</span>
-
-<span class="c"># Now we can conduct the matched-filter detection</span>
-<span class="n">detections</span> <span class="o">=</span> <span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="o">=</span><span class="n">template_names</span><span class="p">,</span>
-                                       <span class="n">template_list</span><span class="o">=</span><span class="n">templates</span><span class="p">,</span>
-                                       <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
-                                       <span class="n">threshold_type</span><span class="o">=</span><span class="s">&#39;MAD&#39;</span><span class="p">,</span>
-                                       <span class="n">trig_int</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">plotvar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span>
-                                       <span class="n">cores</span><span class="o">=</span><span class="n">ncores</span><span class="p">,</span> <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                                       <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">)</span>
-
-<span class="c"># Now lets try and work out how many unique events we have just to compare with</span>
-<span class="c"># the GeoNet catalog of 20 events on this day in this sequence</span>
 <span class="n">unique_detections</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">master</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
-    <span class="n">keep</span> <span class="o">=</span> <span class="bp">True</span>
-    <span class="k">for</span> <span class="n">slave</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span> <span class="o">==</span> <span class="n">slave</span> <span class="ow">and</span>\
-           <span class="nb">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">6.0</span><span class="p">:</span>
-            <span class="c"># If the events are within 6s of each other then test which</span>
-            <span class="c"># was the &#39;best&#39; match, strongest detection</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">detect_val</span> <span class="o">&gt;</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_val</span><span class="p">:</span>
-                <span class="n">keep</span> <span class="o">=</span> <span class="bp">False</span>
-                <span class="k">break</span>
-    <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
-        <span class="n">unique_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">master</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">kdays</span><span class="p">):</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">template_days</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="mi">86400</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">86400</span>
+
+    <span class="c"># Generate the bulk information to query the GeoNet database</span>
+    <span class="n">bulk_info</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+        <span class="n">bulk_info</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;NZ&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">station</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;H*&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">))</span>
+        <span class="c"># Note that we are only using the first letter of the channel code to</span>
+        <span class="c"># download all channels from that sensor at that site, e.g. if the</span>
+        <span class="c"># channel code is HHZ we will download HHE and HHN as well.</span>
+
+    <span class="c"># Set up a client to access the GeoNet database</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s">&quot;GEONET&quot;</span><span class="p">)</span>
+
+    <span class="c"># Note this will take a little while.</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Downloading seismic data, this may take a while&#39;</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">bulk_info</span><span class="p">)</span>
+    <span class="c"># Merge the stream, it will be downloaded in chunks</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
+
+    <span class="c"># Work out what data we actually have to cope with possible lost data</span>
+    <span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]))</span>
+
+    <span class="c"># Pre-process the data to set frequency band and sampling rate</span>
+    <span class="c"># Note that this is, and MUST BE the same as the parameters used for the</span>
+    <span class="c"># template creation.</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
+                             <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                              <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+    <span class="c"># Convert from list to stream</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
+    <span class="c"># Set how many cores we want to parallel across, we will set this to four</span>
+    <span class="c"># as this is the number of templates, if your machine has fewer than four</span>
+    <span class="c"># cores/CPUs the multiprocessing will wait until there is a free core.</span>
+    <span class="c"># Setting this to be higher than the number of templates will have no i</span>
+    <span class="c"># increase in speed as only detections for each template are computed in</span>
+    <span class="c"># parallel.</span>
+    <span class="n">ncores</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="c"># Now we can conduct the matched-filter detection</span>
+    <span class="n">detections</span> <span class="o">=</span> <span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="o">=</span><span class="n">template_names</span><span class="p">,</span>
+                                           <span class="n">template_list</span><span class="o">=</span><span class="n">templates</span><span class="p">,</span>
+                                           <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
+                                           <span class="n">threshold_type</span><span class="o">=</span><span class="s">&#39;MAD&#39;</span><span class="p">,</span>
+                                           <span class="n">trig_int</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">plotvar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                           <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">ncores</span><span class="p">,</span>
+                                           <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                           <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">)</span>
+
+    <span class="c"># Now lets try and work out how many unique events we have just to compare</span>
+    <span class="c"># with the GeoNet catalog of 20 events on this day in this sequence</span>
+    <span class="k">for</span> <span class="n">master</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">slave</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span> <span class="o">==</span> <span class="n">slave</span> <span class="ow">and</span>\
+               <span class="nb">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">6.0</span><span class="p">:</span>
+                <span class="c"># If the events are within 6s of each other then test which</span>
+                <span class="c"># was the &#39;best&#39; match, strongest detection</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">detect_val</span> <span class="o">&gt;</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_val</span><span class="p">:</span>
+                    <span class="n">keep</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">break</span>
+        <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
+            <span class="n">unique_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">master</span><span class="p">)</span>
 
 <span class="k">print</span><span class="p">(</span><span class="s">&#39;We made a total of &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_detections</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39; detections&#39;</span><span class="p">)</span>
 
@@ -268,9 +279,11 @@ your call.</p>
           <span class="nb">str</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_val</span><span class="p">))</span>
     <span class="c"># We can plot these too</span>
     <span class="n">stplot</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">stplot</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span>
-                <span class="n">endtime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">+</span> <span class="mi">30</span><span class="p">)</span>
     <span class="n">template</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">template_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="p">)]</span>
+    <span class="n">lags</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">])</span>
+    <span class="n">maxlag</span> <span class="o">=</span> <span class="n">lags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lags</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">stplot</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">endtime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">+</span> <span class="n">maxlag</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
     <span class="n">plotting</span><span class="o">.</span><span class="n">detection_multiplot</span><span class="p">(</span><span class="n">stplot</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span>
                                  <span class="p">[</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="o">.</span><span class="n">datetime</span><span class="p">])</span>
 </pre></div>
