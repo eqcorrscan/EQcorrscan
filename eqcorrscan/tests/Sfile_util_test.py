@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 from eqcorrscan.utils.Sfile_util import eventtoSfile, readwavename, readpicks
 from eqcorrscan.utils.Sfile_util import eventtopick, picktoevent
 
+
 def test_download_write():
     """
     Function to download quakeML files from a range of datacenters and \
@@ -33,8 +34,9 @@ def test_download_write():
         client = Client(event_info[0])
         if event_info[0] == 'GEONET':
             try:
-                data_stream = client._download('http://quakeml.geonet.org.nz/' +
-                                               'quakeml/1.2/' + event_info[1])
+                data_stream = client.\
+                    _download('http://quakeml.geonet.org.nz/' +
+                              'quakeml/1.2/' + event_info[1])
                 data_stream.seek(0, 0)
                 event = read_events(data_stream, format="quakeml")
                 data_stream.close()
@@ -59,7 +61,7 @@ def basic_test_event():
     Function to generate a basic, full test event
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    from obspy.core.event import Catalog, Event, Origin, Magnitude
+    from obspy.core.event import Event, Origin, Magnitude
     from obspy.core.event import EventDescription, CreationInfo
     from obspy import UTCDateTime
 
@@ -120,15 +122,12 @@ def test_read_write():
     Function to test the read and write capabilities of Sfile_util.
     """
     import os
-    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    from obspy.core.event import Catalog, Event, Origin, Magnitude
-    from obspy.core.event import EventDescription, CreationInfo
+    from obspy.core.event import Catalog
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.core.event import read_events
     else:
         from obspy.core.event import readEvents as read_events
-    from obspy import UTCDateTime
 
     # Set-up a test event
     test_event = basic_test_event()
