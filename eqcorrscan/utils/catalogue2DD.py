@@ -71,13 +71,19 @@ def _av_weight(W1, W2):
 
     :returns: str
     """
-    for W in [W1, W2]:
-        if W == ' ':
-            W = 1
-        elif W == '9':
-            W = 0
-        else:
-            W = 1 - int(W) / 4.0
+    if W1 == ' ':
+        W1 = 1
+    elif W1 == '9':
+        W1 = 0
+    else:
+        W1 = 1 - int(W1) / 4.0
+
+    if W2 == ' ':
+        W2 = 1
+    elif W2 == '9':
+        W2 = 0
+    else:
+        W2 = 1 - int(W2) / 4.0
 
     W = (W1 + W2) / 2
     return _cc_round(W, 4)
