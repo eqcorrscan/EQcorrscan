@@ -11,13 +11,13 @@ import unittest
 class TestCoreMethods(unittest.TestCase):
     # def test_lag_calc():
     #     """
-    #     Function to test the capabilites of lag_calc.  When bugs are found in \
-    #     the code and fixed the cause of the bug should be emulated here to \
-    #     ensure that it is truely fixed.
+    #     Function to test the capabilites of lag_calc.  When bugs are found \
+    #     in the code and fixed the cause of the bug should be emulated here \
+    #     to ensure that it is truely fixed.
     #     """
     #     # We need to develop a synthetic dataset...
-    #     # This needs to have a list of detection objects, a day of synth data,
-    #     # and a series of templates.
+    #     # This needs to have a list of detection objects, a day of synth
+    #     # data, and a series of templates.
     #     return True
 
     def test_match_filter(self, samp_rate=20.0, debug=0):
