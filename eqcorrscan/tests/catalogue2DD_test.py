@@ -2,6 +2,10 @@
 Functions to test the functions within the eqcorrscan.utils.catalogue2DD.py \
 submodule.  Uses test data distributed with the EQcorrscan pacakge.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import unittest
 
 
@@ -132,7 +136,6 @@ class TestCatalogueMethods(unittest.TestCase):
         """
         from eqcorrscan.utils.catalogue2DD import sfiles_to_event
         from eqcorrscan.utils import Sfile_util
-        from obspy import UTCDateTime
         import os
         import glob
 
@@ -171,6 +174,30 @@ class TestCatalogueMethods(unittest.TestCase):
                                  Time_Residual_RMS,
                                  float(output_event_info[-2]))
         os.remove('event.dat')
+
+    def test_write_catalogue(self):
+        """
+        Simple testing function for the write_catalogue function in \
+        catalogue2DD.
+        """
+        from eqcorrscan.utils.catalogue2DD import write_catalogue
+        import glob
+        import os
+        # We have to make an event list first
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_')
+        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
+        event_ids = list(range(len(sfile_list)))
+        event_list = zip(event_ids, sfile_list)
+        stations = write_catalogue(event_list=event_list, max_sep=1,
+                                   min_link=8)
+        self.assertTrue(os.path.isfile('dt.ct'))
+        self.assertTrue(os.path.isfile('phase.dat'))
+        os.remove('phase.dat')
+        os.remove('dt.ct')
+        if os.path.isfile('dt.ct2'):
+            os.remove('dt.ct2')
+        raise NotImplementedError('Currently unfinished test')
 
 if __name__ == '__main__':
     unittest.main()
