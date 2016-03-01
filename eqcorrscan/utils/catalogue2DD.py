@@ -178,6 +178,10 @@ def write_event(catalog):
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
         Mag_1 = event.magnitudes[0].mag or ' '
+        if event.origins[0].time_errors:
+            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
+        else:
+            t_RMS = ' '
         f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2)+'  ' +
                 str(evinfo.time.hour).rjust(2) +
@@ -188,7 +192,7 @@ def write_event(catalog):
                 str(evinfo.longitude).ljust(8, '0')+'  ' +
                 str(evinfo.depth / 1000).rjust(7).ljust(9, '0')+'   ' +
                 str(Mag_1)+'    0.00    0.00   ' +
-                str(evinfo.time_errors.Time_Residual_RMS).ljust(4, '0') +
+                str(t_RMS).ljust(4, '0') +
                 str(i).rjust(11)+'\n')
     f.close()
     return
