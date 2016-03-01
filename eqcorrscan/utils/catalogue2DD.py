@@ -223,17 +223,17 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_picks = Sfile_util.readpicks(master_sfile)
-        master_ori_time = Sfile_util.readheader(master_sfile).time
+        master_event = Sfile_util.readpicks(master_sfile)
+        master_ori_time = master_event.origins[0].time
         # print 'Master origin time: '+str(master_ori_time)
-        master_location = (Sfile_util.readheader(master_sfile).latitude,
-                           Sfile_util.readheader(master_sfile).longitude,
-                           Sfile_util.readheader(master_sfile).depth)
+        master_location = (master_event.origins[0].latitude,
+                           master_event.origins[0].longitude,
+                           master_event.origins[0].depth)
         header = '#  '+str(master_ori_time)+'#  '+str(master_event_id)
         fphase.write(header+'\n')
-        for pick in master_picks:
-            fphase.write(pick.station+'  ' +
-                         _cc_round(pick.time-master_ori_time, 3) +
+        for pick in master_event.picks:
+            fphase.write(pick.waveform_id.station_code+'  ' +
+                         _cc_round(pick.time - master_ori_time, 3) +
                          '   '+'\n')
         for j in range(i+1, len(event_list)):
             # Use this tactic to only output unique event pairings
@@ -244,37 +244,47 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
                 str(slave_event_id).rjust(10)+'\n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+'\n'
-            slave_picks = Sfile_util.readpicks(slave_sfile)
-            slave_ori_time = Sfile_util.readheader(slave_sfile).time
-            slave_location = (Sfile_util.readheader(slave_sfile).latitude,
-                              Sfile_util.readheader(slave_sfile).longitude,
-                              Sfile_util.readheader(slave_sfile).depth)
+            slave_event = Sfile_util.readpicks(slave_sfile)
+            slave_ori_time = slave_event.origins[0].time
+            slave_location = (slave_event.origins[0].latitude,
+                              slave_event.origins[0].longitude,
+                              slave_event.origins[0].depth)
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
             links = 0  # Count the number of linkages
-            for pick in master_picks:
-                if pick.phase not in ['P', 'S']:
+            for pick in master_event.picks:
+                if pick.phase_hint[0].upper() not in ['P', 'S']:
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Added by Carolin
-                slave_matches = [p for p in slave_picks
-                                 if p.phase == pick.phase
-                                 and p.station.upper() == pick.station.upper()]
+                slave_matches = [p for p in slave_event.picks
+                                 if p.phase_hint == pick.phase_hint
+                                 and p.waveform_id.station_code.upper() ==
+                                 pick.waveform_id.station_code.upper()]
                 # Loop through the matches
                 for slave_pick in slave_matches:
                     links += 1
-                    event_text += pick.station.ljust(5) +\
+                    master_weight = [arrival.time_weight
+                                     for arrival in master_event.
+                                     origins[0].arrivals
+                                     if arrival.pick_id == pick.resource_id][0]
+                    slave_weight = [arrival.time_weight
+                                    for arrival in slave_event.
+                                    origins[0].arrivals
+                                    if arrival.pick_id ==
+                                    slave_pick.resource_id][0]
+                    event_text += pick.waveform_id.station_code.ljust(5) +\
                         _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
                         _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
-                        _av_weight(pick.weight, slave_pick.weight).rjust(7) +\
-                        ' '+pick.phase+'\n'
+                        _av_weight(master_weight, slave_weight).rjust(7) +\
+                        ' '+pick.phase_hint+'\n'
                     # Added by Carolin
-                    event_text2 += pick.station.ljust(5).upper() +\
+                    event_text2 += pick.waveform_id.station_code.ljust(5) +\
                         _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
                         _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
-                        _av_weight(pick.weight, slave_pick.weight).rjust(7) +\
-                        ' '+pick.phase+'\n'
-                    stations.append(pick.station.upper())
+                        _av_weight(master_weight, slave_weight).rjust(7) +\
+                        ' '+pick.phase_hint+'\n'
+                    stations.append(pick.waveform_id.station_code)
             if links >= min_link:
                 f.write(event_text)
                 f2.write(event_text2)
