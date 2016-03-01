@@ -143,7 +143,7 @@ def readSTATION0(path, stations):
     return stalist
 
 
-def write_event(sfile_list):
+def sfiles_to_event(sfile_list):
     """
     Function to write out an event.dat file of the events
 
@@ -152,16 +152,32 @@ def write_event(sfile_list):
 
     :returns: List of tuples of event ID (int) and Sfile name
     """
+    from obspy.core.event import Catalog
     event_list = []
     sort_list = [(Sfile_util.readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
     sort_list.sort(key=lambda tup: tup[0])
     sfile_list = [sfile[1] for sfile in sort_list]
-    f = open('event.dat', 'w')
+    catalog = Catalog()
     for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
-        evinfo = Sfile_util.readheader(sfile).origins[0]
-        Mag_1 = Sfile_util.readheader(sfile).magnitudes[0].mag or ' '
+        catalog.append(Sfile_util.readheader(sfile))
+    # Hand off to sister function
+    write_event(catalog)
+    return event_list
+
+
+def write_event(catalog):
+    """
+    Function to write obspy.core.Catalog to a hypoDD format event.dat file.
+
+    :type catalog: :class: osbpy.core.Catalog
+    :param catalog: A catalog of obspy events
+    """
+    f = open('event.dat', 'w')
+    for i, event in enumerate(catalog):
+        evinfo = event.origins[0]
+        Mag_1 = event.magnitudes[0].mag or ' '
         f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2)+'  ' +
                 str(evinfo.time.hour).rjust(2) +
@@ -175,7 +191,7 @@ def write_event(sfile_list):
                 str(evinfo.time_errors.Time_Residual_RMS).ljust(4, '0') +
                 str(i).rjust(11)+'\n')
     f.close()
-    return event_list
+    return
 
 
 def write_catalogue(event_list, max_sep=1, min_link=8):
