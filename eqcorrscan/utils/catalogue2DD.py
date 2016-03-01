@@ -153,14 +153,15 @@ def write_event(sfile_list):
     :returns: List of tuples of event ID (int) and Sfile name
     """
     event_list = []
-    sort_list = [(Sfile_util.readheader(sfile).time, sfile)
+    sort_list = [(Sfile_util.readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
     sort_list.sort(key=lambda tup: tup[0])
     sfile_list = [sfile[1] for sfile in sort_list]
     f = open('event.dat', 'w')
     for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
-        evinfo = Sfile_util.readheader(sfile)
+        evinfo = Sfile_util.readheader(sfile).origins[0]
+        Mag_1 = Sfile_util.readheader(sfile).magnitudes[0].mag or ' '
         f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2)+'  ' +
                 str(evinfo.time.hour).rjust(2) +
@@ -169,9 +170,9 @@ def write_event(sfile_list):
                 str(evinfo.time.microsecond)[0:2].zfill(2)+'  ' +
                 str(evinfo.latitude).ljust(8, '0')+'   ' +
                 str(evinfo.longitude).ljust(8, '0')+'  ' +
-                str(evinfo.depth).rjust(7).ljust(9, '0')+'   ' +
-                str(evinfo.Mag_1)+'    0.00    0.00   ' +
-                str(evinfo.t_RMS).ljust(4, '0') +
+                str(evinfo.depth / 1000).rjust(7).ljust(9, '0')+'   ' +
+                str(Mag_1)+'    0.00    0.00   ' +
+                str(evinfo.time_errors.Time_Residual_RMS).ljust(4, '0') +
                 str(i).rjust(11)+'\n')
     f.close()
     return event_list
