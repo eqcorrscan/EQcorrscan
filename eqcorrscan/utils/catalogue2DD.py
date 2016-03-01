@@ -228,13 +228,25 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
         # print 'Master origin time: '+str(master_ori_time)
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
-                           master_event.origins[0].depth)
-        header = '#  '+str(master_ori_time)+'#  '+str(master_event_id)
+                           master_event.origins[0].depth / 1000)
+        if len(master_event.magnitudes) > 0:
+            master_magnitude = master_event.magnitudes[0].mag or ' '
+        else:
+            master_magnitude = ' '
+        header = '# '+master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
+            ' '+str(master_location[0])+' '+str(master_location[1])+' ' +\
+            str(master_location[2])+' '+str(master_magnitude)+' 0.0 0.0 0.0' +\
+            str(master_event_id)
         fphase.write(header+'\n')
         for pick in master_event.picks:
-            fphase.write(pick.waveform_id.station_code+'  ' +
-                         _cc_round(pick.time - master_ori_time, 3) +
-                         '   '+'\n')
+            if pick.phase_hint[0].upper() in ['P', 'S']:
+                weight = [arrival.time_weight
+                          for arrival in master_event.origins[0].arrivals
+                          if arrival.pick_id == pick.resource_id][0]
+                fphase.write(pick.waveform_id.station_code+'  ' +
+                             _cc_round(pick.time -
+                                       master_ori_time, 3).rjust(6) +
+                             '   '+str(weight).ljust(5)+pick.phase_hint+'\n')
         for j in range(i+1, len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
@@ -248,7 +260,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth)
+                              slave_event.origins[0].depth / 1000)
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
             links = 0  # Count the number of linkages
