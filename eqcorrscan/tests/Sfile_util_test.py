@@ -195,7 +195,7 @@ class TestSfileMethods(unittest.TestCase):
         # self.assertEqual(read_cat[0].origins[0].resource_id,
         #                  test_cat[0].origins[0].resource_id)
         self.assertEqual(conv_cat[0].origins[0].time,
-                        test_cat[0].origins[0].time)
+                         test_cat[0].origins[0].time)
         # Note that time_residuel_RMS is not a quakeML format
         self.assertEqual(conv_cat[0].origins[0].longitude,
                          test_cat[0].origins[0].longitude)
