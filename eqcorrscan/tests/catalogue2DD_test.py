@@ -181,23 +181,89 @@ class TestCatalogueMethods(unittest.TestCase):
         catalogue2DD.
         """
         from eqcorrscan.utils.catalogue2DD import write_catalogue
+        from eqcorrscan.utils.mag_calc import dist_calc
+        from eqcorrscan.utils import Sfile_util
         import glob
         import os
+        # Set forced variables
+        maximum_seperation = 1  # Maximum inter-event seperation in km
+        minimum_links = 8  # Minimum inter-event links to generate a pair
         # We have to make an event list first
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_')
         sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
         event_ids = list(range(len(sfile_list)))
         event_list = zip(event_ids, sfile_list)
-        stations = write_catalogue(event_list=event_list, max_sep=1,
-                                   min_link=8)
+        stations = write_catalogue(event_list=event_list,
+                                   max_sep=maximum_seperation,
+                                   min_link=minimum_links)
         self.assertTrue(os.path.isfile('dt.ct'))
+        # Check dt.ct file, should contain only a few linked events
+        dt_file_out = open('dt.ct', 'r')
+        event_pairs = []
+        for i, line in enumerate(dt_file_out):
+            if line[0] == '#':
+                if i != 0:
+                    # Check the number of links
+                    self.assertTrue(len(event_links) >= minimum_links)
+                    # Check the distance between events
+                    event_1_name = [event[1] for event in event_list
+                                    if event[0] ==
+                                    int(event_pair.split()[1])][0]
+                    event_2_name = [event[1] for event in event_list
+                                    if event[0] ==
+                                    int(event_pair.split()[2])][0]
+                    event_1 = Sfile_util.readheader(event_1_name)
+                    event_2 = Sfile_util.readheader(event_2_name)
+                    event_1_location = (event_1.origins[0].latitude,
+                                        event_1.origins[0].longitude,
+                                        event_1.origins[0].depth / 1000)
+                    event_2_location = (event_2.origins[0].latitude,
+                                        event_2.origins[0].longitude,
+                                        event_2.origins[0].depth / 1000)
+                    hypocentral_seperation = dist_calc(event_1_location,
+                                                       event_2_location)
+                    self.assertTrue(hypocentral_seperation <
+                                    maximum_seperation)
+                    # Check that the differential times are accurate
+                    event_1_picks = Sfile_util.readpicks(event_1_name).picks
+                    event_2_picks = Sfile_util.readpicks(event_2_name).picks
+                    for pick_pair in event_links:
+                        station = pick_pair.split()[0]
+                        event_1_travel_time_output = pick_pair.split()[1]
+                        event_2_travel_time_output = pick_pair.split()[2]
+                        weight = pick_pair.split()[3]
+                        phase = pick_pair.split()[4]
+                        # Extract the relevant pick information from the
+                        # two sfiles
+                        for pick in event_1_picks:
+                            if pick.waveform_id.station_code == station:
+                                if pick.phase_hint[0].upper() == phase:
+                                    event_1_pick = pick
+                        for pick in event_2_picks:
+                            if pick.waveform_id.station_code == station:
+                                if pick.phase_hint[0].upper() == phase:
+                                    event_2_pick = pick
+                        # Calculate the travel-time
+                        event_1_travel_time_input = event_1_pick.time -\
+                            event_1.origins[0].time
+                        event_2_travel_time_input = event_2_pick.time -\
+                            event_2.origins[0].time
+                        self.assertEqual(event_1_travel_time_input,
+                                         float(event_1_travel_time_output))
+                        self.assertEqual(event_2_travel_time_input,
+                                         float(event_2_travel_time_output))
+                event_pair = line
+                event_pairs.append(line)
+                event_links = []
+            else:
+                event_links.append(line)
         self.assertTrue(os.path.isfile('phase.dat'))
         os.remove('phase.dat')
         os.remove('dt.ct')
         if os.path.isfile('dt.ct2'):
             os.remove('dt.ct2')
-        raise NotImplementedError('Currently unfinished test')
+        # raise NotImplementedError('Currently unfinished test')
 
 if __name__ == '__main__':
     unittest.main()
