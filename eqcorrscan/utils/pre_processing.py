@@ -53,7 +53,8 @@ def _check_daylong(tr):
 #     return
 
 
-def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
+def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
+              parallel=False, num_cores=False):
     r"""Basic function to bandpass and downsample.
 
     Works in place on data.  This is employed to ensure all parts of the \
@@ -71,36 +72,141 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0):
     :param samp_rate: Sampling rate desired in Hz
     :type debug: int
     :param debug: Debug flag from 0-5, higher numbers = more output
+    :type parallel: bool
+    :param parallel: Set to True to process traces in parallel, for small \
+        numbers of traces this is often slower than serial processing, \
+        defaults to False
+    :type num_cores: int
+    :param num_cores: Control the number of cores for parallel processing, \
+        if set to False then this will use all the cores.
 
     :return: obspy.Stream
 
     .. note:: Will convert channel names to two charecters long.
     """
+    from multiprocessing import Pool, cpu_count
+    from obspy import Stream
     # Add sanity check for filter
     if highcut >= 0.5*samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
-    for tr in st:
-        if debug > 4:
-            tr.plot()
-        # Check data quality first
-        qual = _check_daylong(tr)
-        if not qual:
-            msg = ("Data have more zeros than actual data, please check the",
-                   "raw data set-up and manually sort it")
-            raise ValueError(msg)
-        # Check sampling rate and resample
-        if tr.stats.sampling_rate != samp_rate:
-            tr.resample(samp_rate)
+    if parallel:
+        if not num_cores:
+            num_cores = cpu_count()
+        pool = Pool(processes=num_cores)
+        results = [pool.apply_async(_shortproc_inner,
+                                    args=(tr, lowcut, highcut, filt_order,
+                                          samp_rate, debug))
+                   for tr in st]
+        pool.close()
+        stream_list = [p.get() for p in results]
+        pool.join()
+        st = Stream(stream_list)
+    else:
+        for tr in st:
+            _shortproc_inner(tr, lowcut, highcut, filt_order, samp_rate, debug)
+    return st
 
-        # Filtering section
-        tr = tr.detrend('simple')    # Detrend data before filtering
-        tr.data = bandpass(tr.data, lowcut, highcut,
-                           tr.stats.sampling_rate, filt_order, True)
-        # Convert to two charectar channel names
-        tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
-        # Final visual check for debug
-        if debug > 4:
-            tr.plot()
+
+def _shortproc_inner(tr, lowcut, highcut, filt_order, samp_rate, debug=0):
+    """
+    Inner loop for shortproc to allow multiprocessing. Would usually be called
+    by shortproc, but can be called individually.
+
+    :type tr: obspy.Trace
+    :param st: Trace to process
+    :type highcut: float
+    :param highcut: High cut for bandpass in Hz
+    :type lowcut: float
+    :param lowcut: Low cut for bandpass in Hz
+    :type filt_order: int
+    :param filt_order: Number of corners for bandpass filter
+    :type samp_rate: float
+    :param samp_rate: Sampling rate desired in Hz
+    :type debug: int
+    :param debug: Debug flag from 0-5, higher numbers = more output
+
+    :return: obspy.Stream
+
+    .. note:: Will convert channel names to two charecters long.
+    """
+    if debug > 4:
+        tr.plot()
+    # Check data quality first
+    qual = _check_daylong(tr)
+    if not qual:
+        msg = ("Data have more zeros than actual data, please check the",
+               "raw data set-up and manually sort it")
+        raise ValueError(msg)
+    # Check sampling rate and resample
+    if tr.stats.sampling_rate != samp_rate:
+        tr.resample(samp_rate)
+
+    # Filtering section
+    tr = tr.detrend('simple')    # Detrend data before filtering
+    tr.data = bandpass(tr.data, lowcut, highcut,
+                       tr.stats.sampling_rate, filt_order, True)
+    # Convert to two charecter channel names
+    tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
+    # Final visual check for debug
+    if debug > 4:
+        tr.plot()
+    return tr
+
+
+def dayproc_stream(st, lowcut, highcut, filt_order, samp_rate,
+                   starttime, debug=0, parallel=True, num_cores=False):
+    """
+    Wrapper for dayproc to parallel multiple traces in a stream.
+
+    Works in place on data.  This is employed to ensure all parts of the data \
+    are processed in the same way.
+
+    :type st: obspy.Stream
+    :param tr: Trace to process
+    :type highcut: float
+    :param highcut: High cut in Hz for bandpass
+    :type lowcut: float
+    :type lowcut: Low cut in Hz for bandpass
+    :type filt_order: int
+    :param filt_order: Corners for bandpass
+    :type samp_rate: float
+    :param samp_rate: Desired sampling rate in Hz
+    :type debug: int
+    :param debug: Debug output level from 0-5, higher numbers = more output
+    :type starttime: obspy.UTCDateTime
+    :param starttime: Desired start of trace
+    :type parallel: bool
+    :param parallel: Set to True to process traces in parallel, this is often \
+        faster than serial processing of traces: defaults to True
+    :type num_cores: int
+    :param num_cores: Control the number of cores for parallel processing, \
+        if set to False then this will use all the cores.
+
+    :return: obspy.Stream
+
+    .. note:: Will convert channel names to two charecters long.
+    """
+    from multiprocessing import Pool, cpu_count
+    from obspy import Stream
+    # Add sanity check for filter
+    if highcut >= 0.5*samp_rate:
+        raise IOError('Highcut must be lower than the nyquist')
+    if parallel:
+        if not num_cores:
+            num_cores = cpu_count()
+        pool = Pool(processes=num_cores)
+        results = [pool.apply_async(dayproc,
+                                    args=(tr, lowcut, highcut, filt_order,
+                                          samp_rate, debug, starttime))
+                   for tr in st]
+        pool.close()
+        stream_list = [p.get() for p in results]
+        pool.join()
+        st = Stream(stream_list)
+    else:
+        for tr in st:
+            dayproc(tr, lowcut, highcut, filt_order, samp_rate, debug,
+                    starttime)
     return st
 
 
