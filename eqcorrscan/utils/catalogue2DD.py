@@ -234,15 +234,24 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
         else:
             master_magnitude = ' '
         header = '# '+master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
-            ' '+str(master_location[0])+' '+str(master_location[1])+' ' +\
-            str(master_location[2])+' '+str(master_magnitude)+' 0.0 0.0 0.0' +\
-            str(master_event_id)
+            ' '+str(master_location[0]).ljust(8)+' ' +\
+            str(master_location[1]).ljust(8)+' ' +\
+            str(master_location[2]).ljust(4)+' ' +\
+            str(master_magnitude).ljust(4)+' 0.0 0.0 0.0' +\
+            str(master_event_id).rjust(4)
         fphase.write(header+'\n')
         for pick in master_event.picks:
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
                           for arrival in master_event.origins[0].arrivals
                           if arrival.pick_id == pick.resource_id][0]
+                # Convert seisan weight to hypoDD 0-1 weights
+                if weight == 0:
+                    weight = 1.0
+                elif weight == 9:
+                    weight = 0.0
+                else:
+                    weight = 1 - weight / 4.0
                 fphase.write(pick.waveform_id.station_code+'  ' +
                              _cc_round(pick.time -
                                        master_ori_time, 3).rjust(6) +
