@@ -1,0 +1,17 @@
+ 2013  921 1512 14.2 L -43.354 170.324  9.7  VUW  6 0.1 1.2LVUW                1
+ GAP=105        0.33       1.2     1.7  4.0  0.3980E+00 -0.6669E+00  0.1171E+01E
+ ACTION:NEW 15- 7-15  1:54 OP:CALU STATUS:               ID:20130921151216     I
+ 2013-09-21-1511-34.DFDPC_021_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ WZ04 HZ IP       1512 16.35                             130    0.0110    9   2 
+ WZ04 HN IS       1512 17.91                             130    0.0910    9   2 
+ WZ04 HZ  IAML    1512 18.58        11.1 0.38                             9   2 
+ WZ11 HZ IP       1512 16.24                             130   -0.1110    9  47 
+ WZ11 HZ  IAML    1512 21.39        29.6 0.56                             9  47 
+ WHYM SZ IP   1   1512 16.70                             130    0.12 7   10 158 
+ WHYM SN IS   2   1512 18.30                             130    0.08 5   10 158 
+ WHYM SZ  IAML    1512 18.71         9.6 0.31                            10 158 
+ WZ02 EN IS       1512 18.60                             121   -0.1010   13  87 
+ FRAN S2 IS   2   1512 18.58                             120   -0.26 5   13 258 
+ FRAN S1  IAML    1512 19.13         0.0 0.17                            13 258 
+                                                                                
