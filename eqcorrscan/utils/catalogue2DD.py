@@ -104,8 +104,8 @@ def readSTATION0(path, stations):
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
     for line in f:
-        if line[2:6].strip() in stations:
-            station = line[2:6].strip()
+        if line[1:6].strip() in stations:
+            station = line[1:6].strip()
             print station
             lat = line[6:14]  # Format is either ddmm.mmS/N or ddmm(.)mmmS/N
             if lat[-1] == 'S':
@@ -128,12 +128,17 @@ def readSTATION0(path, stations):
                 lon = (int(lon[0:3]) + float(lon[3:5]+'.'+lon[5:-1]) /
                        60) * EW
             elev = float(line[23:-1].strip())
+            # Note, negative altitude can be indicated in 1st column
+            if line[0] == '-':
+                elev *= -1
             stalist.append((station, lat, lon, elev))
     f.close()
     f = open('station.dat', 'w')
     for sta in stalist:
-        f.write(sta[0]+'   '+_cc_round(sta[1], 4)+'   '+_cc_round(sta[2], 4) +
-                '   '+_cc_round(sta[3]/1000, 4)+'\n')
+        line = ''.join([sta[0].ljust(5), _cc_round(sta[1], 4).ljust(10),
+                        _cc_round(sta[2], 4).ljust(10),
+                        _cc_round(sta[3]/1000, 4).rjust(7), '\n'])
+        f.write(line)
     f.close()
     return stalist
 
