@@ -61,7 +61,7 @@ class TestCoreMethods(unittest.TestCase):
         template_names = list(string.ascii_lowercase)[0:len(templates)]
         detections = match_filter.match_filter(template_names=template_names,
                                                template_list=templates,
-                                               st=data, threshold=8.0,
+                                               st=data, threshold=10.0,
                                                threshold_type='MAD',
                                                trig_int=6.0,
                                                plotvar=False,
