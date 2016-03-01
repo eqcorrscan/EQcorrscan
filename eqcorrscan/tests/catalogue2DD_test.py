@@ -70,15 +70,62 @@ class TestCatalogueMethods(unittest.TestCase):
         file."""
         from eqcorrscan.utils.catalogue2DD import readSTATION0
         import os
-        station_input_list = []
+        station_input_list = ['COVA', 'SOLU', 'drc', 'RPZ', 'NZ01', 'WHAT2',
+                              'CAMEL', 'NZ20']
         STATION0_path = os.path.join(os.path.abspath(os.path.
                                                      dirname(__file__)),
                                      'test_data')
         station_output_list = readSTATION0(STATION0_path, station_input_list)
         # Check that the output file exists, and remove it
         self.assertTrue(os.path.isfile('station.dat'))
+        for station_information in station_output_list:
+            if station_information[0] == 'COVA':
+                self.assertEqual(station_information,
+                                 ('COVA', -43.6132, 169.968, 1477.0))
+            elif station_information[0] == 'SOLU':
+                self.assertEqual(station_information,
+                                 ('SOLU', -43.90805, 169.60608333333334,
+                                  1146.0))
+            elif station_information[0] == 'drc':
+                self.assertEqual(station_information,
+                                 ('drc', -43.2411, 170.4515, 128.0))
+            elif station_information[0] == 'RPZ':
+                self.assertEqual(station_information,
+                                 ('RPZ', -43.7164, 171.05388333333335, 453.0))
+            elif station_information[0] == 'NZ01':
+                self.assertEqual(station_information,
+                                 ('NZ01', -44.498, 165.00198333333333,
+                                  -4682.0))
+            elif station_information[0] == 'WHAT2':
+                self.assertEqual(station_information,
+                                 ('WHAT2', -43.2793, 170.36038333333335, 95.0))
+            elif station_information[0] == 'CAMEL':
+                self.assertEqual(station_information,
+                                 ('CAMEL', -42.874183333333335, 170.9622,
+                                  60.0))
+            elif station_information[0] == 'NZ20':
+                self.assertEqual(station_information,
+                                 ('NZ20', -40.2, 170.75, -714.0))
+        # Check that things have been written correctly
+        output_check_file = open('station.dat', 'r')
+        for line in output_check_file:
+            station = line[0:5].strip()
+            latitude = float(line[5:].split()[0])
+            longitude = float(line[5:].split()[1])
+            depth = float(line[5:].split()[2].rstrip())
+            station_information_out = (station, latitude, longitude, depth)
+            # Check that this matches what we expect
+            for station_information in station_output_list:
+                if station_information[0] == station_information_out[0]:
+                    self.assertEqual(round(station_information[1], 4),
+                                     round(station_information_out[1], 4))
+                    self.assertEqual(round(station_information[2], 4),
+                                     round(station_information_out[2], 4))
+                    self.assertEqual(round(station_information[3], 4),
+                                     round(station_information_out[3] * 1000,
+                                           4))
+        output_check_file.close()
         os.remove('station.dat')
-
 
 if __name__ == '__main__':
     unittest.main()
