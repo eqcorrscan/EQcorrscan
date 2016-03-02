@@ -88,7 +88,7 @@ def coherence_test(stream, stations, nodes, lags, wlen):
 #                 path = os.path.dirname(os.path.abspath(__file__))
 #                 sys.path.insert(0, path[0:len(path)-5])
 #                 from core import bright_lights
-#                 from utils import EQcorrscan_plotting as plotting
+#                 from utils import plotting
 #                 # Use the brightness function to search for possible
 #                 # templates
 #                 # First read in the travel times

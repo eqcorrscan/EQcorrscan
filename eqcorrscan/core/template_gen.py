@@ -537,7 +537,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
         all channels with picks will be used.
     """
     import copy
-    from eqcorrscan.utils.EQcorrscan_plotting import pretty_template_plot as\
+    from eqcorrscan.utils.plotting import pretty_template_plot as\
         tplot
     from obspy import Stream
     import warnings

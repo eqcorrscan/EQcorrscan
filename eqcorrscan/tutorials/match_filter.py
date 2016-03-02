@@ -6,7 +6,7 @@ then you will need to before you can run this script.
 """
 
 from eqcorrscan.utils import pre_processing
-from eqcorrscan.utils import EQcorrscan_plotting as plotting
+from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
 from joblib import Parallel, delayed
 import glob
