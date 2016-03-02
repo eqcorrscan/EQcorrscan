@@ -1,0 +1,32 @@
+ 2013  9 5 0208 14.3 L -43.341 170.380  8.2  VUW 11 0.1 1.2LVUW                1
+ GAP= 88        0.34       1.2     1.0  2.6 -0.2218E+00  0.6797E+00  0.1785E+01E
+ ACTION:NEW 15- 8-11 13:28 OP:CALU STATUS:               ID:20130905020816     I
+ 2013-09-05-0207-34.DFDPC_036_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ GCSZ SZ IP        2 8 15.95                             142    0.1110    5 303 
+ GCSZ EZ  IAML     2 8 17.10         6.4 0.08                             5 303 
+ WV04 SZ  IAML     2 8 18.08        23.2 0.08                             5  31 
+ GCSZ S1 IS        2 8 16.85                             142   -0.0210    5 303 
+ WV04 SZ IP        2 8 15.79                             142   -0.0410    5  31 
+ WZ11 HZ IP        2 8 15.86                             139   -0.0110    5  26 
+ WZ11 HZ  IAML     2 8 18.17        11.0  0.1                             5  26 
+ WV03 SZ IP        2 8 15.82                             139   -0.0710    5  22 
+ WV03 SZ  IAML     2 8 19.11        20.0  0.2                             5  22 
+ WV02 SZ IP   2    2 8 16.07                             133    0.02 5    7  23 
+ WV02 SZ  IAML     2 8 19.57        20.50.216                             7  23 
+ WZ02 EZ IP        2 8 16.34                             127    0.0810    8  96 
+ WZ02 EN IS        2 8 17.46                             127   -0.1010    8  96 
+ WZ02 EZ  IAML     2 8 18.38         7.1  0.1                             8  96 
+ WHYM SZ IP   1    2 8 16.93                             122    0.23 7   11 183 
+ WHYM SN IS   2    2 8 18.52                             122    0.21 5   11 183 
+ WHYM SZ  IAML     2 8 19.39        10.3 0.09                            11 183 
+ FRAN S3 IS        2 8 20.24                             107    0.1310   18 256 
+ FRAN S1  IAML     2 8 20.77         0.0 0.09                            18 256 
+ EORO SZ IP   1    2 8 18.08                             106    0.10 7   19 241 
+ EORO SN IS   1    2 8 20.16                             106   -0.30 7   19 241 
+ EORO SZ  IAML     2 8 21.22         4.0 0.09                            19 241 
+ LABE SN IS   2    2 8 21.98                             104   -0.22 5   25 205 
+ LABE SZ  IAML     2 8 23.66         2.7 0.17                            25 205 
+ MTFO SN IS        2 8 25.13                              95   -0.0910   35 238 
+ MTFO SZ  IAML     2 8 31.11         7.1 0.82                            35 238 
+                                                                                

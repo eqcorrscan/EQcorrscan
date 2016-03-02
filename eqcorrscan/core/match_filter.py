@@ -406,7 +406,7 @@ def match_filter(template_names, template_list, st, threshold,
     from obspy import Trace
     import time
 
-    # Copy the stream here because we will fuck about with it
+    # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
     # Debug option to confirm that the channel names match those in the
