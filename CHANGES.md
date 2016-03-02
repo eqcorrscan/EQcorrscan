@@ -8,6 +8,8 @@ for Seisan STATION0.HYP file;
 hypoDD location program, including generation of dt.cc files;
 * Added tests for functions in catalog_to_dd;
 * Implemented unittest tests;
+* Changed name of EQcorrscan_plotting to plotting;
+* Added depreciation warnings;
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions

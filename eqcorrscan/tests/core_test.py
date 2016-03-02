@@ -29,7 +29,7 @@ class TestCoreMethods(unittest.TestCase):
         :param debug: Debug level, higher the number the more output.
         """
         from eqcorrscan.utils import pre_processing
-        from eqcorrscan.utils import EQcorrscan_plotting as plotting
+        from eqcorrscan.utils import plotting
         from eqcorrscan.core import match_filter
         from eqcorrscan.utils.synth_seis import generate_synth_data
         from obspy import UTCDateTime

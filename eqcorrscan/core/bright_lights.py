@@ -573,7 +573,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     from obspy.core.event import EventDescription, CreationInfo, Comment
     import obspy.Stream
     import matplotlib.pyplot as plt
-    from eqcorrscan.utils import EQcorrscan_plotting as plotting
+    from eqcorrscan.utils import plotting
     # Check that we actually have the correct stations
     realstations = []
     for station in stations:
