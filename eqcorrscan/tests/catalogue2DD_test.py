@@ -263,7 +263,34 @@ class TestCatalogueMethods(unittest.TestCase):
         os.remove('dt.ct')
         if os.path.isfile('dt.ct2'):
             os.remove('dt.ct2')
-        # raise NotImplementedError('Currently unfinished test')
+
+    def test_write_correlations(self):
+        """
+        Test that the write_correlations function works as it should.
+        Hard to test accurately...
+        """
+        from eqcorrscan.utils.catalogue2DD import write_correlations
+        from eqcorrscan.utils.timer import Timer
+        import os
+        import glob
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_')
+        wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'test_data', 'WAV', 'TEST_')
+        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
+        event_ids = list(range(len(sfile_list)))
+        event_list = zip(event_ids, sfile_list)
+        with Timer() as t:
+            write_correlations(event_list, wavbase, extract_len=2,
+                               pre_pick=0.5, shift_len=0.2, lowcut=2.0,
+                               highcut=10.0, max_sep=1, min_link=8,
+                               coh_thresh=0.0, plotvar=False)
+        msg = 'Running ' + str(len(event_list)) + ' events took %s s' % t.secs
+        print(msg)
+        self.assertTrue(os.path.isfile('dt.cc'))
+        os.remove('dt.cc')
+        if os.path.isfile('dt.cc2'):
+            os.remove('dt.cc2')
 
 if __name__ == '__main__':
     unittest.main()
