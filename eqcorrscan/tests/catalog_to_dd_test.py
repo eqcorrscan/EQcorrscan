@@ -194,9 +194,9 @@ class TestCatalogMethods(unittest.TestCase):
         sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
         event_ids = list(range(len(sfile_list)))
         event_list = zip(event_ids, sfile_list)
-        stations = write_catalog(event_list=event_list,
-                                 max_sep=maximum_seperation,
-                                 min_link=minimum_links)
+        write_catalog(event_list=event_list,
+                      max_sep=maximum_seperation,
+                      min_link=minimum_links)
         self.assertTrue(os.path.isfile('dt.ct'))
         # Check dt.ct file, should contain only a few linked events
         dt_file_out = open('dt.ct', 'r')
