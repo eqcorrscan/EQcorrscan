@@ -106,7 +106,6 @@ def readSTATION0(path, stations):
     for line in f:
         if line[1:6].strip() in stations:
             station = line[1:6].strip()
-            print station
             lat = line[6:14]  # Format is either ddmm.mmS/N or ddmm(.)mmmS/N
             if lat[-1] == 'S':
                 NS = -1
@@ -225,7 +224,6 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
         master_event_id = master[0]
         master_event = Sfile_util.readpicks(master_sfile)
         master_ori_time = master_event.origins[0].time
-        # print 'Master origin time: '+str(master_ori_time)
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
                            master_event.origins[0].depth / 1000)
@@ -310,7 +308,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
                 f.write(event_text)
                 f2.write(event_text2)
                 evcount += 1
-    print 'You have '+str(evcount)+' links'
+    print('You have '+str(evcount)+' links')
     # f.write('\n')
     f.close()
     f2.close()
@@ -320,7 +318,7 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0):
+                       coh_thresh=0.0, plotvar=False):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation.
@@ -346,8 +344,15 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :param max_sep: Maximum seperation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
+    :type plotvar: bool
+    :param plotvar: To show the pick-correction plots, defualts to False.
     """
-    from obspy.signal.cross_correlation import xcorrPickCorrection
+    import obspy
+    if obspy.__version__.split('.')[0] > 0:
+        from obspy.signal.cross_correlation import xcorr_pick_correction
+    else:
+        from obspy.signal.cross_correlation import xcorrPickCorrection \
+            as xcorr_pick_correction
     import matplotlib.pyplot as plt
     from obspy import read
     from eqcorrscan.utils.mag_calc import dist_calc
@@ -360,13 +365,14 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_picks = Sfile_util.readpicks(master_sfile)
+        master_picks = Sfile_util.readpicks(master_sfile).picks
+        master_event = Sfile_util.readheader(master_sfile)
         # master_ori_time = Sfile_util.readheader(master_sfile).time
-        master_location = (Sfile_util.readheader(master_sfile).latitude,
-                           Sfile_util.readheader(master_sfile).longitude,
-                           Sfile_util.readheader(master_sfile).depth)
+        master_location = (master_event.origins[0].latitude,
+                           master_event.origins[0].longitude,
+                           master_event.origins[0].depth)
         master_wavefiles = Sfile_util.readwavename(master_sfile)
-        masterpath = glob.glob(wavbase+os.sep+master_wavefiles[0])
+        masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
         if masterpath:
             masterstream = read(masterpath[0])
         if len(master_wavefiles) > 1:
@@ -383,9 +389,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             slave_wavefiles = Sfile_util.readwavename(slave_sfile)
             try:
                 # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
-                slavestream = read(wavbase+os.sep+slave_wavefiles[0])
+                slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
-                # print slavestream
+                # print(slavestream)
                 raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
                               slave_sfile)
             if len(slave_wavefiles) > 1:
@@ -400,78 +406,98 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 str(slave_event_id).rjust(10)+' 0.0   \n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
-            slave_picks = Sfile_util.readpicks(slave_sfile)
+            slave_picks = Sfile_util.readpicks(slave_sfile).picks
             # slave_ori_time = Sfile_util.readheader(slave_sfile).time
-            slave_location = (Sfile_util.readheader(slave_sfile).latitude,
-                              Sfile_util.readheader(slave_sfile).longitude,
-                              Sfile_util.readheader(slave_sfile).depth)
+            slave_event = Sfile_util.readheader(slave_sfile)
+            slave_location = (slave_event.origins[0].latitude,
+                              slave_event.origins[0].longitude,
+                              slave_event.origins[0].depth)
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
             links = 0
             phases = 0
             for pick in master_picks:
-                if pick.phase not in ['P', 'S']:
+                if pick.phase_hint[0].upper() not in ['P', 'S']:
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Find station, phase pairs
                 # Added by Carolin
                 slave_matches = [p for p in slave_picks
-                                 if p.phase == pick.phase
-                                 and p.station.upper() == pick.station.upper()]
+                                 if p.phase_hint == pick.phase_hint
+                                 and p.waveform_id.station_code ==
+                                 pick.waveform_id.station_code]
 
-                if masterstream.select(station=pick.station,
-                                       channel='*'+pick.channel[-1]):
+                if masterstream.select(station=pick.waveform_id.station_code,
+                                       channel='*' +
+                                       pick.waveform_id.channel_code[-1]):
                     mastertr = masterstream.\
-                        select(station=pick.station,
-                               channel='*'+pick.channel[-1])[0]
+                        select(station=pick.waveform_id.station_code,
+                               channel='*' +
+                               pick.waveform_id.channel_code[-1])[0]
                 else:
-                    print 'No waveform data for '+pick.station+'.'+pick.channel
-                    print pick.station+'.'+pick.channel+' '+slave_sfile+' ' +\
-                        master_sfile
+                    print('No waveform data for ' +
+                          pick.waveform_id.station_code + '.' +
+                          pick.waveform_id.channel_code)
+                    print(pick.waveform_id.station_code +
+                          '.' + pick.waveform_id.channel_code +
+                          ' ' + slave_sfile+' ' + master_sfile)
                     break
                 # Loop through the matches
                 for slave_pick in slave_matches:
-                    if slavestream.select(station=slave_pick.station,
-                                          channel='*'+slave_pick.channel[-1]):
+                    if slavestream.select(station=slave_pick.waveform_id.
+                                          station_code,
+                                          channel='*'+slave_pick.waveform_id.
+                                          channel_code[-1]):
                         slavetr = slavestream.\
-                            select(station=slave_pick.station,
-                                   channel='*'+slave_pick.channel[-1])[0]
+                            select(station=slave_pick.waveform_id.station_code,
+                                   channel='*'+slave_pick.waveform_id.
+                                   channel_code[-1])[0]
                     else:
-                        print 'No slave data for '+slave_pick.station+'.' +\
-                            slave_pick.channel
-                        print pick.station+'.'+pick.channel+' '+slave_sfile +\
-                            ' '+master_sfile
+                        print('No slave data for ' +
+                              slave_pick.waveform_id.station_code + '.' +
+                              slave_pick.waveform_id.channel_code)
+                        print(pick.waveform_id.station_code +
+                              '.' + pick.waveform_id.channel_code +
+                              ' ' + slave_sfile + ' ' + master_sfile)
                         break
                     # Correct the picks
                     try:
                         correction, cc =\
-                            xcorrPickCorrection(pick.time, mastertr,
-                                                slave_pick.time,
-                                                slavetr, pre_pick,
-                                                extract_len - pre_pick,
-                                                shift_len, filter="bandpass",
-                                                filter_options={'freqmin':
-                                                                lowcut,
-                                                                'freqmax':
-                                                                highcut},
-                                                plot=False)
+                            xcorr_pick_correction(pick.time, mastertr,
+                                                  slave_pick.time,
+                                                  slavetr, pre_pick,
+                                                  extract_len - pre_pick,
+                                                  shift_len, filter="bandpass",
+                                                  filter_options={'freqmin':
+                                                                  lowcut,
+                                                                  'freqmax':
+                                                                  highcut},
+                                                  plot=plotvar)
                         # Get the differntial travel time using the
                         # corrected time.
-
+                        # Check that the correction is within the allowed shift
+                        # This can occur in the obspy routine when the
+                        # correlation function is increasing at the end of the
+                        # window.
+                        if abs(correction) > shift_len:
+                            warnings.warn('Shift correction too large, ' +
+                                          'will not use')
+                            continue
                         # dt = (pick.time-master_ori_time) -\
                         #     (slave_pick.time+correction-slave_ori_time)
                         links += 1
-                        if cc*cc >= coh_thresh:
+                        if cc * cc >= coh_thresh:
                             phases += 1
                             # added by Caro
-                            event_text += pick.station.ljust(5) +\
+                            event_text += pick.waveform_id.station_code.\
+                                ljust(5) + _cc_round(correction, 3).\
+                                rjust(11) + _cc_round(cc, 3).rjust(8) +\
+                                ' '+pick.phase_hint+'\n'
+                            event_text2 += pick.waveform_id.station_code\
+                                .ljust(5).upper() +\
                                 _cc_round(correction, 3).rjust(11) +\
                                 _cc_round(cc, 3).rjust(8) +\
-                                ' '+pick.phase+'\n'
-                            event_text2 += pick.station.ljust(5).upper() +\
-                                _cc_round(correction, 3).rjust(11) +\
-                                _cc_round(cc, 3).rjust(8) +\
-                                ' '+pick.phase+'\n'
+                                ' '+pick.phase_hint+'\n'
 
                             # links+=1
                         corr_list.append(cc*cc)
@@ -482,10 +508,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         continue
             if links >= min_link and phases > 0:
                 f.write(event_text)
-                # f2.write(event_text2)
-
-    plt.hist(corr_list, 150)
-    plt.show()
+                f2.write(event_text2)
+    if plotvar:
+        plt.hist(corr_list, 150)
+        plt.show()
     # f.write('\n')
     f.close()
     f2.close()
