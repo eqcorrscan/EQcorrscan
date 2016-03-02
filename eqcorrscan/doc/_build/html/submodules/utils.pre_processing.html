@@ -70,7 +70,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.3. Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
@@ -98,6 +99,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.8. Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">4.11. synth_seis</a></li>
 </ul>
 </li>
 </ul>
@@ -171,6 +173,36 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
+<dt id="pre_processing._shortproc_inner">
+<code class="descclassname">pre_processing.</code><code class="descname">_shortproc_inner</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#_shortproc_inner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._shortproc_inner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inner loop for shortproc to allow multiprocessing. Would usually be called
+by shortproc, but can be called individually.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>st</strong> &#8211; Trace to process</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners for bandpass filter</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate desired in Hz</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Will convert channel names to two charecters long.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
 <dt id="pre_processing.dayproc">
 <code class="descclassname">pre_processing.</code><code class="descname">dayproc</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug</em>, <em>starttime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#dayproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Basic function to bandpass, downsample and check headers and length of trace to ensure files start at the start of a day and are daylong.</p>
@@ -201,8 +233,40 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
+<dt id="pre_processing.dayproc_stream">
+<code class="descclassname">pre_processing.</code><code class="descname">dayproc_stream</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>starttime</em>, <em>debug=0</em>, <em>parallel=True</em>, <em>num_cores=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#dayproc_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for dayproc to parallel multiple traces in a stream.</p>
+<p>Works in place on data.  This is employed to ensure all parts of the data     are processed in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> &#8211; Trace to process</li>
+<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut in Hz for bandpass</li>
+<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Corners for bandpass</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
+<li><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to True to process traces in parallel, this is often         faster than serial processing of traces: defaults to True</li>
+<li><strong>num_cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Control the number of cores for parallel processing,         if set to False then this will use all the cores.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Will convert channel names to two charecters long.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
 <dt id="pre_processing.shortproc">
-<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em>, <em>parallel=False</em>, <em>num_cores=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Basic function to bandpass and downsample.</p>
 <p>Works in place on data.  This is employed to ensure all parts of the data are processed in the same way.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -216,6 +280,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners for bandpass filter</li>
 <li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate desired in Hz</li>
 <li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+<li><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to True to process traces in parallel, for small numbers of traces this is often slower than serial processing, defaults to False</li>
+<li><strong>num_cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Control the number of cores for parallel processing, if set to False then this will use all the cores.</li>
 </ul>
 </td>
 </tr>

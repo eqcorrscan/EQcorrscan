@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestCatalogueMethods(unittest.TestCase):
+class TestCatalogMethods(unittest.TestCase):
     def test_rounding(self):
         """Simple test to test that _cc_round gives correct result.
         """
@@ -175,12 +175,12 @@ class TestCatalogueMethods(unittest.TestCase):
                                  float(output_event_info[-2]))
         os.remove('event.dat')
 
-    def test_write_catalogue(self):
+    def test_write_catalog(self):
         """
         Simple testing function for the write_catalogue function in \
         catalog_to_dd.
         """
-        from eqcorrscan.utils.catalog_to_dd import write_catalogue
+        from eqcorrscan.utils.catalog_to_dd import write_catalog
         from eqcorrscan.utils.mag_calc import dist_calc
         from eqcorrscan.utils import Sfile_util
         import glob
@@ -194,9 +194,9 @@ class TestCatalogueMethods(unittest.TestCase):
         sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
         event_ids = list(range(len(sfile_list)))
         event_list = zip(event_ids, sfile_list)
-        stations = write_catalogue(event_list=event_list,
-                                   max_sep=maximum_seperation,
-                                   min_link=minimum_links)
+        stations = write_catalog(event_list=event_list,
+                                 max_sep=maximum_seperation,
+                                 min_link=minimum_links)
         self.assertTrue(os.path.isfile('dt.ct'))
         # Check dt.ct file, should contain only a few linked events
         dt_file_out = open('dt.ct', 'r')
