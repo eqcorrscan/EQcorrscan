@@ -1,18 +1,17 @@
-#!/usr/bin/python
 """
-Module written by Calum Chamberlain as part of the EQcorrscan package.
+This module contains functions to convert seisan catalogue to files to hypoDD
+input files.
 
-This module contains functions to convert a seisan catalogue to files ready for
-relocation in hypoDD - it will generate both a catalogue (dt.ct) file, event
+These functions will generate both a catalogue (dt.ct) file, event
 file (event.dat), station information file (station.dat), and a correlation
 oiutput file correlated every event in the catalogue with every other event to
 optimize the picks (dt.cc).
 
-The correlation routine relies on obspy's xcorrPickCorrection function from the
-obspy.signal.cross_correlation module.  This function optimizes picks to better
-than sample accuracy by interpolating the correlation function and finding the
-maximum of this rather than the true maximum correlation value.  The output
-from this function is stored in the dt.cc file.
+The correlation routine relies on obspy's xcorr_pick_correction function from
+the obspy.signal.cross_correlation module.  This function optimizes picks to
+better than sample accuracy by interpolating the correlation function and
+finding the maximum of this rather than the true maximum correlation value.
+The output from this function is stored in the dt.cc file.
 
 Information for the station.dat file is read from SEISAN's STATION0.HYP file
 
@@ -94,9 +93,9 @@ def readSTATION0(path, stations):
     Function to read the STATION0.HYP file on the path given.  Outputs written
     in station.dat file.
 
-    :type path: String
+    :type path: str
     :param path: Path to the STATION0.HYP file
-    :type station: List
+    :type station: list
     :param station: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
@@ -146,7 +145,7 @@ def sfiles_to_event(sfile_list):
     """
     Function to write out an event.dat file of the events
 
-    :type sfile_list: List
+    :type sfile_list: list
     :param sfile_list: List of s-files to sort and put into the database
 
     :returns: List of tuples of event ID (int) and Sfile name
@@ -170,7 +169,7 @@ def write_event(catalog):
     """
     Function to write obspy.core.Catalog to a hypoDD format event.dat file.
 
-    :type catalog: :class: osbpy.core.Catalog
+    :type catalog: osbpy.core.Catalog
     :param catalog: A catalog of obspy events
     """
     f = open('event.dat', 'w')
@@ -197,7 +196,7 @@ def write_event(catalog):
     return
 
 
-def write_catalogue(event_list, max_sep=1, min_link=8):
+def write_catalog(event_list, max_sep=1, min_link=8):
     """
     Function to write the dt.ct file needed by hypoDD - takes input event list
     from write_event as a list of tuples of event id and sfile.  It will read
@@ -212,6 +211,11 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
     :param min_link: Minimum links for an event to be paired
 
     :returns: list stations
+
+    .. note:: Currently we have not implemented a method for taking \
+        unassociated event objects and wavefiles.  As such if you have events \
+        with associated wavefiles you are advised to generate Sfiles for each \
+        event using the Sfile_utils module prior to this step.
     """
     from eqcorrscan.utils.mag_calc import dist_calc
     f = open('dt.ct', 'w')
@@ -318,12 +322,10 @@ def write_catalogue(event_list, max_sep=1, min_link=8):
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0, plotvar=False):
+                       coh_thresh=0.0, coherence_weight=True, plotvar=False):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation.
-
-    Note that this is **NOT** fast.
 
     :type event_list: list of tuple
     :param event_list: List of tuples of event_id (int) and sfile (String)
@@ -333,7 +335,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :type extract_len: float
     :param extract_len: Length in seconds to extract around the pick
     :type pre_pick: float
-    :param pre_pick: Time before the pick to start the correclation window
+    :param pre_pick: Time before the pick to start the correlation window
     :type shift_len: float
     :param shift_len: Time to allow pick to vary
     :type lowcut: float
@@ -344,8 +346,23 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :param max_sep: Maximum seperation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
+    :type coherence_weight: bool
+    :param coherence_weight: Use coherence to weight the dt.cc file, or the \
+        raw cross-correlation value, defaults to false which uses the cross-\
+        correlation value.
     :type plotvar: bool
     :param plotvar: To show the pick-correction plots, defualts to False.
+
+    .. warning:: This is not a fast routine!
+
+    .. warning:: In contrast to seisan's \
+        corr routine, but in accordance with the hypoDD manual, this outputs \
+        corrected differential time.
+
+    .. note:: Currently we have not implemented a method for taking \
+        unassociated event objects and wavefiles.  As such if you have events \
+        with associated wavefiles you are advised to generate Sfiles for each \
+        event using the Sfile_utils module prior to this step.
     """
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
@@ -483,20 +500,24 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                             warnings.warn('Shift correction too large, ' +
                                           'will not use')
                             continue
-                        # dt = (pick.time-master_ori_time) -\
-                        #     (slave_pick.time+correction-slave_ori_time)
+                        correction = (pick.time - master_ori_time) -\
+                            (slave_pick.time + correction - slave_ori_time)
                         links += 1
                         if cc * cc >= coh_thresh:
+                            if coherence_weight:
+                                weight = cc * cc
+                            else:
+                                weight = cc
                             phases += 1
                             # added by Caro
                             event_text += pick.waveform_id.station_code.\
                                 ljust(5) + _cc_round(correction, 3).\
-                                rjust(11) + _cc_round(cc, 3).rjust(8) +\
+                                rjust(11) + _cc_round(weight, 3).rjust(8) +\
                                 ' '+pick.phase_hint+'\n'
                             event_text2 += pick.waveform_id.station_code\
                                 .ljust(5).upper() +\
                                 _cc_round(correction, 3).rjust(11) +\
-                                _cc_round(cc, 3).rjust(8) +\
+                                _cc_round(weight, 3).rjust(8) +\
                                 ' '+pick.phase_hint+'\n'
 
                             # links+=1
