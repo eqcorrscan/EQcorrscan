@@ -72,24 +72,26 @@ for i in range(kdays):
     # Work out what data we actually have to cope with possible lost data
     stations = list(set([tr.stats.station for tr in st]))
 
+    # Set how many cores we want to parallel across, we will set this to four
+    # as this is the number of templates, if your machine has fewer than four
+    # cores/CPUs the multiprocessing will wait until there is a free core.
+    # Setting this to be higher than the number of templates will have no
+    # increase in speed as only detections for each template are computed in
+    # parallel.  It may also slow your processing by using more memory than
+    # needed, to the extent that swap may be filled.
+    ncores = 4
+
     # Pre-process the data to set frequency band and sampling rate
     # Note that this is, and MUST BE the same as the parameters used for the
     # template creation.
     print('Processing the seismic data')
-    st = Parallel(n_jobs=10)(delayed(pre_processing.dayproc)
-                             (tr=tr, lowcut=2.0, highcut=9.0, filt_order=3,
-                              samp_rate=20.0, debug=0, starttime=t1)
-                             for tr in st)
+    st = Parallel(n_jobs=ncores)(delayed(pre_processing.dayproc)
+                                 (tr=tr, lowcut=2.0, highcut=9.0,
+                                  filt_order=3,
+                                  samp_rate=20.0, debug=0, starttime=t1)
+                                 for tr in st)
     # Convert from list to stream
     st = Stream(st)
-
-    # Set how many cores we want to parallel across, we will set this to four
-    # as this is the number of templates, if your machine has fewer than four
-    # cores/CPUs the multiprocessing will wait until there is a free core.
-    # Setting this to be higher than the number of templates will have no i
-    # increase in speed as only detections for each template are computed in
-    # parallel.
-    ncores = 4
 
     # Now we can conduct the matched-filter detection
     detections = match_filter.match_filter(template_names=template_names,

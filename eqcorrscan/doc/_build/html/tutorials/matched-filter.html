@@ -99,7 +99,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">4.11. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">4.11. catalog_to_dd</a></li>
 </ul>
 </li>
 </ul>
@@ -229,24 +229,26 @@ your call.</p>
     <span class="c"># Work out what data we actually have to cope with possible lost data</span>
     <span class="n">stations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]))</span>
 
+    <span class="c"># Set how many cores we want to parallel across, we will set this to four</span>
+    <span class="c"># as this is the number of templates, if your machine has fewer than four</span>
+    <span class="c"># cores/CPUs the multiprocessing will wait until there is a free core.</span>
+    <span class="c"># Setting this to be higher than the number of templates will have no</span>
+    <span class="c"># increase in speed as only detections for each template are computed in</span>
+    <span class="c"># parallel.  It may also slow your processing by using more memory than</span>
+    <span class="c"># needed, to the extent that swap may be filled.</span>
+    <span class="n">ncores</span> <span class="o">=</span> <span class="mi">4</span>
+
     <span class="c"># Pre-process the data to set frequency band and sampling rate</span>
     <span class="c"># Note that this is, and MUST BE the same as the parameters used for the</span>
     <span class="c"># template creation.</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
-    <span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
-                             <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                              <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
-                             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">ncores</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
+                                 <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span>
+                                  <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                  <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
+                                 <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
     <span class="c"># Convert from list to stream</span>
     <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
-
-    <span class="c"># Set how many cores we want to parallel across, we will set this to four</span>
-    <span class="c"># as this is the number of templates, if your machine has fewer than four</span>
-    <span class="c"># cores/CPUs the multiprocessing will wait until there is a free core.</span>
-    <span class="c"># Setting this to be higher than the number of templates will have no i</span>
-    <span class="c"># increase in speed as only detections for each template are computed in</span>
-    <span class="c"># parallel.</span>
-    <span class="n">ncores</span> <span class="o">=</span> <span class="mi">4</span>
 
     <span class="c"># Now we can conduct the matched-filter detection</span>
     <span class="n">detections</span> <span class="o">=</span> <span class="n">match_filter</span><span class="o">.</span><span class="n">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="o">=</span><span class="n">template_names</span><span class="p">,</span>

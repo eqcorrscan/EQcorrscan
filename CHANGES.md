@@ -1,9 +1,13 @@
 ## 0.1.1
-* Cope with events not always having time_errors in them in eventtoSfile
-* Convert Quakeml depths from m to km
-* Multiple little fixes to make Sfile conversion play well with GeoNet QuakeML files
+* Cope with events not always having time_errors in them in eventtoSfile;
+* Convert Quakeml depths from m to km;
+* Multiple little fixes to make Sfile conversion play well with GeoNet QuakeML files;
 * Add function to convert from obspy.core.inventory.station.Station to string format
-for Seisan STATION0.HYP file.
+for Seisan STATION0.HYP file;
+* Merged feature branch - hypoDD into develop, this provides mappings for the
+hypoDD location program, including generation of dt.cc files;
+* Added tests for functions in catalog_to_dd;
+* Implemented unittest tests;
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions
