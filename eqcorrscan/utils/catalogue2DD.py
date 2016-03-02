@@ -348,7 +348,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :param plotvar: To show the pick-correction plots, defualts to False.
     """
     import obspy
-    if obspy.__version__.split('.')[0] > 0:
+    if int(obspy.__version__.split('.')[0]) > 0:
         from obspy.signal.cross_correlation import xcorr_pick_correction
     else:
         from obspy.signal.cross_correlation import xcorrPickCorrection \
