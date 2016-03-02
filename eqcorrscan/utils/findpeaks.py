@@ -166,13 +166,13 @@ def find_peaks2(arr, thresh, trig_int, debug=0, maxwidth=10,
                     print(msg)
 
         if debug >= 3:
-            from eqcorrscan.utils import EQcorrscan_plotting
+            from eqcorrscan.utils import plotting
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
             print(' '.join(['Saving plot to', _fname]))
-            EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True,
-                                           peaks, _fname)
+            plotting.peaks_plot(image, starttime, samp_rate, True,
+                                peaks, _fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
@@ -282,12 +282,12 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                     print(msg)
 
         if debug >= 3:
-            from eqcorrscan.utils import EQcorrscan_plotting
+            from eqcorrscan.utils import plotting
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
-            EQcorrscan_plotting.peaks_plot(image, starttime, samp_rate, True,
-                                           peaks, _fname)
+            plotting.peaks_plot(image, starttime, samp_rate, True,
+                                peaks, _fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
@@ -361,12 +361,12 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
                 peaks[i - 1] = peaks[i]
     peaks = sorted(list(set(peaks)), key=lambda loc: loc[1])
     if debug >= 3:
-        from eqcorrscan.utils import EQcorrscan_plotting
+        from eqcorrscan.utils import plotting
         _fname = ''.join(['peaks_',
                           starttime.datetime.strftime('%Y-%m-%d'),
                           '.pdf'])
-        EQcorrscan_plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
-                                       _fname)
+        plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
+                            _fname)
     return peaks
 
 
