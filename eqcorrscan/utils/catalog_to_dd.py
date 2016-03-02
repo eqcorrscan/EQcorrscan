@@ -384,7 +384,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         master_event_id = master[0]
         master_picks = Sfile_util.readpicks(master_sfile).picks
         master_event = Sfile_util.readheader(master_sfile)
-        # master_ori_time = Sfile_util.readheader(master_sfile).time
+        master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
                            master_event.origins[0].depth)
@@ -424,8 +424,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
             slave_picks = Sfile_util.readpicks(slave_sfile).picks
-            # slave_ori_time = Sfile_util.readheader(slave_sfile).time
             slave_event = Sfile_util.readheader(slave_sfile)
+            slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
                               slave_event.origins[0].depth)
