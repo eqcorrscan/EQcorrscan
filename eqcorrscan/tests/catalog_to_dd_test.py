@@ -1,5 +1,5 @@
 """
-Functions to test the functions within the eqcorrscan.utils.catalogue2DD.py \
+Functions to test the functions within the eqcorrscan.utils.catalog_to_dd.py \
 submodule.  Uses test data distributed with the EQcorrscan pacakge.
 """
 from __future__ import absolute_import
@@ -13,7 +13,7 @@ class TestCatalogueMethods(unittest.TestCase):
     def test_rounding(self):
         """Simple test to test that _cc_round gives correct result.
         """
-        from eqcorrscan.utils.catalogue2DD import _cc_round
+        from eqcorrscan.utils.catalog_to_dd import _cc_round
         import numpy as np
         # Use an irrational number and round it to various decimal places
         test_no = np.pi
@@ -37,7 +37,7 @@ class TestCatalogueMethods(unittest.TestCase):
     def test_weight_averaging(self):
         """Simple function to test _av_weight returns the correct weights.
         """
-        from eqcorrscan.utils.catalogue2DD import _av_weight
+        from eqcorrscan.utils.catalog_to_dd import _av_weight
         self.assertEqual(_av_weight('0', '0'), '1.0000')
         self.assertEqual(_av_weight('0', '1'), '0.8750')
         self.assertEqual(_av_weight('0', '2'), '0.7500')
@@ -72,7 +72,7 @@ class TestCatalogueMethods(unittest.TestCase):
     def test_readSTATION0(self):
         """Simple function to test the ability to read a test STATION0.HYP \
         file."""
-        from eqcorrscan.utils.catalogue2DD import readSTATION0
+        from eqcorrscan.utils.catalog_to_dd import readSTATION0
         import os
         station_input_list = ['COVA', 'SOLU', 'drc', 'RPZ', 'NZ01', 'WHAT2',
                               'CAMEL', 'NZ20']
@@ -134,7 +134,7 @@ class TestCatalogueMethods(unittest.TestCase):
     def test_write_event(self):
         """Simple test function to test the writing of events.
         """
-        from eqcorrscan.utils.catalogue2DD import sfiles_to_event
+        from eqcorrscan.utils.catalog_to_dd import sfiles_to_event
         from eqcorrscan.utils import Sfile_util
         import os
         import glob
@@ -178,9 +178,9 @@ class TestCatalogueMethods(unittest.TestCase):
     def test_write_catalogue(self):
         """
         Simple testing function for the write_catalogue function in \
-        catalogue2DD.
+        catalog_to_dd.
         """
-        from eqcorrscan.utils.catalogue2DD import write_catalogue
+        from eqcorrscan.utils.catalog_to_dd import write_catalogue
         from eqcorrscan.utils.mag_calc import dist_calc
         from eqcorrscan.utils import Sfile_util
         import glob
@@ -269,7 +269,7 @@ class TestCatalogueMethods(unittest.TestCase):
         Test that the write_correlations function works as it should.
         Hard to test accurately...
         """
-        from eqcorrscan.utils.catalogue2DD import write_correlations
+        from eqcorrscan.utils.catalog_to_dd import write_correlations
         from eqcorrscan.utils.timer import Timer
         import os
         import glob
