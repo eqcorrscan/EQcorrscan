@@ -18,5 +18,6 @@ prune eqcorrscan/doc/_build/latex
 prune eqcorrscan/plot
 prune eqcorrscan/detections
 prune eqcorrscan/grid
+prune eqcorrscan/tests/test_data
 # prune eqcorrscan/stack_templates
 # prune eqcorrscan/templates
