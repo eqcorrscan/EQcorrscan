@@ -75,6 +75,7 @@ install:
         pytest
         pytest-pep8
         opencv
+        pyflakes<1.1,>=0.8.1
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
