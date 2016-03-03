@@ -42,5 +42,30 @@ download are |basemap_link|.
 
   <a href="http://matplotlib.org/basemap/users/installing.html" target="_blank">here</a>
 
+Important considerations
+------------------------
+In this tutorial we enforce downloading of day-long data for the template
+generation.  This is to ensure that the data we make the template from, and
+the data we use for detection are processed in exactly the same way.  If we
+were to only download a short segment of data around the event and process this
+we would find that the resampling process would result in minor differences
+between the templates and the continuous data.  This has the effect that, for
+self-detections, the cross-correlation values are less than 1.
+
+This is an important effect and something that you should consider when generating
+your own templates.  You **MUST** process your templates in the exact same way
+(using the same routines, same filters, same resampling, and same data length)
+as your continuous data.  It can have a very significant impact to your results.
+
+The functions provided in eqcorrscan.core.template_gen are there to aid you,
+but if you look at the source code, all they are doing is:
+
+* Detrending;
+* Resampling;
+* Filtering;
+* and cutting.
+
+If you want to do these things another way you are more then welcome to!
+
 
 .. literalinclude:: ../../tutorials/template_creation.py

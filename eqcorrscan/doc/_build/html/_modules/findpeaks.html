@@ -304,13 +304,13 @@
                     <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span>
+            <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">plotting</span>
             <span class="n">_fname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;peaks_&#39;</span><span class="p">,</span>
                               <span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">),</span>
                               <span class="s">&#39;.pdf&#39;</span><span class="p">])</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Saving plot to&#39;</span><span class="p">,</span> <span class="n">_fname</span><span class="p">]))</span>
-            <span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
-                                           <span class="n">peaks</span><span class="p">,</span> <span class="n">_fname</span><span class="p">)</span>
+            <span class="n">plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
+                                <span class="n">peaks</span><span class="p">,</span> <span class="n">_fname</span><span class="p">)</span>
         <span class="n">peaks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">time</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
     <span class="k">else</span><span class="p">:</span>
@@ -420,12 +420,12 @@
                     <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span>
+            <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">plotting</span>
             <span class="n">_fname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;peaks_&#39;</span><span class="p">,</span>
                               <span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">),</span>
                               <span class="s">&#39;.pdf&#39;</span><span class="p">])</span>
-            <span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
-                                           <span class="n">peaks</span><span class="p">,</span> <span class="n">_fname</span><span class="p">)</span>
+            <span class="n">plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
+                                <span class="n">peaks</span><span class="p">,</span> <span class="n">_fname</span><span class="p">)</span>
         <span class="n">peaks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">time</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">peaks</span>
     <span class="k">else</span><span class="p">:</span>
@@ -499,12 +499,12 @@
                 <span class="n">peaks</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
     <span class="n">peaks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">peaks</span><span class="p">)),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">loc</span><span class="p">:</span> <span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span>
+        <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">plotting</span>
         <span class="n">_fname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;peaks_&#39;</span><span class="p">,</span>
                           <span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">),</span>
                           <span class="s">&#39;.pdf&#39;</span><span class="p">])</span>
-        <span class="n">EQcorrscan_plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span>
-                                       <span class="n">_fname</span><span class="p">)</span>
+        <span class="n">plotting</span><span class="o">.</span><span class="n">peaks_plot</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span>
+                            <span class="n">_fname</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">peaks</span>
 
 </div>

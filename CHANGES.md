@@ -10,6 +10,10 @@ hypoDD location program, including generation of dt.cc files;
 * Implemented unittest tests;
 * Changed name of EQcorrscan_plotting to plotting;
 * Added depreciation warnings;
+* Changed internal structure of pre-processing to aid long-term upkeep;
+* Added warnings in docs for template_gen relating to template generation from
+set length files;
+* Updated template_creation tutorial to use day-long data.
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions

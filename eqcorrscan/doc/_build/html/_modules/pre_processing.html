@@ -220,20 +220,35 @@
 
 <span class="sd">    :return: obspy.Stream</span>
 
-<span class="sd">    .. note:: Will convert channel names to two charecters long.</span>
+<span class="sd">    .. note:: Will convert channel names to two characters long.</span>
+
+<span class="sd">    .. warning:: If you intend to use this for processing templates you \</span>
+<span class="sd">        should consider how resampling will effect your cross-correlations. \</span>
+<span class="sd">        Minor differences in resampling between day-long files (which you \</span>
+<span class="sd">        are likely to use for continuous detection) and shorter files will \</span>
+<span class="sd">        reduce your cross-correlations!</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">cpu_count</span>
-    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">Trace</span><span class="p">):</span>
+        <span class="n">tracein</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tracein</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="c"># Add sanity check for filter</span>
-    <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Highcut must be lower than the nyquist&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">parallel</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">num_cores</span><span class="p">:</span>
             <span class="n">num_cores</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_shortproc_inner</span><span class="p">,</span>
-                                    <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
-                                          <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">))</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">process</span><span class="p">,</span> <span class="p">(</span><span class="n">tr</span><span class="p">,),</span> <span class="p">{</span><span class="s">&#39;lowcut&#39;</span><span class="p">:</span> <span class="n">lowcut</span><span class="p">,</span>
+                                                     <span class="s">&#39;highcut&#39;</span><span class="p">:</span> <span class="n">highcut</span><span class="p">,</span>
+                                                     <span class="s">&#39;filt_order&#39;</span><span class="p">:</span> <span class="n">filt_order</span><span class="p">,</span>
+                                                     <span class="s">&#39;samp_rate&#39;</span><span class="p">:</span> <span class="n">samp_rate</span><span class="p">,</span>
+                                                     <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">,</span>
+                                                     <span class="s">&#39;starttime&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+                                                     <span class="s">&#39;full_day&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
                    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">stream_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
@@ -241,58 +256,17 @@
         <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
-            <span class="n">_shortproc_inner</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+            <span class="n">process</span><span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="n">highcut</span><span class="p">,</span>
+                    <span class="n">filt_order</span><span class="o">=</span><span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+                    <span class="n">starttime</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">full_day</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tracein</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">st</span>
 
 </div>
-<div class="viewcode-block" id="_shortproc_inner"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing._shortproc_inner">[docs]</a><span class="k">def</span> <span class="nf">_shortproc_inner</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Inner loop for shortproc to allow multiprocessing. Would usually be called</span>
-<span class="sd">    by shortproc, but can be called individually.</span>
-
-<span class="sd">    :type tr: obspy.Trace</span>
-<span class="sd">    :param st: Trace to process</span>
-<span class="sd">    :type highcut: float</span>
-<span class="sd">    :param highcut: High cut for bandpass in Hz</span>
-<span class="sd">    :type lowcut: float</span>
-<span class="sd">    :param lowcut: Low cut for bandpass in Hz</span>
-<span class="sd">    :type filt_order: int</span>
-<span class="sd">    :param filt_order: Number of corners for bandpass filter</span>
-<span class="sd">    :type samp_rate: float</span>
-<span class="sd">    :param samp_rate: Sampling rate desired in Hz</span>
-<span class="sd">    :type debug: int</span>
-<span class="sd">    :param debug: Debug flag from 0-5, higher numbers = more output</span>
-
-<span class="sd">    :return: obspy.Stream</span>
-
-<span class="sd">    .. note:: Will convert channel names to two charecters long.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-    <span class="c"># Check data quality first</span>
-    <span class="n">qual</span> <span class="o">=</span> <span class="n">_check_daylong</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">qual</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Data have more zeros than actual data, please check the&quot;</span><span class="p">,</span>
-               <span class="s">&quot;raw data set-up and manually sort it&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="c"># Check sampling rate and resample</span>
-    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">!=</span> <span class="n">samp_rate</span><span class="p">:</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
-
-    <span class="c"># Filtering section</span>
-    <span class="n">tr</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
-    <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
-                       <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
-    <span class="c"># Convert to two charecter channel names</span>
-    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="c"># Final visual check for debug</span>
-    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">tr</span>
-
-</div>
-<div class="viewcode-block" id="dayproc_stream"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.dayproc_stream">[docs]</a><span class="k">def</span> <span class="nf">dayproc_stream</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span>
-                   <span class="n">starttime</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">num_cores</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span>
+            <span class="n">starttime</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">num_cores</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Wrapper for dayproc to parallel multiple traces in a stream.</span>
 
@@ -300,7 +274,7 @@
 <span class="sd">    are processed in the same way.</span>
 
 <span class="sd">    :type st: obspy.Stream</span>
-<span class="sd">    :param tr: Trace to process</span>
+<span class="sd">    :param st: Stream to process (can be trace)</span>
 <span class="sd">    :type highcut: float</span>
 <span class="sd">    :param highcut: High cut in Hz for bandpass</span>
 <span class="sd">    :type lowcut: float</span>
@@ -322,20 +296,29 @@
 
 <span class="sd">    :return: obspy.Stream</span>
 
-<span class="sd">    .. note:: Will convert channel names to two charecters long.</span>
+<span class="sd">    .. note:: Will convert channel names to two characters long.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">cpu_count</span>
-    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">Trace</span>
     <span class="c"># Add sanity check for filter</span>
-    <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">Trace</span><span class="p">):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+        <span class="n">tracein</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tracein</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">samp_rate</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Highcut must be lower than the nyquist&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">parallel</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">num_cores</span><span class="p">:</span>
             <span class="n">num_cores</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">dayproc</span><span class="p">,</span>
-                                    <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
-                                          <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">))</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">process</span><span class="p">,</span> <span class="p">(</span><span class="n">tr</span><span class="p">,),</span> <span class="p">{</span><span class="s">&#39;lowcut&#39;</span><span class="p">:</span> <span class="n">lowcut</span><span class="p">,</span>
+                                                     <span class="s">&#39;highcut&#39;</span><span class="p">:</span> <span class="n">highcut</span><span class="p">,</span>
+                                                     <span class="s">&#39;filt_order&#39;</span><span class="p">:</span> <span class="n">filt_order</span><span class="p">,</span>
+                                                     <span class="s">&#39;samp_rate&#39;</span><span class="p">:</span> <span class="n">samp_rate</span><span class="p">,</span>
+                                                     <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">,</span>
+                                                     <span class="s">&#39;starttime&#39;</span><span class="p">:</span> <span class="n">starttime</span><span class="p">,</span>
+                                                     <span class="s">&#39;full_day&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
                    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">stream_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
@@ -343,17 +326,24 @@
         <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">stream_list</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
-            <span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span>
-                    <span class="n">starttime</span><span class="p">)</span>
+            <span class="n">process</span><span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="n">highcut</span><span class="p">,</span>
+                    <span class="n">filt_order</span><span class="o">=</span><span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+                    <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">full_day</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tracein</span><span class="p">:</span>
+        <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">st</span>
 
 </div>
-<div class="viewcode-block" id="dayproc"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.dayproc">[docs]</a><span class="k">def</span> <span class="nf">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">starttime</span><span class="p">):</span>
+<div class="viewcode-block" id="process"><a class="viewcode-back" href="../submodules/utils.pre_processing.html#pre_processing.process">[docs]</a><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span> <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span>
+            <span class="n">starttime</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">full_day</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Basic function to bandpass, downsample and check headers and length \</span>
 <span class="sd">    of trace to ensure files start at the start of a day and are daylong.</span>
 
 <span class="sd">    Works in place on data.  This is employed to ensure all parts of the data \</span>
 <span class="sd">    are processed in the same way.</span>
+
+<span class="sd">    .. note:: Usually this function is called via dayproc or shortproc.</span>
 
 <span class="sd">    :type tr: obspy.Trace</span>
 <span class="sd">    :param tr: Trace to process</span>
@@ -369,6 +359,8 @@
 <span class="sd">    :param debug: Debug output level from 0-5, higher numbers = more output</span>
 <span class="sd">    :type starttime: obspy.UTCDateTime</span>
 <span class="sd">    :param starttime: Desired start of trace</span>
+<span class="sd">    :type full_day: bool</span>
+<span class="sd">    :param full_day: Whether to expect, and enforce a full day of data or not.</span>
 
 <span class="sd">    :return: obspy.Stream</span>
 
@@ -378,8 +370,12 @@
     <span class="c"># Add sanity check</span>
     <span class="k">if</span> <span class="n">highcut</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">samp_rate</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Highcut must be lower than the nyquist&#39;</span><span class="p">)</span>
-    <span class="n">day</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>\
-        <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c"># Define the start-time</span>
+    <span class="k">if</span> <span class="n">starttime</span><span class="p">:</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="n">starttime</span><span class="o">.</span><span class="n">date</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span>
+
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;Working on: &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
@@ -394,14 +390,16 @@
 
     <span class="c"># If there is one sample too many remove the first sample - this occurs</span>
     <span class="c"># at station FOZ where the first sample is zero when it shouldn&#39;t be,</span>
-    <span class="c"># Not real sample generated during data download</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">86400</span> <span class="o">*</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+    <span class="c"># Not real sample: generated during data download</span>
+    <span class="c"># if full_day:</span>
+    <span class="c">#     if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:</span>
+    <span class="c">#         tr.data = tr.data[1:len(tr.data)]</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;I have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; data points for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span>
           <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; before processing&#39;</span><span class="p">)</span>
 
     <span class="c"># Sanity check to ensure files are daylong</span>
-    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span>\
+       <span class="ow">and</span> <span class="n">full_day</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39;Data for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">+</span>
                   <span class="s">&#39; is not of daylong length, will zero pad&#39;</span><span class="p">)</span>
@@ -420,8 +418,8 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Data are not daylong for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span>
                                  <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
 
-    <span class="k">print</span><span class="p">(</span><span class="s">&#39;I now have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span>
-          <span class="s">&#39; data points after enforcing day length&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;I now have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span>
+              <span class="s">&#39; data points after enforcing day length&#39;</span><span class="p">)</span>
 
     <span class="c"># Check sampling rate and resample</span>
     <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">!=</span> <span class="n">samp_rate</span><span class="p">:</span>
@@ -430,7 +428,7 @@
         <span class="n">tr</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">samp_rate</span><span class="p">)</span>
 
     <span class="c"># Filtering section</span>
-    <span class="n">tr</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data before filtering</span>
+    <span class="n">tr</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>    <span class="c"># Detrend data again before filtering</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;Bandpassing&#39;</span><span class="p">)</span>
     <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">bandpass</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span>
@@ -440,13 +438,12 @@
     <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c"># Sanity check the time header</span>
-    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>\
-       <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">!=</span> <span class="n">day</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">day</span> <span class="o">!=</span> <span class="n">day</span> <span class="o">!=</span> <span class="n">day</span> <span class="ow">and</span> <span class="n">full_day</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Time headers do not match expected date: &quot;</span> <span class="o">+</span>
                       <span class="nb">str</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
 
     <span class="c"># Sanity check to ensure files are daylong</span>
-    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span> <span class="o">/</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">86400.0</span> <span class="ow">and</span> <span class="n">full_day</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39;Data for &#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="o">+</span>
                   <span class="s">&#39; is not of daylong length, will zero pad&#39;</span><span class="p">)</span>

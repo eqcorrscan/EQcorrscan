@@ -99,7 +99,7 @@
 <li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.8. Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">4.11. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">4.11. catalog_to_dd</a></li>
 </ul>
 </li>
 </ul>
@@ -142,6 +142,10 @@
   <div class="section" id="module-template_gen">
 <span id="template-gen"></span><h1>3.2. template_gen<a class="headerlink" href="#module-template_gen" title="Permalink to this headline">¶</a></h1>
 <p>Functions to generate template waveforms and information to go with them for the application of cross-correlation of seismic data for the detection of repeating events.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All of these functions work for a single template, however all of them call _template_gen, which takes care of pick association and cutting.  If you have many templates in one day of data it would be simple to write a wrapper that cuts multiple templates from one day of processed data rather than re-processing the same day of data for each template.</p>
+</div>
 <p>Code written by Calum John Chamberlain &amp; Chet Hopp of Victoria University of Wellington, 2015.</p>
 <p>Copyright 2015, 2016 Calum Chamberlain, Chet Hopp.</p>
 <p>This file is part of EQcorrscan.</p>
@@ -291,7 +295,7 @@ Requires the stack, the template used to make the detections for the stack, and 
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>quakeml</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; QuakeML file containing pick information, can contain multiple events.</li>
-<li><strong>st</strong> (<em>class: obspy.Stream</em>) &#8211; Stream containing waveform data for template (hopefully)</li>
+<li><strong>st</strong> (<em>class: obspy.Stream</em>) &#8211; Stream containing waveform data for template (hopefully). Note that this should be the same length of stream as you will use for the continuous detection, e.g. if you detect in day-long files, give this a day-long file!</li>
 <li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
 <li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
 <li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
@@ -309,6 +313,10 @@ Requires the stack, the template used to make the detections for the stack, and 
 </tr>
 </tbody>
 </table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">We suggest giving this function a full day of data, to ensure templates are generated with <strong>exactly</strong> the same processing as the continuous data.  Not doing this will result in slightly reduced cross-correlation values.</p>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -367,6 +375,10 @@ Requires the stack, the template used to make the detections for the stack, and 
 </tr>
 </tbody>
 </table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This will use whatever data is pointed to in the s-file, if this is not the coninuous data, we recommend using other functions. Differences in processing between short files and day-long files (inherent to resampling) will produce lower cross-correlations.</p>
+</div>
 </dd></dl>
 
 </div>

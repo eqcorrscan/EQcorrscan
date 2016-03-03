@@ -141,6 +141,13 @@
 <span class="sd">for the application of cross-correlation of seismic data for the detection of \</span>
 <span class="sd">repeating events.</span>
 
+<span class="sd">.. note:: All of these functions work for a single template, however all of \</span>
+<span class="sd">    them call _template_gen, which takes care of pick association and \</span>
+<span class="sd">    cutting.  If you have many templates in one day of data it would be \</span>
+<span class="sd">    simple to write a wrapper that cuts multiple templates from one day \</span>
+<span class="sd">    of processed data rather than re-processing the same day of data \</span>
+<span class="sd">    for each template.</span>
+
 <span class="sd">Code written by Calum John Chamberlain &amp; Chet Hopp of \</span>
 <span class="sd">Victoria University of Wellington, 2015.</span>
 
@@ -200,6 +207,11 @@
 <span class="sd">    :param plot: Turns template plotting on or off.</span>
 
 <span class="sd">    :returns: obspy.Stream Newly cut template</span>
+
+<span class="sd">    .. warning:: This will use whatever data is pointed to in the s-file, if \</span>
+<span class="sd">        this is not the coninuous data, we recommend using other functions. \</span>
+<span class="sd">        Differences in processing between short files and day-long files \</span>
+<span class="sd">        (inherent to resampling) will produce lower cross-correlations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Perform some checks first</span>
     <span class="kn">import</span> <span class="nn">os</span>
@@ -387,7 +399,10 @@
 <span class="sd">    :param quakeml: QuakeML file containing pick information, can contain \</span>
 <span class="sd">        multiple events.</span>
 <span class="sd">    :type st: class: obspy.Stream</span>
-<span class="sd">    :param st: Stream containing waveform data for template (hopefully)</span>
+<span class="sd">    :param st: Stream containing waveform data for template (hopefully). \</span>
+<span class="sd">        Note that this should be the same length of stream as you will use \</span>
+<span class="sd">        for the continuous detection, e.g. if you detect in day-long files, \</span>
+<span class="sd">        give this a day-long file!</span>
 <span class="sd">    :type lowcut: float</span>
 <span class="sd">    :param lowcut: Low cut (Hz), if set to None will look in template \</span>
 <span class="sd">            defaults file</span>
@@ -413,6 +428,11 @@
 <span class="sd">    :param plot: Display template plots or not</span>
 
 <span class="sd">    :returns: list of obspy.Stream Newly cut templates</span>
+
+<span class="sd">    .. warning:: We suggest giving this function a full day of data, to ensure \</span>
+<span class="sd">        templates are generated with **exactly** the same processing as the \</span>
+<span class="sd">        continuous data.  Not doing this will result in slightly reduced \</span>
+<span class="sd">        cross-correlation values.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Perform some checks first</span>
     <span class="kn">import</span> <span class="nn">os</span>
@@ -433,8 +453,9 @@
     <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
         <span class="n">tr</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
-                                    <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span>
-                                    <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">date</span><span class="p">))</span>
+                                    <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+                                    <span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span>
+                                                          <span class="n">starttime</span><span class="o">.</span><span class="n">date</span><span class="p">))</span>
     <span class="c"># Read QuakeML file into Catalog class</span>
     <span class="n">catalog</span> <span class="o">=</span> <span class="n">read_events</span><span class="p">(</span><span class="n">quakeml</span><span class="p">)</span>
     <span class="n">templates</span> <span class="o">=</span> <span class="p">[]</span>
@@ -518,9 +539,12 @@
             <span class="n">sta</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span>
             <span class="n">chan</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span>
             <span class="n">loc</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">location_code</span>
-            <span class="n">starttime</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="p">(</span><span class="n">prepick</span> <span class="o">+</span> <span class="mi">600</span><span class="p">)</span>
-            <span class="c"># Enforce some pad, 10min either side, to reduce filter effects</span>
-            <span class="n">endtime</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">600</span> <span class="o">-</span> <span class="n">prepick</span>
+            <span class="n">starttime</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">endtime</span> <span class="o">=</span> <span class="n">starttime</span> <span class="o">+</span> <span class="mi">86400</span>
+            <span class="c"># Here we download a full day of data.  We do this so that minor</span>
+            <span class="c"># differences in processing during processing due to the effect</span>
+            <span class="c"># of resampling do not impinge on our cross-correaltions.</span>
+
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">print</span><span class="p">(</span><span class="s">&#39;start-time: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="p">))</span>
                 <span class="k">print</span><span class="p">(</span><span class="s">&#39;end-time: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">endtime</span><span class="p">))</span>
@@ -539,8 +563,9 @@
             <span class="n">st</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;Preprocessing data for event: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">))</span>
         <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
-        <span class="n">st1</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
-                                       <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+        <span class="n">st1</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
+                                     <span class="n">samp_rate</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span>
+                                     <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
         <span class="n">template</span> <span class="o">=</span> <span class="n">_template_gen</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">,</span> <span class="n">st1</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="p">,</span>
                                  <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">st</span><span class="p">,</span> <span class="n">st1</span>
@@ -594,6 +619,7 @@
         <span class="kn">from</span> <span class="nn">obspy.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
         <span class="kn">from</span> <span class="nn">obspy.fdsn.header</span> <span class="kn">import</span> <span class="n">FDSNException</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span>
     <span class="kn">import</span> <span class="nn">warnings</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
@@ -607,9 +633,11 @@
             <span class="n">sta</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span>
             <span class="n">chan</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">channel_code</span>
             <span class="n">loc</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">location_code</span>
-            <span class="n">starttime</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="p">(</span><span class="n">prepick</span> <span class="o">+</span> <span class="mi">600</span><span class="p">)</span>
-            <span class="c"># Enforce some pad, 10min either side, to reduce filter effects</span>
-            <span class="n">endtime</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">600</span> <span class="o">-</span> <span class="n">prepick</span>
+            <span class="n">starttime</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">endtime</span> <span class="o">=</span> <span class="n">starttime</span> <span class="o">+</span> <span class="mi">86400</span>
+            <span class="c"># Here we download a full day of data.  We do this so that minor</span>
+            <span class="c"># differences in processing during processing due to the effect</span>
+            <span class="c"># of resampling do not impinge on our cross-correaltions.</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">print</span><span class="p">(</span><span class="s">&#39;start-time: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">starttime</span><span class="p">))</span>
                 <span class="k">print</span><span class="p">(</span><span class="s">&#39;end-time: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">endtime</span><span class="p">))</span>
@@ -631,10 +659,12 @@
             <span class="n">st</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
         <span class="k">print</span><span class="p">(</span><span class="s">&#39;Pre-processing data for event: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">))</span>
         <span class="n">st</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="s">&#39;interpolate&#39;</span><span class="p">)</span>
-        <span class="n">st1</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">shortproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
-                                       <span class="n">samp_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+        <span class="n">st1</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="p">,</span> <span class="n">highcut</span><span class="p">,</span> <span class="n">filt_order</span><span class="p">,</span>
+                                     <span class="n">samp_rate</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span>
+                                     <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">st1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+        <span class="n">st1</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;processed_data.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
         <span class="n">template</span> <span class="o">=</span> <span class="n">_template_gen</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">,</span> <span class="n">st1</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">swin</span><span class="p">,</span> <span class="n">prepick</span><span class="p">,</span>
                                  <span class="n">plot</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">st</span><span class="p">,</span> <span class="n">st1</span>
@@ -675,7 +705,7 @@
 <span class="sd">        all channels with picks will be used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">copy</span>
-    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.EQcorrscan_plotting</span> <span class="kn">import</span> <span class="n">pretty_template_plot</span> <span class="k">as</span>\
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.plotting</span> <span class="kn">import</span> <span class="n">pretty_template_plot</span> <span class="k">as</span>\
         <span class="n">tplot</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
     <span class="kn">import</span> <span class="nn">warnings</span>
@@ -786,7 +816,10 @@
                                  <span class="mi">10</span><span class="p">,</span>
                                  <span class="n">st1</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="o">+</span>
                                  <span class="mi">10</span><span class="p">)</span>
-        <span class="n">tplot</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">)</span>
+        <span class="n">tplot</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">,</span>
+              <span class="n">title</span><span class="o">=</span><span class="s">&#39;Template for &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">st1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
+        <span class="n">st1</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;template_plotted.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
+        <span class="n">background</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;background_plotted.ms&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;MSEED&#39;</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">stplot</span>
     <span class="k">del</span> <span class="n">st</span>
     <span class="c"># st1.plot(size=(800,600))</span>
