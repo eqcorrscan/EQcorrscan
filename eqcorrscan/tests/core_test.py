@@ -45,17 +45,15 @@ class TestCoreMethods(unittest.TestCase):
         # otherwise similar templates will detect events seeded by another
         # template.
         # Test the pre_processing functions
-        for tr in data:
-            pre_processing.dayproc(tr=tr, lowcut=2.0, highcut=8.0,
-                                   filt_order=3,
-                                   samp_rate=20.0, debug=0,
-                                   starttime=UTCDateTime(0))
+        data = pre_processing.dayproc(st=data, lowcut=2.0, highcut=8.0,
+                                      filt_order=3, samp_rate=samp_rate,
+                                      debug=0, starttime=UTCDateTime(0))
         if debug > 0:
             data.plot()
         # Filter the data and the templates
         for template in templates:
             pre_processing.shortproc(st=template, lowcut=2.0, highcut=8.0,
-                                     filt_order=3, samp_rate=20.0)
+                                     filt_order=3, samp_rate=samp_rate)
             if debug > 0:
                 template.plot()
         template_names = list(string.ascii_lowercase)[0:len(templates)]
@@ -66,7 +64,8 @@ class TestCoreMethods(unittest.TestCase):
                                                trig_int=6.0,
                                                plotvar=False,
                                                plotdir='.',
-                                               cores=1)
+                                               cores=1,
+                                               debug=0)
         # Compare the detections to the seeds
         print('This test made ' + str(len(detections)) + ' detections')
         ktrue = 0

@@ -85,11 +85,9 @@ for i in range(kdays):
     # Note that this is, and MUST BE the same as the parameters used for the
     # template creation.
     print('Processing the seismic data')
-    st = Parallel(n_jobs=ncores)(delayed(pre_processing.dayproc)
-                                 (tr=tr, lowcut=2.0, highcut=9.0,
-                                  filt_order=3,
-                                  samp_rate=20.0, debug=0, starttime=t1)
-                                 for tr in st)
+    st = pre_processing.dayproc(st, lowcut=2.0, highcut=9.0,
+                                filt_order=4, samp_rate=20.0,
+                                debug=0, starttime=t1)
     # Convert from list to stream
     st = Stream(st)
 
@@ -100,7 +98,7 @@ for i in range(kdays):
                                            threshold_type='MAD',
                                            trig_int=6.0, plotvar=True,
                                            plotdir='.', cores=ncores,
-                                           tempdir=False, debug=0,
+                                           tempdir=False, debug=1,
                                            plot_format='jpg')
 
     # Now lets try and work out how many unique events we have just to compare
@@ -109,8 +107,8 @@ for i in range(kdays):
         keep = True
         for slave in detections:
             if not master == slave and\
-               abs(master.detect_time - slave.detect_time) <= 6.0:
-                # If the events are within 6s of each other then test which
+               abs(master.detect_time - slave.detect_time) <= 1.0:
+                # If the events are within 1s of each other then test which
                 # was the 'best' match, strongest detection
                 if not master.detect_val > slave.detect_val:
                     keep = False

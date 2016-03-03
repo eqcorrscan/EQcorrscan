@@ -66,7 +66,7 @@ def mktemplates(network_code='GEONET',
                                          client_id=network_code,
                                          lowcut=2.0, highcut=9.0,
                                          samp_rate=20.0, filt_order=4,
-                                         length=3.0, prepick=0.05,
+                                         length=3.0, prepick=0.15,
                                          swin='all', debug=1, plot=True)
 
     # We now have a series of templates! Using Obspys Stream.write() method we

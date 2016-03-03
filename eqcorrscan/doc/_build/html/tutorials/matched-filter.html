@@ -145,9 +145,9 @@
 to scan for similar earthquakes within a day of data.  This small example does not truly exploit the parallel
 operations within this package however, so you would be encouraged to think
 about where parallel operations occur (<em>hint, the code can run one template
-per cpu</em>), and why there are &#8211;instance and&#8211;splits flags in the other
+per CPU</em>), and why there are &#8211;instance and&#8211;splits flags in the other
 scripts in the github repository (<em>hint, if you have heaps of memory
-and cpus you can do some brute force day parallelisation!</em>).</p>
+and CPUs you can do some brute force day parallelisation!</em>).</p>
 <p>The main processing flow is outlined in the figure below, note the main speedups
 in this process are achieved by running multiple templates at once, however this
 increases memory usage.  If memory is a problem there are flags (mem_issue) in the
@@ -163,7 +163,7 @@ your call.</p>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">pre_processing</span>
-<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">EQcorrscan_plotting</span> <span class="k">as</span> <span class="n">plotting</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">plotting</span>
 <span class="kn">from</span> <span class="nn">eqcorrscan.core</span> <span class="kn">import</span> <span class="n">match_filter</span>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 <span class="kn">import</span> <span class="nn">glob</span>
@@ -242,11 +242,9 @@ your call.</p>
     <span class="c"># Note that this is, and MUST BE the same as the parameters used for the</span>
     <span class="c"># template creation.</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&#39;Processing the seismic data&#39;</span><span class="p">)</span>
-    <span class="n">st</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">ncores</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">)</span>
-                                 <span class="p">(</span><span class="n">tr</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span>
-                                  <span class="n">filt_order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                                  <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
-                                 <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">pre_processing</span><span class="o">.</span><span class="n">dayproc</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span>
+                                <span class="n">filt_order</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+                                <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">)</span>
     <span class="c"># Convert from list to stream</span>
     <span class="n">st</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
 
@@ -257,7 +255,7 @@ your call.</p>
                                            <span class="n">threshold_type</span><span class="o">=</span><span class="s">&#39;MAD&#39;</span><span class="p">,</span>
                                            <span class="n">trig_int</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">plotvar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                                            <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">ncores</span><span class="p">,</span>
-                                           <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                           <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                                            <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">)</span>
 
     <span class="c"># Now lets try and work out how many unique events we have just to compare</span>
@@ -266,8 +264,8 @@ your call.</p>
         <span class="n">keep</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="k">for</span> <span class="n">slave</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span> <span class="o">==</span> <span class="n">slave</span> <span class="ow">and</span>\
-               <span class="nb">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">6.0</span><span class="p">:</span>
-                <span class="c"># If the events are within 6s of each other then test which</span>
+               <span class="nb">abs</span><span class="p">(</span><span class="n">master</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">-</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="c"># If the events are within 1s of each other then test which</span>
                 <span class="c"># was the &#39;best&#39; match, strongest detection</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">master</span><span class="o">.</span><span class="n">detect_val</span> <span class="o">&gt;</span> <span class="n">slave</span><span class="o">.</span><span class="n">detect_val</span><span class="p">:</span>
                     <span class="n">keep</span> <span class="o">=</span> <span class="bp">False</span>

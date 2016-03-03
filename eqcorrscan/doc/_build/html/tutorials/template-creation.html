@@ -99,7 +99,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">4.8. Sfile_util</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">4.9. stacking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">4.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">4.11. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">4.11. catalog_to_dd</a></li>
 </ul>
 </li>
 </ul>
@@ -167,6 +167,28 @@ to the vertical channel and S-picks to both horizontal channels.</p>
 <p><strong>Note:</strong> To run this script and for all map plotting you will need to install
 matplotlib-toolkits basemap package.  Install instructions and a link to the
 download are <a href="http://matplotlib.org/basemap/users/installing.html" target="_blank">here</a>.</p>
+<div class="section" id="important-considerations">
+<h2>2.1.1. Important considerations<a class="headerlink" href="#important-considerations" title="Permalink to this headline">¶</a></h2>
+<p>In this tutorial we enforce downloading of day-long data for the template
+generation.  This is to ensure that the data we make the template from, and
+the data we use for detection are processed in exactly the same way.  If we
+were to only download a short segment of data around the event and process this
+we would find that the resampling process would result in minor differences
+between the templates and the continuous data.  This has the effect that, for
+self-detections, the cross-correlation values are less than 1.</p>
+<p>This is an important effect and something that you should consider when generating
+your own templates.  You <strong>MUST</strong> process your templates in the exact same way
+(using the same routines, same filters, same resampling, and same data length)
+as your continuous data.  It can have a very significant impact to your results.</p>
+<p>The functions provided in eqcorrscan.core.template_gen are there to aid you,
+but if you look at the source code, all they are doing is:</p>
+<ul class="simple">
+<li>Detrending;</li>
+<li>Resampling;</li>
+<li>Filtering;</li>
+<li>and cutting.</li>
+</ul>
+<p>If you want to do these things another way you are more then welcome to!</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Simple tutorial detailing how to generate a series of templates from catalog\</span>
 <span class="sd">data available online.</span>
@@ -235,7 +257,7 @@ download are <a href="http://matplotlib.org/basemap/users/installing.html" targe
                                          <span class="n">client_id</span><span class="o">=</span><span class="n">network_code</span><span class="p">,</span>
                                          <span class="n">lowcut</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span>
                                          <span class="n">samp_rate</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">filt_order</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-                                         <span class="n">length</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+                                         <span class="n">length</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">prepick</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span>
                                          <span class="n">swin</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 
     <span class="c"># We now have a series of templates! Using Obspys Stream.write() method we</span>
@@ -262,6 +284,7 @@ download are <a href="http://matplotlib.org/basemap/users/installing.html" targe
         <span class="k">print</span><span class="p">(</span><span class="n">idlist</span><span class="p">)</span>
         <span class="n">mktemplates</span><span class="p">(</span><span class="n">net_code</span><span class="p">,</span> <span class="n">idlist</span><span class="p">)</span>
 </pre></div>
+</div>
 </div>
 </div>
 
