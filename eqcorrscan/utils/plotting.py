@@ -582,14 +582,14 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     for i, tr in enumerate(template):
         delay = tr.stats.starttime - mintime
         y = tr.data
-        x = np.linspace(0, len(y) * tr.stats.delta, len(y))
+        x = np.linspace(0, (len(y)-1) * tr.stats.delta, len(y))
         x += delay
         if background:
             btr = background.select(station=tr.stats.station,
                                     channel=tr.stats.channel)[0]
             bdelay = btr.stats.starttime - mintime
             by = btr.data
-            bx = np.linspace(0, len(by) * btr.stats.delta, len(by))
+            bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
             bx += bdelay
             axes[i].plot(bx, by, 'k', linewidth=1)
             axes[i].plot(x, y, 'r', linewidth=1.1)
