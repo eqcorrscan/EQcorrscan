@@ -866,7 +866,7 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     Function to take an obspy.event and write the relevant information to a \
     nordic formatted s-file
 
-    :type event: obspy.event.core.Catalog
+    :type event: obspy.event.core.Event
     :param event: A single obspy event
     :type userID: str
     :param userID: Up to 4 character user ID
