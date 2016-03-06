@@ -329,13 +329,13 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
     ps_multiplier = 0.34
-    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import sfile_util
     from obspy import read
     from scipy.signal import iirfilter
     from obspy.signal.invsim import paz2AmpValueOfFreqResp
     import warnings
     # First we need to work out what stations have what picks
-    event = Sfile_util.readpicks(sfile)[0]
+    event = sfile_util.readpicks(sfile)[0]
     # Convert these picks into a lists
     stations = []  # List of stations
     channels = []  # List of channels
@@ -355,9 +355,9 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                        if arrival.pick_id == pick.resource_id]
             distances.append(arrival.distance)
     # Read in waveforms
-    stream = read(datapath+'/'+Sfile_util.readwavename(sfile)[0])
-    if len(Sfile_util.readwavename(sfile)) > 1:
-        for wavfile in Sfile_util.readwavename(sfile):
+    stream = read(datapath+'/'+sfile_util.readwavename(sfile)[0])
+    if len(sfile_util.readwavename(sfile)) > 1:
+        for wavfile in sfile_util.readwavename(sfile):
             stream += read(datapath+'/'+wavfile)
     stream.merge()  # merge the data, just in case!
     # For each station cut the window
@@ -529,7 +529,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
             #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
             # Generate a PICK type object for this pick
-            picks_out.append(Sfile_util.PICK(station=tr.stats.station,
+            picks_out.append(sfile_util.PICK(station=tr.stats.station,
                                              channel=tr.stats.channel,
                                              impulsivity=' ',
                                              phase='IAML',
@@ -561,7 +561,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     # Write picks out to new s-file
     for pick in picks_out:
         print(pick)
-    # Sfile_util.populateSfile('mag_calc.out', picks_out)
+    # sfile_util.populatesfile('mag_calc.out', picks_out)
     return picks_out
 
 

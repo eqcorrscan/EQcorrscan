@@ -37,7 +37,7 @@ This file is part of EQcorrscan.
     along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-from eqcorrscan.utils import Sfile_util
+from eqcorrscan.utils import sfile_util
 import os
 
 
@@ -152,14 +152,14 @@ def sfiles_to_event(sfile_list):
     """
     from obspy.core.event import Catalog
     event_list = []
-    sort_list = [(Sfile_util.readheader(sfile).origins[0].time, sfile)
+    sort_list = [(sfile_util.readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
     sort_list.sort(key=lambda tup: tup[0])
     sfile_list = [sfile[1] for sfile in sort_list]
     catalog = Catalog()
     for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
-        catalog.append(Sfile_util.readheader(sfile))
+        catalog.append(sfile_util.readheader(sfile))
     # Hand off to sister function
     write_event(catalog)
     return event_list
@@ -200,7 +200,7 @@ def write_catalog(event_list, max_sep=1, min_link=8):
     """
     Function to write the dt.ct file needed by hypoDD - takes input event list
     from write_event as a list of tuples of event id and sfile.  It will read
-    the pick information from the seisan formated s-file using the Sfile_util
+    the pick information from the seisan formated s-file using the sfile_util
     utilities.
 
     :type event_list: list of tuple
@@ -215,7 +215,7 @@ def write_catalog(event_list, max_sep=1, min_link=8):
     .. note:: Currently we have not implemented a method for taking \
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
-        event using the Sfile_utils module prior to this step.
+        event using the sfile_util module prior to this step.
     """
     from eqcorrscan.utils.mag_calc import dist_calc
     f = open('dt.ct', 'w')
@@ -226,7 +226,7 @@ def write_catalog(event_list, max_sep=1, min_link=8):
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_event = Sfile_util.readpicks(master_sfile)
+        master_event = sfile_util.readpicks(master_sfile)
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
@@ -267,7 +267,7 @@ def write_catalog(event_list, max_sep=1, min_link=8):
                 str(slave_event_id).rjust(10)+'\n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+'\n'
-            slave_event = Sfile_util.readpicks(slave_sfile)
+            slave_event = sfile_util.readpicks(slave_sfile)
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
@@ -362,7 +362,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     .. note:: Currently we have not implemented a method for taking \
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
-        event using the Sfile_utils module prior to this step.
+        event using the sfile_util module prior to this step.
     """
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
@@ -382,13 +382,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_picks = Sfile_util.readpicks(master_sfile).picks
-        master_event = Sfile_util.readheader(master_sfile)
+        master_picks = sfile_util.readpicks(master_sfile).picks
+        master_event = sfile_util.readheader(master_sfile)
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
                            master_event.origins[0].depth)
-        master_wavefiles = Sfile_util.readwavename(master_sfile)
+        master_wavefiles = sfile_util.readwavename(master_sfile)
         masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
         if masterpath:
             masterstream = read(masterpath[0])
@@ -403,7 +403,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
             slave_event_id = event_list[j][0]
-            slave_wavefiles = Sfile_util.readwavename(slave_sfile)
+            slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
                 # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
@@ -423,8 +423,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 str(slave_event_id).rjust(10)+' 0.0   \n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
-            slave_picks = Sfile_util.readpicks(slave_sfile).picks
-            slave_event = Sfile_util.readheader(slave_sfile)
+            slave_picks = sfile_util.readpicks(slave_sfile).picks
+            slave_event = sfile_util.readheader(slave_sfile)
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
