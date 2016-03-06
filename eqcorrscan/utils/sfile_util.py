@@ -860,7 +860,7 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     return sfile
 
 
-def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
+def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
                  overwrite=False):
     """
     Function to take an obspy.event and write the relevant information to a \
@@ -1003,13 +1003,13 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     sfile.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
                 ' VELO AIN AR TRES W  DIS CAZ7\n')
     sfile.close()
-    # Now call the populateSfile function
+    # Now call the populatesfile function
     if len(event.picks) > 0:
-        populateSfile(sfilename, event)
+        populatesfile(sfilename, event)
     return sfilename
 
 
-def populateSfile(sfile, event):
+def populatesfile(sfile, event):
     """
     Module to populate a blank nordic format S-file with pick information, \
     arguments required are the filename of the blank s-file and the picks \

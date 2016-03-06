@@ -32,14 +32,20 @@ import importlib
 import warnings
 
 
-__all__ = ['Sfile_util', 'pre_processing', 'findpeaks', 'plotting',
+__all__ = ['sfile_util', 'pre_processing', 'findpeaks', 'plotting',
            'mag_calc', 'catalog_to_dd', 'clustering',
            'seismo_logs', 'stacking', 'synth_seis', 'timer']
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {
     "catalogue2DD": "catalog_to_dd",
-    "EQcorrscan_plotting": "plotting"
+    "EQcorrscan_plotting": "plotting",
+    "Sfile_util": "sfile_util",
+}
+
+_function_map = {
+    "Sfile_util.eventtoSfile": "sfile_util.eventtosfile",
+    "Sfile_util.populateSfile": "sfile_util.populatesfile"
 }
 
 

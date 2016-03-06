@@ -107,7 +107,7 @@ def cross_net(stream, env=False, debug=0, master=False):
     """
     from obspy.signal.cross_correlation import xcorr
     from obspy.signal.filter import envelope
-    from eqcorrscan.utils.Sfile_util import PICK
+    from eqcorrscan.utils.sfile_util import PICK
     import matplotlib.pyplot as plt
     import numpy as np
     picks = []
@@ -209,7 +209,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :returns: list of pick class.
     """
     from obspy.signal.trigger import classicSTALTA, triggerOnset, plotTrigger
-    from Sfile_util import PICK
+    from sfile_util import PICK
     import EQcorrscan_plotting as plotting
     picks = []
     for tr in stream:

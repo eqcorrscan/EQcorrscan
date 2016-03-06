@@ -135,7 +135,7 @@ class TestCatalogMethods(unittest.TestCase):
         """Simple test function to test the writing of events.
         """
         from eqcorrscan.utils.catalog_to_dd import sfiles_to_event
-        from eqcorrscan.utils import Sfile_util
+        from eqcorrscan.utils import sfile_util
         import os
         import glob
 
@@ -147,7 +147,7 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile('event.dat'))
         f = open('event.dat', 'r')
         for line, event in zip(f, event_list):
-            header = Sfile_util.readheader(event[1])
+            header = sfile_util.readheader(event[1])
             event_id_input = event[0]
             output_event_info = line.strip().split()
             # Check that the event id's match
@@ -182,7 +182,7 @@ class TestCatalogMethods(unittest.TestCase):
         """
         from eqcorrscan.utils.catalog_to_dd import write_catalog
         from eqcorrscan.utils.mag_calc import dist_calc
-        from eqcorrscan.utils import Sfile_util
+        from eqcorrscan.utils import sfile_util
         import glob
         import os
         # Set forced variables
@@ -213,8 +213,8 @@ class TestCatalogMethods(unittest.TestCase):
                     event_2_name = [event[1] for event in event_list
                                     if event[0] ==
                                     int(event_pair.split()[2])][0]
-                    event_1 = Sfile_util.readheader(event_1_name)
-                    event_2 = Sfile_util.readheader(event_2_name)
+                    event_1 = sfile_util.readheader(event_1_name)
+                    event_2 = sfile_util.readheader(event_2_name)
                     event_1_location = (event_1.origins[0].latitude,
                                         event_1.origins[0].longitude,
                                         event_1.origins[0].depth / 1000)
@@ -226,8 +226,8 @@ class TestCatalogMethods(unittest.TestCase):
                     self.assertTrue(hypocentral_seperation <
                                     maximum_seperation)
                     # Check that the differential times are accurate
-                    event_1_picks = Sfile_util.readpicks(event_1_name).picks
-                    event_2_picks = Sfile_util.readpicks(event_2_name).picks
+                    event_1_picks = sfile_util.readpicks(event_1_name).picks
+                    event_2_picks = sfile_util.readpicks(event_2_name).picks
                     for pick_pair in event_links:
                         station = pick_pair.split()[0]
                         event_1_travel_time_output = pick_pair.split()[1]

@@ -1,12 +1,12 @@
 """
-Functions for testing the utils.Sfile_util functions
+Functions for testing the utils.sfile_util functions
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from eqcorrscan.utils.Sfile_util import eventtoSfile, readwavename, readpicks
-from eqcorrscan.utils.Sfile_util import eventtopick, picktoevent
+from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
+from eqcorrscan.utils.sfile_util import eventtopick, picktoevent
 import unittest
 
 
@@ -17,7 +17,7 @@ class TestSfileMethods(unittest.TestCase):
         attempt to write miniseed files
         """
         import os
-        from eqcorrscan.utils import Sfile_util
+        from eqcorrscan.utils import sfile_util
         import obspy
         if int(obspy.__version__.split('.')[0]) >= 1:
             from obspy.clients.fdsn import Client
@@ -52,14 +52,14 @@ class TestSfileMethods(unittest.TestCase):
                 except FDSNException:
                     warnings.warn('FDSNException')
                     continue
-            test_Sfile_name = Sfile_util.eventtoSfile(event, 'test', 'L', '.',
+            test_Sfile_name = sfile_util.eventtosfile(event, 'test', 'L', '.',
                                                       'null', overwrite=True)
             os.remove(test_Sfile_name)
         return True
 
     def test_read_write(self):
         """
-        Function to test the read and write capabilities of Sfile_util.
+        Function to test the read and write capabilities of sfile_util.
         """
         import os
         from obspy.core.event import Catalog
@@ -109,7 +109,7 @@ class TestSfileMethods(unittest.TestCase):
                          test_cat[0].amplitudes[0].waveform_id)
 
         # Check the read-write s-file functionality
-        sfile = eventtoSfile(test_cat[0], userID='TEST',
+        sfile = eventtosfile(test_cat[0], userID='TEST',
                              evtype='L', outdir='.',
                              wavefiles='test', explosion=True, overwrite=True)
         del read_cat

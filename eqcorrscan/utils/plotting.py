@@ -480,10 +480,10 @@ def interev_mag_sfiles(sfiles):
     :type sfiles: list
     :param sfiles: List of sfiles to read from
     """
-    from eqcorrscan.utils import Sfile_util
-    times = [Sfile_util.readheader(sfile)[0].origins[0].time
+    from eqcorrscan.utils import sfile_util
+    times = [sfile_util.readheader(sfile)[0].origins[0].time
              for sfile in sfiles]
-    mags = [Sfile_util.readheader(sfile)[0].magnitudes[0].mag
+    mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
             for sfile in sfiles]
     interev_mag(times, mags)
 
@@ -565,7 +565,7 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :param title: String if set will be the plot title
     :type background: :class: obspy.stream
     :param background: Stream to plot the template within.
-    :type picks: list of :class: eqcorrscan.utils.Sfile_util.PICK
+    :type picks: list of :class: eqcorrscan.utils.sfile_util.PICK
     :param picks: List of eqcorrscan type picks.
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
