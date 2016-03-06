@@ -49,8 +49,7 @@ def mktemplates(network_code='GEONET',
     # five most used stations
     all_picks = []
     for event in catalog:
-        all_picks += [(pick.waveform_id.station_code,
-                       pick.waveform_id.channel_code) for pick in event.picks]
+        all_picks += [(pick.waveform_id.station_code) for pick in event.picks]
     all_picks = Counter(all_picks).most_common(5)
     all_picks = [pick[0] for pick in all_picks]
 
@@ -58,8 +57,7 @@ def mktemplates(network_code='GEONET',
         if len(event.picks) == 0:
             raise IOError('No picks found')
         event.picks = [pick for pick in event.picks
-                       if (pick.waveform_id.station_code,
-                           pick.waveform_id.channel_code) in all_picks]
+                       if pick.waveform_id.station_code in all_picks]
 
     # Now we can generate the templates
     templates = template_gen.from_client(catalog=catalog,

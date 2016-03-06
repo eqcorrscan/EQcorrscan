@@ -918,19 +918,43 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         print(type(wavefiles))
         raise IOError(wavefiles + ' is neither string or list')
     # Determine name from origin time
-    sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\
-        evtype + '.S' + event.origins[0].time.datetime.strftime('%Y%m')
-    evtime = event.origins[0].time
+    try:
+        evtime = event.origins[0].time
+    except IndexError:
+        msg = 'list index out of range: Need at least one origin with at ' +\
+            'least an origin time'
+        raise IndexError(msg)
+    if not evtime:
+        msg = 'event has an origin, but time is not populated.  ' +\
+            'This is required!'
+        raise ValueError(msg)
+    sfilename = evtime.datetime.strftime('%d-%H%M-%S') +\
+        evtype + '.S' + evtime.datetime.strftime('%Y%m')
     # Check that the file doesn't exist
     if not overwrite and os.path.isfile(outdir+'/'+sfilename):
         raise IOError(outdir+'/'+sfilename +
                       ' already exists, will not overwrite')
     sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
-    lat = '{0:.3f}'.format(event.origins[0].get('latitude')) or ''
-    lon = '{0:.3f}'.format(event.origins[0].get('longitude')) or ''
-    depth = '{0:.1f}'.format(event.origins[0].get('depth')/1000) or ''
-    agency = event.creation_info.get('agency_id') or ''
+    if event.origins[0].latitude:
+        lat = '{0:.3f}'.format(event.origins[0].latitude)
+    else:
+        lat = ''
+    if event.origins[0].longitude:
+        lon = '{0:.3f}'.format(event.origins[0].longitude)
+    else:
+        lon = ''
+    if event.origins[0].depth:
+        depth = '{0:.1f}'.format(event.origins[0].depth/1000)
+    else:
+        depth = ''
+    if event.creation_info:
+        try:
+            agency = event.creation_info.get('agency_id')
+        except AttributeError:
+            agency = ''
+    else:
+        agency = ''
     if len(agency) > 3:
         agency = agency[0:3]
     # Cope with differences in event uncertainty naming
@@ -942,9 +966,14 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
             timerms = '0.0'
     else:
         timerms = '0.0'
-    mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
-    mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
-    mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+    try:
+        mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
+        mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
+        mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+    except IndexError:
+        mag_1 = ''
+        mag_1_type = ''
+        mag_1_agency = ''
     try:
         mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
         mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
