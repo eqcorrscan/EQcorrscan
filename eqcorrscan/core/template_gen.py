@@ -291,10 +291,10 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
     :returns: list of obspy.Stream Newly cut templates
 
-    .. warning:: We suggest giving this function a full day of data, to ensure \
-        templates are generated with **exactly** the same processing as the \
-        continuous data.  Not doing this will result in slightly reduced \
-        cross-correlation values.
+    .. warning:: We suggest giving this function a full day of data, to \
+        ensure templates are generated with **exactly** the same processing \
+        as the continuous data.  Not doing this will result in slightly \
+        reduced cross-correlation values.
     """
     # Perform some checks first
     import os
@@ -504,6 +504,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
                 print('pick-time: ' + str(pick.time))
+                print('pick phase: ' + pick.phase_hint)
             print('.'.join([net, sta, loc, chan]))
             if 'st' not in locals():
                 try:
@@ -526,7 +527,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                                      debug=debug, parallel=True)
         if debug > 0:
             st1.plot()
-        st1.write('processed_data.ms', format='MSEED')
         template = _template_gen(event.picks, st1, length, swin, prepick,
                                  plot)
         del st, st1
@@ -679,9 +679,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
                                  st1.sort(['starttime'])[-1].stats.endtime +
                                  10)
         tplot(st1, background=background,
-              title='Template for '+str(st1[0].stats.starttime))
-        st1.write('template_plotted.ms', format='MSEED')
-        background.write('background_plotted.ms', format='MSEED')
+              title='Template for '+str(st1[0].stats.starttime),
+              picks=picks)
         del stplot
     del st
     # st1.plot(size=(800,600))

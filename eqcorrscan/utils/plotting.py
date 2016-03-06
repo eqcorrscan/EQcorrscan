@@ -565,8 +565,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :param title: String if set will be the plot title
     :type background: :class: obspy.stream
     :param background: Stream to plot the template within.
-    :type picks: list of :class: eqcorrscan.utils.sfile_util.PICK
-    :param picks: List of eqcorrscan type picks.
+    :type picks: list of obspy.core.event.pick
+    :param picks: List of obspy type picks.
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
@@ -579,6 +579,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
     lengths = []
+    lines = []
+    labels = []
     for i, tr in enumerate(template):
         delay = tr.stats.starttime - mintime
         y = tr.data
@@ -592,10 +594,18 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
             bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
             bx += bdelay
             axes[i].plot(bx, by, 'k', linewidth=1)
-            axes[i].plot(x, y, 'r', linewidth=1.1)
+            template_line, = axes[i].plot(x, y, 'r', linewidth=1.1,
+                                          label='Template')
+            if i == 0:
+                lines.append(template_line)
+                labels.append('Template')
             lengths.append(max(bx[-1], x[-1]))
         else:
-            axes[i].plot(x, y, 'k', linewidth=1.1)
+            template_line, = axes[i].plot(x, y, 'k', linewidth=1.1,
+                                          label='Template')
+            if i == 0:
+                lines.append(template_line)
+                labels.append('Template')
             lengths.append(x[-1])
         # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
@@ -604,27 +614,37 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         # Plot the picks if they are given
         if picks:
             tr_picks = [pick for pick in picks if
-                        pick.station == tr.stats.station and
-                        pick.channel[0] + pick.channel[-1] ==
+                        pick.waveform_id.station_code == tr.stats.station and
+                        pick.waveform_id.channel_code[0] +
+                        pick.waveform_id.channel_code[-1] ==
                         tr.stats.channel[0] + tr.stats.channel[-1]]
             for pick in tr_picks:
-                if pick.phase == 'P':
+                if 'P' in pick.phase_hint.upper():
                     pcolor = 'red'
-                elif pick.phase == 'S':
+                    label = 'P-pick'
+                elif 'S' in pick.phase_hint.upper():
                     pcolor = 'blue'
+                    label = 'S-pick'
                 else:
                     pcolor = 'k'
+                    label = 'Unknown pick'
                 pdelay = pick.time - mintime
                 # print(pdelay)
-                axes[i].axvline(x=pdelay, color=pcolor, linewidth=2)
+                line = axes[i].axvline(x=pdelay, color=pcolor, linewidth=2,
+                                       linestyle='--', label=label)
+                if label not in labels:
+                    lines.append(line)
+                    labels.append(label)
                 # axes[i].plot([pdelay, pdelay], [])
     axes[i].set_xlim([0, max(lengths)])
     axes[len(template)-1].set_xlabel('Time (s) from start of template')
-    plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
+    plt.figlegend(lines, labels, 'upper right')
     if title:
         axes[0].set_title(title)
     else:
         plt.subplots_adjust(top=0.98)
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
         plt.close()

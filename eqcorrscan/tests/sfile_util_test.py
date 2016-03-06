@@ -230,6 +230,23 @@ class TestSfileMethods(unittest.TestCase):
         self.assertEqual(conv_cat[0].amplitudes[0].snr,
                          test_cat[0].amplitudes[0].snr)
 
+    def test_write_empty(self):
+        """
+        Function to check that writing a blank event works as it should.
+        """
+        from obspy.core.event import Event, Origin
+        from obspy import UTCDateTime
+        import os
+        test_event = Event()
+        with self.assertRaises(IndexError):
+            eventtosfile(test_event, 'TEST', 'L', '.', 'test')
+        test_event.origins.append(Origin())
+        with self.assertRaises(ValueError):
+            eventtosfile(test_event, 'TEST', 'L', '.', 'test')
+        test_event.origins[0].time = UTCDateTime()
+        test_sfile = eventtosfile(test_event, 'TEST', 'L', '.', 'test')
+        self.assertTrue(os.path.isfile(test_sfile))
+        os.remove(test_sfile)
 
 def basic_test_event():
     """

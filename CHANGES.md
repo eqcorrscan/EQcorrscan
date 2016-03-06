@@ -14,7 +14,10 @@ hypoDD location program, including generation of dt.cc files;
 * Added warnings in docs for template_gen relating to template generation from
 set length files;
 * Updated template_creation tutorial to use day-long data;
-* Renamed Sfile_util to sfile_util, and functions there-in: will warn about name changes.
+* Renamed Sfile_util to sfile_util, and functions there-in: will warn about name changes;
+* Updated template plotting to include pick labels;
+* Updated template_creation tutorial to download S-picks as well as P-picks;
+* Update sfile_util to cope with many possible unfilled objects.
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions
