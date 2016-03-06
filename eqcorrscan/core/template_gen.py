@@ -81,10 +81,10 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         raise IOError('sfile does not exist')
 
     from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import sfile_util
     from obspy import read as obsread
     # Read in the header of the sfile
-    wavefiles = Sfile_util.readwavename(sfile)
+    wavefiles = sfile_util.readwavename(sfile)
     pathparts = sfile.split('/')[0:-1]
     new_path_parts = []
     for part in pathparts:
@@ -112,7 +112,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             raise ValueError("Trace: " + tr.stats.station +
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
-    catalog = Sfile_util.readpicks(sfile)
+    catalog = sfile_util.readpicks(sfile)
     # Read the list of Picks for this event
     picks = catalog[0].picks
     print("I have found the following picks")
@@ -182,16 +182,16 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
 
     # import some things
     from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import Sfile_util
+    from eqcorrscan.utils import sfile_util
     import glob
     from obspy import read as obsread
 
     # Read in the header of the sfile
-    event = Sfile_util.readheader(sfile)
+    event = sfile_util.readheader(sfile)
     day = event.origins[0].time
 
     # Read in pick info
-    catalog = Sfile_util.readpicks(sfile)
+    catalog = sfile_util.readpicks(sfile)
     picks = catalog[0].picks
     print("I have found the following picks")
     pick_chans = []
