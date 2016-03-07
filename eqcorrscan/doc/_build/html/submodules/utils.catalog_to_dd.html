@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.11. catalog_to_dd &mdash; EQcorrscan 0.1.0 documentation</title>
+  <title>5.11. catalog_to_dd &mdash; EQcorrscan 0.1.1 documentation</title>
   
 
   
@@ -32,9 +32,10 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
-        <link rel="up" title="4. Utils" href="../utils.html"/>
-        <link rel="prev" title="4.10. synth_seis" href="utils.synth_seis.html"/> 
+    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+        <link rel="up" title="5. Utils" href="../utils.html"/>
+        <link rel="next" title="5.12. sac_util" href="utils.sac_util.html"/>
+        <link rel="prev" title="5.10. synth_seis" href="utils.synth_seis.html"/> 
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
@@ -73,32 +74,34 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">2.1. Template creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">2.2. Matched-filter detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">2.3. Lag time calculation and pick correction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">2.4. Magnitude calculation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">2.5. Clustering and stacking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../core.html">3. Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">3.1. bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">3.2. template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">3.3. match_filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">4. Utils</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">4.1. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">4.3. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.4. locate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.5. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.6. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">4.7. seismo_logs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.Sfile_util.html">4.8. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="">4.11. catalog_to_dd</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">5.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">5.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">5.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">5.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">5.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sfile_util.html">5.8. sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">5.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">5.10. synth_seis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">5.11. catalog_to_dd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">5.12. sac_util</a></li>
 </ul>
 </li>
 </ul>
@@ -125,9 +128,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-          <li><a href="../utils.html">4. Utils</a> &raquo;</li>
+          <li><a href="../utils.html">5. Utils</a> &raquo;</li>
       
-    <li>4.11. catalog_to_dd</li>
+    <li>5.11. catalog_to_dd</li>
       <li class="wy-breadcrumbs-aside">
         
           <a href="../_sources/submodules/utils.catalog_to_dd.txt" rel="nofollow"> View page source</a>
@@ -139,7 +142,7 @@
           <div role="main" class="document">
             
   <div class="section" id="module-catalog_to_dd">
-<span id="catalog-to-dd"></span><h1>4.11. catalog_to_dd<a class="headerlink" href="#module-catalog_to_dd" title="Permalink to this headline">¶</a></h1>
+<span id="catalog-to-dd"></span><h1>5.11. catalog_to_dd<a class="headerlink" href="#module-catalog_to_dd" title="Permalink to this headline">¶</a></h1>
 <p>This module contains functions to convert seisan catalogue to files to hypoDD
 input files.</p>
 <p>These functions will generate both a catalogue (dt.ct) file, event
@@ -255,7 +258,7 @@ in station.dat file.</p>
 <code class="descclassname">catalog_to_dd.</code><code class="descname">write_catalog</code><span class="sig-paren">(</span><em>event_list</em>, <em>max_sep=1</em>, <em>min_link=8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/catalog_to_dd.html#write_catalog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#catalog_to_dd.write_catalog" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to write the dt.ct file needed by hypoDD - takes input event list
 from write_event as a list of tuples of event id and sfile.  It will read
-the pick information from the seisan formated s-file using the Sfile_util
+the pick information from the seisan formated s-file using the sfile_util
 utilities.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -275,7 +278,7 @@ utilities.</p>
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Currently we have not implemented a method for taking         unassociated event objects and wavefiles.  As such if you have events         with associated wavefiles you are advised to generate Sfiles for each         event using the Sfile_utils module prior to this step.</p>
+<p class="last">Currently we have not implemented a method for taking         unassociated event objects and wavefiles.  As such if you have events         with associated wavefiles you are advised to generate Sfiles for each         event using the sfile_util module prior to this step.</p>
 </div>
 </dd></dl>
 
@@ -316,7 +319,7 @@ S-files are stored</li>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Currently we have not implemented a method for taking         unassociated event objects and wavefiles.  As such if you have events         with associated wavefiles you are advised to generate Sfiles for each         event using the Sfile_utils module prior to this step.</p>
+<p class="last">Currently we have not implemented a method for taking         unassociated event objects and wavefiles.  As such if you have events         with associated wavefiles you are advised to generate Sfiles for each         event using the sfile_util module prior to this step.</p>
 </div>
 </dd></dl>
 
@@ -342,8 +345,10 @@ S-files are stored</li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
+        <a href="utils.sac_util.html" class="btn btn-neutral float-right" title="5.12. sac_util">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-        <a href="utils.synth_seis.html" class="btn btn-neutral" title="4.10. synth_seis"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+        <a href="utils.synth_seis.html" class="btn btn-neutral" title="5.10. synth_seis"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -373,7 +378,7 @@ S-files are stored</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
