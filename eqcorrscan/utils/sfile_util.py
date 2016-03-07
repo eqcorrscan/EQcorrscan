@@ -884,6 +884,12 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     :param overwrite: force to overwrite old files, defaults to False
 
     :returns: str: name of sfile written
+
+    .. note:: Seisan can find waveforms either by their relative or absolute \
+        path, or by looking for the file recursiuvely in directories within \
+        the WAV directory in your seisan install.  Because all lines need to \
+        be less than 79 charecters long (fortran hangover) in the s-files, \
+        you will need to determine whether the full-path is okay or not.
     """
     import datetime
     import os
@@ -1369,6 +1375,10 @@ def nordpick(event):
 
     pick_strings = []
     for pick in event.picks:
+        if not pick.waveform_id:
+            msg = 'No waveform id for pick, skipping'
+            warnings.warn(msg)
+            continue
         # Convert string to short sting
         if pick.onset == 'impulsive':
             impulsivity = 'I'
