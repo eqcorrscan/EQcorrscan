@@ -37,8 +37,73 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
+             prepick=0.05, debug=0, plot=False):
+    """Function to read picks and waveforms from SAC data, and generate a \
+    template from these.
+
+    :type sac_files: list or stream
+    :param sac_files: List or stream of sac waveforms, or list of paths to \
+        sac waveforms.
+    :type lowcut: float
+    :param lowcut: Low cut (Hz), if set to None will look in template \
+            defaults file
+    :type highcut: float
+    :param highcut: High cut (Hz), if set to None will look in template \
+            defaults file
+    :type samp_rate: float
+    :param samp_rate: New sampling rate in Hz, if set to None will look in \
+            template defaults file
+    :type filt_order: int
+    :param filt_order: Filter level, if set to None will look in \
+            template defaults file
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type length: float
+    :param length: Extract length in seconds, if None will look in template \
+            defaults file.
+    :type prepick: float
+    :param prepick: Length to extract prior to the pick in seconds.
+    :type debug: int
+    :param debug: Debug level, higher number=more output.
+    :type plot: bool
+    :param plot: Turns template plotting on or off.
+
+    :returns: obspy.Stream Newly cut template
+
+    .. warning:: This will use whatever data is pointed to in the s-file, if \
+        this is not the coninuous data, we recommend using other functions. \
+        Differences in processing between short files and day-long files \
+        (inherent to resampling) will produce lower cross-correlations.
+    """
+    from obspy import read, Stream
+    from eqcorrscan.utils.sac_util import sactoevent
+    from eqcorrscan.utils import pre_processing
+    # Check whether sac_files is a stream or a list
+    if isinstance(sac_files, list):
+        if isinstance(sac_files[0], str) or isinstance(sac_files[0], unicode):
+            sac_files = [read(sac_file)[0] for sac_file in sac_files]
+        if isinstance(sac_files[0], Stream):
+            # This is a list of streams...
+            st = sac_files[0]
+            for sac_file in sac_files[1:]:
+                st += sac_file
+        st = Stream(sac_files)
+    elif isinstance(sac_files, Stream):
+        st = sac_files
+    # Make an event object...
+    event = sactoevent(st)
+    # Process the data
+    st.merge(fill_value='interpolate')
+    st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
+                                  samp_rate, debug)
+    template = _template_gen(picks=event.picks, st=st, length=length,
+                             swin=swin, prepick=prepick, plot=plot)
+    return template
+
+
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
-               debug=0, plot=False):
+               prepick=0.05, debug=0, plot=False):
     r"""Function to read in picks from sfile then generate the template from \
     the picks within this and the wavefile found in the pick file.
 
@@ -63,6 +128,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type length: float
     :param length: Extract length in seconds, if None will look in template \
             defaults file.
+    :type prepick: float
+    :param prepick: Length to extract prior to the pick in seconds.
     :type debug: int
     :param debug: Debug level, higher number=more output.
     :type plot: bool
@@ -125,7 +192,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
                                   samp_rate, debug)
-    st1 = _template_gen(picks, st, length, swin, plot=plot)
+    st1 = _template_gen(picks=picks, st=st, length=length, swin=swin,
+                        prepick=prepick, plot=plot)
     return st1
 
 
@@ -389,6 +457,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     else:
         from obspy.seishub import Client
     from eqcorrscan.utils import pre_processing
+    from obspy import UTCDateTime
     client = Client(url)
     temp_list = []
     for event in catalog:

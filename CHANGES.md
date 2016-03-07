@@ -17,7 +17,10 @@ set length files;
 * Renamed Sfile_util to sfile_util, and functions there-in: will warn about name changes;
 * Updated template plotting to include pick labels;
 * Updated template_creation tutorial to download S-picks as well as P-picks;
-* Update sfile_util to cope with many possible unfilled objects.
+* Update sfile_util to cope with many possible unfilled objects;
+* Added sac_util to convert from sac headers to useful event information - note,
+does not convert all things, just origin and pick times;
+* Added from_sac function to template_gen.
 
 ## 0.1.0
 * Implimented tests for synthetic generation and match-filter functions
