@@ -214,10 +214,9 @@
 
 <span class="sd">    :returns: obspy.Stream Newly cut template</span>
 
-<span class="sd">    .. warning:: This will use whatever data is pointed to in the s-file, if \</span>
-<span class="sd">        this is not the coninuous data, we recommend using other functions. \</span>
-<span class="sd">        Differences in processing between short files and day-long files \</span>
-<span class="sd">        (inherent to resampling) will produce lower cross-correlations.</span>
+<span class="sd">    .. note:: This functionality is not supported for obspy versions below \</span>
+<span class="sd">        1.0.0 as references times are not read in by SACIO, which are needed \</span>
+<span class="sd">        for defining pick times.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">Stream</span>
     <span class="kn">from</span> <span class="nn">eqcorrscan.utils.sac_util</span> <span class="kn">import</span> <span class="n">sactoevent</span>

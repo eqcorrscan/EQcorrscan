@@ -74,7 +74,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../updates.html#version-0-1-1">2.1. Version 0.1.1</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
@@ -214,7 +217,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <li><strong>stream_list</strong> (<em>List of Obspy.Stream</em>) &#8211; List of templates to compute clustering for</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; plot linkage on screen if True, defaults to True</li>
 <li><strong>corr_thresh</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Cross-channel correlation threshold for grouping</li>
-<li><strong>save_corrmat</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will save the distance matrix to dist_mat.npy</li>
+<li><strong>save_corrmat</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will save the distance matrix to         dist_mat.npy in the local directory.</li>
 <li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; numebr of cores to use when computing the distance matrix,         defaults to &#8216;all&#8217; which will work out how many cpus are available         and hog them.</li>
 <li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Level of debugging from 1-5, higher is more output,         currently only level 1 implimented.</li>
 </ul>
