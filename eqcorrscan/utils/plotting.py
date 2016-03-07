@@ -51,7 +51,7 @@ def chunk_data(tr, samp_rate, state='mean'):
     # Wrap the array into a 2D array of chunks, truncating the last chunk if
     # chunksize isn't an even divisor of the total size.
     # (This part won't use _any_ additional memory)
-    numchunks = y.size // chunksize
+    numchunks = int(y.size // chunksize)
     ychunks = y[:chunksize*numchunks].reshape((-1, chunksize))
     xchunks = x[:chunksize*numchunks].reshape((-1, chunksize))
 
@@ -442,9 +442,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image = image.merge()[0]
         # Downsample if needed
         if image.stats.sampling_rate > 20:
-            image.decimate(image.stats.sampling_rate // 20)
+            image.decimate(int(image.stats.sampling_rate // 20))
         if template_tr.stats.sampling_rate > 20:
-            template_tr.decimate(template_tr.stats.sampling_rate // 20)
+            template_tr.decimate(int(template_tr.stats.sampling_rate // 20))
         # Get a list of datetime objects
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
