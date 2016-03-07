@@ -1,5 +1,5 @@
-Sfile_util
+sfile_util
 ----------
-.. automodule:: Sfile_util
+.. automodule:: sfile_util
     :members:
     :private-members:

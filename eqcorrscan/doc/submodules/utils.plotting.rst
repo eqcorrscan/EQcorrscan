@@ -1,5 +1,5 @@
-EQcorrscan_plotting
+plotting
 -------------------
-.. automodule:: EQcorrscan_plotting
+.. automodule:: plotting
     :members:
     :private-members:
