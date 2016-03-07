@@ -147,6 +147,10 @@
 
 <span class="sd">Authors: Calum Chamberlain and the EQcorrscan developers.</span>
 
+<span class="sd">.. note:: This functionality is not supported for obspy versions below \</span>
+<span class="sd">    1.0.0 as references times are not read in by SACIO, which are needed \</span>
+<span class="sd">    for defining pick times.</span>
+
 <span class="sd">This file is part of EQcorrscan.</span>
 
 <span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
@@ -168,6 +172,14 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
+<span class="k">def</span> <span class="nf">_version_check</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">obspy</span>
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Obspy version: &#39;</span> <span class="o">+</span> <span class="n">obspy</span><span class="o">.</span><span class="n">__version__</span> <span class="o">+</span> <span class="s">&#39; does not have &#39;</span> <span class="o">+</span>\
+            <span class="s">&#39;correct reference time handling, please upgrade to &#39;</span> <span class="o">+</span>\
+            <span class="s">&#39;version &gt; 1.0.0&#39;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="sactoevent"><a class="viewcode-back" href="../submodules/utils.sac_util.html#sac_util.sactoevent">[docs]</a><span class="k">def</span> <span class="nf">sactoevent</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -179,10 +191,21 @@
 <span class="sd">    :pram debug: Debug level, larger number = more output.</span>
 
 <span class="sd">    :returns: obspy.core.Event</span>
+
+<span class="sd">    .. note:: This functionality is not supported for obspy versions below \</span>
+<span class="sd">        1.0.0 as references times are not read in by SACIO, which are needed \</span>
+<span class="sd">        for defining pick times.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Origin</span><span class="p">,</span> <span class="n">WaveformStreamID</span><span class="p">,</span> <span class="n">Pick</span>
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">UTCDateTime</span>
     <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+    <span class="c"># Check the version</span>
+    <span class="n">_cehck_version</span><span class="p">()</span>
+    <span class="c"># Set the default SAC nan values</span>
+    <span class="n">float_nan</span> <span class="o">=</span> <span class="o">-</span><span class="mf">12345.0</span>
+    <span class="n">int_nan</span> <span class="o">=</span> <span class="o">-</span><span class="mi">12345</span>
+
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">Stream</span><span class="p">):</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;st must be a stream object, if you have just read in &#39;</span> <span class="o">+</span>\
             <span class="s">&#39;multiple SAC files you may have a list of streams, convert &#39;</span> <span class="o">+</span>\
@@ -198,17 +221,25 @@
     <span class="c"># Now we need to create an event!</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
     <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Origin</span><span class="p">())</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzyear</span><span class="p">,</span>
                                         <span class="n">julday</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzjday</span><span class="p">,</span>
                                         <span class="n">hour</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzhour</span><span class="p">,</span>
                                         <span class="n">minute</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzmin</span><span class="p">,</span>
                                         <span class="n">second</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzsec</span><span class="p">,</span>
-                                        <span class="n">microsecond</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">nzmsec</span> <span class="o">*</span>
-                                        <span class="mi">1000</span><span class="p">)</span>
+                                        <span class="n">microsecond</span><span class="o">=</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span>
+                                        <span class="n">sac</span><span class="o">.</span><span class="n">nzmsec</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">evla</span>
         <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">evlo</span>
         <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="o">.</span><span class="n">evdp</span>
+        <span class="c"># Catch filled with 12345.0 as nan</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">==</span> <span class="n">float_nan</span><span class="p">:</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">==</span> <span class="n">float_nan</span><span class="p">:</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="n">float_nan</span><span class="p">:</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
@@ -227,6 +258,15 @@
             <span class="n">pick_key</span> <span class="o">=</span> <span class="s">&#39;t&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">pick_number</span><span class="p">)</span>
             <span class="n">phase_key</span> <span class="o">=</span> <span class="s">&#39;kt&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">pick_number</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="p">[</span><span class="n">pick_key</span><span class="p">]</span> <span class="o">==</span> <span class="n">float_nan</span><span class="p">:</span>
+                    <span class="c"># in version 0.10.2 and before. rather than not include</span>
+                    <span class="c"># the keys, the variables are filled with SAC nans.</span>
+                    <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;No pick in position &#39;</span> <span class="o">+</span> <span class="n">pick_key</span> <span class="o">+</span> \
+                            <span class="s">&#39; for trace: &#39;</span> <span class="o">+</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span> \
+                            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                    <span class="k">continue</span>
                 <span class="n">pick_time</span> <span class="o">=</span> <span class="n">reference_time</span> <span class="o">+</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="p">[</span><span class="n">pick_key</span><span class="p">]</span>
                 <span class="n">phase_hint</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span><span class="p">[</span><span class="n">phase_key</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
