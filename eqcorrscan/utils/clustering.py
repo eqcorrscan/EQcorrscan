@@ -130,7 +130,8 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
     :type save_corrmat: bool
-    :param save_corrmat: If True will save the distance matrix to dist_mat.npy
+    :param save_corrmat: If True will save the distance matrix to \
+        dist_mat.npy in the local directory.
     :type cores: int
     :param cores: numebr of cores to use when computing the distance matrix, \
         defaults to 'all' which will work out how many cpus are available \
