@@ -6,7 +6,7 @@ With obspy integration (which is necessary) all main waveform formats can be
 read in and output.
 
 Note that these functions do not provide full functionality between quakeML
-and seisan s-files.  Currently (as of version 0.0.9) these only convert pick
+and seisan s-files.  Currently (as of version 0.1.1) these only convert pick
 times and phase information, along with amplitude information for local
 magnitudes between seisan and quakeML.  Location information including
 hypocentre, origin time and magnitudes are also handled.
