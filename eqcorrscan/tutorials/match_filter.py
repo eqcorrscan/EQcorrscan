@@ -8,7 +8,6 @@ then you will need to before you can run this script.
 from eqcorrscan.utils import pre_processing
 from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
-from joblib import Parallel, delayed
 import glob
 
 # This import section copes with namespace changes between obspy versions

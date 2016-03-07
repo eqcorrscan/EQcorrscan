@@ -248,6 +248,7 @@ class TestSfileMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile(test_sfile))
         os.remove(test_sfile)
 
+
 def basic_test_event():
     """
     Function to generate a basic, full test event

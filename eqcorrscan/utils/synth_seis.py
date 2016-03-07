@@ -68,7 +68,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     # The length of the decaying S-phase should depend on the SP time,\
     # Some basic estimations suggest this should be atleast 10 samples\
     # and that the coda should be about 1/10 of the SP time
-    S_length = 10 + SP // 3
+    S_length = 10 + int(SP // 3)
     S_spikes = np.arange(amp_ratio, 0, -(amp_ratio / S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
