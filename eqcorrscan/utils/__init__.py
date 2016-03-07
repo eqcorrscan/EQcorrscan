@@ -111,7 +111,6 @@ class EQcorrscanRestructureAndLoad(object):
 sys.meta_path.append(EQcorrscanRestructureAndLoad())
 
 
-
 if __name__ == '__main__':
     import doctest
     doctest.testmod(exclude_empty=True)
