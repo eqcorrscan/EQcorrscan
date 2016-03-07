@@ -1040,7 +1040,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     sfile.close()
     # Now call the populatesfile function
     if len(event.picks) > 0:
-        populatesfile(sfilename, event)
+        populatesfile(outdir + '/' + sfilename, event)
     return sfilename
 
 
