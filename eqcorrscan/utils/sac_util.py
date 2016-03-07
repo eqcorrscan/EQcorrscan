@@ -56,12 +56,12 @@ def sactoevent(st, debug=0):
     event = Event()
     event.origins.append(Origin())
     event.origins[0].time = UTCDateTime(year=st[0].stats.sac['nzyear'],
-                                        julday=st[0].stats.sac.['nzjday'],
-                                        hour=st[0].stats.sac.['nzhour'],
-                                        minute=st[0].stats.sac.['nzmin'],
-                                        second=st[0].stats.sac.['nzsec'],
-                                        microsecond=st[0].stats.sac.
-                                        ['nzmsec'] * 1000)
+                                        julday=st[0].stats.sac['nzjday'],
+                                        hour=st[0].stats.sac['nzhour'],
+                                        minute=st[0].stats.sac['nzmin'],
+                                        second=st[0].stats.sac['nzsec'],
+                                        microsecond=st[0].stats.
+                                        sac['nzmsec'] * 1000)
     try:
         event.origins[0].latitude = st[0].stats.sac.evla
         event.origins[0].longitude = st[0].stats.sac.evlo
