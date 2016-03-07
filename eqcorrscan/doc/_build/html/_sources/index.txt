@@ -74,6 +74,7 @@ Contents:
    :maxdepth: 4
 
    intro
+   updates
    tutorial
    core
    utils

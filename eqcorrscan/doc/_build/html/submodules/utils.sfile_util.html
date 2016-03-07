@@ -1,0 +1,736 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>5.8. sfile_util &mdash; EQcorrscan 0.1.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+        <link rel="up" title="5. Utils" href="../utils.html"/>
+        <link rel="next" title="5.9. stacking" href="utils.stacking.html"/>
+        <link rel="prev" title="5.7. seismo_logs" href="utils.seismo_logs.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">5.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">5.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">5.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">5.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">5.7. seismo_logs</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">5.8. sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">5.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">5.10. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">5.12. sac_util</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../utils.html">5. Utils</a> &raquo;</li>
+      
+    <li>5.8. sfile_util</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/submodules/utils.sfile_util.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="module-sfile_util">
+<span id="sfile-util"></span><h1>5.8. sfile_util<a class="headerlink" href="#module-sfile_util" title="Permalink to this headline">¶</a></h1>
+<p>Part of the EQcorrscan module to read nordic format s-files and write them
+EQcorrscan is a python module designed to run match filter routines for
+seismology, within it are routines for integration to seisan and obspy.
+With obspy integration (which is necessary) all main waveform formats can be
+read in and output.</p>
+<p>Note that these functions do not provide full functionality between quakeML
+and seisan s-files.  Currently (as of version 0.1.1) these only convert pick
+times and phase information, along with amplitude information for local
+magnitudes between seisan and quakeML.  Location information including
+hypocentre, origin time and magnitudes are also handled.</p>
+<p>A series of wrappers and conversions is included between the legacy PICK
+and EVENTINFO classes, however these will be depreciated along with these
+classes for version 0.1.0.  Users should transition to using obspy.core.event
+classes as these have more support and functionality.</p>
+<p>We have not implimented any handling of focal mechanism solutions between
+the two formats.</p>
+<p>Code written by Calum John Chamberlain and Chet Hopp both of
+Victoria University of Wellington, 2015 &amp; 2016.</p>
+<p>Copyright 2015, 2016 the authors.</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="class">
+<dt id="sfile_util.EVENTINFO">
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x3cf88d0&gt;</em>, <em>loc_mod_ind=u' '</em>, <em>dist_ind=u' '</em>, <em>ev_id=u' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=u' '</em>, <em>loc_ind=u' '</em>, <em>agency=u' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=u' '</em>, <em>Mag_1_agency=u' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=u' '</em>, <em>Mag_2_agency=u' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=u' '</em>, <em>Mag_3_agency=u' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Header information for seisan events, again all fields can be left blank     for a default empty header.  The print function for header will print     important information, but not as seen in an S-file.</p>
+<p>For more information on parameters see the seisan manual.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">type time:</th><td class="field-body">obspy.UTCDateTime</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param time:</th><td class="field-body">Event origin time</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type loc_mod_ind:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param loc_mod_ind:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type dist_ind:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param dist_ind:</th><td class="field-body">Distance flag, usually &#8216;L&#8217; for local, &#8216;R&#8217; for             regional and &#8216;D&#8217; for distant</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type ev_id:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param ev_id:</th><td class="field-body">Often blank, &#8216;E&#8217; denotes explosion and fixes depth to 0km</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type latitude:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param latitude:</th><td class="field-body">Hypocentre latitude in decimal degrees</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type longitude:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param lognitude:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Hypocentre longitude in decimal degrees</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type depth:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param depth:</th><td class="field-body">hypocentre depth in km</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type depth_ind:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param depth_ind:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type loc_ind:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param loc_ind:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type agency:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param agency:</th><td class="field-body">Reporting agency, three letters</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type nsta:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param nsta:</th><td class="field-body">Number of stations recording</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type t_RMS:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param t_RMS:</th><td class="field-body">Root-mean-squared time residual</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type Mag_1:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param Mag_1:</th><td class="field-body">first magnitude</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_1_type:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_1_type:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Type of magnitude for Mag_1 (&#8216;L&#8217;, &#8216;C&#8217;, &#8216;W&#8217;)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_1_agency:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_1_agency:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Reporting agency for Mag_1</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type Mag_2:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param Mag_2:</th><td class="field-body">second magnitude</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_2_type:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_2_type:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Type of magnitude for Mag_2 (&#8216;L&#8217;, &#8216;C&#8217;, &#8216;W&#8217;)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_2_agency:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_2_agency:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Reporting agency for Mag_2</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type Mag_3:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param Mag_3:</th><td class="field-body">third magnitude</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_3_type:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_3_type:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Type of magnitude for Mag_3 (&#8216;L&#8217;, &#8216;C&#8217;, &#8216;W&#8217;)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type Mag_3_agency:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param Mag_3_agency:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Reporting agency for Mag_3</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p class="rubric">Note: Depreciated legacy function, use the obspy.core.event     classes. This will be removed in future releases.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="sfile_util.PICK">
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=u' '</em>, <em>channel=u' '</em>, <em>impulsivity=u' '</em>, <em>phase=u' '</em>, <em>weight=999</em>, <em>polarity=u' '</em>, <em>time=&lt;mock.Mock object at 0x3cf88d0&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">type station:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param station:</th><td class="field-body">Station name, less than five charectars required as         standard</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type channel:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param channel:</th><td class="field-body">Two or three charactar channel name, stored as two            charactars in S-file</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">type impulsivity:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">param impulsivity:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">either &#8216;C&#8217; or &#8216;D&#8217; for compressive and dilatational</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type phase:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param phase:</th><td class="field-body">Any allowable phase name in two characters</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type weight:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-even field"><th class="field-name">param weight:</th><td class="field-body">0-4 with 0=100%, 4=0%, use weight=9 for unknown timing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">type polarity:</th><td class="field-body">str</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type time:</th><td class="field-body">obspy.UTCDateTime()</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param time:</th><td class="field-body">Pick time as an obspy.UTCDateTime object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type coda:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param coda:</th><td class="field-body">Length of coda in seconds</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type amplitude:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param amplitude:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Amplitude (zero-peak), type is given in phase</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type peri:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param peri:</th><td class="field-body">Period of amplitude</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type azimuth:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param azimuth:</th><td class="field-body">Direction of approach in degrees</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type velocity:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param velocity:</th><td class="field-body">Phase velocity (km/s)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type AIN:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param AIN:</th><td class="field-body">Angle of incidence.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type SNR:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param SNR:</th><td class="field-body">Signal to noise ratio</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type azimuthres:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param azimuthres:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Residual azimuth</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type timeres:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param timeres:</th><td class="field-body">Time residual in seconds</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type finalweight:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param finalweight:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Final weight used in location</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type distance:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param distance:</th><td class="field-body">Source-reciever distance in km</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type CAZ:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param CAZ:</th><td class="field-body">Azimuth at source.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p class="rubric">Note: Depreciated legacy function, use the obspy.core.event     classes. This will be removed in future releases.</p>
+<dl class="method">
+<dt id="sfile_util.PICK.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Public function to write the pick to a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to file to write to - will append to file</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util._evmagtonor">
+<code class="descclassname">sfile_util.</code><code class="descname">_evmagtonor</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_evmagtonor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._evmagtonor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience tool to switch from obspy event magnitude types to seisan     syntax</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util._float_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_float_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_float_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._float_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience tool to convert from string to float, if empty string return     NaN rather than an error</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util._int_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_int_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_int_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._int_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience tool to convert from string to integer, if empty string     return a 999 rather than an error.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util._nortoevmag">
+<code class="descclassname">sfile_util.</code><code class="descname">_nortoevmag</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_nortoevmag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._nortoevmag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience tool to switch from nordic type magnitude notation to obspy     event magnitudes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util._str_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_str_conv</code><span class="sig-paren">(</span><em>number</em>, <em>rounded=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_str_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._str_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience tool to convert a number, either float or into into a string,     if the int is 999, or the float is NaN, returns empty string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.blanksfile">
+<code class="descclassname">sfile_util.</code><code class="descname">blanksfile</code><span class="sig-paren">(</span><em>wavefile</em>, <em>evtype</em>, <em>userID</em>, <em>outdir</em>, <em>overwrite=False</em>, <em>evtime=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#blanksfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.blanksfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module to generate an empty s-file with a populated header for a given     waveform.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wavefile</strong> (<em>String</em>) &#8211; Wavefile to associate with this S-file, the timing of         the S-file will be taken from this file if evtime is not set.</li>
+<li><strong>evtype</strong> (<em>String</em>) &#8211; L,R,D</li>
+<li><strong>userID</strong> (<em>String</em>) &#8211; 4-charectar SEISAN USER ID</li>
+<li><strong>outdir</strong> (<em>String</em>) &#8211; Location to write S-file</li>
+<li><strong>overwrite</strong> (<em>Bool</em>) &#8211; Overwrite an existing S-file, default=False</li>
+<li><strong>evtime</strong> (<em>UTCDateTime</em>) &#8211; If given this will set the timing of the S-file</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">String, S-file name</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.eventtopick">
+<code class="descclassname">sfile_util.</code><code class="descname">eventtopick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#eventtopick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.eventtopick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to convert from obspy.core.event to legacy PICK and     EVENT classes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event</strong> (<em>obspy.core.event.Event</em>) &#8211; A single obspy event</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of PICK(), and a single EVENTINFO()</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is a wrapper to simplify transition from PICK and     EVENT classes to obspy.core.event classes.  This will not be maintained     beyond v 0.1.0.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.eventtosfile">
+<code class="descclassname">sfile_util.</code><code class="descname">eventtosfile</code><span class="sig-paren">(</span><em>event</em>, <em>userID</em>, <em>evtype</em>, <em>outdir</em>, <em>wavefiles</em>, <em>explosion=False</em>, <em>overwrite=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#eventtosfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.eventtosfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to take an obspy.event and write the relevant information to a     nordic formatted s-file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event</strong> (<em>obspy.event.core.Event</em>) &#8211; A single obspy event</li>
+<li><strong>userID</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Up to 4 character user ID</li>
+<li><strong>evtype</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Single character string to describe the event, either L, R         or D.</li>
+<li><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to directory to write to</li>
+<li><strong>wavefiles</strong> (<em>list of str</em>) &#8211; Waveforms to associate the sfile with</li>
+<li><strong>explosion</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Note if the event is an explosion, will be marked by an         E.</li>
+<li><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; force to overwrite old files, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str: name of sfile written</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Seisan can find waveforms either by their relative or absolute         path, or by looking for the file recursiuvely in directories within         the WAV directory in your seisan install.  Because all lines need to         be less than 79 charecters long (fortran hangover) in the s-files,         you will need to determine whether the full-path is okay or not.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.nordpick">
+<code class="descclassname">sfile_util.</code><code class="descname">nordpick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#nordpick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.nordpick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to print information from an obspy.event class to nordic format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event</strong> &#8211; A single obspy event.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of String</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently finalweight is unsupported, nor is velocity, or     angle of incidence.  This is because obspy.event stores slowness in     s/deg and takeoff angle, which would require computation from the     values stored in seisan.  Multiple weights are also not supported in     Obspy.event.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.picktoevent">
+<code class="descclassname">sfile_util.</code><code class="descname">picktoevent</code><span class="sig-paren">(</span><em>evinfo</em>, <em>picks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#picktoevent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.picktoevent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to convert from EVENTINFO and PICK classes to     obspy.core.event.Event.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>evinfo</strong> (<a class="reference internal" href="#sfile_util.EVENTINFO" title="sfile_util.EVENTINFO"><em>EVENTINFO</em></a>) &#8211; Event header info for a single event</li>
+<li><strong>picks</strong> (<em>List of PICK</em>) &#8211; List of picks associated with the event</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.core.event.Event</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is a legacy support function, users should avoid     this as it will be removed for version 0.1.1.  Written to aid transition     from in-built classes to obspy.core.event classes.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 0.1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.populatesfile">
+<code class="descclassname">sfile_util.</code><code class="descname">populatesfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#populatesfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.populatesfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module to populate a blank nordic format S-file with pick information,     arguments required are the filename of the blank s-file and the picks     where picks is a dictionary of picks including station, channel,     impulsivity, phase, weight, polarity, time, coda, amplitude, peri,     azimuth, velocity, SNR, azimuth residual, Time-residual, final weight,     epicentral distance &amp; azimuth from event to station.</p>
+<p>This is a full pick line information from the seisan manual, P. 341</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sfile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to S-file to populate, must have a header already</li>
+<li><strong>picks</strong> &#8211; A single event to be written to a single S-file.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.readheader">
+<code class="descclassname">sfile_util.</code><code class="descname">readheader</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readheader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read the header information from a seisan nordic format S-file.
+Returns an obspy.core.event.Catalog type: note this changed for version     0.1.0 from the inbuilt class types.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to the s-file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">obspy.core.event.Event</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.readpicks">
+<code class="descclassname">sfile_util.</code><code class="descname">readpicks</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readpicks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readpicks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read pick information from the s-file and store this in an     obspy.event.Catalog type.  This was changed for version 0.1.0 from using     the inbuilt PICK class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfile</strong> (<em>String</em>) &#8211; Path to sfile</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">obspy.core.event.Event</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Currently finalweight is unsupported, nor is velocity,     or angle of incidence.  This is because obspy.event stores slowness     in s/deg and takeoff angle, which would require computation from the     values stored in seisan.  Multiple weights are also not supported in     Obspy.event.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.readwavename">
+<code class="descclassname">sfile_util.</code><code class="descname">readwavename</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readwavename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readwavename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to extract the waveform filename from the s-file,     returns a list of waveform names found in the s-file as multiples can     be present.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to the sfile</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.stationtoseisan">
+<code class="descclassname">sfile_util.</code><code class="descname">stationtoseisan</code><span class="sig-paren">(</span><em>station</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#stationtoseisan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.stationtoseisan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert obspy station inventory to simple string to copy in to     STATION0.HYP file for seisan locations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>station</strong> (<em>obspy.core.inventory.station.Station</em>) &#8211; Inventory containing a single station.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Only works to the low-precision level at the moment (see seisan         manual for explanation).</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.stacking.html" class="btn btn-neutral float-right" title="5.9. stacking">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="utils.seismo_logs.html" class="btn btn-neutral" title="5.7. seismo_logs"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
