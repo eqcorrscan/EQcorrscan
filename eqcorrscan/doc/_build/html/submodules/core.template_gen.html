@@ -74,7 +74,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../updates.html#version-0-1-1">2.1. Version 0.1.1</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
@@ -348,9 +351,9 @@ Requires the stack, the template used to make the detections for the stack, and 
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This will use whatever data is pointed to in the s-file, if         this is not the coninuous data, we recommend using other functions.         Differences in processing between short files and day-long files         (inherent to resampling) will produce lower cross-correlations.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This functionality is not supported for obspy versions below         1.0.0 as references times are not read in by SACIO, which are needed         for defining pick times.</p>
 </div>
 </dd></dl>
 

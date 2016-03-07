@@ -29,12 +29,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import warnings
 
-
-import obspy
-if int(obspy.__version__.split('.')[0]) < 1:
-    msg = 'Obspy version: ' + obspy.__version__ + ' does not have correct ' +\
-        'reference time handling, please upgrade to version > 1.0.0'
-    raise NotImplementedError(msg)
+def _version_check():
+    import obspy
+    if int(obspy.__version__.split('.')[0]) < 1:
+        msg = 'Obspy version: ' + obspy.__version__ + ' does not have ' +\
+            'correct reference time handling, please upgrade to ' +\
+            'version > 1.0.0'
+        raise NotImplementedError(msg)
 
 
 def sactoevent(st, debug=0):
@@ -56,6 +57,8 @@ def sactoevent(st, debug=0):
     from obspy import Stream, UTCDateTime
     import numpy as np
 
+    # Check the version
+    _version_check()
     # Set the default SAC nan values
     float_nan = -12345.0
     int_nan = -12345
