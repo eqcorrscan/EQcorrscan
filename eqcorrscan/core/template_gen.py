@@ -71,10 +71,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
 
     :returns: obspy.Stream Newly cut template
 
-    .. warning:: This will use whatever data is pointed to in the s-file, if \
-        this is not the coninuous data, we recommend using other functions. \
-        Differences in processing between short files and day-long files \
-        (inherent to resampling) will produce lower cross-correlations.
+    .. note:: This functionality is not supported for obspy versions below \
+        1.0.0 as references times are not read in by SACIO, which are needed \
+        for defining pick times.
     """
     from obspy import read, Stream
     from eqcorrscan.utils.sac_util import sactoevent
