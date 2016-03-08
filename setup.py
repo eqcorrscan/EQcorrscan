@@ -43,7 +43,11 @@ except:
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-long_description = read_md('README.md')
+long_description = "EQcorrscan: matched-filter earthquake detection and " +\
+    "analysis in Python.  Open-source routines for: systematic template " +\
+    "creation, multi-parallel matched-filter detection, clustering of " +\
+    "events, integration with SEISAN, SAC, QuakeML and NonLinLoc, " +\
+    "magnitude calculation by singular value decomposition, and more!"
 
 # Get a list of all the scripts not to be installed
 scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
@@ -56,7 +60,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=eqcorrscan.__version__,
 
-    description='EQcorrscan - correlation earthquake detection',
+    description='EQcorrscan - matched-filter earthquake detection and analysis',
     long_description=long_description,
 
     # The project's main homepage.
