@@ -29,6 +29,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import warnings
 
+
 def _version_check():
     import obspy
     if int(obspy.__version__.split('.')[0]) < 1:
@@ -61,7 +62,6 @@ def sactoevent(st, debug=0):
     _version_check()
     # Set the default SAC nan values
     float_nan = -12345.0
-    int_nan = -12345
 
     if not isinstance(st, Stream):
         msg = 'st must be a stream object, if you have just read in ' +\
