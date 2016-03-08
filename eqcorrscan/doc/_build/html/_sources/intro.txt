@@ -37,9 +37,23 @@ A fresh install should be as simple as:
 Most codes should work without any effort on your part.  However you may need to
 install the openCV-python package yourself.
 
+On Linux:
+
+**apt-get install python-opencv**
+
+On OSX:
+
+**port install py27-numpy**
+**port install opencv +python27**
+or
+**brew install opencv**
+
+Note you may have issues with homebrew if you don't have numpy installed: but if
+you don't have numpy installed then you have bigger issues...
+
 This install has only been tested on Linux and OSX machines.  You
 should be prepared for small differences in the results of your correlations
-relating to foating-point truncation differences between 32 and 64-Bit
+relating to floating-point truncation differences between 32 and 64-Bit
 machines.
 
 If you plan to run the bright_lights or generating a synthetic grid of
@@ -97,7 +111,7 @@ Within *core* you will find the core routines to generate templates,
 compute cross-channel correlations from these templates *(match_filter)*.  The
 bright_lights and match_filter submodules have been designed with parallel
 computing in mind, to the extent that the more cores and machines you have
-running them the better.  These rely on the python multiprocesisng module to
+running them the better.  These rely on the python multiprocessing module to
 handle parallelisation at lower-levels.  You can also do some 'brute-force'
 parallelisation on a day level when computing detections over multiple days.
 I tend to run one day per node of a cluster computer, with each day running

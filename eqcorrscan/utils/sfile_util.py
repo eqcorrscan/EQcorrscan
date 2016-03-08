@@ -6,7 +6,7 @@ With obspy integration (which is necessary) all main waveform formats can be
 read in and output.
 
 Note that these functions do not provide full functionality between quakeML
-and seisan s-files.  Currently (as of version 0.0.9) these only convert pick
+and seisan s-files.  Currently (as of version 0.1.1) these only convert pick
 times and phase information, along with amplitude information for local
 magnitudes between seisan and quakeML.  Location information including
 hypocentre, origin time and magnitudes are also handled.
@@ -46,6 +46,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from obspy import UTCDateTime
 import numpy as np
+import warnings
 
 
 class PICK:
@@ -354,7 +355,8 @@ def _evmagtonor(mag_type):
     Convenience tool to switch from obspy event magnitude types to seisan \
     syntax
     """
-    if mag_type == 'ML':
+    if mag_type in ['ML', 'MLv']:
+        # MLv is local magnitude on vertical component
         mag = 'L'
     elif mag_type == 'mB':
         mag = 'b'
@@ -362,14 +364,19 @@ def _evmagtonor(mag_type):
         mag = 's'
     elif mag_type == 'MS':
         mag = 'S'
-    elif mag_type == 'MW':
+    elif mag_type in ['MW', 'Mw']:
         mag = 'W'
     elif mag_type == 'MbLg':
         mag = 'G'
-    elif mag_type == 'Mc':
+    elif mag_type in ['Mc', 'MC']:
         mag = 'C'
+    elif mag_type == 'M':
+        mag = 'W'  # Convert generic magnitude to moment magnitude
+        msg = ('Converting generic magnitude to being stored as moment mag')
+        warnings.warn(msg)
     else:
-        raise IOError(mag_type + ' is not convertable')
+        warnings.warn(mag_type + ' is not convertable')
+        return ''
     return mag
 
 
@@ -393,7 +400,8 @@ def _nortoevmag(mag_type):
     elif mag_type == 'C':
         mag = 'Mc'
     else:
-        raise IOError(mag_type + ' is not convertable')
+        warnings.warn(mag_type + ' is not convertable')
+        return ''
     return mag
 
 
@@ -443,7 +451,7 @@ def readheader(sfile):
         if not _float_conv(topline[23:30]) == 999:
             new_event.origins[0].latitude = _float_conv(topline[23:30])
             new_event.origins[0].longitude = _float_conv(topline[31:38])
-            new_event.origins[0].depth = _float_conv(topline[39:43])
+            new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
         # new_event.depth_ind = topline[44]
         # new_event.loc_ind = topline[45]
         new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -852,13 +860,13 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     return sfile
 
 
-def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
+def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
                  overwrite=False):
     """
     Function to take an obspy.event and write the relevant information to a \
     nordic formatted s-file
 
-    :type event: obspy.event.core.Catalog
+    :type event: obspy.event.core.Event
     :param event: A single obspy event
     :type userID: str
     :param userID: Up to 4 character user ID
@@ -876,6 +884,12 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     :param overwrite: force to overwrite old files, defaults to False
 
     :returns: str: name of sfile written
+
+    .. note:: Seisan can find waveforms either by their relative or absolute \
+        path, or by looking for the file recursiuvely in directories within \
+        the WAV directory in your seisan install.  Because all lines need to \
+        be less than 79 charecters long (fortran hangover) in the s-files, \
+        you will need to determine whether the full-path is okay or not.
     """
     import datetime
     import os
@@ -910,30 +924,78 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         print(type(wavefiles))
         raise IOError(wavefiles + ' is neither string or list')
     # Determine name from origin time
-    sfilename = event.origins[0].time.datetime.strftime('%d-%H%M-%S') +\
-        evtype + '.S' + event.origins[0].time.datetime.strftime('%Y%m')
-    evtime = event.origins[0].time
+    try:
+        evtime = event.origins[0].time
+    except IndexError:
+        msg = 'list index out of range: Need at least one origin with at ' +\
+            'least an origin time'
+        raise IndexError(msg)
+    if not evtime:
+        msg = 'event has an origin, but time is not populated.  ' +\
+            'This is required!'
+        raise ValueError(msg)
+    sfilename = evtime.datetime.strftime('%d-%H%M-%S') +\
+        evtype + '.S' + evtime.datetime.strftime('%Y%m')
     # Check that the file doesn't exist
     if not overwrite and os.path.isfile(outdir+'/'+sfilename):
         raise IOError(outdir+'/'+sfilename +
                       ' already exists, will not overwrite')
     sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
-    lat = '{0:.3f}'.format(event.origins[0].get('latitude')) or ''
-    lon = '{0:.3f}'.format(event.origins[0].get('longitude')) or ''
-    depth = '{0:.1f}'.format(event.origins[0].get('depth')) or ''
-    agency = event.creation_info.get('agency_id') or ''
-    timerms = '{0:.1f}'.format(event.origins[0].time_errors.Time_Residual_RMS)\
-        or ''
-    mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
-    mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
-    mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
-    mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
-    mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
-    mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
-    mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
-    mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
-    mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+    if event.origins[0].latitude:
+        lat = '{0:.3f}'.format(event.origins[0].latitude)
+    else:
+        lat = ''
+    if event.origins[0].longitude:
+        lon = '{0:.3f}'.format(event.origins[0].longitude)
+    else:
+        lon = ''
+    if event.origins[0].depth:
+        depth = '{0:.1f}'.format(event.origins[0].depth/1000)
+    else:
+        depth = ''
+    if event.creation_info:
+        try:
+            agency = event.creation_info.get('agency_id')
+        except AttributeError:
+            agency = ''
+    else:
+        agency = ''
+    if len(agency) > 3:
+        agency = agency[0:3]
+    # Cope with differences in event uncertainty naming
+    if event.origins[0].time_errors:
+        try:
+            timerms = '{0:.1f}'.format(event.origins[0].
+                                       time_errors.Time_Residual_RMS)
+        except AttributeError:
+            timerms = '0.0'
+    else:
+        timerms = '0.0'
+    try:
+        mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
+        mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
+        mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+    except IndexError:
+        mag_1 = ''
+        mag_1_type = ''
+        mag_1_agency = ''
+    try:
+        mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
+        mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
+        mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
+    except IndexError:
+        mag_2 = ''
+        mag_2_type = ''
+        mag_2_agency = ''
+    try:
+        mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
+        mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
+        mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+    except IndexError:
+        mag_3 = ''
+        mag_3_type = ''
+        mag_3_agency = ''
     # Work out how many stations were used
     if len(event.picks) > 0:
         stations = [pick.waveform_id.station_code for pick in event.picks]
@@ -976,13 +1038,13 @@ def eventtoSfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     sfile.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
                 ' VELO AIN AR TRES W  DIS CAZ7\n')
     sfile.close()
-    # Now call the populateSfile function
+    # Now call the populatesfile function
     if len(event.picks) > 0:
-        populateSfile(sfilename, event)
+        populatesfile(outdir + '/' + sfilename, event)
     return sfilename
 
 
-def populateSfile(sfile, event):
+def populatesfile(sfile, event):
     """
     Module to populate a blank nordic format S-file with pick information, \
     arguments required are the filename of the blank s-file and the picks \
@@ -1075,7 +1137,7 @@ def eventtopick(event):
                        ev_id=event_descriptions[2],
                        latitude=event.origins[0].latitude,
                        longitude=event.origins[0].longitude,
-                       depth=event.origins[0].depth,
+                       depth=event.origins[0].depth / 1000,
                        depth_ind=' ',
                        loc_ind=' ',
                        agency=event.creation_info.get('agency_id') or ' ',
@@ -1180,7 +1242,7 @@ def picktoevent(evinfo, picks):
                                                 evinfo.ev_id]).strip()
     event.origins[0].latitude = evinfo.latitude
     event.origins[0].longitude = evinfo.longitude
-    event.origins[0].depth = evinfo.depth
+    event.origins[0].depth = evinfo.depth * 1000
     event.creation_info = CreationInfo(agency_id=evinfo.agency)
     event.origins[0].comments.append(Comment(text='Number of stations=' +
                                              str(evinfo.nsta)))
@@ -1313,6 +1375,10 @@ def nordpick(event):
 
     pick_strings = []
     for pick in event.picks:
+        if not pick.waveform_id:
+            msg = 'No waveform id for pick, skipping'
+            warnings.warn(msg)
+            continue
         # Convert string to short sting
         if pick.onset == 'impulsive':
             impulsivity = 'I'
@@ -1389,7 +1455,7 @@ def nordpick(event):
             timeres = ' '
             azimuthres = ' '
             azimuth = ' '
-            weight = ' '
+            weight = 0
         # Extract amplitude: note there can be multiple amplitudes, but they
         # should be associated with different picks.
         amplitude = [amplitude for amplitude in event.amplitudes
@@ -1409,6 +1475,7 @@ def nordpick(event):
                         peri_round = False
                 else:
                     peri = ' '
+                    peri_round = False
                 # Extract amplitude and convert units
                 if amplitude.generic_amplitude:
                     amp = amplitude.generic_amplitude
@@ -1421,6 +1488,7 @@ def nordpick(event):
             else:
                 coda = int(amplitude.generic_amplitude)
                 peri = ' '
+                peri_round = False
                 amp = np.nan
         else:
             peri = ' '
@@ -1431,12 +1499,17 @@ def nordpick(event):
         if weight == 0 or weight == '0':
             weight = 999  # this will return an empty string using _str_conv
         # Generate a print string and attach it to the list
+        if not pick.phase_hint:
+            # Cope with some authorities not providing phase hints :(
+            phase_hint = ' '
+        else:
+            phase_hint = pick.phase_hint
         pick_strings.append(' ' + pick.waveform_id.station_code.ljust(5) +
                             pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[len(pick.waveform_id.
                                                               channel_code)
                                                           - 1] +
-                            ' ' + impulsivity + pick.phase_hint.ljust(4) +
+                            ' ' + impulsivity + phase_hint.ljust(4) +
                             _str_conv(int(weight)).rjust(1) + ' ' +
                             polarity.rjust(1) + ' ' +
                             str(pick.time.hour).rjust(2) +
@@ -1461,6 +1534,51 @@ def nordpick(event):
         # values stored in seisan.  Multiple weights are also not supported in
         # Obspy.event
     return pick_strings
+
+
+def stationtoseisan(station):
+    """
+    Convert obspy station inventory to simple string to copy in to \
+    STATION0.HYP file for seisan locations.
+
+    :type station: obspy.core.inventory.station.Station
+    :param station: Inventory containing a single station.
+
+    :returns: str
+
+    .. note:: Only works to the low-precision level at the moment (see seisan \
+        manual for explanation).
+    """
+    import LatLon
+
+    if station.latitude < 0:
+        lat_str = 'S'
+    else:
+        lat_str = 'N'
+    if station.longitude < 0:  # Stored in =/- 180, not 0-360
+        lon_str = 'W'
+    else:
+        lon_str = 'E'
+    if len(station.code) > 4:
+        sta_str = station.code[0:4]
+    else:
+        sta_str = station.code.ljust(4)
+    if len(station.channels) > 0:
+        depth = station.channels[0].depth
+    else:
+        msg = 'No depth found in station.channels, have you set the level ' +\
+              'of stationXML download to channel if using obspy.get_stations?'
+        raise IOError(msg)
+    elev = str(int(round(station.elevation - depth))).rjust(4)
+    # lat and long are written in STATION0.HYP in deg,decimal mins
+    lat = LatLon.Latitude(station.latitude)
+    lon = LatLon.Longitude(station.longitude)
+    lat = ''.join([str(int(abs(lat.degree))),
+                   '{0:.2f}'.format(lat.decimal_minute).rjust(5)])
+    lon = ''.join([str(int(abs(lon.degree))),
+                   '{0:.2f}'.format(lon.decimal_minute).rjust(5)])
+    station_str = ''.join(['  ', sta_str, lat, lat_str, lon, lon_str, elev])
+    return station_str
 
 
 if __name__ == "__main__":

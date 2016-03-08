@@ -61,14 +61,14 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         additional_length = 100
     else:
         additional_length = 2.5 * SP
-    synth = np.zeros(SP + 10 + additional_length)
+    synth = np.zeros(int(SP + 10 + additional_length))
     # Make the array begin 10 samples before the P
     # and at least 2.5 times the S-P samples after the S arrival
     synth[10] = 1.0  # P-spike fixed at 10 samples from start of window
     # The length of the decaying S-phase should depend on the SP time,\
     # Some basic estimations suggest this should be atleast 10 samples\
     # and that the coda should be about 1/10 of the SP time
-    S_length = 10 + SP // 3
+    S_length = 10 + int(SP // 3)
     S_spikes = np.arange(amp_ratio, 0, -(amp_ratio / S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
@@ -242,6 +242,113 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
         templates.append(Stream(st))
         # Stream(st).plot(size=(800,600))
     return templates
+
+
+def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
+                        t_length=3.0, max_amp=10.0, debug=0):
+    """
+    Function to generate a synthetic dataset to be used for testing.
+    This will generate both templates and data to scan through.
+    Templates will be generated using the utils.synth_seis functions.
+    The day of data will be random noise, with random signal-to-noise
+    ratio copies of the templates randomly seeded throughout the day.
+    It also returns the seed times and signal-to-noise ratios used.
+
+    :type nsta: int
+    :param nsta: Number of stations to generate data for < 15.
+    :type ntemplates: int
+    :param ntemplates: Number of templates to generate, will be generated \
+        with random arrival times.
+    :type nseeds: int
+    :param nseeds: Number of copies of the template to seed within the \
+        day of noisy data for each template.
+    :type samp_rate: float
+    :param samp_rate: Sampling rate to use in Hz
+    :type t_length: float
+    :param t_length: Length of templates in seconds.
+    :type max_amp: float
+    :param max_amp: Maximum signal-to-noise ratio of seeds.
+    :type debug: int
+    :param debug: Debug level, bigger the number, the more plotting/output.
+
+    :returns: Templates: List of obspy.Stream, Data: obspy.Stream of \
+        seeded noisy data, Seeds: dictionary of seed SNR and time with \
+        time in samples.
+    """
+    from eqcorrscan.utils import synth_seis
+    import numpy as np
+    from obspy import UTCDateTime
+
+    # Generate random arrival times
+    t_times = np.abs(np.random.random([nsta, ntemplates])) * t_length
+    # Generate random node locations - these do not matter as they are only
+    # used for naming
+    lats = np.random.random(ntemplates) * 90.0
+    lons = np.random.random(ntemplates) * 90.0
+    depths = np.abs(np.random.random(ntemplates) * 40.0)
+    nodes = zip(lats, lons, depths)
+    # Generating a 5x3 array to make 3 templates
+    stations = ['ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
+                'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
+                'MALC']
+    if debug > 1:
+        print(nodes)
+        print(t_times)
+        print(stations[0:nsta])
+    templates = synth_seis.template_grid(stations=stations[0:nsta],
+                                         nodes=nodes,
+                                         travel_times=t_times, phase='S',
+                                         samp_rate=samp_rate,
+                                         flength=int(t_length * samp_rate))
+    if debug > 2:
+        for template in templates:
+            print(template)
+            template.plot(size=(800, 600), equal_scale=False)
+    # Now we want to create a day of synthetic data
+    seeds = []
+    data = templates[0].copy()  # Copy a template to get the correct length
+    # and stats for data, we will overwrite the data on this copy
+    for tr in data:
+        tr.data = np.zeros(86400 * int(samp_rate))
+        # Set all the traces to have a day of zeros
+        tr.stats.starttime = UTCDateTime(0)
+    for i, template in enumerate(templates):
+        impulses = np.zeros(86400 * int(samp_rate))
+        # Generate a series of impulses for seeding
+        # Need three seperate impulse traces for each of the three templates,
+        # all will be convolved within the data though.
+        impulse_times = np.random.randint(86400 * int(samp_rate),
+                                          size=nseeds)
+        impulse_amplitudes = np.random.randn(nseeds) * max_amp
+        # Generate amplitudes up to maximum amplitude in a normal distribution
+        seeds.append({'SNR': impulse_amplitudes,
+                      'time': impulse_times})
+        for j in range(nseeds):
+            impulses[impulse_times[j]] = impulse_amplitudes[j]
+        # We now have one vector of impulses, we need nsta numbers of them,
+        # shifted with the appropriate lags
+        mintime = min([template_tr.stats.starttime
+                       for template_tr in template])
+        for j, template_tr in enumerate(template):
+            offset = int((template_tr.stats.starttime - mintime) * samp_rate)
+            pad = np.zeros(offset)
+            tr_impulses = np.append(pad, impulses)[0:len(impulses)]
+            # Convolve this with the template trace to give the daylong seeds
+            data[j].data += np.convolve(tr_impulses,
+                                        template_tr.data)[0:len(impulses)]
+        if debug > 2:
+            data.plot(starttime=UTCDateTime(0) +
+                      impulse_times[0] / samp_rate - 3,
+                      endtime=UTCDateTime(0) +
+                      impulse_times[0] / samp_rate + 15)
+    # Add the noise
+    for tr in data:
+        noise = np.random.randn(86400 * int(samp_rate))
+        tr.data += noise / max(noise)
+        if debug > 2:
+            tr.plot()
+
+    return templates, data, seeds
 
 
 if __name__ == "__main__":

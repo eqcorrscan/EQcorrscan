@@ -51,7 +51,7 @@ def chunk_data(tr, samp_rate, state='mean'):
     # Wrap the array into a 2D array of chunks, truncating the last chunk if
     # chunksize isn't an even divisor of the total size.
     # (This part won't use _any_ additional memory)
-    numchunks = y.size // chunksize
+    numchunks = int(y.size // chunksize)
     ychunks = y[:chunksize*numchunks].reshape((-1, chunksize))
     xchunks = x[:chunksize*numchunks].reshape((-1, chunksize))
 
@@ -442,9 +442,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image = image.merge()[0]
         # Downsample if needed
         if image.stats.sampling_rate > 20:
-            image.decimate(image.stats.sampling_rate // 20)
+            image.decimate(int(image.stats.sampling_rate // 20))
         if template_tr.stats.sampling_rate > 20:
-            template_tr.decimate(template_tr.stats.sampling_rate // 20)
+            template_tr.decimate(int(template_tr.stats.sampling_rate // 20))
         # Get a list of datetime objects
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
@@ -480,10 +480,10 @@ def interev_mag_sfiles(sfiles):
     :type sfiles: list
     :param sfiles: List of sfiles to read from
     """
-    from eqcorrscan.utils import Sfile_util
-    times = [Sfile_util.readheader(sfile)[0].origins[0].time
+    from eqcorrscan.utils import sfile_util
+    times = [sfile_util.readheader(sfile)[0].origins[0].time
              for sfile in sfiles]
-    mags = [Sfile_util.readheader(sfile)[0].magnitudes[0].mag
+    mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
             for sfile in sfiles]
     interev_mag(times, mags)
 
@@ -565,8 +565,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :param title: String if set will be the plot title
     :type background: :class: obspy.stream
     :param background: Stream to plot the template within.
-    :type picks: list of :class: eqcorrscan.utils.Sfile_util.PICK
-    :param picks: List of eqcorrscan type picks.
+    :type picks: list of obspy.core.event.pick
+    :param picks: List of obspy type picks.
     """
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
@@ -579,23 +579,33 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
     lengths = []
+    lines = []
+    labels = []
     for i, tr in enumerate(template):
         delay = tr.stats.starttime - mintime
         y = tr.data
-        x = np.linspace(0, len(y) * tr.stats.delta, len(y))
+        x = np.linspace(0, (len(y)-1) * tr.stats.delta, len(y))
         x += delay
         if background:
             btr = background.select(station=tr.stats.station,
                                     channel=tr.stats.channel)[0]
             bdelay = btr.stats.starttime - mintime
             by = btr.data
-            bx = np.linspace(0, len(by) * btr.stats.delta, len(by))
+            bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
             bx += bdelay
             axes[i].plot(bx, by, 'k', linewidth=1)
-            axes[i].plot(x, y, 'r', linewidth=1.1)
+            template_line, = axes[i].plot(x, y, 'r', linewidth=1.1,
+                                          label='Template')
+            if i == 0:
+                lines.append(template_line)
+                labels.append('Template')
             lengths.append(max(bx[-1], x[-1]))
         else:
-            axes[i].plot(x, y, 'k', linewidth=1.1)
+            template_line, = axes[i].plot(x, y, 'k', linewidth=1.1,
+                                          label='Template')
+            if i == 0:
+                lines.append(template_line)
+                labels.append('Template')
             lengths.append(x[-1])
         # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
@@ -604,27 +614,37 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         # Plot the picks if they are given
         if picks:
             tr_picks = [pick for pick in picks if
-                        pick.station == tr.stats.station and
-                        pick.channel[0] + pick.channel[-1] ==
+                        pick.waveform_id.station_code == tr.stats.station and
+                        pick.waveform_id.channel_code[0] +
+                        pick.waveform_id.channel_code[-1] ==
                         tr.stats.channel[0] + tr.stats.channel[-1]]
             for pick in tr_picks:
-                if pick.phase == 'P':
+                if 'P' in pick.phase_hint.upper():
                     pcolor = 'red'
-                elif pick.phase == 'S':
+                    label = 'P-pick'
+                elif 'S' in pick.phase_hint.upper():
                     pcolor = 'blue'
+                    label = 'S-pick'
                 else:
                     pcolor = 'k'
+                    label = 'Unknown pick'
                 pdelay = pick.time - mintime
                 # print(pdelay)
-                axes[i].axvline(x=pdelay, color=pcolor, linewidth=2)
+                line = axes[i].axvline(x=pdelay, color=pcolor, linewidth=2,
+                                       linestyle='--', label=label)
+                if label not in labels:
+                    lines.append(line)
+                    labels.append(label)
                 # axes[i].plot([pdelay, pdelay], [])
     axes[i].set_xlim([0, max(lengths)])
     axes[len(template)-1].set_xlabel('Time (s) from start of template')
-    plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
+    plt.figlegend(lines, labels, 'upper right')
     if title:
         axes[0].set_title(title)
     else:
         plt.subplots_adjust(top=0.98)
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
         plt.close()

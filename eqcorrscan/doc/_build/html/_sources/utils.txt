@@ -18,12 +18,14 @@ there are now multiple options for location of events.
    :maxdepth: 4
 
    submodules/utils.clustering
-   submodules/utils.EQcorrscan_plotting
+   submodules/utils.plotting
    submodules/utils.findpeaks
    submodules/utils.locate
    submodules/utils.mag_calc
    submodules/utils.pre_processing
    submodules/utils.seismo_logs
-   submodules/utils.Sfile_util
+   submodules/utils.sfile_util
    submodules/utils.stacking
    submodules/utils.synth_seis
+   submodules/utils.catalog_to_dd
+   submodules/utils.sac_util

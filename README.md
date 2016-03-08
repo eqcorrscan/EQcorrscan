@@ -69,7 +69,7 @@ Also within this package are:
 
 We are currently hovering around 9,000 lines of code (including doc-strings) - it is probably worth
 having a look at the docs to check what functions we have.  We plan to write a series of tutorials to be
-included on the EQcorrscan API to highlight key functions, currently our tutorial only shows
+included on the EQcorrscan API to highlight key functions, currently our tutorials only show
 how to do the core matched-filter detection.
 
 # Licence
@@ -108,3 +108,4 @@ will keep us all branching in the same way.
 * Thurber, C. H., Zeng, X., Thomas, A. M., & Audet, P. (2014). [Phase‐Weighted Stacking Applied to Low‐Frequency Earthquakes](http://www.bssaonline.org/content/early/2014/08/12/0120140077.abstract), __BSSA__, doi:10.1785/0120140077.
 * Frank, W. B., & Shapiro, N. M. (2014). [Automatic detection of low-frequency earthquakes (LFEs) based on a beamformed network response](http://gji.oxfordjournals.org/content/197/2/1215.short), __Geophysical Journal International__, 197(2), 1215-1223, doi:10.1093/gji/ggu058.
 * Rubinstein, J. L., & Ellsworth, W. L. (2010). [Precise estimation of repeating earthquake moment: Example from Parkfield, California](http://www.bssaonline.org/content/100/5A/1952.short), __BSSA__, doi:10.1785/0120100007
+fa66e06971b2dd1e4bf766

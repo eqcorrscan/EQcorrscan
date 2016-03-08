@@ -401,12 +401,12 @@ def match_filter(template_names, template_list, st, threshold,
     import matplotlib.pyplot as plt
     plt.ioff()
     import copy
-    from eqcorrscan.utils import EQcorrscan_plotting
+    from eqcorrscan.utils import plotting
     from eqcorrscan.utils import findpeaks
     from obspy import Trace
     import time
 
-    # Copy the stream here because we will fuck about with it
+    # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
     # Debug option to confirm that the channel names match those in the
@@ -517,19 +517,19 @@ def match_filter(template_names, template_list, st, threshold,
             cccsum_hist = cccsum_plot.copy()
             cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
                                                    sampling_rate / 10)).data
-            cccsum_plot = EQcorrscan_plotting.chunk_data(cccsum_plot, 10,
-                                                         'Maxabs').data
+            cccsum_plot = plotting.chunk_data(cccsum_plot, 10,
+                                              'Maxabs').data
             # Enforce same length
             stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
             cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
             cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-            EQcorrscan_plotting.triple_plot(cccsum_plot, cccsum_hist,
-                                            stream_plot, rawthresh, True,
-                                            plotdir + '/cccsum_plot_' +
-                                            template_names[i] + '_' +
-                                            stream[0].stats.starttime.
-                                            datetime.strftime('%Y-%m-%d') +
-                                            '.' + plot_format)
+            plotting.triple_plot(cccsum_plot, cccsum_hist,
+                                 stream_plot, rawthresh, True,
+                                 plotdir + '/cccsum_plot_' +
+                                 template_names[i] + '_' +
+                                 stream[0].stats.starttime.
+                                 datetime.strftime('%Y-%m-%d') +
+                                 '.' + plot_format)
             if debug >= 4:
                 print(' '.join(['Saved the cccsum to:', template_names[i],
                                 stream[0].stats.starttime.datetime.

@@ -1,0 +1,22 @@
+ 2013  923 1939 32.8 L -43.357 170.310  8.0  VUW  8 0.1 0.9LVUW                1
+ GAP=111        0.31       1.0     2.8  2.6 -0.8153E+00  0.1667E+01  0.1076E+01E
+ ACTION:NEW 15- 7-15  1:40 OP:CALU STATUS:               ID:20130923193934     I
+ 2013-09-23-1938-52.DFDPC_027_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ WZ21 HZ IP       1939 35.31                                                    
+ WZ21 HN IS       1939 36.60                                                    
+ WZ21 HZ  IAML    1939 37.05         0.2 0.18                                   
+ GCSZ SZ IP       1939 34.04                             144   -0.1710    4  17 
+ GCSZ S2 IS       1939 35.15                             144   -0.0410    4  17 
+ GCSZ EZ  IAML    1939 35.30         4.5 0.06                             4  17 
+ WZ04 HZ IP       1939 34.85                             123    0.0010    9   9 
+ WZ04 HZ  IAML    1939 36.65         7.7 0.34                             9   9 
+ WV03 SZ IP   1   1939 34.90                             122   -0.06 7   10  48 
+ WV03 SZ  IAML    1939 41.03        22.70.296                            10  48 
+ WHYM SE IS   2   1939 36.67                             125    0.10 5   10 152 
+ FRAN S3 IS   3   1939 36.95                             118    0.04 2   12 258 
+ FRAN S1  IAML    1939 38.81         0.0 0.36                            12 258 
+ LABE SZ IP   1   1939 36.91                             110    0.07 7   21 194 
+ LABE SN IS   2   1939 39.73                             110    0.13 5   21 194 
+ LABE SZ  IAML    1939 40.15         1.3 0.15                            21 194 
+                                                                                

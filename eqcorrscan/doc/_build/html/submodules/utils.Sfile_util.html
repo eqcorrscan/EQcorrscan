@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.8. Sfile_util &mdash; EQcorrscan 0.1.0 documentation</title>
+  <title>sfile_util &mdash; EQcorrscan 0.1.1 documentation</title>
   
 
   
@@ -32,10 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.0 documentation" href="../index.html"/>
-        <link rel="up" title="4. Utils" href="../utils.html"/>
-        <link rel="next" title="4.9. stacking" href="utils.stacking.html"/>
-        <link rel="prev" title="4.7. seismo_logs" href="utils.seismo_logs.html"/> 
+    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/> 
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
@@ -66,11 +63,12 @@
         
           
           
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.3. Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">2. EQcorrscan tutorial</a><ul>
@@ -87,17 +85,18 @@
 <li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">3.3. match_filter</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">4. Utils</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">4. Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">4.1. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.EQcorrscan_plotting.html">4.2. EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">4.2. plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">4.3. findpeaks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.locate.html">4.4. locate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">4.5. mag_calc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">4.6. pre_processing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">4.7. seismo_logs</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="">4.8. Sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.9. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.10. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">4.8. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">4.9. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">4.10. catalog_to_dd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">4.11. sac_util</a></li>
 </ul>
 </li>
 </ul>
@@ -124,9 +123,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-          <li><a href="../utils.html">4. Utils</a> &raquo;</li>
-      
-    <li>4.8. Sfile_util</li>
+    <li>sfile_util</li>
       <li class="wy-breadcrumbs-aside">
         
           <a href="../_sources/submodules/utils.Sfile_util.txt" rel="nofollow"> View page source</a>
@@ -137,15 +134,15 @@
 </div>
           <div role="main" class="document">
             
-  <div class="section" id="module-Sfile_util">
-<span id="sfile-util"></span><h1>4.8. Sfile_util<a class="headerlink" href="#module-Sfile_util" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-sfile_util">
+<span id="sfile-util"></span><h1>sfile_util<a class="headerlink" href="#module-sfile_util" title="Permalink to this headline">¶</a></h1>
 <p>Part of the EQcorrscan module to read nordic format s-files and write them
 EQcorrscan is a python module designed to run match filter routines for
 seismology, within it are routines for integration to seisan and obspy.
 With obspy integration (which is necessary) all main waveform formats can be
 read in and output.</p>
 <p>Note that these functions do not provide full functionality between quakeML
-and seisan s-files.  Currently (as of version 0.0.9) these only convert pick
+and seisan s-files.  Currently (as of version 0.1.1) these only convert pick
 times and phase information, along with amplitude information for local
 magnitudes between seisan and quakeML.  Location information including
 hypocentre, origin time and magnitudes are also handled.</p>
@@ -172,8 +169,8 @@ GNU General Public License for more details.</p>
 along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
 </div></blockquote>
 <dl class="class">
-<dt id="Sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x3dc6b50&gt;</em>, <em>loc_mod_ind=u' '</em>, <em>dist_ind=u' '</em>, <em>ev_id=u' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=u' '</em>, <em>loc_ind=u' '</em>, <em>agency=u' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=u' '</em>, <em>Mag_1_agency=u' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=u' '</em>, <em>Mag_2_agency=u' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=u' '</em>, <em>Mag_3_agency=u' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.EVENTINFO">
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x3505850&gt;</em>, <em>loc_mod_ind=u' '</em>, <em>dist_ind=u' '</em>, <em>ev_id=u' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=u' '</em>, <em>loc_ind=u' '</em>, <em>agency=u' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=u' '</em>, <em>Mag_1_agency=u' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=u' '</em>, <em>Mag_2_agency=u' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=u' '</em>, <em>Mag_3_agency=u' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events, again all fields can be left blank     for a default empty header.  The print function for header will print     important information, but not as seen in an S-file.</p>
 <p>For more information on parameters see the seisan manual.</p>
 <dl class="docutils">
@@ -290,8 +287,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="class">
-<dt id="Sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">Sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=u' '</em>, <em>channel=u' '</em>, <em>impulsivity=u' '</em>, <em>phase=u' '</em>, <em>weight=999</em>, <em>polarity=u' '</em>, <em>time=&lt;mock.Mock object at 0x3dc6b50&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.PICK">
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=u' '</em>, <em>channel=u' '</em>, <em>impulsivity=u' '</em>, <em>phase=u' '</em>, <em>weight=999</em>, <em>polarity=u' '</em>, <em>time=&lt;mock.Mock object at 0x3505850&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -386,8 +383,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dl>
 <p class="rubric">Note: Depreciated legacy function, use the obspy.core.event     classes. This will be removed in future releases.</p>
 <dl class="method">
-<dt id="Sfile_util.PICK.write">
-<code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#PICK.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.PICK.write" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.PICK.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Public function to write the pick to a file</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -402,38 +399,38 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util._evmagtonor">
-<code class="descclassname">Sfile_util.</code><code class="descname">_evmagtonor</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#_evmagtonor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util._evmagtonor" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util._evmagtonor">
+<code class="descclassname">sfile_util.</code><code class="descname">_evmagtonor</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_evmagtonor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._evmagtonor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience tool to switch from obspy event magnitude types to seisan     syntax</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util._float_conv">
-<code class="descclassname">Sfile_util.</code><code class="descname">_float_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#_float_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util._float_conv" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util._float_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_float_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_float_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._float_conv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience tool to convert from string to float, if empty string return     NaN rather than an error</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util._int_conv">
-<code class="descclassname">Sfile_util.</code><code class="descname">_int_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#_int_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util._int_conv" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util._int_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_int_conv</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_int_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._int_conv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience tool to convert from string to integer, if empty string     return a 999 rather than an error.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util._nortoevmag">
-<code class="descclassname">Sfile_util.</code><code class="descname">_nortoevmag</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#_nortoevmag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util._nortoevmag" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util._nortoevmag">
+<code class="descclassname">sfile_util.</code><code class="descname">_nortoevmag</code><span class="sig-paren">(</span><em>mag_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_nortoevmag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._nortoevmag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience tool to switch from nordic type magnitude notation to obspy     event magnitudes.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util._str_conv">
-<code class="descclassname">Sfile_util.</code><code class="descname">_str_conv</code><span class="sig-paren">(</span><em>number</em>, <em>rounded=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#_str_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util._str_conv" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util._str_conv">
+<code class="descclassname">sfile_util.</code><code class="descname">_str_conv</code><span class="sig-paren">(</span><em>number</em>, <em>rounded=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#_str_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util._str_conv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience tool to convert a number, either float or into into a string,     if the int is 999, or the float is NaN, returns empty string.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.blanksfile">
-<code class="descclassname">Sfile_util.</code><code class="descname">blanksfile</code><span class="sig-paren">(</span><em>wavefile</em>, <em>evtype</em>, <em>userID</em>, <em>outdir</em>, <em>overwrite=False</em>, <em>evtime=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#blanksfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.blanksfile" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.blanksfile">
+<code class="descclassname">sfile_util.</code><code class="descname">blanksfile</code><span class="sig-paren">(</span><em>wavefile</em>, <em>evtype</em>, <em>userID</em>, <em>outdir</em>, <em>overwrite=False</em>, <em>evtime=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#blanksfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.blanksfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Module to generate an empty s-file with a populated header for a given     waveform.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -457,34 +454,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.eventtoSfile">
-<code class="descclassname">Sfile_util.</code><code class="descname">eventtoSfile</code><span class="sig-paren">(</span><em>event</em>, <em>userID</em>, <em>evtype</em>, <em>outdir</em>, <em>wavefiles</em>, <em>explosion=False</em>, <em>overwrite=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#eventtoSfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.eventtoSfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to take an obspy.event and write the relevant information to a     nordic formatted s-file</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>event</strong> (<em>obspy.event.core.Catalog</em>) &#8211; A single obspy event</li>
-<li><strong>userID</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Up to 4 character user ID</li>
-<li><strong>evtype</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Single character string to describe the event, either L, R         or D.</li>
-<li><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to directory to write to</li>
-<li><strong>wavefiles</strong> (<em>list of str</em>) &#8211; Waveforms to associate the sfile with</li>
-<li><strong>explosion</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Note if the event is an explosion, will be marked by an         E.</li>
-<li><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; force to overwrite old files, defaults to False</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str: name of sfile written</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="Sfile_util.eventtopick">
-<code class="descclassname">Sfile_util.</code><code class="descname">eventtopick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#eventtopick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.eventtopick" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.eventtopick">
+<code class="descclassname">sfile_util.</code><code class="descname">eventtopick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#eventtopick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.eventtopick" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper function to convert from obspy.core.event to legacy PICK and     EVENT classes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -506,8 +477,38 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.nordpick">
-<code class="descclassname">Sfile_util.</code><code class="descname">nordpick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#nordpick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.nordpick" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.eventtosfile">
+<code class="descclassname">sfile_util.</code><code class="descname">eventtosfile</code><span class="sig-paren">(</span><em>event</em>, <em>userID</em>, <em>evtype</em>, <em>outdir</em>, <em>wavefiles</em>, <em>explosion=False</em>, <em>overwrite=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#eventtosfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.eventtosfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to take an obspy.event and write the relevant information to a     nordic formatted s-file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event</strong> (<em>obspy.event.core.Event</em>) &#8211; A single obspy event</li>
+<li><strong>userID</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Up to 4 character user ID</li>
+<li><strong>evtype</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Single character string to describe the event, either L, R         or D.</li>
+<li><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path to directory to write to</li>
+<li><strong>wavefiles</strong> (<em>list of str</em>) &#8211; Waveforms to associate the sfile with</li>
+<li><strong>explosion</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Note if the event is an explosion, will be marked by an         E.</li>
+<li><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; force to overwrite old files, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str: name of sfile written</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Seisan can find waveforms either by their relative or absolute         path, or by looking for the file recursiuvely in directories within         the WAV directory in your seisan install.  Because all lines need to         be less than 79 charecters long (fortran hangover) in the s-files,         you will need to determine whether the full-path is okay or not.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="sfile_util.nordpick">
+<code class="descclassname">sfile_util.</code><code class="descname">nordpick</code><span class="sig-paren">(</span><em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#nordpick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.nordpick" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to print information from an obspy.event class to nordic format.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -529,15 +530,15 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.picktoevent">
-<code class="descclassname">Sfile_util.</code><code class="descname">picktoevent</code><span class="sig-paren">(</span><em>evinfo</em>, <em>picks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#picktoevent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.picktoevent" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.picktoevent">
+<code class="descclassname">sfile_util.</code><code class="descname">picktoevent</code><span class="sig-paren">(</span><em>evinfo</em>, <em>picks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#picktoevent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.picktoevent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper function to convert from EVENTINFO and PICK classes to     obspy.core.event.Event.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>evinfo</strong> (<a class="reference internal" href="#Sfile_util.EVENTINFO" title="Sfile_util.EVENTINFO"><em>EVENTINFO</em></a>) &#8211; Event header info for a single event</li>
+<li><strong>evinfo</strong> (<a class="reference internal" href="#sfile_util.EVENTINFO" title="sfile_util.EVENTINFO"><em>EVENTINFO</em></a>) &#8211; Event header info for a single event</li>
 <li><strong>picks</strong> (<em>List of PICK</em>) &#8211; List of picks associated with the event</li>
 </ul>
 </td>
@@ -557,8 +558,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.populateSfile">
-<code class="descclassname">Sfile_util.</code><code class="descname">populateSfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#populateSfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.populateSfile" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.populatesfile">
+<code class="descclassname">sfile_util.</code><code class="descname">populatesfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>event</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#populatesfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.populatesfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Module to populate a blank nordic format S-file with pick information,     arguments required are the filename of the blank s-file and the picks     where picks is a dictionary of picks including station, channel,     impulsivity, phase, weight, polarity, time, coda, amplitude, peri,     azimuth, velocity, SNR, azimuth residual, Time-residual, final weight,     epicentral distance &amp; azimuth from event to station.</p>
 <p>This is a full pick line information from the seisan manual, P. 341</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -576,8 +577,8 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.readheader">
-<code class="descclassname">Sfile_util.</code><code class="descname">readheader</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#readheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readheader" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.readheader">
+<code class="descclassname">sfile_util.</code><code class="descname">readheader</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readheader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read the header information from a seisan nordic format S-file.
 Returns an obspy.core.event.Catalog type: note this changed for version     0.1.0 from the inbuilt class types.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -601,8 +602,8 @@ Returns an obspy.core.event.Catalog type: note this changed for version     0.1.
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.readpicks">
-<code class="descclassname">Sfile_util.</code><code class="descname">readpicks</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#readpicks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readpicks" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.readpicks">
+<code class="descclassname">sfile_util.</code><code class="descname">readpicks</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readpicks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readpicks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to read pick information from the s-file and store this in an     obspy.event.Catalog type.  This was changed for version 0.1.0 from using     the inbuilt PICK class.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -621,8 +622,8 @@ Returns an obspy.core.event.Catalog type: note this changed for version     0.1.
 </dd></dl>
 
 <dl class="function">
-<dt id="Sfile_util.readwavename">
-<code class="descclassname">Sfile_util.</code><code class="descname">readwavename</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Sfile_util.html#readwavename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Sfile_util.readwavename" title="Permalink to this definition">¶</a></dt>
+<dt id="sfile_util.readwavename">
+<code class="descclassname">sfile_util.</code><code class="descname">readwavename</code><span class="sig-paren">(</span><em>sfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#readwavename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.readwavename" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience function to extract the waveform filename from the s-file,     returns a list of waveform names found in the s-file as multiples can     be present.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -636,20 +637,31 @@ Returns an obspy.core.event.Catalog type: note this changed for version     0.1.
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="sfile_util.stationtoseisan">
+<code class="descclassname">sfile_util.</code><code class="descname">stationtoseisan</code><span class="sig-paren">(</span><em>station</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#stationtoseisan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.stationtoseisan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert obspy station inventory to simple string to copy in to     STATION0.HYP file for seisan locations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>station</strong> (<em>obspy.core.inventory.station.Station</em>) &#8211; Inventory containing a single station.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Only works to the low-precision level at the moment (see seisan         manual for explanation).</p>
+</div>
+</dd></dl>
+
 </div>
 
 
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="utils.stacking.html" class="btn btn-neutral float-right" title="4.9. stacking">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="utils.seismo_logs.html" class="btn btn-neutral" title="4.7. seismo_logs"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -677,7 +689,7 @@ Returns an obspy.core.event.Catalog type: note this changed for version     0.1.
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -573,7 +573,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     from obspy.core.event import EventDescription, CreationInfo, Comment
     import obspy.Stream
     import matplotlib.pyplot as plt
-    from eqcorrscan.utils import EQcorrscan_plotting as plotting
+    from eqcorrscan.utils import plotting
     # Check that we actually have the correct stations
     realstations = []
     for station in stations:
@@ -659,7 +659,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         del energy, indeces
     else:
         print('Reading the temp files and computing network response')
-        node_splits = len(nodes) // num_cores
+        node_splits = int(len(nodes) // num_cores)
         indeces = [range(node_splits)]
         for i in range(1, num_cores - 1):
             indeces.append(range(node_splits * i, node_splits * (i + 1)))

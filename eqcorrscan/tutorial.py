@@ -42,7 +42,7 @@ from obspy import read
 from eqcorrscan.core import template_gen, match_filter
 # Before calling these module imports for parameter files you should insert
 # your own path into sys.path so that we find your parameter files.
-from eqcorrscan.utils import pre_processing, Sfile_util
+from eqcorrscan.utils import pre_processing, sfile_util
 import glob
 
 # Set up the default parameters - these used to be stored in parameter files
@@ -65,7 +65,7 @@ for i, sfile in enumerate(sfiles):
     # template generation is inefficient for multiple templates, if using
     # daylong data for multiple templates you would want to only read
     # the seismic data once and cut it multiple times.
-    event = Sfile_util.readpicks(sfile)
+    event = sfile_util.readpicks(sfile)
     for pick in event.picks:
         print(pick)
         if 'wavefiles' not in locals():

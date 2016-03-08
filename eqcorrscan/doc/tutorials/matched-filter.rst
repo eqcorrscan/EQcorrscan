@@ -5,9 +5,9 @@ In this section we will outline using the templates generated in the first tutor
 to scan for similar earthquakes within a day of data.  This small example does not truly exploit the parallel
 operations within this package however, so you would be encouraged to think
 about where parallel operations occur (*hint, the code can run one template
-per cpu*), and why there are --instance and--splits flags in the other
+per CPU*), and why there are --instance and--splits flags in the other
 scripts in the github repository (*hint, if you have heaps of memory
-and cpus you can do some brute force day parallelisation!*).
+and CPUs you can do some brute force day parallelisation!*).
 
 The main processing flow is outlined in the figure below, note the main speedups
 in this process are achieved by running multiple templates at once, however this
@@ -15,6 +15,7 @@ increases memory usage.  If memory is a problem there are flags (mem_issue) in t
 match_filter.py source that can be turned on - the codes will then write temporary
 files, which is slower, but can allow for more data crunching at once, your trade-off,
 your call.
+
 
 .. image:: processing_flow.png
      :width: 600px

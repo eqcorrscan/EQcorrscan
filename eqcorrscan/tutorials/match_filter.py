@@ -6,9 +6,8 @@ then you will need to before you can run this script.
 """
 
 from eqcorrscan.utils import pre_processing
-from eqcorrscan.utils import EQcorrscan_plotting as plotting
+from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
-from joblib import Parallel, delayed
 import glob
 
 # This import section copes with namespace changes between obspy versions
@@ -72,24 +71,24 @@ for i in range(kdays):
     # Work out what data we actually have to cope with possible lost data
     stations = list(set([tr.stats.station for tr in st]))
 
+    # Set how many cores we want to parallel across, we will set this to four
+    # as this is the number of templates, if your machine has fewer than four
+    # cores/CPUs the multiprocessing will wait until there is a free core.
+    # Setting this to be higher than the number of templates will have no
+    # increase in speed as only detections for each template are computed in
+    # parallel.  It may also slow your processing by using more memory than
+    # needed, to the extent that swap may be filled.
+    ncores = 4
+
     # Pre-process the data to set frequency band and sampling rate
     # Note that this is, and MUST BE the same as the parameters used for the
     # template creation.
     print('Processing the seismic data')
-    st = Parallel(n_jobs=10)(delayed(pre_processing.dayproc)
-                             (tr=tr, lowcut=2.0, highcut=9.0, filt_order=3,
-                              samp_rate=20.0, debug=0, starttime=t1)
-                             for tr in st)
+    st = pre_processing.dayproc(st, lowcut=2.0, highcut=9.0,
+                                filt_order=4, samp_rate=20.0,
+                                debug=0, starttime=t1)
     # Convert from list to stream
     st = Stream(st)
-
-    # Set how many cores we want to parallel across, we will set this to four
-    # as this is the number of templates, if your machine has fewer than four
-    # cores/CPUs the multiprocessing will wait until there is a free core.
-    # Setting this to be higher than the number of templates will have no i
-    # increase in speed as only detections for each template are computed in
-    # parallel.
-    ncores = 4
 
     # Now we can conduct the matched-filter detection
     detections = match_filter.match_filter(template_names=template_names,
@@ -98,7 +97,7 @@ for i in range(kdays):
                                            threshold_type='MAD',
                                            trig_int=6.0, plotvar=True,
                                            plotdir='.', cores=ncores,
-                                           tempdir=False, debug=0,
+                                           tempdir=False, debug=1,
                                            plot_format='jpg')
 
     # Now lets try and work out how many unique events we have just to compare
@@ -107,8 +106,8 @@ for i in range(kdays):
         keep = True
         for slave in detections:
             if not master == slave and\
-               abs(master.detect_time - slave.detect_time) <= 6.0:
-                # If the events are within 6s of each other then test which
+               abs(master.detect_time - slave.detect_time) <= 1.0:
+                # If the events are within 1s of each other then test which
                 # was the 'best' match, strongest detection
                 if not master.detect_val > slave.detect_val:
                     keep = False
