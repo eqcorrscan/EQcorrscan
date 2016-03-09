@@ -1,0 +1,17 @@
+ 2013  920 0849 47.3 L -43.356 170.319  8.6  VUW  8 0.2 1.0LVUW                1
+ GAP=110        0.46       1.5     4.2  3.8 -0.1566E+01  0.2963E+01  0.2569E+01E
+ ACTION:NEW 15- 7-15  1:36 OP:CALU STATUS:               ID:20130920084949     I
+ 2013-09-20-0849-07.DFDPC_027_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ WZ21 HZ IP        849 49.86                                                    
+ WZ21 HZ  IAML     849 51.02         0.9 0.86                                   
+ GCSZ S2 IS        849 49.73                             147   -0.0810    4   8 
+ WZ04 HZ IP        849 49.49                             125    0.1010    9   5 
+ WZ04 HZ  IAML     849 51.12        10.9 0.58                             9   5 
+ WHYM SZ IP   2    849 49.48                             126   -0.09 5   10 156 
+ WHYM SZ  IAML     849 52.35        10.3 0.19                            10 156 
+ FRAN S1  IAML     849 54.72         0.0 0.24                            13 258 
+ LABE SZ IP   1    849 51.80                             108    0.37 7   21 196 
+ LABE SN IS   2    849 54.18                             108   -0.07 5   21 196 
+ LABE SZ  IAML     849 55.90         4.7 0.22                            21 196 
+                                                                                

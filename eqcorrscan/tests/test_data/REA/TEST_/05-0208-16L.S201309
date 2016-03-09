@@ -1,0 +1,25 @@
+ 2013  9 5 0208 15.0 L -43.339 170.376  8.6  VUW  8 0.1 1.2LVUW                1
+ GAP= 85        0.44       1.2     1.6  3.1 -0.3236E+00  0.1145E+01  0.1573E+01E
+ ACTION:NEW 15- 8-11 13:43 OP:CALU STATUS:               ID:20130905020816     I
+ 2013-09-05-0207-35.DFDPC_024_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ GCSZ SZ IP        2 8 16.49                             146    0.0110    4 303 
+ GCSZ S1 IS        2 8 17.55                             146    0.0410    4 303 
+ GCSZ EZ  IAML     2 8 17.80         9.7 0.08                             4 303 
+ WV04 SZ IP        2 8 16.49                             144   -0.0110    5  36 
+ WV04 SZ  IAML     2 8 18.11        21.5 0.12                             5  36 
+ WZ11 HZ IP        2 8 16.53                             141    0.0010    5  31 
+ WZ11 HZ  IAML     2 8 18.28        19.6  0.4                             5  31 
+ WV03 SZ IP        2 8 16.53                             141   -0.0210    5  26 
+ WV03 SZ  IAML     2 8 19.11        19.7  0.2                             5  26 
+ WZ02 EN IS        2 8 18.16                             128   -0.1810    8  97 
+ WZ02 EZ  IAML     2 8 18.42         7.2  0.1                             8  97 
+ WHYM SZ IP        2 8 17.63                             123    0.2310   11 182 
+ WHYM SN IS        2 8 19.23                             123    0.1710   11 182 
+ WHYM SZ  IAML     2 8 19.99        11.1 0.14                            11 182 
+ EORO SZ IP        2 8 18.76                             107    0.1610   19 240 
+ EORO SN IS        2 8 20.86                             107   -0.2110   19 240 
+ EORO SZ  IAML     2 8 21.22         4.0 0.09                            19 240 
+ LABE SN IS        2 8 22.69                             105   -0.2010   25 205 
+ LABE SZ  IAML     2 8 23.66         2.7 0.17                            25 205 
+                                                                                
