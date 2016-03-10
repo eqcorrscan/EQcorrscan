@@ -109,7 +109,7 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
+def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
             cores='all', debug=1):
     """
     Function to take a set of templates and cluster them, will return groups as
@@ -123,7 +123,7 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
 
     Will compute the distance matrix in parallel, using all available cores
 
-    :type stream_list: List of Obspy.Stream
+    :type template_list: List of tuples (Obspy.Stream, temp_id)
     :param stream_list: List of templates to compute clustering for
     :type show: bool
     :param show: plot linkage on screen if True, defaults to True
@@ -150,6 +150,8 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
         num_cores = cpu_count()
     else:
         num_cores = cores
+    # Extract only the Streams from stream_list
+    stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
     if debug >= 1:
         print 'Computing the distance matrix using '+str(num_cores)+' cores'
@@ -169,25 +171,25 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
         D = dendrogram(Z, color_threshold=1 - corr_thresh,
                        distance_sort='ascending')
         plt.show()
-    # Get the indeces of the groups
+    # Get the indices of the groups
     if debug >= 1:
         print 'Clustering'
-    indeces = fcluster(Z, 1 - corr_thresh, 'distance')
-    group_ids = list(set(indeces))  # Unique list of group ids
+    indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
+    group_ids = list(set(indices))  # Unique list of group ids
     if debug >= 1:
         print 'Found '+str(len(group_ids))+' groups'
     # Convert to tuple of (group id, stream id)
-    indeces = [(indeces[i], i) for i in xrange(len(indeces))]
+    indices = [(indices[i], i) for i in xrange(len(indices))]
     # Sort by group id
-    indeces.sort(key=lambda tup: tup[0])
+    indices.sort(key=lambda tup: tup[0])
     groups = []
     if debug >= 1:
         print 'Extracting and grouping'
     for group_id in group_ids:
         group = []
-        for ind in indeces:
+        for ind in indices:
             if ind[0] == group_id:
-                group.append(stream_list[ind[1]])
+                group.append(template_list[ind[1]])
             elif ind[0] > group_id:
                 # Because we have sorted by group id, when the index is greater
                 # than the group_id we can break the inner loop.
@@ -591,7 +593,7 @@ def space_time_cluster(detections, t_thresh, d_thresh):
     :type d_thresh: float
     :param d_thresh: Maximum inter-event distance in km
 
-    :returns: List of tuple (detections, clustered) and list of indeces of\
+    :returns: List of tuple (detections, clustered) and list of indices of\
             clustered detections
     """
     from eqcorrscan.utils.mag_calc import dist_calc
@@ -599,7 +601,7 @@ def space_time_cluster(detections, t_thresh, d_thresh):
     # Ensure they are sorted by time first, not that we need it.
     detections.sort(key=lambda tup: tup[1])
     clustered = []
-    clustered_indeces = []
+    clustered_indices = []
     for master_ind, master in enumerate(detections):
         keep = False
         for slave in detections:
@@ -612,9 +614,9 @@ def space_time_cluster(detections, t_thresh, d_thresh):
                 break
         if keep:
             clustered.append(master)
-            clustered_indeces.append(master_ind)
+            clustered_indices.append(master_ind)
 
-    return clustered, clustered_indeces
+    return clustered, clustered_indices
 
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
