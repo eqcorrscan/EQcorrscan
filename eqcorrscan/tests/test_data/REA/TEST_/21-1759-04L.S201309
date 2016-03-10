@@ -1,0 +1,20 @@
+ 2013  921 1759  4.7 L -43.326 170.404  6.2  VUW  9 0.1 1.1LVUW                1
+ GAP=178        0.34       1.2     1.9  2.8  0.1291E+00  0.1283E+01  0.1844E+01E
+ ACTION:NEW 15- 8-11 15: 7 OP:CALU STATUS:               ID:20130921175905     I
+ 2013-09-21-1758-24.DFDPC_027_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ WV04 SZ IP   1   1759  5.63                             149    0.02 7    2  14 
+ WV04 SZ  IAML    1759  6.68        15.00.072                             2  14 
+ WZ11 HZ IP       1759  5.60                             144   -0.0610    3   8 
+ WZ11 HZ  IAML    1759  6.14        11.0 0.34                             3   8 
+ WZ11 HE IS       1759  6.33                             144   -0.0010    3   8 
+ GCSZ SZ IP       1759  6.01                             127   -0.0510    6 280 
+ GCSZ S1 IS       1759  6.93                             127   -0.0810    6 280 
+ GCSZ EZ  IAML    1759  7.46         0.8  0.1                             6 280 
+ WHYM SN IS   2   1759  9.11                             113    0.26 5   13 192 
+ WZ08 HZ IP   4   1759  9.21                             102    0.71 0   21   3 
+ WZ08 HZ  IAML    1759 16.92        44.7 1.02                            21   3 
+ LABE SZ IP   2   1759  9.77                             103    0.12 5   27 208 
+ LABE SN IS   2   1759 12.82                             103   -0.23 5   27 208 
+ LABE SZ  IAML    1759 14.92         1.9  0.7                            27 208 
+                                                                                

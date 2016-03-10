@@ -1,0 +1,601 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>5.2. plotting &mdash; EQcorrscan 0.1.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+        <link rel="up" title="5. Utils" href="../utils.html"/>
+        <link rel="next" title="5.3. findpeaks" href="utils.findpeaks.html"/>
+        <link rel="prev" title="5.1. clustering" href="utils.clustering.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">5.2. plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">5.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">5.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">5.5. mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">5.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">5.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sfile_util.html">5.8. sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">5.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">5.10. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">5.12. sac_util</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../utils.html">5. Utils</a> &raquo;</li>
+      
+    <li>5.2. plotting</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/submodules/utils.plotting.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="module-plotting">
+<span id="plotting"></span><h1>5.2. plotting<a class="headerlink" href="#module-plotting" title="Permalink to this headline">¶</a></h1>
+<p>Utility code for most of the plots used as part of the EQcorrscan package.</p>
+<p>Copyright 2015 Calum Chamberlain</p>
+<p>This file is part of EQcorrscan.</p>
+<blockquote>
+<div><p>EQcorrscan is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>EQcorrscan is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
+</div></blockquote>
+<dl class="function">
+<dt id="plotting.NR_plot">
+<code class="descclassname">plotting.</code><code class="descname">NR_plot</code><span class="sig-paren">(</span><em>stream</em>, <em>NR_stream</em>, <em>detections</em>, <em>false_detections=False</em>, <em>size=(18.5</em>, <em>10)</em>, <em>save=False</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#NR_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.NR_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the Network response alongside the streams used -highlights detection times in the network response.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> &#8211; Stream to plot</li>
+<li><strong>NR_stream</strong> &#8211; Stream for the network response</li>
+<li><strong>detections</strong> (<em>list of datetime objects</em>) &#8211; List of the detections</li>
+<li><strong>false_detections</strong> (<em>list of datetime</em>) &#8211; Either False (default) or list of false detectiontimes</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Size of figure, default is (18.5,10)</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save figure or plot to screen, if not False, must be stringof save path.</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String for the title of the plot, set to False</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.SVD_plot">
+<code class="descclassname">plotting.</code><code class="descname">SVD_plot</code><span class="sig-paren">(</span><em>SVStreams</em>, <em>SValues</em>, <em>stachans</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#SVD_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.SVD_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the singular vectors from the clustering routines, oneplot for each stachan</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>SVStreams</strong> (<em>list of :class:Obspy.Stream</em>) &#8211; See clustering.SVD_2_Stream - will assume these areordered by power, e.g. first singular vector in the first stream</li>
+<li><strong>SValues</strong> (<em>list of float</em>) &#8211; List of the singular values corresponding to the SVStreams</li>
+<li><strong>stachans</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station.channel</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting._spec_trace">
+<code class="descclassname">plotting.</code><code class="descname">_spec_trace</code><span class="sig-paren">(</span><em>trace</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc=u'k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>2.5)</em>, <em>axes=None</em>, <em>title=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#_spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting._spec_trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot a trace over that traces spectrogram.
+Uses obspys spectrogram routine.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; trace to plot</li>
+<li><strong>cmap</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; [Matplotlib colormap](<a class="reference external" href="http://matplotlib.org/examples/color/">http://matplotlib.org/examples/color/</a>
+colormaps_reference.html)</li>
+<li><strong>wlen</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Window length for fft in seconds</li>
+<li><strong>log</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Use a log frequency scale</li>
+<li><strong>trc</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Color for the trace.</li>
+<li><strong>tralpha</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Opacity level for the seismogram, from transparent (0.0) to opaque (1.0).</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Plot size, tuple of floats, inches</li>
+<li><strong>axes</strong> (<em>matplotlib axes</em>) &#8211; Axes to plot onto, defaults to self generating.</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Title for the plot.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.chunk_data">
+<code class="descclassname">plotting.</code><code class="descname">chunk_data</code><span class="sig-paren">(</span><em>tr</em>, <em>samp_rate</em>, <em>state=u'mean'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#chunk_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.chunk_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to downsample data for plotting by computing the maximum of data within chunks, useful for plotting waveforms or cccsums, large datasets that would otherwise exceed the complexity allowed, and overflow.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to be chunked</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>state</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either &#8216;Min&#8217;, &#8216;Max&#8217;, &#8216;Mean&#8217; or &#8216;Maxabs&#8217; to return one of these for the chunks. Maxabs will return the largest (positive or negative) for that chunk.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">class:</th><td class="field-body">obspy.Trace</td>
+</tr>
+</tbody>
+</table>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.cumulative_detections">
+<code class="descclassname">plotting.</code><code class="descname">cumulative_detections</code><span class="sig-paren">(</span><em>dates</em>, <em>template_names</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#cumulative_detections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.cumulative_detections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple plotting function to take a list of datetime objects and plot a cumulative detections list.  Can take dates as a list of lists and will plot each list seperately, e.g. if you have dates from more than one template it will overlay them in different colours.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dates</strong> (<em>list of lists of datetime.datetime</em>) &#8211; Must be a list of lists of datetime.datetime objects</li>
+<li><strong>template_names</strong> (<em>list of strings</em>) &#8211; List of the template names in order of the dates</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save figure or show to screen, optional</li>
+<li><strong>savefile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String to save to, optional</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.detection_multiplot">
+<code class="descclassname">plotting.</code><code class="descname">detection_multiplot</code><span class="sig-paren">(</span><em>stream</em>, <em>template</em>, <em>times</em>, <em>streamcolour=u'k'</em>, <em>templatecolour=u'r'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#detection_multiplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.detection_multiplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot the stream of data that has been detected in, withthe template on top of it timed according to a list of given times, justa pretty way to show a detection!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<em>obspy.Stream</em>) &#8211; Stream of data to be plotted as the base (black)</li>
+<li><strong>template</strong> (<em>obspy.Stream</em>) &#8211; Template to be plotted on top of the base stream (red)</li>
+<li><strong>times</strong> (<em>list of datetime.datetime</em>) &#8211; list of times of detections in the order of the channels in
+template.</li>
+<li><strong>streamcolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String of matplotlib colour types for the stream</li>
+<li><strong>templatecolour</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Colour to plot the template in.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.freq_mag">
+<code class="descclassname">plotting.</code><code class="descname">freq_mag</code><span class="sig-paren">(</span><em>magnitudes</em>, <em>completeness</em>, <em>max_mag</em>, <em>binsize=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#freq_mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.freq_mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make a frequency-magnitude histogram and cumulative density plot.  This can compute a b-value, but not a completeness at the moment.  B-value is computed by linear fitting to section of curve between completeness and max_mag.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>magnitudes</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; list of float of magnitudes</li>
+<li><strong>completeness</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Level to compute the b-value above</li>
+<li><strong>max_mag</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum magnitude to try and fit a b-value to</li>
+<li><strong>binsize</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Width of histogram bins, defaults to 0.2</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.interev_mag">
+<code class="descclassname">plotting.</code><code class="descname">interev_mag</code><span class="sig-paren">(</span><em>times</em>, <em>mags</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#interev_mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.interev_mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot interevent times against magnitude for given times
+and magnitudes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>times</strong> (<em>list of datetime</em>) &#8211; list of the detection times, must be sorted the same as mags</li>
+<li><strong>mags</strong> (<em>list of float</em>) &#8211; list of magnitudes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.interev_mag_sfiles">
+<code class="descclassname">plotting.</code><code class="descname">interev_mag_sfiles</code><span class="sig-paren">(</span><em>sfiles</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#interev_mag_sfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.interev_mag_sfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot interevent-time versus magnitude for series of events.
+<strong>thin</strong> Wrapper for interev_mag.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sfiles</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of sfiles to read from</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.multi_event_singlechan">
+<code class="descclassname">plotting.</code><code class="descname">multi_event_singlechan</code><span class="sig-paren">(</span><em>streams</em>, <em>catalog</em>, <em>clip=10.0</em>, <em>pre_pick=2.0</em>, <em>freqmin=False</em>, <em>freqmax=False</em>, <em>realign=False</em>, <em>cut=(-3.0</em>, <em>5.0)</em>, <em>PWS=False</em>, <em>title=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#multi_event_singlechan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.multi_event_singlechan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot data from a single channel at a single station for multiple events - data will be alligned by their pick-time given in the picks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>streams</strong> (<em>list of :class:obspy.stream</em>) &#8211; List of the streams to use, can contain more traces than you plan on plotting</li>
+<li><strong>catalog</strong> (<em>obspy.core.event.Catalog</em>) &#8211; Catalog of events, one for each trace, with a single pick</li>
+<li><strong>clip</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to plot, defaults to 10.0</li>
+<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length in seconds to extract and plot before the pick, defaults to 2.0</li>
+<li><strong>freqmin</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>freqmax</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>realign</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To compute best alignement based on correlation or not.</li>
+<li><strong>cut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; tuple of start and end times for cut in seconds from the pick</li>
+<li><strong>PWS</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; compute Phase Weighted Stack, if False, will compute linear stack.</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Plot title.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Alligned and cut traces, and new picks</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.peaks_plot">
+<code class="descclassname">plotting.</code><code class="descname">peaks_plot</code><span class="sig-paren">(</span><em>data, starttime, samp_rate, save=False, peaks=[(0, 0)], savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#peaks_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.peaks_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple utility code to plot the correlation peaks to check that the peak finding routine is running correctly, used in debugging for the EQcorrscan module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<em>numpy.array</em>) &#8211; Numpy array of the data within which peaks have been found</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Start time for the data</li>
+<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate of data in Hz</li>
+<li><strong>save</strong> (<em>Boolean, optional</em>) &#8211; Save figure or plot to screen (False)</li>
+<li><strong>peaks</strong> (<em>list of Tuple, optional</em>) &#8211; List of peak locations and amplitudes (loc, amp)</li>
+<li><strong>savefile</strong> (<em>String, optional</em>) &#8211; Path to save to, only used if save=True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.plot_synth_real">
+<code class="descclassname">plotting.</code><code class="descname">plot_synth_real</code><span class="sig-paren">(</span><em>real_template</em>, <em>synthetic</em>, <em>channels=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#plot_synth_real"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.plot_synth_real" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot multiple channels of data for real data and synthetic.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>real_template</strong> (<em>obspy.Stream</em>) &#8211; Stream of the real template</li>
+<li><strong>synthetic</strong> (<em>obspy.Stream</em>) &#8211; Stream of synthetic template</li>
+<li><strong>channels</strong> (<em>list of str</em>) &#8211; List of tuples of (station, channel) to plot, default isFalse, which plots all.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.pretty_template_plot">
+<code class="descclassname">plotting.</code><code class="descname">pretty_template_plot</code><span class="sig-paren">(</span><em>template</em>, <em>size=(18.5</em>, <em>10.5)</em>, <em>save=False</em>, <em>title=False</em>, <em>background=False</em>, <em>picks=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#pretty_template_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.pretty_template_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to make a pretty plot of a single template, designed to work better than the default obspy plotting routine for short data lengths.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>template</strong> &#8211; Template stream to plot</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; tuple of plot size</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False will plot to screen, if True will save</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; String if set will be the plot title</li>
+<li><strong>background</strong> &#8211; Stream to plot the template within.</li>
+<li><strong>picks</strong> (<em>list of obspy.core.event.pick</em>) &#8211; List of obspy type picks.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.spec_trace">
+<code class="descclassname">plotting.</code><code class="descname">spec_trace</code><span class="sig-paren">(</span><em>traces</em>, <em>cmap=None</em>, <em>wlen=0.4</em>, <em>log=False</em>, <em>trc=u'k'</em>, <em>tralpha=0.9</em>, <em>size=(10</em>, <em>13)</em>, <em>Fig=None</em>, <em>title=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#spec_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.spec_trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for _spec_trace, take a stream or list of traces and plots the trace with the spectra beneath it - this just does the overseeing to work out if it needs to add subplots or not.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>traces</strong> (<em>either stream or list of traces</em>) &#8211; Traces to be plotted, can be a single obspy.Stream, or a list of obspy.Trace</li>
+<li><strong>cmap</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; [Matplotlib colormap](<a class="reference external" href="http://matplotlib.org/examples/color/">http://matplotlib.org/examples/color/</a> colormaps_reference.html)</li>
+<li><strong>wlen</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Window length for fft in seconds</li>
+<li><strong>log</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Use a log frequency scale</li>
+<li><strong>trc</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Color for the trace.</li>
+<li><strong>tralpha</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Opacity level for the seismogram, from transparent (0.0) to opaque (1.0).</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; Plot size, tuple of floats, inches</li>
+<li><strong>axes</strong> &#8211; Figure to plot onto, defaults to self generating.</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; To show plot or not, if false, will return Fig.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.threeD_gridplot">
+<code class="descclassname">plotting.</code><code class="descname">threeD_gridplot</code><span class="sig-paren">(</span><em>nodes</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#threeD_gridplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.threeD_gridplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot in 3D a series of grid points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; List of tuples of the form (lat, long, depth)</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True will save without plotting to screen, if False (default) will plot to screen but not save</li>
+<li><strong>savefile</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; required if save=True, path to save figure to.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.threeD_seismplot">
+<code class="descclassname">plotting.</code><code class="descname">threeD_seismplot</code><span class="sig-paren">(</span><em>stations</em>, <em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#threeD_seismplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.threeD_seismplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to plot seismicity and stations in a 3D, movable, zoomable space using matplotlibs Axes3D package.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stations</strong> (<em>list of tuple</em>) &#8211; list of one tuple per station of (lat, long, elevation), with up positive.</li>
+<li><strong>nodes</strong> (<em>list of tuple</em>) &#8211; list of one tuple per event of (lat, long, depth) with down positive.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="plotting.triple_plot">
+<code class="descclassname">plotting.</code><code class="descname">triple_plot</code><span class="sig-paren">(</span><em>cccsum</em>, <em>cccsum_hist</em>, <em>trace</em>, <em>threshold</em>, <em>save=False</em>, <em>savefile=u''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/plotting.html#triple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plotting.triple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to make a triple plot with a day-long seismogram, day-long correlation sum trace and histogram of the correlation sum to show normality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cccsum</strong> (<em>numpy.ndarray</em>) &#8211; Array of the cross-channel cross-correlation sum</li>
+<li><strong>cccsum_hist</strong> (<em>numpy.ndarray</em>) &#8211; cccsum for histogram plotting, can be the same as cccsum but included if cccsum is just an envelope.</li>
+<li><strong>trace</strong> (<em>obspy.Trace</em>) &#8211; A sample trace from the same time as cccsum</li>
+<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Detection threshold within cccsum</li>
+<li><strong>save</strong> (<em>bool, optional</em>) &#8211; If True will svae and not plot to screen, vice-versa if False</li>
+<li><strong>savefile</strong> (<em>str, optional</em>) &#8211; Path to save figure to, only required if save=True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.findpeaks.html" class="btn btn-neutral float-right" title="5.3. findpeaks">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="utils.clustering.html" class="btn btn-neutral" title="5.1. clustering"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
