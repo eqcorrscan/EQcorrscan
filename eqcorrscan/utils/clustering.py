@@ -396,7 +396,7 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr2(tr.data,stack.data)[0][0] > thresh:
+        if normxcorr2(tr.data, stack.data)[0][0] > thresh:
             group2.append(tr)
             output[i] = True
         else:
