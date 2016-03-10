@@ -1,0 +1,16 @@
+ 2013  920 2037 49.0 L -43.345 170.324  6.7  VUW  7 0.1 0.9LVUW                1
+ GAP=109        0.33       0.9     1.4  3.6 -0.6110E-01 -0.5594E-01  0.4066E+00E
+ ACTION:NEW 15- 7-15  2:54 OP:CALU STATUS:               ID:20130920203750     I
+ 2013-09-20-2037-09.DFDPC_024_00                                               6
+ STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU VELO AIN AR TRES W  DIS CAZ7
+ GCSZ SZ IP       2037 50.07                             149   -0.0510    3   3 
+ GCSZ EZ  IAML    2037 51.09         1.0  0.3                             3   3 
+ GCSZ S2 IS   3   2037 51.11                             149    0.25 2    3   3 
+ WHYM SZ IP   1   2037 51.39                             118    0.10 7   11 160 
+ WHYM SZ  IAML    2037 53.72         9.4 0.26                            11 160 
+ WZ02 EN IS       2037 52.98                             112   -0.1910   12  92 
+ FRAN S2 IS   2   2037 53.33                             111   -0.08 5   13 254 
+ FRAN S1  IAML    2037 55.10         0.0 0.14                            13 254 
+ LABE SZ IP   1   2037 53.18                             106   -0.12 7   23 196 
+ LABE SZ  IAML    2037 57.42         1.9 0.25                            23 196 
+                                                                                

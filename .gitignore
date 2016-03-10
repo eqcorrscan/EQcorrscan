@@ -15,3 +15,9 @@ matcherr_*
 build
 dist
 EQcorrscan.egg-info
+*.xml
+.cache
+.eggs
+.tox
+eqcorrscan/tutorials/*.jpg
+pytest_runner*

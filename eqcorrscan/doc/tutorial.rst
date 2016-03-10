@@ -3,7 +3,7 @@ EQcorrscan tutorial
 Welcome to EQcorrscan - this package is designed to compute earthquake detections
 using a paralleled matched-filter network cross-correlation routine.  The inner
 loop of this package is the cross-correlation of templates of seismic data
-with day-ong seismic data.  This inner function is the openCV.match_template
+with day-long seismic data.  This inner function is the openCV.match_template
 function - this appears to be a well optimized cross-correlation function, and
 is written in c++.  Cross-correlations are computed in the frequency domain
 for large datasets, for which a day of seismic data usually qualifies.
@@ -28,55 +28,25 @@ functions:
 :lag_calc:
         Routines for calculating optimal lag-times for events detected
         by the match-filter routine, these lags can then be used to define new picks
-        for high accuracy relocations.
+        for high accuracy relocations. *Under-development*
 
 The Utils sub-module contains useful, but small functions.  These functions are
 rarely cpu intensive, but perform vital operations, such as reading *Seisan* s-files,
 finding peaks in noisy data, converting a seisan database to hypoDD formatted
 files and computing cross-correlations between detections for hypoDD (a double
-difference reloaction software), calculating magnitudes, clustering detections,
+difference relocation software), calculating magnitudes, clustering detections,
 stacking detections, making pretty plots, and processing seismic data in the
 same way repeatedly using *Obspy*'s functionality.
 
+What follows is a (hopefully) expanding set of tutorials that should take you
+through some of the key functionality of the EQcorrscan package.
 
-Matched-filter detection
-----------------------
+.. toctree::
+  :numbered:
+  :titlesonly:
 
-In this section we will discuss generating a pair of templates from two
-*Seisan* s-files before using these templates to scan for similar earthquakes
-within a day of data.  This small example does not truly exploit the parallel
-operations within this package however, so you would be encouraged to think
-about where parallel operations occur (*hint, the code can run one template
-per cpu*), and why there are --instance and--splits flags in the other
-scripts in the guthub repository (*hint, if you have heaps of memory and cpus
- you can do some brute force day parallelisation!*).
-
-The following script is included in the top-level directory alongside the full-scripts
-used by the author to generate a 6.5 year long catalogue of low-frequency earthquakes
-for the central Southern Alps of New Zealand.
-
-This tutorial script highlights the ability of the match-filter method in detecting
-earthquakes of near-repeating nature.  The dataset is a day of data taken from the
-New Zealand national database, and the Southern Alp Microearthquake Borehole Array
-(SAMBA) network (Boese et al. 2012).  This day was found to contain a swarm of
-earthquakes, as published by Boese et al. (2014), the s-files provided are two
-of these events.
-
-The main processing flow is outlined in the figure below, note the main speedups
-in this process are achieved by running multiple templates at once, however this
-increases memory usage.  If memory is a problem there are flags (mem_issue) in the
-match_filter.py source that can be turned on - the codes will then write temporary
-files, which is slower, but can allow for more data crunching at once, your trade-off,
-your call.
-
-.. image:: processing_flow.png
-     :width: 600px
-     :align: center
-     :alt: processing_flow.png
-
-References
-----------
-* CM Boese, J Townend, E Smith, T Stern (2012). `Microseismicity and stress in the vicinity of the Alpine Fault, central Southern Alps, New Zealand <http://onlinelibrary.wiley.com/doi/10.1029/2011JB008460/full>`_, *JGR*, doi:10.1029/2011JB008460
-* CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). `Background and delayed-triggered swarms in the central Southern Alps, South Island, New Zealand <http://onlinelibrary.wiley.com/doi/10.1002/2013GC005171/full>`_, *G-cubed*, doi:10.1002/2013GC005171
-
-.. literalinclude:: ../tutorial.py
+  tutorials/template-creation.rst
+  tutorials/matched-filter.rst
+  tutorials/lag-calc.rst
+  tutorials/mag-calc.rst
+  tutorials/clustering.rst
