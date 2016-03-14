@@ -1,3 +1,6 @@
+## 0.1.2
+* Add handling for empty location information in sfiles.
+
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;
 * Convert Quakeml depths from m to km;
