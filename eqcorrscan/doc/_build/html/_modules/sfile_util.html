@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>sfile_util &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>sfile_util &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -161,6 +161,20 @@
 
 <span class="sd">We have not implimented any handling of focal mechanism solutions between</span>
 <span class="sd">the two formats.</span>
+
+<span class="sd">.. note:: Pick time-residauls are handled in event.origins[0].arrivals, with \</span>
+<span class="sd">    the arrival.pick_id linking the arrival (which contain calculated \</span>
+<span class="sd">    information) with the pick.resource_id (where the pick contains only \</span>
+<span class="sd">    physical measured information).</span>
+
+<span class="sd">:Example:</span>
+
+<span class="sd">&gt;&gt;&gt; from eqcorrscan.utils import sfile_util</span>
+<span class="sd">&gt;&gt;&gt; event = sfile_util.readpicks(&#39;eqcorrscan/tests/test_data/REA/TEST_/&#39; +</span>
+<span class="sd">...                              &#39;01-0411-15L.S201309&#39;)</span>
+<span class="sd">&gt;&gt;&gt; pick = event.picks[0]</span>
+<span class="sd">&gt;&gt;&gt; time_rms = [arrival.time_residual for arrival in event.origins[0].arrivals</span>
+<span class="sd">...             if arrival.pick_id == pick.resource_id]</span>
 
 <span class="sd">Code written by Calum John Chamberlain and Chet Hopp both of</span>
 <span class="sd">Victoria University of Wellington, 2015 &amp; 2016.</span>
@@ -595,6 +609,11 @@
             <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">23</span><span class="p">:</span><span class="mi">30</span><span class="p">])</span>
             <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">31</span><span class="p">:</span><span class="mi">38</span><span class="p">])</span>
             <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">39</span><span class="p">:</span><span class="mi">43</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># The origin &#39;requires&#39; a lat &amp; long</span>
+            <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">)</span>
+            <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">)</span>
+            <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">)</span>
         <span class="c"># new_event.depth_ind = topline[44]</span>
         <span class="c"># new_event.loc_ind = topline[45]</span>
         <span class="n">new_event</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">CreationInfo</span><span class="p">(</span><span class="n">agency_id</span><span class="o">=</span><span class="n">topline</span><span class="p">[</span><span class="mi">45</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span><span class="o">.</span>
@@ -603,8 +622,9 @@
                        <span class="n">topline</span><span class="p">[</span><span class="mi">49</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
         <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ksta</span><span class="p">)</span>
         <span class="c"># new_event.origins[0].nsta??? = _int_conv(topline[49:51])</span>
-        <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time_errors</span><span class="p">[</span><span class="s">&#39;Time_Residual_RMS&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">52</span><span class="p">:</span><span class="mi">55</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">52</span><span class="p">:</span><span class="mi">55</span><span class="p">])</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
+            <span class="n">new_event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time_errors</span><span class="p">[</span><span class="s">&#39;Time_Residual_RMS&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">_float_conv</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">52</span><span class="p">:</span><span class="mi">55</span><span class="p">])</span>
         <span class="c"># Read in magnitudes if they are there.</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">topline</span><span class="p">[</span><span class="mi">59</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">new_event</span><span class="o">.</span><span class="n">magnitudes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Magnitude</span><span class="p">())</span>
@@ -1086,15 +1106,24 @@
     <span class="n">sfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outdir</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">sfilename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
     <span class="c"># Write the header info.</span>
     <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span><span class="p">:</span>
-        <span class="n">lat</span> <span class="o">=</span> <span class="s">&#39;{0:.3f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="mi">999</span><span class="p">]:</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="s">&#39;{0:.3f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">lat</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span><span class="p">:</span>
-        <span class="n">lon</span> <span class="o">=</span> <span class="s">&#39;{0:.3f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="mi">999</span><span class="p">]:</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="s">&#39;{0:.3f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">lon</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span><span class="p">:</span>
-        <span class="n">depth</span> <span class="o">=</span> <span class="s">&#39;{0:.1f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;NaN&#39;</span><span class="p">),</span> <span class="mi">999</span><span class="p">]:</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="s">&#39;{0:.1f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">depth</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
     <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">creation_info</span><span class="p">:</span>
@@ -1774,7 +1803,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

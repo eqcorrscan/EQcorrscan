@@ -24,6 +24,15 @@ the two formats.
     information) with the pick.resource_id (where the pick contains only \
     physical measured information).
 
+:Example:
+
+>>> from eqcorrscan.utils import sfile_util
+>>> event = sfile_util.readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
+...                              '01-0411-15L.S201309')
+>>> pick = event.picks[0]
+>>> time_rms = [arrival.time_residual for arrival in event.origins[0].arrivals
+...             if arrival.pick_id == pick.resource_id]
+
 Code written by Calum John Chamberlain and Chet Hopp both of
 Victoria University of Wellington, 2015 & 2016.
 
