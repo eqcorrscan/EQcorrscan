@@ -1,5 +1,9 @@
 ## 0.1.2
 * Add handling for empty location information in sfiles.
+* Added project setup script which creates a useful directory structure and copies
+a default match-filter script to the directory.
+* Add archive reader helper for default script, and parameter classes and
+definitions for default script.
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;
