@@ -9,14 +9,23 @@ Licence: LGPL
 """
 
 class ParameterSetup:
-    def __init__(self, master):
+    def __init__(self, master, par=False):
+        """
+        GUI for selecting default parameters - will write parameters to file \
+        of users choosing.
+
+        :type master: Tk
+        :param master: Tkinter window
+        :type par: EQcorrscanParameters
+        :param par: Default parameters to start-up with.
+        """
         from tkinter import Label, Button, Entry, DoubleVar, StringVar, IntVar
         from tkinter import BooleanVar
         from eqcorrscan.utils import parameters
         from obspy import UTCDateTime
 
         # Set the default par, only if they don't already exist.
-        if 'par' not in locals():
+        if not par:
             par = parameters.EQcorrscanParameters([''], 2, 10, 4, 20, 2,
                                                   '1900-01-01', '2300-01-01',
                                                   '', 'seishub', 4, False, '',
@@ -97,7 +106,7 @@ class ParameterSetup:
             trigger_interval.set(par.trigger_interval)
         # Set some grid parameters
         nrows = 25
-        ncolumns = 2
+        ncolumns = 3
         self.master = master
         master.title("EQcorrscan parameter setup")
         self.label = Label(master, text="EQcorrscan parameter setup")
@@ -179,7 +188,7 @@ class ParameterSetup:
         self.arc_type_label = Label(master, text="Archive type")
         self.arc_type_label.grid(column=0, row=10)
         arc_type = StringVar()
-        arc_type.set(par.enddate)
+        arc_type.set(par.arc_type)
         self.arc_type_box = Entry(master, bd=2, textvariable=arc_type)
         self.arc_type_box.grid(column=1, row=10)
         arc_type.trace("w", update_arc_type)
@@ -254,7 +263,7 @@ class ParameterSetup:
 
         # End of user editable section, now we have read/write buttons
         self.read_button = Button(master, text="Read parameters",
-                                  command=self.read_par)
+                                  command=lambda: self.read_par(master))
         self.read_button.grid(column=0, row=nrows-2)
 
         self.write_button = Button(master, text="Write parameters",
@@ -265,7 +274,7 @@ class ParameterSetup:
                                    command=master.destroy)
         self.close_button.grid(column=0, columnspan=ncolumns, row=nrows-1)
 
-    def read_par(self):
+    def read_par(self, master):
         """
         Function to open a file-browser and to select a parameter file.
         """
@@ -274,7 +283,9 @@ class ParameterSetup:
         parameter_filename = askopenfilename()
         try:
             par = parameters.read_parameters(parameter_filename)
-            return par
+            # Start a new instance
+            master.destroy()
+            run(par=par)
         except IOError:
             print 'No such file'
             return
@@ -287,11 +298,12 @@ class ParameterSetup:
         from tkFileDialog import asksaveasfilename
         parameter_filename = asksaveasfilename()
         print(parameter_filename)
-        par.write(parameter_filename)
+        # Set overwrite to true because asksavefilename already checks this.
+        par.write(parameter_filename, overwrite=True)
 
 
-def run():
+def run(par=False):
     from tkinter import Tk
     root = Tk()
-    parameter_gui = ParameterSetup(root)
+    parameter_gui = ParameterSetup(root, par)
     root.mainloop()
