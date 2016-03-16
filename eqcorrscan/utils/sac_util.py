@@ -101,6 +101,10 @@ def sactoevent(st, debug=0):
         event.origins[0].latitude = np.nan
         event.origins[0].longitude = np.nan
         event.origins[0].depth = np.nan
+    except AttributeError:
+        event.origins[0].latitude = np.nan
+        event.origins[0].longitude = np.nan
+        event.origins[0].depth = np.nan
 
     # Add in the picks
     for tr in st:
