@@ -248,6 +248,19 @@ class TestSfileMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile(test_sfile))
         os.remove(test_sfile)
 
+    def test_read_empty_header(self):
+        """
+        Function to check a known issue, empty header info S-file: Bug found \
+        by Dominic Evanzia.
+        """
+        import os
+        import numpy as np
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        test_event = readpicks(os.path.join(testing_path, 'Sfile_no_header'))
+        self.assertTrue(np.isnan(test_event.origins[0].latitude))
+        self.assertTrue(np.isnan(test_event.origins[0].longitude))
+        self.assertTrue(np.isnan(test_event.origins[0].depth))
 
 def basic_test_event():
     """
