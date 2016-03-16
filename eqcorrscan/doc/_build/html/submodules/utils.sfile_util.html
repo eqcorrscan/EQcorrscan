@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5.8. sfile_util &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>5.8. sfile_util &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="5. Utils" href="../utils.html"/>
         <link rel="next" title="5.9. stacking" href="utils.stacking.html"/>
         <link rel="prev" title="5.7. seismo_logs" href="utils.seismo_logs.html"/> 
@@ -74,7 +74,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../updates.html#version-0-1-1">2.1. Version 0.1.1</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
@@ -159,6 +162,26 @@ classes for version 0.1.0.  Users should transition to using obspy.core.event
 classes as these have more support and functionality.</p>
 <p>We have not implimented any handling of focal mechanism solutions between
 the two formats.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Pick time-residauls are handled in event.origins[0].arrivals, with     the arrival.pick_id linking the arrival (which contain calculated     information) with the pick.resource_id (where the pick contains only     physical measured information).</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">sfile_util</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">event</span> <span class="o">=</span> <span class="n">sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="s">&#39;eqcorrscan/tests/test_data/REA/TEST_/&#39;</span> <span class="o">+</span>
+<span class="gp">... </span>                             <span class="s">&#39;01-0411-15L.S201309&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pick</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">time_rms</span> <span class="o">=</span> <span class="p">[</span><span class="n">arrival</span><span class="o">.</span><span class="n">time_residual</span> <span class="k">for</span> <span class="n">arrival</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span>
+<span class="gp">... </span>            <span class="k">if</span> <span class="n">arrival</span><span class="o">.</span><span class="n">pick_id</span> <span class="o">==</span> <span class="n">pick</span><span class="o">.</span><span class="n">resource_id</span><span class="p">]</span>
+</pre></div>
+</div>
 <p>Code written by Calum John Chamberlain and Chet Hopp both of
 Victoria University of Wellington, 2015 &amp; 2016.</p>
 <p>Copyright 2015, 2016 the authors.</p>
@@ -177,7 +200,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div></blockquote>
 <dl class="class">
 <dt id="sfile_util.EVENTINFO">
-<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x3cf88d0&gt;</em>, <em>loc_mod_ind=u' '</em>, <em>dist_ind=u' '</em>, <em>ev_id=u' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=u' '</em>, <em>loc_ind=u' '</em>, <em>agency=u' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=u' '</em>, <em>Mag_1_agency=u' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=u' '</em>, <em>Mag_2_agency=u' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=u' '</em>, <em>Mag_3_agency=u' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">EVENTINFO</code><span class="sig-paren">(</span><em>time=&lt;mock.Mock object at 0x42bfc90&gt;</em>, <em>loc_mod_ind=u' '</em>, <em>dist_ind=u' '</em>, <em>ev_id=u' '</em>, <em>latitude=nan</em>, <em>longitude=nan</em>, <em>depth=nan</em>, <em>depth_ind=u' '</em>, <em>loc_ind=u' '</em>, <em>agency=u' '</em>, <em>nsta=0</em>, <em>t_RMS=nan</em>, <em>Mag_1=nan</em>, <em>Mag_1_type=u' '</em>, <em>Mag_1_agency=u' '</em>, <em>Mag_2=nan</em>, <em>Mag_2_type=u' '</em>, <em>Mag_2_agency=u' '</em>, <em>Mag_3=nan</em>, <em>Mag_3_type=u' '</em>, <em>Mag_3_agency=u' '</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#EVENTINFO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.EVENTINFO" title="Permalink to this definition">¶</a></dt>
 <dd><p>Header information for seisan events, again all fields can be left blank     for a default empty header.  The print function for header will print     important information, but not as seen in an S-file.</p>
 <p>For more information on parameters see the seisan manual.</p>
 <dl class="docutils">
@@ -295,7 +318,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 
 <dl class="class">
 <dt id="sfile_util.PICK">
-<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=u' '</em>, <em>channel=u' '</em>, <em>impulsivity=u' '</em>, <em>phase=u' '</em>, <em>weight=999</em>, <em>polarity=u' '</em>, <em>time=&lt;mock.Mock object at 0x3cf88d0&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">sfile_util.</code><code class="descname">PICK</code><span class="sig-paren">(</span><em>station=u' '</em>, <em>channel=u' '</em>, <em>impulsivity=u' '</em>, <em>phase=u' '</em>, <em>weight=999</em>, <em>polarity=u' '</em>, <em>time=&lt;mock.Mock object at 0x42bfc90&gt;</em>, <em>coda=999</em>, <em>amplitude=nan</em>, <em>peri=nan</em>, <em>azimuth=nan</em>, <em>velocity=nan</em>, <em>AIN=999</em>, <em>SNR=nan</em>, <em>azimuthres=999</em>, <em>timeres=nan</em>, <em>finalweight=999</em>, <em>distance=nan</em>, <em>CAZ=999</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sfile_util.html#PICK"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sfile_util.PICK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pick information for seisan implimentation, note all fields can be left    blank to obtain a default pick: picks have a print function which will    print them as they would be seen in an S-file.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -705,7 +728,7 @@ Returns an obspy.core.event.Catalog type: note this changed for version     0.1.
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
