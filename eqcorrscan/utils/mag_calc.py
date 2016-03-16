@@ -33,23 +33,25 @@ import numpy as np
 import warnings
 
 
-def dist_calc(loc1, loc2):
+def dist_calc(event1, event2):
     """
     Function to calcualte the distance in km between two points, uses the \
     flat Earth approximation.
 
-    :type loc1: tuple
-    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
-    :type loc2: tuple
-    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
+    :type event1: obspy.Event()
+    :param loc1: Event class
+    :type loc2: obspy.Event()
+    :param loc2: Event class
 
     :returns: float, Distance between points.
     """
     R = 6371.009  # Radius of the Earth in km
-    dlat = np.radians(abs(loc1[0] - loc2[0]))
-    dlong = np.radians(abs(loc1[1] - loc2[1]))
-    ddepth = abs(loc1[2] - loc2[2])
-    mean_lat = np.radians((loc1[0] + loc2[0]) / 2)
+    ev1_o = event1.preferred_origin()
+    ev2_o = event2.preferred_origin()
+    dlat = np.radians(abs(ev1_o.latitude - ev2_o.latitude))
+    dlong = np.radians(abs(ev1_o.longitude - ev2_o.longitude))
+    ddepth = abs((ev1_o.depth // 1000) - (ev2_o.depth // 1000))
+    mean_lat = np.radians((ev1_o.latitude + ev2_o.latitude) / 2)
     dist = R * np.sqrt(dlat ** 2 + (np.cos(mean_lat) * dlong) ** 2)
     dist = np.sqrt(dist ** 2 + ddepth ** 2)
     return dist
