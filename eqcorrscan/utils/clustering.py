@@ -290,7 +290,8 @@ def SVD(stream_list):
 
     .. note:: We recommend that you align the data before computing the \
         SVD, e.g., the P-arrival on all templates for the same channel \
-        should appear at the same time in the trace.
+        should appear at the same time in the trace.  See the \
+        stacking.align_traces function for a way to do this.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
@@ -389,6 +390,11 @@ def corr_cluster(trace_list, thresh=0.9):
     :param thresh: Correlation threshold between -1-1
 
     :returns: np.ndarray of bool
+
+    .. note:: We recommend that you align the data before computing the \
+        clutsering, e.g., the P-arrival on all templates for the same channel \
+        should appear at the same time in the trace.  See the \
+        stacking.align_traces function for a way to do this
     """
     from eqcorrscan.utils import stacking
     from obspy import Stream
