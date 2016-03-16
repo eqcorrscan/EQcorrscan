@@ -67,7 +67,7 @@ def distance_matrix(stream_list, cores=1):
     Function to compute the distance matrix for all templates - will give \
     distance as 1-abs(cccoh), e.g. a well correlated pair of templates will \
     have small distances, and an equally well correlated reverse image will \
-    have the same distance as apositively correlated image - this is an issue.
+    have the same distance as a positively correlated image - this is an issue.
 
     :type stream_list: List of obspy.Streams
     :param stream_list: List of the streams to compute the distance matrix for
@@ -174,7 +174,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
         plt.show()
     # Get the indices of the groups
     if debug >= 1:
-        print 'Clustering'
+        print('Clustering')
     indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
     group_ids = list(set(indices))  # Unique list of group ids
     if debug >= 1:
@@ -311,7 +311,7 @@ def SVD(stream_list):
                                               channel=stachan.split('.')[1])) != 0]
         # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
         chan_mat = np.asarray(chan_mat)
-        print chan_mat.shape
+        print(chan_mat.shape)
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
         SVectors.append(V)
@@ -573,6 +573,85 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         return
 
 
+def dist_mat_km(catalog):
+    """
+    Function to compute the distance matrix for all events in a catalog - \
+    will give physical distance in kilometers.
+
+    :type catalog: List of obspy.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+
+    :returns: ndarray - distance matrix
+    """
+    from eqcorrscan.utils.mag_calc import dist_calc
+
+    # Initialize square matrix
+    dist_mat = np.array([np.array([0.0] * len(catalog))] *
+                        len(catalog))
+    # Calculate distance vector for each event
+    for i, master in enumerate(catalog):
+        mast_list = [dist_calc(master, catalog[j])
+                     for j in range(len(catalog))]
+        # Sort the list into the dist_mat structure
+        for j in range(i, len(catalog)):
+            dist_mat[i, j] = mast_list[j]
+    # Reshape the distance matrix
+    for i in range(1, len(catalog)):
+        for j in range(i):
+            dist_mat[i, j] = dist_mat.T[i, j]
+    return dist_mat
+
+
+def space_cluster(catalog, d_thresh, show=True):
+    """
+    Function to cluster a catalog by distance only - will compute the\
+    matrix of physical distances between events and utilize the\
+    scipy.clusering.hierarchy module to perform the clustering.
+
+    :type catalog: obspy.Catalog
+    :param catalog: Catalog of events to clustered
+    :type d_thresh: float
+    :param d_thresh: Maximum inter-event distance threshold
+
+    :returns: list of Catalog classes
+    """
+    from scipy.spatial.distance import squareform
+    from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+    import matplotlib.pyplot as plt
+    from obspy import Catalog
+
+    # Compute the distance matrix and linkage
+    dist_mat = dist_mat_km(catalog)
+    dist_vec = squareform(dist_mat)
+    Z = linkage(dist_vec, method='average')
+
+    # Cluster the linkage using the given threshold as the cutoff
+    indices = fcluster(Z, t=d_thresh, criterion='distance')
+    group_ids = list(set(indices))
+    indices = [(indices[i], i) for i in xrange(len(indices))]
+
+    if show:
+        # Plot the dendrogram...if it's not way too huge
+        dendrogram(Z, color_threshold=d_thresh,
+                   distance_sort='ascending')
+        plt.show()
+
+    # Sort by group id
+    indices.sort(key=lambda tup: tup[0])
+    groups = []
+    for group_id in group_ids:
+        group = Catalog()
+        for ind in indices:
+            if ind[0] == group_id:
+                group.append(catalog[ind[1]])
+            elif ind[0] > group_id:
+                # Because we have sorted by group id, when the index is greater
+                # than the group_id we can break the inner loop.
+                # Patch applied by CJC 05/11/2015
+                groups.append(group)
+                break
+    return groups
+
 def space_time_cluster(detections, t_thresh, d_thresh):
     """
     Function to cluster detections in space and time, use to seperate \
@@ -590,16 +669,24 @@ def space_time_cluster(detections, t_thresh, d_thresh):
             clustered detections
     """
     from eqcorrscan.utils.mag_calc import dist_calc
+
     # Ensure they are sorted by time first, not that we need it.
     detections.sort(key=lambda tup: tup[1])
     clustered = []
     clustered_indices = []
     for master_ind, master in enumerate(detections):
         keep = False
+        mast_o = master.preferred_origin()
+        mast_time = mast_o.time
+        mast_loc = (mast_o.latitude, mast_o.longitude, mast_o.depth // 1000)
         for slave in detections:
-            if not master == slave and\
-               abs((master[1] - slave[1]).total_seconds()) <= t_thresh and \
-               dist_calc(master[0], slave[0]) <= d_thresh:
+            slave_o = slave.preferred_origin()
+            slave_time = slave_o.time
+            slave_loc = (slave_o.latitude, slave_o.longitude,
+                         slave_o.depth // 1000)
+            if not master.resource_id == slave.resource_id and\
+               abs((mast_time - slave_time).total_seconds()) <= t_thresh and\
+               dist_calc(mast_loc, slave_loc) <= d_thresh:
                 # If the slave events is close in time and space to the master
                 # keep it and break out of the loop.
                 keep = True
