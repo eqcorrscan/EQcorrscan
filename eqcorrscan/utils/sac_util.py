@@ -53,6 +53,11 @@ def sactoevent(st, debug=0):
     .. note:: This functionality is not supported for obspy versions below \
         1.0.0 as references times are not read in by SACIO, which are needed \
         for defining pick times.
+
+    .. note:: Takes the event origin information from the first trace in the \
+        stream - to ensure this works as you expect, please populate the \
+        evla, evlo, evdp and nzyear, nzjday, nzhour, nzmin, nzsec, nzmsec \
+        for all traces with the same values.
     """
     from obspy.core.event import Event, Origin, WaveformStreamID, Pick
     from obspy import Stream, UTCDateTime
