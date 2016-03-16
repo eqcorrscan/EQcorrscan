@@ -590,8 +590,15 @@ def dist_mat_km(catalog):
                         len(catalog))
     # Calculate distance vector for each event
     for i, master in enumerate(catalog):
-        mast_list = [dist_calc(master, catalog[j])
-                     for j in range(len(catalog))]
+        mast_list = []
+        master_tup = (master.preferred_origin().latitude,
+                      master.preferred_origin().longitude,
+                      master.preferred_origin().depth // 1000)
+        for slave in catalog:
+            slave_tup = (slave.preferred_origin().latitude,
+                         slave.preferred_origin().longitude,
+                         slave.preferred_origin().depth // 1000)
+            mast_list.append(dist_calc(master_tup, slave_tup))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
             dist_mat[i, j] = mast_list[j]
