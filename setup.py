@@ -51,6 +51,7 @@ long_description = "EQcorrscan: matched-filter earthquake detection and " +\
 
 # Get a list of all the scripts not to be installed
 scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
+scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
 setup(
     name='EQcorrscan',
