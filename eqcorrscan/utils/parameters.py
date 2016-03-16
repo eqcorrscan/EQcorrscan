@@ -75,7 +75,8 @@ class EQcorrscanParameters:
                               ])
         return print_str
 
-    def write(self, outfile='../parameters/EQcorrscan_parameters.txt'):
+    def write(self, outfile='../parameters/EQcorrscan_parameters.txt',
+              overwrite=False):
         """
         Function to write the parameters to a file - will be user readable.
 
@@ -92,7 +93,7 @@ class EQcorrscanParameters:
                             'does not exist, check path.'])
             raise IOError(msg)
         # Make sure that the user wants to overwrite the old parameters
-        if os.path.isfile(outfile):
+        if os.path.isfile(outfile) and not overwrite:
             responding = True
             while responding:
                 print(' '.join([outfile, 'exists.  Overwrite? [y/N]']))
