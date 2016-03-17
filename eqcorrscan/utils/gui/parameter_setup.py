@@ -20,7 +20,7 @@ class ParameterSetup:
         :param par: Default parameters to start-up with.
         """
         from tkinter import Label, Button, Entry, DoubleVar, StringVar, IntVar
-        from tkinter import BooleanVar
+        from tkinter import BooleanVar, OptionMenu
         from eqcorrscan.utils import parameters
         from obspy import UTCDateTime
 
@@ -120,6 +120,9 @@ class ParameterSetup:
         self.t_names_box = Entry(master, bd=2, textvariable=template_names)
         self.t_names_box.grid(column=1, row=1)
         template_names.trace("w", update_template_names)
+        self.t_names_lookup = Button(master, text="Lookup",
+                                     command=lambda: self.get_template_names(par))
+        self.t_names_lookup.grid(column=2, row=1)
 
         self.lowcut_label = Label(master, text="Lowcut (Hz)", anchor='e')
         self.lowcut_label.grid(column=0, row=2)
@@ -184,12 +187,16 @@ class ParameterSetup:
         self.archive_box = Entry(master, bd=2, textvariable=archive)
         self.archive_box.grid(column=1, row=9)
         archive.trace("w", update_archive)
+        self.archive_lookup = Button(master, text="Lookup",
+                                     command=lambda: self.get_archive(par))
+        self.archive_lookup.grid(column=2, row=9)
 
         self.arc_type_label = Label(master, text="Archive type")
         self.arc_type_label.grid(column=0, row=10)
         arc_type = StringVar()
         arc_type.set(par.arc_type)
-        self.arc_type_box = Entry(master, bd=2, textvariable=arc_type)
+        self.arc_type_box = OptionMenu(master, arc_type,
+                                       "seishub", "fdsn", "day_vols")
         self.arc_type_box.grid(column=1, row=10)
         arc_type.trace("w", update_arc_type)
 
@@ -263,7 +270,7 @@ class ParameterSetup:
 
         # End of user editable section, now we have read/write buttons
         self.read_button = Button(master, text="Read parameters",
-                                  command=lambda: self.read_par(master))
+                                  command=self.read_par)
         self.read_button.grid(column=0, row=nrows-2)
 
         self.write_button = Button(master, text="Write parameters",
@@ -274,7 +281,7 @@ class ParameterSetup:
                                    command=master.destroy)
         self.close_button.grid(column=0, columnspan=ncolumns, row=nrows-1)
 
-    def read_par(self, master):
+    def read_par(self):
         """
         Function to open a file-browser and to select a parameter file.
         """
@@ -284,7 +291,7 @@ class ParameterSetup:
         try:
             par = parameters.read_parameters(parameter_filename)
             # Start a new instance
-            master.destroy()
+            self.master.destroy()
             run(par=par)
         except IOError:
             print 'No such file'
@@ -300,6 +307,19 @@ class ParameterSetup:
         print(parameter_filename)
         # Set overwrite to true because asksavefilename already checks this.
         par.write(parameter_filename, overwrite=True)
+
+    def get_template_names(self, par):
+        from tkFileDialog import askopenfilenames
+        par.template_names = askopenfilenames()
+        self.master.destroy()
+        run(par=par)
+
+    def get_archive(self, par):
+        from tkFileDialog import askdirectory
+        par.archive = askdirectory()
+        par.arc_type = 'day_vols'
+        self.master.destroy()
+        run(par=par)
 
 
 def run(par=False):
