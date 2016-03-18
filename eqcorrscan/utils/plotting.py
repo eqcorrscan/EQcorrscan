@@ -523,6 +523,30 @@ def interev_mag(times, mags):
     plt.show()
 
 
+def obspy_3d_plot(inventory, catalog):
+    r"""Wrapper on threeD_seismplot() to plot obspy.Inventory and
+    obspy.Catalog classes in three dimensions.
+
+    :type inventory: obspy.Inventory
+    :param inventory: Obspy inventory class containing station metadata
+    :type catalog: obspy.Catalog
+    :param catalog: Obspy catalog class containing event metadata
+    """
+    from eqcorrscan.utils.plotting import threeD_seismplot
+    nodes = [(ev.preferred_origin().latitude,
+              ev.preferred_origin().longitude,
+              ev.preferred_origin().depth / 1000) for ev in catalog]
+    # Will plot borehole instruments at elevation - depth if provided
+    all_stas = []
+    for net in inventory:
+        stations = [(sta.latitude, sta.longitude,
+                     sta.elevation / 1000 - sta.channels[0].depth / 1000)
+                    for sta in net]
+        all_stas += stations
+    threeD_seismplot(all_stas, nodes)
+    return
+
+
 def threeD_seismplot(stations, nodes):
     r"""Function to plot seismicity and stations in a 3D, movable, zoomable \
     space using matplotlibs Axes3D package.
