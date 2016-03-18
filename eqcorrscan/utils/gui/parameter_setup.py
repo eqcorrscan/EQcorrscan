@@ -286,9 +286,6 @@ class ParameterSetup:
                                    command=lambda: self.write_par(par))
         self.write_button.grid(column=1, row=nrows-2, sticky='w,e')
 
-        # self.close_button = Button(master, text="Quit",
-        #                            command=master.destroy)
-        # self.close_button.grid(column=0, columnspan=ncolumns, row=nrows-1)
 
     def read_par(self, master):
         """
@@ -310,11 +307,17 @@ class ParameterSetup:
             return
 
     def write_par(self, par):
+        import tkMessageBox
         from eqcorrscan.utils import parameters
         from tkFileDialog import asksaveasfilename
         parameter_filename = asksaveasfilename()
         print(parameter_filename)
         # Set overwrite to true because asksavefilename already checks this.
+        if len(par.template_names) == 1 and len(par.template_names[0]) == 0:
+            msg = ("Warning: You have not selected any templates, " +
+                   "you must add them before running matched-filter.")
+            tkMessageBox.showwarning(title="No templates",
+                                     message=msg)
         par.write(parameter_filename, overwrite=True)
 
     def get_template_names(self, par):
