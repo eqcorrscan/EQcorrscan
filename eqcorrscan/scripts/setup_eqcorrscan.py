@@ -30,7 +30,8 @@ def create_directory_structure(top_dir):
         _setup_print(msg)
         os.makedirs(top_dir)
 
-    for directory in ['parameters', 'templates', 'detections', 'working']:
+    for directory in ['parameters', 'templates', 'detections', 'working',
+                      'plot']:
         os.makedirs(os.path.join(top_dir, directory))
         msg = ' '.join(['Made', directory, 'directory'])
         _setup_print(msg)
@@ -80,4 +81,4 @@ if __name__ == '__main__':
     top_dir = sys.argv[1]
     create_directory_structure(top_dir)
     default_matched_filter(top_dir)
-    parameter_setup()
+    parameter_setup.run()
