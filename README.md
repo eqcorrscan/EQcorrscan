@@ -29,6 +29,16 @@ separately using (on Linux):
 
 Or, for Mac users, this is available on Macports or other similar package managers.
 
+For those who want to un the GUIs (in very early development) you will need to
+install tk, on Windows and OSX this is usually pre-installed, on Linux you
+may need to run:
+
+```apt-get install python-tk```
+
+You will also need **Qt** and **PyQT** > 4.4.  Installation for these can be
+a bit of a dog, you will need to google around - hopefully I can have better
+instructions here soon.
+
 ## Updates
 
 If you want to be kept informed about releases, bug-tracking and enhancements
