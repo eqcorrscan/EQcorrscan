@@ -23,6 +23,11 @@ class EQcorrscanParameters:
         self.highcut = float(highcut)
         self.filt_order = int(filt_order)
         self.samp_rate = float(samp_rate)
+        if self.samp_rate <= 2 * self.highcut:
+            msg = ('Highcut must be less than the Nyquist, setting to ' +
+                   str(self.samp_rate / 2.0) - 1)
+            raise IOError(msg)
+            self.highcut = (self.samp_rate / 2.0) - 1
         self.debug = int(debug)
         self.startdate = UTCDateTime(startdate)
         self.enddate = UTCDateTime(enddate)
