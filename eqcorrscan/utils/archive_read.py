@@ -57,6 +57,7 @@ def read_data(archive, arc_type, day, stachans):
         speed you will need to re-write this.
     """
     import obspy
+    from obspy.clients.fdsn.header import FDSNException
     if arc_type.lower() == 'seishub':
         if int(obspy.__version__.split('.')[0]) >= 1:
             from obspy.clients.seishub import Client
@@ -73,24 +74,40 @@ def read_data(archive, arc_type, day, stachans):
     st = []
     available_stations = _check_available_data(archive, arc_type, day)
     for station in stachans:
-        if station not in available_stations:
-            msg = ' '.join([station[0], station[1], 'is not available for',
+        if len(station[1]) == 2:
+            # Cope with two char channel naming in seisan
+            station_map = (station[0], station[1][0] + '*' + station[1][1])
+            available_stations_map = [(sta[0], sta[1][0] + '*' + sta[1][-1])
+                                      for sta in available_stations]
+        else:
+            station_map = station
+            available_stations_map = available_stations
+        if station_map not in available_stations_map:
+            msg = ' '.join([station[0], station_map[1], 'is not available for',
                             day.strftime('%d/%m/%Y')])
             warnings.warn(msg)
             continue
         if arc_type.lower() in ['seishub', 'fdsn']:
             client = Client(archive)
-            st += client.waveform.getWaveform('*', station[0], '*',
-                                              station[1], UTCDateTime(day),
-                                              UTCDateTime(day) + 86400)
+            try:
+                st += client.get_waveforms(network='*', station=station_map[0],
+                                           location='*',
+                                           channel=station_map[1],
+                                           starttime=UTCDateTime(day),
+                                           endtime=UTCDateTime(day) + 86400)
+            except FDSNException:
+                warnings.warn('No data on server despite station being ' +
+                              'available...')
+                continue
         elif arc_type.lower() == 'day_vols':
             wavfiles = _get_station_file(os.path.join(archive,
                                                       day.strftime('Y%Y' +
                                                                    os.sep +
                                                                    'R%j.01')),
-                                         station[0], station[1])
+                                         station_map[0], station_map[1])
             for wavfile in wavfiles:
                 st += read(wavfile)
+    st = obspy.Stream(st)
     return st
 
 
@@ -148,4 +165,34 @@ def _check_available_data(archive, arc_type, day):
     :param day: Date to retrieve data for
 
     :returns: list of tuples of (station, channel) as available.
+
+    ..note:: Currently the seishub options are untested.
     """
+    from obspy import read, UTCDateTime
+    available_stations = []
+    if arc_type.lower() == 'day_vols':
+        wavefiles = glob.glob(os.path.join(archive, day.strftime('%Y'),
+                                           day.strftime('%j.01'), '*'))
+        for wavefile in wavefiles:
+            header = read(wavfile, headonly=True)
+            available_stations.append((header[0].stats.station,
+                                       header[0].stats.channel))
+    elif arc_type.lower() == 'seishub':
+        from obspy.clients.seishub import Client
+        client = Client(archive)
+        st = client.get_previews(starttime=UTCDateTime(day),
+                                 endtime=UTCDateTime(day) + 86400)
+        for tr in st:
+            available_stations.append((tr.stats.station, tr.stats.channel))
+    elif arc_type.lower() == 'fdsn':
+        from obspy.clients.fdsn import Client
+        client = Client(archive)
+        inventory = client.get_stations(starttime=UTCDateTime(day),
+                                        endtime=UTCDateTime(day) + 86400,
+                                        level='channel')
+        for network in inventory:
+            for station in network:
+                for channel in station:
+                    available_stations.append((station.code,
+                                               channel.code))
+    return available_stations
