@@ -14,6 +14,7 @@ class EQcorrscanParameters:
         Standard parameter options.
         """
         from obspy import UTCDateTime
+        import warnings
         if isinstance(template_names, list):
             self.template_names = [str(template_name)
                                    for template_name in template_names]
@@ -25,8 +26,8 @@ class EQcorrscanParameters:
         self.samp_rate = float(samp_rate)
         if self.samp_rate <= 2 * self.highcut:
             msg = ('Highcut must be less than the Nyquist, setting to ' +
-                   str(self.samp_rate / 2.0) - 1)
-            raise IOError(msg)
+                   str((self.samp_rate / 2.0) - 1))
+            warnings.warn(msg)
             self.highcut = (self.samp_rate / 2.0) - 1
         self.debug = int(debug)
         self.startdate = UTCDateTime(startdate)

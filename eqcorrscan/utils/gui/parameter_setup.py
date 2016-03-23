@@ -21,12 +21,14 @@ class ParameterSetup:
         """
         from tkinter import Label, Button, Entry, DoubleVar, StringVar, IntVar
         from tkinter import BooleanVar, OptionMenu, Checkbutton
+        import tkMessageBox
         from eqcorrscan.utils import parameters
         from obspy import UTCDateTime
+        import warnings
 
         # Set the default par, only if they don't already exist.
         if not par:
-            par = parameters.EQcorrscanParameters([''], 2, 10, 4, 20, 2,
+            par = parameters.EQcorrscanParameters([''], 2, 10, 4, 100, 2,
                                                   '1900-01-01', '2300-01-01',
                                                   '', 'seishub', 4, False, '',
                                                   'jpg', False, 8, 'MAD', 6)
@@ -43,6 +45,12 @@ class ParameterSetup:
 
         def update_highcut(*args):
             par.highcut = highcut.get()
+            if par.highcut >= 0.5 * par.samp_rate:
+                msg = ('Highcut must be less than the Nyquist, setting to ' +
+                       str((par.samp_rate / 2.0) - 1))
+                tkMessageBox.showwarning(title="Nyquist error",
+                                         message=msg)
+                par.highcut = (par.samp_rate / 2.0) - 1
             highcut.set(par.highcut)
 
         def update_filt_order(*args):
@@ -51,6 +59,13 @@ class ParameterSetup:
 
         def update_samp_rate(*args):
             par.samp_rate = samp_rate.get()
+            if par.highcut >= 0.5 * par.samp_rate:
+                msg = ('Highcut must be less than the Nyquist, setting to ' +
+                       str((par.samp_rate / 2.0) - 1))
+                tkMessageBox.showwarning(title="Nyquist error",
+                                         message=msg)
+                par.highcut = (par.samp_rate / 2.0) - 1
+                highcut.set(par.highcut)
             samp_rate.set(par.samp_rate)
 
         def update_debug(*args):
