@@ -61,6 +61,10 @@ class DETECTION(object):
             will be the raw threshold value related to the cccsum.
         :type typeofdet: str
         :param typeofdet: Type of detection, STA, corr, bright
+
+    .. todo:: Use Obspy.core.event class instead of detection. Requires \
+        internal knowledge of template parameters - which needs changes to \
+        how templates are stored.
     """
 
     detectioncount = 0
@@ -461,7 +465,14 @@ def match_filter(template_names, template_list, st, threshold,
         if not (tr.stats.station, tr.stats.channel) in template_stachan:
             stream.remove(tr)
     # Also pad out templates to have all channels
-    for template in templates:
+    for template, template_name in zip(templates, template_names):
+        if len(template) == 0:
+            msg = ('No channels matching in continuous data for ' +
+                   'template' + template_name)
+            warnings.warn(msg)
+            templates.remove(template)
+            template_names.remove(template_name)
+            continue
         for stachan in template_stachan:
             if not template.select(station=stachan[0], channel=stachan[1]):
                 nulltrace = Trace()
