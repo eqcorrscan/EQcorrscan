@@ -18,6 +18,7 @@ def run():
     import os
     import datetime as dt
     from obspy import read
+    import copy
 
     # Read parameter files
     par = read_parameters('../parameters/VSP_parameters.txt')
@@ -63,9 +64,13 @@ def run():
                                     filt_order=par.filt_order,
                                     samp_rate=par.samp_rate, debug=par.debug,
                                     starttime=UTCDateTime(date.date))
+        # Will remove templates if they are deemed useless
+        # (eg no matching channels)
+        template_names_short_copy = copy.deepcopy(template_names_short)
+        templates_copy = copy.deepcopy(templates)
         # Now conduct matched-filter
-        detections = match_filter(template_names=template_names_short,
-                                  template_list=templates,
+        detections = match_filter(template_names=template_names_short_copy,
+                                  template_list=templates_copy,
                                   st=st, threshold=par.threshold,
                                   threshold_type=par.threshold_type,
                                   trig_int=par.trigger_interval,
