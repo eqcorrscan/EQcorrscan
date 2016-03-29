@@ -33,25 +33,21 @@ class TestSfileMethods(unittest.TestCase):
                       ('NCEDC', '72572665'),
                       ('USGS', 'nc72597260')]
         for event_info in event_list:
-            client = Client(event_info[0])
-            if event_info[0] == 'GEONET':
-                try:
+            try:
+                client = Client(event_info[0])
+                if event_info[0] == 'GEONET':
                     data_stream = client.\
                         _download('http://quakeml.geonet.org.nz/' +
                                   'quakeml/1.2/' + event_info[1])
                     data_stream.seek(0, 0)
                     event = read_events(data_stream, format="quakeml")
                     data_stream.close()
-                except FDSNException:
-                    warnings.warn('FDSNException')
-                    continue
-            else:
-                try:
+                else:
                     event = client.get_events(eventid=event_info[1],
                                               includearrivals=True)
-                except FDSNException:
-                    warnings.warn('FDSNException')
-                    continue
+            except FDSNException:
+                warnings.warn('FDSNException')
+                continue
             test_Sfile_name = sfile_util.eventtosfile(event, 'test', 'L', '.',
                                                       'null', overwrite=True)
             os.remove(test_Sfile_name)
