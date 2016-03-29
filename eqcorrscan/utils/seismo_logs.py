@@ -51,7 +51,11 @@ def rt_time_log(logfile, startdate):
     """
     import datetime as dt
     import re
-    f = open(logfile, 'r')
+    import os
+    if os.name == 'nt':
+        f = open(logfile, 'rb')
+    else:
+        f = open(logfile, 'r')
     phase_err = []
     lock = []
     # Extract all the phase errors
@@ -74,6 +78,7 @@ def rt_time_log(logfile, startdate):
                         999))
     if len(phase_err) == 0 and len(lock) > 0:
         phase_err = lock
+    f.close()
     return phase_err
 
 
@@ -88,7 +93,11 @@ def rt_location_log(logfile):
     :returns: list of tuples of lat, lon, elevation in decimal degrees and km.
     """
     import re
-    f = open(logfile, 'r')
+    import os
+    if os.name == 'nt':
+        f = open(logfile, 'rb')
+    else:
+        f = open(logfile, 'r')
     locations = []
     for line in f:
         match = re.search("GPS: POSITION:", line)
