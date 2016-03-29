@@ -1,5 +1,5 @@
 # EQcorrscan
-## A python package to conduct match-filter earthquake detections.
+## A python package to conduct matched-filter earthquake detections.
 
 [![Join the chat at https://gitter.im/calum-chamberlain/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/calum-chamberlain/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
@@ -9,7 +9,8 @@
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), we currently do not support
-Windows systems, but plan to in the future.  Installation for Linux and OS X should be as simple as:
+Windows systems, but plan to in the future (check the appveyor status, when it passes we
+might be good to go!).  Installation for Linux and OS X should be as simple as:
 
 ```pip install EQcorrscan```
 
@@ -70,7 +71,7 @@ used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes
 
 Also within this package are:
 * Clustering routines for seismic data;
-* Peak finding algorithm (basic);
+* Peak finding algorithm (basic, but appropriate for noisy data);
 * Automatic amplitude picker for local magnitude scale;
 * [Seisan](http://seisan.info/) S-file integration for database management and routine earthquake location;
 * Obspy.core.event integration, which opens up lots of other functions (Seishub, hypoDDpy etc.);
@@ -86,7 +87,7 @@ how to do the core matched-filter detection.
 # Licence
 
 This package is written by Calum Chamberlain and Chet Hopp of Victoria University of Wellington, and
-is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015, 2016.
+is distributed under the LGPL GNU License, Copyright Calum Chamberlain and Chet Hopp 2015, 2016.
 
 
 # Contributing
