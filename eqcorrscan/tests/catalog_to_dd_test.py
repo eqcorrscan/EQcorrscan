@@ -173,6 +173,7 @@ class TestCatalogMethods(unittest.TestCase):
                 self.assertEqual(header.origins[0].time_errors.
                                  Time_Residual_RMS,
                                  float(output_event_info[-2]))
+        f.close()
         os.remove('event.dat')
 
     def test_write_catalog(self):
@@ -259,6 +260,7 @@ class TestCatalogMethods(unittest.TestCase):
             else:
                 event_links.append(line)
         self.assertTrue(os.path.isfile('phase.dat'))
+        dt_file_out.close()
         os.remove('phase.dat')
         os.remove('dt.ct')
         if os.path.isfile('dt.ct2'):
