@@ -22,7 +22,8 @@ platform:
 install:
   # Install miniconda using a powershell script.
   - "powershell ./misc/appveyor/install-miniconda.ps1"
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;"
+  #"%PATH%"
   # Check that we have the expected version and architecture for Python
   - "%CMD_IN_ENV% python --version"
   # Install the build and runtime dependencies of the project.
@@ -39,7 +40,7 @@ install:
   # list package versions
   - "conda list"
 
-# Not a .NET project, we build SunPy in the install step instead
+# Not a .NET project
 build: false
 
 test_script:
