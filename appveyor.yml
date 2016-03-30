@@ -22,10 +22,10 @@ platform:
 
 install:
   # Install miniconda using a powershell script.
+  - "%TRIM_CMD%"
   - "ECHO %PATH%"
   - "powershell ./misc/appveyor/install-miniconda.ps1"
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - "%TRIM_CMD%"
   # Check that we have the expected version and architecture for Python
   - "%CMD_IN_ENV% python --version"
   # Install the build and runtime dependencies of the project.
