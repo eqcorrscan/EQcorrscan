@@ -245,7 +245,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 
 
 def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
-                        t_length=3.0, max_amp=10.0, debug=0):
+                        t_length=3.0, max_amp=10.0, max_lag=20, debug=0):
     """
     Function to generate a synthetic dataset to be used for testing.
     This will generate both templates and data to scan through.
@@ -268,6 +268,8 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     :param t_length: Length of templates in seconds.
     :type max_amp: float
     :param max_amp: Maximum signal-to-noise ratio of seeds.
+    :type max_lag: Maximum lag time in seconds (randomised).
+    :param max_lag: float
     :type debug: int
     :param debug: Debug level, bigger the number, the more plotting/output.
 
@@ -280,7 +282,7 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     from obspy import UTCDateTime
 
     # Generate random arrival times
-    t_times = np.abs(np.random.random([nsta, ntemplates])) * t_length
+    t_times = np.abs(np.random.random([nsta, ntemplates])) * max_lag
     # Generate random node locations - these do not matter as they are only
     # used for naming
     lats = np.random.random(ntemplates) * 90.0
