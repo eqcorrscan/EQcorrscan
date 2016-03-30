@@ -22,14 +22,15 @@ platform:
 install:
   # Install miniconda using a powershell script.
   - "powershell ./misc/appveyor/install-miniconda.ps1"
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;"
-  #"%PATH%"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   # Check that we have the expected version and architecture for Python
   - "%CMD_IN_ENV% python --version"
   # Install the build and runtime dependencies of the project.
   - "conda update -q --yes conda"
   # Create a conda environment using the astropy bonus packages
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
+  # Cut the path down
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts"
   - "activate test"
   # Install default dependencies
   - "conda install -q --yes pip numpy scipy matplotlib=1.3.1 lxml sqlalchemy flake8 mock nose gdal decorator requests basemap pytest pyflakes=0.9.0"
