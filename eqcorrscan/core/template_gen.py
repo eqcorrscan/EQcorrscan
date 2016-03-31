@@ -10,26 +10,17 @@ repeating events.
     of processed data rather than re-processing the same day of data \
     for each template.
 
-Code written by Calum John Chamberlain & Chet Hopp of \
-Victoria University of Wellington, 2015.
+.. note:: All functions use obspy filters, which are implemented such that \
+    if both highcut and lowcut are set a bandpass filter will be used, \
+    but of highcut is not set (None) then a highpass filter will be used and \
+    if only the highcut is set then a lowpass filter will be used.
 
-Copyright 2015, 2016 Calum Chamberlain, Chet Hopp.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -756,8 +747,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
 
 
 def extract_from_stack(stack, template, length, pre_pick, pre_pad,
-                       Z_include=False, pre_processed=True, samp_rate=False,
-                       lowcut=False, highcut=False, filt_order=False):
+                       Z_include=False, pre_processed=True, samp_rate=None,
+                       lowcut=None, highcut=None, filt_order=3):
     r"""Function to extract a new template from a stack of previous detections.
     Requires the stack, the template used to make the detections for the \
     stack, and we need to know if the stack has been pre-processed.
