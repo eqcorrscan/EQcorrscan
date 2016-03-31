@@ -4,29 +4,17 @@ Victoria University Wellington.  These functions are designed to do the basic \
 processing of the data using obspy modules (which also rely on scipy and \
 numpy).
 
-Copyright 2015 Calum Chamberlain
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from obspy.signal.filter import bandpass
 
 
 def _check_daylong(tr):
@@ -98,7 +86,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     else:
         tracein = False
     # Add sanity check for filter
-    if highcut >= 0.5 * samp_rate:
+    if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     if parallel:
         if not num_cores:
@@ -168,7 +156,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         tracein = True
     else:
         tracein = False
-    if highcut >= 0.5 * samp_rate:
+    if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     if parallel:
         if not num_cores:
@@ -210,11 +198,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :type tr: obspy.Trace
     :param tr: Trace to process
     :type highcut: float
-    :param highcut: High cut in Hz for bandpass
+    :param highcut: High cut in Hz, if set to None and lowcut is set, will \
+        use a highpass filter.
     :type lowcut: float
-    :type lowcut: Low cut in Hz for bandpass
+    :type lowcut: Low cut in Hz, if set to None and highcut is set, will use \
+        a lowpass filter.
     :type filt_order: int
-    :param filt_order: Corners for bandpass
+    :param filt_order: Number of corners for filter.
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
     :type debug: int
@@ -229,8 +219,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     .. note:: Will convert channel names to two charecters long.
     """
     import warnings
+    from obspy.signal.filter import bandpass, lowpass, highpass
     # Add sanity check
-    if highcut >= 0.5*samp_rate:
+    if highcut and highcut >= 0.5*samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     # Define the start-time
     if starttime:
@@ -291,10 +282,23 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
-    if debug >= 2:
-        print('Bandpassing')
-    tr.data = bandpass(tr.data, lowcut, highcut,
-                       tr.stats.sampling_rate, filt_order, True)
+    if highcut and lowcut:
+        if debug >= 2:
+            print('Bandpassing')
+        tr.data = bandpass(tr.data, lowcut, highcut,
+                           tr.stats.sampling_rate, filt_order, True)
+    elif highcut:
+        if debug >= 2:
+            print('Lowpassing')
+        tr.data = lowpass(tr.data, highcut, tr.stats.sampling_rate,
+                          filt_order, True)
+    elif lowcut:
+        if debug >= 2:
+            print('Highpassing')
+        tr.data = highpass(tr.data, lowcut, tr.stats.sampling_rate,
+                           filt_order, True)
+    else:
+        warnings.warn('No filters applied')
 
     # Account for two letter channel names in s-files and therefore templates
     tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
