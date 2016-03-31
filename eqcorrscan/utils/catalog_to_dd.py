@@ -19,23 +19,12 @@ Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 
-Copyright 2015 Calum Chamberlain
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from eqcorrscan.utils import sfile_util
 import os

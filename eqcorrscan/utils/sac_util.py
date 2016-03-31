@@ -2,26 +2,16 @@
 Part of the EQcorrscan package: tools to convert SAC headers to obspy event \
 objects.
 
-Authors: Calum Chamberlain and the EQcorrscan developers.
-
 .. note:: This functionality is not supported for obspy versions below \
     1.0.0 as references times are not read in by SACIO, which are needed \
     for defining pick times.
 
-This file is part of EQcorrscan.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -83,7 +73,7 @@ def sactoevent(st, debug=0):
     # Now we need to create an event!
     event = Event()
     event.origins.append(Origin())
-    print(st[0].stats.sac.keys())
+    # print(st[0].stats.sac.keys())
     event.origins[0].time = UTCDateTime(year=st[0].stats.sac.nzyear,
                                         julday=st[0].stats.sac.nzjday,
                                         hour=st[0].stats.sac.nzhour,
