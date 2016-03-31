@@ -659,8 +659,6 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False,
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
-    else:
-        return
     if not background:
         mintime = template.sort(['starttime'])[0].stats.starttime
     else:
@@ -670,6 +668,11 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False,
     lines = []
     labels = []
     for i, tr in enumerate(template):
+        # Cope with a singe channel template case.
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         delay = tr.stats.starttime - mintime
         y = tr.data
         x = np.linspace(0, (len(y)-1) * tr.stats.delta, len(y))
@@ -681,24 +684,24 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False,
             by = btr.data
             bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
             bx += bdelay
-            axes[i].plot(bx, by, 'k', linewidth=1)
-            template_line, = axes[i].plot(x, y, 'r', linewidth=1.1,
-                                          label='Template')
+            axis.plot(bx, by, 'k', linewidth=1)
+            template_line, = axis.plot(x, y, 'r', linewidth=1.1,
+                                       label='Template')
             if i == 0:
                 lines.append(template_line)
                 labels.append('Template')
             lengths.append(max(bx[-1], x[-1]))
         else:
-            template_line, = axes[i].plot(x, y, 'k', linewidth=1.1,
-                                          label='Template')
+            template_line, = axis.plot(x, y, 'k', linewidth=1.1,
+                                       label='Template')
             if i == 0:
                 lines.append(template_line)
                 labels.append('Template')
             lengths.append(x[-1])
         # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
-        axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+        axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
                            rotation=0, horizontalalignment='right')
-        axes[i].yaxis.set_ticks([])
+        axis.yaxis.set_ticks([])
         # Plot the picks if they are given
         if picks:
             tr_picks = [pick for pick in picks if
@@ -718,23 +721,31 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False,
                     label = 'Unknown pick'
                 pdelay = pick.time - mintime
                 # print(pdelay)
-                line = axes[i].axvline(x=pdelay, color=pcolor, linewidth=2,
-                                       linestyle='--', label=label)
+                line = axis.axvline(x=pdelay, color=pcolor, linewidth=2,
+                                    linestyle='--', label=label)
                 if label not in labels:
                     lines.append(line)
                     labels.append(label)
                 # axes[i].plot([pdelay, pdelay], [])
-    axes[i].set_xlim([0, max(lengths)])
-    axes[len(template)-1].set_xlabel('Time (s) from start of template')
+    axis.set_xlim([0, max(lengths)])
+    if len(template) > 1:
+        axis = axes[len(template) - 1]
+    else:
+        axis = axes
+    axis.set_xlabel('Time (s) from start of template')
     plt.figlegend(lines, labels, 'upper right')
     if title:
-        axes[0].set_title(title)
+        if len(template) > 1:
+            axes[0].set_title(title)
+        else:
+            axes.set_title(title)
     else:
         plt.subplots_adjust(top=0.98)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
+        plt.close()
     else:
         plt.savefig(savefile)
 
