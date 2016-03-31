@@ -1,5 +1,12 @@
 """
 Default parameters for eqcorrscan, only used if the quickstart options are run.
+
+:copyright:
+    Calum Chamberlain, Chet Hopp.
+
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 
 class EQcorrscanParameters:
