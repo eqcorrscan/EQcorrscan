@@ -9,26 +9,12 @@ http://www.cs.ubc.ca/research/deaton/remarks_ncc.html \
 The matched-filter routine described here was used a previous Matlab code for \
 the Chamberlain et al. 2014 G-cubed publication.
 
-Code written by Calum John Chamberlain of Victoria University of \
-Wellington, 2015.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-Copyright 2015, 2016 Calum Chamberlain
-
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
