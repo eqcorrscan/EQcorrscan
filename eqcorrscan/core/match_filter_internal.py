@@ -1,6 +1,13 @@
 """
-Functions written to be compilled by Cython as the inner loops of
-the match_filter.py routine
+Functions written to be compilled by Cython as the inner loops of \
+the match_filter.py routine.
+
+:copyright:
+    Calum Chamberlain, Chet Hopp.
+
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
