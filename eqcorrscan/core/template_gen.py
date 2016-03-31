@@ -642,6 +642,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
     stations = []
     channels = []
     st_stachans = []
+    if not swin in ['P', 'all', 'S']:
+        raise IOError('Phase type is not in [all, P, S]')
     for pick in picks:
         # Check to see that we are only taking the appropriate picks
         if swin == 'all':
@@ -658,8 +660,6 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[-1])
-        else:
-            raise IOError('Phase type is not in [all, P, S]')
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i, station in enumerate(stations):
