@@ -247,8 +247,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # if full_day:
     #     if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
     #         tr.data = tr.data[1:len(tr.data)]
-    print('I have '+str(len(tr.data))+' data points for '+tr.stats.station +
-          '.'+tr.stats.channel+' before processing')
+    if debug > 0:
+        print('I have '+str(len(tr.data))+' data points for ' +
+              tr.stats.station+'.'+tr.stats.channel+' before processing')
 
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0\

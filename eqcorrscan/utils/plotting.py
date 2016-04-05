@@ -623,7 +623,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
     return
 
 
-def pretty_template_plot(template, size=(18.5, 10.5), save=False,
+def pretty_template_plot(template, size=(10.5, 7.5), save=False,
                          savefile=None, title=False, background=False,
                          picks=False):
     r"""Function to make a pretty plot of a single template, designed to work \
