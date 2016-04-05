@@ -31,7 +31,8 @@ def _version_check():
 
 def sactoevent(st, debug=0):
     """
-    Function to convert SAC headers to obspy event class.
+    Function to convert SAC headers (picks only) to obspy event class. Picks \
+    are taken from header values a, t[0-9].
 
     :type st: obspy.core.Stream
     :param st: Stream of waveforms including SAC headers.
@@ -131,6 +132,10 @@ def sactoevent(st, debug=0):
                         tr.stats.station + '.' + tr.stats.channel
                     warnings.warn(msg)
                 continue
+            if debug > 0:
+                msg = 'Found pick in position ' + pick_key + ' for trace: ' +\
+                    tr.stats.station + '.' + tr.stats.channel
+                print(msg)
             waveform_id = WaveformStreamID(station_code=tr.stats.station,
                                            network_code=tr.stats.network,
                                            channel_code=tr.stats.channel)
@@ -138,5 +143,33 @@ def sactoevent(st, debug=0):
                         phase_hint=phase_hint,
                         time=pick_time)
             event.picks.append(pick)
+        # Also check header slots 'a' and 'ka'
+        try:
+            if tr.stats.sac['a'] == float_nan:
+                if debug > 1:
+                    msg = 'No pick in position ' + pick_key + \
+                        ' for trace: ' + tr.stats.station + '.' + \
+                        tr.stats.channel
+                    warnings.warn(msg)
+                continue
+            pick_time = reference_time + tr.stats.sac['a']
+            phase_hint = tr.stats.sac['ka'].split()[0]
+        except KeyError:
+            if debug > 1:
+                msg = 'No pick in position ' + pick_key + ' for trace: ' +\
+                    tr.stats.station + '.' + tr.stats.channel
+                warnings.warn(msg)
+            continue
+        if debug > 0:
+            msg = 'Found pick in position a for trace: ' +\
+                tr.stats.station + '.' + tr.stats.channel
+            print(msg)
+        waveform_id = WaveformStreamID(station_code=tr.stats.station,
+                                       network_code=tr.stats.network,
+                                       channel_code=tr.stats.channel)
+        pick = Pick(waveform_id=waveform_id,
+                    phase_hint=phase_hint,
+                    time=pick_time)
+        event.picks.append(pick)
 
     return event
