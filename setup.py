@@ -37,6 +37,7 @@ except ImportError:
 try:
     import cv2  # NOQA
 except:
+    print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
