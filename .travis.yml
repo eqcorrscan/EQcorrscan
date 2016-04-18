@@ -80,6 +80,7 @@ install:
   # install packages not available via conda
   # - pip install -r requirements.txt
   - pip install coveralls
+  - pip install pytest-cov
   - pip install geographiclib
   - pip install pypandoc
   # current pyimgur stable release has a py2.6 incompatibility
@@ -95,6 +96,10 @@ script:
   # - python eqcorrscan/tests/install_test.py
   # py.test
   python setup.py test
+
+after_success:
+  - coverage combine
+  - coveralls
 
 notifications:
     email: false
