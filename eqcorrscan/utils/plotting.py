@@ -1,23 +1,12 @@
 """
 Utility code for most of the plots used as part of the EQcorrscan package.
 
-Copyright 2015 Calum Chamberlain
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -25,6 +14,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
+
+
+def _check_save_args(save, savefile):
+    if save and not savefile:
+        raise IOError('save is set to True, but no savefile is given')
+    else:
+        return
 
 
 def chunk_data(tr, samp_rate, state='mean'):
@@ -78,7 +74,7 @@ def chunk_data(tr, samp_rate, state='mean'):
 
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
-                savefile=''):
+                savefile=None):
     r"""Main function to make a triple plot with a day-long seismogram, \
     day-long correlation sum trace and histogram of the correlation sum to \
     show normality.
@@ -93,10 +89,11 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :type threshold: float
     :param threshold: Detection threshold within cccsum
     :type save: bool, optional
-    :param save: If True will svae and not plot to screen, vice-versa if False
+    :param save: If True will save and not plot to screen, vice-versa if False
     :type savefile: str, optional
     :param savefile: Path to save figure to, only required if save=True
     """
+    _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
         print('cccsum is: ' +
               str(len(cccsum))+' trace is: '+str(len(trace.data)))
@@ -140,7 +137,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
-               savefile=''):
+               savefile=None):
     r"""Simple utility code to plot the correlation peaks to check that the \
     peak finding routine is running correctly, used in debugging for the \
     EQcorrscan module.
@@ -158,6 +155,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     :type savefile: String, optional
     :param savefile: Path to save to, only used if save=True
     """
+    _check_save_args(save, savefile)
     npts = len(data)
     t = np.arange(npts, dtype=np.float32) / (samp_rate * 3600)
     fig = plt.figure()
@@ -179,7 +177,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return
 
 
-def cumulative_detections(dates, template_names, save=False, savefile=''):
+def cumulative_detections(dates, template_names, save=False, savefile=None):
     r"""Simple plotting function to take a list of datetime objects and plot \
     a cumulative detections list.  Can take dates as a list of lists and will \
     plot each list seperately, e.g. if you have dates from more than one \
@@ -192,8 +190,9 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     :type save: bool
     :param save: Save figure or show to screen, optional
     :type savefile: str
-    :param savefile: String to save to, optional
+    :param savefile: String to save to, required is save=True
     """
+    _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
               'firebrick', 'purple', 'darkgoldenrod', 'gray']
@@ -234,7 +233,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=''):
     return
 
 
-def threeD_gridplot(nodes, save=False, savefile=''):
+def threeD_gridplot(nodes, save=False, savefile=None):
     r"""Function to plot in 3D a series of grid points.
 
     :type nodes: list of tuples
@@ -245,6 +244,7 @@ def threeD_gridplot(nodes, save=False, savefile=''):
     :type savefile: str
     :param savefile: required if save=True, path to save figure to.
     """
+    _check_save_args(save, savefile)
     lats = []
     longs = []
     depths = []
@@ -270,7 +270,8 @@ def threeD_gridplot(nodes, save=False, savefile=''):
 
 def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                            freqmin=False, freqmax=False, realign=False,
-                           cut=(-3.0, 5.0), PWS=False, title=False):
+                           cut=(-3.0, 5.0), PWS=False, title=False,
+                           save=False, savefile=None):
     r"""Function to plot data from a single channel at a single station for \
     multiple events - data will be alligned by their pick-time given in the \
     picks.
@@ -298,9 +299,15 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
         stack.
     :type title: str
     :param title: Plot title.
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
 
     :returns: Alligned and cut traces, and new picks
     """
+    _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
     import copy
     from eqcorrscan.core.match_filter import normxcorr2
@@ -404,12 +411,15 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     if title:
         axes[0].set_title(title)
     plt.subplots_adjust(hspace=0)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
     return traces, clist
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
-                        templatecolour='r'):
+                        templatecolour='r', save=False, savefile=None):
     r"""Function to plot the stream of data that has been detected in, with\
     the template on top of it timed according to a list of given times, just\
     a pretty way to show a detection!
@@ -425,7 +435,13 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param streamcolour: String of matplotlib colour types for the stream
     :type templatecolour: str
     :param templatecolour: Colour to plot the template in.
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     import datetime as dt
     from obspy import UTCDateTime
     fig, axes = plt.subplots(len(template), 1, sharex=True)
@@ -469,26 +485,35 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         axes[i].yaxis.set_ticks([])
     axes[len(axes) - 1].set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
     return
 
 
-def interev_mag_sfiles(sfiles):
+def interev_mag_sfiles(sfiles, save=False, savefile=None):
     r"""Function to plot interevent-time versus magnitude for series of events.
     **thin** Wrapper for interev_mag.
 
     :type sfiles: list
     :param sfiles: List of sfiles to read from
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     from eqcorrscan.utils import sfile_util
     times = [sfile_util.readheader(sfile)[0].origins[0].time
              for sfile in sfiles]
     mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
             for sfile in sfiles]
-    interev_mag(times, mags)
+    interev_mag(times, mags, save, savefile)
 
 
-def interev_mag(times, mags):
+def interev_mag(times, mags, save=False, savefile=None):
     r"""Function to plot interevent times against magnitude for given times
     and magnitudes.
 
@@ -496,7 +521,13 @@ def interev_mag(times, mags):
     :param times: list of the detection times, must be sorted the same as mags
     :type mags: list of float
     :param mags: list of magnitudes
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     l = [(times[i], mags[i]) for i in xrange(len(times))]
     l.sort(key=lambda tup: tup[0])
     times = [x[0] for x in l]
@@ -520,10 +551,43 @@ def interev_mag(times, mags):
     axes[1].set_title('Post-event times')
     axes[1].set_xlabel('Time (Minutes)')
     plt.setp(axes[1].xaxis.get_majorticklabels(), rotation=30)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
 
 
-def threeD_seismplot(stations, nodes):
+def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
+    r"""Wrapper on threeD_seismplot() to plot obspy.Inventory and
+    obspy.Catalog classes in three dimensions.
+
+    :type inventory: obspy.Inventory
+    :param inventory: Obspy inventory class containing station metadata
+    :type catalog: obspy.Catalog
+    :param catalog: Obspy catalog class containing event metadata
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
+    """
+    _check_save_args(save, savefile)
+    from eqcorrscan.utils.plotting import threeD_seismplot
+    nodes = [(ev.preferred_origin().latitude,
+              ev.preferred_origin().longitude,
+              ev.preferred_origin().depth / 1000) for ev in catalog]
+    # Will plot borehole instruments at elevation - depth if provided
+    all_stas = []
+    for net in inventory:
+        stations = [(sta.latitude, sta.longitude,
+                     sta.elevation / 1000 - sta.channels[0].depth / 1000)
+                    for sta in net]
+        all_stas += stations
+    threeD_seismplot(all_stas, nodes, save, savefile)
+    return
+
+
+def threeD_seismplot(stations, nodes, save=False, savefile=None):
     r"""Function to plot seismicity and stations in a 3D, movable, zoomable \
     space using matplotlibs Axes3D package.
 
@@ -533,7 +597,13 @@ def threeD_seismplot(stations, nodes):
     :type nodes: list of tuple
     :param nodes: list of one tuple per event of (lat, long, depth) with down \
         positive.
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
     evdepths = [-1 * depth for depth in evdepths]
@@ -546,12 +616,16 @@ def threeD_seismplot(stations, nodes):
     ax.set_zlabel("Depth(km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
     return
 
 
-def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
-                         background=False, picks=False):
+def pretty_template_plot(template, size=(10.5, 7.5), save=False,
+                         savefile=None, title=False, background=False,
+                         picks=False):
     r"""Function to make a pretty plot of a single template, designed to work \
     better than the default obspy plotting routine for short data lengths.
 
@@ -561,6 +635,8 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :param size: tuple of plot size
     :type save: bool
     :param save: if False will plot to screen, if True will save
+    :type savefile: str
+    :param savefile: String to save plot as, required if save=True.
     :type title: bool
     :param title: String if set will be the plot title
     :type background: :class: obspy.stream
@@ -568,11 +644,10 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     :type picks: list of obspy.core.event.pick
     :param picks: List of obspy type picks.
     """
+    _check_save_args(save, savefile)
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
-    else:
-        return
     if not background:
         mintime = template.sort(['starttime'])[0].stats.starttime
     else:
@@ -582,6 +657,11 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
     lines = []
     labels = []
     for i, tr in enumerate(template):
+        # Cope with a singe channel template case.
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         delay = tr.stats.starttime - mintime
         y = tr.data
         x = np.linspace(0, (len(y)-1) * tr.stats.delta, len(y))
@@ -593,24 +673,24 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
             by = btr.data
             bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
             bx += bdelay
-            axes[i].plot(bx, by, 'k', linewidth=1)
-            template_line, = axes[i].plot(x, y, 'r', linewidth=1.1,
-                                          label='Template')
+            axis.plot(bx, by, 'k', linewidth=1)
+            template_line, = axis.plot(x, y, 'r', linewidth=1.1,
+                                       label='Template')
             if i == 0:
                 lines.append(template_line)
                 labels.append('Template')
             lengths.append(max(bx[-1], x[-1]))
         else:
-            template_line, = axes[i].plot(x, y, 'k', linewidth=1.1,
-                                          label='Template')
+            template_line, = axis.plot(x, y, 'k', linewidth=1.1,
+                                       label='Template')
             if i == 0:
                 lines.append(template_line)
                 labels.append('Template')
             lengths.append(x[-1])
         # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
-        axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+        axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
                            rotation=0, horizontalalignment='right')
-        axes[i].yaxis.set_ticks([])
+        axis.yaxis.set_ticks([])
         # Plot the picks if they are given
         if picks:
             tr_picks = [pick for pick in picks if
@@ -630,17 +710,24 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
                     label = 'Unknown pick'
                 pdelay = pick.time - mintime
                 # print(pdelay)
-                line = axes[i].axvline(x=pdelay, color=pcolor, linewidth=2,
-                                       linestyle='--', label=label)
+                line = axis.axvline(x=pdelay, color=pcolor, linewidth=2,
+                                    linestyle='--', label=label)
                 if label not in labels:
                     lines.append(line)
                     labels.append(label)
                 # axes[i].plot([pdelay, pdelay], [])
-    axes[i].set_xlim([0, max(lengths)])
-    axes[len(template)-1].set_xlabel('Time (s) from start of template')
+    axis.set_xlim([0, max(lengths)])
+    if len(template) > 1:
+        axis = axes[len(template) - 1]
+    else:
+        axis = axes
+    axis.set_xlabel('Time (s) from start of template')
     plt.figlegend(lines, labels, 'upper right')
     if title:
-        axes[0].set_title(title)
+        if len(template) > 1:
+            axes[0].set_title(title)
+        else:
+            axes.set_title(title)
     else:
         plt.subplots_adjust(top=0.98)
     plt.tight_layout()
@@ -649,11 +736,11 @@ def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,
         plt.show()
         plt.close()
     else:
-        plt.savefig(save)
+        plt.savefig(savefile)
 
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,
-            size=(18.5, 10), save=False, title=False):
+            size=(18.5, 10), save=False, savefile=None, title=False):
     r"""Function to plot the Network response alongside the streams used -\
     highlights detection times in the network response.
 
@@ -674,6 +761,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     :type title: str
     :param title: String for the title of the plot, set to False
     """
+    _check_save_args(save, savefile)
     import datetime as dt
     import matplotlib.dates as mdates
     fig, axes = plt.subplots(len(stream)+1, 1, sharex=True, figsize=size)
@@ -744,11 +832,12 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         plt.show()
         plt.close()
     else:
-        plt.savefig(save)
+        plt.savefig(savefile)
     return
 
 
-def SVD_plot(SVStreams, SValues, stachans, title=False):
+def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
+             savefile=None):
     r"""Function to plot the singular vectors from the clustering routines, one\
     plot for each stachan
 
@@ -759,7 +848,14 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
     :param SValues: List of the singular values corresponding to the SVStreams
     :type stachans: list
     :param stachans: List of station.channel
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True, will label \
+        additionally according to station and channel.
     """
+    _check_save_args(save, savefile)
     for stachan in stachans:
         print(stachan)
         plot_traces = [SVStream.select(station=stachan.split('.')[0],
@@ -781,11 +877,16 @@ def SVD_plot(SVStreams, SValues, stachans, title=False):
             axes[0].set_title(title)
         else:
             axes[0].set_title(stachan)
-        plt.show()
+        if not save:
+            plt.show()
+        else:
+            plt.savefig(savefile.split('.') + '_stachan.' +
+                        savefile.split('.')[-1])
     return
 
 
-def plot_synth_real(real_template, synthetic, channels=False):
+def plot_synth_real(real_template, synthetic, channels=False, save=False,
+                    savefile=None):
     r"""Plot multiple channels of data for real data and synthetic.
 
     :type real_template: obspy.Stream
@@ -795,7 +896,13 @@ def plot_synth_real(real_template, synthetic, channels=False):
     :type channels: list of str
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     from obspy.signal.cross_correlation import xcorr
     from obspy import Stream
     colours = ['k', 'r']
@@ -843,10 +950,14 @@ def plot_synth_real(real_template, synthetic, channels=False):
     plt.subplots_adjust(hspace=0)
     # axes[0].legend()
     axes[-1].set_xlabel('Time (s)')
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
 
 
-def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
+def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
+             savefile=None):
     r"""Function to make a frequency-magnitude histogram and cumulative \
     density plot.  This can compute a b-value, but not a completeness at \
     the moment.  B-value is computed by linear fitting to section of curve \
@@ -860,7 +971,13 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
     :param max_mag: Maximum magnitude to try and fit a b-value to
     :type binsize: float
     :param binsize: Width of histogram bins, defaults to 0.2
+    :type save: bool
+    :param save: False will plot to screen, true will save plot and not show \
+        to screen.
+    :type savefile: str
+    :param savefile: Filename to save to, required for save=True
     """
+    _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
     magnitudes.sort()
     fig, ax1 = plt.subplots()
@@ -893,7 +1010,10 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2):
     plt.xlim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 0.2])
     plt.ylim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 1.0])
     plt.legend(loc=2)
-    plt.show()
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
 
 
 def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',

@@ -5,9 +5,10 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5.6. pre_processing &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>5.6. pre_processing &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -16,7 +17,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -32,13 +32,13 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="5. Utils" href="../utils.html"/>
         <link rel="next" title="5.7. seismo_logs" href="utils.seismo_logs.html"/>
         <link rel="prev" title="5.5. mag_calc" href="utils.mag_calc.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -48,11 +48,30 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
-          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
-        
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -60,35 +79,19 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-      </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
           
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
-</ul>
-</li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
@@ -106,10 +109,10 @@
 </li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -124,7 +127,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
@@ -133,31 +142,31 @@
     <li>5.6. pre_processing</li>
       <li class="wy-breadcrumbs-aside">
         
-          <a href="../_sources/submodules/utils.pre_processing.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/submodules/utils.pre_processing.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="module-pre_processing">
 <span id="pre-processing"></span><h1>5.6. pre_processing<a class="headerlink" href="#module-pre_processing" title="Permalink to this headline">¶</a></h1>
 <p>Utilities module for the EQcorrscan package written by Calum Chamberlain of Victoria University Wellington.  These functions are designed to do the basic processing of the data using obspy modules (which also rely on scipy and numpy).</p>
-<p>Copyright 2015 Calum Chamberlain</p>
-<p>This file is part of EQcorrscan.</p>
-<blockquote>
-<div><p>EQcorrscan is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.</p>
-<p>EQcorrscan is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.</p>
-<p>You should have received a copy of the GNU General Public License
-along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
-</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body">Calum Chamberlain, Chet Hopp.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body">GNU Lesser General Public License, Version 3
+(<a class="reference external" href="https://www.gnu.org/copyleft/lesser.html">https://www.gnu.org/copyleft/lesser.html</a>)</td>
+</tr>
+</tbody>
+</table>
 <dl class="function">
 <dt id="pre_processing._check_daylong">
 <code class="descclassname">pre_processing.</code><code class="descname">_check_daylong</code><span class="sig-paren">(</span><em>tr</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#_check_daylong"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._check_daylong" title="Permalink to this definition">¶</a></dt>
@@ -185,13 +194,13 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process (can be trace)</li>
-<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut in Hz for bandpass</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Corners for bandpass</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut in Hz for bandpass</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Corners for bandpass</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
 <li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
-<li><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to True to process traces in parallel, this is often         faster than serial processing of traces: defaults to True</li>
-<li><strong>num_cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Control the number of cores for parallel processing,         if set to False then this will use all the cores.</li>
+<li><strong>parallel</strong> (<em>bool</em>) &#8211; Set to True to process traces in parallel, this is often         faster than serial processing of traces: defaults to True</li>
+<li><strong>num_cores</strong> (<em>int</em>) &#8211; Control the number of cores for parallel processing,         if set to False then this will use all the cores.</li>
 </ul>
 </td>
 </tr>
@@ -221,12 +230,12 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to process</li>
-<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut in Hz for bandpass</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Corners for bandpass</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Desired sampling rate in Hz</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut in Hz, if set to None and lowcut is set, will use a highpass filter.</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Number of corners for filter.</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
 <li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
-<li><strong>full_day</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Whether to expect, and enforce a full day of data or not.</li>
+<li><strong>full_day</strong> (<em>bool</em>) &#8211; Whether to expect, and enforce a full day of data or not.</li>
 </ul>
 </td>
 </tr>
@@ -252,13 +261,13 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process</li>
-<li><strong>highcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; High cut for bandpass in Hz</li>
-<li><strong>lowcut</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Low cut for bandpass in Hz</li>
-<li><strong>filt_order</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Number of corners for bandpass filter</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate desired in Hz</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
-<li><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to True to process traces in parallel, for small numbers of traces this is often slower than serial processing, defaults to False</li>
-<li><strong>num_cores</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Control the number of cores for parallel processing, if set to False then this will use all the cores.</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Number of corners for bandpass filter</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Sampling rate desired in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+<li><strong>parallel</strong> (<em>bool</em>) &#8211; Set to True to process traces in parallel, for small numbers of traces this is often slower than serial processing, defaults to False</li>
+<li><strong>num_cores</strong> (<em>int</em>) &#8211; Control the number of cores for parallel processing, if set to False then this will use all the cores.</li>
 </ul>
 </td>
 </tr>
@@ -280,15 +289,16 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 </div>
 
 
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utils.seismo_logs.html" class="btn btn-neutral float-right" title="5.7. seismo_logs">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="utils.seismo_logs.html" class="btn btn-neutral float-right" title="5.7. seismo_logs" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="utils.mag_calc.html" class="btn btn-neutral" title="5.5. mag_calc"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="utils.mag_calc.html" class="btn btn-neutral" title="5.5. mag_calc" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -298,12 +308,13 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
     </p>
   </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
 </footer>
+
         </div>
       </div>
 
@@ -318,7 +329,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

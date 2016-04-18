@@ -33,25 +33,21 @@ class TestSfileMethods(unittest.TestCase):
                       ('NCEDC', '72572665'),
                       ('USGS', 'nc72597260')]
         for event_info in event_list:
-            client = Client(event_info[0])
-            if event_info[0] == 'GEONET':
-                try:
+            try:
+                client = Client(event_info[0])
+                if event_info[0] == 'GEONET':
                     data_stream = client.\
                         _download('http://quakeml.geonet.org.nz/' +
                                   'quakeml/1.2/' + event_info[1])
                     data_stream.seek(0, 0)
                     event = read_events(data_stream, format="quakeml")
                     data_stream.close()
-                except FDSNException:
-                    warnings.warn('FDSNException')
-                    continue
-            else:
-                try:
+                else:
                     event = client.get_events(eventid=event_info[1],
                                               includearrivals=True)
-                except FDSNException:
-                    warnings.warn('FDSNException')
-                    continue
+            except FDSNException:
+                warnings.warn('FDSNException')
+                continue
             test_Sfile_name = sfile_util.eventtosfile(event, 'test', 'L', '.',
                                                       'null', overwrite=True)
             os.remove(test_Sfile_name)
@@ -248,6 +244,19 @@ class TestSfileMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile(test_sfile))
         os.remove(test_sfile)
 
+    def test_read_empty_header(self):
+        """
+        Function to check a known issue, empty header info S-file: Bug found \
+        by Dominic Evanzia.
+        """
+        import os
+        import numpy as np
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        test_event = readpicks(os.path.join(testing_path, 'Sfile_no_header'))
+        self.assertTrue(np.isnan(test_event.origins[0].latitude))
+        self.assertTrue(np.isnan(test_event.origins[0].longitude))
+        self.assertTrue(np.isnan(test_event.origins[0].depth))
 
 def basic_test_event():
     """

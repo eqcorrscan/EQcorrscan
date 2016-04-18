@@ -39,6 +39,7 @@ class TestCoreMethods(unittest.TestCase):
                                                      nseeds=50,
                                                      samp_rate=samp_rate,
                                                      t_length=6.0, max_amp=5.0,
+                                                     max_lag=12.0,
                                                      debug=debug)
         # Notes to the user: If you use more templates you should ensure they
         # are more different, e.g. set the data to have larger moveouts,
@@ -71,7 +72,7 @@ class TestCoreMethods(unittest.TestCase):
         ktrue = 0
         kfalse = 0
         for detection in detections:
-            print(detection.template_name)
+            print(detection)
             i = template_names.index(detection.template_name)
             t_seeds = seeds[i]
             dtime_samples = int((detection.detect_time - UTCDateTime(0)) *

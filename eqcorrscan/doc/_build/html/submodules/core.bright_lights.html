@@ -5,9 +5,10 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.1. bright_lights &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>4.1. bright_lights &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -16,7 +17,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -32,13 +32,13 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="4. Core" href="../core.html"/>
         <link rel="next" title="4.2. template_gen" href="core.template_gen.html"/>
         <link rel="prev" title="4. Core" href="../core.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -48,11 +48,30 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
-          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
-        
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -60,56 +79,31 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-      </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
           
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
-</ul>
-</li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../core.html">4. Core</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="">4.1. bright_lights</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">5.3. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">5.4. locate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">5.5. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.pre_processing.html">5.6. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">5.7. seismo_logs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.sfile_util.html">5.8. sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">5.9. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">5.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">5.12. sac_util</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -124,7 +118,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
@@ -133,33 +133,32 @@
     <li>4.1. bright_lights</li>
       <li class="wy-breadcrumbs-aside">
         
-          <a href="../_sources/submodules/core.bright_lights.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/submodules/core.bright_lights.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="module-bright_lights">
 <span id="bright-lights"></span><h1>4.1. bright_lights<a class="headerlink" href="#module-bright_lights" title="Permalink to this headline">¶</a></h1>
 <p>Code to determine the brightness function of seismic data according to a three-dimensional travel-time grid.  This travel-time grid should be generated using the grid2time function of the NonLinLoc package by Anthony Lomax which can be found here: <a class="reference external" href="http://alomax.free.fr/nlloc/">http://alomax.free.fr/nlloc/</a> and is not distributed within this package as this is a very useful stand-alone library for seismic event location.</p>
 <p>This code is based on the method of Frank &amp; Shapiro 2014.</p>
-<p>Code written by Calum John Chamberlain of Victoria University of Wellington, 2015.</p>
-<p>Copyright 2015, 2016 Calum Chamberlain</p>
-<p>This file is part of EQcorrscan.</p>
-<blockquote>
-<div><p>EQcorrscan is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.</p>
-<p>EQcorrscan is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.</p>
-<p>You should have received a copy of the GNU General Public License
-along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
-</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body">Calum Chamberlain, Chet Hopp.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body">GNU Lesser General Public License, Version 3
+(<a class="reference external" href="https://www.gnu.org/copyleft/lesser.html">https://www.gnu.org/copyleft/lesser.html</a>)</td>
+</tr>
+</tbody>
+</table>
 <dl class="function">
 <dt id="bright_lights._cum_net_resp">
 <code class="descclassname">bright_lights.</code><code class="descname">_cum_net_resp</code><span class="sig-paren">(</span><em>node_lis</em>, <em>instance=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bright_lights.html#_cum_net_resp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bright_lights._cum_net_resp" title="Permalink to this definition">¶</a></dt>
@@ -170,7 +169,7 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>node_lis</strong> (<em>np.ndarray</em>) &#8211; List of nodes (ints) to read from</li>
-<li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Instance flag for parallelisation, defaults to 0.</li>
+<li><strong>instance</strong> (<em>int</em>) &#8211; Instance flag for parallelisation, defaults to 0.</li>
 </ul>
 </td>
 </tr>
@@ -196,11 +195,11 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>cum_net_resp</strong> (<em>np.ndarray</em>) &#8211; Array of cumulative network response for nodes</li>
 <li><strong>nodes</strong> (<em>list of tuples</em>) &#8211; Nodes associated with the source of energy in the cum_net_resp</li>
-<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value</li>
-<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD (Median Absolute Deviation) or abs (absolute) or RMS (Root Mean Squared)</li>
-<li><strong>samp_rate</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Sampling rate in Hz</li>
+<li><strong>threshold</strong> (<em>float</em>) &#8211; Threshold value</li>
+<li><strong>thresh_type</strong> (<em>str</em>) &#8211; Either MAD (Median Absolute Deviation) or abs (absolute) or RMS (Root Mean Squared)</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Sampling rate in Hz</li>
 <li><strong>realstations</strong> (<em>list of str</em>) &#8211; List of stations used to make the cumulative network response, will be reported in the DETECTION</li>
-<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum length of peak to look for in seconds</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Maximum length of peak to look for in seconds</li>
 </ul>
 </td>
 </tr>
@@ -224,14 +223,14 @@ along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use.</li>
+<li><strong>stations</strong> (<em>list</em>) &#8211; List of stations to use.</li>
 <li><strong>lags</strong> (<em>np.ndarray</em>) &#8211; List of lags where lags[i[:]] are the lags for stations[i].</li>
 <li><strong>stream</strong> &#8211; Data stream to find the brightness for.</li>
-<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit for energy as a multiplier to the mean energy.</li>
-<li><strong>i</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of loop for parallelisation.</li>
-<li><strong>mem_issue</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True will write to disk rather than storing data in RAM.</li>
-<li><strong>instance</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; instance for bulk parallelisation, only used if mem_issue=true.</li>
-<li><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Turn plotting on or off, defaults to False.</li>
+<li><strong>clip_level</strong> (<em>float</em>) &#8211; Upper limit for energy as a multiplier to the mean energy.</li>
+<li><strong>i</strong> (<em>int</em>) &#8211; Index of loop for parallelisation.</li>
+<li><strong>mem_issue</strong> (<em>bool</em>) &#8211; If True will write to disk rather than storing data in RAM.</li>
+<li><strong>instance</strong> (<em>int</em>) &#8211; instance for bulk parallelisation, only used if mem_issue=true.</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Turn plotting on or off, defaults to False.</li>
 </ul>
 </td>
 </tr>
@@ -257,11 +256,11 @@ both at the moment.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The path to the .csv Grid2Time outputs</li>
-<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names to read slowness files for.</li>
-<li><strong>phaseout</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; What phase to return the lagtimes in</li>
-<li><strong>ps_ratio</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; p to s ratio for coversion</li>
-<li><strong>lags_switch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Return lags or raw travel-times, if set to true will return lags.</li>
+<li><strong>path</strong> (<em>str</em>) &#8211; The path to the .csv Grid2Time outputs</li>
+<li><strong>stations</strong> (<em>list</em>) &#8211; List of station names to read slowness files for.</li>
+<li><strong>phaseout</strong> (<em>str</em>) &#8211; What phase to return the lagtimes in</li>
+<li><strong>ps_ratio</strong> (<em>float</em>) &#8211; p to s ratio for coversion</li>
+<li><strong>lags_switch</strong> (<em>bool</em>) &#8211; Return lags or raw travel-times, if set to true will return lags.</li>
 </ul>
 </td>
 </tr>
@@ -285,11 +284,11 @@ both at the moment.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>stations</strong> (<em>list</em>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
 <li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is lonitude in degrees, nodes[:][:][2] is depth in km.</li>
 <li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds.</li>
-<li><strong>mindepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Upper limit of volume</li>
-<li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Lower limit of volume</li>
+<li><strong>mindepth</strong> (<em>float</em>) &#8211; Upper limit of volume</li>
+<li><strong>maxdepth</strong> (<em>float</em>) &#8211; Lower limit of volume</li>
 <li><strong>corners</strong> (<em>matplotlib.Path</em>) &#8211; matplotlib path of the corners for the 2D polygon to cut to in lat and long</li>
 </ul>
 </td>
@@ -315,7 +314,7 @@ both at the moment.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>stations</strong> (<em>list</em>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
 <li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in degrees, nodes[:][:][2] is depth in km.</li>
 <li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds</li>
 <li><strong>threshold</strong> &#8211; Threshold for removal in seconds</li>
@@ -354,22 +353,22 @@ sampling rates.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
+<li><strong>stations</strong> (<em>list</em>) &#8211; List of station names from in the form where stations[i] refers to nodes[i][:] and lags[i][:]</li>
 <li><strong>nodes</strong> (<em>list, tuple</em>) &#8211; List of node points where nodes[i] referes to stations[i] and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in degrees, nodes[:][:][2] is depth in km.</li>
 <li><strong>lags</strong> &#8211; Array of arrays where lags[i][:] refers to stations[i]. lags[i][j] should be the delay to the nodes[i][j] for stations[i] in seconds.</li>
 <li><strong>data</strong> &#8211; Data through which to look for detections.</li>
-<li><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Threshold value for detection of template within the brightness function</li>
-<li><strong>thresh_type</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Either MAD or abs where MAD is the Median Absolute Deviation and abs is an absoulte brightness.</li>
-<li><strong>template_length</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Length of template to extract in seconds</li>
-<li><strong>template_saveloc</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Path of where to save the templates.</li>
+<li><strong>threshold</strong> (<em>float</em>) &#8211; Threshold value for detection of template within the brightness function</li>
+<li><strong>thresh_type</strong> (<em>str</em>) &#8211; Either MAD or abs where MAD is the Median Absolute Deviation and abs is an absoulte brightness.</li>
+<li><strong>template_length</strong> (<em>float</em>) &#8211; Length of template to extract in seconds</li>
+<li><strong>template_saveloc</strong> (<em>str</em>) &#8211; Path of where to save the templates.</li>
 <li><strong>coherence_thresh</strong> (<em>tuple of floats</em>) &#8211; Threshold for removing incoherant peaks in the network response, those below this will not be used as templates. Must be in the form of (a,b) where the coherence is given by: a-kchan/b where kchan is the number of channels used to compute the coherence</li>
-<li><strong>coherence_stations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; List of stations to use in the coherance thresholding - defaults to &#8216;all&#8217; which uses all the stations.</li>
+<li><strong>coherence_stations</strong> (<em>list</em>) &#8211; List of stations to use in the coherance thresholding - defaults to &#8216;all&#8217; which uses all the stations.</li>
 <li><strong>coherence_clip</strong> (<em>Start and end in seconds of data to window around, defaults to False, which uses all the data given.</em>) &#8211; tuple</li>
-<li><strong>pre_pick</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Seconds before the detection time to include in template</li>
-<li><strong>plotsave</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Save or show plots, if False will try and show the plots on screen - as this is designed for bulk use this is set to True to save any plots rather than show them if you create them - changes the backend of matplotlib, so if is set to False you will see NO PLOTS!</li>
+<li><strong>pre_pick</strong> (<em>float</em>) &#8211; Seconds before the detection time to include in template</li>
+<li><strong>plotsave</strong> (<em>bool</em>) &#8211; Save or show plots, if False will try and show the plots on screen - as this is designed for bulk use this is set to True to save any plots rather than show them if you create them - changes the backend of matplotlib, so if is set to False you will see NO PLOTS!</li>
 <li><strong>core</strong> &#8211; Number of cores to use, defaults to 1.</li>
-<li><strong>clip_level</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Multiplier applied to the mean deviation of the energy as an upper limit, used to remove spikes (earthquakes, lightning, electircal spikes) from the energy stack.</li>
-<li><strong>gap</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum inter-event time in seconds for detections</li>
+<li><strong>clip_level</strong> (<em>float</em>) &#8211; Multiplier applied to the mean deviation of the energy as an upper limit, used to remove spikes (earthquakes, lightning, electircal spikes) from the energy stack.</li>
+<li><strong>gap</strong> (<em>float</em>) &#8211; Minimum inter-event time in seconds for detections</li>
 </ul>
 </td>
 </tr>
@@ -405,15 +404,16 @@ sampling rates.</p>
 </div>
 
 
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="core.template_gen.html" class="btn btn-neutral float-right" title="4.2. template_gen">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="core.template_gen.html" class="btn btn-neutral float-right" title="4.2. template_gen" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../core.html" class="btn btn-neutral" title="4. Core"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../core.html" class="btn btn-neutral" title="4. Core" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -423,12 +423,13 @@ sampling rates.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
     </p>
   </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
 </footer>
+
         </div>
       </div>
 
@@ -443,7 +444,7 @@ sampling rates.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

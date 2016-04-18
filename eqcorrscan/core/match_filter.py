@@ -9,26 +9,12 @@ http://www.cs.ubc.ca/research/deaton/remarks_ncc.html \
 The matched-filter routine described here was used a previous Matlab code for \
 the Chamberlain et al. 2014 G-cubed publication.
 
-Code written by Calum John Chamberlain of Victoria University of \
-Wellington, 2015.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-Copyright 2015, 2016 Calum Chamberlain
-
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -61,6 +47,10 @@ class DETECTION(object):
             will be the raw threshold value related to the cccsum.
         :type typeofdet: str
         :param typeofdet: Type of detection, STA, corr, bright
+
+    .. todo:: Use Obspy.core.event class instead of detection. Requires \
+        internal knowledge of template parameters - which needs changes to \
+        how templates are stored.
     """
 
     detectioncount = 0
@@ -69,7 +59,7 @@ class DETECTION(object):
                  no_chans, detect_val,
                  threshold, typeofdet,
                  chans=None):
-        """Main class of PICK."""
+        """Main class of DETECTION."""
         self.template_name = template_name
         self.detect_time = detect_time
         self.no_chans = no_chans
@@ -85,8 +75,10 @@ class DETECTION(object):
 
     def __str__(self):
         """Full print."""
-        print_str = "Detection on " + self.template_name + " at " + \
-                    str(self.detect_time)
+        print_str =' '.join(['Detection on template:', self.template_name,
+                             'at:', str(self.detect_time),
+                             'with', str(self.no_chans), 'channels:',
+                             str(self.chans)])
         return print_str
 
 
@@ -226,9 +218,12 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     :type debug: int
     :param debug: Debug level.
 
-    :return: New list of :class: 'numpy.array' objects.  These will contain \
+    :returns: New list of :class: 'numpy.array' objects.  These will contain \
         the correlation sums for each template for this day of data.
-    :return: list of ints as number of channels used for each cross-correlation
+    :returns: list of ints as number of channels used for each \
+        cross-correlation.
+    :returns: list of list of tuples of station, channel for all \
+        cross-correlations.
     """
     import time
     from multiprocessing import Pool
@@ -249,6 +244,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                             len(templates))] * 2)
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
+    chans = [[] for _ in range(len(templates))]
 
     for tr in stream:
         tr_data = tr.data
@@ -318,6 +314,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                 # than being all 0, which is the default case for no match
                 # of image and template names
                 no_chans[i] += 1
+                chans[i].append((tr.stats.station, tr.stats.channel))
         # Now sum along the channel axis for each template to give the
         # cccsum values for each template for each day
         with Timer() as t:
@@ -335,7 +332,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     if debug >= 2:
         print('cccs_matrix is shaped: ' + str(np.shape(cccs_matrix)))
     cccsums = cccs_matrix[0]
-    return cccsums, no_chans
+    return cccsums, no_chans, chans
 
 
 def match_filter(template_names, template_list, st, threshold,
@@ -461,7 +458,14 @@ def match_filter(template_names, template_list, st, threshold,
         if not (tr.stats.station, tr.stats.channel) in template_stachan:
             stream.remove(tr)
     # Also pad out templates to have all channels
-    for template in templates:
+    for template, template_name in zip(templates, template_names):
+        if len(template) == 0:
+            msg = ('No channels matching in continuous data for ' +
+                   'template' + template_name)
+            warnings.warn(msg)
+            templates.remove(template)
+            template_names.remove(template_name)
+            continue
         for stachan in template_stachan:
             if not template.select(station=stachan[0], channel=stachan[1]):
                 nulltrace = Trace()
@@ -474,7 +478,7 @@ def match_filter(template_names, template_list, st, threshold,
                 template += nulltrace
     if debug >= 2:
         print('Starting the correlation run for this day')
-    [cccsums, no_chans] = _channel_loop(templates, stream, cores, debug)
+    [cccsums, no_chans, chans] = _channel_loop(templates, stream, cores, debug)
     if len(cccsums[0]) == 0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
@@ -563,7 +567,7 @@ def match_filter(template_names, template_list, st, threshold,
                 detections.append(DETECTION(template_names[i],
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
-                                            'corr'))
+                                            'corr', chans[i]))
     del stream, templates
     return detections
 

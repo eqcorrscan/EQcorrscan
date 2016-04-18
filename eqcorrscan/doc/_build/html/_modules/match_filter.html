@@ -5,9 +5,10 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>match_filter &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>match_filter &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -16,7 +17,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -32,11 +32,11 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -46,11 +46,30 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
-          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
-        
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -58,59 +77,26 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
-          
-          
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../updates.html#version-0-1-1">2.1. Version 0.1.1</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">4.1. bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">4.2. template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">4.3. match_filter</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">5.1. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.plotting.html">5.2. plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">5.3. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">5.4. locate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">5.5. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">5.6. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">5.7. seismo_logs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.sfile_util.html">5.8. sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">5.9. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">5.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.sac_util.html">5.12. sac_util</a></li>
-</ul>
-</li>
-</ul>
 
           
-        
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a></li>
+</ul>
+
+            
+          
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -125,7 +111,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
@@ -134,14 +126,17 @@
     <li>match_filter</li>
       <li class="wy-breadcrumbs-aside">
         
+          
+        
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <h1>Source code for match_filter</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/python</span>
+<span></span><span class="ch">#!/usr/bin/python</span>
 <span class="sd">r&quot;&quot;&quot;Function to cross-correlate templates generated by template_gen function \</span>
 <span class="sd">with data and output the detecitons.  The central component of this is \</span>
 <span class="sd">the match_template function from the openCV image processing package.  This \</span>
@@ -152,26 +147,12 @@
 <span class="sd">The matched-filter routine described here was used a previous Matlab code for \</span>
 <span class="sd">the Chamberlain et al. 2014 G-cubed publication.</span>
 
-<span class="sd">Code written by Calum John Chamberlain of Victoria University of \</span>
-<span class="sd">Wellington, 2015.</span>
+<span class="sd">:copyright:</span>
+<span class="sd">    Calum Chamberlain, Chet Hopp.</span>
 
-<span class="sd">Copyright 2015, 2016 Calum Chamberlain</span>
-
-<span class="sd">This file is part of EQcorrscan.</span>
-
-<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
-<span class="sd">    it under the terms of the GNU General Public License as published by</span>
-<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
-<span class="sd">    (at your option) any later version.</span>
-
-<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
-<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="sd">    GNU General Public License for more details.</span>
-
-<span class="sd">    You should have received a copy of the GNU General Public License</span>
-<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
-
+<span class="sd">:license:</span>
+<span class="sd">    GNU Lesser General Public License, Version 3</span>
+<span class="sd">    (https://www.gnu.org/copyleft/lesser.html)</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
@@ -204,6 +185,10 @@
 <span class="sd">            will be the raw threshold value related to the cccsum.</span>
 <span class="sd">        :type typeofdet: str</span>
 <span class="sd">        :param typeofdet: Type of detection, STA, corr, bright</span>
+
+<span class="sd">    .. todo:: Use Obspy.core.event class instead of detection. Requires \</span>
+<span class="sd">        internal knowledge of template parameters - which needs changes to \</span>
+<span class="sd">        how templates are stored.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">detectioncount</span> <span class="o">=</span> <span class="mi">0</span>
@@ -212,7 +197,7 @@
                  <span class="n">no_chans</span><span class="p">,</span> <span class="n">detect_val</span><span class="p">,</span>
                  <span class="n">threshold</span><span class="p">,</span> <span class="n">typeofdet</span><span class="p">,</span>
                  <span class="n">chans</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Main class of PICK.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Main class of DETECTION.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">template_name</span> <span class="o">=</span> <span class="n">template_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">detect_time</span> <span class="o">=</span> <span class="n">detect_time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">no_chans</span> <span class="o">=</span> <span class="n">no_chans</span>
@@ -224,15 +209,17 @@
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Simple print.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s">&quot;DETECTION()&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;DETECTION()&quot;</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Full print.&quot;&quot;&quot;</span>
-        <span class="n">print_str</span> <span class="o">=</span> <span class="s">&quot;Detection on &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_name</span> <span class="o">+</span> <span class="s">&quot; at &quot;</span> <span class="o">+</span> \
-                    <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">detect_time</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">print_str</span>
+        <span class="n">print_str</span> <span class="o">=</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Detection on template:&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_name</span><span class="p">,</span>
+                             <span class="s1">&#39;at:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">detect_time</span><span class="p">),</span>
+                             <span class="s1">&#39;with&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">no_chans</span><span class="p">),</span> <span class="s1">&#39;channels:&#39;</span><span class="p">,</span>
+                             <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chans</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">print_str</span></div>
 
-</div>
+
 <div class="viewcode-block" id="normxcorr2"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.normxcorr2">[docs]</a><span class="k">def</span> <span class="nf">normxcorr2</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Base function to call the c++ correlation routine from the openCV \</span>
 <span class="sd">    image processing suite.  Requires you to have installed the openCV python \</span>
@@ -256,11 +243,11 @@
 <span class="sd">        the correlation of the image with the template.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">cv2</span>
-    <span class="c"># Check that we have been passed numpy arrays</span>
+    <span class="c1"># Check that we have been passed numpy arrays</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">template</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">image</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;You have not provided numpy arrays, I will not convert them&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="s">&#39;NaN&#39;</span>
-    <span class="c"># Convert numpy arrays to float 32</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;You have not provided numpy arrays, I will not convert them&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;NaN&#39;</span>
+    <span class="c1"># Convert numpy arrays to float 32</span>
     <span class="n">cv_template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">cv_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">ccc</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">matchTemplate</span><span class="p">(</span><span class="n">cv_image</span><span class="p">,</span> <span class="n">cv_template</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">TM_CCOEFF_NORMED</span><span class="p">)</span>
@@ -269,12 +256,12 @@
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">ccc</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_template</span><span class="p">))</span> <span class="ow">or</span>
                                <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cv_image</span><span class="p">))):</span>
         <span class="n">ccc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">))</span>
-        <span class="c"># Convert an array of perfect correlations to zero cross-correlations</span>
-    <span class="c"># Reshape ccc to be a 1D vector as is useful for seismic data</span>
+        <span class="c1"># Convert an array of perfect correlations to zero cross-correlations</span>
+    <span class="c1"># Reshape ccc to be a 1D vector as is useful for seismic data</span>
     <span class="n">ccc</span> <span class="o">=</span> <span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
-    <span class="k">return</span> <span class="n">ccc</span>
+    <span class="k">return</span> <span class="n">ccc</span></div>
 
-</div>
+
 <div class="viewcode-block" id="_template_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._template_loop">[docs]</a><span class="k">def</span> <span class="nf">_template_loop</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Sister loop to handle the correlation of a single template (of \</span>
 <span class="sd">    multiple channels) with a single channel of data.</span>
@@ -302,55 +289,55 @@
 
     <span class="n">ccc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chan</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
-    <span class="n">ccc</span> <span class="o">=</span> <span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>           <span class="c"># Set default value for</span>
-    <span class="c"># cross-channel correlation in case there are no data that match our</span>
-    <span class="c"># channels.</span>
+    <span class="n">ccc</span> <span class="o">=</span> <span class="n">ccc</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>           <span class="c1"># Set default value for</span>
+    <span class="c1"># cross-channel correlation in case there are no data that match our</span>
+    <span class="c1"># channels.</span>
 
     <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-        <span class="c"># While each bit of this loop isn&#39;t slow, looping through the if</span>
-        <span class="c"># statement when I don&#39;t need to adds up, I should work this out</span>
-        <span class="c"># earlier</span>
+        <span class="c1"># While each bit of this loop isn&#39;t slow, looping through the if</span>
+        <span class="c1"># statement when I don&#39;t need to adds up, I should work this out</span>
+        <span class="c1"># earlier</span>
         <span class="n">template_data</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span>
                                         <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">)</span>
-        <span class="c"># I will for now assume that you only have one template per-channel</span>
+        <span class="c1"># I will for now assume that you only have one template per-channel</span>
         <span class="n">template_data</span> <span class="o">=</span> <span class="n">template_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">delay</span> <span class="o">=</span> <span class="n">template_data</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> \
-            <span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+            <span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s1">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
         <span class="n">pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">delay</span> <span class="o">*</span>
                                        <span class="n">template_data</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">)))</span>
         <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chan</span><span class="p">,</span> <span class="n">pad</span><span class="p">)[</span><span class="nb">len</span><span class="p">(</span><span class="n">pad</span><span class="p">):]</span>
         <span class="n">ccc</span> <span class="o">=</span> <span class="p">(</span><span class="n">normxcorr2</span><span class="p">(</span><span class="n">template_data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">image</span><span class="p">))</span>
         <span class="n">ccc</span> <span class="o">=</span> <span class="n">ccc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
-        <span class="c"># Convert to float16 to save memory for large problems - lose some</span>
-        <span class="c"># accuracy which will affect detections very close to threshold</span>
+        <span class="c1"># Convert to float16 to save memory for large problems - lose some</span>
+        <span class="c1"># accuracy which will affect detections very close to threshold</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Single if statement took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Single if statement took </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">template_data</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Didn&#39;t even correlate!&quot;</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="n">station</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">channel</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Didn&#39;t even correlate!&quot;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">station</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">channel</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;If statement without correlation took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;If statement without correlation took </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;********* DEBUG:  &#39;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span>
-              <span class="n">channel</span> <span class="o">+</span> <span class="s">&#39; ccc MAX: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;********* DEBUG:  &#39;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span>
-              <span class="n">channel</span> <span class="o">+</span> <span class="s">&#39; ccc MEAN: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;********* DEBUG:  &#39;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span>
+              <span class="n">channel</span> <span class="o">+</span> <span class="s1">&#39; ccc MAX: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;********* DEBUG:  &#39;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span>
+              <span class="n">channel</span> <span class="o">+</span> <span class="s1">&#39; ccc MEAN: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Mean of ccc is infinite, check!&#39;</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Mean of ccc is infinite, check!&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_ccc.npy&#39;</span><span class="p">,</span> <span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_template.npy&#39;</span><span class="p">,</span> <span class="n">template_data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;inf_cccmean_image.npy&#39;</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;inf_cccmean_ccc.npy&#39;</span><span class="p">,</span> <span class="n">ccc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;inf_cccmean_template.npy&#39;</span><span class="p">,</span> <span class="n">template_data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;inf_cccmean_image.npy&#39;</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;shape of ccc: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;A single ccc is using: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ccc</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;MB&#39;</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;ccc type is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;shape of ccc: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;A single ccc is using: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ccc</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;MB&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;ccc type is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;shape of ccc: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Parallel worker &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; complete&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ccc</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;shape of ccc: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">ccc</span><span class="p">)))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Parallel worker &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; complete&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ccc</span><span class="p">)</span></div>
 
-</div>
+
 <div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;</span>
 <span class="sd">    Loop to generate cross channel correaltion sums for a series of templates \</span>
@@ -369,9 +356,12 @@
 <span class="sd">    :type debug: int</span>
 <span class="sd">    :param debug: Debug level.</span>
 
-<span class="sd">    :return: New list of :class: &#39;numpy.array&#39; objects.  These will contain \</span>
+<span class="sd">    :returns: New list of :class: &#39;numpy.array&#39; objects.  These will contain \</span>
 <span class="sd">        the correlation sums for each template for this day of data.</span>
-<span class="sd">    :return: list of ints as number of channels used for each cross-correlation</span>
+<span class="sd">    :returns: list of ints as number of channels used for each \</span>
+<span class="sd">        cross-correlation.</span>
+<span class="sd">    :returns: list of list of tuples of station, channel for all \</span>
+<span class="sd">        cross-correlations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">time</span>
     <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
@@ -379,30 +369,31 @@
     <span class="n">num_cores</span> <span class="o">=</span> <span class="n">cores</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_cores</span><span class="p">:</span>
         <span class="n">num_cores</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s">&#39;cccs_matrix&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+    <span class="k">if</span> <span class="s1">&#39;cccs_matrix&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
         <span class="k">del</span> <span class="n">cccs_matrix</span>
-    <span class="c"># Initialize cccs_matrix, which will be two arrays of len(templates) arrays</span>
-    <span class="c"># where the arrays cccs_matrix[0[:]] will be the cross channel sum for each</span>
-    <span class="c"># template.</span>
+    <span class="c1"># Initialize cccs_matrix, which will be two arrays of len(templates) arrays</span>
+    <span class="c1"># where the arrays cccs_matrix[0[:]] will be the cross channel sum for each</span>
+    <span class="c1"># template.</span>
 
-    <span class="c"># Note: This requires all templates to be the same length, and all channels</span>
-    <span class="c"># to be the same length</span>
+    <span class="c1"># Note: This requires all templates to be the same length, and all channels</span>
+    <span class="c1"># to be the same length</span>
     <span class="n">cccs_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span>
                                      <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span> <span class="o">*</span>
                             <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="c"># Initialize number of channels array</span>
+    <span class="c1"># Initialize number of channels array</span>
     <span class="n">no_chans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))</span>
+    <span class="n">chans</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))]</span>
 
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
         <span class="n">tr_data</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span>
         <span class="n">station</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span>
         <span class="n">channel</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Starting parallel run for station &quot;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span>
-                  <span class="s">&quot; channel &quot;</span> <span class="o">+</span> <span class="n">channel</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Starting parallel run for station &quot;</span> <span class="o">+</span> <span class="n">station</span> <span class="o">+</span>
+                  <span class="s2">&quot; channel &quot;</span> <span class="o">+</span> <span class="n">channel</span><span class="p">)</span>
         <span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-            <span class="c"># Send off to sister function</span>
+            <span class="c1"># Send off to sister function</span>
             <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">)</span>
             <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_template_loop</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tr_data</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span>
@@ -410,80 +401,81 @@
                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">))]</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Correlation loop took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot; I have &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot; results&quot;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Correlation loop took: </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot; I have &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; results&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">cccs_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Getting results took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Getting results took: </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-            <span class="c"># Sort by placeholder returned from _template_loop</span>
+            <span class="c1"># Sort by placeholder returned from _template_loop</span>
             <span class="n">cccs_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Sorting took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Sorting took: </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">cccs_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ccc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">ccc</span> <span class="ow">in</span> <span class="n">cccs_list</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Extracting arrays took: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Extracting arrays took: </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs_list is shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_list</span><span class="p">)))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs_list is shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_list</span><span class="p">)))</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">cccs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">cccs_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    cccs_list conversion: </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    cccs_list conversion: </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">cccs_list</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;After looping through templates the cccs is shaped: &#39;</span> <span class="o">+</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;After looping through templates the cccs is shaped: &#39;</span> <span class="o">+</span>
                   <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs</span><span class="p">)))</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs is using: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cccs</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span>
-                  <span class="s">&#39; MB of memory&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs is using: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cccs</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span>
+                  <span class="s1">&#39; MB of memory&#39;</span><span class="p">)</span>
         <span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cccs</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">),</span>
                                     <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs</span><span class="p">))))</span>
         <span class="k">del</span> <span class="n">cccs</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs_matrix shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">)))</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs_matrix is using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span>
-                  <span class="s">&#39; MB of memory&#39;</span><span class="p">)</span>
-        <span class="c"># Now we have an array of arrays with the first dimensional index</span>
-        <span class="c"># giving the channel, the second dimensional index giving the</span>
-        <span class="c"># template and the third dimensional index giving the position</span>
-        <span class="c"># in the ccc, e.g.:</span>
-        <span class="c"># np.shape(cccsums)=(len(stream), len(templates), len(ccc))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs_matrix shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">)))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs_matrix is using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span> <span class="o">+</span>
+                  <span class="s1">&#39; MB of memory&#39;</span><span class="p">)</span>
+        <span class="c1"># Now we have an array of arrays with the first dimensional index</span>
+        <span class="c1"># giving the channel, the second dimensional index giving the</span>
+        <span class="c1"># template and the third dimensional index giving the position</span>
+        <span class="c1"># in the ccc, e.g.:</span>
+        <span class="c1"># np.shape(cccsums)=(len(stream), len(templates), len(ccc))</span>
 
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs_matrix as a np.array is shaped: &#39;</span> <span class="o">+</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs_matrix as a np.array is shaped: &#39;</span> <span class="o">+</span>
                   <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">)))</span>
-        <span class="c"># First work out how many channels were used</span>
+        <span class="c1"># First work out how many channels were used</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-                <span class="c"># Check that there are some real numbers in the vector rather</span>
-                <span class="c"># than being all 0, which is the default case for no match</span>
-                <span class="c"># of image and template names</span>
+                <span class="c1"># Check that there are some real numbers in the vector rather</span>
+                <span class="c1"># than being all 0, which is the default case for no match</span>
+                <span class="c1"># of image and template names</span>
                 <span class="n">no_chans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="c"># Now sum along the channel axis for each template to give the</span>
-        <span class="c"># cccsum values for each template for each day</span>
+                <span class="n">chans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+        <span class="c1"># Now sum along the channel axis for each template to give the</span>
+        <span class="c1"># cccsum values for each template for each day</span>
         <span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">cccsums</span> <span class="o">=</span> <span class="n">cccs_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Summing took </span><span class="si">%s</span><span class="s"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Summing took </span><span class="si">%s</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccsums is shaped thus: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccsums</span><span class="p">)))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccsums is shaped thus: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccsums</span><span class="p">)))</span>
         <span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">cccsums</span>
         <span class="k">del</span> <span class="n">cccsums</span>
         <span class="n">toc</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;--------- TIMER:    Trace loop took &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">toc</span> <span class="o">-</span> <span class="n">tic</span><span class="p">)</span> <span class="o">+</span>
-                  <span class="s">&quot; s&quot;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;--------- TIMER:    Trace loop took &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">toc</span> <span class="o">-</span> <span class="n">tic</span><span class="p">)</span> <span class="o">+</span>
+                  <span class="s2">&quot; s&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;cccs_matrix is shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">)))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;cccs_matrix is shaped: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccs_matrix</span><span class="p">)))</span>
     <span class="n">cccsums</span> <span class="o">=</span> <span class="n">cccs_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span>
+    <span class="k">return</span> <span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">,</span> <span class="n">chans</span></div>
 
-</div>
+
 <div class="viewcode-block" id="match_filter"><a class="viewcode-back" href="../submodules/core.match_filter.html#match_filter.match_filter">[docs]</a><span class="k">def</span> <span class="nf">match_filter</span><span class="p">(</span><span class="n">template_names</span><span class="p">,</span> <span class="n">template_list</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
-                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">plotdir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                 <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot_format</span><span class="o">=</span><span class="s">&#39;jpg&#39;</span><span class="p">):</span>
+                 <span class="n">threshold_type</span><span class="p">,</span> <span class="n">trig_int</span><span class="p">,</span> <span class="n">plotvar</span><span class="p">,</span> <span class="n">plotdir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot_format</span><span class="o">=</span><span class="s1">&#39;jpg&#39;</span><span class="p">):</span>
     <span class="sd">r&quot;&quot;&quot;Over-arching code to run the correlations of given templates with a \</span>
 <span class="sd">    day of seismic data and output the detections based on a given threshold.</span>
 
@@ -540,7 +532,7 @@
 <span class="sd">        changed the plotting behaviour.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">matplotlib</span>
-    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span>
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>
     <span class="kn">import</span> <span class="nn">copy</span>
@@ -549,62 +541,69 @@
     <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Trace</span>
     <span class="kn">import</span> <span class="nn">time</span>
 
-    <span class="c"># Copy the stream here because we will muck about with it</span>
+    <span class="c1"># Copy the stream here because we will muck about with it</span>
     <span class="n">stream</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">templates</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">template_list</span><span class="p">)</span>
-    <span class="c"># Debug option to confirm that the channel names match those in the</span>
-    <span class="c"># templates</span>
+    <span class="c1"># Debug option to confirm that the channel names match those in the</span>
+    <span class="c1"># templates</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">template_stachan</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">data_stachan</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
-                <span class="n">template_stachan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span>
+                <span class="n">template_stachan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span>
                                         <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="n">data_stachan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+            <span class="n">data_stachan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
         <span class="n">template_stachan</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">template_stachan</span><span class="p">))</span>
         <span class="n">data_stachan</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data_stachan</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;I have template info for these stations:&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;I have template info for these stations:&#39;</span><span class="p">)</span>
             <span class="k">print</span><span class="p">(</span><span class="n">template_stachan</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;I have daylong data for these stations:&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;I have daylong data for these stations:&#39;</span><span class="p">)</span>
             <span class="k">print</span><span class="p">(</span><span class="n">data_stachan</span><span class="p">)</span>
-    <span class="c"># Perform a check that the daylong vectors are daylong</span>
+    <span class="c1"># Perform a check that the daylong vectors are daylong</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">*</span> <span class="mi">86400</span> <span class="o">==</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Data are not daylong for&#39;</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Data are not daylong for&#39;</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
                             <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">])</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-    <span class="c"># Call the _template_loop function to do all the correlation work</span>
+    <span class="c1"># Call the _template_loop function to do all the correlation work</span>
     <span class="n">outtic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
-    <span class="c"># Edit here from previous, stable, but slow match_filter</span>
-    <span class="c"># Would be worth testing without an if statement, but with every station in</span>
-    <span class="c"># the possible template stations having data, but for those without real</span>
-    <span class="c"># data make the data NaN to return NaN ccc_sum</span>
-    <span class="c"># Note: this works</span>
+    <span class="c1"># Edit here from previous, stable, but slow match_filter</span>
+    <span class="c1"># Would be worth testing without an if statement, but with every station in</span>
+    <span class="c1"># the possible template stations having data, but for those without real</span>
+    <span class="c1"># data make the data NaN to return NaN ccc_sum</span>
+    <span class="c1"># Note: this works</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Ensuring all template channels have matches in daylong data&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Ensuring all template channels have matches in daylong data&#39;</span><span class="p">)</span>
     <span class="n">template_stachan</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
             <span class="n">template_stachan</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)]</span>
     <span class="n">template_stachan</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">template_stachan</span><span class="p">))</span>
-    <span class="c"># Copy this here to keep it safe</span>
+    <span class="c1"># Copy this here to keep it safe</span>
     <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-            <span class="c"># Remove template traces rather than adding NaN data</span>
+            <span class="c1"># Remove template traces rather than adding NaN data</span>
             <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
                     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                                               <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
                         <span class="n">template</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
-    <span class="c"># Remove un-needed channels</span>
+    <span class="c1"># Remove un-needed channels</span>
     <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
-    <span class="c"># Also pad out templates to have all channels</span>
-    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+    <span class="c1"># Also pad out templates to have all channels</span>
+    <span class="k">for</span> <span class="n">template</span><span class="p">,</span> <span class="n">template_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">template_names</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;No channels matching in continuous data for &#39;</span> <span class="o">+</span>
+                   <span class="s1">&#39;template&#39;</span> <span class="o">+</span> <span class="n">template_name</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">templates</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+            <span class="n">template_names</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">template_name</span><span class="p">)</span>
+            <span class="k">continue</span>
         <span class="k">for</span> <span class="n">stachan</span> <span class="ow">in</span> <span class="n">template_stachan</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">stachan</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
                 <span class="n">nulltrace</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">()</span>
@@ -616,73 +615,73 @@
                                           <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
                 <span class="n">template</span> <span class="o">+=</span> <span class="n">nulltrace</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Starting the correlation run for this day&#39;</span><span class="p">)</span>
-    <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">]</span> <span class="o">=</span> <span class="n">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Starting the correlation run for this day&#39;</span><span class="p">)</span>
+    <span class="p">[</span><span class="n">cccsums</span><span class="p">,</span> <span class="n">no_chans</span><span class="p">,</span> <span class="n">chans</span><span class="p">]</span> <span class="o">=</span> <span class="n">_channel_loop</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cccsums</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Correlation has not run, zero length cccsum&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Correlation has not run, zero length cccsum&#39;</span><span class="p">)</span>
     <span class="n">outtoc</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Looping over templates and streams took:&#39;</span><span class="p">,</span>
-                    <span class="nb">str</span><span class="p">(</span><span class="n">outtoc</span> <span class="o">-</span> <span class="n">outtic</span><span class="p">),</span> <span class="s">&#39;s&#39;</span><span class="p">]))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Looping over templates and streams took:&#39;</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">outtoc</span> <span class="o">-</span> <span class="n">outtic</span><span class="p">),</span> <span class="s1">&#39;s&#39;</span><span class="p">]))</span>
     <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;The shape of the returned cccsums is:&#39;</span><span class="p">,</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;The shape of the returned cccsums is:&#39;</span><span class="p">,</span>
                         <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cccsums</span><span class="p">))]))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;This is from&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)),</span> <span class="s">&#39;templates&#39;</span><span class="p">]))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Correlated with&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)),</span>
-                        <span class="s">&#39;channels of data&#39;</span><span class="p">]))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;This is from&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)),</span> <span class="s1">&#39;templates&#39;</span><span class="p">]))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Correlated with&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">)),</span>
+                        <span class="s1">&#39;channels of data&#39;</span><span class="p">]))</span>
     <span class="n">detections</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cccsum</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cccsums</span><span class="p">):</span>
         <span class="n">template</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">threshold_type</span> <span class="o">==</span> <span class="s">&#39;MAD&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">threshold_type</span> <span class="o">==</span> <span class="s1">&#39;MAD&#39;</span><span class="p">:</span>
             <span class="n">rawthresh</span> <span class="o">=</span> <span class="n">threshold</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">threshold_type</span> <span class="o">==</span> <span class="s">&#39;absolute&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">threshold_type</span> <span class="o">==</span> <span class="s1">&#39;absolute&#39;</span><span class="p">:</span>
             <span class="n">rawthresh</span> <span class="o">=</span> <span class="n">threshold</span>
-        <span class="k">elif</span> <span class="n">threshold</span> <span class="o">==</span> <span class="s">&#39;av_chan_corr&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">threshold</span> <span class="o">==</span> <span class="s1">&#39;av_chan_corr&#39;</span><span class="p">:</span>
             <span class="n">rawthresh</span> <span class="o">=</span> <span class="n">threshold</span> <span class="o">*</span> <span class="p">(</span><span class="n">cccsum</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;You have not selected the correct threshold type, I will&#39;</span> <span class="o">+</span>
-                  <span class="s">&#39;use MAD as I like it&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;You have not selected the correct threshold type, I will&#39;</span> <span class="o">+</span>
+                  <span class="s1">&#39;use MAD as I like it&#39;</span><span class="p">)</span>
             <span class="n">rawthresh</span> <span class="o">=</span> <span class="n">threshold</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span>
-        <span class="c"># Findpeaks returns a list of tuples in the form [(cccsum, sample)]</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Threshold is set at:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">rawthresh</span><span class="p">)]))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Max of data is:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))]))</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Mean of data is:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))]))</span>
+        <span class="c1"># Findpeaks returns a list of tuples in the form [(cccsum, sample)]</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Threshold is set at:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">rawthresh</span><span class="p">)]))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Max of data is:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))]))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Mean of data is:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))]))</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cccsum</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Mean is not zero!  Check this!&#39;</span><span class="p">)</span>
-        <span class="c"># Set up a trace object for the cccsum as this is easier to plot and</span>
-        <span class="c"># maintins timing</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Mean is not zero!  Check this!&#39;</span><span class="p">)</span>
+        <span class="c1"># Set up a trace object for the cccsum as this is easier to plot and</span>
+        <span class="c1"># maintins timing</span>
         <span class="k">if</span> <span class="n">plotvar</span><span class="p">:</span>
             <span class="n">stream_plot</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="c"># Downsample for plotting</span>
+            <span class="c1"># Downsample for plotting</span>
             <span class="n">stream_plot</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">/</span> <span class="mi">10</span><span class="p">))</span>
             <span class="n">cccsum_plot</span> <span class="o">=</span> <span class="n">Trace</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span>
             <span class="n">cccsum_plot</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
-            <span class="c"># Resample here to maintain shape better</span>
+            <span class="c1"># Resample here to maintain shape better</span>
             <span class="n">cccsum_hist</span> <span class="o">=</span> <span class="n">cccsum_plot</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">cccsum_hist</span> <span class="o">=</span> <span class="n">cccsum_hist</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span>
                                                    <span class="n">sampling_rate</span> <span class="o">/</span> <span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">data</span>
             <span class="n">cccsum_plot</span> <span class="o">=</span> <span class="n">plotting</span><span class="o">.</span><span class="n">chunk_data</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
-                                              <span class="s">&#39;Maxabs&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-            <span class="c"># Enforce same length</span>
+                                              <span class="s1">&#39;Maxabs&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+            <span class="c1"># Enforce same length</span>
             <span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">)]</span>
             <span class="n">cccsum_plot</span> <span class="o">=</span> <span class="n">cccsum_plot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
             <span class="n">cccsum_hist</span> <span class="o">=</span> <span class="n">cccsum_hist</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">stream_plot</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
             <span class="n">plotting</span><span class="o">.</span><span class="n">triple_plot</span><span class="p">(</span><span class="n">cccsum_plot</span><span class="p">,</span> <span class="n">cccsum_hist</span><span class="p">,</span>
                                  <span class="n">stream_plot</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span>
-                                 <span class="n">plotdir</span> <span class="o">+</span> <span class="s">&#39;/cccsum_plot_&#39;</span> <span class="o">+</span>
-                                 <span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span>
+                                 <span class="n">plotdir</span> <span class="o">+</span> <span class="s1">&#39;/cccsum_plot_&#39;</span> <span class="o">+</span>
+                                 <span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span>
                                  <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span>
-                                 <span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span> <span class="o">+</span>
-                                 <span class="s">&#39;.&#39;</span> <span class="o">+</span> <span class="n">plot_format</span><span class="p">)</span>
+                                 <span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">+</span>
+                                 <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">plot_format</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
-                <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Saved the cccsum to:&#39;</span><span class="p">,</span> <span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Saved the cccsum to:&#39;</span><span class="p">,</span> <span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                 <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span>
-                                <span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">)]))</span>
+                                <span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%j&#39;</span><span class="p">)]))</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span>
-                        <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%j&#39;</span><span class="p">),</span>
+                        <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%j&#39;</span><span class="p">),</span>
                         <span class="n">cccsum</span><span class="p">)</span>
         <span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;cccsum_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.npy&#39;</span><span class="p">,</span> <span class="n">cccsum</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;cccsum_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.npy&#39;</span><span class="p">,</span> <span class="n">cccsum</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">max</span><span class="p">(</span><span class="n">cccsum</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rawthresh</span><span class="p">:</span>
             <span class="n">peaks</span> <span class="o">=</span> <span class="n">findpeaks</span><span class="o">.</span><span class="n">find_peaks2_short</span><span class="p">(</span><span class="n">cccsum</span><span class="p">,</span> <span class="n">rawthresh</span><span class="p">,</span>
                                                 <span class="n">trig_int</span> <span class="o">*</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span>
@@ -694,11 +693,11 @@
                                                 <span class="n">trig_int</span> <span class="o">*</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span>
                                                 <span class="n">sampling_rate</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;No peaks found above threshold&#39;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;No peaks found above threshold&#39;</span><span class="p">)</span>
             <span class="n">peaks</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="n">toc</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">debug</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;Finding peaks took:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">toc</span> <span class="o">-</span> <span class="n">tic</span><span class="p">),</span> <span class="s">&#39;s&#39;</span><span class="p">]))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;Finding peaks took:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">toc</span> <span class="o">-</span> <span class="n">tic</span><span class="p">),</span> <span class="s1">&#39;s&#39;</span><span class="p">]))</span>
         <span class="k">if</span> <span class="n">peaks</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">peaks</span><span class="p">:</span>
                 <span class="n">detecttime</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">+</span>\
@@ -706,16 +705,17 @@
                 <span class="n">detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DETECTION</span><span class="p">(</span><span class="n">template_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                             <span class="n">detecttime</span><span class="p">,</span>
                                             <span class="n">no_chans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">peak</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rawthresh</span><span class="p">,</span>
-                                            <span class="s">&#39;corr&#39;</span><span class="p">))</span>
+                                            <span class="s1">&#39;corr&#39;</span><span class="p">,</span> <span class="n">chans</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
     <span class="k">del</span> <span class="n">stream</span><span class="p">,</span> <span class="n">templates</span>
-    <span class="k">return</span> <span class="n">detections</span>
+    <span class="k">return</span> <span class="n">detections</span></div>
 
-</div>
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">doctest</span>
     <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
+           </div>
           </div>
           <footer>
   
@@ -725,12 +725,13 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
     </p>
   </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
 </footer>
+
         </div>
       </div>
 
@@ -745,7 +746,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

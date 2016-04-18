@@ -5,9 +5,10 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3.4. Magnitude calculation &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>3.4. Magnitude calculation &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -16,7 +17,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -32,13 +32,13 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="3. EQcorrscan tutorial" href="../tutorial.html"/>
         <link rel="next" title="3.5. Clustering and stacking" href="clustering.html"/>
         <link rel="prev" title="3.3. Lag time calculation and pick correction" href="lag-calc.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -48,11 +48,30 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
-          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
-        
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -60,21 +79,17 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-      </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
           
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="template-creation.html">3.1. Template creation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matched-filter.html">3.2. Matched-filter detection</a></li>
@@ -83,33 +98,14 @@
 <li class="toctree-l2"><a class="reference internal" href="clustering.html">3.5. Clustering and stacking</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">4.1. bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">4.2. template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">4.3. match_filter</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">5.1. clustering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.plotting.html">5.2. plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">5.3. findpeaks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.locate.html">5.4. locate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">5.5. mag_calc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">5.6. pre_processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.seismo_logs.html">5.7. seismo_logs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.sfile_util.html">5.8. sfile_util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">5.9. stacking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.synth_seis.html">5.10. synth_seis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.sac_util.html">5.12. sac_util</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -124,7 +120,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
@@ -133,13 +135,16 @@
     <li>3.4. Magnitude calculation</li>
       <li class="wy-breadcrumbs-aside">
         
-          <a href="../_sources/tutorials/mag-calc.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/tutorials/mag-calc.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="magnitude-calculation">
 <h1>3.4. Magnitude calculation<a class="headerlink" href="#magnitude-calculation" title="Permalink to this headline">¶</a></h1>
@@ -150,15 +155,16 @@ is very accurate but requires high levels of event similarity.</p>
 </div>
 
 
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="clustering.html" class="btn btn-neutral float-right" title="3.5. Clustering and stacking">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="clustering.html" class="btn btn-neutral float-right" title="3.5. Clustering and stacking" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="lag-calc.html" class="btn btn-neutral" title="3.3. Lag time calculation and pick correction"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="lag-calc.html" class="btn btn-neutral" title="3.3. Lag time calculation and pick correction" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -168,12 +174,13 @@ is very accurate but requires high levels of event similarity.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
     </p>
   </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
 </footer>
+
         </div>
       </div>
 
@@ -188,7 +195,7 @@ is very accurate but requires high levels of event similarity.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

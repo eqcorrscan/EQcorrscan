@@ -3,24 +3,12 @@ Early development functions to do **very** basic simulations of seismograms \
 to be used as general matched-filter templates and see how well a simple \
 model would fit with real data.
 
-This file is part of EQcorrscan.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
-All copyright and ownership of this module belongs to Calum Chamberlain, 2015 \
-& 2016
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -245,7 +233,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 
 
 def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
-                        t_length=3.0, max_amp=10.0, debug=0):
+                        t_length=3.0, max_amp=10.0, max_lag=20, debug=0):
     """
     Function to generate a synthetic dataset to be used for testing.
     This will generate both templates and data to scan through.
@@ -268,6 +256,8 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     :param t_length: Length of templates in seconds.
     :type max_amp: float
     :param max_amp: Maximum signal-to-noise ratio of seeds.
+    :type max_lag: Maximum lag time in seconds (randomised).
+    :param max_lag: float
     :type debug: int
     :param debug: Debug level, bigger the number, the more plotting/output.
 
@@ -280,7 +270,7 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     from obspy import UTCDateTime
 
     # Generate random arrival times
-    t_times = np.abs(np.random.random([nsta, ntemplates])) * t_length
+    t_times = np.abs(np.random.random([nsta, ntemplates])) * max_lag
     # Generate random node locations - these do not matter as they are only
     # used for naming
     lats = np.random.random(ntemplates) * 90.0

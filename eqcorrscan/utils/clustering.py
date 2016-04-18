@@ -1,23 +1,12 @@
 """
 Functions to cluster seismograms by a range of constraints.
 
-Copyright 2015 Calum Chamberlain
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -67,7 +56,7 @@ def distance_matrix(stream_list, cores=1):
     Function to compute the distance matrix for all templates - will give \
     distance as 1-abs(cccoh), e.g. a well correlated pair of templates will \
     have small distances, and an equally well correlated reverse image will \
-    have the same distance as apositively correlated image - this is an issue.
+    have the same distance as a positively correlated image - this is an issue.
 
     :type stream_list: List of obspy.Streams
     :param stream_list: List of the streams to compute the distance matrix for
@@ -109,7 +98,7 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
+def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
             cores='all', debug=1):
     """
     Function to take a set of templates and cluster them, will return groups \
@@ -123,7 +112,7 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
 
     Will compute the distance matrix in parallel, using all available cores
 
-    :type stream_list: List of Obspy.Stream
+    :type template_list: List of tuples (Obspy.Stream, temp_id)
     :param stream_list: List of templates to compute clustering for
     :type show: bool
     :param show: plot linkage on screen if True, defaults to True
@@ -151,11 +140,11 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
         num_cores = cpu_count()
     else:
         num_cores = cores
+    # Extract only the Streams from stream_list
+    stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
     if debug >= 1:
-        msg = ' '.join(['Computing the distance matrix using',
-                        str(num_cores), 'cores'])
-        print(msg)
+        print('Computing the distance matrix using '+str(num_cores)+' cores')
     dist_mat = distance_matrix(stream_list, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
@@ -172,26 +161,26 @@ def cluster(stream_list, show=True, corr_thresh=0.3, save_corrmat=False,
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
-    # Get the indeces of the groups
+    # Get the indices of the groups
     if debug >= 1:
         print('Clustering')
-    indeces = fcluster(Z, 1 - corr_thresh, 'distance')
-    group_ids = list(set(indeces))  # Unique list of group ids
+    indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
+    group_ids = list(set(indices))  # Unique list of group ids
     if debug >= 1:
         msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
         print(msg)
     # Convert to tuple of (group id, stream id)
-    indeces = [(indeces[i], i) for i in xrange(len(indeces))]
+    indices = [(indices[i], i) for i in xrange(len(indices))]
     # Sort by group id
-    indeces.sort(key=lambda tup: tup[0])
+    indices.sort(key=lambda tup: tup[0])
     groups = []
     if debug >= 1:
         print('Extracting and grouping')
     for group_id in group_ids:
         group = []
-        for ind in indeces:
+        for ind in indices:
             if ind[0] == group_id:
-                group.append(stream_list[ind[1]])
+                group.append(template_list[ind[1]])
             elif ind[0] > group_id:
                 # Because we have sorted by group id, when the index is greater
                 # than the group_id we can break the inner loop.
@@ -290,7 +279,8 @@ def SVD(stream_list):
 
     .. note:: We recommend that you align the data before computing the \
         SVD, e.g., the P-arrival on all templates for the same channel \
-        should appear at the same time in the trace.
+        should appear at the same time in the trace.  See the \
+        stacking.align_traces function for a way to do this.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
@@ -305,15 +295,14 @@ def SVD(stream_list):
     Uvectors = []
     for stachan in stachans:
         chan_mat = [stream_list[i].select(station=stachan.split('.')[0],
-                                          channel=stachan.
-                                          split('.')[1])[0].data
+                                          channel=stachan.split('.')[1])[0].data
                     for i in range(len(stream_list)) if
                     len(stream_list[i].select(station=stachan.split('.')[0],
-                                              channel=stachan.split('.')[1]))
-                    != 0]
+                                              channel=stachan.split('.')[1])) != 0]
+        # chan_mat=[chan_mat[i]/np.max(chan_mat[i]) for i in xrange(len(chan_mat))]
         chan_mat = np.asarray(chan_mat)
         print(chan_mat.shape)
-        U, s, V = np.linalg.svd(chan_mat, full_matrices=True)
+        U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
         SVectors.append(V)
         Uvectors.append(U)
@@ -374,7 +363,6 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
                                   header={'station': stachan.split('.')[0],
                                           'channel': stachan.split('.')[1],
                                           'sampling_rate': sampling_rate}))
-
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
@@ -391,6 +379,11 @@ def corr_cluster(trace_list, thresh=0.9):
     :param thresh: Correlation threshold between -1-1
 
     :returns: np.ndarray of bool
+
+    .. note:: We recommend that you align the data before computing the \
+        clutsering, e.g., the P-arrival on all templates for the same channel \
+        should appear at the same time in the trace.  See the \
+        stacking.align_traces function for a way to do this
     """
     from eqcorrscan.utils import stacking
     from obspy import Stream
@@ -575,6 +568,92 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         return
 
 
+def dist_mat_km(catalog):
+    """
+    Function to compute the distance matrix for all events in a catalog - \
+    will give physical distance in kilometers.
+
+    :type catalog: List of obspy.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+
+    :returns: ndarray - distance matrix
+    """
+    from eqcorrscan.utils.mag_calc import dist_calc
+
+    # Initialize square matrix
+    dist_mat = np.array([np.array([0.0] * len(catalog))] *
+                        len(catalog))
+    # Calculate distance vector for each event
+    for i, master in enumerate(catalog):
+        mast_list = []
+        master_tup = (master.preferred_origin().latitude,
+                      master.preferred_origin().longitude,
+                      master.preferred_origin().depth // 1000)
+        for slave in catalog:
+            slave_tup = (slave.preferred_origin().latitude,
+                         slave.preferred_origin().longitude,
+                         slave.preferred_origin().depth // 1000)
+            mast_list.append(dist_calc(master_tup, slave_tup))
+        # Sort the list into the dist_mat structure
+        for j in range(i, len(catalog)):
+            dist_mat[i, j] = mast_list[j]
+    # Reshape the distance matrix
+    for i in range(1, len(catalog)):
+        for j in range(i):
+            dist_mat[i, j] = dist_mat.T[i, j]
+    return dist_mat
+
+
+def space_cluster(catalog, d_thresh, show=True):
+    """
+    Function to cluster a catalog by distance only - will compute the\
+    matrix of physical distances between events and utilize the\
+    scipy.clusering.hierarchy module to perform the clustering.
+
+    :type catalog: obspy.Catalog
+    :param catalog: Catalog of events to clustered
+    :type d_thresh: float
+    :param d_thresh: Maximum inter-event distance threshold
+
+    :returns: list of Catalog classes
+    """
+    from scipy.spatial.distance import squareform
+    from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+    import matplotlib.pyplot as plt
+    from obspy import Catalog
+
+    # Compute the distance matrix and linkage
+    dist_mat = dist_mat_km(catalog)
+    dist_vec = squareform(dist_mat)
+    Z = linkage(dist_vec, method='average')
+
+    # Cluster the linkage using the given threshold as the cutoff
+    indices = fcluster(Z, t=d_thresh, criterion='distance')
+    group_ids = list(set(indices))
+    indices = [(indices[i], i) for i in xrange(len(indices))]
+
+    if show:
+        # Plot the dendrogram...if it's not way too huge
+        dendrogram(Z, color_threshold=d_thresh,
+                   distance_sort='ascending')
+        plt.show()
+
+    # Sort by group id
+    indices.sort(key=lambda tup: tup[0])
+    groups = []
+    for group_id in group_ids:
+        group = Catalog()
+        for ind in indices:
+            if ind[0] == group_id:
+                group.append(catalog[ind[1]])
+            elif ind[0] > group_id:
+                # Because we have sorted by group id, when the index is greater
+                # than the group_id we can break the inner loop.
+                # Patch applied by CJC 05/11/2015
+                groups.append(group)
+                break
+    return groups
+
 def space_time_cluster(detections, t_thresh, d_thresh):
     """
     Function to cluster detections in space and time, use to seperate \
@@ -588,29 +667,38 @@ def space_time_cluster(detections, t_thresh, d_thresh):
     :type d_thresh: float
     :param d_thresh: Maximum inter-event distance in km
 
-    :returns: List of tuple (detections, clustered) and list of indeces of \
-        clustered detections
+    :returns: List of tuple (detections, clustered) and list of indices of\
+            clustered detections
     """
     from eqcorrscan.utils.mag_calc import dist_calc
+
     # Ensure they are sorted by time first, not that we need it.
     detections.sort(key=lambda tup: tup[1])
     clustered = []
-    clustered_indeces = []
+    clustered_indices = []
     for master_ind, master in enumerate(detections):
         keep = False
+        mast_o = master.preferred_origin()
+        mast_time = mast_o.time
+        mast_loc = (mast_o.latitude, mast_o.longitude, mast_o.depth // 1000)
         for slave in detections:
-            if not master == slave and\
-               abs((master[1] - slave[1]).total_seconds()) <= t_thresh and \
-               dist_calc(master[0], slave[0]) <= d_thresh:
+            slave_o = slave.preferred_origin()
+            slave_time = slave_o.time
+            slave_loc = (slave_o.latitude, slave_o.longitude,
+                         slave_o.depth // 1000)
+            if not master.resource_id == slave.resource_id and\
+               abs((mast_time - slave_time).total_seconds()) <= t_thresh and\
+               dist_calc(mast_loc, slave_loc) <= d_thresh:
                 # If the slave events is close in time and space to the master
                 # keep it and break out of the loop.
                 keep = True
                 break
         if keep:
             clustered.append(master)
-            clustered_indeces.append(master_ind)
+            clustered_indices.append(master_ind)
 
-    return clustered, clustered_indeces
+    return clustered, clustered_indices
+
 
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):

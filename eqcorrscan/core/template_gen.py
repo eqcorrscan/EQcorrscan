@@ -10,26 +10,17 @@ repeating events.
     of processed data rather than re-processing the same day of data \
     for each template.
 
-Code written by Calum John Chamberlain & Chet Hopp of \
-Victoria University of Wellington, 2015.
+.. note:: All functions use obspy filters, which are implemented such that \
+    if both highcut and lowcut are set a bandpass filter will be used, \
+    but of highcut is not set (None) then a highpass filter will be used and \
+    if only the highcut is set then a lowpass filter will be used.
 
-Copyright 2015, 2016 Calum Chamberlain, Chet Hopp.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-This file is part of EQcorrscan.
-
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -40,7 +31,9 @@ from __future__ import unicode_literals
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
              prepick=0.05, debug=0, plot=False):
     """Function to read picks and waveforms from SAC data, and generate a \
-    template from these.
+    template from these. Usually sac_files is a list of all single-channel \
+    SAC files for a given event, a single, multi-channel template will be \
+    created from these traces.
 
     :type sac_files: list or stream
     :param sac_files: List or stream of sac waveforms, or list of paths to \
@@ -91,13 +84,14 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     elif isinstance(sac_files, Stream):
         st = sac_files
     # Make an event object...
-    event = sactoevent(st)
+    event = sactoevent(st, debug=debug)
     # Process the data
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
                                   samp_rate, debug)
     template = _template_gen(picks=event.picks, st=st, length=length,
-                             swin=swin, prepick=prepick, plot=plot)
+                             swin=swin, prepick=prepick, plot=plot,
+                             debug=debug)
     return template
 
 
@@ -192,7 +186,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
                                   samp_rate, debug)
     st1 = _template_gen(picks=picks, st=st, length=length, swin=swin,
-                        prepick=prepick, plot=plot)
+                        prepick=prepick, plot=plot, debug=debug)
     return st1
 
 
@@ -315,7 +309,8 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
         tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
                                     samp_rate, debug, day)
     # Cut and extract the templates
-    st1 = _template_gen(picks, st, length, swin, prepick=prepick, plot=plot)
+    st1 = _template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
+                        debug=debug)
     return st1
 
 
@@ -407,7 +402,7 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
         st1 = st.copy()
         # Cut and extract the templates
         template = _template_gen(event.picks, st1, length, swin,
-                                 prepick=prepick, plot=plot)
+                                 prepick=prepick, plot=plot, debug=debug)
         templates.append(template)
     return templates
 
@@ -497,7 +492,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                                      samp_rate, starttime=starttime,
                                      debug=debug)
         template = _template_gen(event.picks, st1, length, swin, prepick,
-                                 plot=plot)
+                                 plot=plot, debug=debug)
         del st, st1
         temp_list.append(template)
     return temp_list
@@ -596,13 +591,14 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         if debug > 0:
             st1.plot()
         template = _template_gen(event.picks, st1, length, swin, prepick,
-                                 plot)
+                                 plot=plot, debug=debug)
         del st, st1
         temp_list.append(template)
     return temp_list
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
+def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
+                  debug=0):
     r"""Function to generate a cut template in the obspy \
     Stream class from a given set of picks and data, also in an obspy stream \
     class.  Should be given pre-processed data (downsampled and filtered).
@@ -620,6 +616,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
             default is 0.05 seconds
     :type plot: bool
     :param plot: To plot the template or not, default is True
+    :type debug: int
+    :param debug: Debug output level from 0-5.
 
     :returns: obspy.Stream Newly cut template.
 
@@ -642,6 +640,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
     stations = []
     channels = []
     st_stachans = []
+    if not swin in ['P', 'all', 'S']:
+        raise IOError('Phase type is not in [all, P, S]')
     for pick in picks:
         # Check to see that we are only taking the appropriate picks
         if swin == 'all':
@@ -658,8 +658,6 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[-1])
-        else:
-            raise IOError('Phase type is not in [all, P, S]')
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i, station in enumerate(stations):
@@ -727,16 +725,18 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
                         swin in pick.phase_hint.upper():
                     starttime = pick.time - prepick
         if 'starttime' in locals():
-            print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
+            if debug > 0:
+                print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
             tr.trim(starttime=starttime, endtime=starttime + length,
                     nearest_sample=False)
-            print(tr.stats.starttime)
-            print(tr.stats.endtime)
+            if debug > 0:
+                print('Cut starttime = ' + str(tr.stats.starttime))
+                print('Cut endtime = ' + str(tr.stats.endtime))
             if 'st1' not in locals():
                 st1 = Stream(tr)
             else:
                 st1 += tr
-        else:
+        elif debug > 0:
             print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
         # Ensure that the template is the correct length
         if len(tr.data) == (tr.stats.sampling_rate * length) + 1:
@@ -756,8 +756,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False):
 
 
 def extract_from_stack(stack, template, length, pre_pick, pre_pad,
-                       Z_include=False, pre_processed=True, samp_rate=False,
-                       lowcut=False, highcut=False, filt_order=False):
+                       Z_include=False, pre_processed=True, samp_rate=None,
+                       lowcut=None, highcut=None, filt_order=3):
     r"""Function to extract a new template from a stack of previous detections.
     Requires the stack, the template used to make the detections for the \
     stack, and we need to know if the stack has been pre-processed.

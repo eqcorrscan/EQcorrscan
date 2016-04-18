@@ -37,6 +37,7 @@ except ImportError:
 try:
     import cv2  # NOQA
 except:
+    print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
@@ -51,6 +52,7 @@ long_description = "EQcorrscan: matched-filter earthquake detection and " +\
 
 # Get a list of all the scripts not to be installed
 scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
+scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
 setup(
     name='EQcorrscan',

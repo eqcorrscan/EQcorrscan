@@ -21,3 +21,4 @@ EQcorrscan.egg-info
 .tox
 eqcorrscan/tutorials/*.jpg
 pytest_runner*
+.coveralls.yml

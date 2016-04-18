@@ -5,9 +5,10 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5.9. stacking &mdash; EQcorrscan 0.1.1 documentation</title>
+  <title>5.9. stacking &mdash; EQcorrscan 0.1.2rc documentation</title>
   
 
   
@@ -16,7 +17,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -32,13 +32,13 @@
   
 
   
-    <link rel="top" title="EQcorrscan 0.1.1 documentation" href="../index.html"/>
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
         <link rel="up" title="5. Utils" href="../utils.html"/>
         <link rel="next" title="5.10. synth_seis" href="utils.synth_seis.html"/>
         <link rel="prev" title="5.8. sfile_util" href="utils.sfile_util.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -48,11 +48,30 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
-          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
-        
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -60,35 +79,19 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-      </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
           
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">1.2. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#supported-environments">1.3. Supported environments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">1.4. Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. Whats new for version 0.1.1</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/template-creation.html">3.1. Template creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/clustering.html">3.5. Clustering and stacking</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.template_gen.html">4.2. template_gen</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
-</ul>
-</li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
@@ -106,10 +109,10 @@
 </li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -124,7 +127,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
@@ -133,33 +142,31 @@
     <li>5.9. stacking</li>
       <li class="wy-breadcrumbs-aside">
         
-          <a href="../_sources/submodules/utils.stacking.txt" rel="nofollow"> View page source</a>
+          
+            <a href="../_sources/submodules/utils.stacking.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="module-stacking">
 <span id="stacking"></span><h1>5.9. stacking<a class="headerlink" href="#module-stacking" title="Permalink to this headline">¶</a></h1>
-<p>Utility module of the EQcorrscan package to allow for different methods of
-stacking of seismic signal in one place.</p>
-<p>Calum Chamberlain 24/06/2015</p>
-<p>Copyright 2015 Calum Chamberlain</p>
-<p>This file is part of EQcorrscan.</p>
-<blockquote>
-<div><p>EQcorrscan is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.</p>
-<p>EQcorrscan is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.</p>
-<p>You should have received a copy of the GNU General Public License
-along with EQcorrscan.  If not, see &lt;<a class="reference external" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
-</div></blockquote>
+<p>Utility module of the EQcorrscan package to allow for different methods of stacking of seismic signal in one place.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body">Calum Chamberlain, Chet Hopp.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body">GNU Lesser General Public License, Version 3
+(<a class="reference external" href="https://www.gnu.org/copyleft/lesser.html">https://www.gnu.org/copyleft/lesser.html</a>)</td>
+</tr>
+</tbody>
+</table>
 <dl class="function">
 <dt id="stacking.PWS_stack">
 <code class="descclassname">stacking.</code><code class="descname">PWS_stack</code><span class="sig-paren">(</span><em>streams</em>, <em>weight=2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/stacking.html#PWS_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#stacking.PWS_stack" title="Permalink to this definition">¶</a></dt>
@@ -171,7 +178,7 @@ Recommend aligning the traces before stacking.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>streams</strong> (<em>list of obspy.Stream</em>) &#8211; List of Stream to stack</li>
-<li><strong>weight</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Exponent to the phase stack used for weighting.</li>
+<li><strong>weight</strong> (<em>float</em>) &#8211; Exponent to the phase stack used for weighting.</li>
 </ul>
 </td>
 </tr>
@@ -192,7 +199,7 @@ Recommend aligning the traces before stacking.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>trace_list</strong> (<em>list of Traces</em>) &#8211; List of traces to allign</li>
-<li><strong>shift_len</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Length to allow shifting within in samples</li>
+<li><strong>shift_len</strong> (<em>int</em>) &#8211; Length to allow shifting within in samples</li>
 <li><strong>master</strong> (<em>obspy.Trace</em>) &#8211; Master trace to align to, if set to False will align to         the largest amplitude trace (default)</li>
 </ul>
 </td>
@@ -223,15 +230,16 @@ Recommend aligning the traces before stacking.</p>
 </div>
 
 
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utils.synth_seis.html" class="btn btn-neutral float-right" title="5.10. synth_seis">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="utils.synth_seis.html" class="btn btn-neutral float-right" title="5.10. synth_seis" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="utils.sfile_util.html" class="btn btn-neutral" title="5.8. sfile_util"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="utils.sfile_util.html" class="btn btn-neutral" title="5.8. sfile_util" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -241,12 +249,13 @@ Recommend aligning the traces before stacking.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
     </p>
   </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
 </footer>
+
         </div>
       </div>
 
@@ -261,7 +270,7 @@ Recommend aligning the traces before stacking.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2rc',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

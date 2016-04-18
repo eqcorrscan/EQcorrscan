@@ -19,26 +19,26 @@ classes as these have more support and functionality.
 We have not implimented any handling of focal mechanism solutions between
 the two formats.
 
-Code written by Calum John Chamberlain and Chet Hopp both of
-Victoria University of Wellington, 2015 & 2016.
+.. note:: Pick time-residauls are handled in event.origins[0].arrivals, with \
+    the arrival.pick_id linking the arrival (which contain calculated \
+    information) with the pick.resource_id (where the pick contains only \
+    physical measured information).
 
-Copyright 2015, 2016 the authors.
+:Example:
 
-This file is part of EQcorrscan.
+>>> from eqcorrscan.utils import sfile_util
+>>> event = sfile_util.readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
+...                              '01-0411-15L.S201309')
+>>> pick = event.picks[0]
+>>> time_rms = [arrival.time_residual for arrival in event.origins[0].arrivals
+...             if arrival.pick_id == pick.resource_id]
 
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+:copyright:
+    Calum Chamberlain, Chet Hopp.
 
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
-
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -452,6 +452,11 @@ def readheader(sfile):
             new_event.origins[0].latitude = _float_conv(topline[23:30])
             new_event.origins[0].longitude = _float_conv(topline[31:38])
             new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
+        else:
+            # The origin 'requires' a lat & long
+            new_event.origins[0].latitude = float('NaN')
+            new_event.origins[0].longitude = float('NaN')
+            new_event.origins[0].depth = float('NaN')
         # new_event.depth_ind = topline[44]
         # new_event.loc_ind = topline[45]
         new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -460,8 +465,9 @@ def readheader(sfile):
                        topline[49:51].strip())
         new_event.origins[0].comments.append(ksta)
         # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
-        new_event.origins[0].time_errors['Time_Residual_RMS'] = \
-            _float_conv(topline[52:55])
+        if not _float_conv(topline[52:55]) == 999:
+            new_event.origins[0].time_errors['Time_Residual_RMS'] = \
+                _float_conv(topline[52:55])
         # Read in magnitudes if they are there.
         if len(topline[59].strip()) > 0:
             new_event.magnitudes.append(Magnitude())
@@ -943,15 +949,24 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
     if event.origins[0].latitude:
-        lat = '{0:.3f}'.format(event.origins[0].latitude)
+        if event.origins[0].latitude not in [float('NaN'), 999]:
+            lat = '{0:.3f}'.format(event.origins[0].latitude)
+        else:
+            lat = ''
     else:
         lat = ''
     if event.origins[0].longitude:
-        lon = '{0:.3f}'.format(event.origins[0].longitude)
+        if event.origins[0].longitude not in [float('NaN'), 999]:
+            lon = '{0:.3f}'.format(event.origins[0].longitude)
+        else:
+            lon = ''
     else:
         lon = ''
     if event.origins[0].depth:
-        depth = '{0:.1f}'.format(event.origins[0].depth/1000)
+        if event.origins[0].depth not in [float('NaN'), 999]:
+            depth = '{0:.1f}'.format(event.origins[0].depth/1000)
+        else:
+            depth = ''
     else:
         depth = ''
     if event.creation_info:

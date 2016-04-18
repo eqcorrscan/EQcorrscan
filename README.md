@@ -1,14 +1,17 @@
 # EQcorrscan
-## A python package to conduct match-filter earthquake detections.
+## A python package to conduct matched-filter earthquake detections.
 
 [![Join the chat at https://gitter.im/calum-chamberlain/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/calum-chamberlain/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
+[![Build status](https://ci.appveyor.com/api/projects/status/69bpa53loaq473w7?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan)
+[![Coverage Status](https://coveralls.io/repos/github/calum-chamberlain/EQcorrscan/badge.svg?branch=develop)](https://coveralls.io/github/calum-chamberlain/EQcorrscan?branch=develop)
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), we currently do not support
-Windows systems, but plan to in the future.  Installation for Linux and OS X should be as simple as:
+Windows systems, but plan to in the future (check the appveyor status, when it passes we
+might be good to go!).  Installation for Linux and OS X should be as simple as:
 
 ```pip install EQcorrscan```
 
@@ -28,6 +31,16 @@ separately using (on Linux):
 ```apt-get install python-opencv```
 
 Or, for Mac users, this is available on Macports or other similar package managers.
+
+For those who want to un the GUIs (in very early development) you will need to
+install tk, on Windows and OSX this is usually pre-installed, on Linux you
+may need to run:
+
+```apt-get install python-tk```
+
+You will also need **Qt** and **PyQT** > 4.4.  Installation for these can be
+a bit of a dog, you will need to google around - hopefully I can have better
+instructions here soon.
 
 ## Updates
 
@@ -59,7 +72,7 @@ used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes
 
 Also within this package are:
 * Clustering routines for seismic data;
-* Peak finding algorithm (basic);
+* Peak finding algorithm (basic, but appropriate for noisy data);
 * Automatic amplitude picker for local magnitude scale;
 * [Seisan](http://seisan.info/) S-file integration for database management and routine earthquake location;
 * Obspy.core.event integration, which opens up lots of other functions (Seishub, hypoDDpy etc.);
@@ -75,7 +88,7 @@ how to do the core matched-filter detection.
 # Licence
 
 This package is written by Calum Chamberlain and Chet Hopp of Victoria University of Wellington, and
-is distributed under the LGPL GNU License, Copyright Calum Chamberlain 2015, 2016.
+is distributed under the LGPL GNU License, Copyright Calum Chamberlain and Chet Hopp 2015, 2016.
 
 
 # Contributing
