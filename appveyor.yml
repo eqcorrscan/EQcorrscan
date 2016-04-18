@@ -39,6 +39,7 @@ install:
   - "powershell copy-item C:\\OpenCV249\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
   - "pip install pyimgur"
   - "pip install -U future"
+  - "pip install pytest-cov"
   # list package versions
   - "conda list"
 
