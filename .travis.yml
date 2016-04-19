@@ -52,16 +52,24 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   - |
-      if [[ "${py:0:1}" == '3' ]]; then
+      if [[ "$py" == "3.3" ]]; then
         NUMPY_VERSION=1.9.2
         SCIPY_VERSION=0.16.0
         MPL_VERSION=1.4.3
+        BASEMAP="basemap=1.0.7"
+        PYPROJ=""
+      elif [[ "${py:0:1}" == '3' ]]; then
+        NUMPY_VERSION=1.10.4
+        SCIPY_VERSION=0.17.0
+        MPL_VERSION=1.5.1
         BASEMAP_VERSION=1.0.7
+        PYPROJ="pyproj"
       else
-        NUMPY_VERSION=1.8.2
-        SCIPY_VERSION=0.14.0
-        MPL_VERSION=1.3.1
+        NUMPY_VERSION=1.10.4
+        SCIPY_VERSION=0.17.0
+        MPL_VERSION=1.5.1
         BASEMAP_VERSION=1.0.7
+        PYPROJ="pyproj"
       fi
   - conda create -q -n test-environment
         python=$py
@@ -69,13 +77,13 @@ install:
         scipy=$SCIPY_VERSION
         matplotlib=$MPL_VERSION
         basemap=$BASEMAP_VERSION
+        $PYPROJ
         flake8
         future
         lxml
         sqlalchemy
         mock
         gdal
-        pyproj
         docopt
         coverage
         requests
