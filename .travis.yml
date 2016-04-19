@@ -3,12 +3,12 @@ os:
   - linux
   # - osx  # Note, travis doesn't support python builds on osx
 python:
-  - "2.7"
+  - "2.7_with_system_site_packages"
   - "3.3"
   - "3.4"
   - "3.5"
-virtualenv:
-    system_site_packages: true
+# virtualenv:
+#     system_site_packages: true
 sudo: false
 
 # Test with multiple obspy versions, allow some backwards compatability
