@@ -21,7 +21,7 @@ addons:
     source:
       - lucid
     packages:
-      # - python-opencv
+      - python-opencv
       - pandoc
 
 # before install:
@@ -81,8 +81,8 @@ install:
         requests
         pytest
         pytest-pep8
-        opencv
         pyflakes=0.9.0
+        # opencv
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
