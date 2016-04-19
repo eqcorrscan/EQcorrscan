@@ -16,11 +16,15 @@ we just need to get the testing going.
 
 Installation for all systems should be as simple as:
 
-```pip install EQcorrscan```
+```bash
+pip install EQcorrscan
+```
 
 If upgrading from a previous version, rather than running install --upgrade, I recommend the following:
 
-```pip install -U --no-deps EQcorrscan```
+```bash
+pip install -U --no-deps EQcorrscan
+```
 
 This will not try to upgrade your dependencies, which is not needed.  You may wish
 to update your obspy version to 1.0.0 which was recently released.  We have tested
@@ -31,7 +35,9 @@ this and support it, nevertheless, if you find any issues then let us know.
 If you have any issues installing please let me know.  You will need to install openCV
 separately using (on Linux):
 
-```apt-get install python-opencv```
+```bash
+apt-get install python-opencv
+```
 
 Or, for Mac users, this is available on Macports or other similar package managers.
 
@@ -42,7 +48,9 @@ For those who want to run the GUIs (in very early development) you will need to
 install tk, on Windows and OSX this is usually pre-installed, on Linux you
 may need to run:
 
-```apt-get install python-tk```
+```bash
+apt-get install python-tk
+```
 
 ## Updates
 
