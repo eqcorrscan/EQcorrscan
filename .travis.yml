@@ -36,6 +36,9 @@ install:
       export OS="Linux";
       export py=$TRAVIS_PYTHON_VERSION;
     fi
+  - if [[ "py" == "2.7_with_system_site_packages"]]; then
+      export py="2.7"
+    fi
   - if [[ "${py:0:1}" == '2' ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-${OS}-x86_64.sh -O miniconda.sh;
     else
