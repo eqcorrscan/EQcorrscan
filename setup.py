@@ -54,6 +54,14 @@ long_description = "EQcorrscan: matched-filter earthquake detection and " +\
 scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
 scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
+if sys.version_info.major == 2:
+    install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.3.0',
+                        'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing',
+                        'LatLon']
+else:
+    install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.3.0',
+                        'joblib>=0.8.4', 'scipy>=0.14', 'LatLon']
+
 setup(
     name='EQcorrscan',
 
@@ -111,9 +119,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.3.0',
-                      'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing',
-                      'LatLon'],
+    install_requires=install_requires,
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
