@@ -9,9 +9,12 @@
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 # Installation
-Installation has been tested on both OSX and Linux (Ubuntu), we currently do not support
-Windows systems, but plan to in the future (check the appveyor status, when it passes we
-might be good to go!).  Installation for Linux and OS X should be as simple as:
+Installation has been tested on both OSX and Linux (Ubuntu), and now
+Windows systems.  Currently we only support python 2.7, but plan to extend
+this coverage in the near future - everything is written to work in python 3.x,
+we just need to get the testing going.
+
+Installation for all systems should be as simple as:
 
 ```pip install EQcorrscan```
 
@@ -23,7 +26,7 @@ This will not try to upgrade your dependencies, which is not needed.  You may wi
 to update your obspy version to 1.0.0 which was recently released.  We have tested
 this and support it, nevertheless, if you find any issues then let us know.
 
-*You will likely need sudo permissions to run this command.*
+*You will likely need sudo/root permissions to run this command.*
 
 If you have any issues installing please let me know.  You will need to install openCV
 separately using (on Linux):
@@ -32,15 +35,14 @@ separately using (on Linux):
 
 Or, for Mac users, this is available on Macports or other similar package managers.
 
-For those who want to un the GUIs (in very early development) you will need to
+For Windows users, you should follow the instructions [here](http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0),
+not that you need to copy the cv2.pyd file.
+
+For those who want to run the GUIs (in very early development) you will need to
 install tk, on Windows and OSX this is usually pre-installed, on Linux you
 may need to run:
 
 ```apt-get install python-tk```
-
-You will also need **Qt** and **PyQT** > 4.4.  Installation for these can be
-a bit of a dog, you will need to google around - hopefully I can have better
-instructions here soon.
 
 ## Updates
 

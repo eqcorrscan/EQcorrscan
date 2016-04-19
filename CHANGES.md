@@ -4,6 +4,9 @@
 a default match-filter script to the directory.
 * Add archive reader helper for default script, and parameter classes and
 definitions for default script.
+* Re-write history to make repository smaller, removed trash files that had
+been added carelessly.
+* Now tested on appveyor, so able to be run on Windows.
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;

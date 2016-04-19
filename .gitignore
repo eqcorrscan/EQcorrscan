@@ -22,3 +22,4 @@ EQcorrscan.egg-info
 eqcorrscan/tutorials/*.jpg
 pytest_runner*
 .coveralls.yml
+.coverage
