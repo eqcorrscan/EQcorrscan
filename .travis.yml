@@ -21,8 +21,8 @@ addons:
     source:
       - lucid
     packages:
-      - python-opencv
       - pandoc
+      - python3.4-dev
       - python-dev
       - python-numpy
 
@@ -111,6 +111,13 @@ install:
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
+  - |
+      if [[ "${py:0:1}" == '3' ]]; then
+        OPENCV="-c https://conda.anaconda.org/menpo opencv3"
+      else
+        OPENCV="opencv"
+      fi
+  - conda install $OPENCV
   - pip install coveralls
   - pip install pytest-cov
   - pip install geographiclib
