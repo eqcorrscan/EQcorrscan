@@ -7,14 +7,18 @@ import unittest
 class TestImport(unittest.TestCase):
     def test_import(self):
         import sys
-        sys.path.insert(0, '/usr/lib/pyshared/python2.7')
+        if sys.info.major == 2:
+            sys.path.insert(0, '/usr/lib/pyshared/python2.7')
         # Insert path for travis
         i = 0
         try:
             import cv2  # NOQA
         except:
-            print("You have not properly installed: cv2")
-            i += 1
+            if sys.info.major == 2:
+                print("You have not properly installed: cv2")
+                i += 1
+            else:
+                print("We haven't worked out how to install openCV for py3")
         try:
             import joblib  # NOQA
         except:

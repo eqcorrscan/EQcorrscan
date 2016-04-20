@@ -195,6 +195,8 @@ class TestCatalogMethods(unittest.TestCase):
         sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
         event_ids = list(range(len(sfile_list)))
         event_list = zip(event_ids, sfile_list)
+        # In python 3.x this gives an error as zip is now an object...
+        event_list = list(event_list)  # Do this for compatability
         write_catalog(event_list=event_list,
                       max_sep=maximum_seperation,
                       min_link=minimum_links)

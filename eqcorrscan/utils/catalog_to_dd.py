@@ -207,6 +207,8 @@ def write_catalog(event_list, max_sep=1, min_link=8):
         event using the sfile_util module prior to this step.
     """
     from eqcorrscan.utils.mag_calc import dist_calc
+    # Cope with possibly being passed a zip in python 3.x
+    event_list = list(event_list)
     f = open('dt.ct', 'w')
     f2 = open('dt.ct2', 'w')
     fphase = open('phase.dat', 'w')
