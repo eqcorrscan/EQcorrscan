@@ -22,9 +22,6 @@ addons:
       - lucid
     packages:
       - pandoc
-      - python3.4-dev
-      - python-dev
-      - python-numpy
 
 # before install:
 #   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update        ; fi
