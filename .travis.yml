@@ -120,7 +120,7 @@ install:
   - pip install geographiclib
   - pip install pypandoc
   # Copy opencv cv2.so file to path
-  - cp /usr/lib/pymodules/python2.7/cv2.so /home/travis/build/calum-chamberlain/EQcorrscan/.
+  # - cp /usr/lib/pymodules/python2.7/cv2.so /home/travis/build/calum-chamberlain/EQcorrscan/.
   # current pyimgur stable release has a py2.6 incompatibility
   - pip install https://github.com/megies/PyImgur/archive/py26.zip
   - pip install obspy==$OBSPY_VERSION
