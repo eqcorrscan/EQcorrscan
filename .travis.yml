@@ -23,6 +23,8 @@ addons:
     packages:
       - python-opencv
       - pandoc
+      - python-dev
+      - python-numpy
 
 # before install:
 #   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update        ; fi
@@ -58,18 +60,21 @@ install:
         MPL_VERSION=1.4.3
         BASEMAP_VERSION="1.0.7"
         PYPROJ=""
+        PYTEST="pytest>=2.8"
       elif [[ "${py:0:1}" == '3' ]]; then
         NUMPY_VERSION=1.10.4
         SCIPY_VERSION=0.17.0
         MPL_VERSION=1.5.1
         BASEMAP_VERSION=1.0.7
         PYPROJ="pyproj"
+        PYTEST=""
       else
         NUMPY_VERSION=1.10.4
         SCIPY_VERSION=0.17.0
         MPL_VERSION=1.5.1
         BASEMAP_VERSION=1.0.7
         PYPROJ="pyproj"
+        PYTEST=""
       fi
   - conda create -q -n test-environment
         python=$py
@@ -78,6 +83,7 @@ install:
         matplotlib=$MPL_VERSION
         basemap=$BASEMAP_VERSION
         $PYPROJ
+        $PYTEST
         flake8
         future
         lxml
