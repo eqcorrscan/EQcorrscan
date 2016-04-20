@@ -7,7 +7,7 @@ import unittest
 class TestImport(unittest.TestCase):
     def test_import(self):
         import sys
-        if sys.info.major == 2:
+        if sys.version_info.major == 2:
             sys.path.insert(0, '/usr/lib/pyshared/python2.7')
         # Insert path for travis
         i = 0
