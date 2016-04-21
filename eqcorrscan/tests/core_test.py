@@ -24,11 +24,11 @@ class TestCoreMethods(unittest.TestCase):
         """
         import numpy as np
         from eqcorrscan.core.match_filter import normxcorr2
-        template = np.random.randn(100)
-        image = np.zeros(1000)
+        template = np.random.randn(100).astype(np.float32)
+        image = np.zeros(1000).astype(np.float32)
         image[200] = 1.0
         image = np.convolve(template, image)
-        ccc = normxcorr2(template, image)
+        ccc = normxcorr2(template, image).astype(np.float16)
         self.assertEqual(ccc.max(), 1.0)
 
     def test_fail_normxcorr2(self):
@@ -62,17 +62,17 @@ class TestCoreMethods(unittest.TestCase):
         from obspy import Stream, Trace
         import numpy as np
         from eqcorrscan.core.match_filter import _template_loop
-        template = Stream(Trace(np.random.randn(100)))
+        template = Stream(Trace(np.random.randn(100).astype(np.float32)))
         template[0].stats.station = 'test'
         template[0].stats.channel = 'SZ'
-        image = np.zeros(1000)
+        image = np.zeros(1000).astype(np.float32)
         image[200] = 1.0
         image = np.convolve(image, template[0].data)
         chan = image
         i, ccc = _template_loop(template=template, chan=chan,
                                 station=template[0].stats.station,
                                 channel=template[0].stats.channel)
-        self.assertEqual(ccc.max(), 1.0)
+        self.assertEqual(ccc.astype(np.float16).max(), 1.0)
 
     def test_false_template_loop(self):
         """Check that perfect correlations are carried through.
