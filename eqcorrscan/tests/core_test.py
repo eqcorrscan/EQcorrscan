@@ -19,6 +19,97 @@ class TestCoreMethods(unittest.TestCase):
     #     # This needs to have a list of detection objects, a day of synth
     #     # data, and a series of templates.
     #     return True
+    def test_perfect_normxcorr2(self):
+        """Simple test of normxcorr2 to ensure data are detected
+        """
+        import numpy as np
+        from eqcorrscan.core.match_filter import normxcorr2
+        template = np.random.randn(100)
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(template, image)
+        ccc = normxcorr2(template, image)
+        self.assertEqual(ccc.max(), 1.0)
+
+    def test_fail_normxcorr2(self):
+        """Ensure it template is nan then return is nan
+        """
+        import numpy as np
+        from eqcorrscan.core.match_filter import normxcorr2
+        template = np.array([np.nan] * 100)
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(template, image)
+        ccc = normxcorr2(template, image)
+        self.assertTrue(np.all(ccc == 0.0))
+
+    def test_normal_normxcorr2(self):
+        """Check that if match is not perfect correlation max isn't unity
+        """
+        import numpy as np
+        from eqcorrscan.core.match_filter import normxcorr2
+        template = np.random.randn(100) * 10.0
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(template, image)
+        image += np.random.randn(1099)  # Add random noise
+        ccc = normxcorr2(template, image)
+        self.assertNotEqual(ccc.max(), 1.0)
+
+    def test_perfect_template_loop(self):
+        """Check that perfect correlations are carried through.
+        """
+        from obspy import Stream, Trace
+        import numpy as np
+        from eqcorrscan.core.match_filter import _template_loop
+        template = Stream(Trace(np.random.randn(100)))
+        template[0].stats.station = 'test'
+        template[0].stats.channel = 'SZ'
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(image, template[0].data)
+        chan = image
+        i, ccc = _template_loop(template=template, chan=chan,
+                                station=template[0].stats.station,
+                                channel=template[0].stats.channel)
+        self.assertEqual(ccc.max(), 1.0)
+
+    def test_false_template_loop(self):
+        """Check that perfect correlations are carried through.
+        """
+        from obspy import Stream, Trace
+        import numpy as np
+        from eqcorrscan.core.match_filter import _template_loop
+        template = Stream(Trace(np.array([np.nan] * 100)))
+        template[0].stats.station = 'test'
+        template[0].stats.channel = 'SZ'
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(image, template[0].data)
+        chan = image
+        i, ccc = _template_loop(template=template, chan=chan,
+                                station=template[0].stats.station,
+                                channel=template[0].stats.channel)
+        self.assertTrue(np.all(ccc == 0))
+
+    def test_normal_template_loop(self):
+        """Check that perfect correlations are carried through.
+        """
+        from obspy import Stream, Trace
+        import numpy as np
+        from eqcorrscan.core.match_filter import _template_loop
+        template = Stream(Trace(np.random.randn(100) * 10.0))
+        template[0].stats.station = 'test'
+        template[0].stats.channel = 'SZ'
+        image = np.zeros(1000)
+        image[200] = 1.0
+        image = np.convolve(image, template[0].data)
+        image += np.random.randn(1099)  # Add random noise
+        chan = image
+        i, ccc = _template_loop(template=template, chan=chan,
+                                station=template[0].stats.station,
+                                channel=template[0].stats.channel)
+        self.assertNotEqual(ccc.max(), 1.0)
 
     def test_match_filter(self, samp_rate=20.0, debug=0):
         """
