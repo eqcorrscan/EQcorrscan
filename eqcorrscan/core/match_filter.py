@@ -245,7 +245,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     # to be the same length
     cccs_matrix = np.array([np.array([np.array([0.0] * (len(stream[0].data) -
                                      len(templates[0][0].data) + 1))] *
-                            len(templates))] * 2)
+                            len(templates))] * 2, dtype=np.float32)
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
