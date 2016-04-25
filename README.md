@@ -11,8 +11,9 @@
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and now
 Windows systems.  Currently we only support python 2.7, but plan to extend
-this coverage in the near future - everything is written to work in python 3.x,
-we just need to get the testing going.
+this coverage in the near future - almost everything is written to work in python 3.x,
+we just need to get the testing going, work out the openCV3 install on travis and
+fix some small variable type changes.
 
 Installation for all systems should be as simple as:
 
@@ -32,8 +33,11 @@ this and support it, nevertheless, if you find any issues then let us know.
 
 *You will likely need sudo/root permissions to run this command.*
 
-If you have any issues installing please let me know.  You will need to install openCV
-separately using (on Linux):
+If you have any issues installing please let me know.  
+
+You will need to install openCV (note that currently only openCV2 is tested,
+we plan on switching to openCV3 by default soon once the install is smoothed,
+this will ease transitions to python3.x) separately using (on Linux):
 
 ```bash
 apt-get install python-opencv
@@ -42,7 +46,7 @@ apt-get install python-opencv
 Or, for Mac users, this is available on Macports or other similar package managers.
 
 For Windows users, you should follow the instructions [here](http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0),
-not that you need to copy the cv2.pyd file.
+note that you need to copy the cv2.pyd file.
 
 For those who want to run the GUIs (in very early development) you will need to
 install tk, on Windows and OSX this is usually pre-installed, on Linux you
@@ -104,7 +108,9 @@ is distributed under the LGPL GNU License, Copyright Calum Chamberlain and Chet 
 # Contributing
 
 Please fork this project and work on it there then create a pull request to
-merge back into develop.
+merge back to this main repository.  If you are working on a bug-fix then
+use the *develop* branch, otherwise, create a feature branch and work
+on your addition there.
 
 When you make changes please run the tests in the test directory to ensure
 everything merges with minimum effort.  If there is not yet a test to cope
