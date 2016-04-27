@@ -176,13 +176,8 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
         # There is an interesting issue found in the tests that sometimes what
         # should be a perfect correlation results in a max of ccc of 0.99999994
         # Converting to float16 'corrects' this to 1.0 - bad workaround.
-    if debug >= 2 and t.secs > 4:
-        print("Single if statement took %s s" % t.secs)
-        if not template_data:
-            print("Didn't even correlate!")
-        print(station + ' ' + channel)
-    elif debug >= 2:
-        print("If statement without correlation took %s s" % t.secs)
+    if debug >= 2:
+        print("Cross-correlation took %s s" % t.secs)
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(ccc[0])))
