@@ -4,17 +4,29 @@ Victoria University Wellington.  These functions are designed to do the basic \
 processing of the data using obspy modules (which also rely on scipy and \
 numpy).
 
-:copyright:
-    Calum Chamberlain, Chet Hopp.
+Copyright 2015 Calum Chamberlain
 
-:license:
-    GNU Lesser General Public License, Version 3
-    (https://www.gnu.org/copyleft/lesser.html)
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from obspy.signal.filter import bandpass
 
 
 def _check_daylong(tr):
@@ -86,7 +98,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     else:
         tracein = False
     # Add sanity check for filter
-    if highcut and highcut >= 0.5 * samp_rate:
+    if highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     if parallel:
         if not num_cores:
@@ -115,8 +127,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     return st
 
 
-def dayproc(st, lowcut, highcut, filt_order, samp_rate,
-            starttime, debug=0, parallel=True, num_cores=False):
+def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
+            debug=0, parallel=True, num_cores=False, as_float32=False):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -143,6 +155,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
+    :type as_float32: bool
+    :param as_float32: If True, will return array as type float32. If False \
+        (default), will return array as type float64.
 
     :return: obspy.Stream
 
@@ -156,7 +171,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         tracein = True
     else:
         tracein = False
-    if highcut and highcut >= 0.5 * samp_rate:
+    if highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     if parallel:
         if not num_cores:
@@ -167,6 +182,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
                                                      'filt_order': filt_order,
                                                      'samp_rate': samp_rate,
                                                      'debug': debug,
+                                                     'as_float32': as_float32,
                                                      'starttime': starttime,
                                                      'full_day': True})
                    for tr in st]
@@ -178,7 +194,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=starttime, full_day=True)
+                    as_float32=as_float32, starttime=starttime, full_day=True)
     if tracein:
         st.merge()
         return st[0]
@@ -186,7 +202,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
-            starttime=False, full_day=False):
+            as_float32=False, starttime=False, full_day=False):
     r"""Basic function to bandpass, downsample and check headers and length \
     of trace to ensure files start at the start of a day and are daylong.
 
@@ -198,17 +214,17 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :type tr: obspy.Trace
     :param tr: Trace to process
     :type highcut: float
-    :param highcut: High cut in Hz, if set to None and lowcut is set, will \
-        use a highpass filter.
+    :param highcut: High cut in Hz for bandpass
     :type lowcut: float
-    :type lowcut: Low cut in Hz, if set to None and highcut is set, will use \
-        a lowpass filter.
+    :type lowcut: Low cut in Hz for bandpass
     :type filt_order: int
-    :param filt_order: Number of corners for filter.
+    :param filt_order: Corners for bandpass
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
     :type debug: int
     :param debug: Debug output level from 0-5, higher numbers = more output
+    :type as_float32: bool
+    :param as_float32: To convert output to float32 (True) or leave as float32
     :type starttime: obspy.UTCDateTime
     :param starttime: Desired start of trace
     :type full_day: bool
@@ -219,9 +235,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     .. note:: Will convert channel names to two charecters long.
     """
     import warnings
-    from obspy.signal.filter import bandpass, lowpass, highpass
+    import numpy as np
     # Add sanity check
-    if highcut and highcut >= 0.5*samp_rate:
+    if highcut >= 0.5*samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     # Define the start-time
     if starttime:
@@ -247,9 +263,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # if full_day:
     #     if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
     #         tr.data = tr.data[1:len(tr.data)]
-    if debug > 0:
-        print('I have '+str(len(tr.data))+' data points for ' +
-              tr.stats.station+'.'+tr.stats.channel+' before processing')
+    print('I have '+str(len(tr.data))+' data points for '+tr.stats.station +
+          '.'+tr.stats.channel+' before processing')
 
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0\
@@ -283,23 +298,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
-    if highcut and lowcut:
-        if debug >= 2:
-            print('Bandpassing')
-        tr.data = bandpass(tr.data, lowcut, highcut,
-                           tr.stats.sampling_rate, filt_order, True)
-    elif highcut:
-        if debug >= 2:
-            print('Lowpassing')
-        tr.data = lowpass(tr.data, highcut, tr.stats.sampling_rate,
-                          filt_order, True)
-    elif lowcut:
-        if debug >= 2:
-            print('Highpassing')
-        tr.data = highpass(tr.data, lowcut, tr.stats.sampling_rate,
-                           filt_order, True)
-    else:
-        warnings.warn('No filters applied')
+    if debug >= 2:
+        print('Bandpassing')
+    tr.data = bandpass(tr.data, lowcut, highcut,
+                       tr.stats.sampling_rate, filt_order, True)
 
     # Account for two letter channel names in s-files and therefore templates
     tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
@@ -324,6 +326,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if not tr.stats.sampling_rate*86400 == tr.stats.npts:
                 raise ValueError('Data are not daylong for '+tr.stats.station +
                                  '.'+tr.stats.channel)
+    if as_float32:
+        # If flagged, convert to float32 for space savings. Note that this will
+        # limit precision
+        tr.data = tr.data.astype(np.float32)
     # Final visual check for debug
     if debug >= 4:
         tr.plot()

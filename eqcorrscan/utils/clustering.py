@@ -1,12 +1,23 @@
 """
 Functions to cluster seismograms by a range of constraints.
 
-:copyright:
-    Calum Chamberlain, Chet Hopp.
+Copyright 2015 Calum Chamberlain
 
-:license:
-    GNU Lesser General Public License, Version 3
-    (https://www.gnu.org/copyleft/lesser.html)
+This file is part of EQcorrscan.
+
+    EQcorrscan is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    EQcorrscan is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -98,8 +109,8 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
-            cores='all', debug=1):
+def cluster(template_list, plot='clust', corr_thresh=0.3, save_corrmat=False,
+            cores='all', debug=1, save_plot=False):
     """
     Function to take a set of templates and cluster them, will return groups \
     as lists of streams.  Clustering is done by computing the cross-channel \
@@ -114,20 +125,23 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
 
     :type template_list: List of tuples (Obspy.Stream, temp_id)
     :param stream_list: List of templates to compute clustering for
-    :type show: bool
-    :param show: plot linkage on screen if True, defaults to True
+    :type plot: str
+    :param plot: plot linkage on screen if 'dend', plot seaborn clustermap if\
+        'clust'
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
-    :type save_corrmat: bool
-    :param save_corrmat: If True will save the distance matrix to \
-        dist_mat.npy in the local directory.
+    :type save_corrmat: bool or str
+    :param save_corrmat: If not False will save the distance matrix to \
+        the specified path given as a str.
     :type cores: int
-    :param cores: numebr of cores to use when computing the distance matrix, \
+    :param cores: number of cores to use when computing the distance matrix, \
         defaults to 'all' which will work out how many cpus are available \
         and hog them.
     :type debug: int
     :param debug: Level of debugging from 1-5, higher is more output, \
         currently only level 1 implimented.
+    :type save_plot: bool or str
+    :param save_plot: Either False or a filename for the dendrogram figure
 
     :returns: List of groups with each group a list of streams making up \
         that group.
@@ -135,7 +149,10 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     from scipy.spatial.distance import squareform
     from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
     import matplotlib.pyplot as plt
+    import seaborn as sns
     from multiprocessing import cpu_count
+    # Specify 'Agg' matplotlib backend due to interference with multiprocessing
+    plt.switch_backend('Agg')
     if cores == 'all':
         num_cores = cpu_count()
     else:
@@ -147,20 +164,29 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
         print('Computing the distance matrix using '+str(num_cores)+' cores')
     dist_mat = distance_matrix(stream_list, cores=num_cores)
     if save_corrmat:
-        np.save('dist_mat.npy', dist_mat)
+        np.save(save_corrmat, dist_mat)
         if debug >= 1:
-            print('Saved the distance matrix as dist_mat.npy')
+            print('Saved the distance matrix as %s' % save_corrmat)
     dist_vec = squareform(dist_mat)
     # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
     if debug >= 1:
         print('Computing linkage')
     Z = linkage(dist_vec)
-    if show:
-        if debug >= 1:
-            print('Plotting the dendrogram')
+    if plot == 'clust':
+        cmap = sns.diverging_palette(20, 220, as_cmap=True)
+        sns.clustermap(dist_mat, cmap=cmap, row_linkage=Z,
+                       col_linkage=Z)
+        plt.show()
+        if save_plot:
+            plt.savefig(save_plot)
+        plt.close()
+    elif plot == 'dend':
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
+        if save_plot:
+            plt.savefig(save_plot)
+        plt.close()
     # Get the indices of the groups
     if debug >= 1:
         print('Clustering')
@@ -605,12 +631,12 @@ def dist_mat_km(catalog):
 
 
 def space_cluster(catalog, d_thresh, show=True):
-    """
+    r"""
     Function to cluster a catalog by distance only - will compute the\
     matrix of physical distances between events and utilize the\
     scipy.clusering.hierarchy module to perform the clustering.
 
-    :type catalog: obspy.Catalog
+    :type catalog: :class: obspy.Catalog
     :param catalog: Catalog of events to clustered
     :type d_thresh: float
     :param d_thresh: Maximum inter-event distance threshold
@@ -653,6 +679,7 @@ def space_cluster(catalog, d_thresh, show=True):
                 groups.append(group)
                 break
     return groups
+
 
 def space_time_cluster(detections, t_thresh, d_thresh):
     """
@@ -698,7 +725,6 @@ def space_time_cluster(detections, t_thresh, d_thresh):
             clustered_indices.append(master_ind)
 
     return clustered, clustered_indices
-
 
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
