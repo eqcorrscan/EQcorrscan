@@ -176,8 +176,13 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
         # There is an interesting issue found in the tests that sometimes what
         # should be a perfect correlation results in a max of ccc of 0.99999994
         # Converting to float16 'corrects' this to 1.0 - bad workaround.
-    if debug >= 2:
-        print("Cross-correlation took %s s" % t.secs)
+    if debug >= 2 and t.secs > 4:
+        print("Single if statement took %s s" % t.secs)
+        if not template_data:
+            print("Didn't even correlate!")
+        print(station + ' ' + channel)
+    elif debug >= 2:
+        print("If statement without correlation took %s s" % t.secs)
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(ccc[0])))
@@ -429,6 +434,12 @@ def match_filter(template_names, template_list, st, threshold,
             msg = ' '.join(['Data are not daylong for', tr.stats.station,
                             tr.stats.channel])
             raise ValueError(msg)
+    # Perform check that all template lengths are internally consistent
+    for i, temp in enumerate(template_list):
+        if len(set([tr.stats.npts for tr in temp])) > 1:
+            msg = 'Template %s contains traces of differing length!! THIS \
+                  WILL CAUSE ISSUES' % template_names[i]
+            raise ValueError(msg)
     # Call the _template_loop function to do all the correlation work
     outtic = time.clock()
     # Edit here from previous, stable, but slow match_filter
@@ -509,7 +520,7 @@ def match_filter(template_names, template_list, st, threshold,
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
-        # maintins timing
+        # maintains timing
         if plotvar:
             stream_plot = copy.deepcopy(stream[0])
             # Downsample for plotting
