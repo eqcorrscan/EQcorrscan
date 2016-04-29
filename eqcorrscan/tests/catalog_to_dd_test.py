@@ -296,5 +296,25 @@ class TestCatalogMethods(unittest.TestCase):
         if os.path.isfile('dt.cc2'):
             os.remove('dt.cc2')
 
+    def test_read_phase(self):
+        """Function to test the phase reading function"""
+        from eqcorrscan.utils.catalog_to_dd import read_phase
+        from obspy import UTCDateTime
+        import os
+        test_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                 'test_data', 'tunnel.phase')
+        test_catalog = read_phase(test_file)
+        self.assertEqual(len(test_catalog), 2)
+        self.assertEqual(test_catalog[0].origins[0].latitude, -43.169)
+        self.assertEqual(test_catalog[0].origins[0].longitude, 170.646)
+        self.assertEqual(test_catalog[0].origins[0].depth, -288)
+        self.assertEqual(test_catalog[0].origins[0].time,
+                         UTCDateTime('2012-01-30T01:45:43.25'))
+        self.assertEqual(test_catalog[1].origins[0].latitude, -43.169)
+        self.assertEqual(test_catalog[1].origins[0].longitude, 170.646)
+        self.assertEqual(test_catalog[1].origins[0].depth, -288)
+        self.assertEqual(test_catalog[1].origins[0].time,
+                         UTCDateTime('2012-01-30T06:48:43.07'))
+
 if __name__ == '__main__':
     unittest.main()
