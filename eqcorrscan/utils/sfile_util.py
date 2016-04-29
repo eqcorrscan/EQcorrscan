@@ -159,7 +159,7 @@ class PICK:
             dummy = self.SNR
         print(_str_conv(self.weight).rjust(1))
         print_str = ' ' + self.station.ljust(5) +\
-            self.channel[0]+self.channel[len(self.channel)-1] +\
+            self.channel[0] + self.channel[len(self.channel) - 1] +\
             ' ' + self.impulsivity +\
             self.phase.ljust(4) +\
             _str_conv(self.weight).rjust(1) + ' ' +\
@@ -179,7 +179,7 @@ class PICK:
             _str_conv(self.timeres, rounded=2).rjust(5) +\
             _str_conv(int(self.finalweight)).rjust(2) +\
             _str_conv(self.distance, rounded=round_len).rjust(5) +\
-            _str_conv(int(self.CAZ)).rjust(4)+' '
+            _str_conv(int(self.CAZ)).rjust(4) + ' '
         return print_str
 
     def write(self, filename):
@@ -199,7 +199,7 @@ class PICK:
 
         with open(filename, open_as) as f:
             pickstr = self.__str__()
-            f.write(pickstr+'\n')
+            f.write(pickstr + '\n')
         return
 
 
@@ -941,10 +941,10 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
             'This is required!'
         raise ValueError(msg)
     sfilename = evtime.datetime.strftime('%d-%H%M-%S') +\
-        evtype + '.S' + evtime.datetime.strftime('%Y%m')
+        evtype[0] + '.S' + evtime.datetime.strftime('%Y%m')
     # Check that the file doesn't exist
-    if not overwrite and os.path.isfile(outdir+'/'+sfilename):
-        raise IOError(outdir+'/'+sfilename +
+    if not overwrite and os.path.isfile(outdir + '/' + sfilename):
+        raise IOError(outdir + '/' + sfilename +
                       ' already exists, will not overwrite')
     sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
@@ -990,7 +990,10 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     try:
         mag_1 = '{0:.1f}'.format(event.magnitudes[0].mag) or ''
         mag_1_type = _evmagtonor(event.magnitudes[0].magnitude_type) or ''
-        mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+        if event.magnitudes[0].creation_info:
+            mag_1_agency = event.magnitudes[0].creation_info.agency_id or ''
+        else:
+            mag_1_agency = ''
     except IndexError:
         mag_1 = ''
         mag_1_type = ''
@@ -998,7 +1001,10 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     try:
         mag_2 = '{0:.1f}'.format(event.magnitudes[1].mag) or ''
         mag_2_type = _evmagtonor(event.magnitudes[1].magnitude_type) or ''
-        mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
+        if event.magnitudes[1].creation_info:
+            mag_2_agency = event.magnitudes[1].creation_info.agency_id or ''
+        else:
+            mag_2_agency = ''
     except IndexError:
         mag_2 = ''
         mag_2_type = ''
@@ -1006,7 +1012,10 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     try:
         mag_3 = '{0:.1f}'.format(event.magnitudes[2].mag) or ''
         mag_3_type = _evmagtonor(event.magnitudes[2].magnitude_type) or ''
-        mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+        if event.magnitudes[2].creation_info:
+            mag_3_agency = event.magnitudes[2].creation_info.agency_id or ''
+        else:
+            mag_3_agency = ''
     except IndexError:
         mag_3 = ''
         mag_3_type = ''
@@ -1519,11 +1528,9 @@ def nordpick(event):
             phase_hint = ' '
         else:
             phase_hint = pick.phase_hint
+        channel_code = pick.waveform_id.channel_code or '   '
         pick_strings.append(' ' + pick.waveform_id.station_code.ljust(5) +
-                            pick.waveform_id.channel_code[0] +
-                            pick.waveform_id.channel_code[len(pick.waveform_id.
-                                                              channel_code)
-                                                          - 1] +
+                            channel_code[0] + channel_code[-1] +
                             ' ' + impulsivity + phase_hint.ljust(4) +
                             _str_conv(int(weight)).rjust(1) + ' ' +
                             polarity.rjust(1) + ' ' +
@@ -1542,7 +1549,7 @@ def nordpick(event):
                             _str_conv(timeres, rounded=2).rjust(5) +
                             _str_conv(' ').rjust(2) +
                             _str_conv(distance, rounded=round_len).rjust(5) +
-                            _str_conv(CAZ).rjust(4)+' ')
+                            _str_conv(CAZ).rjust(4) + ' ')
         # Note that currently finalweight is unsupported, nor is velocity, or
         # angle of incidence.  This is because obspy.event stores slowness in
         # s/deg and takeoff angle, which would require computation from the
