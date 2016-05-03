@@ -177,7 +177,8 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return
 
 
-def cumulative_detections(dates, template_names, save=False, savefile=None):
+def cumulative_detections(dates, template_names, show=False,
+                          save=False, savefile=None):
     r"""Simple plotting function to take a list of datetime objects and plot \
     a cumulative detections list.  Can take dates as a list of lists and will \
     plot each list seperately, e.g. if you have dates from more than one \
@@ -187,6 +188,9 @@ def cumulative_detections(dates, template_names, save=False, savefile=None):
     :param dates: Must be a list of lists of datetime.datetime objects
     :type template_names: list of strings
     :param template_names: List of the template names in order of the dates
+    :type show: bool
+    :param show: Wether or not to show the plot, defaults to False which will \
+        return the axes for editing
     :type save: bool
     :param save: Save figure or show to screen, optional
     :type savefile: str
@@ -196,7 +200,7 @@ def cumulative_detections(dates, template_names, save=False, savefile=None):
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
               'firebrick', 'purple', 'darkgoldenrod', 'gray']
-    linestyles = ['-', '-.',  '--',  ':']
+    linestyles = ['-', '-.', '--', ':']
     # Check that dates is a list of lists
     if type(dates[0]) != list:
         dates = [dates]
@@ -204,15 +208,14 @@ def cumulative_detections(dates, template_names, save=False, savefile=None):
     j = 0
     # This is an ugly way of looping through colours and linestyles, it would
     # be better with itertools functions...
-    plothandles = []
+    fig, ax1 = plt.subplots()
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         counts = np.arange(0, len(template_dates))
         print(str(i)+' '+str(j)+' '+str(k))
-        filename = plt.plot(template_dates, counts, linestyles[j],
-                            color=colors[i], label=template_names[k],
-                            linewidth=3.0)
-        plothandles.append(filename)
+        ax1.plot(template_dates, counts, linestyles[j],
+                 color=colors[i], label=template_names[k],
+                 linewidth=3.0)
         if i < len(colors) - 1:
             i += 1
         else:
@@ -221,16 +224,18 @@ def cumulative_detections(dates, template_names, save=False, savefile=None):
                 j += 1
             else:
                 j = 0
-    plt.xlabel('Date')
-    plt.ylabel('Cumulative detections')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Cumulative detections')
     plt.title('Cumulative detections for all templates')
-    plt.legend(loc=2, prop={'size': 8}, ncol=2)  # handles=plothandles)
+    ax1.legend(loc=2, prop={'size': 8}, ncol=2)
     if save:
-        plt.savefig(savefile)
+        fig.savefig(savefile)
         plt.close()
-    else:
+    if show:
         plt.show()
-    return
+        return
+    else:
+        return fig
 
 
 def threeD_gridplot(nodes, save=False, savefile=None):
