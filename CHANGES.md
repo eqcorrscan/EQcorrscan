@@ -8,6 +8,8 @@ definitions for default script.
 been added carelessly.
 * Now tested on appveyor, so able to be run on Windows.
 * Added ability to read hypoDD/tomoDD phase files to obspy events.
+* Added simple despiking algorithm - not ideal for correlation as spikes are
+interpolated around when found: eqcorrscan.utils.despike.
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;

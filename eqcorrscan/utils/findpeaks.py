@@ -201,7 +201,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     image = np.abs(image)
     image[image < thresh] = 0
     if len(image[image > thresh]) == 0:
-        print('No values over threshold found')
+        if debug > 0:
+            print('No values over threshold found')
         return []
     if debug > 0:
         print(' '.join(['Found', str(len(image[image > thresh])),
