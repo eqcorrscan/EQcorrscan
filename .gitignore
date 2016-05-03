@@ -23,3 +23,4 @@ eqcorrscan/tutorials/*.jpg
 pytest_runner*
 .coveralls.yml
 .coverage
+eqcorrscan/doc/_build
