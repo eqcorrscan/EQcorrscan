@@ -39,7 +39,7 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
     from eqcorrscan.utils.timer import Timer
 
     num_cores = cpu_count()
-    if debug > 2:
+    if debug >= 1:
         data_in = tr.copy()
     # Note - might be worth finding spikes in filtered data
     filt = tr.copy()
@@ -69,7 +69,7 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
         for peak in peaks:
             tr.data = _interp_gap(tr.data, peak[1], _interp_len)
     print("Despiking took: %s s" % t.secs)
-    if debug > 2:
+    if debug >= 1:
         plt.plot(data_in.data, 'r', label='raw')
         plt.plot(tr.data, 'k', label='despiked')
         plt.legend()
@@ -136,9 +136,8 @@ def _interp_gap(data, peak_loc, interp_len):
         start_loc = 0
     if end_loc > len(data) - 1:
         end_loc = len(data) - 1
-    data[start_loc:end_loc] =\
-        np.linspace(data[start_loc], data[end_loc],
-                    interp_len)
+    fill = np.linspace(data[start_loc], data[end_loc], end_loc - start_loc)
+    data[start_loc:end_loc] = fill
     return data
 
 
