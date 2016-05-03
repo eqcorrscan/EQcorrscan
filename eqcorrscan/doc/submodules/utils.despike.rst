@@ -1,0 +1,5 @@
+
+despike
+--------
+.. automodule:: despike
+    :members:

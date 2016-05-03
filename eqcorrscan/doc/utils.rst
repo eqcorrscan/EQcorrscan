@@ -20,6 +20,7 @@ there are now multiple options for location of events.
    submodules/utils.clustering
    submodules/utils.plotting
    submodules/utils.findpeaks
+   submodules/utils.despike
    submodules/utils.locate
    submodules/utils.mag_calc
    submodules/utils.pre_processing
