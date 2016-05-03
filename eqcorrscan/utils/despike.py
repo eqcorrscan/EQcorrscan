@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 
-def median_filter(tr, multiplier=10, windowlength=25,
+def median_filter(tr, multiplier=10, windowlength=0.5,
                   interp_len=0.05, debug=0):
     """
     Filter out spikes in data according to the median absolute deviation of \
@@ -130,9 +130,56 @@ def _interp_gap(data, peak_loc, interp_len):
 
     :returns: obspy.tr works in-place
     """
-    data[peak_loc - int(0.5 * interp_len):
-         peak_loc + int(0.5 * interp_len)] =\
-        np.linspace(data[peak_loc - int(0.5 * interp_len)],
-                    data[peak_loc + int(0.5 * interp_len)],
+    start_loc = peak_loc - int(0.5 * interp_len)
+    end_loc = peak_loc + int(0.5 * interp_len)
+    if start_loc < 0:
+        start_loc = 0
+    if end_loc > len(data) - 1:
+        end_loc = len(data) - 1
+    data[start_loc:end_loc] =\
+        np.linspace(data[start_loc], data[end_loc],
                     interp_len)
     return data
+
+
+def template_remove(tr, template, cc_thresh, interp_len, debug=0):
+    """
+    Looks for instances of template in the trace and removes the matches.
+
+    :type tr: obspy.core.Trace
+    :param tr: Trace to remove spikes from
+    :type template: osbpy.core.Trace
+    :param template: Spike template to look for in data
+    :type cc_thresh: float
+    :param cc_thresh: Cross-correlation trheshold (-1 - 1)
+    :type interp_len: float
+    :param interp_len: Window length to remove and fill in seconds
+    :type debug: int
+    :param debug: Debug level
+
+    :returns: tr, works in place
+    """
+    from eqcorrscan.core.match_filer import normxcorr2
+    from eqcorrscan.utils.findpeaks import find_peaks2_short
+    from obspy import Trace
+    import numpy as np
+    from eqcorrscan.utils.timer import Timer
+    import matplotlib.pyplot as plt
+
+    data_in = tr.copy()
+    _interp_len = int(tr.stats.sampling_rate * interp_len)
+    if isinstance(template, Trace):
+        template = template.data
+    with Timer() as t:
+        cc = normxcorr2(tr.data.astype(np.float32),
+                        template.astype(np.float32))
+        peaks = find_peaks2_short(cc, cc_thresh)
+        for peak in peaks:
+            tr.data = _interp_gap(tr.data, peak[1], _interp_len)
+    print("Despiking took: %s s" % t.secs)
+    if debug > 2:
+        plt.plot(data_in.data, 'r', label='raw')
+        plt.plot(tr.data, 'k', label='despiked')
+        plt.legend()
+        plt.show()
+    return tr
