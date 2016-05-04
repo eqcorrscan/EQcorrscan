@@ -333,21 +333,21 @@ def multi_event_singlechan(streams, catalog, station, channel,
     st_list = copy.deepcopy(streams)
     for i, event in enumerate(clist):
         # Extract the appropriate pick
-        _pick = [pick for pick in event if
+        _pick = [pick for pick in event.picks if
                  pick.waveform_id.station_code == station and
-                 pick.waveform_id.channel_code == channel]
+                 pick.waveform_id.channel_code == channel][0]
         if st_list[i].select(station=station, channel=channel):
             tr = st_list[i].select(station=station, channel=channel)[0]
         else:
-            print('No data for ' + event.pick[0].waveform_id)
+            print('No data for ' + _pick.waveform_id)
             continue
         tr.detrend('linear')
         if freqmin:
             tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
         if realign:
             tr_cut = tr.copy()
-            tr_cut.trim(_pick[0].time + cut[0],
-                        _pick[0].time + cut[1],
+            tr_cut.trim(_pick.time + cut[0],
+                        _pick.time + cut[1],
                         nearest_sample=False)
             if len(tr_cut.data) <= (0.5 * (cut[1] - cut[0]) *
                                     tr_cut.stats.sampling_rate):
@@ -355,13 +355,13 @@ def multi_event_singlechan(streams, catalog, station, channel,
                                tr.stats.station,
                                '.', tr.stats.channel, '\n',
                                'Suggest removing pick from sfile at time ',
-                               str(event.picks[0].time)])
+                               str(_pick.time)])
                 warnings.warn(msg)
             else:
                 al_traces.append(tr_cut)
         else:
-            tr.trim(_pick[0].time - pre_pick,
-                    _pick[0].time + clip - pre_pick,
+            tr.trim(_pick.time - pre_pick,
+                    _pick.time + clip - pre_pick,
                     nearest_sample=False)
         if len(tr.data) == 0:
             msg = ''.join(['No data in the trace for ', tr.stats.station,
@@ -378,8 +378,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
         for i in xrange(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
             event.picks[0].time -= shifts[i]
-            traces[i].trim(_pick[0].time - pre_pick,
-                           _pick[0].time + clip - pre_pick,
+            traces[i].trim(_pick.time - pre_pick,
+                           _pick.time + clip - pre_pick,
                            nearest_sample=False)
     # We now have a list of traces
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
