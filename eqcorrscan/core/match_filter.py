@@ -58,7 +58,7 @@ class DETECTION(object):
     def __init__(self, template_name, detect_time,
                  no_chans, detect_val,
                  threshold, typeofdet,
-                 chans=None):
+                 chans=None, event=None):
         """Main class of DETECTION."""
         self.template_name = template_name
         self.detect_time = detect_time
@@ -67,6 +67,7 @@ class DETECTION(object):
         self.detect_val = detect_val
         self.threshold = threshold
         self.typeofdet = typeofdet
+        self.event = event
         self.detectioncount += 1
 
     def __repr__(self):
@@ -599,37 +600,36 @@ def match_filter(template_names, template_list, st, threshold,
             for peak in peaks:
                 detecttime = stream[0].stats.starttime +\
                     peak[1] / stream[0].stats.sampling_rate
+                rid = ResourceIdentifier(id=template_names[i] + '_' +
+                                         str(detecttime),
+                                         prefix='smi:local')
+                ev = Event(resource_id=rid)
+                cr_i = CreationInfo(author='EQcorrscan',
+                                    creation_time=UTCDateTime())
+                ev.creation_info = cr_i
+                # All detection info in Comments for lack of a better idea
+                thresh_str = 'threshold=' + str(rawthresh)
+                ccc_str = 'detect_val=' + str(peak[0])
+                used_chans = 'channels used: ' +\
+                             ' '.join([str(pair) for pair in chans[i]])
+                ev.comments.append(Comment(text=thresh_str))
+                ev.comments.append(Comment(text=ccc_str))
+                ev.comments.append(Comment(text=used_chans))
+                for tr in template:
+                    if (tr.stats.station, tr.stats.channel) not in chans[i]:
+                        continue
+                    else:
+                        pick_tm = detecttime + (tr.stats.starttime -
+                                                detecttime)
+                        wv_id = WaveformStreamID(network_code=tr.stats.network,
+                                                 station_code=tr.stats.station,
+                                                 channel_code=tr.stats.channel)
+                        ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
                 detections.append(DETECTION(template_names[i],
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
-                                            'corr', chans[i]))
-                if output_cat:
-                    rid = ResourceIdentifier(id=template_names[i] + '_' +
-                                             str(detecttime),
-                                             prefix='smi:local')
-                    ev = Event(resource_id=rid)
-                    cr_i = CreationInfo(author='EQcorrscan',
-                                        creation_time=UTCDateTime())
-                    ev.creation_info = cr_i
-                    # All detection info in Comments for lack of a better idea
-                    thresh_str = 'threshold=' + str(rawthresh)
-                    ccc_str = 'detect_val=' + str(peak[0])
-                    used_chans = 'channels used: ' +\
-                                 ' '.join([str(pair) for pair in chans[i]])
-                    ev.comments.append(Comment(text=thresh_str))
-                    ev.comments.append(Comment(text=ccc_str))
-                    ev.comments.append(Comment(text=used_chans))
-                    for tr in template:
-                        if (tr.stats.station, tr.stats.channel) not in chans[i]:
-                            continue
-                        else:
-                            pick_tm = detecttime + (tr.stats.starttime -
-                                                    detecttime)
-                            wv_id = WaveformStreamID(network_code=tr.stats.network,
-                                                     station_code=tr.stats.station,
-                                                     channel_code=tr.stats.channel)
-                            ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                    det_cat.append(ev)
+                                            'corr', chans[i], event=ev))
+                det_cat.append(ev)
     del stream, templates
     if output_cat:
         return detections, det_cat
