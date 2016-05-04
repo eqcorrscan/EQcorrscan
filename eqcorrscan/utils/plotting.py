@@ -272,7 +272,8 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     return fig
 
 
-def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
+def multi_event_singlechan(streams, catalog, station, channel,
+                           clip=10.0, pre_pick=2.0,
                            freqmin=False, freqmax=False, realign=False,
                            cut=(-3.0, 5.0), PWS=False, title=False,
                            save=False, savefile=None):
@@ -282,9 +283,13 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
 
     :type streams: list of :class:obspy.stream
     :param streams: List of the streams to use, can contain more traces than \
-        you plan on plotting
+        you plan on plotting - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
-    :param catalog: Catalog of events, one for each trace, with a single pick
+    :param catalog: Catalog of events, one for each stream.
+    :type station: str
+    :param station: Station to plot.
+    :type channel: str
+    :param channel: Channel to plot.
     :type clip: float
     :param clip: Length in seconds to plot, defaults to 10.0
     :type pre_pick: float
@@ -317,7 +322,8 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     from eqcorrscan.core.match_filter import normxcorr2
     from obspy import Stream
     import warnings
-    fig, axes = plt.subplots(len(catalog)+1, 1, sharex=True, figsize=(7, 12))
+
+    fig, axes = plt.subplots(len(catalog) + 1, 1, sharex=True, figsize=(7, 12))
     axes = axes.ravel()
     traces = []
     al_traces = []
@@ -325,24 +331,22 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     clist = copy.deepcopy(catalog)
     st_list = copy.deepcopy(streams)
     for i, event in enumerate(clist):
-        if st_list[i].select(station=event.picks[0].waveform_id.station_code,
-                             channel='*' +
-                             event.picks[0].waveform_id.channel_code[-1]):
-            tr = st_list[i].select(station=event.picks[0].waveforms_id.
-                                   station_code,
-                                   channel='*' +
-                                   event.picks[0].waveform_id.
-                                   channel_code[-1])[0]
+        # Extract the appropriate pick
+        _pick = [pick for pick in event if
+                 pick.waveform_id.station_code == station and
+                 pick.waveform_id.channel_code == channel]
+        if st_list[i].select(station=station, channel=channel):
+            tr = st_list[i].select(station=station, channel=channel)[0]
         else:
-            print('No data for '+event.pick[0].waveform_id)
+            print('No data for ' + event.pick[0].waveform_id)
             continue
         tr.detrend('linear')
         if freqmin:
             tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
         if realign:
             tr_cut = tr.copy()
-            tr_cut.trim(event.picks[0].time + cut[0],
-                        event.picks[0].time + cut[1],
+            tr_cut.trim(_pick[0].time + cut[0],
+                        _pick[0].time + cut[1],
                         nearest_sample=False)
             if len(tr_cut.data) <= (0.5 * (cut[1] - cut[0]) *
                                     tr_cut.stats.sampling_rate):
@@ -355,8 +359,8 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
             else:
                 al_traces.append(tr_cut)
         else:
-            tr.trim(event.picks[0].time - pre_pick,
-                    event.picks[0].time + clip - pre_pick,
+            tr.trim(_pick[0].time - pre_pick,
+                    _pick[0].time + clip - pre_pick,
                     nearest_sample=False)
         if len(tr.data) == 0:
             msg = ''.join(['No data in the trace for ', tr.stats.station,
@@ -371,10 +375,10 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
                         al_traces[0].stats.sampling_rate)
         shifts = stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
-            print('Shifting by '+str(shifts[i])+' seconds')
+            print('Shifting by ' + str(shifts[i]) + ' seconds')
             event.picks[0].time -= shifts[i]
-            traces[i].trim(event.picks[0].time - pre_pick,
-                           event.picks[0].time + clip-pre_pick,
+            traces[i].trim(_pick[0].time - pre_pick,
+                           _pick[0].time + clip - pre_pick,
                            nearest_sample=False)
     # We now have a list of traces
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
@@ -385,16 +389,14 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate  # convert to seconds
-        axes[i+1].plot(x, y, 'k', linewidth=1.1)
-        axes[i+1].yaxis.set_ticks([])
+        axes[i + 1].plot(x, y, 'k', linewidth=1.1)
+        axes[i + 1].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
     if PWS:
         linstack = stacking.PWS_stack(traces)
     else:
         linstack = stacking.linstack(traces)
-    tr = linstack.select(station=event[0].picks[0].waveform_id.station_code,
-                         channel='*' +
-                         event[0].picks[0].waveform_id.channel_code[-1])[0]
+    tr = linstack.select(station=station, channel=channel)[0]
     y = tr.data
     x = np.arange(len(y))
     x = x / tr.stats.sampling_rate
@@ -403,14 +405,14 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     axes[0].yaxis.set_ticks([])
     for i, slave in enumerate(traces):
         cc = normxcorr2(tr.data, slave[0].data)
-        axes[i+1].set_ylabel('cc='+str(round(np.max(cc), 2)), rotation=0)
-        axes[i+1].text(0.9, 0.15, str(round(np.max(slave[0].data))),
-                       bbox=dict(facecolor='white', alpha=0.95),
-                       transform=axes[i+1].transAxes)
-        axes[i+1].text(0.7, 0.85, slave[0].stats.starttime.datetime.
-                       strftime('%Y/%m/%d %H:%M:%S'),
-                       bbox=dict(facecolor='white', alpha=0.95),
-                       transform=axes[i+1].transAxes)
+        axes[i + 1].set_ylabel('cc=' + str(round(np.max(cc), 2)), rotation=0)
+        axes[i + 1].text(0.9, 0.15, str(round(np.max(slave[0].data))),
+                         bbox=dict(facecolor='white', alpha=0.95),
+                         transform=axes[i + 1].transAxes)
+        axes[i + 1].text(0.7, 0.85, slave[0].stats.starttime.datetime.
+                         strftime('%Y/%m/%d %H:%M:%S'),
+                         bbox=dict(facecolor='white', alpha=0.95),
+                         transform=axes[i + 1].transAxes)
     axes[-1].set_xlabel('Time (s)')
     if title:
         axes[0].set_title(title)
