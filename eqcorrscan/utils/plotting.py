@@ -231,11 +231,10 @@ def cumulative_detections(dates, template_names, show=False,
     if save:
         fig.savefig(savefile)
         plt.close()
-    if show:
-        plt.show()
-        return
     else:
-        return fig
+        if show:
+            plt.show()
+    return fig
 
 
 def threeD_gridplot(nodes, save=False, savefile=None):
@@ -270,7 +269,7 @@ def threeD_gridplot(nodes, save=False, savefile=None):
         plt.close()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,

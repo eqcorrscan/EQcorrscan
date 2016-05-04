@@ -121,7 +121,7 @@ class TestCoreMethods(unittest.TestCase):
         """
         from eqcorrscan.utils import pre_processing
         from eqcorrscan.utils import plotting
-        from eqcorrscan.core import match_filter
+        from eqcorrscan.core.match_filter import match_filter
         from eqcorrscan.utils.synth_seis import generate_synth_data
         from obspy import UTCDateTime
         import string
@@ -149,15 +149,16 @@ class TestCoreMethods(unittest.TestCase):
             if debug > 0:
                 template.plot()
         template_names = list(string.ascii_lowercase)[0:len(templates)]
-        detections = match_filter.match_filter(template_names=template_names,
-                                               template_list=templates,
-                                               st=data, threshold=10.0,
-                                               threshold_type='MAD',
-                                               trig_int=6.0,
-                                               plotvar=False,
-                                               plotdir='.',
-                                               cores=1,
-                                               debug=0)
+        detections, out_cat = match_filter(template_names=template_names,
+                                           template_list=templates,
+                                           st=data, threshold=10.0,
+                                           threshold_type='MAD',
+                                           trig_int=6.0,
+                                           plotvar=False,
+                                           plotdir='.',
+                                           cores=1,
+                                           debug=0,
+                                           output_cat=True)
         # Compare the detections to the seeds
         print('This test made ' + str(len(detections)) + ' detections')
         ktrue = 0
@@ -186,6 +187,7 @@ class TestCoreMethods(unittest.TestCase):
                           ' does not match anything in seed times:')
                     kfalse += 1
                 print('Minimum difference in samples is: ' + str(min_diff))
+        print('Catalog created is of length: ' + str(len(out_cat)))
         # Plot the detections
         if debug > 3:
             for i, template in enumerate(templates):
