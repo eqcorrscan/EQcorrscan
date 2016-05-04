@@ -324,7 +324,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
     import warnings
 
     fig, axes = plt.subplots(len(catalog) + 1, 1, sharex=True, figsize=(7, 12))
-    axes = axes.ravel()
+    if len(catalog) > 1:
+        axes = axes.ravel()
     traces = []
     al_traces = []
     # Keep input safe
@@ -451,7 +452,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     import datetime as dt
     from obspy import UTCDateTime
     fig, axes = plt.subplots(len(template), 1, sharex=True)
-    axes = axes.ravel()
+    if len(template) > 1:
+        axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in template])
     for i, template_tr in enumerate(template):
         image = stream.select(station=template_tr.stats.station,
@@ -868,7 +870,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
                                        channel=stachan.split('.')[1])[0]
                        for SVStream in SVStreams]
         fig, axes = plt.subplots(len(plot_traces), 1, sharex=True)
-        axes = axes.ravel()
+        if len(plot_traces) > 1:
+            axes = axes.ravel()
         for i, tr in enumerate(plot_traces):
             y = tr.data
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
@@ -928,7 +931,8 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     stachans = list(set([(tr.stats.station, tr.stats.channel)
                          for tr in real_template]))
     fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=(5, 10))
-    axes = axes.ravel()
+    if len(stachans) > 1:
+        axes = axes.ravel()
     for i, stachan in enumerate(stachans):
         real_tr = real_template.select(station=stachan[0],
                                        channel=stachan[1])[0]
