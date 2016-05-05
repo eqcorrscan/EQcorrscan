@@ -30,7 +30,8 @@ class TestStackingMethods(unittest.TestCase):
 
         stack = linstack(streams, normalize=True)
         # Check normalized amplitude is correct
-        self.assertEqual(stack[0].data.max(), 10 * maximum_synth / RMS_max)
+        self.assertEqual(np.float32(stack[0].data.max()),
+                         np.float32(10 * maximum_synth / RMS_max))
         stack = linstack(streams, normalize=False)
         # Check amplitude is preserved
         self.assertEqual(stack[0].data.max(), 10 * maximum_synth)
