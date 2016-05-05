@@ -76,11 +76,53 @@ class DETECTION(object):
 
     def __str__(self):
         """Full print."""
-        print_str =' '.join(['Detection on template:', self.template_name,
-                             'at:', str(self.detect_time),
-                             'with', str(self.no_chans), 'channels:',
-                             str(self.chans)])
+        print_str = ' '.join(['Detection on template:', self.template_name,
+                              'at:', str(self.detect_time),
+                              'with', str(self.no_chans), 'channels:',
+                              str(self.chans)])
         return print_str
+
+
+def extract_from_stream(stream, detections, pad=2.0, length=30.0):
+    r"""Extract a list of detections from a stream.
+
+    :type stream: osbpy.core.Stream
+    :param stream: Stream containing the detections.
+    :type detections: list
+    :param detections: list of eqcorrscan.core.match_filter.detection
+    :type pad: float
+    :param pad: Pre-detection extract time in seconds.
+    :type length: float
+    :param length: Total extracted length in seconds.
+
+    :returns: list of obspy.core.Stream
+    """
+    streams = []
+    for detection in detections:
+        cut_stream = stream.copy()
+        for tr in cut_stream:
+            pick = [pick for pick in detection.event.picks if
+                    pick.waveform_id.station_code == tr.stats.station and
+                    pick.waveform_id.channel_code == tr.stats.channel][0]
+            tr.trim(starttime=pick.time - pad,
+                    endtime=pick.time - pad + length)
+        streams.append(cut_stream)
+    return streams
+
+
+def detections_to_catalog(detections):
+    r"""Helper to convert from list of detections to obspy catalog.
+
+    :type detections: list
+    :param detections: list of eqcorrscan.core.match_filter.detection
+
+    :returns: obspy.core.event.Catalog
+    """
+    from obspy.core.event import Catalog
+    catalog = Catalog()
+    for detection in detections:
+        catalog.append(detection.event)
+    return catalog
 
 
 def normxcorr2(template, image):
@@ -343,7 +385,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='jpg',
-                 output_cat=False):
+                 output_cat=False, extract_detections=False):
     r"""Over-arching code to run the correlations of given templates with a \
     day of seismic data and output the detections based on a given threshold.
 
@@ -394,10 +436,14 @@ def match_filter(template_names, template_list, st, threshold,
         obspy.Catalog class containing events for each detection. Default \
         is False, in which case matched_filter will output a list of \
         detection classes, as normal.
+    :type extract_detections: bool
+    :param extract_detections: Specifies whether or not to return a list of \
+        streams, one stream per detection.
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as \
         :class: 'obspy.UTCDateTime' objects.
     :return: :class: obspy.Catalog containing events for each detection.
+    :return: list of :class: obspy.Stream objects for each detection.
 
     .. note:: Plotting within the match-filter routine uses the Agg backend \
         with interactive plotting turned off.  This is because the function \
@@ -526,7 +572,8 @@ def match_filter(template_names, template_list, st, threshold,
         print(' '.join(['Correlated with', str(len(stream)),
                         'channels of data']))
     detections = []
-    det_cat = Catalog()
+    if output_cat:
+        det_cat = Catalog()
     for i, cccsum in enumerate(cccsums):
         template = templates[i]
         if threshold_type == 'MAD':
@@ -629,12 +676,19 @@ def match_filter(template_names, template_list, st, threshold,
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
                                             'corr', chans[i], event=ev))
-                det_cat.append(ev)
+                if output_cat:
+                    det_cat.append(ev)
+        if extract_detections:
+            detection_streams = extract_from_stream(stream, detections)
     del stream, templates
-    if output_cat:
+    if output_cat and not extract_detections:
         return detections, det_cat
-    else:
+    elif not extract_detections:
         return detections
+    elif extract_detections and not output_cat:
+        return detections, detection_streams
+    else:
+        return detections, det_cat, detection_streams
 
 
 if __name__ == "__main__":

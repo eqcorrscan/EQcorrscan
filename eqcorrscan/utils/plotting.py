@@ -330,6 +330,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
     al_traces = []
     # Keep input safe
     clist = copy.deepcopy(catalog)
+    if isinstance(streams, Stream):
+        streams = [streams]
     st_list = copy.deepcopy(streams)
     for i, event in enumerate(clist):
         # Extract the appropriate pick

@@ -149,16 +149,18 @@ class TestCoreMethods(unittest.TestCase):
             if debug > 0:
                 template.plot()
         template_names = list(string.ascii_lowercase)[0:len(templates)]
-        detections, out_cat = match_filter(template_names=template_names,
-                                           template_list=templates,
-                                           st=data, threshold=10.0,
-                                           threshold_type='MAD',
-                                           trig_int=6.0,
-                                           plotvar=False,
-                                           plotdir='.',
-                                           cores=1,
-                                           debug=0,
-                                           output_cat=True)
+        detections, out_cat, streams =\
+            match_filter(template_names=template_names,
+                         template_list=templates,
+                         st=data, threshold=10.0,
+                         threshold_type='MAD',
+                         trig_int=6.0,
+                         plotvar=False,
+                         plotdir='.',
+                         cores=1,
+                         debug=0,
+                         output_cat=True,
+                         extract_detections=True)
         # Compare the detections to the seeds
         print('This test made ' + str(len(detections)) + ' detections')
         ktrue = 0
