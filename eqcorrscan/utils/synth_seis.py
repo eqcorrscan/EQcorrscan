@@ -45,7 +45,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 
     if flength and 2.5 * SP < flength and 100 < flength:
         additional_length = flength
-    elif 2.5*SP < 100.0:
+    elif 2.5 * SP < 100.0:
         additional_length = 100
     else:
         additional_length = 2.5 * SP
@@ -83,7 +83,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
             synth = synth[SP:]
             if len(synth) < flength:
                 # If this is too short, pad
-                synth = np.append(synth, np.zeros(flength-len(synth)))
+                synth = np.append(synth, np.zeros(flength - len(synth)))
             else:
                 synth = synth[0:flength]
         return synth
@@ -200,14 +200,14 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
             # Check that the template length is long enough to include the SP
             if flength and SP_time * samp_rate < flength - 11 \
                and phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
                 warnings.warn('Cannot make a bulk synthetic with this fixed ' +
-                              'length for station '+station)
+                              'length for station ' + station)
             elif phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif phaseout in ['P', 'S']:

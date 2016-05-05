@@ -13,9 +13,14 @@ interpolated around when found: eqcorrscan.utils.despike.
 * Option to output catalog object from match_filter - this will become the
 default once we introduce meta-data to templates - currently the picks for
 events are the template trace start-times, which will be before the phase-pick
-by the lag defined in the template creation.
+by the lag defined in the template creation - also added event into detection
+class, so you can access the event info from the detections, or create a
+catalog from a list of detections.
+* Add option to extract detections at run-time in match_filter.match_filter.
 * Edited multi_event_singlechan to take a catalog with multiple picks, but
 requires you to specify the station and channel to plot.
+* Add normalize option to stacking routines.
+* Add tests for stacking - PWS test needs more checks.
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;

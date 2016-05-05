@@ -16,21 +16,25 @@ from __future__ import unicode_literals
 import numpy as np
 
 
-def linstack(streams):
+def linstack(streams, normalize=True):
     """
     Function to compute the linear stack of a series of seismic streams of \
     multiplexed data.
 
     :type streams: list of Streams
     :param stream: List of streams to stack
+    :type normalize: bool
+    :param normalize: Normalize traces before stacking, normalizes by the RMS \
+        amplitude.
 
     :returns: stack - Stream
     """
     # import matplotlib.pyplot as plt
     stack = streams[np.argmax([len(stream) for stream in streams])].copy()
-    for tr in stack:
-        tr.data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
-        tr.data = np.nan_to_num(tr.data)
+    if normalize:
+        for tr in stack:
+            tr.data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
+            tr.data = np.nan_to_num(tr.data)
     for i in range(1, len(streams)):
         # print("Stacking stream "+str(i))
         for tr in stack:
@@ -39,14 +43,17 @@ def linstack(streams):
                                         channel=tr.stats.channel)
             if matchtr:
                 # Normalize the data before stacking
-                norm = matchtr[0].data /\
-                    np.sqrt(np.mean(np.square(matchtr[0].data)))
-                norm = np.nan_to_num(norm)
+                if normalize:
+                    norm = matchtr[0].data /\
+                        np.sqrt(np.mean(np.square(matchtr[0].data)))
+                    norm = np.nan_to_num(norm)
+                else:
+                    norm = matchtr[0].data
                 tr.data = np.sum((norm, tr.data), axis=0)
     return stack
 
 
-def PWS_stack(streams, weight=2):
+def PWS_stack(streams, weight=2, normalize=True):
     """
     Function to compute the phase weighted stack of a series of streams.
     Recommend aligning the traces before stacking.
@@ -55,6 +62,8 @@ def PWS_stack(streams, weight=2):
     :param streams: List of Stream to stack
     :type weight: float
     :param weight: Exponent to the phase stack used for weighting.
+    :type normalize: bool
+    :param normalize: Normalize traces before stacking.
 
     :return: obspy.Stream
     """
@@ -74,7 +83,7 @@ def PWS_stack(streams, weight=2):
         instaphases.append(instaphase)
     # Compute the phase stack
     print("Computing the phase stack")
-    Phasestack = linstack(instaphases)
+    Phasestack = linstack(instaphases, normalize=normalize)
     # print(type(Phasestack))
     # Compute the phase-weighted stack
     for tr in Phasestack:
