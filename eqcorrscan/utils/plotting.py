@@ -92,6 +92,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :param save: If True will save and not plot to screen, vice-versa if False
     :type savefile: str, optional
     :param savefile: Path to save figure to, only required if save=True
+
+    :returns: matplotlib.figure
     """
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
@@ -133,7 +135,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
         plt.close()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
@@ -154,6 +156,8 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     :param peaks: List of peak locations and amplitudes (loc, amp)
     :type savefile: String, optional
     :param savefile: Path to save to, only used if save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     npts = len(data)
@@ -174,7 +178,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
         plt.close()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def cumulative_detections(dates, template_names, show=False,
@@ -195,6 +199,8 @@ def cumulative_detections(dates, template_names, show=False,
     :param save: Save figure or show to screen, optional
     :type savefile: str
     :param savefile: String to save to, required is save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
@@ -247,6 +253,8 @@ def threeD_gridplot(nodes, save=False, savefile=None):
         (default) will plot to screen but not save
     :type savefile: str
     :param savefile: required if save=True, path to save figure to.
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     lats = []
@@ -314,7 +322,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
 
-    :returns: Alligned and cut traces, and new picks
+    :returns: Alligned and cut traces, new picks, matplotlib.figure
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
@@ -424,7 +432,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
         plt.show()
     else:
         plt.savefig(savefile)
-    return traces, clist
+    return traces, clist, fig
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
@@ -449,6 +457,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -499,7 +509,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         plt.show()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def interev_mag_sfiles(sfiles, save=False, savefile=None):
@@ -513,6 +523,8 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import sfile_util
@@ -520,7 +532,8 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
              for sfile in sfiles]
     mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
             for sfile in sfiles]
-    interev_mag(times, mags, save, savefile)
+    fig = interev_mag(times, mags, save, savefile)
+    return fig
 
 
 def interev_mag(times, mags, save=False, savefile=None):
@@ -536,6 +549,8 @@ def interev_mag(times, mags, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     l = [(times[i], mags[i]) for i in xrange(len(times))]
@@ -565,6 +580,7 @@ def interev_mag(times, mags, save=False, savefile=None):
         plt.show()
     else:
         plt.savefig(savefile)
+    return fig
 
 
 def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
@@ -580,6 +596,8 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils.plotting import threeD_seismplot
@@ -593,8 +611,8 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
                      sta.elevation / 1000 - sta.channels[0].depth / 1000)
                     for sta in net]
         all_stas += stations
-    threeD_seismplot(all_stas, nodes, save, savefile)
-    return
+    fig = threeD_seismplot(all_stas, nodes, save, savefile)
+    return fig
 
 
 def threeD_seismplot(stations, nodes, save=False, savefile=None):
@@ -612,6 +630,8 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
@@ -630,7 +650,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
         plt.show()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def pretty_template_plot(template, size=(10.5, 7.5), save=False,
@@ -653,6 +673,8 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     :param background: Stream to plot the template within.
     :type picks: list of obspy.core.event.pick
     :param picks: List of obspy type picks.
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
@@ -699,7 +721,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
             lengths.append(x[-1])
         # print(' '.join([tr.stats.station, str(len(x)), str(len(y))]))
         axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
-                           rotation=0, horizontalalignment='right')
+                        rotation=0, horizontalalignment='right')
         axis.yaxis.set_ticks([])
         # Plot the picks if they are given
         if picks:
@@ -747,6 +769,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         plt.close()
     else:
         plt.savefig(savefile)
+    return fig
 
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,
@@ -770,6 +793,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         of save path.
     :type title: str
     :param title: String for the title of the plot, set to False
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -843,7 +868,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         plt.close()
     else:
         plt.savefig(savefile)
-    return
+    return fig
 
 
 def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
@@ -864,6 +889,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     :type savefile: str
     :param savefile: Filename to save to, required for save=True, will label \
         additionally according to station and channel.
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     for stachan in stachans:
@@ -893,7 +920,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
         else:
             plt.savefig(savefile.split('.') + '_stachan.' +
                         savefile.split('.')[-1])
-    return
+    return fig
 
 
 def plot_synth_real(real_template, synthetic, channels=False, save=False,
@@ -912,6 +939,8 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     from obspy.signal.cross_correlation import xcorr
@@ -966,6 +995,7 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         plt.show()
     else:
         plt.savefig(savefile)
+    return fig
 
 
 def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
@@ -988,6 +1018,8 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+
+    :returns: :class: matplotlib.figure
     """
     _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
@@ -1026,6 +1058,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         plt.show()
     else:
         plt.savefig(savefile)
+    return fig
 
 
 def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
@@ -1055,6 +1088,8 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     :param axes: Figure to plot onto, defaults to self generating.
     :type show: bool
     :param show: To show plot or not, if false, will return Fig.
+
+    :returns: :class: matplotlib.figure
     """
     from obspy import Stream
     if isinstance(traces, Stream):
