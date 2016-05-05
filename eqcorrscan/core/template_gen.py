@@ -597,6 +597,57 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     return temp_list
 
 
+def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
+                       plot=False, debug=0):
+    r"""Thin wrapper around _template_gen to generate multiple templates from \
+    one stream of continuous data.
+
+    :type catalog: :class: obspy.core.event.Catalog
+    :param catalog:
+    :type st:
+    :param st:
+    :type length: float
+    :param length: Length of template in seconds
+    :type swin: string
+    :param swin: P, S or all, defaults to all
+    :type prepick: float
+    :param prepick: Length in seconds to extract before the pick time \
+            default is 0.05 seconds
+    :type plot: bool
+    :param plot: To plot the template or not, default is True
+    :type debug: int
+    :param debug: Debug output level from 0-5.
+
+    :returns: list of :class: obspy.core.Stream newly cut templates
+
+    .. note:: By convention templates are generated with P-phases on the \
+        vertical channel and S-phases on the horizontal channels, normal \
+        seismograph naming conventions are assumed, where Z denotes vertical \
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
+        or not.  To this end we will **only** use Z channels if they have a \
+        P-pick, and will use one or other horizontal channels **only** if \
+        there is an S-pick on it.
+
+    .. warning:: If there is no phase_hint included in picks, and swin=all, \
+        all channels with picks will be used.
+    """
+    templates = []
+    for event in catalog:
+        picks = event.picks
+        for pick in picks:
+            if pick.time > st[0].stats.starttime and\
+               pick.time < st[0].stats.endtime:
+                continue
+            else:
+                picks.remove(pick)
+        if len(picks) > 0:
+            st_clip = st.copy()
+            template = _template_gen(picks, st_clip, length, swin,
+                                     prepick, plot, debug)
+            templates.append(template)
+    return templates
+
+
 def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
                   debug=0):
     r"""Function to generate a cut template in the obspy \
