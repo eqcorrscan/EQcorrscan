@@ -110,7 +110,7 @@ def distance_matrix(stream_list, cores=1):
 
 
 def cluster(template_list, plot='clust', corr_thresh=0.3, save_corrmat=False,
-            cores='all', debug=1, save_plot=False):
+            cores='all', debug=1, save_plot=False, corr_mat=False):
     """
     Function to take a set of templates and cluster them, will return groups \
     as lists of streams.  Clustering is done by computing the cross-channel \
@@ -142,6 +142,11 @@ def cluster(template_list, plot='clust', corr_thresh=0.3, save_corrmat=False,
         currently only level 1 implimented.
     :type save_plot: bool or str
     :param save_plot: Either False or a filename for the dendrogram figure
+    :type corr_mat: bool or str
+    :param corr_mat: Specifies a preconstructed distance matrix. If False, \
+        (default) cluster() will compute the matrix like normal, otherwise \
+        corr_mat must be given the path to a .npy array. Setting this flag \
+        will override the template_list argument.
 
     :returns: List of groups with each group a list of streams making up \
         that group.
@@ -151,22 +156,26 @@ def cluster(template_list, plot='clust', corr_thresh=0.3, save_corrmat=False,
     import matplotlib.pyplot as plt
     import seaborn as sns
     from multiprocessing import cpu_count
-    # Specify 'Agg' matplotlib backend due to interference with multiprocessing
-    plt.switch_backend('Agg')
-    if cores == 'all':
-        num_cores = cpu_count()
-    else:
-        num_cores = cores
-    # Extract only the Streams from stream_list
-    stream_list = [x[0] for x in template_list]
-    # Compute the distance matrix
-    if debug >= 1:
-        print('Computing the distance matrix using '+str(num_cores)+' cores')
-    dist_mat = distance_matrix(stream_list, cores=num_cores)
-    if save_corrmat:
-        np.save(save_corrmat, dist_mat)
+    if not corr_mat:
+        # Specify 'Agg' matplotlib backend due to interference with multiprocessing
+        plt.switch_backend('Agg')
+        if cores == 'all':
+            num_cores = cpu_count()
+        else:
+            num_cores = cores
+        # Extract only the Streams from stream_list
+        stream_list = [x[0] for x in template_list]
+        # Compute the distance matrix
         if debug >= 1:
-            print('Saved the distance matrix as %s' % save_corrmat)
+            print('Computing the distance matrix using ' +
+                  str(num_cores) + ' cores')
+        dist_mat = distance_matrix(stream_list, cores=num_cores)
+        if save_corrmat:
+            np.save(save_corrmat, dist_mat)
+            if debug >= 1:
+                print('Saved the distance matrix as %s' % save_corrmat)
+    else:
+        dist_mat = np.load(corr_mat)
     dist_vec = squareform(dist_mat)
     # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
     if debug >= 1:
