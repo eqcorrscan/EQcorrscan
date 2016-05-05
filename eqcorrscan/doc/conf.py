@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 import eqcorrscan
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
+import glob
 MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'matplotlib.pylab',
                 'matplotlib.dates', 'numpy',
                 'scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
@@ -383,3 +384,28 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/2.7/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('http://matplotlib.org/', None),
+    'sqlalchemy': ('http://docs.sqlalchemy.org/en/latest/', None),
+    'obspy': ('https://docs.obspy.org', None),
+}
+
+# generate automatically stubs
+autosummary_generate = glob.glob("submodules" + os.sep + "*.rst")
+
+# Don't merge __init__ method in auoclass content
+autoclass_content = 'class'
+
+# This value is a list of autodoc directive flags that should be automatically
+# applied to all autodoc directives. The supported flags are 'members',
+# 'undoc-members', 'private-members', 'special-members', 'inherited-members' an
+# 'show-inheritance'. Don't set it to anything !
+autodoc_default_flags = ['show-inheritance']
+
+# warn about *all* references where the target cannot be found
+nitpicky = False

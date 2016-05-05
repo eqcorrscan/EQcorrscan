@@ -24,3 +24,4 @@ pytest_runner*
 .coveralls.yml
 .coverage
 eqcorrscan/doc/_build
+eqcorrscan/doc/submodules/autogen
