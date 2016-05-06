@@ -41,6 +41,9 @@ def _cc_round(num, dp):
     :param dp: Number of decimal places to round to.
 
     :returns: str
+
+    >>> _cc_round(0.25364, 2)
+    '0.25'
     """
     num = round(num, dp)
     num = '{0:.{1}f}'.format(num, dp)
@@ -58,6 +61,11 @@ def _av_weight(W1, W2):
     :param W2: Seisan input weight (0-4)
 
     :returns: str
+
+    >>> _av_weight(1, 4)
+    '0.3750'
+    >>> _av_weight(0, 0)
+    '1.0000'
     """
     if W1 == ' ':
         W1 = 1
@@ -88,6 +96,9 @@ def readSTATION0(path, stations):
     :param station: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
+
+    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2'])
+    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, 170.36038333333335, 95.0)]
     """
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
@@ -542,6 +553,11 @@ def read_phase(ph_file):
     :param ph_file: Phase file to read event info from.
 
     :returns: obspy.core.catlog
+
+    >>> from obspy.core.event.catalog import Catalog
+    >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
+    >>> isinstance(catalog, Catalog)
+    True
     """
     from obspy.core.event import Catalog
     ph_catalog = Catalog()
@@ -611,3 +627,8 @@ def _phase_to_event(event_text):
                                                     resource_id))
         ph_event.origins[0].arrivals[i].time_weight = float(pick[2])
     return ph_event
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

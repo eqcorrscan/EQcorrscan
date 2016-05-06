@@ -157,6 +157,8 @@ def template_remove(tr, template, cc_thresh, interp_len, debug=0):
     :param debug: Debug level
 
     :returns: tr, works in place
+
+    .. note:: Unfinished
     """
     from eqcorrscan.core.match_filer import normxcorr2
     from eqcorrscan.utils.findpeaks import find_peaks2_short
@@ -182,3 +184,8 @@ def template_remove(tr, template, cc_thresh, interp_len, debug=0):
         plt.legend()
         plt.show()
     return tr
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.modtest()

@@ -654,6 +654,7 @@ def space_cluster(catalog, d_thresh, show=True):
                 break
     return groups
 
+
 def space_time_cluster(detections, t_thresh, d_thresh):
     """
     Function to cluster detections in space and time, use to seperate \
@@ -698,7 +699,6 @@ def space_time_cluster(detections, t_thresh, d_thresh):
             clustered_indices.append(master_ind)
 
     return clustered, clustered_indices
-
 
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
