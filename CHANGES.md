@@ -21,6 +21,8 @@ catalog from a list of detections.
 requires you to specify the station and channel to plot.
 * Add normalize option to stacking routines.
 * Add tests for stacking - PWS test needs more checks.
+* Add many examples to doc-strings, not complete though.
+* Change docs to have one page per function.
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;
