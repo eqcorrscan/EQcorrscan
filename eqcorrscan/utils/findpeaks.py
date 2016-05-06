@@ -213,7 +213,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     >>> arr[40] = 20
     >>> arr[60] = 100
     >>> find_peaks2_short(arr, threshold, 3)
-    [(20.0, 40L), (100.0, 60L)]
+    [(20.0, 40), (100.0, 60)]
     """
     from scipy import ndimage
     import numpy as np
@@ -240,7 +240,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         # print('Width of peak='+str(peak_slice[0].stop-peak_slice[0].start)
         window = arr[peak_slice[0].start: peak_slice[0].stop]
         initial_peaks.append((max(window),
-                              peak_slice[0].start + np.argmax(window)))
+                              int(peak_slice[0].start + np.argmax(window))))
     # Sort initial peaks according to amplitude
     peaks_sort = sorted(initial_peaks, key=lambda amplitude: amplitude[0],
                         reverse=True)

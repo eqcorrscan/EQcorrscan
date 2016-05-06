@@ -439,8 +439,8 @@ def readheader(sfile):
 
     :returns: :class: obspy.core.event.Event
 
-    >>> event = readheader('eqcorrscan/tests/test_data/REA/TEST_/' +\
-        '01-0411-15L.S201309')
+    >>> event = readheader('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...                    '01-0411-15L.S201309')
     >>> print(event.origins[0].time)
     2013-09-01T04:11:15.700000Z
     """
@@ -606,8 +606,8 @@ def readpicks(sfile):
     values stored in seisan.  Multiple weights are also not supported in \
     Obspy.event.
 
-    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +\
-        '01-0411-15L.S201309')
+    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...                   '01-0411-15L.S201309')
     >>> print(event.origins[0].time)
     2013-09-01T04:11:15.700000Z
     >>> print(event.picks[0].time)
@@ -789,8 +789,8 @@ def readwavename(sfile):
 
     :returns: List of str
 
-    >>> readwavename('eqcorrscan/tests/test_data/REA/TEST_/' +\
-        '01-0411-15L.S201309')
+    >>> readwavename('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...              '01-0411-15L.S201309')
     ['2013-09-01-0410-35.DFDPC_024_00']
     """
     f = open(sfile)
@@ -825,8 +825,11 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     :returns: String, S-file name
 
     >>> from eqcorrscan.utils.sfile_util import readwavename
-    >>> sfile = blanksfile('eqcorrscan/tests/test_data/WAV/TEST_/' +\
-        '2013-09-01-0410-35.DFDPC_024_00', 'L', 'TEST', '.', overwrite=True)
+    >>> import os
+    >>> wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
+    ...                         'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
+    >>> sfile = blanksfile(wavefile, 'L', 'TEST',
+    ...                    '.', overwrite=True)
     Written s-file: ./01-0410-35L.S201309
     >>> readwavename(sfile)
     ['2013-09-01-0410-35.DFDPC_024_00']
