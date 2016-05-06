@@ -26,7 +26,7 @@ class TestTutorialScripts(unittest.TestCase):
         # Run the matched-filter
         tutorial_detections = run_tutorial(plot=False)
         # It should make 19 detections in total...
-        self.assertEqual(len(tutorial_detections), 19)
+        self.assertEqual(len(tutorial_detections), 5)
         # Cleanup the templates
         templates = glob.glob('tutorial_template_?.ms')
         for template in templates:
