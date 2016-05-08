@@ -5,8 +5,7 @@ tutorial and uses those templates.  If you haven't run that tutorial script
 then you will need to before you can run this script.
 """
 
-
-def run_tutorial(plot=True):
+def run_tutorial(plot=False):
     """Main function to run the tutorial dataset."""
 
     from eqcorrscan.utils import pre_processing
@@ -59,10 +58,7 @@ def run_tutorial(plot=True):
         bulk_info = []
         for station in stations:
             bulk_info.append(('NZ', station[0], '*',
-                              station[1][0] + 'H*', t1, t2))
-            # Note that we are only using the first letter of the channel code to
-            # download all channels from that sensor at that site, e.g. if the
-            # channel code is HHZ we will download HHE and HHN as well.
+                              station[1][0] + 'H' + station[1][-1], t1, t2))
 
         # Set up a client to access the GeoNet database
         client = Client("GEONET")
@@ -91,7 +87,7 @@ def run_tutorial(plot=True):
         print('Processing the seismic data')
         st = pre_processing.dayproc(st, lowcut=2.0, highcut=9.0,
                                     filt_order=4, samp_rate=20.0,
-                                    debug=0, starttime=t1)
+                                    debug=0, starttime=t1, num_cores=ncores)
         # Convert from list to stream
         st = Stream(st)
 
@@ -137,7 +133,7 @@ def run_tutorial(plot=True):
                         endtime=detection.detect_time + maxlag + 10)
             plotting.detection_multiplot(stplot, template,
                                          [detection.detect_time.datetime])
-    return detections
+    return unique_detections
 
 if __name__ == '__main__':
     run_tutorial()

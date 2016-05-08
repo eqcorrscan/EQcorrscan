@@ -18,15 +18,17 @@ class TestTutorialScripts(unittest.TestCase):
         from obspy import read
 
         # Run mktemplates first to set-up for match_filter
-        mktemplates(network_code='GEONET',
-                    publicIDs=['2016p008122', '2016p008353'], plot=False)
+        mktemplates(plot=False)
+                    # network_code='GEONET',
+                    # publicIDs=['2016p008122', '2016p008353'], plot=False)
         for template_no in range(2):
             template = read('tutorial_template_' + str(template_no) + '.ms')
             self.assertTrue(len(template) > 1)
+        del(template)
         # Run the matched-filter
         tutorial_detections = run_tutorial(plot=False)
         # It should make 19 detections in total...
-        self.assertEqual(len(tutorial_detections), 5)
+        self.assertEqual(len(tutorial_detections), 20)
         # Cleanup the templates
         templates = glob.glob('tutorial_template_?.ms')
         for template in templates:
