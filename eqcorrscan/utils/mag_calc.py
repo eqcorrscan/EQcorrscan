@@ -555,23 +555,25 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     decomposition (see the SVD functions in clustering) into relative \
     magnitudes.
 
-    :type U: List of np.ndarray
-    :param U: List of the input basis vectors from the SVD, one array for \
-        each channel used.
-    :type s: List of nd.array
-    :param s: List of the singular values, one array for each channel
-    :type V: List of np.ndarry
-    :param V: List of output basis vectors from SVD, one array per channel.
-    :type stachans: List of string
+    :type U: list
+    :param U: List of the numpy array input basis vectors from the SVD, \
+        one array for each channel used.
+    :type s: list
+    :param s: List of the numpy arrays of singular values, one array for \
+        each channel.
+    :type V: list
+    :param V: List of numpy arrays of output basis vectors from SVD, one \
+        array per channel.
+    :type stachans: list
     :param stachans: List of station.channel input
-    :type event_list: List of list
+    :type event_list: list
     :param event_list: List of events for which you have data, such that \
         event_list[i] corresponds to stachans[i], U[i] etc. and \
-        event_list[i][j] corresponds to event j in U[i]
-    type n_SVs: int
+        event_list[i][j] corresponds to event j in U[i].
+    :type n_SVs: int
     :param n_SVs: Number of singular values to use, defaults to 4.
 
-    :returns: M, np.array of relative moments
+    :returns: M, np.array of relative moments.
     """
     import copy
     import random

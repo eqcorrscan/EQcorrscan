@@ -17,15 +17,20 @@ import os
 import shlex
 sys.path.insert(0, os.path.abspath('../..'))
 import eqcorrscan
+import matplotlib
+matplotlib.use("agg")
+
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'matplotlib.pylab',
-                'matplotlib.dates', 'numpy',
-                'scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
-                'joblib', 'obspy', 'obspy.read', 'obspy.signal',
-                'obspy.signal.cross_correlation', 'obspy.signal.filter',
-                'cv2', 'scipy.signal']
+# MOCK_MODULES = ['matplotlib.pyplot', 'matplotlib.pylab',
+#                 'matplotlib.dates', 'numpy',
+#                 'scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
+#                 'joblib', 'obspy', 'obspy.read', 'obspy.signal',
+#                 'obspy.signal.cross_correlation', 'obspy.signal.filter',
+#                 'cv2', 'scipy.signal']
+MOCK_MODULES = ['cv2']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -47,17 +52,16 @@ needs_sphinx = '1.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
+    'matplotlib.sphinxext.plot_directive',
+    'numpydoc',
 ]
-
-# automodule:: core
-# automodule:: utils
-# automodule:: par
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -128,9 +132,14 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+# File formats to generate.
+plot_formats = [('png', 110), ('hires.png', 200)]
+if READ_THE_DOCS:
+    plot_formats += [('pdf', 200)]
+
+
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -383,16 +392,13 @@ epub_exclude_files = ['search.html']
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
-
-# Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/2.7/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('http://matplotlib.org/', None),
     'sqlalchemy': ('http://docs.sqlalchemy.org/en/latest/', None),
-    'obspy': ('https://docs.obspy.org', None),
+    'obspy': ('https://docs.obspy.org/', None),
 }
 
 # generate automatically stubs
@@ -408,4 +414,4 @@ autoclass_content = 'class'
 autodoc_default_flags = ['show-inheritance']
 
 # warn about *all* references where the target cannot be found
-nitpicky = False
+nitpicky = True

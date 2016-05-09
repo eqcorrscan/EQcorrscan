@@ -28,5 +28,6 @@ plotting
        threeD_gridplot
        threeD_seismplot
        triple_plot
+       peaks_plot
 
     .. comment to end block

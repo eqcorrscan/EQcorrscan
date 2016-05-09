@@ -19,7 +19,7 @@ mag_calc
 
     .. comment to end block
 
-       Private Functions
+    Private Functions
     -----------------
     Note that these functions are not designed for public use and may change
     at any point.

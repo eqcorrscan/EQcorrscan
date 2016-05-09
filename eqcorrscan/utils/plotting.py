@@ -48,8 +48,8 @@ def chunk_data(tr, samp_rate, state='mean'):
     # chunksize isn't an even divisor of the total size.
     # (This part won't use _any_ additional memory)
     numchunks = int(y.size // chunksize)
-    ychunks = y[:chunksize*numchunks].reshape((-1, chunksize))
-    xchunks = x[:chunksize*numchunks].reshape((-1, chunksize))
+    ychunks = y[:chunksize * numchunks].reshape((-1, chunksize))
+    xchunks = x[:chunksize * numchunks].reshape((-1, chunksize))
 
     # Calculate the max, min, and means of chunksize-element chunks...
     if state == 'Max':
@@ -98,7 +98,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
         print('cccsum is: ' +
-              str(len(cccsum))+' trace is: '+str(len(trace.data)))
+              str(len(cccsum)) + ' trace is: ' + str(len(trace.data)))
         msg = ' '.join(['cccsum and trace must have the',
                         'same number of data points'])
         raise ValueError(msg)
@@ -146,18 +146,46 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
     :type data: numpy.array
     :param data: Numpy array of the data within which peaks have been found
-    :type starttime: obspy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Start time for the data
     :type samp_rate: float
     :param samp_rate: Sampling rate of data in Hz
-    :type save: Boolean, optional
-    :param save: Save figure or plot to screen (False)
-    :type peaks: list of Tuple, optional
-    :param peaks: List of peak locations and amplitudes (loc, amp)
-    :type savefile: String, optional
+    :type save: bool
+    :param save: Save figure or plot to screen.
+    :type peaks: list
+    :param peaks: List of tuples of peak locations and amplitudes (loc, amp)
+    :type savefile: str
     :param savefile: Path to save to, only used if save=True
 
-    :returns: :class: matplotlib.figure
+    :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> import numpy as np
+    >>> from eqcorrscan.utils import findpeaks
+    >>> from eqcorrscan.utils.plotting import peaks_plot
+    >>> from obspy import UTCDateTime
+    >>> data = np.random.randn(200)
+    >>> data[30]=100
+    >>> data[60]=40
+    >>> threshold = 10
+    >>> peaks = findpeaks.find_peaks2_short(data, threshold, 3)
+    >>> peaks_plot(data=data, starttime=UTCDateTime("2008001"),
+    ...            samp_rate=10, peaks=peaks)  # doctest: +SKIP
+
+    .. plot::
+
+        import numpy as np
+        from eqcorrscan.utils import findpeaks
+        from eqcorrscan.utils.plotting import peaks_plot
+        from obspy import UTCDateTime
+        data = np.random.randn(200)
+        data[30]=100
+        data[60]=40
+        threshold = 10
+        peaks = findpeaks.find_peaks2_short(data, threshold, 3)
+        peaks_plot(data=data, starttime=UTCDateTime("2008001"),
+                   samp_rate=10, peaks=peaks)
     """
     _check_save_args(save, savefile)
     npts = len(data)
@@ -201,6 +229,8 @@ def cumulative_detections(dates, template_names, show=False,
     :param savefile: String to save to, required is save=True
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
     """
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
