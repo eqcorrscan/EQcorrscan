@@ -55,7 +55,7 @@ scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
 scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
 if sys.version_info.major == 2:
-    install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.3.0',
+    install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0', 'matplotlib>=1.3.0',
                         'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing',
                         'LatLon']
 else:

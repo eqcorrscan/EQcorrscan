@@ -13,7 +13,6 @@ sudo: false
 
 # Test with multiple obspy versions, allow some backwards compatability
 env:
-  - OBSPY_VERSION=0.10.2
   - OBSPY_VERSION=1.0.1
 
 addons:
