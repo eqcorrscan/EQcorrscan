@@ -6,8 +6,8 @@ is a highly optimized and accurate normalized cross-correlation routine.  \
 The details of this code can be found here: \
 http://www.cs.ubc.ca/research/deaton/remarks_ncc.html \
 
-The matched-filter routine described here was used a previous Matlab code for \
-the Chamberlain et al. 2014 G-cubed publication.
+The matched-filter routine described here was used in a previous Matlab code \
+for the Chamberlain et al. 2014 G-cubed publication.
 
 :copyright:
     Calum Chamberlain, Chet Hopp.
@@ -167,7 +167,8 @@ def normxcorr2(template, image):
     return ccc
 
 
-def _template_loop(template, chan, station, channel, debug=0, i=0):
+def _template_loop(template, chan, station, channel, subspace=False,
+                   debug=0, i=0):
     r"""Sister loop to handle the correlation of a single template (of \
     multiple channels) with a single channel of data.
 
@@ -183,7 +184,7 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
 
     .. note:: This function currently assumes only one template-channel per \
         data-channel, while this is normal for a standard matched-filter \
-        routine, if we wanted to impliment a subspace detector, this would be \
+        routine, if we wanted to implement a subspace detector, this would be \
         the function to change, I think.  E.g. where I currently take only \
         the first matching channel, we could loop through all the matching \
         channels and then sum the correlation sums - however I haven't yet
@@ -202,17 +203,27 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
         # While each bit of this loop isn't slow, looping through the if
         # statement when I don't need to adds up, I should work this out
         # earlier
-        template_data = template.select(station=station,
-                                        channel=channel)
-        # I will for now assume that you only have one template per-channel
-        template_data = template_data[0]
-        delay = template_data.stats.starttime - \
-            template.sort(['starttime'])[0].stats.starttime
-        pad = np.array([0] * int(round(delay *
-                                       template_data.stats.sampling_rate)))
-        image = np.append(chan, pad)[len(pad):]
-        ccc = (normxcorr2(template_data.data, image))
-        ccc = ccc.astype(np.float16)
+        if subspace:
+            #XXX TODO: Check that template is list of list of streams
+            sin_vecs = [st.select(station=station, channel=channel)[0].data
+                        for st in template if len(st.select(station=station,
+                                                            channel=channel))
+                        != 0]
+            detector = np.asarray(sin_vecs)
+            #XXX TODO: 
+            det_stats = subspace.det_statistic(detector, data=chan.data)
+        else:
+            template_data = template.select(station=station,
+                                            channel=channel)
+            # I will for now assume that you only have one template per-channel
+            template_data = template_data[0]
+            delay = template_data.stats.starttime - \
+                template.sort(['starttime'])[0].stats.starttime
+            pad = np.array([0] * int(round(delay *
+                                           template_data.stats.sampling_rate)))
+            image = np.append(chan, pad)[len(pad):]
+            ccc = (normxcorr2(template_data.data, image))
+            ccc = ccc.astype(np.float16)
         # Convert to float16 to save memory for large problems - lose some
         # accuracy which will affect detections very close to threshold
         #
