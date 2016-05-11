@@ -409,7 +409,7 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
+    r"""Function to generate templates from a SeisHub database. Must be given \
     an obspy.Catalog class and the SeisHub url as input. The function returns \
     a list of obspy.Stream classes containting steams for each desired \
     template.
@@ -500,15 +500,16 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
-    an obspy.Catalog class and the SeisHub url as input. The function returns \
-    a list of obspy.Stream classes containting steams for each desired \
+    r"""Function to generate templates from an FDSN client. Must be given \
+    an obspy.Catalog class and the client_id as input. The function returns \
+    a list of obspy.Stream classes containing steams for each desired \
     template.
 
     :type catalog: obspy.Catalog
     :param catalog: Catalog class containing desired template events
-    :type url: string
-    :param url: url of SeisHub database instance
+    :type client_id: string
+    :param client_id: Name of the client, either url, or Obspy \
+        mappable.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template\
             defaults file
@@ -562,7 +563,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correaltions.
+            # of resampling do not impinge on our cross-correlations.
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
@@ -602,10 +603,10 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     r"""Thin wrapper around _template_gen to generate multiple templates from \
     one stream of continuous data.
 
-    :type catalog: :class: obspy.core.event.Catalog
-    :param catalog:
-    :type st:
-    :param st:
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Events to extract templates for
+    :type st: obspy.core.Stream
+    :param st: Processed stream to extract from.
     :type length: float
     :param length: Length of template in seconds
     :type swin: string
