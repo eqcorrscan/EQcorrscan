@@ -12,6 +12,7 @@ plotting
        :toctree: autogen
        :nosignatures:
 
+       peaks_plot
        NR_plot
        SVD_plot
        chunk_data
@@ -28,6 +29,5 @@ plotting
        threeD_gridplot
        threeD_seismplot
        triple_plot
-       peaks_plot
 
     .. comment to end block

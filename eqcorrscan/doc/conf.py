@@ -16,11 +16,13 @@ import sys
 import os
 import shlex
 sys.path.insert(0, os.path.abspath('../..'))
-import eqcorrscan
 import matplotlib
-matplotlib.use("agg")
+import eqcorrscan
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+if not READ_THE_DOCS:
+    print('Imported rtd')
+    import sphinx_rtd_theme
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
@@ -40,27 +42,29 @@ sys.path.insert(0, os.path.abspath('../par'))
 sys.path.insert(0, os.path.abspath('../core'))
 sys.path.insert(0, os.path.abspath('../utils'))
 
+sys.path = [os.path.dirname(__file__) + os.sep + '_ext'] + sys.path
 
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.1'
+needs_sphinx = '1.4'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
+    'sphinx.ext.doctest',
+    'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
+    # 'matplotlib.sphinxext.mathmpl',
+    # 'matplotlib.sphinxext.only_directives',
     'matplotlib.sphinxext.plot_directive',
-    'numpydoc',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.todo',
+    # local extensions
+    'sphinx.ext.autosummary',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -136,7 +140,7 @@ pygments_style = 'sphinx'
 plot_formats = [('png', 110), ('hires.png', 200)]
 if READ_THE_DOCS:
     plot_formats += [('pdf', 200)]
-
+plot_html_show_formats = True
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
@@ -146,6 +150,8 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -414,4 +420,4 @@ autoclass_content = 'class'
 autodoc_default_flags = ['show-inheritance']
 
 # warn about *all* references where the target cannot be found
-nitpicky = True
+nitpicky = False

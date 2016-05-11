@@ -28,7 +28,7 @@ def chunk_data(tr, samp_rate, state='mean'):
     data within chunks, useful for plotting waveforms or cccsums, large \
     datasets that would otherwise exceed the complexity allowed, and overflow.
 
-    :type tr: obspy.Trace
+    :type tr: obspy.core.trace.Trace
     :param tr: Trace to be chunked
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
@@ -84,13 +84,13 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :type cccsum_hist: numpy.ndarray
     :param cccsum_hist: cccsum for histogram plotting, can be the same as \
         cccsum but included if cccsum is just an envelope.
-    :type trace: obspy.Trace
+    :type trace: obspy.core.trace.Trace
     :param trace: A sample trace from the same time as cccsum
     :type threshold: float
     :param threshold: Detection threshold within cccsum
-    :type save: bool, optional
+    :type save: bool
     :param save: If True will save and not plot to screen, vice-versa if False
-    :type savefile: str, optional
+    :type savefile: str
     :param savefile: Path to save figure to, only required if save=True
 
     :returns: matplotlib.figure
@@ -140,9 +140,9 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
                savefile=None):
-    r"""Simple utility code to plot the correlation peaks to check that the \
-    peak finding routine is running correctly, used in debugging for the \
-    EQcorrscan module.
+    r"""Plot peaks to check that the peak finding routine is running correctly.
+
+    Used in debugging for the EQcorrscan module.
 
     :type data: numpy.array
     :param data: Numpy array of the data within which peaks have been found
@@ -175,6 +175,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
     .. plot::
 
+        import matplotlib.pyplot as plt
         import numpy as np
         from eqcorrscan.utils import findpeaks
         from eqcorrscan.utils.plotting import peaks_plot
@@ -203,7 +204,6 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     fig.suptitle('Peaks')
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -216,9 +216,9 @@ def cumulative_detections(dates, template_names, show=False,
     plot each list seperately, e.g. if you have dates from more than one \
     template it will overlay them in different colours.
 
-    :type dates: list of lists of datetime.datetime
+    :type dates: list
     :param dates: Must be a list of lists of datetime.datetime objects
-    :type template_names: list of strings
+    :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type show: bool
     :param show: Wether or not to show the plot, defaults to False which will \
@@ -276,7 +276,7 @@ def cumulative_detections(dates, template_names, show=False,
 def threeD_gridplot(nodes, save=False, savefile=None):
     r"""Function to plot in 3D a series of grid points.
 
-    :type nodes: list of tuples
+    :type nodes: list
     :param nodes: List of tuples of the form (lat, long, depth)
     :type save: bool
     :param save: if True will save without plotting to screen, if False \
@@ -304,7 +304,6 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     ax.get_yaxis().get_major_formatter().set_scientific(False)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -319,7 +318,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     multiple events - data will be alligned by their pick-time given in the \
     picks.
 
-    :type streams: list of :class:obspy.stream
+    :type streams: list
     :param streams: List of the streams to use, can contain more traces than \
         you plan on plotting - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
@@ -471,11 +470,11 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     the template on top of it timed according to a list of given times, just\
     a pretty way to show a detection!
 
-    :type stream: obspy.Stream
+    :type stream: obspy.core.stream.Stream
     :param stream: Stream of data to be plotted as the base (black)
-    :type template: obspy.Stream
+    :type template: obspy.core.stream.Stream
     :param template: Template to be plotted on top of the base stream (red)
-    :type times: list of datetime.datetime
+    :type times: list
     :param times: list of times of detections in the order of the channels in
                 template.
     :type streamcolour: str
@@ -567,12 +566,12 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
 
 
 def interev_mag(times, mags, save=False, savefile=None):
-    r"""Function to plot interevent times against magnitude for given times
+    r"""Function to plot inter-event times against magnitude for given times
     and magnitudes.
 
-    :type times: list of datetime
+    :type times: list
     :param times: list of the detection times, must be sorted the same as mags
-    :type mags: list of float
+    :type mags: list
     :param mags: list of magnitudes
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -617,9 +616,9 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
     r"""Wrapper on threeD_seismplot() to plot obspy.Inventory and
     obspy.Catalog classes in three dimensions.
 
-    :type inventory: obspy.Inventory
+    :type inventory: obspy.core.inventory.inventory.Inventory
     :param inventory: Obspy inventory class containing station metadata
-    :type catalog: obspy.Catalog
+    :type catalog: obspy.core.event.catalog.Catalog
     :param catalog: Obspy catalog class containing event metadata
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -649,10 +648,10 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
     r"""Function to plot seismicity and stations in a 3D, movable, zoomable \
     space using matplotlibs Axes3D package.
 
-    :type stations: list of tuple
+    :type stations: list
     :param stations: list of one tuple per station of (lat, long, elevation), \
         with up positive.
-    :type nodes: list of tuple
+    :type nodes: list
     :param nodes: list of one tuple per event of (lat, long, depth) with down \
         positive.
     :type save: bool
@@ -689,7 +688,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     r"""Function to make a pretty plot of a single template, designed to work \
     better than the default obspy plotting routine for short data lengths.
 
-    :type template: :class: obspy.Stream
+    :type template: :class: obspy.core.stream.Stream
     :param template: Template stream to plot
     :type size: tuple
     :param size: tuple of plot size
@@ -699,9 +698,9 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     :param savefile: String to save plot as, required if save=True.
     :type title: bool
     :param title: String if set will be the plot title
-    :type background: :class: obspy.stream
+    :type background: :class: obspy.core.stream.stream
     :param background: Stream to plot the template within.
-    :type picks: list of obspy.core.event.pick
+    :type picks: list
     :param picks: List of obspy type picks.
 
     :returns: :class: matplotlib.figure
@@ -796,7 +795,6 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -807,13 +805,13 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     r"""Function to plot the Network response alongside the streams used -\
     highlights detection times in the network response.
 
-    :type stream: :class: obspy.Stream
+    :type stream: :class: obspy.core.stream.Stream
     :param stream: Stream to plot
-    :type NR_stream: :class: obspy.Stream
+    :type NR_stream: :class: obspy.core.stream.Stream
     :param NR_stream: Stream for the network response
-    :type detections: list of datetime objects
+    :type detections: list
     :param detections: List of the detections
-    :type false_detections: list of datetime
+    :type false_detections: list
     :param false_detections: Either False (default) or list of false detection\
      times
     :type size: tuple
@@ -895,7 +893,6 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         axes[0].set_title(title)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -906,11 +903,12 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     r"""Function to plot the singular vectors from the clustering routines, one\
     plot for each stachan
 
-    :type SVStreams: list of :class:Obspy.Stream
+    :type SVStreams: list
     :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
             ordered by power, e.g. first singular vector in the first stream
-    :type SValues: list of float
-    :param SValues: List of the singular values corresponding to the SVStreams
+    :type SValues: list
+    :param SValues: List of floats of the singular values corresponding to \
+        the SVStreams
     :type stachans: list
     :param stachans: List of station.channel
     :type save: bool
@@ -957,11 +955,11 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
                     savefile=None):
     r"""Plot multiple channels of data for real data and synthetic.
 
-    :type real_template: obspy.Stream
+    :type real_template: obspy.core.stream.Stream
     :param real_template: Stream of the real template
-    :type synthetic: obspy.Stream
+    :type synthetic: obspy.core.stream.Stream
     :param synthetic: Stream of synthetic template
-    :type channels: list of str
+    :type channels: list
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
     :type save: bool
@@ -1097,7 +1095,7 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     the trace with the spectra beneath it - this just does the overseeing to \
     work out if it needs to add subplots or not.
 
-    :type traces: either stream or list of traces
+    :type traces: list
     :param traces: Traces to be plotted, can be a single obspy.Stream, or a \
         list of obspy.Trace
     :type cmap: str
@@ -1165,7 +1163,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     r"""Function to plot a trace over that traces spectrogram.
     Uses obspys spectrogram routine.
 
-    :type trace: obspy.Trace
+    :type trace: obspy.core.trace.Trace
     :param trace: trace to plot
     :type cmap: str
     :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/

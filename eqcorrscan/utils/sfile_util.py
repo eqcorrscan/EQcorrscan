@@ -95,6 +95,8 @@ class PICK:
         :param distance: Source-reciever distance in km
         :type CAZ: int
         :param CAZ: Azimuth at source.
+        :type pickcount: int
+        :param pickcount: Number of picks.
 
     .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \
     classes. This will be removed in future releases.
@@ -108,7 +110,7 @@ class PICK:
                  velocity=float('NaN'), AIN=999, SNR=float('NaN'),
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
-                 CAZ=999):
+                 CAZ=999, pickcount=pickcount):
         self.station = station
         self.channel = channel
         self.impulsivity = impulsivity

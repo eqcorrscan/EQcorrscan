@@ -14,6 +14,7 @@ sfile_util
 
        EVENTINFO
        PICK
+       PICK.write
        blanksfile
        eventtopick
        eventtosfile
