@@ -30,9 +30,22 @@ def det_statistic(detector, data):
     the data stream, U is the subspace detector and :math:'\\gamma' is the \
     detection statistic from 0 to 1.
     """
-    #XXX TODO: Complete function to loop though one day for one channel/temp
+    day_stats = []
+    for i in range(len(data) - len(detector[0]) + 1):
+        y = data[i:i + len(detector[0])]
+        day_stats.append(y.T.dot(detector.T).dot(detector).dot(y))
+    #XXX TODO: Figure out why det_statistic not always giving between 0 and 1
+    day_stats = np.asarray(day_stats)
+    return day_stats
 
-    #XXX TODO: Figure out why det_statistic not giving between 0 and 1
+
+def subspace_detect(detector_names, detector_list, st, threshold,
+                    threshold_type, trig_int, plotvar, plotdir='.', cores=1,
+                    tempdir=False, debug=0, plot_format='jpg',
+                    output_cat=False, extract_detections=False):
+    r"""Overseer function to handle subspace detection. Modelled after \
+    match_filter.match_filter().
+    """
 
 
 def plot_e_fraction():

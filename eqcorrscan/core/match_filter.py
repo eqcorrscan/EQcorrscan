@@ -191,14 +191,13 @@ def _template_loop(template, chan, station, channel, subspace=False,
         implimented detection based on that.  More reading of the Harris \
         document required.
     """
+    #XXX TODO: Rename ccc to a name common to subspace and match_filt
     from eqcorrscan.utils.timer import Timer
-
     ccc = np.array([np.nan] * (len(chan) - len(template[0].data) + 1),
                    dtype=np.float16)
     ccc = ccc.reshape((1, len(ccc)))           # Set default value for
     # cross-channel correlation in case there are no data that match our
     # channels.
-
     with Timer() as t:
         # While each bit of this loop isn't slow, looping through the if
         # statement when I don't need to adds up, I should work this out
@@ -209,9 +208,10 @@ def _template_loop(template, chan, station, channel, subspace=False,
                         for st in template if len(st.select(station=station,
                                                             channel=channel))
                         != 0]
-            detector = np.asarray(sin_vecs)
-            #XXX TODO: 
+            # Convert trace data to np array and transpose to column vectors
+            detector = np.asarray(sin_vecs).T
             det_stats = subspace.det_statistic(detector, data=chan.data)
+            det_stats = det_stats.astype(np.float16)
         else:
             template_data = template.select(station=station,
                                             channel=channel)
