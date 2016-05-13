@@ -26,8 +26,7 @@ if not READ_THE_DOCS:
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['scipy', 'scipy.spatial.distance', 'scipy.cluster.hierachy',
-                'cv2', 'scipy.signal']
+MOCK_MODULES = ['cv2']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 # If extensions (or modules to document with autodoc) are in another directory,
