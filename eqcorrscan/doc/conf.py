@@ -59,6 +59,7 @@ extensions = [
     'sphinx.ext.todo',
     # local extensions
     'sphinx.ext.autosummary',
+    'obspydoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -416,3 +417,5 @@ autodoc_default_flags = ['show-inheritance']
 
 # warn about *all* references where the target cannot be found
 nitpicky = False
+
+trim_doctest_flags = True

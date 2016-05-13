@@ -172,9 +172,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             raise ValueError("Trace: " + tr.stats.station +
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
-    catalog = sfile_util.readpicks(sfile)
+    event = sfile_util.readpicks(sfile)
     # Read the list of Picks for this event
-    picks = catalog[0].picks
+    picks = event.picks
     print("I have found the following picks")
     for pick in picks:
         print(' '.join([pick.waveform_id.station_code,
