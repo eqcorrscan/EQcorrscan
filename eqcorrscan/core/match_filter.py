@@ -662,12 +662,12 @@ def match_filter(template_names, template_list, st, threshold,
                 ev.comments.append(Comment(text=thresh_str))
                 ev.comments.append(Comment(text=ccc_str))
                 ev.comments.append(Comment(text=used_chans))
+                min_template_tm = min([tr.stats.starttime for tr in template])
                 for tr in template:
                     if (tr.stats.station, tr.stats.channel) not in chans[i]:
                         continue
                     else:
-                        pick_tm = detecttime + (tr.stats.starttime -
-                                                detecttime)
+                        pick_tm = detecttime + (tr.stats.starttime - min_template_tm)
                         wv_id = WaveformStreamID(network_code=tr.stats.network,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)
