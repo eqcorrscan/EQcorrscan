@@ -1,6 +1,7 @@
-r"""Functions to locate earthquakes detected by EQcorrscan.
+r"""Functions to pick earthquakes detected by EQcorrscan.
 Designed primarily locate stacks of detections to give family locations.
-Extensions may later be written, not tested for accuracy.
+Extensions may later be written, not tested for accuracy, nor considered
+good functions.
 
 :copyright:
     Calum Chamberlain, Chet Hopp.
@@ -19,7 +20,7 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
     r"""Compare a specific stream to a list of synthetic templates, or \
     earthquakes of known source and find the best matching event.
 
-    :type stream: :class:obspy.Stream
+    :type stream: :class: obspy.Stream
     :param stream: Stream to be compared to streams with known locations.
     :type stream_list: list
     :param stream_list: List of streams with known locations
@@ -30,7 +31,6 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
 
     :returns: int, float: index of best match and cross-correlation sum
     """
-
     from eqcorrscan.core.match_filter import _channel_loop
     import numpy as np
     import copy
@@ -85,8 +85,8 @@ def cross_net(stream, env=False, debug=0, master=False):
 
     :type stream: :class: obspy.Stream
     :param stream: Stream to pick
-    :type envelope: bool
-    :param envelope: To compute cross-correlations on the envelope or not.
+    :type env: bool
+    :param env: To compute cross-correlations on the envelope or not.
     :type debug: int
     :param debug: Debug level from 0-5
     :type master: obspy.Trace
@@ -94,6 +94,15 @@ def cross_net(stream, env=False, debug=0, master=False):
             in stream.
 
     :returns: obspy.core.event.Event
+
+    .. rubric:: Example
+
+        >>> from obspy import read
+        >>> from eqcorrscan.utils.picker import cross_net
+        >>> st = read()
+        >>> event = cross_net(st, env=True)
+        >>> event.creation_info.author
+        'EQcorrscan'
     """
     from obspy.signal.cross_correlation import xcorr
     from obspy.signal.filter import envelope
@@ -171,6 +180,8 @@ def cross_net(stream, env=False, debug=0, master=False):
         if debug > 2:
             print(event.picks[i])
     event.origins[0].time = min([pick.time for pick in event.picks]) - 1
+    event.origins[0].latitude = float('nan')
+    event.origins[0].longitude = float('nan')
     # Set arbitrary origin time
     del st
     return event
@@ -206,8 +217,20 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :param show: Show picks on waveform.
 
     :returns: obspy.core.event.Event
+
+    .. rubric:: Example
+
+        >>> from obspy import read
+        >>> from eqcorrscan.utils.picker import stalta_pick
+        >>> st = read()
+        >>> event = stalta_pick(st, stalen=0.2, ltalen=4, trig_on=10,
+        ...             trig_off=1, freqmin=3.0, freqmax=20.0)
+        >>> event.creation_info.author
+        'EQcorrscan'
+
     """
-    from obspy.signal.trigger import classic_sta_lta, trigger_onset, plot_trigger
+    from obspy.signal.trigger import classic_sta_lta, trigger_onset
+    from obspy.signal.trigger import plot_trigger
     from obspy import UTCDateTime
     from obspy.core.event import Event, Pick, WaveformStreamID
     from obspy.core.event import CreationInfo, Comment, Origin
@@ -266,6 +289,8 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                                       size=(8, 9))
     event.picks = picks
     event.origins[0].time = min([pick.time for pick in event.picks]) - 1
+    event.origins[0].latitude = float('nan')
+    event.origins[0].longitude = float('nan')
     # Set arbitrary origin time
     return event
 

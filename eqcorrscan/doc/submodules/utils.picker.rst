@@ -1,5 +1,5 @@
-locate
-----------
+picker
+------
 
 .. currentmodule:: eqcorrscan.utils.locate
 .. automodule:: eqcorrscan.utils.locate
@@ -12,7 +12,7 @@ locate
        :toctree: autogen
        :nosignatures:
 
-       \cross_net
+       cross_net
        stalta_pick
        synth_compare
 
