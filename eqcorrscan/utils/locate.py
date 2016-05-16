@@ -80,7 +80,7 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
 
 def cross_net(stream, env=False, debug=0, master=False):
     r"""Function to generate picks for each channel based on optimal moveout \
-    defined by maximum cross-correaltion with master trace.  Master trace \
+    defined by maximum cross-correlation with master trace.  Master trace \
     will be the first trace in the stream.
 
     :type stream: :class: obspy.Stream
@@ -93,14 +93,21 @@ def cross_net(stream, env=False, debug=0, master=False):
     :param master: Trace to use as master, if False, will use the first trace \
             in stream.
 
-    :returns: list of pick class
+    :returns: obspy.core.event.Event
     """
     from obspy.signal.cross_correlation import xcorr
     from obspy.signal.filter import envelope
-    from eqcorrscan.utils.sfile_util import PICK
+    from obspy import UTCDateTime
+    from obspy.core.event import Event, Pick, WaveformStreamID
+    from obspy.core.event import CreationInfo, Comment, Origin
     import matplotlib.pyplot as plt
     import numpy as np
-    picks = []
+
+    event = Event()
+    event.origins.append(Origin())
+    event.creation_info = CreationInfo(author='EQcorrscan',
+                                       creation_time=UTCDateTime())
+    event.comments.append(Comment(text='cross_net'))
     samp_rate = stream[0].stats.sampling_rate
     if not env:
         if debug > 2:
@@ -121,7 +128,7 @@ def cross_net(stream, env=False, debug=0, master=False):
     else:
         master = master
     master.data = np.nan_to_num(master.data)
-    for tr in st:
+    for i, tr in enumerate(st):
         tr.data = np.nan_to_num(tr.data)
         if debug > 2:
             msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
@@ -154,17 +161,19 @@ def cross_net(stream, env=False, debug=0, master=False):
             # ax2.set_xlim(0, len(master))
             plt.show()
         index, cc = xcorr(master, tr, shift_len)
-        pick = PICK(station=tr.stats.station,
-                    channel=tr.stats.channel,
-                    impulsivity='E',
-                    phase='S',
-                    weight='1',
-                    time=tr.stats.starttime + (index / tr.stats.sampling_rate))
+        wav_id = WaveformStreamID(station_code=tr.stats.station,
+                                  channel_code=tr.stats.channel,
+                                  network_code=tr.stats.network)
+        event.picks.append(Pick(time=tr.stats.starttime + (index / tr.stats.sampling_rate),
+                                waveform_id=wav_id,
+                                phase_hint='S',
+                                onset='emergent'))
         if debug > 2:
-            print(pick)
-        picks.append(pick)
+            print(event.picks[i])
+    event.origins[0].time = min([pick.time for pick in event.picks]) - 1
+    # Set arbitrary origin time
     del st
-    return picks
+    return event
 
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
@@ -196,11 +205,19 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :type show: bool
     :param show: Show picks on waveform.
 
-    :returns: list of pick class.
+    :returns: obspy.core.event.Event
     """
-    from obspy.signal.trigger import classicSTALTA, triggerOnset, plotTrigger
-    from sfile_util import PICK
-    import EQcorrscan_plotting as plotting
+    from obspy.signal.trigger import classic_sta_lta, trigger_onset, plot_trigger
+    from obspy import UTCDateTime
+    from obspy.core.event import Event, Pick, WaveformStreamID
+    from obspy.core.event import CreationInfo, Comment, Origin
+    import eqcorrscan.utils.plotting as plotting
+
+    event = Event()
+    event.origins.append(Origin())
+    event.creation_info = CreationInfo(author='EQcorrscan',
+                                       creation_time=UTCDateTime())
+    event.comments.append(Comment(text='stalta'))
     picks = []
     for tr in stream:
         # We are going to assume, for now, that if the pick is made on the
@@ -215,37 +232,42 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
             tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax,
                       corners=3, zerophase=True)
         df = tr.stats.sampling_rate
-        cft = classicSTALTA(tr.data, int(stalen * df), int(ltalen * df))
+        cft = classic_sta_lta(tr.data, int(stalen * df), int(ltalen * df))
         if debug > 3:
-            plotTrigger(tr, cft, trig_on, trig_off)
-        triggers = triggerOnset(cft, trig_on, trig_off)
+            plot_trigger(tr, cft, trig_on, trig_off)
+        triggers = trigger_onset(cft, trig_on, trig_off)
         for trigger in triggers:
             on = tr.stats.starttime + (trigger[0] / df)
             # off = tr.stats.starttime + (trigger[1] / df)
-            pick = PICK(station=tr.stats.station, channel=tr.stats.channel,
-                        time=on, phase=phase)
+            wav_id = WaveformStreamID(station_code=tr.stats.station,
+                                      channel_code=tr.stats.channel,
+                                      network_code=tr.stats.network)
+            pick = Pick(waveform_id=wav_id, phase_hint=phase, time=on)
             if debug > 2:
                 print('Pick made:')
                 print(pick)
             picks.append(pick)
     # QC picks
     del pick
-    pick_stations = list(set([pick.station for pick in picks]))
+    pick_stations = list(set([pick.waveform_id.station_code for pick in picks]))
     for pick_station in pick_stations:
         station_picks = [pick for pick in picks if
-                         pick.station == pick_station]
+                         pick.waveform_id.station_code == pick_station]
         # If P-pick is after S-picks, remove it.
-        p_time = [pick.time for pick in station_picks if pick.phase == 'P']
-        s_time = [pick.time for pick in station_picks if pick.phase == 'S']
+        p_time = [pick.time for pick in station_picks if pick.phase_hint == 'P']
+        s_time = [pick.time for pick in station_picks if pick.phase_hint == 'S']
         if p_time > s_time:
-            p_pick = [pick for pick in station_picks if pick.phase == 'P']
+            p_pick = [pick for pick in station_picks if pick.phase_hint == 'P']
             for pick in p_pick:
                 print('P pick after S pick, removing P pick')
                 picks.remove(pick)
     if show:
         plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',
                                       size=(8, 9))
-    return picks
+    event.picks = picks
+    event.origins[0].time = min([pick.time for pick in event.picks]) - 1
+    # Set arbitrary origin time
+    return event
 
 
 if __name__ == "__main__":

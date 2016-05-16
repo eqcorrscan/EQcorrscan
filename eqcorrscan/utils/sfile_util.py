@@ -1012,13 +1012,24 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         msg = 'event has an origin, but time is not populated.  ' +\
             'This is required!'
         raise ValueError(msg)
-    sfilename = evtime.datetime.strftime('%d-%H%M-%S') +\
-        evtype[0] + '.S' + evtime.datetime.strftime('%Y%m')
-    # Check that the file doesn't exist
-    if not overwrite and os.path.isfile(outdir + '/' + sfilename):
-        raise IOError(outdir + '/' + sfilename +
+    # Attempt to cope with possible pre-existing files
+    range_list = []
+    for i in range(30):  # Look +/- 30 seconds around origin time
+        range_list.append(i)
+        range_list.append(-1 * i)
+    range_list = range_list[1:]
+    for add_secs in range_list:
+        sfilename = (evtime + add_secs).datetime.strftime('%d-%H%M-%S') +\
+            evtype[0] + '.S' + (evtime + add_secs).datetime.strftime('%Y%m')
+        if not os.path.isfile(outdir + os.sep + sfilename):
+            sfile = open(outdir + os.sep + sfilename, 'w')
+            break
+        elif overwrite:
+            sfile = open(outdir + os.sep + sfilename, 'w')
+            break
+    else:
+        raise IOError(outdir + os.sep + sfilename +
                       ' already exists, will not overwrite')
-    sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
     if event.origins[0].latitude:
         if event.origins[0].latitude not in [float('NaN'), 999]:
@@ -1044,6 +1055,9 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     if event.creation_info:
         try:
             agency = event.creation_info.get('agency_id')
+            # If there is creation_info this may not raise an error annoyingly
+            if agency is None:
+                agency = ''
         except AttributeError:
             agency = ''
     else:
