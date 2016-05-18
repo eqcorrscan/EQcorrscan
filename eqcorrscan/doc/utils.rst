@@ -21,7 +21,7 @@ there are now multiple options for location of events.
    submodules/utils.plotting
    submodules/utils.findpeaks
    submodules/utils.despike
-   submodules/utils.locate
+   submodules/utils.picker
    submodules/utils.mag_calc
    submodules/utils.pre_processing
    submodules/utils.seismo_logs

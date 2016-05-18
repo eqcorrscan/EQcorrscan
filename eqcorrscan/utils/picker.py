@@ -97,12 +97,12 @@ def cross_net(stream, env=False, debug=0, master=False):
 
     .. rubric:: Example
 
-        >>> from obspy import read
-        >>> from eqcorrscan.utils.picker import cross_net
-        >>> st = read()
-        >>> event = cross_net(st, env=True)
-        >>> event.creation_info.author
-        'EQcorrscan'
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.picker import cross_net
+    >>> st = read()
+    >>> event = cross_net(st, env=True)
+    >>> event.creation_info.author
+    'EQcorrscan'
     """
     from obspy.signal.cross_correlation import xcorr
     from obspy.signal.filter import envelope
@@ -220,14 +220,13 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
 
     .. rubric:: Example
 
-        >>> from obspy import read
-        >>> from eqcorrscan.utils.picker import stalta_pick
-        >>> st = read()
-        >>> event = stalta_pick(st, stalen=0.2, ltalen=4, trig_on=10,
-        ...             trig_off=1, freqmin=3.0, freqmax=20.0)
-        >>> event.creation_info.author
-        'EQcorrscan'
-
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.picker import stalta_pick
+    >>> st = read()
+    >>> event = stalta_pick(st, stalen=0.2, ltalen=4, trig_on=10,
+    ...             trig_off=1, freqmin=3.0, freqmax=20.0)
+    >>> event.creation_info.author
+    'EQcorrscan'
     """
     from obspy.signal.trigger import classic_sta_lta, trigger_onset
     from obspy.signal.trigger import plot_trigger

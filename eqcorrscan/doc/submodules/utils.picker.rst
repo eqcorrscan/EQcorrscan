@@ -1,8 +1,8 @@
 picker
 ------
 
-.. currentmodule:: eqcorrscan.utils.locate
-.. automodule:: eqcorrscan.utils.locate
+.. currentmodule:: eqcorrscan.utils.picker
+.. automodule:: eqcorrscan.utils.picker
 
     .. comment to end block
 
