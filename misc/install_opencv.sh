@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to install opencv3
+# Script to install opencv3: http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/
 apt-get update
 apt-get upgrade
 
