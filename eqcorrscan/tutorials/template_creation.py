@@ -53,8 +53,20 @@ def mktemplates(network_code='GEONET',
     for event in catalog:
         all_picks += [(pick.waveform_id.station_code,
                        pick.waveform_id.channel_code) for pick in event.picks]
-    all_picks = Counter(all_picks).most_common(5)
-    all_picks = [pick[0] for pick in all_picks]
+    # Python 3.x and python 2.7 do not sort in the same way, this is a cludge
+    # to work around that...
+    counted = Counter(all_picks).most_common()
+    # Going to take an initial set that all have atleast 1 less pick than the
+    # highest pick-count...
+    all_picks = []
+    for i in range(counted[0][1]):
+        highest = [item[0] for item in counted if item[1] >= counted[0][1] - i]
+        # Sort them by alphabetical order in station
+        highest = sorted(highest, key=lambda tup: tup[0])
+        all_picks += highest
+        if len(all_picks) > 5:
+            all_picks = all_picks[0:5]
+            break
 
     for event in catalog:
         if len(event.picks) == 0:

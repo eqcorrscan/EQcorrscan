@@ -10,10 +10,7 @@
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and now
-Windows systems.  Currently we only support python 2.7, but plan to extend
-this coverage in the near future - almost everything is written to work in python 3.x,
-we just need to get the testing going, work out the openCV3 install on travis and
-fix some small variable type changes.
+Windows systems.  We support Python versions 2.7, 3.3, 3.4 and 3.5.
 
 Installation for all systems should be as simple as:
 
@@ -35,18 +32,21 @@ this and support it, nevertheless, if you find any issues then let us know.
 
 If you have any issues installing please let me know.  
 
-You will need to install openCV (note that currently only openCV2 is tested,
-we plan on switching to openCV3 by default soon once the install is smoothed,
-this will ease transitions to python3.x) separately using (on Linux):
+You will need to install openCV (note that openCV versions 2 and 3 work for
+Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
+recommend installing openCV 3). If you are running 64-Bit Linux,
+Windows or OSX, or 32-Bit Windows, you can simplify your install by running:
 
 ```bash
-apt-get install python-opencv
+conda install -c menpo opencv3=3.1.0
 ```
 
-Or, for Mac users, this is available on Macports or other similar package managers.
-
-For Windows users, you should follow the instructions [here](http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0),
-note that you need to copy the cv2.pyd file.
+Otherwise, if you are running 32-Bit Linux, or 32-Bit OSX installation
+instructions can be found
+[here for ubuntu](http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/)
+and [here for OSX](http://www.pyimagesearch.com/2015/06/15/install-opencv-3-0-and-python-2-7-on-osx/).
+Note these two links are Python dependent and you will need to change your pip
+and python versions appropriate to your system.
 
 For those who want to run the GUIs (in very early development) you will need to
 install tk, on Windows and OSX this is usually pre-installed, on Linux you
@@ -55,6 +55,18 @@ may need to run:
 ```bash
 apt-get install python-tk
 ```
+
+*A note for Ubuntu 12.04 users and python 3.x*
+You will need the python3.x-dev libraries to install openCV if installing from
+source.  Getting these is a little difficult...  They are available by doing the
+following:
+```bash
+add-apt-repository ppa:fkrull/deadsnakes
+apt-get update
+apt-get install python3.x-dev
+```
+Note you will likely need root privileges for these actions, and you will need
+to replace the *x* with your version number.
 
 ## Updates
 

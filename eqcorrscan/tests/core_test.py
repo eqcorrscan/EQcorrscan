@@ -56,6 +56,23 @@ class TestCoreMethods(unittest.TestCase):
         ccc = normxcorr2(template, image)
         self.assertNotEqual(ccc.max(), 1.0)
 
+    def test_set_normxcorr2(self):
+        """Check that correlations output are the same irrespective of version.
+        """
+        import numpy as np
+        from eqcorrscan.core.match_filter import normxcorr2
+        from obspy import read
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        template = read(os.path.join(testing_path, 'test_template.ms'))
+        template = template[0].data.astype(np.float32)
+        image = read(os.path.join(testing_path, 'test_image.ms'))
+        image = image[0].data.astype(np.float32)
+        ccc = normxcorr2(template, image)[0]
+        expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
+        self.assertTrue((ccc == expected_ccc).all())
+
     def test_perfect_template_loop(self):
         """Check that perfect correlations are carried through.
         """

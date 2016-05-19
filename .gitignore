@@ -4,7 +4,6 @@
 .Spotlight-V100
 .Trashes
 .DS_Store
-*.ms
 *.buf
 *.hdr
 templates

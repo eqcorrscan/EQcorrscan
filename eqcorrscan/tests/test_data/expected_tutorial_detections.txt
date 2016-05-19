@@ -1,0 +1,24 @@
+Template name; Detection time (UTC); Number of channels; Channel list; Detection value; Threshold; Detection type
+tutorial_template_3.ms; 2016-01-04T00:13:23.498399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.03043; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T00:13:39.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 4.00244; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T00:45:58.148399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 5.0; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T01:21:42.748399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.53477; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T01:48:52.948399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.67236; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T02:17:23.898399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.20337; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T03:30:07.898399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 1.84586; 1.78002929688; corr
+tutorial_template_3.ms; 2016-01-04T09:22:14.048399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.95605; 1.78002929688; corr
+tutorial_template_1.ms; 2016-01-04T01:57:21.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.50073; 1.81201171875; corr
+tutorial_template_1.ms; 2016-01-04T02:01:03.098399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 1.88281; 1.81201171875; corr
+tutorial_template_1.ms; 2016-01-04T02:10:47.898399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 5.0; 1.81201171875; corr
+tutorial_template_2.ms; 2016-01-04T00:15:11.898399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.90381; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T00:17:02.098399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.35736; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T00:18:42.248399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.69165; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T00:23:15.148399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.11035; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T00:25:08.198399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 5.0; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T03:24:01.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.39648; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T09:21:42.998399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.37061; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T12:57:19.298399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.39505; 1.759765625; corr
+tutorial_template_2.ms; 2016-01-04T14:01:08.798399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.09814; 1.759765625; corr
+tutorial_template_0.ms; 2016-01-04T00:08:01.848399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 5.0; 2.13610839844; corr
+tutorial_template_0.ms; 2016-01-04T00:49:00.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.14001; 2.13610839844; corr
+tutorial_template_0.ms; 2016-01-04T16:29:43.298399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.30841; 2.13610839844; corr

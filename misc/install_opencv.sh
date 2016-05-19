@@ -54,5 +54,5 @@ make install
 ldconfig
 
 # Link openCV
-cd ~/.virtualenvs/cv/lib/python3.4/site-packages/
-ln -s /usr/local/lib/python3.4/site-packages/cv2.cpython-34m.so cv2.so
+cd ~/.virtualenvs/cv/lib/python3.5/site-packages/
+ln -s /usr/local/lib/python3.5/site-packages/cv2.cpython-34m.so cv2.so
