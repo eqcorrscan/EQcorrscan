@@ -44,6 +44,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from six import string_types
 from obspy import UTCDateTime
 import numpy as np
 import warnings
@@ -351,9 +352,7 @@ def _str_conv(number, rounded=False):
     """
     if (isinstance(number, float) and np.isnan(number)) or number == 999:
         string = ' '
-    elif isinstance(number, str):
-        return number
-    elif isinstance(number, unicode):
+    elif isinstance(number, string_types):
         return str(number)
     elif not rounded:
         if number < 100000:
@@ -962,12 +961,11 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     >>> client = Client('GEONET')
     >>> data_stream = client._download('http://quakeml.geonet.org.nz/' +\
         'quakeml/1.2/2016p008122')
-    >>> data_stream.seek(0, 0)
-    0L
+    >>> close = data_stream.seek(0, 0)
     >>> catalog = read_events(data_stream, format="quakeml")
     >>> data_stream.close()
     >>> eventtosfile(catalog[0], 'TEST', 'R', '.', ['DUMMY'], overwrite=True)
-    u'04-0007-55R.S201601'
+    '04-0007-55R.S201601'
     """
     import datetime
     import os
@@ -992,9 +990,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         event = event
     else:
         raise IOError('Needs a single event')
-    if isinstance(wavefiles, str):
-        wavefiles = [wavefiles]
-    if isinstance(wavefiles, unicode):
+    if isinstance(wavefiles, string_types):
         wavefiles = [str(wavefiles)]
     elif isinstance(wavefiles, list):
         wavefiles = wavefiles
@@ -1151,7 +1147,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     # Now call the populatesfile function
     if len(event.picks) > 0:
         populatesfile(outdir + '/' + sfilename, event)
-    return sfilename
+    return str(sfilename)
 
 
 def populatesfile(sfile, event):

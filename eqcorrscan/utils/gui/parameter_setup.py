@@ -315,10 +315,10 @@ class ParameterSetup:
             master.destroy()
             run(par=par)
         except IOError:
-            print 'No such file'
+            print('No such file')
             return
         except TypeError:
-            print 'Invalid parameter file'
+            print('Invalid parameter file')
             return
 
     def write_par(self, par):

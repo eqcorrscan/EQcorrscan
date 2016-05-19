@@ -132,7 +132,7 @@ def is_prime(number):
 #                                 'now to see if they overlap'])
 #                 print(msg)
 #             for next_peak in peaks_sort:
-#                 # i in xrange(1,len(peaks_sort)):
+#                 # i in range(1,len(peaks_sort)):
 #                 # Loop through the amplitude sorted peaks
 #                 # if the next highest amplitude peak is within trig_int of any
 #                 # peak already in peaks then we don't want it, else, add it
@@ -259,7 +259,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                                 'them now to see if they overlap'])
                 print(msg)
             for next_peak in peaks_sort:
-                # i in xrange(1,len(peaks_sort)):
+                # i in range(1,len(peaks_sort)):
                 # Loop through the amplitude sorted peaks
                 # if the next highest amplitude peak is within trig_int of any
                 # peak already in peaks then we don't want it, else, add it
@@ -351,12 +351,12 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
     # Will find peaks in the absolute then transfer these to the true values
     sig = np.abs(arr) - thresh
     true_peaks = []
-    for i in xrange(int(trig_int), int(len(sig) - trig_int), int(trig_int)):
+    for i in range(int(trig_int), int(len(sig) - trig_int), int(trig_int)):
         window = sig[i - trig_int: i + trig_int]
         # Define a moving window containing data from +/- the trigger iterval
         peaks = []
         locs = []
-        for j in xrange(1, len(window) - 1):
+        for j in range(1, len(window) - 1):
             # Find all turning points within the window
             if window[j] > 0.0 and window[j] > window[j + 1] and\
                window[j] > window[j - 1]:
@@ -369,7 +369,7 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
     # Get unique values
     peaks = sorted(list(set(true_peaks)), key=lambda loc: loc[1])
     # Find highest peak in peaks within trig_int of each other
-    for i in xrange(1, len(peaks) - 1):
+    for i in range(1, len(peaks) - 1):
         if peaks[i + 1][1] - peaks[i][1] < trig_int:
             if peaks[i][0] < peaks[i + 1][0]:
                 peaks[i] = peaks[i + 1]

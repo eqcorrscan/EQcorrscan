@@ -77,7 +77,7 @@ else:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'LatLon']
-
+install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
 

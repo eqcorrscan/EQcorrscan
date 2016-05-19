@@ -239,7 +239,7 @@ def cumulative_detections(dates, template_names, show=False,
     >>> from eqcorrscan.utils.plotting import cumulative_detections
     >>> dates = []
     >>> for i in range(3):
-    ...     dates.append([dt.datetime(2012, 03, 26) + dt.timedelta(n)
+    ...     dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
     ...                   for n in np.random.randn(100)])
     >>> cumulative_detections(dates, ['a', 'b', 'c'],
     ...                       show=True) # doctest: +SKIP
@@ -251,7 +251,7 @@ def cumulative_detections(dates, template_names, show=False,
         from eqcorrscan.utils.plotting import cumulative_detections
         dates = []
         for i in range(3):
-            dates.append([dt.datetime(2012, 03, 26) + dt.timedelta(n)
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """

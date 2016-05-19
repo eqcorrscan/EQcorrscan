@@ -385,6 +385,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     corr_list = []
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
+    k_events = len(list(event_list))
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
@@ -405,7 +406,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 except:
                     continue
                     raise IOError("Couldn't find wavefile")
-        for j in range(i + 1, len(event_list)):
+        for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
             slave_event_id = event_list[j][0]
