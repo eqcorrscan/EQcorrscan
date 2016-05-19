@@ -71,7 +71,8 @@ class TestCoreMethods(unittest.TestCase):
         image = image[0].data.astype(np.float32)
         ccc = normxcorr2(template, image)[0]
         expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
-        self.assertTrue((ccc == expected_ccc).all())
+        self.assertTrue((ccc.astype(np.float32) ==
+                         expected_ccc.astype(np.float32)).all())
 
     def test_perfect_template_loop(self):
         """Check that perfect correlations are carried through.
