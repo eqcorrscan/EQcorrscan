@@ -34,12 +34,16 @@ If you have any issues installing please let me know.
 
 You will need to install openCV (note that openCV versions 2 and 3 work for
 Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
-recommend installing openCV 3). If you are running 64-Bit Linux,
+recommend installing openCV 3). We recommend installing openCV from source,
+this will both optimize it for your machine, and ensure you don't break your python
+by using conda.  If you are running 64-Bit Linux,
 Windows or OSX, or 32-Bit Windows, you can simplify your install by running:
 
 ```bash
 conda install -c menpo opencv3=3.1.0
 ```
+**Note that you should do this in a virtual environment, conda may try to
+overwrite your system python install and that gets messy**
 
 Otherwise, if you are running 32-Bit Linux, or 32-Bit OSX installation
 instructions can be found
