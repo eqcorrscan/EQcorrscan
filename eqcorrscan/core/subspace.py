@@ -33,7 +33,7 @@ def det_statistic(detector, data):
     day_stats = []
     for i in range(len(data) - len(detector[0]) + 1):
         y = data[i:i + len(detector[0])]
-        y = y / np.linalg.norm(y)
+        y = y / np.sqrt((y ** 2).sum(-1))
         day_stats.append(y.dot(detector.T).dot(detector).dot(y))
     day_stats = np.asarray(day_stats)
     if np.all(np.isnan(day_stats)):
@@ -54,6 +54,7 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     plt.ioff()
     import copy
     from eqcorrscan.core import match_filter
+    from eqcorrscan.core.match_filter import DETECTION
     from eqcorrscan.utils import plotting
     from eqcorrscan.utils import findpeaks
     from obspy import Trace, Catalog, UTCDateTime, Stream
@@ -65,15 +66,11 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     stream = st.copy()
     detectors = copy.deepcopy(detector_list)
     # Collect detector and data channel information
-    detector_stachan = []
-    data_stachan = []
-    for detector in detectors:
-        for det_st in detector:
-            for tr in det_st:
-                detector_stachan.append((tr.stats.station,
-                                         tr.stats.channel))
-    for tr in stream:
-        data_stachan.append((tr.stats.station, tr.stats.channel))
+    detector_stachan = list((tr.stats.station, tr.stats.channel)
+                            for detector in detectors
+                            for det_st in detector
+                            for tr in det_st)
+    data_stachan = list((tr.stats.station, tr.stats.channel) for tr in stream)
     detector_stachan = list(set(detector_stachan))
     data_stachan = list(set(data_stachan))
     if debug >= 3:
@@ -177,6 +174,8 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     # XXX TODO: Need to investigate thresholding for correct detection stats
     for i, cccsum in enumerate(cccsums):
         detector = detectors[i]
+        # Unless I can prove otherwise, we will average cccsums to obtain our detection statistic from 0 to 1
+        cccsum /= no_chans[i]
         if threshold_type == 'MAD':
             rawthresh = threshold * np.median(np.abs(cccsum))
         elif threshold_type == 'absolute':
@@ -191,8 +190,6 @@ def subspace_detect(detector_names, detector_list, st, threshold,
         print(' '.join(['Threshold is set at:', str(rawthresh)]))
         print(' '.join(['Max of data is:', str(max(cccsum))]))
         print(' '.join(['Mean of data is:', str(np.mean(cccsum))]))
-        if np.abs(np.mean(cccsum)) > 0.05:
-            warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintains timing
         if plotvar:

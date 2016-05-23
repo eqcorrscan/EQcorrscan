@@ -217,7 +217,9 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
             detector = np.asarray(sin_vecs)
             cstat = subspace.det_statistic(detector, data=chan)
             cstat = cstat.reshape((1, len(cstat)))
-            cstat = cstat.astype(np.float16)
+            # Do not convert subspace statistic to float16 due to overrunning
+            # 16 bit precision in the mean calculation. np.isinf(np.mean())=T
+            # cstat = cstat.astype(np.float16)
         else:
             template_data = template.select(station=station,
                                             channel=channel)
@@ -236,13 +238,14 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
         # There is an interesting issue found in the tests that sometimes what
         # should be a perfect correlation results in a max of ccc of 0.99999994
         # Converting to float16 'corrects' this to 1.0 - bad workaround.
-    if debug >= 2 and t.secs > 4:
-        print("Single if statement took %s s" % t.secs)
-        if not 'template_data' or 'sin_vecs' in locals():
-            print("Didn't even correlate!")
-        print(station + ' ' + channel)
-    elif debug >= 2:
-        print("If statement without correlation took %s s" % t.secs)
+    #XXX Not sure what the following if statement is meant to do
+    # if debug >= 2 and t.secs > 4:
+    #     print("Single if statement took %s s" % t.secs)
+    #     if not 'template_data' or 'sin_vecs' in locals():
+    #         print("Didn't even correlate!")
+    #     print(station + ' ' + channel)
+    # elif debug >= 2:
+    #     print("If statement without correlation took %s s" % t.secs)
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(cstat[0])))
@@ -251,13 +254,13 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
     if np.isinf(np.mean(cstat[0])):
         warnings.warn('Mean of ccc is infinite, check!')
         if debug >= 3:
-            np.save('inf_cccmean_ccc.npy', cstat[0])
+            np.save('inf_cccmean_ccc_%02d.npy' % i, cstat[0])
             if do_subspace:
-                np.save('inf_cccmean_template.npy', sin_vecs)
-                np.save('inf_cccmean_image.npy', chan)
+                np.save('inf_cccmean_template_%02d.npy' % i, sin_vecs)
+                np.save('inf_cccmean_image_%02d.npy' % i, chan)
             else:
-                np.save('inf_cccmean_template.npy', template_data.data)
-                np.save('inf_cccmean_image.npy', image)
+                np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
+                np.save('inf_cccmean_image_%02d.npy' % i, image)
     if debug >= 3:
         print('shape of ccc: ' + str(np.shape(cstat)))
         print('A single ccc is using: ' + str(cstat.nbytes / 1000000) + 'MB')

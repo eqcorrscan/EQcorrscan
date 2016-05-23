@@ -16,7 +16,7 @@ import numpy as np
 import warnings
 
 
-def cross_chan_coherence(st1, st2, i=0):
+def cross_chan_coherence(st1, st2, allow_shift, shift_len, i=0):
     """
     Function to determine the cross-channel coherancy between two streams of \
     multichannel seismic data.
@@ -25,6 +25,10 @@ def cross_chan_coherence(st1, st2, i=0):
     :param st1: Stream one
     :type st2: obspy Stream
     :param st2: Stream two
+    :type allow_shift: bool
+    :param allow_shift: Allow shift?
+    :type shift_len: int
+    :param shift_len: Samples to shift
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
 
@@ -33,16 +37,25 @@ def cross_chan_coherence(st1, st2, i=0):
     """
 
     from eqcorrscan.core.match_filter import normxcorr2
+    from obspy.signal.cross_correlation import xcorr
     cccoh = 0.0
     kchan = 0
-    for tr in st1:
-        tr1 = tr.data
-        # Assume you only have one waveform for each channel
-        tr2 = st2.select(station=tr.stats.station,
-                         channel=tr.stats.channel)
-        if tr2:
-            cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
-            kchan += 1
+    if allow_shift:
+        for tr in st1:
+            tr2 = st2.select(station=tr.stats.station, channel=tr.stats.channel)
+            if tr2:
+                index, corval = xcorr(tr, tr2[0], shift_len)
+                cccoh += corval
+                kchan += 1
+    else:
+        for tr in st1:
+            tr1 = tr.data
+            # Assume you only have one waveform for each channel
+            tr2 = st2.select(station=tr.stats.station,
+                             channel=tr.stats.channel)
+            if tr2:
+                cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
+                kchan += 1
     if kchan:
         cccoh = cccoh / kchan
         return (cccoh, i)
@@ -51,7 +64,7 @@ def cross_chan_coherence(st1, st2, i=0):
         return (0, i)
 
 
-def distance_matrix(stream_list, cores=1):
+def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
     """
     Function to compute the distance matrix for all templates - will give \
     distance as 1-abs(cccoh), e.g. a well correlated pair of templates will \
@@ -60,6 +73,10 @@ def distance_matrix(stream_list, cores=1):
 
     :type stream_list: List of obspy.Streams
     :param stream_list: List of the streams to compute the distance matrix for
+    :type allow_shift: bool
+    :param allow_shift: To allow templates to shift or not?
+    :type shift_len: int
+    :param shift_len: How many samples for templates to shift in time
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
@@ -76,6 +93,8 @@ def distance_matrix(stream_list, cores=1):
         # Parallel processing
         results = [pool.apply_async(cross_chan_coherence, args=(master,
                                                                 stream_list[j],
+                                                                allow_shift,
+                                                                shift_len,
                                                                 j))
                    for j in range(len(stream_list))]
         pool.close()
@@ -98,7 +117,8 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
+def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
+            shift_len=0, save_corrmat=False,
             cores='all', debug=1):
     """
     Function to take a set of templates and cluster them, will return groups \
@@ -118,11 +138,15 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     :param show: plot linkage on screen if True, defaults to True
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
+    :type allow_shift: bool
+    :param allow_shift: Whether to allow the templates to shift when correlating
+    :type shift_len: int
+    :param shift_len: How many samples to allow the templates to shift in time
     :type save_corrmat: bool
     :param save_corrmat: If True will save the distance matrix to \
         dist_mat.npy in the local directory.
     :type cores: int
-    :param cores: numebr of cores to use when computing the distance matrix, \
+    :param cores: number of cores to use when computing the distance matrix, \
         defaults to 'all' which will work out how many cpus are available \
         and hog them.
     :type debug: int
@@ -145,7 +169,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     # Compute the distance matrix
     if debug >= 1:
         print('Computing the distance matrix using '+str(num_cores)+' cores')
-    dist_mat = distance_matrix(stream_list, cores=num_cores)
+    dist_mat = distance_matrix(stream_list, allow_shift, shift_len, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         if debug >= 1:
@@ -270,7 +294,7 @@ def SVD(stream_list):
     Function to compute the SVD of a number of templates and return the \
     singular vectors and singular values of the templates.
 
-    :type stream_list: List of Obspy.Stream
+    :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
 
     :return: SVector(list of ndarray), SValues(list) for each channel, \
@@ -337,6 +361,87 @@ def empirical_SVD(stream_list, linear=True):
     return [first_subspace, second_subspace]
 
 
+def min_sub_dimension(stream_list, percent_capture, max_dim=10,
+                      plotvar=False):
+    r"""Function to calculate the fraction of energy captured by subspace \
+    dimension for each event used to create the subspace. Will output the \
+    best subspace stream for the given perecent_acpture and maximum subspace \
+    dimension.
+
+    :type stream_list: List of :class: obspy.Stream
+    :param stream_list: List of the templates used to create subspace
+    :type percent_capture: float
+    :param percent_capture: Minimum average percent capture by the subspace \
+        for each event used to create it.
+    :type max_dim: int
+    :param max_dim: Maximum dimension subspace to calculate energy capture \
+        for. Will default to 10 but cannot be greater than or equal to len(stream_list)
+    :type plotvar: bool
+    :param plotvar: Whether or not to plot energy capture against subspace \
+        dimension.
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from eqcorrscan.core import subspace
+    # Check if max_dim is greater than number of streams
+    stachans = []
+    for st in stream_list:
+        for tr in st:
+            stachans.append((tr.stats.station, tr.stats.channel))
+    stachans = list(set(stachans))
+    if max_dim >= len(stream_list):
+        raise IOError('max_dim cannot be >= the number of input events')
+        # msg = 'max_dim cannot be greater than the number of input events'
+        # warnings.warn(msg)
+    print('Generating matrix of singular vectors')
+    SVectors, SValues, Uvectors, svd_stachans = SVD(stream_list)
+    stat_dict = {}
+    avg_dict = {}
+    fig, ax1 = plt.subplots()
+    for i in range(max_dim + 1):
+        if i == 0:
+            continue
+        avg_dict[i] = [0]
+        sub_streams = SVD_2_stream(SVectors, svd_stachans, i, stream_list[0][0].stats.sampling_rate)
+        for j, ev_st in enumerate(stream_list):
+            if j not in stat_dict:
+                stat_dict[j] = [0]
+            chan_det_stats = []
+            no_chans = 0
+            for stachan in stachans:
+                if len(ev_st.select(station=stachan[0], channel=stachan[1])) != 0 and \
+                   len(sub_streams[0].select(station=stachan[0], channel=stachan[1])) != 0:
+                    ev_chan_array = ev_st.select(station=stachan[0], channel=stachan[1])[0].data
+                    sub_trs_array = []
+                    for sub_stream in sub_streams:
+                        sub_trs_array.append(sub_stream.select(station=stachan[0], channel=stachan[1])[0].data)
+                    sub_trs_array = np.asarray(sub_trs_array)
+                    chan_det_stats.append(subspace.det_statistic(sub_trs_array, ev_chan_array))
+                    no_chans += 1
+            if no_chans == 0:
+                print('No matching stachans between detector and event number %02d' % j)
+                continue
+            else:
+                stat_dict[j].append(sum(chan_det_stats) / no_chans)
+                avg_dict[i].append(sum(chan_det_stats) / no_chans)
+    stat_dict['avg'] = [0]
+    for dim, vals in avg_dict.iteritems():
+        stat_dict['avg'].append(np.mean(vals))
+    if plotvar:
+        for st_num, det_stats in stat_dict.iteritems():
+            if st_num == 'avg':
+                ax1.plot(det_stats, color='red')
+            else:
+                ax1.plot(det_stats, '--', color='grey')
+        plt.show()
+    # Find first dimension of avg det_stat that exceeds percent_capture
+    for i, stat in enumerate(stat_dict['avg']):
+        if stat > percent_capture / 100:
+            print('Minimum subspace dimension for this stream_list is %02d' % i)
+            return fig
+    return fig
+
+
 def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
     Function to convert the singular vectors output by SVD to streams, one \
@@ -359,10 +464,15 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     for i in range(k):
         SVstream = []
         for j, stachan in enumerate(stachans):
-            SVstream.append(Trace(SVectors[j][i],
-                                  header={'station': stachan.split('.')[0],
-                                          'channel': stachan.split('.')[1],
-                                          'sampling_rate': sampling_rate}))
+            if len(SVectors[j]) <= k:
+                warnings.warn('Too few traces at %s for a %02d ' % (stachan, k)
+                              + 'dimensional subspace. Detector streams will' +
+                              ' not include this stachan.')
+            else:
+                SVstream.append(Trace(SVectors[j][i],
+                                      header={'station': stachan.split('.')[0],
+                                              'channel': stachan.split('.')[1],
+                                              'sampling_rate': sampling_rate}))
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
