@@ -44,37 +44,37 @@ install:
   - conda info -a
   - |
       if [[ "$py" == "3.3" ]]; then
-        NUMPY_VERSION=1.9.2
-        SCIPY_VERSION=0.16.0
-        MPL_VERSION=1.4.3
-        BASEMAP_VERSION="1.0.7"
-        PYPROJ=""
-        PYTEST="pytest>=2.8"
-        PYFLAKES="pyflakes=0.9.0"
+          NUMPY_VERSION=1.9.2
+          SCIPY_VERSION=0.16.0
+          MPL_VERSION=1.4.3
+          BASEMAP_VERSION=1.0.7
+          PYPROJ=""
+          PYTEST="pytest>=2.8"
+          PYFLAKES="pyflakes=0.9.0"
       elif [[ "$py" == "3.5" ]]; then
-        NUMPY_VERSION=1.10.0
-        SCIPY_VERSION=0.16.0
-        MPL_VERSION=1.4.3
-        BASEMAP_VERSION="1.0.7"
-        PYPROJ=""
-        PYTEST="pytest>=2.8"
-        PYFLAKES="pyflakes=1.0.0"
+          NUMPY_VERSION=1.9.2
+          SCIPY_VERSION=0.16.0
+          MPL_VERSION=1.4.3
+          BASEMAP_VERSION=1.0.7
+          PYPROJ=""
+          PYTEST="pytest>=2.8"
+          PYFLAKES="pyflakes=1.0.0"
       elif [[ "${py:0:1}" == '3' ]]; then
-        NUMPY_VERSION=1.10.4
-        SCIPY_VERSION=0.17.0
-        MPL_VERSION=1.5.1
-        BASEMAP_VERSION=1.0.7
-        PYPROJ="pyproj"
-        PYTEST=""
-        PYFLAKES="pyflakes=0.9.0"
+          NUMPY_VERSION=1.10.4
+          SCIPY_VERSION=0.17.0
+          MPL_VERSION=1.5.1
+          BASEMAP_VERSION=1.0.7
+          PYPROJ="pyproj"
+          PYTEST=""
+          PYFLAKES="pyflakes=0.9.0"
       else
-        NUMPY_VERSION=1.10.4
-        SCIPY_VERSION=0.17.0
-        MPL_VERSION=1.5.1
-        BASEMAP_VERSION=1.0.7
-        PYPROJ="pyproj"
-        PYTEST=""
-        PYFLAKES="pyflakes=0.9.0"
+          NUMPY_VERSION=1.10.4
+          SCIPY_VERSION=0.17.0
+          MPL_VERSION=1.5.1
+          BASEMAP_VERSION=1.0.7
+          PYPROJ="pyproj"
+          PYTEST=""
+          PYFLAKES="pyflakes=0.9.0"
       fi
   - conda create -q -n test-environment
         python=$py
@@ -83,20 +83,17 @@ install:
         matplotlib=$MPL_VERSION
         basemap=$BASEMAP_VERSION
         $PYPROJ
-        $PYTEST
         flake8
         future
         lxml
+        decorator
         sqlalchemy
         mock
+        nose
         gdal
         docopt
         coverage
         requests
-        pytest
-        $PYFLAKES
-        pytest-pep8
-        # opencv
   - source activate test-environment
   # install packages not available via conda
   # - pip install -r requirements.txt
@@ -106,16 +103,15 @@ install:
       else
         OPENCV="opencv"
       fi
+  - conda install $PYFLAKES
   - conda install $OPENCV
-  - conda install -c janschulz pypandoc=1.1.3
-  - conda install -c menpo coveralls=1.1
+  - pip install coveralls
   - pip install geographiclib
+  - pip install https://github.com/megies/PyImgur/archive/py3.zip
+  - pip install pep8-naming
+  - pip install pytest
   - pip install pytest-cov
-  # Copy opencv cv2.so file to path
-  # - cp /usr/lib/pymodules/python2.7/cv2.so /home/travis/build/calum-chamberlain/EQcorrscan/.
-  # current pyimgur stable release has a py2.6 incompatibility
-  # - pip install https://github.com/megies/PyImgur/archive/py26.zip
-  - conda install -c obspy obspy=$OBSPY_VERSION
+  - pip install obspy==$OBSPY_VERSION
   # - pip install obspy==$OBSPY_VERSION
   - pip freeze
   - conda list
@@ -123,7 +119,6 @@ install:
   - git version
   - pip install .
 script:
-  # Run the tests available, more should be added
   python setup.py test
 
 after_success:
