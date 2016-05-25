@@ -14,7 +14,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
-from matplotlib.testing.decorators import image_comparison, cleanup
 
 
 def _check_save_args(save, savefile):
