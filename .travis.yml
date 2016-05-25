@@ -39,12 +39,12 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+  - conda config --add channels menpo
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
   - |
       if [[ "${py:0:1}" == '3' ]]; then
-          conda config --add channels menpo
           env_file="misc/py35_test_env.lis"
       else
         env_file="misc/py2_test_env.lis"
