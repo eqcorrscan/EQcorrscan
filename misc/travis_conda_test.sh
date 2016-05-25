@@ -46,36 +46,13 @@ if [[ "$py" == "3.3" ]]; then
     source activate test-environment
     conda install $PYFLAKES
     conda install $OPENCV
-elif [[ "${py:0:1}" == "3" ]]; then
+elif [[ "$py" == "3" ]]; then
     conda config --add channels menpo
     conda create -n test-environment --file misc/py35_test_env.lis
     source activate test-environment
-#elif [[ "${py:0:1}" == '3' ]]; then
-#    NUMPY_VERSION=1.10.4
-#    SCIPY_VERSION=0.17.0
-#    MPL_VERSION=1.5.1
-#    BASEMAP_VERSION=1.0.7
-#    PYPROJ="pyproj"
-#    PYTEST=""
-#    PYFLAKES="pyflakes=0.9.0"
-#    conda create -n test-environment python=$py numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION matplotlib=$MPL_VERSION basemap=$BASEMAP_VERSION $PYPROJ flake8 future lxml decorator sqlalchemy mock nose gdal docopt coverage requests
-#    source activate test-environment
-#    conda install $PYFLAKES
-#    conda install $OPENCV
 else
     conda create -n test-environment --file misc/py2_test_env.lis
     source activate test-environment
-#    NUMPY_VERSION=1.10.4
-#    SCIPY_VERSION=0.17.0
-#    MPL_VERSION=1.5.1
-#    BASEMAP_VERSION=1.0.7
-#    PYPROJ="pyproj"
-#    PYTEST=""
-#    PYFLAKES="pyflakes=0.9.0"
-#    conda create -n test-environment python=$py numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION matplotlib=$MPL_VERSION basemap=$BASEMAP_VERSION $PYPROJ flake8 future lxml decorator sqlalchemy mock nose gdal docopt coverage requests
-#    source activate test-environment
-#    conda install $PYFLAKES
-#    conda install $OPENCV
 fi
 
 pip install coveralls

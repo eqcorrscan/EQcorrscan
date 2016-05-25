@@ -151,7 +151,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
         if debug >= 1:
             print('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnB)
+    # plt.matshow(dist_mat, aspect='auto', origin='lower', cmap=pylab.cm.YlGnBu)
     if debug >= 1:
         print('Computing linkage')
     Z = linkage(dist_vec)
@@ -165,12 +165,13 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     if debug >= 1:
         print('Clustering')
     indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
+    # Indices start at 1...
     group_ids = list(set(indices))  # Unique list of group ids
     if debug >= 1:
         msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
         print(msg)
     # Convert to tuple of (group id, stream id)
-    indices = [(indices[i], i) for i in xrange(len(indices))]
+    indices = [(indices[i], i) for i in range(len(indices))]
     # Sort by group id
     indices.sort(key=lambda tup: tup[0])
     groups = []
@@ -187,6 +188,8 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
                 # Patch applied by CJC 05/11/2015
                 groups.append(group)
                 break
+    # Catch the final group
+    groups.append(group)
     return groups
 
 

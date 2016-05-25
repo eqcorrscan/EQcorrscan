@@ -6,3 +6,4 @@ omit =
   eqcorrscan/tests/*
   eqcorrscan/gui/*
   eqcorrscan/utils/timer.py
+  eqcorrscan/utils/plotting.py
