@@ -44,13 +44,11 @@ install:
   - conda info -a
   - |
       if [[ "${py:0:1}" == '3' ]]; then
-          conda config --add channel menpo
+          conda config --add channels menpo
           env_file="misc/py35_test_env.lis"
       else
-        env_file="misc/py2_test_env.list"
+        env_file="misc/py2_test_env.lis"
       fi
-  - pwd
-  - ls misc
   - conda create -q -n test-environment --file $env_file
   - source activate test-environment
   # install packages not available via conda
