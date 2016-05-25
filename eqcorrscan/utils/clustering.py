@@ -317,6 +317,10 @@ def SVD(stream_list):
                                  channel=stachan.split('.')[1])
             if chan:
                 if len(chan[0].data) > min_length:
+                    if abs(len(chan[0].data) - min_length) > 0.1 *\
+                            chan[0].stats.sampling_rate:
+                        raise IndexError('More than 0.1 s length '
+                                         'difference, align and fix')
                     warnings.warn('Channels are not equal length, trimming')
                     chan[0].data = chan[0].data[0:min_length]
                 if 'chan_mat' not in locals():
@@ -365,6 +369,10 @@ def empirical_SVD(stream_list, linear=True):
             tr = st.select(station=stachan[0],
                            channel=stachan[1])[0]
             if len(tr.data) > min_length:
+                if abs(len(tr.data) - min_length) > 0.1 *\
+                            tr.stats.sampling_rate:
+                        raise IndexError('More than 0.1 s length '
+                                         'difference, align and fix')
                 warnings.warn(str(tr) + ' is not the same length as others, ' +
                               'trimming the end')
                 tr.data = tr.data[0:min_length]

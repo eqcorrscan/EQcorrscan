@@ -44,7 +44,7 @@ class ClusteringTestMethods(unittest.TestCase):
         st2 = read(os.path.join(testing_path, 'WAV', 'TEST_',
                                 '2013-09-01-2040-11.DFDPC_039_00'))
         cccoh, i = cross_chan_coherence(st1=st1, st2=st2)
-        self.assertEqual(round(cccoh, 3), 0.003)
+        self.assertTrue(cccoh < 0.01)
         self.assertEqual(i, 0)
 
     def test_distance_matrix(self):
@@ -75,7 +75,6 @@ class ClusteringTestMethods(unittest.TestCase):
         groups = cluster(template_list=stream_list, show=False,
                          corr_thresh=0.3)
         self.assertEqual(len(groups), 10)  # They shouldn't cluster at all
-
 
     def test_clustered(self):
         """Test clustering on clustered data..."""
