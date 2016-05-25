@@ -59,8 +59,6 @@ install:
 #      else
 #        OPENCV="opencv"
 #      fi
-  - conda install $PYFLAKES
-  - conda install $OPENCV
   - pip install coveralls
   - pip install geographiclib
   - pip install https://github.com/megies/PyImgur/archive/py3.zip
