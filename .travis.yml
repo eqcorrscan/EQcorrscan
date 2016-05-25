@@ -49,6 +49,7 @@ install:
       else
         env_file="misc/py2_test_env.list"
       fi
+  - pwd
   - conda create -q -n test-environment --file $env_file
   - source activate test-environment
   # install packages not available via conda
