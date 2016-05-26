@@ -886,33 +886,34 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
         # sys.exit()
     f = open(sfile, 'w')
     # Write line 1 of s-file
-    f.write(' ' + str(evtime.year) + ' ' +
-            str(evtime.month).rjust(2) +
-            str(evtime.day).rjust(2) + ' ' +
-            str(evtime.hour).rjust(2) +
-            str(evtime.minute).rjust(2) + ' ' +
-            str(float(evtime.second)).rjust(4) + ' ' +
-            evtype + '1'.rjust(58) + '\n')
+    f.write(str(' ' + str(evtime.year) + ' ' +
+                str(evtime.month).rjust(2) +
+                str(evtime.day).rjust(2) + ' ' +
+                str(evtime.hour).rjust(2) +
+                str(evtime.minute).rjust(2) + ' ' +
+                str(float(evtime.second)).rjust(4) + ' ' +
+                evtype + '1'.rjust(58) + '\n'))
     # Write line 2 of s-file
-    f.write(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
-            str(datetime.datetime.now().month).zfill(2) + '-' +
-            str(datetime.datetime.now().day).zfill(2) + ' ' +
-            str(datetime.datetime.now().hour).zfill(2) + ':' +
-            str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
-            userID.ljust(4) + ' STATUS:' + 'ID:'.rjust(18) +
-            str(evtime.year) +
-            str(evtime.month).zfill(2) +
-            str(evtime.day).zfill(2) +
-            str(evtime.hour).zfill(2) +
-            str(evtime.minute).zfill(2) +
-            str(evtime.second).zfill(2) +
-            'I'.rjust(6) + '\n')
+    f.write(str(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
+                str(datetime.datetime.now().month).zfill(2) + '-' +
+                str(datetime.datetime.now().day).zfill(2) + ' ' +
+                str(datetime.datetime.now().hour).zfill(2) + ':' +
+                str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
+                userID.ljust(4) + ' STATUS:' + 'ID:'.rjust(18) +
+                str(evtime.year) +
+                str(evtime.month).zfill(2) +
+                str(evtime.day).zfill(2) +
+                str(evtime.hour).zfill(2) +
+                str(evtime.minute).zfill(2) +
+                str(evtime.second).zfill(2) +
+                'I'.rjust(6) + '\n'))
     # Write line 3 of s-file
     write_wavfile = wavefile.split(os.sep)[-1]
-    f.write(' ' + write_wavfile + '6'.rjust(79 - len(write_wavfile)) + '\n')
+    f.write(str(' ' + write_wavfile + '6'.rjust(79 - len(write_wavfile)) +
+                '\n'))
     # Write final line of s-file
-    f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
-            ' VELO AIN AR TRES W  DIS CAZ7\n')
+    f.write(str(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
+                ' VELO AIN AR TRES W  DIS CAZ7\n'))
     f.close()
     print('Written s-file: ' + sfile)
     return sfile

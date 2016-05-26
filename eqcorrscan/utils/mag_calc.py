@@ -55,7 +55,9 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
                     yourself.
     :type PAZ: dict
     :param PAZ: Dictionary containing lists of poles and zeros, the gain and
-                the sensitivity.
+                the sensitivity. If unset will expect seedresp.
+    :type seedresp: dict
+    :param seedresp: Seed response information - if unset will expect PAZ.
     :type water_level: int
     :param water_level: Water level for the simulation.
 
@@ -64,22 +66,23 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
     # Note Wood anderson sensitivity is 2080 as per Uhrhammer & Collins 1990
     PAZ_WA = {'poles': [-6.283 + 4.7124j, -6.283 - 4.7124j],
               'zeros': [0 + 0j], 'gain': 1.0, 'sensitivity': 2080}
-    from obspy.signal import seisSim
+    from obspy.signal.invsim import simulate_seismometer as seis_sim
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
     if PAZ:
-        trace.data = seisSim(trace.data, trace.stats.sampling_rate,
-                             paz_remove=PAZ, paz_simulate=PAZ_WA,
-                             water_level=water_level, remove_sensitivity=True)
+        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
+                              paz_remove=PAZ, paz_simulate=PAZ_WA,
+                              water_level=water_level, remove_sensitivity=True)
     elif seedresp:
-        trace.data = seisSim(trace.data, trace.stats.sampling_rate,
-                             paz_remove=None, paz_simulate=PAZ_WA,
-                             water_level=water_level, seedresp=seedresp)
+        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
+                              paz_remove=None, paz_simulate=PAZ_WA,
+                              water_level=water_level, seedresp=seedresp)
     else:
         UserWarning('No response given to remove, will just simulate WA')
-        trace.data = seisSim(trace.data, trace.stats.samplng_rate,
-                             paz_remove=None, water_level=water_level)
+        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
+                              paz_remove=None, paz_simulate=PAZ_WA,
+                              water_level=water_level)
     return trace
 
 
@@ -202,22 +205,30 @@ def _find_resp(station, channel, network, time, delta, directory):
     import glob
     from obspy.signal.invsim import evalresp
     from obspy import UTCDateTime
-    possible_respfiles = glob.glob(directory+'/RESP.'+network+'.'+station +
+    import os
+    possible_respfiles = glob.glob(directory + os.path.sep + 'RESP.' +
+                                   network + '.' + station +
                                    '.*.' + channel)  # GeoNet RESP naming
-    possible_respfiles += glob.glob(directory+'/RESP.'+network+'.'+channel +
+    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
+                                    network + '.' + channel +
                                     '.' + station)  # RDseed RESP naming
-    possible_respfiles += glob.glob(directory+'/RESP.'+station+'.'+network)
+    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
+                                    station + '.' + network)
     # WIZARD resp naming
-    # GSE format, station needs to be 5 charectars padded with _, channel is 4
+    # GSE format, station needs to be 5 characters padded with _, channel is 4
     # characters padded with _
-    possible_respfiles += glob.glob(directory+'/'+station.ljust(5, '_') +
-                                    channel[0:len(channel)-1].ljust(3, '_') +
-                                    channel[-1]+'.*_GSE')
+    station = str(station)
+    channel = str(channel)
+    possible_respfiles += glob.glob(directory + os.path.sep +
+                                    station.ljust(5, str('_')) +
+                                    channel[0:len(channel)-1].ljust(3,
+                                                                    str('_')) +
+                                    channel[-1] + '.*_GSE')
     PAZ = []
     seedresp = []
     for respfile in possible_respfiles:
-        print('Reading response from: '+respfile)
-        if respfile.split('/')[-1][0:4] == 'RESP':
+        print('Reading response from: ' + respfile)
+        if respfile.split(os.path.sep)[-1][0:4] == 'RESP':
             # Read from a resp file
             seedresp = {'filename': respfile, 'date': UTCDateTime(time),
                         'units': 'DIS', 'network': network, 'station': station,
@@ -242,8 +253,8 @@ def _find_resp(station, channel, network, time, delta, directory):
             if pazdate >= time and pazchannel != channel and\
                pazstation != station:
                 print('Issue with GSE file')
-                print('date: '+str(pazdate)+' channel: '+pazchannel +
-                      ' station: '+pazstation)
+                print('date: ' + str(pazdate) + ' channel: ' + pazchannel +
+                      ' station: ' + pazstation)
                 PAZ = []
         else:
             continue
@@ -261,12 +272,28 @@ def _pairwise(iterable):
     Wrapper on itertools for SVD_magnitude.
     """
     import itertools
+    import sys
     a, b = itertools.tee(iterable)
     next(b, None)
-    return itertools.izip(a, b)
+    if sys.version_info.major == 2:
+        return itertools.izip(a, b)
+    else:
+        return zip(a, b)
 
 
 def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
+                   winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
+                   highcut=20.0, corners=4):
+    """Wrapper before depreciation."""
+    warnings.warn('Depreciation warning: Amp_pick_sfile is depreciated, ' +
+                  'use amp_pick_sfile')
+    event = amp_pick_sfile(sfile, datapath, respdir, chans, var_wintype,
+                           winlen, pre_pick, pre_filt, lowcut,
+                           highcut, corners)
+    return event
+
+
+def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4):
     """
@@ -309,6 +336,8 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
+
+    :returns: obspy.core.event
     """
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
@@ -316,10 +345,12 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     from eqcorrscan.utils import sfile_util
     from obspy import read
     from scipy.signal import iirfilter
-    from obspy.signal.invsim import paz2AmpValueOfFreqResp
+    from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
     import warnings
+    import shutil
+    from obspy.core.event import Amplitude, Pick, WaveformStreamID
     # First we need to work out what stations have what picks
-    event = sfile_util.readpicks(sfile)[0]
+    event = sfile_util.readpicks(sfile)
     # Convert these picks into a lists
     stations = []  # List of stations
     channels = []  # List of channels
@@ -336,7 +367,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
             picktimes.append(pick.time)
             picktypes.append(pick.phase_hint)
             arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick.resource_id]
+                       if arrival.pick_id == pick.resource_id][0]
             distances.append(arrival.distance)
     # Read in waveforms
     stream = read(datapath+'/'+sfile_util.readwavename(sfile)[0])
@@ -346,14 +377,14 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     stream.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
-    del arrival
+    del(arrival)
     for sta in uniq_stas:
         for chan in chans:
             print('Working on '+sta+' '+chan)
             tr = stream.select(station=sta, channel='*'+chan)
             if not tr:
                 # Remove picks from file
-                # picks_out=[picks_out[i] for i in xrange(len(picks))\
+                # picks_out=[picks_out[i] for i in range(len(picks))\
                 # if picks_out[i].station+picks_out[i].channel != \
                 # sta+chan]
                 warnings.warn('There is no station and channel match in the ' +
@@ -371,11 +402,11 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                     tr = dummy.merge()[0]
                 tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
                           corners=corners)
-            sta_picks = [i for i in xrange(len(stations))
+            sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
             pick_id = event.picks[sta_picks[0]].resource_id
             arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick_id]
+                       if arrival.pick_id == pick_id][0]
             hypo_dist = arrival.distance
             CAZ = arrival.azimuth
             if var_wintype:
@@ -474,7 +505,7 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                 warnings.warn('No data found for: '+tr.stats.station)
                 # print 'No data in miniseed file for '+tr.stats.station+\
                 # ' removing picks'
-                # picks_out=[picks_out[i] for i in xrange(len(picks_out))\
+                # picks_out=[picks_out[i] for i in range(len(picks_out))\
                 # if i not in sta_picks]
                 break
             # Get the amplitude
@@ -499,7 +530,8 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                             'zeros': list(z),
                             'gain': k,
                             'sensitivity':  1.0}
-                amplitude /= (paz2AmpValueOfFreqResp(filt_paz, 1 / period) *
+                amplitude /= (paz_2_amplitude_value_of_freq_resp(filt_paz,
+                                                                 1 / period) *
                               filt_paz['sensitivity'])
             # Convert amplitude to mm
             if PAZ:  # Divide by Gain to get to nm (returns pm? 10^-12)
@@ -512,41 +544,33 @@ def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
             # Page 343 of Seisan manual:
             #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
-            # Generate a PICK type object for this pick
-            picks_out.append(sfile_util.PICK(station=tr.stats.station,
-                                             channel=tr.stats.channel,
-                                             impulsivity=' ',
-                                             phase='IAML',
-                                             weight='', polarity=' ',
-                                             time=tr.stats.starttime+delay,
-                                             coda=999, amplitude=amplitude,
-                                             peri=period, azimuth=float('NaN'),
-                                             velocity=float('NaN'), AIN=999,
-                                             SNR='',
-                                             azimuthres=999,
-                                             timeres=float('NaN'),
-                                             finalweight=999,
-                                             distance=hypo_dist,
-                                             CAZ=CAZ))
-    # Copy the header from the sfile to a new local S-file
-    fin = open(sfile, 'r')
-    fout = open('mag_calc.out', 'w')
-    for line in fin:
-        if not line[79] == '7':
-            fout.write(line)
-        else:
-            fout.write(line)
-            break
-    fin.close()
-    for pick in picks_out:
-        fout.write(pick)
-        # Note this uses the legacy pick class
-    fout.close()
-    # Write picks out to new s-file
-    for pick in picks_out:
-        print(pick)
-    # sfile_util.populatesfile('mag_calc.out', picks_out)
-    return picks_out
+            # Append an amplitude reading to the event
+            _waveform_id = WaveformStreamID(station_code=tr.stats.station,
+                                            channel_code=tr.stats.channel,
+                                            network_code=tr.stats.network)
+            pick_ind = len(event.picks)
+            event.picks.append(Pick(waveform_id=_waveform_id,
+                                    phase_hint='IAML',
+                                    polarity='undecidable',
+                                    time=tr.stats.starttime + delay,
+                                    evaluation_mode='automatic'))
+            event.amplitudes.append(Amplitude(generic_amplitude=amplitude /
+                                                                10**9,
+                                              period=period,
+                                              pick_id=event.
+                                              picks[pick_ind].resource_id,
+                                              waveform_id=event.
+                                              picks[pick_ind].waveform_id,
+                                              unit='m',
+                                              magnitude_hint='ML',
+                                              type='AML',
+                                              category='point'))
+    new_sfile = sfile_util.eventtosfile(event=event, userID=str('EQCO'),
+                                        evtype=str('L'), outdir=str('.'),
+                                        wavefiles=sfile_util.
+                                        readwavename(sfile))
+    shutil.move(new_sfile, 'mag_calc.out')
+    return event
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
@@ -574,12 +598,42 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     :param n_SVs: Number of singular values to use, defaults to 4.
 
     :returns: M, np.array of relative moments.
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.mag_calc import SVD_moments
+    >>> from obspy import read
+    >>> import glob
+    >>> import os
+    >>> from eqcorrscan.utils.clustering import SVD
+    >>> import numpy as np
+    >>> # Do the set-up
+    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
+    >>> stream_list = [read(stream_file) for stream_file in stream_files]
+    >>> event_list = []
+    >>> for i, stream in enumerate(stream_list):
+    ...     st_list = []
+    ...     for tr in stream:
+    ...         if (tr.stats.station, tr.stats.channel) not in [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
+    ...             stream.remove(tr)
+    ...             continue
+    ...         tr.detrend('simple')
+    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
+    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
+    ...         st_list.append(i)
+    ...     event_list.append(st_list) # doctest: +SKIP
+    >>> event_list = np.asarray(event_list).T.tolist()
+    >>> SVectors, SValues, Uvectors, stachans = SVD(stream_list=stream_list) # doctest: +SKIP
+    ['GCSZ.EHZ', 'WV04.SHZ', 'WHAT2.SH1']
+    >>> M, events_out = SVD_moments(U=Uvectors, s=SValues, V=SVectors,
+    ...                             stachans=stachans, event_list=event_list) # doctest: +SKIP
+
     """
     import copy
     import random
     import pickle
 
-    # Copying script from one obtained from John Townend.
     # Define maximum number of events, will be the width of K
     K_width = max([max(ev_list) for ev_list in event_list])+1
     # Sometimes the randomisation generates a singular matrix - rather than
@@ -632,8 +686,8 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
         # Deciding values for each place in kernel matrix using the pairs
         for pairsIndex in range(len(pairs)):
             # We will normalize by the minimum weight
-            _weights = zip(*list(pairs[pairsIndex]))[0]
-            _indeces = zip(*list(pairs[pairsIndex]))[1]
+            _weights = list(zip(*list(pairs[pairsIndex])))[0]
+            _indeces = list(zip(*list(pairs[pairsIndex])))[1]
             min_weight = min(_weights)
             max_weight = max(_weights)
             min_index = _indeces[np.argmin(_weights)]
@@ -719,7 +773,7 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
     import shutil
 
     kdays = ((enddate + dt.timedelta(1)) - startdate).days
-    for i in xrange(kdays):
+    for i in range(kdays):
         day = startdate + dt.timedelta(i)
         print('Working on ' + str(day))
         sfiles = glob.glob(indir + '/' + str(day.year) + '/' +
@@ -728,8 +782,8 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
                            str(day.month).zfill(2))
         datetimes = [dt.datetime.strptime(sfiles[i].split('/')[-1],
                                           '%d-%H%M-%SL.S%Y%m')
-                     for i in xrange(len(sfiles))]
-        sfiles = [sfiles[i] for i in xrange(len(sfiles))
+                     for i in range(len(sfiles))]
+        sfiles = [sfiles[i] for i in range(len(sfiles))
                   if datetimes[i] > startdate and
                   datetimes[i] < enddate]
         if not wavepath:
@@ -743,8 +797,8 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
         for sfile in sfiles:
             # Make the picks!
             print('				Working on Sfile: '+sfile)
-            picks = Amp_pick_sfile(sfile, wavedir, calpath)
-            del picks
+            event = Amp_pick_sfile(sfile, wavedir, calpath)
+            del event
             # Copy the mag_calc.out file to the correct place
             shutil.copyfile('mag_calc.out', outdir+'/'+str(day.year)+'/' +
                             str(day.month).zfill(2)+'/'+sfile.split('/')[-1])

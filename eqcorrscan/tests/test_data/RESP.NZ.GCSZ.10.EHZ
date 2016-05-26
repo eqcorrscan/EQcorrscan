@@ -1,0 +1,609 @@
+#		<< IRIS SEED Reader, Release 4.6 >>
+#		
+#		======== CHANNEL RESPONSE DATA ========
+B050F03     Station:     GCSZ
+B050F16     Network:     NZ
+B052F03     Location:    10
+B052F04     Channel:     EHZ
+B052F22     Start date:  2012,111,00:00:01.0000
+B052F23     End date:    2012,173,00:00:00.0000
+#		=======================================
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 1
+B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               0.995601
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      2
+B053F14     Number of poles:                       2
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+B053F10-13    0  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+B053F10-13    1  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+B053F15-18    0 -7.665490E+00  9.957610E+00  0.000000E+00  0.000000E+00
+B053F15-18    1 -7.665490E+00 -9.957610E+00  0.000000E+00  0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 1
+B058F04     Gain:                                  6.220000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 2
+B053F05     Response in units lookup:              V - Volts
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               1
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      0
+B053F14     Number of poles:                       0
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 2
+B058F04     Gain:                                  3.000000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +-------------------------------------------+                 +
+#		+               |   Response (Coefficients),  GCSZ ch EHZ   |                 +
+#		+               +-------------------------------------------+                 +
+#		
+B054F03     Transfer function type:                D
+B054F04     Stage sequence number:                 3
+B054F05     Response in units lookup:              V - Volts
+B054F06     Response out units lookup:             COUNTS - Digital Counts
+B054F07     Number of numerators:                  0
+B054F10     Number of denominators:                0
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 3
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             0.000000E+00
+B057F08     Correction applied (seconds):          0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 3
+B058F04     Gain:                                  4.194300E+05
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                     +--------------------------------+                      +
+#		+                     |   FIR response,  GCSZ ch EHZ   |                      +
+#		+                     +--------------------------------+                      +
+#		
+B061F03     Stage sequence number:                 4
+B061F05     Symmetry type:                         A
+B061F06     Response in units lookup:              COUNTS - Digital Counts
+B061F07     Response out units lookup:             COUNTS - Digital Counts
+B061F08     Number of numerators:                  65
+#		Numerator coefficients:
+#		  i, coefficient
+B061F09       0  1.315493E-11
+B061F09       1  1.501065E-04
+B061F09       2  1.339681E-02
+B061F09       3  1.644292E-01
+B061F09       4  5.688094E-01
+B061F09       5  5.173835E-01
+B061F09       6 -2.608360E-01
+B061F09       7 -1.220329E-01
+B061F09       8  2.571813E-01
+B061F09       9 -2.029026E-01
+B061F09      10  7.075880E-02
+B061F09      11  3.879666E-02
+B061F09      12 -1.143135E-01
+B061F09      13  1.354797E-01
+B061F09      14 -1.114475E-01
+B061F09      15  6.705481E-02
+B061F09      16 -1.927124E-02
+B061F09      17 -2.093129E-02
+B061F09      18  4.768056E-02
+B061F09      19 -5.933829E-02
+B061F09      20  5.757931E-02
+B061F09      21 -4.623331E-02
+B061F09      22  2.977715E-02
+B061F09      23 -1.248294E-02
+B061F09      24 -2.366075E-03
+B061F09      25  1.278821E-02
+B061F09      26 -1.846982E-02
+B061F09      27  1.879725E-02
+B061F09      28 -1.713865E-02
+B061F09      29  1.278199E-02
+B061F09      30 -7.675787E-03
+B061F09      31  3.255159E-03
+B061F09      32 -8.947563E-05
+B061F09      33 -1.778757E-03
+B061F09      34  2.596043E-03
+B061F09      35 -2.666169E-03
+B061F09      36  2.307403E-03
+B061F09      37 -1.770516E-03
+B061F09      38  1.218643E-03
+B061F09      39 -7.460492E-04
+B061F09      40  3.921752E-04
+B061F09      41 -1.583665E-04
+B061F09      42  2.437801E-05
+B061F09      43  3.807573E-05
+B061F09      44 -5.618048E-05
+B061F09      45  5.152771E-05
+B061F09      46 -3.856469E-05
+B061F09      47  2.530286E-05
+B061F09      48 -1.512465E-05
+B061F09      49  8.739795E-06
+B061F09      50 -4.648117E-06
+B061F09      51  1.376276E-06
+B061F09      52  7.042064E-07
+B061F09      53  2.241873E-07
+B061F09      54 -1.251026E-06
+B061F09      55  1.066771E-07
+B061F09      56  2.642876E-07
+B061F09      57  3.226638E-07
+B061F09      58 -8.074162E-08
+B061F09      59 -1.099049E-07
+B061F09      60 -3.325203E-08
+B061F09      61  1.388506E-08
+B061F09      62  1.056275E-08
+B061F09      63  2.577911E-09
+B061F09      64 -7.018623E-10
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 4
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             4.167000E-02
+B057F08     Correction applied (seconds):          4.167000E-02
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 4
+B058F04     Gain:                                  1.000000E+00
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |   Channel Sensitivity,  GCSZ ch EHZ   |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 0
+B058F04     Sensitivity:                           7.826570E+08
+B058F05     Frequency of sensitivity:              1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		<< IRIS SEED Reader, Release 4.6 >>
+#		
+#		======== CHANNEL RESPONSE DATA ========
+B050F03     Station:     GCSZ
+B050F16     Network:     NZ
+B052F03     Location:    10
+B052F04     Channel:     EHZ
+B052F22     Start date:  2012,173,00:00:01.0000
+B052F23     End date:    2013,034,00:00:00.0000
+#		=======================================
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 1
+B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               0.995601
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      2
+B053F14     Number of poles:                       2
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+B053F10-13    0  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+B053F10-13    1  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+B053F15-18    0 -7.665490E+00  9.957610E+00  0.000000E+00  0.000000E+00
+B053F15-18    1 -7.665490E+00 -9.957610E+00  0.000000E+00  0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 1
+B058F04     Gain:                                  6.220000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 2
+B053F05     Response in units lookup:              V - Volts
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               1
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      0
+B053F14     Number of poles:                       0
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 2
+B058F04     Gain:                                  3.000000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +-------------------------------------------+                 +
+#		+               |   Response (Coefficients),  GCSZ ch EHZ   |                 +
+#		+               +-------------------------------------------+                 +
+#		
+B054F03     Transfer function type:                D
+B054F04     Stage sequence number:                 3
+B054F05     Response in units lookup:              V - Volts
+B054F06     Response out units lookup:             COUNTS - Digital Counts
+B054F07     Number of numerators:                  0
+B054F10     Number of denominators:                0
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 3
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             0.000000E+00
+B057F08     Correction applied (seconds):          0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 3
+B058F04     Gain:                                  4.194300E+05
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                     +--------------------------------+                      +
+#		+                     |   FIR response,  GCSZ ch EHZ   |                      +
+#		+                     +--------------------------------+                      +
+#		
+B061F03     Stage sequence number:                 4
+B061F05     Symmetry type:                         A
+B061F06     Response in units lookup:              COUNTS - Digital Counts
+B061F07     Response out units lookup:             COUNTS - Digital Counts
+B061F08     Number of numerators:                  65
+#		Numerator coefficients:
+#		  i, coefficient
+B061F09       0  1.315493E-11
+B061F09       1  1.501065E-04
+B061F09       2  1.339681E-02
+B061F09       3  1.644292E-01
+B061F09       4  5.688094E-01
+B061F09       5  5.173835E-01
+B061F09       6 -2.608360E-01
+B061F09       7 -1.220329E-01
+B061F09       8  2.571813E-01
+B061F09       9 -2.029026E-01
+B061F09      10  7.075880E-02
+B061F09      11  3.879666E-02
+B061F09      12 -1.143135E-01
+B061F09      13  1.354797E-01
+B061F09      14 -1.114475E-01
+B061F09      15  6.705481E-02
+B061F09      16 -1.927124E-02
+B061F09      17 -2.093129E-02
+B061F09      18  4.768056E-02
+B061F09      19 -5.933829E-02
+B061F09      20  5.757931E-02
+B061F09      21 -4.623331E-02
+B061F09      22  2.977715E-02
+B061F09      23 -1.248294E-02
+B061F09      24 -2.366075E-03
+B061F09      25  1.278821E-02
+B061F09      26 -1.846982E-02
+B061F09      27  1.879725E-02
+B061F09      28 -1.713865E-02
+B061F09      29  1.278199E-02
+B061F09      30 -7.675787E-03
+B061F09      31  3.255159E-03
+B061F09      32 -8.947563E-05
+B061F09      33 -1.778757E-03
+B061F09      34  2.596043E-03
+B061F09      35 -2.666169E-03
+B061F09      36  2.307403E-03
+B061F09      37 -1.770516E-03
+B061F09      38  1.218643E-03
+B061F09      39 -7.460492E-04
+B061F09      40  3.921752E-04
+B061F09      41 -1.583665E-04
+B061F09      42  2.437801E-05
+B061F09      43  3.807573E-05
+B061F09      44 -5.618048E-05
+B061F09      45  5.152771E-05
+B061F09      46 -3.856469E-05
+B061F09      47  2.530286E-05
+B061F09      48 -1.512465E-05
+B061F09      49  8.739795E-06
+B061F09      50 -4.648117E-06
+B061F09      51  1.376276E-06
+B061F09      52  7.042064E-07
+B061F09      53  2.241873E-07
+B061F09      54 -1.251026E-06
+B061F09      55  1.066771E-07
+B061F09      56  2.642876E-07
+B061F09      57  3.226638E-07
+B061F09      58 -8.074162E-08
+B061F09      59 -1.099049E-07
+B061F09      60 -3.325203E-08
+B061F09      61  1.388506E-08
+B061F09      62  1.056275E-08
+B061F09      63  2.577911E-09
+B061F09      64 -7.018623E-10
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 4
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             4.167000E-02
+B057F08     Correction applied (seconds):          4.167000E-02
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 4
+B058F04     Gain:                                  1.000000E+00
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |   Channel Sensitivity,  GCSZ ch EHZ   |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 0
+B058F04     Sensitivity:                           7.826570E+08
+B058F05     Frequency of sensitivity:              1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		<< IRIS SEED Reader, Release 4.6 >>
+#		
+#		======== CHANNEL RESPONSE DATA ========
+B050F03     Station:     GCSZ
+B050F16     Network:     NZ
+B052F03     Location:    10
+B052F04     Channel:     EHZ
+B052F22     Start date:  2013,034,00:10:00.0000
+B052F23     End date:    No Ending Time
+#		=======================================
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 1
+B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               0.995601
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      2
+B053F14     Number of poles:                       2
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+B053F10-13    0  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+B053F10-13    1  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+B053F15-18    0 -7.665490E+00  9.957610E+00  0.000000E+00  0.000000E+00
+B053F15-18    1 -7.665490E+00 -9.957610E+00  0.000000E+00  0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 1
+B058F04     Gain:                                  6.220000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +--------------------------------------------+                +
+#		+               |   Response (Poles & Zeros),  GCSZ ch EHZ   |                +
+#		+               +--------------------------------------------+                +
+#		
+B053F03     Transfer function type:                A [Laplace Transform (Rad/sec)]
+B053F04     Stage sequence number:                 2
+B053F05     Response in units lookup:              V - Volts
+B053F06     Response out units lookup:             V - Volts
+B053F07     A0 normalization factor:               1
+B053F08     Normalization frequency:               15
+B053F09     Number of zeroes:                      0
+B053F14     Number of poles:                       0
+#		Complex zeroes:
+#		  i  real          imag          real_error    imag_error
+#		Complex poles:
+#		  i  real          imag          real_error    imag_error
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 2
+B058F04     Gain:                                  3.000000E+01
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+               +-------------------------------------------+                 +
+#		+               |   Response (Coefficients),  GCSZ ch EHZ   |                 +
+#		+               +-------------------------------------------+                 +
+#		
+B054F03     Transfer function type:                D
+B054F04     Stage sequence number:                 3
+B054F05     Response in units lookup:              V - Volts
+B054F06     Response out units lookup:             COUNTS - Digital Counts
+B054F07     Number of numerators:                  0
+B054F10     Number of denominators:                0
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 3
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             0.000000E+00
+B057F08     Correction applied (seconds):          0.000000E+00
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 3
+B058F04     Gain:                                  4.194300E+05
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                     +--------------------------------+                      +
+#		+                     |   FIR response,  GCSZ ch EHZ   |                      +
+#		+                     +--------------------------------+                      +
+#		
+B061F03     Stage sequence number:                 4
+B061F05     Symmetry type:                         A
+B061F06     Response in units lookup:              COUNTS - Digital Counts
+B061F07     Response out units lookup:             COUNTS - Digital Counts
+B061F08     Number of numerators:                  65
+#		Numerator coefficients:
+#		  i, coefficient
+B061F09       0  1.315493E-11
+B061F09       1  1.501065E-04
+B061F09       2  1.339681E-02
+B061F09       3  1.644292E-01
+B061F09       4  5.688094E-01
+B061F09       5  5.173835E-01
+B061F09       6 -2.608360E-01
+B061F09       7 -1.220329E-01
+B061F09       8  2.571813E-01
+B061F09       9 -2.029026E-01
+B061F09      10  7.075880E-02
+B061F09      11  3.879666E-02
+B061F09      12 -1.143135E-01
+B061F09      13  1.354797E-01
+B061F09      14 -1.114475E-01
+B061F09      15  6.705481E-02
+B061F09      16 -1.927124E-02
+B061F09      17 -2.093129E-02
+B061F09      18  4.768056E-02
+B061F09      19 -5.933829E-02
+B061F09      20  5.757931E-02
+B061F09      21 -4.623331E-02
+B061F09      22  2.977715E-02
+B061F09      23 -1.248294E-02
+B061F09      24 -2.366075E-03
+B061F09      25  1.278821E-02
+B061F09      26 -1.846982E-02
+B061F09      27  1.879725E-02
+B061F09      28 -1.713865E-02
+B061F09      29  1.278199E-02
+B061F09      30 -7.675787E-03
+B061F09      31  3.255159E-03
+B061F09      32 -8.947563E-05
+B061F09      33 -1.778757E-03
+B061F09      34  2.596043E-03
+B061F09      35 -2.666169E-03
+B061F09      36  2.307403E-03
+B061F09      37 -1.770516E-03
+B061F09      38  1.218643E-03
+B061F09      39 -7.460492E-04
+B061F09      40  3.921752E-04
+B061F09      41 -1.583665E-04
+B061F09      42  2.437801E-05
+B061F09      43  3.807573E-05
+B061F09      44 -5.618048E-05
+B061F09      45  5.152771E-05
+B061F09      46 -3.856469E-05
+B061F09      47  2.530286E-05
+B061F09      48 -1.512465E-05
+B061F09      49  8.739795E-06
+B061F09      50 -4.648117E-06
+B061F09      51  1.376276E-06
+B061F09      52  7.042064E-07
+B061F09      53  2.241873E-07
+B061F09      54 -1.251026E-06
+B061F09      55  1.066771E-07
+B061F09      56  2.642876E-07
+B061F09      57  3.226638E-07
+B061F09      58 -8.074162E-08
+B061F09      59 -1.099049E-07
+B061F09      60 -3.325203E-08
+B061F09      61  1.388506E-08
+B061F09      62  1.056275E-08
+B061F09      63  2.577911E-09
+B061F09      64 -7.018623E-10
+#		
+#		+                      +------------------------------+                       +
+#		+                      |   Decimation,  GCSZ ch EHZ   |                       +
+#		+                      +------------------------------+                       +
+#		
+B057F03     Stage sequence number:                 4
+B057F04     Input sample rate:                     1.000000E+02
+B057F05     Decimation factor:                     1
+B057F06     Decimation offset:                     0
+B057F07     Estimated delay (seconds):             4.167000E-02
+B057F08     Correction applied (seconds):          4.167000E-02
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |       Channel Gain,  GCSZ ch EHZ      |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 4
+B058F04     Gain:                                  1.000000E+00
+B058F05     Frequency of gain:                     1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
+#		+                  +---------------------------------------+                  +
+#		+                  |   Channel Sensitivity,  GCSZ ch EHZ   |                  +
+#		+                  +---------------------------------------+                  +
+#		
+B058F03     Stage sequence number:                 0
+B058F04     Sensitivity:                           7.826570E+08
+B058F05     Frequency of sensitivity:              1.500000E+01 HZ
+B058F06     Number of calibrations:                0
+#		
