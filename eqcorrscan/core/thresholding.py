@@ -25,7 +25,7 @@ def coherence_test(stream, stations, nodes, lags, wlen):
     :type stream: obspy.Stream
     :param stream: Day of multi-channel, multi-station seismic data
     :type stations: list of str
-    :param station: List fo the stations in the same order as the delays
+    :param stations: List fo the stations in the same order as the delays
     :type nodes: list of tuple
     :param nodes: A list of the node points as (lat, lon, depth)
     :type lags: np.array
@@ -39,7 +39,7 @@ def coherence_test(stream, stations, nodes, lags, wlen):
     :return: coherence, array of arrays where coherence[i][:] refers to the \
         running daily coherence at node[i].
     """
-    from core.bright_lights import coherence
+    from eqcorrscan.core.bright_lights import coherence
     from copy import deepcopy
     import sys
     # Convert wlen to samples

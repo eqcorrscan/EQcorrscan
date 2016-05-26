@@ -19,17 +19,20 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
                   interp_len=0.05, debug=0):
     """
     Filter out spikes in data according to the median absolute deviation of \
-    the data.  Replaces spikes with linear interpolation. Works in-place on \
-    data.
+    the data.
+
+    Currently only has the ability to replaces spikes with linear
+    interpolation.  In the future we would aim to fill the gap with something
+    more appropriate.  Works in-place on data.
 
     :type tr: obspy.Trace
     :param tr: trace to despike
     :type multiplier: float
     :param multiplier: median absolute deviation multiplier to find spikes \
         above.
-    :type windowlength: int
+    :type windowlength: float
     :param windowlength: Length of window to look for spikes in in seconds.
-    :type interp_len: int
+    :type interp_len: float
     :param interp_len: Length in seconds to interpolate around spikes.
 
     :returns: obspy.trace
@@ -141,42 +144,55 @@ def _interp_gap(data, peak_loc, interp_len):
     return data
 
 
-def template_remove(tr, template, cc_thresh, interp_len, debug=0):
+def template_remove(tr, template, cc_thresh, windowlength,
+                    interp_len, debug=0):
     """
     Looks for instances of template in the trace and removes the matches.
 
     :type tr: obspy.core.Trace
-    :param tr: Trace to remove spikes from
+    :param tr: Trace to remove spikes from.
     :type template: osbpy.core.Trace
-    :param template: Spike template to look for in data
+    :param template: Spike template to look for in data.
     :type cc_thresh: float
-    :param cc_thresh: Cross-correlation trheshold (-1 - 1)
+    :param cc_thresh: Cross-correlation threshold (-1 - 1).
+    :type windowlength: float
+    :param windowlength: Length of window to look for spikes in in seconds.
     :type interp_len: float
-    :param interp_len: Window length to remove and fill in seconds
+    :param interp_len: Window length to remove and fill in seconds.
     :type debug: int
-    :param debug: Debug level
+    :param debug: Debug level.
 
-    :returns: tr, works in place
-
-    .. note:: Unfinished
+    :returns: tr, works in place.
     """
-    from eqcorrscan.core.match_filer import normxcorr2
+    from eqcorrscan.core.match_filter import normxcorr2
     from eqcorrscan.utils.findpeaks import find_peaks2_short
     from obspy import Trace
-    import numpy as np
     from eqcorrscan.utils.timer import Timer
     import matplotlib.pyplot as plt
+    import warnings
 
     data_in = tr.copy()
     _interp_len = int(tr.stats.sampling_rate * interp_len)
+    if _interp_len < len(template.data):
+        warnings.warn('Interp_len is less than the length of the template,'
+                      'will used the length of the template!')
+        _interp_len = len(template.data)
     if isinstance(template, Trace):
         template = template.data
     with Timer() as t:
         cc = normxcorr2(tr.data.astype(np.float32),
                         template.astype(np.float32))
-        peaks = find_peaks2_short(cc, cc_thresh)
+        if debug > 3:
+            plt.plot(cc.flatten(), 'k', label='cross-correlation')
+            plt.legend()
+            plt.show()
+        peaks = find_peaks2_short(arr=cc.flatten(), thresh=cc_thresh,
+                                  trig_int=windowlength * tr.stats.
+                                  sampling_rate)
         for peak in peaks:
-            tr.data = _interp_gap(tr.data, peak[1], _interp_len)
+            tr.data = _interp_gap(data=tr.data,
+                                  peak_loc=peak[1] + int(0.5 * _interp_len),
+                                  interp_len=_interp_len)
     print("Despiking took: %s s" % t.secs)
     if debug > 2:
         plt.plot(data_in.data, 'r', label='raw')

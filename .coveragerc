@@ -4,6 +4,6 @@ omit =
   eqcorrscan/*/__init__.py
   eqcorrscan/core/match_filter_internal.py
   eqcorrscan/tests/*
-  eqcorrscan/gui/*
+  eqcorrscan/utils/gui/*
   eqcorrscan/utils/timer.py
   eqcorrscan/utils/plotting.py
