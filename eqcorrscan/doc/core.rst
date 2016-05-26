@@ -29,7 +29,7 @@ multiple nodes.  This allows us to detect earthquakes through > 6 years of
 multi-channel data using > 600 templates in less than 36 hours.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    submodules/core.bright_lights
    submodules/core.template_gen

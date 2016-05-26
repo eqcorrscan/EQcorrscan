@@ -15,7 +15,7 @@ out to nordic format files, which can be easily converted to hypoDD files,
 there are now multiple options for location of events.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    submodules/utils.clustering
    submodules/utils.plotting
