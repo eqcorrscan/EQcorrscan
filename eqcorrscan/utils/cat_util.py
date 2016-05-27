@@ -367,3 +367,130 @@ def refine_picks(catalog, stream_dict, pre_pick, post_pick, shift_len,
         new_catalog += new_event
     print('Refined %d of %d picks' % (refined_num, tot_pks))
     return new_catalog
+
+
+def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, cc_thresh,
+                     extract_pre_pick=3.0, extract_post_pick=7.0, write_wav=False, debug=0):
+    r"""Function to create a catalog from a list of detections, adjusting template pick \
+    times using cross correlation with data stream at the time of detection.
+
+    :type detections: list of DETECTION objects
+    :param detections: Detections which we want to extract and locate.
+    :type template_dict: dict
+    :param template_dict: Dictionary of template name: template stream for the entire \
+        catalog. Template names must be in the format found in the DETECTION objects.
+    :type stream: obspy.Stream
+    :param stream: stream encompassing time span of the detections. Will be used for pick \
+        refinement by cross correlation. Should be fed a stream processed in the same way \
+        as the streams in template dict (and in the same way that they were processed \
+        during matched filtering). The waveforms will not be processed here.
+    :type write_wav: bool or str
+    :param write_wav: If false, will not write detection waveforms to miniseed files. \
+        Otherwise, specify a directory to write the templates to. Will use name \
+        template_name_detection_time.mseed.
+    :returns: :class: obspy.Catalog
+    """
+
+    from obspy import UTCDateTime, Catalog, Stream
+    from obspy.core.event import ResourceIdentifier, Event, Pick, CreationInfo, Comment, WaveformStreamID
+    from obspy.signal.cross_correlation import xcorr
+    from eqcorrscan.utils import plotting
+
+    #XXX TODO Scripts havent been saving the actual detection objects so we cannot make
+    #XXX TODO use of DETECTION.chans. Would be useful.
+
+    # Copy stream out of the way
+    st = stream.copy()
+    # Create nested dictionary of delays template_name: stachan: delay
+    # dict.items() works in both python 2 and 3 but is memory inefficient in 2 as both vars are
+    # read into memory as lists
+    delays = {}
+    for name, temp in template_dict.items():
+        sorted_temp = temp.sort(['starttime'])
+        stachans = [(tr.stats.station, tr.stats.channel, tr.stats.network)
+                    for tr in sorted_temp]
+        mintime = sorted_temp[0].stats.starttime
+        delays[name] = {(tr.stats.station, tr.stats.channel): tr.stats.starttime - mintime
+                        for tr in sorted_temp}
+    # Loop over all detections, saving each as a new event in a catalog
+    new_cat = Catalog()
+    for detection in detections:
+        if write_wav:
+            new_stream = Stream()
+        if hasattr(detection, 'event'):
+            new_event = detection.event
+        else:
+            rid = ResourceIdentifier(id=detection.template_name + '_' +
+                                        str(detection.detect_time),
+                                     prefix='smi:local')
+            new_event = Event(resource_id=rid)
+            cr_i = CreationInfo(author='EQcorrscan',
+                                creation_time=UTCDateTime())
+            new_event.creation_info = cr_i
+            thresh_str = 'threshold=' + str(detection.threshold)
+            ccc_str = 'detect_val=' + str(detection.detect_val)
+            if detection.chans:
+                used_chans = 'channels used: ' + \
+                             ' '.join([str(pair) for pair in detection.chans])
+                new_event.comments.append(Comment(text=used_chans))
+            new_event.comments.append(Comment(text=thresh_str))
+            new_event.comments.append(Comment(text=ccc_str))
+        template = template_dict[detection.template_name]
+        temp_len = template[0].stats.npts * tr.stats.sampling_rate
+        if template.sort(['starttime'])[0].stats.starttime == detection.detect_time:
+            print('Template %s detected itself at %s.' % (detection.template_name, str(detection.detect_time)))
+            new_event.resource_id = ResourceIdentifier(id=detection.template_name + '_self',
+                                                       prefix='smi:local')
+        if debug >= 2:
+            print('Plotting detection for template: %s' % detection.template_name)
+            plt_st = Stream([st.select(station=tr.stats.station,
+                                       channel=tr.stats.channel)[0].slice(detection.detect_time-extract_pre_pick,
+                                                                          detection.detect_time+extract_post_pick)
+                             for tr in template if len(st.select(station=tr.stats.station,
+                                                                 channel=tr.stats.channel)) > 0])
+            plotting.detection_multiplot(plt_st, template, [detection.detect_time.datetime])
+        # Loop over each trace in the template, correcting picks for new event if need be
+        for tr in template:
+            sta = tr.stats.station
+            chan = tr.stats.channel
+            if len(st.select(station=sta, channel=chan)) != 0:
+                st_tr = st.select(station=sta, channel=chan)[0]
+            else:
+                print('No stream for %s: %s' % (sta, chan))
+                continue
+            st_tr_pick = detection.detect_time + delays[detection.template_name][(sta, chan)] + temp_prepick
+            i, absval, full_corr = xcorr(tr, st_tr.slice(st_tr_pick - temp_prepick,
+                                                            st_tr_pick - temp_prepick + temp_len),
+                                            shift_len=max_lag, full_xcorr=True)
+            ccval = max(full_corr)
+            index = np.argmax(full_corr) - max_lag
+            if index == 0 or index == max_lag * 2:
+                msg = 'Correlation correction at max_lag. Consider increasing max_lag.'
+                warnings.warn(msg)
+            if debug >= 3:
+                print('Plotting full correlation function')
+                print('index: %d' % index)
+                print('max_ccval: %.2f' % ccval)
+                plt.plot(full_corr)
+                plt.show()
+                plt.close()
+            if ccval > cc_thresh:
+                print('Threshold exceeded at %s: %s' % (sta, chan))
+                pick_tm = st_tr_pick + (index * tr.stats.sampling_rate)
+            else:
+                print('Correlation at %s: %s not good enough to correct pick' % (sta, chan))
+                pick_tm = st_tr_pick
+            wv_id = WaveformStreamID(network_code=tr.stats.network,
+                                     station_code=tr.stats.station,
+                                     channel_code=tr.stats.channel)
+            new_event.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+            if write_wav:
+                    new_stream.append(st_tr.slice(starttime=pick_tm - extract_pre_pick,
+                                                  endtime=pick_tm + extract_pre_pick))
+        # Append to new catalog
+        new_cat += new_event
+        if write_wav:
+            filename = '%s%s_%s.mseed' % (write_wav, detection.template_name, detection.detect_time)
+            print('Writing new stream for detection to %s' % filename)
+            new_stream.write(filename, format='MSEED')
+    return new_cat

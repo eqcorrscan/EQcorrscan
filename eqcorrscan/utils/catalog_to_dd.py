@@ -163,29 +163,29 @@ def write_event(catalog):
     """
     f = open('event.dat', 'w')
     for i, event in enumerate(catalog):
-        evinfo = event.origins[0]
-        Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
+        evinfo = event.preferred_origin()
+        Mag_1 = event.preferred_magnitude().mag or ' '
+        if event.preferred_origin().time_errors:
+            t_RMS = event.preferred_origin().time_errors.Time_Residual_RMS or ' '
         else:
             t_RMS = ' '
-        f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2) +
+        f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2)+'  ' +
                 str(evinfo.time.hour).rjust(2) +
                 str(evinfo.time.minute).zfill(2) +
                 str(evinfo.time.second).zfill(2) +
-                str(evinfo.time.microsecond)[0:2].zfill(2)+'  ' +
-                str(evinfo.latitude).ljust(8, '0')+'   ' +
-                str(evinfo.longitude).ljust(8, '0')+'  ' +
-                str(evinfo.depth / 1000).rjust(7).ljust(9, '0')+'   ' +
-                str(Mag_1)+'    0.00    0.00   ' +
+                str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
+                str(evinfo.latitude).ljust(8, '0') + '   ' +
+                str(evinfo.longitude).ljust(8, '0') + '  ' +
+                str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
+                str(Mag_1) + '    0.00    0.00   ' +
                 str(t_RMS).ljust(4, '0') +
-                str(i).rjust(11)+'\n')
+                str(i).rjust(11) + '\n')
     f.close()
     return
 
 
-def write_catalog(event_list, max_sep=1, min_link=8):
+def write_catalog(catalog, max_sep=1, min_link=8):
     """
     Function to write the dt.ct file needed by hypoDD - takes input event list
     from write_event as a list of tuples of event id and sfile.  It will read
@@ -208,61 +208,64 @@ def write_catalog(event_list, max_sep=1, min_link=8):
     """
     from eqcorrscan.utils.mag_calc import dist_calc
     # Cope with possibly being passed a zip in python 3.x
-    event_list = list(event_list)
+    # event_list = list(event_list)
     f = open('dt.ct', 'w')
     f2 = open('dt.ct2', 'w')
     fphase = open('phase.dat', 'w')
     stations = []
     evcount = 0
-    for i, master in enumerate(event_list):
-        master_sfile = master[1]
-        master_event_id = master[0]
-        master_event = sfile_util.readpicks(master_sfile)
-        master_ori_time = master_event.origins[0].time
-        master_location = (master_event.origins[0].latitude,
-                           master_event.origins[0].longitude,
-                           master_event.origins[0].depth / 1000)
+    for i, master_event in catalog:
+        # master_sfile = master[1]
+        # master_event_id = master[0]
+        master_event_id = i
+        # master_event = sfile_util.readpicks(master_sfile)
+        master_ori_time = master_event.preferred_origin().time
+        master_location = (master_event.preferred_origin().latitude,
+                           master_event.preferred_origin().longitude,
+                           master_event.preferred_origin().depth / 1000)
         if len(master_event.magnitudes) > 0:
-            master_magnitude = master_event.magnitudes[0].mag or ' '
+            master_magnitude = master_event.preferred_magnitude().mag or ' '
         else:
             master_magnitude = ' '
-        header = '# '+master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
-            ' '+str(master_location[0]).ljust(8)+' ' +\
-            str(master_location[1]).ljust(8)+' ' +\
-            str(master_location[2]).ljust(4)+' ' +\
-            str(master_magnitude).ljust(4)+' 0.0 0.0 0.0' +\
+        header = '# ' + master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
+            ' ' + str(master_location[0]).ljust(8) + ' ' +\
+            str(master_location[1]).ljust(8) + ' ' +\
+            str(master_location[2]).ljust(4) + ' ' +\
+            str(master_magnitude).ljust(4) + ' 0.0 0.0 0.0' +\
             str(master_event_id).rjust(4)
-        fphase.write(header+'\n')
+        fphase.write(header + '\n')
         for pick in master_event.picks:
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
-                          for arrival in master_event.origins[0].arrivals
+                          for arrival in master_event.preferred_origin().arrivals
                           if arrival.pick_id == pick.resource_id][0]
                 # Convert seisan weight to hypoDD 0-1 weights
-                if weight == 0:
-                    weight = 1.0
-                elif weight == 9:
-                    weight = 0.0
-                else:
-                    weight = 1 - weight / 4.0
-                fphase.write(pick.waveform_id.station_code+'  ' +
+                # if weight == 0:
+                #     weight = 1.0
+                # elif weight == 9:
+                #     weight = 0.0
+                # else:
+                #     weight = 1 - weight / 4.0
+                fphase.write(pick.waveform_id.station_code + '  ' +
                              _cc_round(pick.time -
                                        master_ori_time, 3).rjust(6) +
-                             '   '+str(weight).ljust(5)+pick.phase_hint+'\n')
-        for j in range(i+1, len(event_list)):
+                             '   ' + str(weight).ljust(5) + pick.phase_hint + '\n')
+        for j in range(i + 1, len(catalog)):
             # Use this tactic to only output unique event pairings
-            slave_sfile = event_list[j][1]
-            slave_event_id = event_list[j][0]
+            # slave_sfile = event_list[j][1]
+            # slave_event_id = event_list[j][0]
+            slave_event_id = j
             # Write out the header line
-            event_text = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+'\n'
-            event_text2 = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+'\n'
-            slave_event = sfile_util.readpicks(slave_sfile)
-            slave_ori_time = slave_event.origins[0].time
-            slave_location = (slave_event.origins[0].latitude,
-                              slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth / 1000)
+            event_text = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + '\n'
+            event_text2 = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + '\n'
+            # slave_event = sfile_util.readpicks(slave_sfile)
+            slave_event = catalog[j]
+            slave_ori_time = slave_event.preferred_origin().time
+            slave_location = (slave_event.preferred_origin().latitude,
+                              slave_event.preferred_origin().longitude,
+                              slave_event.preferred_origin().depth / 1000)
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
             links = 0  # Count the number of linkages
@@ -280,24 +283,24 @@ def write_catalog(event_list, max_sep=1, min_link=8):
                     links += 1
                     master_weight = [arrival.time_weight
                                      for arrival in master_event.
-                                     origins[0].arrivals
+                                     preferred_origin().arrivals
                                      if arrival.pick_id == pick.resource_id][0]
                     slave_weight = [arrival.time_weight
                                     for arrival in slave_event.
-                                    origins[0].arrivals
+                                    preferred_origin().arrivals
                                     if arrival.pick_id ==
                                     slave_pick.resource_id][0]
                     event_text += pick.waveform_id.station_code.ljust(5) +\
                         _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
                         _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
                         _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' '+pick.phase_hint+'\n'
+                        ' ' + pick.phase_hint + '\n'
                     # Added by Carolin
                     event_text2 += pick.waveform_id.station_code.ljust(5) +\
                         _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
                         _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
                         _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' '+pick.phase_hint+'\n'
+                        ' ' + pick.phase_hint + '\n'
                     stations.append(pick.waveform_id.station_code)
             if links >= min_link:
                 f.write(event_text)
@@ -311,7 +314,7 @@ def write_catalog(event_list, max_sep=1, min_link=8):
     return list(set(stations))
 
 
-def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
+def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
                        coh_thresh=0.0, coherence_weight=True, plotvar=False):
     """
@@ -370,56 +373,63 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     corr_list = []
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
-    for i, master in enumerate(event_list):
-        master_sfile = master[1]
-        master_event_id = master[0]
-        master_picks = sfile_util.readpicks(master_sfile).picks
-        master_event = sfile_util.readheader(master_sfile)
-        master_ori_time = master_event.origins[0].time
-        master_location = (master_event.origins[0].latitude,
-                           master_event.origins[0].longitude,
-                           master_event.origins[0].depth)
-        master_wavefiles = sfile_util.readwavename(master_sfile)
-        masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
-        if masterpath:
-            masterstream = read(masterpath[0])
-        if len(master_wavefiles) > 1:
-            for wavefile in master_wavefiles:
-                try:
-                    masterstream += read(os.join(wavbase, wavefile))
-                except:
-                    continue
-                    raise IOError("Couldn't find wavefile")
-        for j in range(i+1, len(event_list)):
-            # Use this tactic to only output unique event pairings
-            slave_sfile = event_list[j][1]
-            slave_event_id = event_list[j][0]
-            slave_wavefiles = sfile_util.readwavename(slave_sfile)
-            try:
-                # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
-                slavestream = read(wavbase + os.sep + slave_wavefiles[0])
-            except:
-                # print(slavestream)
-                raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
-                              slave_sfile)
-            if len(slave_wavefiles) > 1:
-                for wavefile in slave_wavefiles:
-                    # slavestream+=read(wavbase+'/*/*/'+wavefile)
-                    try:
-                        slavestream += read(wavbase+'/'+wavefile)
-                    except:
-                        continue
-            # Write out the header line
+    for i, master_event in enumerate(catalog):
+        # master_sfile = master[1]
+        # master_event_id = master[0]
+        master_event_id = i
+        # master_picks = sfile_util.readpicks(master_sfile).picks
+        # master_event = sfile_util.readheader(master_sfile)
+        master_picks = master_event.picks
+        master_ori_time = master_event.preferred_origin().time
+        master_location = (master_event.preferred_origin().latitude,
+                           master_event.preferred_origin().longitude,
+                           master_event.preferred_origin().depth)
+        master_stream = template_dict[master_event.resource_id]
+        # master_wavefiles = sfile_util.readwavename(master_sfile)
+        # masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
+        # if masterpath:
+        #     masterstream = read(masterpath[0])
+        # if len(master_wavefiles) > 1:
+        #     for wavefile in master_wavefiles:
+        #         try:
+        #             masterstream += read(os.join(wavbase, wavefile))
+        #         except:
+        #             continue
+        #             raise IOError("Couldn't find wavefile")
+        for j in range(i+1, len(catalog)):
+            # # Use this tactic to only output unique event pairings
+            # slave_sfile = event_list[j][1]
+            # slave_event_id = event_list[j][0]
+            slave_event_id = j
+            # slave_wavefiles = sfile_util.readwavename(slave_sfile)
+            # try:
+            #     # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
+            #     slavestream = read(wavbase + os.sep + slave_wavefiles[0])
+            # except:
+            #     # print(slavestream)
+            #     raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
+            #                   slave_sfile)
+            # if len(slave_wavefiles) > 1:
+            #     for wavefile in slave_wavefiles:
+            #         # slavestream+=read(wavbase+'/*/*/'+wavefile)
+            #         try:
+            #             slavestream += read(wavbase+'/'+wavefile)
+            #         except:
+            #             continue
+            # # Write out the header line
             event_text = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
-            slave_picks = sfile_util.readpicks(slave_sfile).picks
-            slave_event = sfile_util.readheader(slave_sfile)
-            slave_ori_time = slave_event.origins[0].time
-            slave_location = (slave_event.origins[0].latitude,
-                              slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth)
+            # slave_picks = sfile_util.readpicks(slave_sfile).picks
+            # slave_event = sfile_util.readheader(slave_sfile)
+            slave_event = catalog[j]
+            slave_picks = slave_event.picks
+            slave_ori_time = slave_event.preferred_origin().time
+            slave_location = (slave_event.preferred_origin().latitude,
+                              slave_event.preferred_origin().longitude,
+                              slave_event.preferred_origin().depth)
+            slave_stream = template_dict[slave_event.resource_id]
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
             links = 0
@@ -435,10 +445,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                  and p.waveform_id.station_code ==
                                  pick.waveform_id.station_code]
 
-                if masterstream.select(station=pick.waveform_id.station_code,
+                if master_stream.select(station=pick.waveform_id.station_code,
                                        channel='*' +
                                        pick.waveform_id.channel_code[-1]):
-                    mastertr = masterstream.\
+                    mastertr = master_stream.\
                         select(station=pick.waveform_id.station_code,
                                channel='*' +
                                pick.waveform_id.channel_code[-1])[0]
@@ -446,17 +456,17 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     print('No waveform data for ' +
                           pick.waveform_id.station_code + '.' +
                           pick.waveform_id.channel_code)
-                    print(pick.waveform_id.station_code +
-                          '.' + pick.waveform_id.channel_code +
-                          ' ' + slave_sfile+' ' + master_sfile)
+                    # print(pick.waveform_id.station_code +
+                    #       '.' + pick.waveform_id.channel_code +
+                    #       ' ' + slave_sfile+' ' + master_sfile)
                     break
                 # Loop through the matches
                 for slave_pick in slave_matches:
-                    if slavestream.select(station=slave_pick.waveform_id.
+                    if slave_stream.select(station=slave_pick.waveform_id.
                                           station_code,
                                           channel='*'+slave_pick.waveform_id.
                                           channel_code[-1]):
-                        slavetr = slavestream.\
+                        slavetr = slave_stream.\
                             select(station=slave_pick.waveform_id.station_code,
                                    channel='*'+slave_pick.waveform_id.
                                    channel_code[-1])[0]
@@ -464,9 +474,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         print('No slave data for ' +
                               slave_pick.waveform_id.station_code + '.' +
                               slave_pick.waveform_id.channel_code)
-                        print(pick.waveform_id.station_code +
-                              '.' + pick.waveform_id.channel_code +
-                              ' ' + slave_sfile + ' ' + master_sfile)
+                        # print(pick.waveform_id.station_code +
+                        #       '.' + pick.waveform_id.channel_code +
+                        #       ' ' + slave_sfile + ' ' + master_sfile)
                         break
                     # Correct the picks
                     try:
