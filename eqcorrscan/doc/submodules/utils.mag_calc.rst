@@ -12,10 +12,11 @@ mag_calc
        :toctree: autogen
        :nosignatures:
 
-       Amp_pick_sfile
-       SVD_moments
+       amp_pick_event
+       amp_pick_sfile
        dist_calc
        pick_db
+       SVD_moments
 
     .. comment to end block
 

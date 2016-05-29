@@ -1,6 +1,8 @@
 """
 Functions for despiking seismic data.
 
+.. todo:: Deconvolve spike to remove it, find peaks in the f-domain.
+
 :copyright:
     Calum Chamberlain.
 

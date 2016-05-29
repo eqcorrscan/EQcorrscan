@@ -12,9 +12,6 @@ plotting
        :toctree: autogen
        :nosignatures:
 
-       peaks_plot
-       NR_plot
-       SVD_plot
        chunk_data
        cumulative_detections
        detection_multiplot
@@ -22,10 +19,13 @@ plotting
        interev_mag
        interev_mag_sfiles
        multi_event_singlechan
+       NR_plot
        obspy_3d_plot
+       peaks_plot
        plot_synth_real
        pretty_template_plot
        spec_trace
+       SVD_plot
        threeD_gridplot
        threeD_seismplot
        triple_plot

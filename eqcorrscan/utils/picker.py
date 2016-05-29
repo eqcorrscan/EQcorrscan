@@ -17,8 +17,13 @@ from __future__ import unicode_literals
 
 
 def synth_compare(stream, stream_list, cores=4, debug=0):
-    r"""Compare a specific stream to a list of synthetic templates, or \
+    """
+    Find best matching template or earthquake for a given stream.
+    Compare a specific stream to a list of synthetic templates, or \
     earthquakes of known source and find the best matching event.
+
+    This can be used to assign the event to a family, which has a known \
+    location.
 
     :type stream: :class: obspy.Stream
     :param stream: Stream to be compared to streams with known locations.
@@ -30,6 +35,7 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
     :param debug: Debug level, high is more debug
 
     :returns: int, float: index of best match and cross-correlation sum
+    :rtype: tuple
     """
     from eqcorrscan.core.match_filter import _channel_loop
     import numpy as np
@@ -79,7 +85,9 @@ def synth_compare(stream, stream_list, cores=4, debug=0):
 
 
 def cross_net(stream, env=False, debug=0, master=False):
-    r"""Function to generate picks for each channel based on optimal moveout \
+    """
+    Generate picks using a simple envelope cross-correlation.
+    Picks are made for each channel based on optimal moveout \
     defined by maximum cross-correlation with master trace.  Master trace \
     will be the first trace in the stream.
 
@@ -189,12 +197,14 @@ def cross_net(stream, env=False, debug=0, master=False):
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 freqmax=False, debug=0, show=False):
-    r"""Simple sta-lta (short-term average/long-term average) picker, using \
+    """
+    Basic sta/lta picker, suggest using alternative in obspy.
+    Simple sta-lta (short-term average/long-term average) picker, using \
     obspy's stalta routine to generate the characteristic function.
 
     Currently very basic quick wrapper, there are many other (better) options \
     in obspy, found \
-    (here)[http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html].
+    `here <http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html>`_.
 
     :type stream: obspy.Stream
     :param stream: The stream to pick on, can be any number of channels.

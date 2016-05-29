@@ -373,8 +373,11 @@ def multi_event_singlechan(streams, catalog, station, channel,
                            save=False, savefile=None):
     r"""Plot data from a single channel for multiple events.
 
-    Data will be alligned by their pick-time given in the \
-    picks.
+    Data will be aligned by their pick-time given in the \
+    picks.  Requires an individual stream for each event you want to plot,
+    events are stored in the catalog object, and there must be picks present
+    for the streams you wish to plot.  Events will be aligned if `realign=True`,
+    in this case the traces will be aligned using the window defined by `cut`.
 
     :type streams: list
     :param streams: List of the streams to use, can contain more traces than \
@@ -395,9 +398,11 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type freqmax: float
     :param freqmax: High cut for bandpass in Hz
     :type realign: bool
-    :param realign: To compute best alignement based on correlation or not.
+    :param realign: To compute best alignment based on correlation or not.
     :type cut: tuple
-    :param cut: tuple of start and end times for cut in seconds from the pick
+    :param cut: tuple of start and end times for cut in seconds from the \
+        pick, used for alignment.  Will only use this window to align the \
+        traces.
     :type PWS: bool
     :param PWS: compute Phase Weighted Stack, if False, will compute linear \
         stack.
@@ -409,7 +414,10 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
 
-    :returns: Alligned and cut traces, new picks, matplotlib.figure
+    :returns: Aligned and cut traces
+    :returns: new picks
+    :rtype: list
+    :returns: matplotlib.figure
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
@@ -451,7 +459,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                 msg = ''.join(['Not enough in the trace for ',
                                tr.stats.station,
                                '.', tr.stats.channel, '\n',
-                               'Suggest removing pick from sfile at time ',
+                               'Suggest removing pick from event at time ',
                                str(_pick.time)])
                 warnings.warn(msg)
             else:
@@ -463,7 +471,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
         if len(tr.data) == 0:
             msg = ''.join(['No data in the trace for ', tr.stats.station,
                            '.', tr.stats.channel, '\n',
-                           'Suggest removing pick from sfile at time ',
+                           'Suggest removing pick from event at time ',
                            str(event.picks[0].time)])
             warnings.warn(msg)
             continue

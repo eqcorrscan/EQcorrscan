@@ -18,7 +18,7 @@ def is_prime(number):
     resource:
         http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w
 
-    This function is distributed under a seperate licence:
+    This function is distributed under a separate licence:
         This article, along with any associated source code and files, is \
         licensed under The Code Project Open License (CPOL)
 
@@ -185,7 +185,7 @@ def is_prime(number):
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       samp_rate=1.0):
-    r"""Function to determine peaks in an array of data above a certain \
+    r"""Determine peaks in an array of data above a certain \
     threshold. Uses a mask to remove data below threshold and finds peaks in \
     what is left.
 
@@ -310,8 +310,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
                    samp_rate=1.0):
-    r"""Function to determine peaks in an array of data above a certain \
-    threshold.
+    r"""Determine peaks in an array of data above a certain \
+    threshold: depreciated.
 
     Depreciated peak-finding routine, very slow, but accurate.  If all else \
     fails this one should work.
