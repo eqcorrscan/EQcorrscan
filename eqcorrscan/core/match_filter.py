@@ -647,8 +647,10 @@ def match_filter(template_names, template_list, st, threshold,
             for peak in peaks:
                 detecttime = stream[0].stats.starttime +\
                     peak[1] / stream[0].stats.sampling_rate
+                # Detect time must be valid QuakeML uri within resource_id.
+                # This will write a formatted string which is still readable by UTCDateTime
                 rid = ResourceIdentifier(id=template_names[i] + '_' +
-                                         str(detecttime),
+                                         str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
                                          prefix='smi:local')
                 ev = Event(resource_id=rid)
                 cr_i = CreationInfo(author='EQcorrscan',
