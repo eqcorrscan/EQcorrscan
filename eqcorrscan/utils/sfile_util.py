@@ -44,6 +44,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from six import string_types
 from obspy import UTCDateTime
 import numpy as np
 import warnings
@@ -95,6 +96,8 @@ class PICK:
         :param distance: Source-reciever distance in km
         :type CAZ: int
         :param CAZ: Azimuth at source.
+        :type pickcount: int
+        :param pickcount: Number of picks.
 
     .. rubric:: Note: Depreciated legacy function, use the obspy.core.event \
     classes. This will be removed in future releases.
@@ -108,7 +111,7 @@ class PICK:
                  velocity=float('NaN'), AIN=999, SNR=float('NaN'),
                  azimuthres=999, timeres=float('NaN'),
                  finalweight=999, distance=float('NaN'),
-                 CAZ=999):
+                 CAZ=999, pickcount=pickcount):
         self.station = station
         self.channel = channel
         self.impulsivity = impulsivity
@@ -304,6 +307,11 @@ def _int_conv(string):
     """
     Convenience tool to convert from string to integer, if empty string \
     return a 999 rather than an error.
+
+    >>> _int_conv('12')
+    12
+    >>> _int_conv('')
+    999
     """
     try:
         intstring = int(string)
@@ -315,7 +323,14 @@ def _int_conv(string):
 def _float_conv(string):
     """
     Convenience tool to convert from string to float, if empty string return \
-    NaN rather than an error
+    NaN rather than an error.
+
+    >>> _float_conv('12')
+    12.0
+    >>> _float_conv('')
+    999.0
+    >>> _float_conv('12.324')
+    12.324
     """
     try:
         floatstring = float(string)
@@ -329,12 +344,15 @@ def _str_conv(number, rounded=False):
     """
     Convenience tool to convert a number, either float or into into a string, \
     if the int is 999, or the float is NaN, returns empty string.
+
+    >>> _str_conv(12.3)
+    '12.3'
+    >>> _str_conv(12.34546, rounded=1)
+    '12.3'
     """
     if (isinstance(number, float) and np.isnan(number)) or number == 999:
         string = ' '
-    elif isinstance(number, str):
-        return number
-    elif isinstance(number, unicode):
+    elif isinstance(number, string_types):
         return str(number)
     elif not rounded:
         if number < 100000:
@@ -347,13 +365,16 @@ def _str_conv(number, rounded=False):
         string = '{0:.2f}'.format(number)
     elif rounded == 1:
         string = '{0:.1f}'.format(number)
-    return string
+    return str(string)
 
 
 def _evmagtonor(mag_type):
     """
     Convenience tool to switch from obspy event magnitude types to seisan \
     syntax
+
+    >>> _evmagtonor('mB')
+    'b'
     """
     if mag_type in ['ML', 'MLv']:
         # MLv is local magnitude on vertical component
@@ -377,13 +398,16 @@ def _evmagtonor(mag_type):
     else:
         warnings.warn(mag_type + ' is not convertable')
         return ''
-    return mag
+    return str(mag)
 
 
 def _nortoevmag(mag_type):
     """
     Convenience tool to switch from nordic type magnitude notation to obspy \
     event magnitudes.
+
+    >>> _nortoevmag('b')
+    'mB'
     """
     if mag_type == 'L':
         mag = 'ML'
@@ -402,7 +426,7 @@ def _nortoevmag(mag_type):
     else:
         warnings.warn(mag_type + ' is not convertable')
         return ''
-    return mag
+    return str(mag)
 
 
 def readheader(sfile):
@@ -415,6 +439,11 @@ def readheader(sfile):
     :param sfile: Path to the s-file
 
     :returns: :class: obspy.core.event.Event
+
+    >>> event = readheader('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...                    '01-0411-15L.S201309')
+    >>> print(event.origins[0].time)
+    2013-09-01T04:11:15.700000Z
     """
     import warnings
     from obspy.core.event import Event, Origin, Magnitude, Comment
@@ -439,10 +468,11 @@ def readheader(sfile):
                                                     int(topline[11:13]),
                                                     int(topline[13:15]),
                                                     sfile_seconds,
-                                                    int(topline[19:20])*100000)\
+                                                    int(topline[19:20]) *
+                                                    100000)\
                 + add_seconds
         except:
-            warnings.warn("Couldn't read a date from sfile: "+sfile)
+            warnings.warn("Couldn't read a date from sfile: " + sfile)
             new_event.origins.append(Origin(time=UTCDateTime(0)))
         # new_event.loc_mod_ind=topline[20]
         new_event.event_descriptions.append(EventDescription())
@@ -506,7 +536,7 @@ def readheader(sfile):
                                     int(topline[11:13]),
                                     int(topline[13:15]),
                                     int(topline[16:18]),
-                                    int(topline[19:20])*10)
+                                    int(topline[19:20]) * 10)
                 except:
                     new_event.origins.append(Origin(time=UTCDateTime(0)))
                 # new_event.loc_mod_ind=topline[21]
@@ -576,6 +606,13 @@ def readpicks(sfile):
     in s/deg and takeoff angle, which would require computation from the \
     values stored in seisan.  Multiple weights are also not supported in \
     Obspy.event.
+
+    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...                   '01-0411-15L.S201309')
+    >>> print(event.origins[0].time)
+    2013-09-01T04:11:15.700000Z
+    >>> print(event.picks[0].time)
+    2013-09-01T04:11:17.240000Z
     """
     from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
     # Get wavefile name for use in resource_ids
@@ -626,7 +663,7 @@ def readpicks(sfile):
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
                                int(line[18:20]), int(line[20:22]),
                                int(line[23:28].split('.')[0]),
-                               int(line[23:28].split('.')[1])*10000)
+                               int(line[23:28].split('.')[1]) * 10000)
         except (ValueError):
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
                                int(line[18:20]), int(line[20:22]), 0, 0)
@@ -752,6 +789,10 @@ def readwavename(sfile):
     :param sfile: Path to the sfile
 
     :returns: List of str
+
+    >>> readwavename('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...              '01-0411-15L.S201309')
+    ['2013-09-01-0410-35.DFDPC_024_00']
     """
     f = open(sfile)
     wavename = []
@@ -783,6 +824,16 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     :param evtime: If given this will set the timing of the S-file
 
     :returns: String, S-file name
+
+    >>> from eqcorrscan.utils.sfile_util import readwavename
+    >>> import os
+    >>> wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
+    ...                         'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
+    >>> sfile = blanksfile(wavefile, 'L', 'TEST',
+    ...                    '.', overwrite=True)
+    Written s-file: ./01-0410-35L.S201309
+    >>> readwavename(sfile)
+    ['2013-09-01-0410-35.DFDPC_024_00']
     """
 
     from obspy import read as obsread
@@ -795,7 +846,7 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
             st = obsread(wavefile)
             evtime = st[0].stats.starttime
         except:
-            print('Wavefile: '+wavefile +
+            print('Wavefile: ' + wavefile +
                   ' is invalid, try again with real data.')
             sys.exit()
     # Check that user ID is the correct length
@@ -823,7 +874,7 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
             sfile = outdir + '/' + str(evtime.day).zfill(2) + '-' +\
                 str(evtime.hour).zfill(2) +\
                 str(evtime.minute).zfill(2) + '-' +\
-                str(evtime.second+i).zfill(2) + evtype + '.S' +\
+                str(evtime.second + i).zfill(2) + evtype + '.S' +\
                 str(evtime.year) +\
                 str(evtime.month).zfill(2)
             if not os.path.isfile(sfile):
@@ -835,32 +886,34 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
         # sys.exit()
     f = open(sfile, 'w')
     # Write line 1 of s-file
-    f.write(' ' + str(evtime.year) + ' ' +
-            str(evtime.month).rjust(2) +
-            str(evtime.day).rjust(2) + ' ' +
-            str(evtime.hour).rjust(2) +
-            str(evtime.minute).rjust(2) + ' ' +
-            str(float(evtime.second)).rjust(4) + ' ' +
-            evtype + '1'.rjust(58) + '\n')
+    f.write(str(' ' + str(evtime.year) + ' ' +
+                str(evtime.month).rjust(2) +
+                str(evtime.day).rjust(2) + ' ' +
+                str(evtime.hour).rjust(2) +
+                str(evtime.minute).rjust(2) + ' ' +
+                str(float(evtime.second)).rjust(4) + ' ' +
+                evtype + '1'.rjust(58) + '\n'))
     # Write line 2 of s-file
-    f.write(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
-            str(datetime.datetime.now().month).zfill(2) + '-' +
-            str(datetime.datetime.now().day).zfill(2) + ' ' +
-            str(datetime.datetime.now().hour).zfill(2) + ':' +
-            str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
-            userID.ljust(4) + ' STATUS:'+'ID:'.rjust(18) +
-            str(evtime.year) +
-            str(evtime.month).zfill(2) +
-            str(evtime.day).zfill(2) +
-            str(evtime.hour).zfill(2) +
-            str(evtime.minute).zfill(2) +
-            str(evtime.second).zfill(2) +
-            'I'.rjust(6) + '\n')
+    f.write(str(' ACTION:ARG ' + str(datetime.datetime.now().year)[2:4] + '-' +
+                str(datetime.datetime.now().month).zfill(2) + '-' +
+                str(datetime.datetime.now().day).zfill(2) + ' ' +
+                str(datetime.datetime.now().hour).zfill(2) + ':' +
+                str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
+                userID.ljust(4) + ' STATUS:' + 'ID:'.rjust(18) +
+                str(evtime.year) +
+                str(evtime.month).zfill(2) +
+                str(evtime.day).zfill(2) +
+                str(evtime.hour).zfill(2) +
+                str(evtime.minute).zfill(2) +
+                str(evtime.second).zfill(2) +
+                'I'.rjust(6) + '\n'))
     # Write line 3 of s-file
-    f.write(' ' + wavefile + '6'.rjust(79-len(wavefile)) + '\n')
+    write_wavfile = wavefile.split(os.sep)[-1]
+    f.write(str(' ' + write_wavfile + '6'.rjust(79 - len(write_wavfile)) +
+                '\n'))
     # Write final line of s-file
-    f.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
-            ' VELO AIN AR TRES W  DIS CAZ7\n')
+    f.write(str(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
+                ' VELO AIN AR TRES W  DIS CAZ7\n'))
     f.close()
     print('Written s-file: ' + sfile)
     return sfile
@@ -896,6 +949,24 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         the WAV directory in your seisan install.  Because all lines need to \
         be less than 79 charecters long (fortran hangover) in the s-files, \
         you will need to determine whether the full-path is okay or not.
+
+    >>> import obspy
+    >>> # Note that this example shows how to download from GeoNet which
+    >>> # doesn't have full fdsn capability.
+    >>> if int(obspy.__version__.split('.')[0]) >= 1:
+    ...    from obspy.clients.fdsn import Client
+    ...    from obspy import read_events
+    ... else:
+    ...    from obspy.fdsn import Client
+    ...    from obspy import readEvents as read_events
+    >>> client = Client('GEONET')
+    >>> data_stream = client._download('http://quakeml.geonet.org.nz/' +\
+        'quakeml/1.2/2016p008122')
+    >>> close = data_stream.seek(0, 0)
+    >>> catalog = read_events(data_stream, format="quakeml")
+    >>> data_stream.close()
+    >>> eventtosfile(catalog[0], 'TEST', 'R', '.', ['DUMMY'], overwrite=True)
+    '04-0007-55R.S201601'
     """
     import datetime
     import os
@@ -920,9 +991,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         event = event
     else:
         raise IOError('Needs a single event')
-    if isinstance(wavefiles, str):
-        wavefiles = [wavefiles]
-    if isinstance(wavefiles, unicode):
+    if isinstance(wavefiles, string_types):
         wavefiles = [str(wavefiles)]
     elif isinstance(wavefiles, list):
         wavefiles = wavefiles
@@ -940,13 +1009,24 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         msg = 'event has an origin, but time is not populated.  ' +\
             'This is required!'
         raise ValueError(msg)
-    sfilename = evtime.datetime.strftime('%d-%H%M-%S') +\
-        evtype[0] + '.S' + evtime.datetime.strftime('%Y%m')
-    # Check that the file doesn't exist
-    if not overwrite and os.path.isfile(outdir + '/' + sfilename):
-        raise IOError(outdir + '/' + sfilename +
+    # Attempt to cope with possible pre-existing files
+    range_list = []
+    for i in range(30):  # Look +/- 30 seconds around origin time
+        range_list.append(i)
+        range_list.append(-1 * i)
+    range_list = range_list[1:]
+    for add_secs in range_list:
+        sfilename = (evtime + add_secs).datetime.strftime('%d-%H%M-%S') +\
+            evtype[0] + '.S' + (evtime + add_secs).datetime.strftime('%Y%m')
+        if not os.path.isfile(outdir + os.sep + sfilename):
+            sfile = open(outdir + os.sep + sfilename, 'w')
+            break
+        elif overwrite:
+            sfile = open(outdir + os.sep + sfilename, 'w')
+            break
+    else:
+        raise IOError(outdir + os.sep + sfilename +
                       ' already exists, will not overwrite')
-    sfile = open(outdir + '/' + sfilename, 'w')
     # Write the header info.
     if event.origins[0].latitude:
         if event.origins[0].latitude not in [float('NaN'), 999]:
@@ -972,6 +1052,9 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     if event.creation_info:
         try:
             agency = event.creation_info.get('agency_id')
+            # If there is creation_info this may not raise an error annoyingly
+            if agency is None:
+                agency = ''
         except AttributeError:
             agency = ''
     else:
@@ -1065,7 +1148,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     # Now call the populatesfile function
     if len(event.picks) > 0:
         populatesfile(outdir + '/' + sfilename, event)
-    return sfilename
+    return str(sfilename)
 
 
 def populatesfile(sfile, event):
@@ -1083,6 +1166,17 @@ def populatesfile(sfile, event):
     :param sfile: Path to S-file to populate, must have a header already
     :type event: :class: obspy.event.core.Catalog
     :param picks: A single event to be written to a single S-file.
+
+    >>> from eqcorrscan.utils.sfile_util import readwavename, blanksfile, \
+        readpicks
+    >>> sfile = blanksfile('eqcorrscan/tests/test_data/WAV/TEST_/' +\
+        '2013-09-01-0410-35.DFDPC_024_00', 'L', 'TEST', '.', overwrite=True)
+    Written s-file: ./01-0410-35L.S201309
+    >>> # Poor example, but we need an event, so we will use one we know is
+    >>> # associated with the event...
+    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +\
+        '01-0411-15L.S201309')
+    >>> populatesfile(sfile, event)
     """
     from obspy.core.event import Catalog, Event
     # first check that the event is only one event
@@ -1606,19 +1700,3 @@ def stationtoseisan(station):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
-# if __name__ == '__main__':
-#     # Read arguments
-#     import sys
-#     if len(sys.argv) != 6:
-#         print('Requires 5 arguments: wavefile, evtype, userID, outdir,'
-#               ' overwrite')
-#         sys.exit()
-#     else:
-#         wavefile = str(sys.argv[1])
-#         evtype = str(sys.argv[2])
-#         userID = str(sys.argv[3])
-#         outdir = str(sys.argv[4])
-#         overwrite = str(sys.argv[5])
-#     sfile = blanksfile(wavefile, evtype, userID, outdir, overwrite)
-#     print sfile

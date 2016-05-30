@@ -28,7 +28,7 @@ def _check_daylong(tr):
     :return qual: bool
     """
     import numpy as np
-    if len(tr.data)-len(np.nonzero(tr.data)) < 0.5*len(tr.data):
+    if len(tr.data) - len(np.nonzero(tr.data)) < 0.5 * len(tr.data):
         qual = False
     else:
         qual = True

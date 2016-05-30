@@ -49,6 +49,14 @@ def sactoevent(st, debug=0):
         stream - to ensure this works as you expect, please populate the \
         evla, evlo, evdp and nzyear, nzjday, nzhour, nzmin, nzsec, nzmsec \
         for all traces with the same values.
+
+    >>> from obspy import read, UTCDateTime
+    >>> st = read('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> event = sactoevent(st)
+    >>> print(event.origins[0].time)
+    2014-08-15T03:55:21.057000Z
+    >>> print(event.picks[0].phase_hint)
+    S
     """
     from obspy.core.event import Event, Origin, WaveformStreamID, Pick
     from obspy import Stream, UTCDateTime
@@ -173,3 +181,8 @@ def sactoevent(st, debug=0):
         event.picks.append(pick)
 
     return event
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

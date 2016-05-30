@@ -56,6 +56,29 @@ class TestCoreMethods(unittest.TestCase):
         ccc = normxcorr2(template, image)
         self.assertNotEqual(ccc.max(), 1.0)
 
+    def test_set_normxcorr2(self):
+        """Check that correlations output are the same irrespective of version.
+        """
+        import numpy as np
+        from eqcorrscan.core.match_filter import normxcorr2
+        from obspy import read
+        import os
+        import warnings
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        template = read(os.path.join(testing_path, 'test_template.ms'))
+        template = template[0].data.astype(np.float32)
+        image = read(os.path.join(testing_path, 'test_image.ms'))
+        image = image[0].data.astype(np.float32)
+        ccc = normxcorr2(template, image)[0]
+        expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
+        # We know that conda installs of openCV give a different results
+        # to source built - allow this and allow it to pass.
+        self.assertTrue((np.gradient(expected_ccc).round(2) ==
+                         np.gradient(ccc).round(2)).all())
+        if not (ccc == expected_ccc).all():
+            warnings.warn('The expected result was not achieved')
+
     def test_perfect_template_loop(self):
         """Check that perfect correlations are carried through.
         """

@@ -408,8 +408,8 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
         thresh = _rms(cum_net_resp) * threshold
     print('Threshold is set to: ' + str(thresh))
     print('Max of data is: ' + str(max(cum_net_resp)))
-    peaks = findpeaks.find_peaks2(cum_net_resp, thresh,
-                                  length * samp_rate, debug=0, maxwidth=10)
+    peaks = findpeaks.find_peaks2_short(cum_net_resp, thresh,
+                                        length * samp_rate, debug=0)
     detections = []
     if peaks:
         for peak in peaks:

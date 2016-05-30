@@ -24,11 +24,13 @@ def _check_save_args(save, savefile):
 
 
 def chunk_data(tr, samp_rate, state='mean'):
-    r"""Function to downsample data for plotting by computing the maximum of \
-    data within chunks, useful for plotting waveforms or cccsums, large \
-    datasets that would otherwise exceed the complexity allowed, and overflow.
+    r"""Downsample data for plotting.
 
-    :type tr: obspy.Trace
+    Computes the maximum of data within chunks, useful for plotting waveforms \
+    or cccsums, large datasets that would otherwise exceed the complexity \
+    allowed, and overflow.
+
+    :type tr: obspy.core.trace.Trace
     :param tr: Trace to be chunked
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
@@ -48,8 +50,8 @@ def chunk_data(tr, samp_rate, state='mean'):
     # chunksize isn't an even divisor of the total size.
     # (This part won't use _any_ additional memory)
     numchunks = int(y.size // chunksize)
-    ychunks = y[:chunksize*numchunks].reshape((-1, chunksize))
-    xchunks = x[:chunksize*numchunks].reshape((-1, chunksize))
+    ychunks = y[:chunksize * numchunks].reshape((-1, chunksize))
+    xchunks = x[:chunksize * numchunks].reshape((-1, chunksize))
 
     # Calculate the max, min, and means of chunksize-element chunks...
     if state == 'Max':
@@ -75,22 +77,20 @@ def chunk_data(tr, samp_rate, state='mean'):
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
                 savefile=None):
-    r"""Main function to make a triple plot with a day-long seismogram, \
-    day-long correlation sum trace and histogram of the correlation sum to \
-    show normality.
+    r"""Plot a day-long seismogram, correlogram and histogram.
 
     :type cccsum: numpy.ndarray
     :param cccsum: Array of the cross-channel cross-correlation sum
     :type cccsum_hist: numpy.ndarray
     :param cccsum_hist: cccsum for histogram plotting, can be the same as \
         cccsum but included if cccsum is just an envelope.
-    :type trace: obspy.Trace
+    :type trace: obspy.core.trace.Trace
     :param trace: A sample trace from the same time as cccsum
     :type threshold: float
     :param threshold: Detection threshold within cccsum
-    :type save: bool, optional
+    :type save: bool
     :param save: If True will save and not plot to screen, vice-versa if False
-    :type savefile: str, optional
+    :type savefile: str
     :param savefile: Path to save figure to, only required if save=True
 
     :returns: matplotlib.figure
@@ -98,7 +98,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
         print('cccsum is: ' +
-              str(len(cccsum))+' trace is: '+str(len(trace.data)))
+              str(len(cccsum)) + ' trace is: ' + str(len(trace.data)))
         msg = ' '.join(['cccsum and trace must have the',
                         'same number of data points'])
         raise ValueError(msg)
@@ -140,24 +140,53 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
                savefile=None):
-    r"""Simple utility code to plot the correlation peaks to check that the \
-    peak finding routine is running correctly, used in debugging for the \
-    EQcorrscan module.
+    r"""Plot peaks to check that the peak finding routine is running correctly.
+
+    Used in debugging for the EQcorrscan module.
 
     :type data: numpy.array
     :param data: Numpy array of the data within which peaks have been found
-    :type starttime: obspy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Start time for the data
     :type samp_rate: float
     :param samp_rate: Sampling rate of data in Hz
-    :type save: Boolean, optional
-    :param save: Save figure or plot to screen (False)
-    :type peaks: list of Tuple, optional
-    :param peaks: List of peak locations and amplitudes (loc, amp)
-    :type savefile: String, optional
+    :type save: bool
+    :param save: Save figure or plot to screen.
+    :type peaks: list
+    :param peaks: List of tuples of peak locations and amplitudes (loc, amp)
+    :type savefile: str
     :param savefile: Path to save to, only used if save=True
 
-    :returns: :class: matplotlib.figure
+    :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> import numpy as np
+    >>> from eqcorrscan.utils import findpeaks
+    >>> from eqcorrscan.utils.plotting import peaks_plot
+    >>> from obspy import UTCDateTime
+    >>> data = np.random.randn(200)
+    >>> data[30]=100
+    >>> data[60]=40
+    >>> threshold = 10
+    >>> peaks = findpeaks.find_peaks2_short(data, threshold, 3)
+    >>> peaks_plot(data=data, starttime=UTCDateTime("2008001"),
+    ...            samp_rate=10, peaks=peaks)  # doctest: +SKIP
+
+    .. plot::
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from eqcorrscan.utils import findpeaks
+        from eqcorrscan.utils.plotting import peaks_plot
+        from obspy import UTCDateTime
+        data = np.random.randn(200)
+        data[30]=100
+        data[60]=40
+        threshold = 10
+        peaks = findpeaks.find_peaks2_short(data, threshold, 3)
+        peaks_plot(data=data, starttime=UTCDateTime("2008001"),
+                   samp_rate=10, peaks=peaks)
     """
     _check_save_args(save, savefile)
     npts = len(data)
@@ -175,7 +204,6 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     fig.suptitle('Peaks')
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -183,14 +211,16 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
 def cumulative_detections(dates, template_names, show=False,
                           save=False, savefile=None):
-    r"""Simple plotting function to take a list of datetime objects and plot \
+    r"""Plot cumulative detections in time.
+
+    Simple plotting function to take a list of datetime objects and plot \
     a cumulative detections list.  Can take dates as a list of lists and will \
     plot each list seperately, e.g. if you have dates from more than one \
     template it will overlay them in different colours.
 
-    :type dates: list of lists of datetime.datetime
+    :type dates: list
     :param dates: Must be a list of lists of datetime.datetime objects
-    :type template_names: list of strings
+    :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type show: bool
     :param show: Wether or not to show the plot, defaults to False which will \
@@ -201,7 +231,31 @@ def cumulative_detections(dates, template_names, show=False,
     :param savefile: String to save to, required is save=True
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> import datetime as dt
+    >>> import numpy as np
+    >>> from eqcorrscan.utils.plotting import cumulative_detections
+    >>> dates = []
+    >>> for i in range(3):
+    ...     dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+    ...                   for n in np.random.randn(100)])
+    >>> cumulative_detections(dates, ['a', 'b', 'c'],
+    ...                       show=True) # doctest: +SKIP
+
+    .. plot::
+
+        import datetime as dt
+        import numpy as np
+        from eqcorrscan.utils.plotting import cumulative_detections
+        dates = []
+        for i in range(3):
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+                          for n in np.random.randn(100)])
+        cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """
+    import matplotlib.dates as mdates
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -218,7 +272,7 @@ def cumulative_detections(dates, template_names, show=False,
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         counts = np.arange(0, len(template_dates))
-        print(str(i)+' '+str(j)+' '+str(k))
+        print(str(i) + ' ' + str(j) + ' ' + str(k))
         ax1.plot(template_dates, counts, linestyles[j],
                  color=colors[i], label=template_names[k],
                  linewidth=3.0)
@@ -233,6 +287,39 @@ def cumulative_detections(dates, template_names, show=False,
     ax1.set_xlabel('Date')
     ax1.set_ylabel('Cumulative detections')
     plt.title('Cumulative detections for all templates')
+    # Set formatters for x-labels
+    mins = mdates.MinuteLocator()
+    max_date = dates[0][0]
+    min_date = max_date
+    for date_list in dates:
+        if max(date_list) > max_date:
+            max_date = max(date_list)
+        if min(date_list) < min_date:
+            min_date = min(date_list)
+    timedif = max_date - min_date
+    if timedif.total_seconds() >= 10800 and timedif.total_seconds() <= 25200:
+        print('Using quarter of an hour stamps')
+        hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
+    elif timedif.total_seconds() <= 1200:
+        print('Using 2 min stamps')
+        hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
+    elif timedif.total_seconds > 25200 and timedif.total_seconds() <= 172800:
+        print('Using hour stamps')
+        hours = mdates.HourLocator(byhour=range(0, 24, 3))
+    elif timedif.total_seconds() > 172800:
+        print('Using day stamps')
+        hours = mdates.DayLocator()
+        mins = mdates.HourLocator(byhour=range(0, 24, 3))
+    else:
+        print('Using 5 min stamps')
+        hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
+    hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
+    ax1.xaxis.set_major_locator(hours)
+    ax1.xaxis.set_major_formatter(hrFMT)
+    ax1.xaxis.set_minor_locator(mins)
+    plt.gcf().autofmt_xdate()
+    locs, labels = plt.xticks()
+    plt.setp(labels, rotation=15)
     ax1.legend(loc=2, prop={'size': 8}, ncol=2)
     if save:
         fig.savefig(savefile)
@@ -244,9 +331,9 @@ def cumulative_detections(dates, template_names, show=False,
 
 
 def threeD_gridplot(nodes, save=False, savefile=None):
-    r"""Function to plot in 3D a series of grid points.
+    r"""Plot in a series of grid points in 3D.
 
-    :type nodes: list of tuples
+    :type nodes: list
     :param nodes: List of tuples of the form (lat, long, depth)
     :type save: bool
     :param save: if True will save without plotting to screen, if False \
@@ -274,7 +361,6 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     ax.get_yaxis().get_major_formatter().set_scientific(False)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -285,11 +371,12 @@ def multi_event_singlechan(streams, catalog, station, channel,
                            freqmin=False, freqmax=False, realign=False,
                            cut=(-3.0, 5.0), PWS=False, title=False,
                            save=False, savefile=None):
-    r"""Function to plot data from a single channel at a single station for \
-    multiple events - data will be alligned by their pick-time given in the \
+    r"""Plot data from a single channel for multiple events.
+
+    Data will be alligned by their pick-time given in the \
     picks.
 
-    :type streams: list of :class:obspy.stream
+    :type streams: list
     :param streams: List of the streams to use, can contain more traces than \
         you plan on plotting - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
@@ -437,15 +524,13 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', save=False, savefile=None):
-    r"""Function to plot the stream of data that has been detected in, with\
-    the template on top of it timed according to a list of given times, just\
-    a pretty way to show a detection!
+    r"""Plot a stream of data with a template on top of it at detection  times.
 
-    :type stream: obspy.Stream
+    :type stream: obspy.core.stream.Stream
     :param stream: Stream of data to be plotted as the base (black)
-    :type template: obspy.Stream
+    :type template: obspy.core.stream.Stream
     :param template: Template to be plotted on top of the base stream (red)
-    :type times: list of datetime.datetime
+    :type times: list
     :param times: list of times of detections in the order of the channels in
                 template.
     :type streamcolour: str
@@ -513,7 +598,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
 
 def interev_mag_sfiles(sfiles, save=False, savefile=None):
-    r"""Function to plot interevent-time versus magnitude for series of events.
+    r"""Plot inter-event time versus magnitude for series of events.
+
     **thin** Wrapper for interev_mag.
 
     :type sfiles: list
@@ -537,12 +623,11 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
 
 
 def interev_mag(times, mags, save=False, savefile=None):
-    r"""Function to plot interevent times against magnitude for given times
-    and magnitudes.
+    r"""Plot inter-event times against magnitude.
 
-    :type times: list of datetime
+    :type times: list
     :param times: list of the detection times, must be sorted the same as mags
-    :type mags: list of float
+    :type mags: list
     :param mags: list of magnitudes
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -551,6 +636,32 @@ def interev_mag(times, mags, save=False, savefile=None):
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.plotting import interev_mag
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime('2012-03-26T00:00:00')
+    >>> t2 = t1 + (3 * 86400)
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+    >>> magnitudes = [event.preferred_magnitude().mag for event in catalog]
+    >>> times = [event.preferred_origin().time for event in catalog]
+    >>> interev_mag(times, magnitudes) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.plotting import interev_mag
+        client = Client('IRIS')
+        t1 = UTCDateTime('2012-03-26T00:00:00')
+        t2 = t1 + (3 * 86400)
+        catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+        magnitudes = [event.preferred_magnitude().mag for event in catalog]
+        times = [event.preferred_origin().time for event in catalog]
+        interev_mag(times, magnitudes)
     """
     _check_save_args(save, savefile)
     l = [(times[i], mags[i]) for i in xrange(len(times))]
@@ -584,12 +695,11 @@ def interev_mag(times, mags, save=False, savefile=None):
 
 
 def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
-    r"""Wrapper on threeD_seismplot() to plot obspy.Inventory and
-    obspy.Catalog classes in three dimensions.
+    r"""Plot obspy.Inventory and obspy.Catalog classes in three dimensions.
 
-    :type inventory: obspy.Inventory
+    :type inventory: obspy.core.inventory.inventory.Inventory
     :param inventory: Obspy inventory class containing station metadata
-    :type catalog: obspy.Catalog
+    :type catalog: obspy.core.event.catalog.Catalog
     :param catalog: Obspy catalog class containing event metadata
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -616,13 +726,14 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
 
 
 def threeD_seismplot(stations, nodes, save=False, savefile=None):
-    r"""Function to plot seismicity and stations in a 3D, movable, zoomable \
-    space using matplotlibs Axes3D package.
+    r"""Plot seismicity and stations in a 3D, movable, zoomable space.
 
-    :type stations: list of tuple
+    Uses matplotlibs Axes3D package.
+
+    :type stations: list
     :param stations: list of one tuple per station of (lat, long, elevation), \
         with up positive.
-    :type nodes: list of tuple
+    :type nodes: list
     :param nodes: list of one tuple per event of (lat, long, depth) with down \
         positive.
     :type save: bool
@@ -656,10 +767,12 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
 def pretty_template_plot(template, size=(10.5, 7.5), save=False,
                          savefile=None, title=False, background=False,
                          picks=False):
-    r"""Function to make a pretty plot of a single template, designed to work \
-    better than the default obspy plotting routine for short data lengths.
+    r"""Plot of a single template possibly within background data.
 
-    :type template: :class: obspy.Stream
+    Designed to work better than the default obspy plotting routine for \
+    short data lengths.
+
+    :type template: :class: obspy.core.stream.Stream
     :param template: Template stream to plot
     :type size: tuple
     :param size: tuple of plot size
@@ -669,12 +782,52 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     :param savefile: String to save plot as, required if save=True.
     :type title: bool
     :param title: String if set will be the plot title
-    :type background: :class: obspy.stream
+    :type background: :class: obspy.core.stream.stream
     :param background: Stream to plot the template within.
-    :type picks: list of obspy.core.event.pick
+    :type picks: list
     :param picks: List of obspy type picks.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.core import template_gen
+    >>> from eqcorrscan.utils.plotting import pretty_template_plot
+    >>> from eqcorrscan.utils import sfile_util
+    >>>
+    >>> test_file = 'eqcorrscan/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+    >>> test_wavefile = 'eqcorrscan/tests/test_data/WAV/TEST_/' +\
+    ...     '2013-09-01-0410-35.DFDPC_024_00'
+    >>> event = sfile_util.readpicks(test_file)
+    >>> st = read(test_wavefile)
+    >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
+    >>> for tr in st:
+    ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+    >>> template = template_gen._template_gen(event.picks, st, 2)
+    >>> pretty_template_plot(template, background=st,
+    ...                      picks=event.picks) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy import read
+        from eqcorrscan.core import template_gen
+        from eqcorrscan.utils.plotting import pretty_template_plot
+        from eqcorrscan.utils import sfile_util
+        import os
+        test_file = os.path.realpath('../../..') + \
+            '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+        test_wavefile = os.path.realpath('../../..') +\
+            '/tests/test_data/WAV/TEST_/' +\
+            '2013-09-01-0410-35.DFDPC_024_00'
+        event = sfile_util.readpicks(test_file)
+        st = read(test_wavefile)
+        st.filter('bandpass', freqmin=2.0, freqmax=15.0)
+        for tr in st:
+            tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+        template = template_gen._template_gen(event.picks, st, 2)
+        pretty_template_plot(template, background=st,
+                             picks=event.picks)
     """
     _check_save_args(save, savefile)
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
@@ -696,14 +849,14 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
             axis = axes
         delay = tr.stats.starttime - mintime
         y = tr.data
-        x = np.linspace(0, (len(y)-1) * tr.stats.delta, len(y))
+        x = np.linspace(0, (len(y) - 1) * tr.stats.delta, len(y))
         x += delay
         if background:
             btr = background.select(station=tr.stats.station,
                                     channel=tr.stats.channel)[0]
             bdelay = btr.stats.starttime - mintime
             by = btr.data
-            bx = np.linspace(0, (len(by)-1) * btr.stats.delta, len(by))
+            bx = np.linspace(0, (len(by) - 1) * btr.stats.delta, len(by))
             bx += bdelay
             axis.plot(bx, by, 'k', linewidth=1)
             template_line, = axis.plot(x, y, 'r', linewidth=1.1,
@@ -766,7 +919,6 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -774,16 +926,17 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,
             size=(18.5, 10), save=False, savefile=None, title=False):
-    r"""Function to plot the Network response alongside the streams used -\
-    highlights detection times in the network response.
+    r"""Plot Network response alongside the streams used.
 
-    :type stream: :class: obspy.Stream
+    Highlights detection times in the network response.
+
+    :type stream: :class: obspy.core.stream.Stream
     :param stream: Stream to plot
-    :type NR_stream: :class: obspy.Stream
+    :type NR_stream: :class: obspy.core.stream.Stream
     :param NR_stream: Stream for the network response
-    :type detections: list of datetime objects
+    :type detections: list
     :param detections: List of the detections
-    :type false_detections: list of datetime
+    :type false_detections: list
     :param false_detections: Either False (default) or list of false detection\
      times
     :type size: tuple
@@ -865,7 +1018,6 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         axes[0].set_title(title)
     if not save:
         plt.show()
-        plt.close()
     else:
         plt.savefig(savefile)
     return fig
@@ -873,14 +1025,16 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 
 def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
              savefile=None):
-    r"""Function to plot the singular vectors from the clustering routines, one\
-    plot for each stachan
+    r"""Plot singular vectors from the clustering routines.
 
-    :type SVStreams: list of :class:Obspy.Stream
+    One plot for each stachan.
+
+    :type SVStreams: list
     :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
             ordered by power, e.g. first singular vector in the first stream
-    :type SValues: list of float
-    :param SValues: List of the singular values corresponding to the SVStreams
+    :type SValues: list
+    :param SValues: List of floats of the singular values corresponding to \
+        the SVStreams
     :type stachans: list
     :param stachans: List of station.channel
     :type save: bool
@@ -927,11 +1081,11 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
                     savefile=None):
     r"""Plot multiple channels of data for real data and synthetic.
 
-    :type real_template: obspy.Stream
+    :type real_template: obspy.core.stream.Stream
     :param real_template: Stream of the real template
-    :type synthetic: obspy.Stream
+    :type synthetic: obspy.core.stream.Stream
     :param synthetic: Stream of synthetic template
-    :type channels: list of str
+    :type channels: list
     :param channels: List of tuples of (station, channel) to plot, default is\
             False, which plots all.
     :type save: bool
@@ -1000,8 +1154,9 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
 
 def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
              savefile=None):
-    r"""Function to make a frequency-magnitude histogram and cumulative \
-    density plot.  This can compute a b-value, but not a completeness at \
+    r"""Plot a frequency-magnitude histogram and cumulative density plot.
+
+    This can compute a b-value, but not a completeness at \
     the moment.  B-value is computed by linear fitting to section of curve \
     between completeness and max_mag.
 
@@ -1020,6 +1175,30 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.plotting import freq_mag
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime('2012-03-26T00:00:00')
+    >>> t2 = t1 + (3 * 86400)
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+    >>> magnitudes = [event.preferred_magnitude().mag for event in catalog]
+    >>> freq_mag(magnitudes, completeness=4, max_mag=7) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.plotting import freq_mag
+        client = Client('IRIS')
+        t1 = UTCDateTime('2012-03-26T00:00:00')
+        t2 = t1 + (3 * 86400)
+        catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+        magnitudes = [event.preferred_magnitude().mag for event in catalog]
+        freq_mag(magnitudes, completeness=4, max_mag=7)
     """
     _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
@@ -1051,8 +1230,8 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
              label='GR trend, b-value = ' + str(abs(fit[0]))[0:4] +
              '\n $M_C$ = ' + str(completeness))
     ax2.set_ylabel('$Log_{10}$ of cumulative density')
-    plt.xlim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 0.2])
-    plt.ylim([min(magnitudes) - 0.5, max(np.log10(cdf)) + 1.0])
+    plt.xlim([min(magnitudes) - 0.1, max(magnitudes) + 0.2])
+    plt.ylim([min(np.log10(cdf)) - 0.5, max(np.log10(cdf)) + 1.0])
     plt.legend(loc=2)
     if not save:
         plt.show()
@@ -1063,11 +1242,13 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
 
 def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
                tralpha=0.9, size=(10, 13), Fig=None, title=None, show=True):
-    r"""Wrapper for _spec_trace, take a stream or list of traces and plots \
+    r"""Wrapper for _spec_trace, plots data with spectrogram beneath.
+
+    Takes a stream or list of traces and plots \
     the trace with the spectra beneath it - this just does the overseeing to \
     work out if it needs to add subplots or not.
 
-    :type traces: either stream or list of traces
+    :type traces: list
     :param traces: Traces to be plotted, can be a single obspy.Stream, or a \
         list of obspy.Trace
     :type cmap: str
@@ -1090,6 +1271,20 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     :param show: To show plot or not, if false, will return Fig.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.plotting import spec_trace
+    >>> st = read()
+    >>> spec_trace(st, trc='white') # doctest: +SKIP
+
+    .. plot::
+
+        from obspy import read
+        from eqcorrscan.utils.plotting import spec_trace
+        st = read()
+        spec_trace(st, trc='white')
     """
     from obspy import Stream
     if isinstance(traces, Stream):
@@ -1133,9 +1328,10 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
 def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
                 tralpha=0.9, size=(10, 2.5), axes=None, title=None):
     r"""Function to plot a trace over that traces spectrogram.
+
     Uses obspys spectrogram routine.
 
-    :type trace: obspy.Trace
+    :type trace: obspy.core.trace.Trace
     :param trace: trace to plot
     :type cmap: str
     :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/

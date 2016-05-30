@@ -172,9 +172,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             raise ValueError("Trace: " + tr.stats.station +
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
-    catalog = sfile_util.readpicks(sfile)
+    event = sfile_util.readpicks(sfile)
     # Read the list of Picks for this event
-    picks = catalog[0].picks
+    picks = event.picks
     print("I have found the following picks")
     for pick in picks:
         print(' '.join([pick.waveform_id.station_code,
@@ -409,7 +409,7 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
+    r"""Function to generate templates from a SeisHub database. Must be given \
     an obspy.Catalog class and the SeisHub url as input. The function returns \
     a list of obspy.Stream classes containting steams for each desired \
     template.
@@ -500,15 +500,16 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
-    an obspy.Catalog class and the SeisHub url as input. The function returns \
-    a list of obspy.Stream classes containting steams for each desired \
+    r"""Function to generate templates from an FDSN client. Must be given \
+    an obspy.Catalog class and the client_id as input. The function returns \
+    a list of obspy.Stream classes containing steams for each desired \
     template.
 
     :type catalog: obspy.Catalog
     :param catalog: Catalog class containing desired template events
-    :type url: string
-    :param url: url of SeisHub database instance
+    :type client_id: string
+    :param client_id: Name of the client, either url, or Obspy \
+        mappable.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template\
             defaults file
@@ -562,7 +563,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correaltions.
+            # of resampling do not impinge on our cross-correlations.
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
@@ -595,6 +596,57 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         del st, st1
         temp_list.append(template)
     return temp_list
+
+
+def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
+                       plot=False, debug=0):
+    r"""Thin wrapper around _template_gen to generate multiple templates from \
+    one stream of continuous data.
+
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Events to extract templates for
+    :type st: obspy.core.Stream
+    :param st: Processed stream to extract from.
+    :type length: float
+    :param length: Length of template in seconds
+    :type swin: string
+    :param swin: P, S or all, defaults to all
+    :type prepick: float
+    :param prepick: Length in seconds to extract before the pick time \
+            default is 0.05 seconds
+    :type plot: bool
+    :param plot: To plot the template or not, default is True
+    :type debug: int
+    :param debug: Debug output level from 0-5.
+
+    :returns: list of :class: obspy.core.Stream newly cut templates
+
+    .. note:: By convention templates are generated with P-phases on the \
+        vertical channel and S-phases on the horizontal channels, normal \
+        seismograph naming conventions are assumed, where Z denotes vertical \
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
+        or not.  To this end we will **only** use Z channels if they have a \
+        P-pick, and will use one or other horizontal channels **only** if \
+        there is an S-pick on it.
+
+    .. warning:: If there is no phase_hint included in picks, and swin=all, \
+        all channels with picks will be used.
+    """
+    templates = []
+    for event in catalog:
+        picks = event.picks
+        for pick in picks:
+            if pick.time > st[0].stats.starttime and\
+               pick.time < st[0].stats.endtime:
+                continue
+            else:
+                picks.remove(pick)
+        if len(picks) > 0:
+            st_clip = st.copy()
+            template = _template_gen(picks, st_clip, length, swin,
+                                     prepick, plot, debug)
+            templates.append(template)
+    return templates
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,

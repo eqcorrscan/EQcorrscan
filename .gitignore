@@ -4,7 +4,6 @@
 .Spotlight-V100
 .Trashes
 .DS_Store
-*.ms
 *.buf
 *.hdr
 templates
@@ -24,3 +23,8 @@ pytest_runner*
 .coveralls.yml
 .coverage
 eqcorrscan/doc/_build
+eqcorrscan/doc/submodules/autogen
+station.dat
+*L.S??????
+*R.S??????
+.idea

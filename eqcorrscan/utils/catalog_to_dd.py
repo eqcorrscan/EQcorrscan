@@ -41,6 +41,9 @@ def _cc_round(num, dp):
     :param dp: Number of decimal places to round to.
 
     :returns: str
+
+    >>> _cc_round(0.25364, 2)
+    '0.25'
     """
     num = round(num, dp)
     num = '{0:.{1}f}'.format(num, dp)
@@ -58,6 +61,11 @@ def _av_weight(W1, W2):
     :param W2: Seisan input weight (0-4)
 
     :returns: str
+
+    >>> _av_weight(1, 4)
+    '0.3750'
+    >>> _av_weight(0, 0)
+    '1.0000'
     """
     if W1 == ' ':
         W1 = 1
@@ -88,6 +96,9 @@ def readSTATION0(path, stations):
     :param station: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
+
+    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2'])
+    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, 170.36038333333335, 95.0)]
     """
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
@@ -374,6 +385,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     corr_list = []
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
+    k_events = len(list(event_list))
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
@@ -394,7 +406,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 except:
                     continue
                     raise IOError("Couldn't find wavefile")
-        for j in range(i + 1, len(event_list)):
+        for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
             slave_event_id = event_list[j][0]
@@ -542,6 +554,11 @@ def read_phase(ph_file):
     :param ph_file: Phase file to read event info from.
 
     :returns: obspy.core.catlog
+
+    >>> from obspy.core.event.catalog import Catalog
+    >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
+    >>> isinstance(catalog, Catalog)
+    True
     """
     from obspy.core.event import Catalog
     ph_catalog = Catalog()
@@ -611,3 +628,8 @@ def _phase_to_event(event_text):
                                                     resource_id))
         ph_event.origins[0].arrivals[i].time_weight = float(pick[2])
     return ph_event
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

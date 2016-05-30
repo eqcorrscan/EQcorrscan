@@ -13,35 +13,32 @@ class TestImport(unittest.TestCase):
         i = 0
         try:
             import cv2  # NOQA
-        except:
-            if sys.info.major == 2:
-                print("You have not properly installed: cv2")
-                i += 1
-            else:
-                print("We haven't worked out how to install openCV for py3")
+        except ImportError:
+            print("You have not properly installed: cv2")
+            i += 1
         try:
             import joblib  # NOQA
-        except:
+        except ImportError:
             print("You have not properly installed: joblib")
             i += 1
         try:
             import numpy  # NOQA
-        except:
+        except ImportError:
             print("You have not properly installed: numpy")
             i += 1
         try:
             import matplotlib.pyplot  # NOQA
-        except:
+        except ImportError:
             print("You have not properly installed: matplotlib")
             i += 1
         try:
             import scipy  # NOQA
-        except:
+        except ImportError:
             print("You have not properly installed: scipy")
             i += 1
         try:
             from obspy import read  # NOQA
-        except:
+        except ImportError:
             print("You have not properly installed: obspy")
             i += 1
         self.assertEqual(i, 0)

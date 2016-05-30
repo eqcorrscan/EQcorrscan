@@ -39,14 +39,21 @@ def rt_time_log(logfile, startdate):
     import datetime as dt
     import re
     import os
+    import io
+    import warnings
     if os.name == 'nt':
-        f = open(logfile, 'rb')
+        f = io.open(logfile, 'rb')
     else:
-        f = open(logfile, 'r')
+        f = io.open(logfile, 'rb')
     phase_err = []
     lock = []
     # Extract all the phase errors
-    for line in f:
+    for line_binary in f:
+        try:
+            line = line_binary.decode("utf8", "ignore")
+        except UnicodeDecodeError:
+            warnings.warn('Cannot decode line, skipping')
+            continue
         if re.search("INTERNAL CLOCK PHASE ERROR", line):
             match = re.search("INTERNAL CLOCK PHASE ERROR", line)
             d_start = match.start() - 13
@@ -81,12 +88,19 @@ def rt_location_log(logfile):
     """
     import re
     import os
+    import warnings
     if os.name == 'nt':
         f = open(logfile, 'rb')
     else:
-        f = open(logfile, 'r')
+        f = open(logfile, 'rb')
     locations = []
-    for line in f:
+    for line_binary in f:
+        try:
+            line = line_binary.decode("utf8", "ignore")
+        except UnicodeDecodeError:
+            warnings.warn('Cannot decode line, skipping')
+            print(line_binary)
+            continue
         match = re.search("GPS: POSITION:", line)
         if match:
             # Line is of form:
@@ -105,7 +119,7 @@ def rt_location_log(logfile):
             elev_sign = loc[2][0]
             elev_unit = loc[2][-1]
             if not elev_unit == 'M':
-                raise NotImplementedError('Elevation is not in M')
+                raise NotImplementedError('Elevation is not in M: unit=' + elev_unit)
             elev = int(loc[2][1:-1])
             if elev_sign == '-':
                 elev *= -1
