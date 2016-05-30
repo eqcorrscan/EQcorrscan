@@ -25,7 +25,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import warnings
-import seaborn as sns
+# import seaborn as sns
 import matplotlib.pyplot as plt
 
 
@@ -420,8 +420,8 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
         if hasattr(detection, 'event'):
             new_event = detection.event
         else:
-            rid = ResourceIdentifier(id=detection.template_name + '_' +
-                                        str(detection.detect_time),
+            rid = ResourceIdentifier(id=detection.template_name + '_' +\
+                                        str(detection.detect_time.strftime('%Y%m%dT%H%M%S.%f')),
                                      prefix='smi:local')
             new_event = Event(resource_id=rid)
             cr_i = CreationInfo(author='EQcorrscan',
@@ -429,14 +429,16 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
             new_event.creation_info = cr_i
             thresh_str = 'threshold=' + str(detection.threshold)
             ccc_str = 'detect_val=' + str(detection.detect_val)
+            det_time_str = 'det_time=detection.detect_time'
             if detection.chans:
                 used_chans = 'channels used: ' + \
                              ' '.join([str(pair) for pair in detection.chans])
                 new_event.comments.append(Comment(text=used_chans))
             new_event.comments.append(Comment(text=thresh_str))
             new_event.comments.append(Comment(text=ccc_str))
+            new_event.comments.append(Comment(text=det_time_str))
         template = template_dict[detection.template_name]
-        temp_len = template[0].stats.npts * tr.stats.sampling_rate
+        temp_len = template[0].stats.npts * template[0].stats.sampling_rate
         if template.sort(['starttime'])[0].stats.starttime == detection.detect_time:
             print('Template %s detected itself at %s.' % (detection.template_name, str(detection.detect_time)))
             new_event.resource_id = ResourceIdentifier(id=detection.template_name + '_self',
@@ -464,6 +466,7 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
                                             shift_len=max_lag, full_xcorr=True)
             ccval = max(full_corr)
             index = np.argmax(full_corr) - max_lag
+            pk_str = 'ccval=' + str(ccval)
             if index == 0 or index == max_lag * 2:
                 msg = 'Correlation correction at max_lag. Consider increasing max_lag.'
                 warnings.warn(msg)
@@ -480,13 +483,18 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
             else:
                 print('Correlation at %s: %s not good enough to correct pick' % (sta, chan))
                 pick_tm = st_tr_pick
+            if tr.stats.channel[-1] in ['Z']:
+                phase_hint = 'P'
+            elif tr.stats.channel[-1] in ['N', 'E', '1', '2']:
+                phase_hint = 'S'
             wv_id = WaveformStreamID(network_code=tr.stats.network,
                                      station_code=tr.stats.station,
                                      channel_code=tr.stats.channel)
-            new_event.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+            new_event.picks.append(Pick(time=pick_tm, waveform_id=wv_id, phase_hint=phase_hint,
+                                        comments=[Comment(text=pk_str)]))
             if write_wav:
                     new_stream.append(st_tr.slice(starttime=pick_tm - extract_pre_pick,
-                                                  endtime=pick_tm + extract_pre_pick))
+                                                  endtime=pick_tm + extract_post_pick))
         # Append to new catalog
         new_cat += new_event
         if write_wav:
