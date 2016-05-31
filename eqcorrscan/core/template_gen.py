@@ -646,9 +646,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     >>> from eqcorrscan.core.template_gen import from_client
     >>> client = Client('NCEDC')
     >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
-    >>> # We are only taking five picks for this example to speed up the example,
+    >>> # We are only taking two picks for this example to speed up the example,
     >>> # note that you don't have to!
-    >>> catalog[0].picks = catalog[0].picks[0:5]
+    >>> catalog[0].picks = catalog[0].picks[0:2]
     >>> templates = from_client(catalog=catalog, client_id='NCEDC',
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
     ...                         filt_order=4, length=3.0, prepick=0.15,
@@ -673,7 +673,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         from eqcorrscan.core.template_gen import from_client
         client = Client('NCEDC')
         catalog = client.get_events(eventid='72572665', includearrivals=True)
-        catalog[0].picks = catalog[0].picks[0:5]
+        catalog[0].picks = catalog[0].picks[0:2]
         templates = from_client(catalog=catalog, client_id='NCEDC',
                                 lowcut=2.0, highcut=9.0, samp_rate=20.0,
                                 filt_order=4, length=3.0, prepick=0.15,
