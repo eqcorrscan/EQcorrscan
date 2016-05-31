@@ -7,6 +7,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
 from eqcorrscan.utils.sfile_util import eventtopick, picktoevent
+from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor
+from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
 import unittest
 
 
@@ -257,6 +259,35 @@ class TestSfileMethods(unittest.TestCase):
         self.assertTrue(np.isnan(test_event.origins[0].latitude))
         self.assertTrue(np.isnan(test_event.origins[0].longitude))
         self.assertTrue(np.isnan(test_event.origins[0].depth))
+
+    def test_mag_conv(self):
+        """Check that we convert magnitudes as we should!"""
+        magnitude_map = [('L', 'ML'),
+                         ('b', 'mB'),
+                         ('s', 'Ms'),
+                         ('S', 'MS'),
+                         ('W', 'MW'),
+                         ('G', 'MbLg'),
+                         ('C', 'Mc'),
+                         ]
+        for magnitude in magnitude_map:
+            self.assertEqual(magnitude[0], _evmagtonor(magnitude[1]))
+            self.assertEqual(_nortoevmag(magnitude[0]), magnitude[1])
+
+    def test_str_conv(self):
+        """Test the simple string conversions."""
+        self.assertEqual(_int_conv('albert'), 999)
+        self.assertEqual(_float_conv('albert'), 999.0)
+        self.assertEqual(_str_conv('albert'), 'albert')
+        self.assertEqual(_int_conv('1'), 1)
+        self.assertEqual(_float_conv('1'), 1.0)
+        self.assertEqual(_str_conv(1), '1')
+        self.assertEqual(_int_conv('1.0256'), 999)
+        self.assertEqual(_float_conv('1.0256'), 1.0256)
+        self.assertEqual(_str_conv(1.0256), '1.0256')
+
+
+
 
 def basic_test_event():
     """

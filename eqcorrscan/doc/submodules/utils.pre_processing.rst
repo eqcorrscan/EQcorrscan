@@ -12,7 +12,6 @@ pre_processing
        :toctree: autogen
        :nosignatures:
 
-       _check_daylong
        dayproc
        process
        shortproc

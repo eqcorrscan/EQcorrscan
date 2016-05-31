@@ -31,15 +31,16 @@ def _version_check():
 
 def sactoevent(st, debug=0):
     """
-    Function to convert SAC headers (picks only) to obspy event class. Picks \
+    Convert SAC headers (picks only) to obspy event class.
+    Picks \
     are taken from header values a, t[0-9].
 
-    :type st: obspy.core.Stream
+    :type st: obspy.core.stream.Stream
     :param st: Stream of waveforms including SAC headers.
     :type debug: int
     :pram debug: Debug level, larger number = more output.
 
-    :returns: obspy.core.Event
+    :returns: obspy.core.evebt.Event
 
     .. note:: This functionality is not supported for obspy versions below \
         1.0.0 as references times are not read in by SACIO, which are needed \

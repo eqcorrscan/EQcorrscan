@@ -532,7 +532,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', save=False, savefile=None):
-    r"""Plot a stream of data with a template on top of it at detection  times.
+    r"""Plot a stream of data with a template on top of it at detection times.
 
     :type stream: obspy.core.stream.Stream
     :param stream: Stream of data to be plotted as the base (black)
@@ -570,9 +570,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
             continue
         image = image.merge()[0]
         # Downsample if needed
-        if image.stats.sampling_rate > 20:
+        if image.stats.sampling_rate > 20 and image.stats.npts > 10000:
             image.decimate(int(image.stats.sampling_rate // 20))
-        if template_tr.stats.sampling_rate > 20:
             template_tr.decimate(int(template_tr.stats.sampling_rate // 20))
         # Get a list of datetime objects
         image_times = [image.stats.starttime.datetime +

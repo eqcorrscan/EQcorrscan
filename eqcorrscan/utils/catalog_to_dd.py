@@ -19,6 +19,10 @@ Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 
+.. todo: Change from forced seisan usage, to using obspy events.  This happens \
+    internally already, but the insides should be extracted and thin wrappers \
+    written for seisan.
+
 :copyright:
     Calum Chamberlain, Chet Hopp.
 
@@ -87,8 +91,8 @@ def _av_weight(W1, W2):
 
 def readSTATION0(path, stations):
     """
-    Function to read the STATION0.HYP file on the path given.  Outputs written
-    in station.dat file.
+    Read a Seisan STATION0.HYP file on the path given.
+    Outputs writtenin station.dat file.
 
     :type path: str
     :param path: Path to the STATION0.HYP file
@@ -143,7 +147,7 @@ def readSTATION0(path, stations):
 
 def sfiles_to_event(sfile_list):
     """
-    Function to write out an event.dat file of the events
+    Write an event.dat file from a list of Seisan events
 
     :type sfile_list: list
     :param sfile_list: List of s-files to sort and put into the database
@@ -167,9 +171,9 @@ def sfiles_to_event(sfile_list):
 
 def write_event(catalog):
     """
-    Function to write obspy.core.Catalog to a hypoDD format event.dat file.
+    Write obspy.core.event.Catalog to a hypoDD format event.dat file.
 
-    :type catalog: osbpy.core.Catalog
+    :type catalog: osbpy.core.event.Catalog
     :param catalog: A catalog of obspy events
     """
     f = open('event.dat', 'w')
@@ -198,12 +202,13 @@ def write_event(catalog):
 
 def write_catalog(event_list, max_sep=1, min_link=8):
     """
-    Function to write the dt.ct file needed by hypoDD - takes input event list
-    from write_event as a list of tuples of event id and sfile.  It will read
+    Generate a dt.ct for hypoDD for a series of events.
+    Takes input event list from write_event as a list of tuples of event
+    id and sfile.  It will read
     the pick information from the seisan formated s-file using the sfile_util
     utilities.
 
-    :type event_list: list of tuple
+    :type event_list: list
     :param event_list: List of tuples of event_id (int) and sfile (String)
     :type max_sep: float
     :param max_sep: Maximum seperation between event pairs in km
@@ -330,10 +335,14 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
                        coh_thresh=0.0, coherence_weight=True, plotvar=False):
     """
-    Function to write a dt.cc file for hypoDD input - takes an input list of
-    events and computes pick refienements by correlation.
+    Write a dt.cc file for hypoDD input for a given list of events.
 
-    :type event_list: list of tuple
+    Takes an input list of events and computes pick refinements by correlation.
+    Outputs two files, dt.cc and dt.cc2, each provides a different weight,
+    dt.cc uses weights of the cross-correlation, and dt.cc2 provides weights
+    as the square of the cross-correlation.
+
+    :type event_list: list
     :param event_list: List of tuples of event_id (int) and sfile (String)
     :type wavbase: str
     :param wavbase: Path to the seisan wave directory that the wavefiles in the
@@ -497,7 +506,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                                                   'freqmax':
                                                                   highcut},
                                                   plot=plotvar)
-                        # Get the differntial travel time using the
+                        # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
                         # This can occur in the obspy routine when the
@@ -522,11 +531,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 rjust(11) + _cc_round(weight, 3).rjust(8) +\
                                 ' ' + pick.phase_hint + '\n'
                             event_text2 += pick.waveform_id.station_code\
-                                .ljust(5).upper() +\
-                                _cc_round(correction, 3).rjust(11) +\
-                                _cc_round(weight, 3).rjust(8) +\
+                                .ljust(5) + _cc_round(correction, 3).\
+                                rjust(11) + _cc_round(weight**2, 3).rjust(8) +\
                                 ' ' + pick.phase_hint + '\n'
-
                             # links+=1
                         corr_list.append(cc * cc)
                     except:
@@ -548,12 +555,12 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
 
 def read_phase(ph_file):
     """
-    Function to read hypoDD phase files into catalog class.
+    Read hypoDD phase files into Obspy catalog class.
 
     :type ph_file: str
     :param ph_file: Phase file to read event info from.
 
-    :returns: obspy.core.catlog
+    :returns: obspy.core.event.catlog
 
     >>> from obspy.core.event.catalog import Catalog
     >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')

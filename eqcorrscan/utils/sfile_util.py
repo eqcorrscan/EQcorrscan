@@ -1,9 +1,6 @@
 """
-Part of the EQcorrscan module to read nordic format s-files and write them
-EQcorrscan is a python module designed to run match filter routines for
-seismology, within it are routines for integration to seisan and obspy.
-With obspy integration (which is necessary) all main waveform formats can be
-read in and output.
+Part of the EQcorrscan module to read nordic format s-files and write them.
+Maps between Nordic format and obspy Event objects.
 
 Note that these functions do not provide full functionality between quakeML
 and seisan s-files.  Currently (as of version 0.1.1) these only convert pick
@@ -16,10 +13,10 @@ and EVENTINFO classes, however these will be depreciated along with these
 classes for version 0.1.0.  Users should transition to using obspy.core.event
 classes as these have more support and functionality.
 
-We have not implimented any handling of focal mechanism solutions between
+We have not implemented any handling of focal mechanism solutions between
 the two formats.
 
-.. note:: Pick time-residauls are handled in event.origins[0].arrivals, with \
+.. note:: Pick time-residuals are handled in event.origins[0].arrivals, with \
     the arrival.pick_id linking the arrival (which contain calculated \
     information) with the pick.resource_id (where the pick contains only \
     physical measured information).
@@ -52,6 +49,8 @@ import warnings
 
 class PICK:
     """
+    Legacy class for handling pick information.
+
     Pick information for seisan implimentation, note all fields can be left\
     blank to obtain a default pick: picks have a print function which will\
     print them as they would be seen in an S-file.
@@ -208,6 +207,8 @@ class PICK:
 
 class EVENTINFO:
     """
+    Legacy class for handling event information.
+
     Header information for seisan events, again all fields can be left blank \
     for a default empty header.  The print function for header will print \
     important information, but not as seen in an S-file.
@@ -305,8 +306,8 @@ class EVENTINFO:
 
 def _int_conv(string):
     """
-    Convenience tool to convert from string to integer, if empty string \
-    return a 999 rather than an error.
+    Convenience tool to convert from string to integer.
+    If empty string return a 999 rather than an error.
 
     >>> _int_conv('12')
     12
@@ -322,8 +323,8 @@ def _int_conv(string):
 
 def _float_conv(string):
     """
-    Convenience tool to convert from string to float, if empty string return \
-    NaN rather than an error.
+    Convenience tool to convert from string to float.
+    If empty string return NaN rather than an error.
 
     >>> _float_conv('12')
     12.0
@@ -342,8 +343,8 @@ def _float_conv(string):
 
 def _str_conv(number, rounded=False):
     """
-    Convenience tool to convert a number, either float or into into a string, \
-    if the int is 999, or the float is NaN, returns empty string.
+    Convenience tool to convert a number, either float or int into a string.
+    If the int is 999, or the float is NaN, returns empty string.
 
     >>> _str_conv(12.3)
     '12.3'
@@ -370,8 +371,7 @@ def _str_conv(number, rounded=False):
 
 def _evmagtonor(mag_type):
     """
-    Convenience tool to switch from obspy event magnitude types to seisan \
-    syntax
+    Switch from obspy event magnitude types to seisan syntax.
 
     >>> _evmagtonor('mB')
     'b'
@@ -403,8 +403,7 @@ def _evmagtonor(mag_type):
 
 def _nortoevmag(mag_type):
     """
-    Convenience tool to switch from nordic type magnitude notation to obspy \
-    event magnitudes.
+    Switch from nordic type magnitude notation to obspy event magnitudes.
 
     >>> _nortoevmag('b')
     'mB'
@@ -431,7 +430,7 @@ def _nortoevmag(mag_type):
 
 def readheader(sfile):
     """
-    Function to read the header information from a seisan nordic format S-file.
+    Read header information from a seisan nordic format S-file.
     Returns an obspy.core.event.Catalog type: note this changed for version \
     0.1.0 from the inbuilt class types.
 
@@ -592,11 +591,12 @@ def readheader(sfile):
 
 def readpicks(sfile):
     """
-    Function to read pick information from the s-file and store this in an \
-    obspy.event.Catalog type.  This was changed for version 0.1.0 from using \
-    the inbuilt PICK class.
+    Read pick information from the s-file to an obspy.event.Catalog type.
 
-    :type sfile: String
+    .. note:: This was changed for version 0.1.0 from using the inbuilt \
+    PICK class.
+
+    :type sfile: str
     :param sfile: Path to sfile
 
     :return: obspy.core.event.Event
@@ -606,6 +606,8 @@ def readpicks(sfile):
     in s/deg and takeoff angle, which would require computation from the \
     values stored in seisan.  Multiple weights are also not supported in \
     Obspy.event.
+
+    .. rubric:: Example
 
     >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
     ...                   '01-0411-15L.S201309')
@@ -781,14 +783,15 @@ def readpicks(sfile):
 
 def readwavename(sfile):
     """
-    Convenience function to extract the waveform filename from the s-file, \
-    returns a list of waveform names found in the s-file as multiples can \
+    Extract the waveform filename from the s-file.
+    Returns a list of waveform names found in the s-file as multiples can \
     be present.
 
     :type sfile: str
     :param sfile: Path to the sfile
 
-    :returns: List of str
+    :returns: List of strings of wave paths
+    :rtype: list
 
     >>> readwavename('eqcorrscan/tests/test_data/REA/TEST_/' +
     ...              '01-0411-15L.S201309')
@@ -806,24 +809,23 @@ def readwavename(sfile):
 def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
                evtime=False):
     """
-    Module to generate an empty s-file with a populated header for a given \
-    waveform.
+    Generate an empty s-file with a populated header for a given waveform.
 
-    :type wavefile: String
+    :type wavefile: str
     :param wavefile: Wavefile to associate with this S-file, the timing of \
         the S-file will be taken from this file if evtime is not set.
-    :type evtype: String
-    :param evtype: L,R,D
-    :type userID: String
-    :param userID: 4-charectar SEISAN USER ID
-    :type outdir: String
+    :type evtype: str
+    :param evtype: Event type letter code, e.g. L, R, D
+    :type userID: str
+    :param userID: 4-character SEISAN USER ID
+    :type outdir: str
     :param outdir: Location to write S-file
-    :type overwrite: Bool
+    :type overwrite: bool
     :param overwrite: Overwrite an existing S-file, default=False
-    :type evtime: UTCDateTime
+    :type evtime: obspy.core.utcdatetime.UTCDateTime
     :param evtime: If given this will set the timing of the S-file
 
-    :returns: String, S-file name
+    :returns: str, S-file name
 
     >>> from eqcorrscan.utils.sfile_util import readwavename
     >>> import os
@@ -922,10 +924,9 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
 def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
                  overwrite=False):
     """
-    Function to take an obspy.event and write the relevant information to a \
-    nordic formatted s-file
+    Write an obspy.event to a nordic formatted s-file.
 
-    :type event: obspy.event.core.Event
+    :type event: obspy.core.event.Event
     :param event: A single obspy event
     :type userID: str
     :param userID: Up to 4 character user ID
@@ -934,7 +935,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         or D.
     :type outdir: str
     :param outdir: Path to directory to write to
-    :type wavefiles: list of str
+    :type wavefiles: list
     :param wavefiles: Waveforms to associate the sfile with
     :type explosion: bool
     :param explosion: Note if the event is an explosion, will be marked by an \
@@ -945,9 +946,9 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     :returns: str: name of sfile written
 
     .. note:: Seisan can find waveforms either by their relative or absolute \
-        path, or by looking for the file recursiuvely in directories within \
+        path, or by looking for the file recursively in directories within \
         the WAV directory in your seisan install.  Because all lines need to \
-        be less than 79 charecters long (fortran hangover) in the s-files, \
+        be less than 79 ccharacterslong (fortran hangover) in the s-files, \
         you will need to determine whether the full-path is okay or not.
 
     >>> import obspy
@@ -960,8 +961,8 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
     ...    from obspy.fdsn import Client
     ...    from obspy import readEvents as read_events
     >>> client = Client('GEONET')
-    >>> data_stream = client._download('http://quakeml.geonet.org.nz/' +\
-        'quakeml/1.2/2016p008122')
+    >>> data_stream = client._download('http://quakeml.geonet.org.nz/' +
+    ...                                'quakeml/1.2/2016p008122')
     >>> close = data_stream.seek(0, 0)
     >>> catalog = read_events(data_stream, format="quakeml")
     >>> data_stream.close()
@@ -1153,7 +1154,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
 
 def populatesfile(sfile, event):
     """
-    Module to populate a blank nordic format S-file with pick information, \
+    Populate a blank nordic format S-file with pick information.
     arguments required are the filename of the blank s-file and the picks \
     where picks is a dictionary of picks including station, channel, \
     impulsivity, phase, weight, polarity, time, coda, amplitude, peri, \
@@ -1164,18 +1165,18 @@ def populatesfile(sfile, event):
 
     :type sfile: str
     :param sfile: Path to S-file to populate, must have a header already
-    :type event: :class: obspy.event.core.Catalog
+    :type event: obspy.core.event.Catalog
     :param picks: A single event to be written to a single S-file.
 
-    >>> from eqcorrscan.utils.sfile_util import readwavename, blanksfile, \
-        readpicks
-    >>> sfile = blanksfile('eqcorrscan/tests/test_data/WAV/TEST_/' +\
-        '2013-09-01-0410-35.DFDPC_024_00', 'L', 'TEST', '.', overwrite=True)
+    >>> from eqcorrscan.utils.sfile_util import blanksfile, readpicks
+    >>> sfile = blanksfile('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...                    '2013-09-01-0410-35.DFDPC_024_00', 'L', 'TEST',
+    ...                    '.', overwrite=True)
     Written s-file: ./01-0410-35L.S201309
     >>> # Poor example, but we need an event, so we will use one we know is
     >>> # associated with the event...
-    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +\
-        '01-0411-15L.S201309')
+    >>> event = readpicks('eqcorrscan/tests/test_data/REA/TEST_/' +
+    ...                   '01-0411-15L.S201309')
     >>> populatesfile(sfile, event)
     """
     from obspy.core.event import Catalog, Event
@@ -1219,8 +1220,7 @@ def populatesfile(sfile, event):
 
 def eventtopick(event):
     """
-    Wrapper function to convert from obspy.core.event to legacy PICK and \
-    EVENT classes.
+    Wrapper to convert from obspy.core.event to legacy PICK and EVENT classes.
 
     :type event: obspy.core.event.Event
     :param event: A single obspy event
@@ -1328,12 +1328,12 @@ def eventtopick(event):
 
 def picktoevent(evinfo, picks):
     """
-    Wrapper function to convert from EVENTINFO and PICK classes to \
+    Wrapper to convert from EVENTINFO and PICK classes to \
     obspy.core.event.Event.
 
     :type evinfo: EVENTINFO
     :param evinfo: Event header info for a single event
-    :type picks: List of PICK
+    :type picks: list
     :param picks: List of picks associated with the event
 
     :returns: obspy.core.event.Event
@@ -1475,9 +1475,9 @@ def picktoevent(evinfo, picks):
 
 def nordpick(event):
     """
-    Function to print information from an obspy.event class to nordic format.
+    Format information from an obspy.event class to nordic string format.
 
-    :type event: :class: obspy.core.event.Event
+    :type event: obspy.core.event.Event
     :param event: A single obspy event.
 
     :returns: List of String
@@ -1654,8 +1654,7 @@ def nordpick(event):
 
 def stationtoseisan(station):
     """
-    Convert obspy station inventory to simple string to copy in to \
-    STATION0.HYP file for seisan locations.
+    Convert obspy inventory to string formatted for Seisan STATION0.HYP file.
 
     :type station: obspy.core.inventory.station.Station
     :param station: Inventory containing a single station.

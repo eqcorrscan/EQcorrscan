@@ -6,15 +6,12 @@ sfile_util
 
     .. comment to end block
 
-    Classes & Functions
-    -------------------
+    Functions
+    ---------
     .. autosummary::
        :toctree: autogen
        :nosignatures:
 
-       EVENTINFO
-       PICK
-       PICK.write
        blanksfile
        eventtopick
        eventtosfile

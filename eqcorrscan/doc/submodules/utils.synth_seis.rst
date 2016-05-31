@@ -13,8 +13,8 @@ synth_seis
        :nosignatures:
 
        generate_synth_data
-       SVD_sim
        seis_sim
+       SVD_sim
        template_grid
 
     .. comment to end block

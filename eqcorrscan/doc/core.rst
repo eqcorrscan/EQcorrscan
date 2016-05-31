@@ -1,22 +1,41 @@
 Core
 ====
 
-Core programs for the EQcorrscan project.  To be added: Lag calculation by
-cross-correlation to find optimum phase arrival picks for near-repeating
-earthquakes.
+Core routines of the EQcorrscan project.  These routines concern the
+large-scale matched-filter detection of near-repeating earthquakes.  For
+this to take place a series of templates must be generated: these templates can
+be created using the functions in **template_gen**, or you can generate them
+externally.  Templates in EQcorrscan are simply cut waveforms.  Because
+EQcorrscan relies on Obspy_, these waveforms can be any
+type readable by Obspy.  For simplicity, portability and data compression
+reasons, EQcorrscan currently stores templates on-disk as multiplexed
+miniseed files, where each file is a single template.
 
-bright_lights contains a series of functions to detect events using the
-brightness-based beamforming method of Frank et. al (2014).  This has been
+.. _Obspy: http://docs.obspy.org/
+
+**Brightness**
+
+bright_lights_ contains a series of functions to detect events using the
+brightness-based beamforming method of `Frank et. al (2014)`_.  This has been
 tested significantly, but has failed to detect events unambiguously in the
 central Southern Alps.  As such development of these functions has ceased.
 
-template_gen contains routines for cutting waveforms around picks for use as
-templates in match_filter.  Included in this are wrappers to directly read in
+.. _bright_lights: submodules/core.bright_lights.html
+.. _Frank et. al (2014): http://gji.oxfordjournals.org/content/197/2/1215.short
+
+**Template generation**
+
+template_gen_ contains routines for cutting waveforms around picks for use as
+templates in match_filter_.  Included in this are wrappers to directly read in
 Seisan formattaed pick files and waveforms associated with the picks, and
 generate templates from these.  There are also wrappers for quakeML events
 and catalogs, and seishub databases.
 
-match_filter contains the core routines for earthquake detection by
+.. _template_gen: submodules/core.template_gen.html
+
+**Matched-Filter**
+
+match_filter_ contains the core routines for earthquake detection by
 cross-correlation.  This is optimized for large-scale, multi-paralleled
 detection, with large numbers of templates.  Because we are unsure of your
 architecture we have not written functions for the top level of possible
@@ -27,6 +46,9 @@ a cluster running SLURM for job scheduling and handle multiple days using
 the batch job submission capability which distributes daily detections across
 multiple nodes.  This allows us to detect earthquakes through > 6 years of
 multi-channel data using > 600 templates in less than 36 hours.
+
+.. _match_filter: submodules/core.match_filter.html
+
 
 .. toctree::
    :maxdepth: 1

@@ -18,11 +18,11 @@ import numpy as np
 
 def linstack(streams, normalize=True):
     """
-    Function to compute the linear stack of a series of seismic streams of \
+    Compute the linear stack of a series of seismic streams of \
     multiplexed data.
 
-    :type streams: list of Streams
-    :param stream: List of streams to stack
+    :type streams: list
+    :param streams: List of streams to stack
     :type normalize: bool
     :param normalize: Normalize traces before stacking, normalizes by the RMS \
         amplitude.
@@ -55,11 +55,12 @@ def linstack(streams, normalize=True):
 
 def PWS_stack(streams, weight=2, normalize=True):
     """
-    Function to compute the phase weighted stack of a series of streams.
-    Recommend aligning the traces before stacking.
+    Compute the phase weighted stack of a series of streams.
 
-    :type streams: list of obspy.Stream
-    :param streams: List of Stream to stack
+    .. note:: It is recommended to align the traces before stacking.
+
+    :type streams: list
+    :param streams: List of obspy Streams to stack
     :type weight: float
     :param weight: Exponent to the phase stack used for weighting.
     :type normalize: bool
@@ -94,18 +95,17 @@ def PWS_stack(streams, weight=2, normalize=True):
 
 def align_traces(trace_list, shift_len, master=False):
     """
-    Function to allign traces relative to each other based on their \
-    cross-correlation value.
+    Align traces relative to each other based on their cross-correlation value.
 
-    :type trace_list: list of Traces
-    :param trace_list: List of traces to allign
+    :type trace_list: list
+    :param trace_list: List of traces to align
     :type shift_len: int
     :param shift_len: Length to allow shifting within in samples
-    :type master: obspy.Trace
+    :type master: obspy.core.trace.Trace
     :param master: Master trace to align to, if set to False will align to \
         the largest amplitude trace (default)
 
-    :returns: list of shifts for best allignment in seconds
+    :returns: list of shifts for best alignment in seconds
     """
     from obspy.signal.cross_correlation import xcorr
     from copy import deepcopy
