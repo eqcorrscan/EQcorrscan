@@ -656,9 +656,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     Fetching the following traces from NCEDC
     BG.CLV..DPZ
     BK.BKS.00.HHZ
-    BK.GASB.00.HHZ
-    BK.HAST.00.HHZ
-    BK.HATC.00.HHZ
     Pre-processing data for event: quakeml:nc.anss.org/Event/NC/72572665
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
