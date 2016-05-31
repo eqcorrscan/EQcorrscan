@@ -659,23 +659,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     Pre-processing data for event: quakeml:nc.anss.org/Event/NC/72572665
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
-    .. plot::
-
-        import obspy
-        if int(obspy.__version__.split('.')[0]) >= 1:
-            from obspy.clients.fdsn import Client
-        else:
-            from obspy.fdsn import Client
-        from obspy.core.event import Catalog
-        from eqcorrscan.core.template_gen import from_client
-        client = Client('NCEDC')
-        catalog = client.get_events(eventid='72572665', includearrivals=True)
-        catalog[0].picks = catalog[0].picks[0:2]
-        templates = from_client(catalog=catalog, client_id='NCEDC',
-                                lowcut=2.0, highcut=9.0, samp_rate=20.0,
-                                filt_order=4, length=3.0, prepick=0.15,
-                                swin='all')
-        templates[0].plot(equal_scale=False, size=(800,600))
+    .. figure:: ../../plots/template_gen.from_client.png
     """
     # This import section copes with namespace changes between obspy versions
     import obspy

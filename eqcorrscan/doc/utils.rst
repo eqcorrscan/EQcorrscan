@@ -17,6 +17,7 @@ there are now multiple options for location of events.
 .. toctree::
    :maxdepth: 1
 
+   submodules/utils.archive_read
    submodules/utils.clustering
    submodules/utils.plotting
    submodules/utils.findpeaks
