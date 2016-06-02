@@ -317,7 +317,8 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
 def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
     r"""Function to generate a template from a local quakeml file \
-    and an obspy.Stream object.
+    and an obspy.Stream object.\
+    Must have picks in quakeml file or will not work!\
 
     :type quakeml: string
     :param quakeml: QuakeML file containing pick information, can contain \
