@@ -487,7 +487,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
-                 tempdir=False, debug=0, plot_format='jpg',
+                 tempdir=False, debug=0, plot_format='png',
                  output_cat=False, extract_detections=False):
     """
     Main matched-filter detection function.
