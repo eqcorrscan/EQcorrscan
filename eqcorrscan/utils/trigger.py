@@ -16,9 +16,28 @@ from __future__ import unicode_literals
 from obspy.core.util import AttribDict
 
 class TriggerParameters(AttribDict):
-    """Base class for trigger parameters."""
-    defaults = {'station': '', 'channel': '', 'sta_len': 0.0, 'lta_len':0.0,
-                'thr_on': 0.0, 'thr_off': 0.0, 'lowcut': 0.0, 'highcut':0.0}
+    """Base class for trigger parameters.
+
+    ..rubric:: Example
+
+    >>> from eqcorrscan.utils.trigger import TriggerParameters
+    >>> defaults = TriggerParameters()
+    >>> defaults.station = 'TEST'
+    >>> # Or use dictionaries
+    >>> defaults['station'] = 'ALF'
+    >>> defaults = TriggerParameters({'station': 'TEST',
+    ...                               'channel': 'SHZ',
+    ...                               'sta_len': 0.3,
+    ...                               'lta_len': 10.0,
+    ...                               'thr_on': 10,
+    ...                               'thr_off': 3,
+    ...                               'lowcut': 2,
+    ...                               'highcut': 20})
+    >>> print(defaults.station)
+    TEST
+    """
+    defaults = {'station': '', 'channel': '', 'sta_len': 0.0, 'lta_len': 0.0,
+                'thr_on': 0.0, 'thr_off': 0.0, 'lowcut': 0.0, 'highcut': 0.0}
 
     def __init__(self, header={}):
         """
@@ -31,9 +50,13 @@ class TriggerParameters(AttribDict):
         if key in ['station', 'channel']:
             # Ensure these are string type
             value = str(value)
+        elif key in ['lowcut', 'highcut']:
+            if value:
+                value = float(value)
         else:
             value = float(value)
         if isinstance(value, dict):
+            print('Setting dict')
             super(TriggerParameters, self).__setitem__(key, AttribDict(value))
         else:
             super(TriggerParameters, self).__setitem__(key, value)
@@ -57,7 +80,7 @@ class TriggerParameters(AttribDict):
         return print_str
 
     def write(self, filename, append=True):
-        """Write the parameters to a file, uses json formatting.
+        """Write the parameters to a file as a human-readable series of dicts.
 
         :type filename: str
         :param filename: File to write to
@@ -92,6 +115,11 @@ def read_trigger_parameters(filename):
 
     :returns: List of parameters
     :rtype: list
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.trigger import read_trigger_parameters
+    >>> parameters = read_trigger_parameters('parameter_file.par') # doctest: +SKIP
     """
     import ast
     parameters = []
@@ -146,8 +174,13 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
     tr.detrend('simple')
     if despike:
         median_filter(tr)
-    tr.filter('bandpass', freqmin=parameter['lowcut'],
-              freqmax=parameter['highcut'])
+    if parameter['lowcut'] and parameter['highcut']:
+        tr.filter('bandpass', freqmin=parameter['lowcut'],
+                  freqmax=parameter['highcut'])
+    elif parameter['lowcut']:
+        tr.filter('highpass', freq=parameter['lowcut'])
+    elif parameter['highcut']:
+        tr.filter('lowpass', freq=parameter['highcut'])
     # find triggers for each channel using recursive_sta_lta
     df = tr.stats.sampling_rate
     cft = recursive_sta_lta(tr.data, int(parameter['sta_len'] * df),
@@ -202,6 +235,28 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
 
     :returns: List of triggers
     :rtype: list
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.trigger import TriggerParameters, network_trigger
+    >>> st = read("https://examples.obspy.org/" +
+    ...           "example_local_earthquake_3stations.mseed")
+    >>> parameters = []
+    >>> for tr in st:
+    ...    parameters.append(TriggerParameters({'station': tr.stats.station,
+    ...                                          'channel': tr.stats.channel,
+    ...                                          'sta_len': 0.5,
+    ...                                          'lta_len': 10.0,
+    ...                                          'thr_on': 10.0,
+    ...                                          'thr_off': 3.0,
+    ...                                          'lowcut': 2.0,
+    ...                                          'highcut': 15.0}))
+    >>> triggers = network_trigger(st=st, parameters=parameters,
+    ...                            thr_coincidence_sum=5, moveout=30,
+    ...                            max_trigger_length=60, despike=False)
+    Looking for coincidence triggers ...
+    Found 1 Coincidence triggers
     """
     from obspy import UTCDateTime
     import numpy as np
@@ -211,7 +266,8 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     triggers = []
     trace_ids = [tr.id for tr in st]
     trace_ids = dict.fromkeys(trace_ids, 1)
-    if debug < 3:
+    if debug > 3:
+        print('Not running in parallel')
         # Don't run in parallel
         for tr in st:
             triggers += _channel_loop(tr=tr, parameters=parameters,
@@ -298,3 +354,6 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     return coincidence_triggers
 
 
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

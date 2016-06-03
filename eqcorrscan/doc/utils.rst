@@ -29,5 +29,6 @@ there are now multiple options for location of events.
    submodules/utils.sfile_util
    submodules/utils.stacking
    submodules/utils.synth_seis
+   submodules/utils.trigger
    submodules/utils.catalog_to_dd
    submodules/utils.sac_util
