@@ -589,9 +589,58 @@ def readheader(sfile):
     return new_event
 
 
+def read_event(sfile):
+    """
+    Read all information from a Nordic formatted s-file.
+    Maps to readpicks and readheader to read origin and pick information,
+    outputs an obspy.core.event.Event.
+
+    :type sfile: str
+    :param sfile: Nordic formatted file to open and read from.
+
+    :returns: event
+    :rtype: obspy.core.event.Event.
+    """
+    event = readpicks(sfile)
+    return event
+
+
+def read_events(select_file):
+    """
+    Read a catalog of events from a Nordic formatted select file.
+    Generates a series of temporary files for each event in the select file.
+
+    :type select_file: str
+    :param select_file: Nordic formatted select.out file to open
+
+    :return: catalog of events
+    :rtype: obspy.core.event.Catalog
+    """
+    from obspy.core.event import Catalog
+    from tempfile import NamedTemporaryFile
+    import os
+
+    catalog = Catalog()
+    event_str = []
+    f = open(select_file, 'r')
+    for line in f:
+        if len(line.rstrip()) > 0:
+            event_str.append(line)
+        elif len(event_str) > 0:
+            # Write to a temporary file then read from it
+            tmp_sfile = NamedTemporaryFile(mode='w', delete=False)
+            for event_line in event_str:
+                tmp_sfile.write(event_line)
+            tmp_sfile.close()
+            catalog += read_event(tmp_sfile.name)
+            os.remove(tmp_sfile.name)
+            event_str = []
+    return catalog
+
+
 def readpicks(sfile):
     """
-    Read pick information from the s-file to an obspy.event.Catalog type.
+    Read all pick information from the s-file to an obspy.event.Catalog type.
 
     .. note:: This was changed for version 0.1.0 from using the inbuilt \
     PICK class.
