@@ -164,7 +164,10 @@ def write_event(catalog):
     f = open('event.dat', 'w')
     for i, event in enumerate(catalog):
         evinfo = event.preferred_origin()
-        Mag_1 = event.preferred_magnitude().mag or ' '
+        if event.preferred_magnitude():
+            Mag_1 = event.preferred_magnitude().mag
+        else:
+            Mag_1 = ' '
         if event.preferred_origin().time_errors:
             t_RMS = event.preferred_origin().time_errors.Time_Residual_RMS or ' '
         else:
@@ -214,7 +217,7 @@ def write_catalog(catalog, max_sep=1, min_link=8):
     fphase = open('phase.dat', 'w')
     stations = []
     evcount = 0
-    for i, master_event in catalog:
+    for i, master_event in enumerate(catalog):
         # master_sfile = master[1]
         # master_event_id = master[0]
         master_event_id = i
