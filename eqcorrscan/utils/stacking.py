@@ -96,6 +96,16 @@ def PWS_stack(streams, weight=2, normalize=True):
 def align_traces(trace_list, shift_len, master=False):
     """
     Align traces relative to each other based on their cross-correlation value.
+    Uses the obspy.signal.cross_correlation.xcorr function to find the optimum
+    shift to align traces relative to a master event.  Either uses a given
+    master to align traces, or uses the first trace in the list.
+    
+    .. Note:: The cross-correlation function may yield an error/warning
+        about shift_len being too large: this is raised by the
+        obspy.signal.cross_correlation.xcorr routine when the shift_len
+        is greater than half the length of either master or a trace, then
+        the correlation will not be robust.  We may switch to a different
+        correlation routine later.
 
     :type trace_list: list
     :param trace_list: List of traces to align
