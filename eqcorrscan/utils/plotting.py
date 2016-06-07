@@ -209,7 +209,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return fig
 
 
-def cumulative_detections(dates, template_names, show=False,
+def cumulative_detections(dates, template_names, show=False, plot_legend=True,
                           save=False, savefile=None):
     r"""Plot cumulative detections in time.
 
@@ -225,6 +225,9 @@ def cumulative_detections(dates, template_names, show=False,
     :type show: bool
     :param show: Wether or not to show the plot, defaults to False which will \
         return the axes for editing
+    :type plot_legend: bool
+    :param plot_legend: Specify whether to plot legend of template names. \
+        Defaults to True.
     :type save: bool
     :param save: Save figure or show to screen, optional
     :type savefile: str
@@ -308,7 +311,7 @@ def cumulative_detections(dates, template_names, show=False,
         hours = mdates.HourLocator(byhour=range(0, 24, 3))
     elif timedif.total_seconds() > 172800:
         print('Using day stamps')
-        hours = mdates.DayLocator()
+        hours = mdates.AutoDateLocator()
         mins = mdates.HourLocator(byhour=range(0, 24, 3))
     else:
         print('Using 5 min stamps')
@@ -316,11 +319,14 @@ def cumulative_detections(dates, template_names, show=False,
     hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
     ax1.xaxis.set_major_locator(hours)
     ax1.xaxis.set_major_formatter(hrFMT)
-    ax1.xaxis.set_minor_locator(mins)
+    # Minor locator overruns maxticks for ~year-long datasets
+    if timedif.total_seconds() < 172800:
+        ax1.xaxis.set_minor_locator(mins)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=15)
-    ax1.legend(loc=2, prop={'size': 8}, ncol=2)
+    if plot_legend:
+        ax1.legend(loc=2, prop={'size': 8}, ncol=2)
     if save:
         fig.savefig(savefile)
         plt.close()
