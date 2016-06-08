@@ -3,7 +3,7 @@ Functions to enable simple energy-base triggering in a network setting where \
 different stations have different noise parameters.
 
 :copyright:
-    Konstantinos Mikaelos, Calum Chamberlain, Chet Hopp.
+    Konstantinos Michailos, Calum Chamberlain, Chet Hopp.
 
 :license:
     GNU Lesser General Public License, Version 3
