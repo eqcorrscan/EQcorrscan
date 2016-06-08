@@ -256,6 +256,7 @@ class TestSfileMethods(unittest.TestCase):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         test_event = readpicks(os.path.join(testing_path, 'Sfile_no_header'))
+        print(test_event)
         self.assertTrue(np.isnan(test_event.origins[0].latitude))
         self.assertTrue(np.isnan(test_event.origins[0].longitude))
         self.assertTrue(np.isnan(test_event.origins[0].depth))

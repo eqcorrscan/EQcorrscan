@@ -586,6 +586,25 @@ def readheader(sfile):
     # convert the nordic notation of magnitude to more general notation
     for _magnitude in new_event.magnitudes:
         _magnitude.magnitude_type = _nortoevmag(_magnitude.magnitude_type)
+    # Set the useful things like preferred magnitude and preferred origin
+    new_event.preferred_origin_id = str(new_event.origins[0].resource_id)
+    if len(new_event.magnitudes) > 1:
+        try:
+            # Select moment first, then local, then
+            mag_filter = ['MW', 'Mw', 'ML', 'Ml', 'MB', 'Mb',
+                          'MS', 'Ms', 'Mc', 'MC']
+            _magnitudes = [(m.magnitude_type, m.resource_id)
+                           for m in new_event.magnitudes]
+            preferred_magnitude = sorted(_magnitudes,
+                                         key=lambda x: mag_filter.index(x[0]))
+            new_event.preferred_magnitude_id = str(preferred_magnitude[0][1])
+        except ValueError:
+            # If there is a magnitude not specified in filter
+            new_event.preferred_magnitude_id =\
+                str(new_event.magnitudes[0].resource_id)
+    elif len(new_event.magnitudes) == 1:
+        new_event.preferred_magnitude_id =\
+            str(new_event.magnitudes[0].resource_id)
     return new_event
 
 
