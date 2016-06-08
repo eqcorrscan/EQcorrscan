@@ -1207,6 +1207,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         magnitudes = [event.preferred_magnitude().mag for event in catalog]
         freq_mag(magnitudes, completeness=4, max_mag=7)
     """
+    from collections import Counter
     _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
     magnitudes.sort()
@@ -1219,15 +1220,23 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     ax1.set_ylim([0, max(n) + 0.5 * max(n)])
     plt.xlabel('Magnitude')
     # Now make the cumulative density function
-    cdf = np.arange(len(magnitudes)) / float(len(magnitudes))
-    cdf = ((cdf * -1.0) + 1.0) * len(magnitudes)
+    counts = Counter(magnitudes)
+    cdf = np.zeros(len(counts))
+    mag_steps = np.zeros(len(counts))
+    for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
+        mag_steps[i] = magnitude
+        if i > 0:
+            cdf[i] = cdf[i-1] + counts[magnitude]
+        else:
+            cdf[i] = counts[magnitude]
     ax2 = ax1.twinx()
-    ax2.scatter(magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
+    # ax2.scatter(magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
+    ax2.scatter(mag_steps, np.log10(cdf), c='k', marker='+', s=20, lw=2,
                 label='Magnitude cumulative density')
     # Now we want to calculate the b-value and plot the fit
     x = []
     y = []
-    for i, magnitude in enumerate(magnitudes):
+    for i, magnitude in enumerate(mag_steps):
         if magnitude >= completeness <= max_mag:
             x.append(magnitude)
             y.append(cdf[i])
