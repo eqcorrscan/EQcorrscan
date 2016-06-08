@@ -309,7 +309,13 @@ def SVD(stream_list):
         lengths = []
         for st in stream_list:
             tr = st.select(station=stachan.split('.')[0],
-                           channel=stachan.split('.')[1])[0]
+                           channel=stachan.split('.')[1])
+            if len(tr) > 0:
+                tr = tr[0]
+            else:
+                print(st)
+                warnings.warn('Stream does not contain ' + stachan)
+                continue
             lengths.append(len(tr.data))
         min_length = min(lengths)
         for stream in stream_list:
