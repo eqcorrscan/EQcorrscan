@@ -1208,9 +1208,17 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         freq_mag(magnitudes, completeness=4, max_mag=7)
     """
     from collections import Counter
+    import warnings
     _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
     magnitudes.sort()
+    # Check that there are no nans or infs
+    if np.isnan(magnitudes).any():
+        warnings.warn('Found nan values, removing them')
+        magnitudes = [mag for mag in magnitudes if not np.isnan(mag)]
+    if np.isinf(magnitudes).any():
+        warnings.warn('Found inf values, removing them')
+        magnitudes = [mag for mag in magnitudes if not np.isinf(mag)]
     fig, ax1 = plt.subplots()
     # Set up the bins, the bin-size could be a variables
     bins = np.arange(min(magnitudes), max(magnitudes), binsize)
