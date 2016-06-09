@@ -333,6 +333,9 @@ def SVD(stream_list):
                     chan_mat = chan[0].data
                 else:
                     chan_mat = np.vstack((chan_mat, chan[0].data))
+        if not len(chan_mat.shape) > 1:
+            warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
+            continue
         chan_mat = np.asarray(chan_mat)
         U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
         SValues.append(s)
