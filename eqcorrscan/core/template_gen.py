@@ -200,8 +200,14 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         if part == 'REA':
             part = 'WAV'
         new_path_parts.append(part)
+    main_wav_parts = []
+    for part in new_path_parts:
+        main_wav_parts.append(part)
+        if part == 'WAV':
+            break
+    mainwav = os.path.join(*main_wav_parts) + os.path.sep
     # * argument to allow .join() to accept a list
-    wavpath = os.path.join(*new_path_parts) + '/'
+    wavpath = os.path.join(*new_path_parts) + os.path.sep
     # In case of absolute paths (not handled with .split() --> .join())
     if sfile[0] == '/':
         wavpath = '/' + wavpath
@@ -211,9 +217,20 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             print(''.join(["I am going to read waveform data from: ", wavpath,
                            wavefile]))
         if 'st' not in locals():
-            st = obsread(wavpath + wavefile)
+            if os.path.isfile(wavpath + wavefile):
+                st = obsread(wavpath + wavefile)
+            elif os.path.isfile(wavefile):
+                st = obsread(wavefile)
+            else:
+                # Read from the main WAV directory
+                st = obsread(mainwav + wavefile)
         else:
-            st += obsread(wavpath + wavefile)
+            if os.path.isfile(wavpath + wavefile):
+                st += obsread(wavpath + wavefile)
+            elif os.path.isfile(wavefile):
+                st += obsread(wavefile)
+            else:
+                st += obsread(mainwav + wavefile)
     for tr in st:
         if tr.stats.sampling_rate < samp_rate:
             print('Sampling rate of data is lower than sampling rate asked ' +
