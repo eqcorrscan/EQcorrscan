@@ -167,22 +167,26 @@ def write_event(catalog):
         if event.preferred_magnitude():
             Mag_1 = event.preferred_magnitude().mag
         else:
-            Mag_1 = ' '
+            Mag_1 = '0.00'
         if event.preferred_origin().time_errors:
             t_RMS = event.preferred_origin().time_errors.Time_Residual_RMS or ' '
         else:
-            t_RMS = ' '
+            t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2)+'  ' +
                 str(evinfo.time.hour).rjust(2) +
                 str(evinfo.time.minute).zfill(2) +
                 str(evinfo.time.second).zfill(2) +
                 str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
-                str(evinfo.latitude).ljust(8, '0') + '   ' +
-                str(evinfo.longitude).ljust(8, '0') + '  ' +
-                str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
+                "{:8.4f}".format(evinfo.latitude) + '   ' +
+                # str(evinfo.latitude).ljust(8, '0') + '   ' +
+                "{:8.4f}".format(evinfo.longitude) + '  ' +
+                # str(evinfo.longitude).ljust(8, '0') + '  ' +
+                "{:9.4f}".format(evinfo.depth / 1000) + '   ' +
+                # str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
                 str(Mag_1) + '    0.00    0.00   ' +
-                str(t_RMS).ljust(4, '0') +
+                "{:4.2f}".format(t_RMS) +
+                # str(t_RMS).ljust(4, '0') +
                 str(i).rjust(11) + '\n')
     f.close()
     return
@@ -380,13 +384,14 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
         # master_sfile = master[1]
         # master_event_id = master[0]
         master_event_id = i
+        # print(i)
         # master_picks = sfile_util.readpicks(master_sfile).picks
         # master_event = sfile_util.readheader(master_sfile)
         master_picks = master_event.picks
         master_ori_time = master_event.preferred_origin().time
         master_location = (master_event.preferred_origin().latitude,
                            master_event.preferred_origin().longitude,
-                           master_event.preferred_origin().depth)
+                           master_event.preferred_origin().depth / 1000)
         master_stream = template_dict[master_event.resource_id]
         # master_wavefiles = sfile_util.readwavename(master_sfile)
         # masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
@@ -431,7 +436,7 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
             slave_ori_time = slave_event.preferred_origin().time
             slave_location = (slave_event.preferred_origin().latitude,
                               slave_event.preferred_origin().longitude,
-                              slave_event.preferred_origin().depth)
+                              slave_event.preferred_origin().depth / 1000)
             slave_stream = template_dict[slave_event.resource_id]
             if dist_calc(master_location, slave_location) > max_sep:
                 continue
@@ -531,7 +536,9 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue
+            print(links)
             if links >= min_link and phases > 0:
+                print('Writing to file')
                 f.write(event_text)
                 f2.write(event_text2)
     if plotvar:
@@ -540,4 +547,4 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
     # f.write('\n')
     f.close()
     f2.close()
-    return
+    return corr_list
