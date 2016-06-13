@@ -265,8 +265,6 @@ class ClusteringTestMethods(unittest.TestCase):
                          len(cat))
 
 
-
-
 if __name__ == '__main__':
     """
     Run core tests

@@ -288,7 +288,7 @@ class TestCatalogMethods(unittest.TestCase):
             write_correlations(event_list, wavbase, extract_len=2,
                                pre_pick=0.5, shift_len=0.2, lowcut=2.0,
                                highcut=10.0, max_sep=1, min_link=8,
-                               coh_thresh=0.0, plotvar=False)
+                               cc_thresh=0.0, plotvar=False)
         msg = 'Running ' + str(len(list(event_list))) + ' events took %s s' % t.secs
         print(msg)
         self.assertTrue(os.path.isfile('dt.cc'))

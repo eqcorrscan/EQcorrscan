@@ -40,7 +40,7 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     :type phaseout: str
     :param phaseout: What phase to return the lagtimes in
     :type ps_ratio: float
-    :param ps_ratio: p to s ratio for coversion
+    :param ps_ratio: p to s ratio for conversion
     :type lags_switch: bool
     :param lags_switch: Return lags or raw travel-times, if set to true will \
         return lags.
@@ -75,11 +75,11 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     for gridfile in gridfiles:
         print('     Reading slowness from: ' + gridfile)
         f = open(gridfile, 'r')
-        grid = csv.reader(f, delimiter=' ')
+        grid = csv.reader(f, delimiter=str(' '))
         traveltime = []
         nodes = []
         for row in grid:
-            nodes.append((row[0], row[1], row[2]))
+            nodes.append((float(row[0]), float(row[1]), float(row[2])))
             traveltime.append(float(row[3]))
         traveltime = np.array(traveltime)
         if not phase == phaseout:
@@ -100,11 +100,11 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
         # other one, e.g. for each station the grid must be the
         # same, hence allnodes=nodes
         f.close()
+    alllags = np.array(alllags)
     return stations_out, allnodes, alllags
 
 
-def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners,
-                   resolution):
+def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners):
     """
     Resample the lagtime grid to a given volume.
     For use if the grid from Grid2Time is too large or you want to run a
@@ -246,6 +246,8 @@ def _node_loop(stations, lags, stream, clip_level,
         should not be called directly.
     """
     import warnings
+    import os
+
     if plot:
         import matplotlib.pyplot as plt
         import obspy.Stream
@@ -322,8 +324,10 @@ def _node_loop(stations, lags, stream, clip_level,
     if not mem_issue:
         return (i, energy)
     else:
+        if not os.path.isdir('tmp' + str(instance)):
+            os.makedirs('tmp' + str(instance))
         np.save('tmp' + str(instance) + '/node_' + str(i), energy)
-        return (i, 'tmp' + str(instance) + '/node_' + str(i))
+        return (i, str('tmp' + str(instance) + '/node_' + str(i)))
 
 
 def _cum_net_resp(node_lis, instance=0):
@@ -411,8 +415,8 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     if peaks:
         for peak in peaks:
             node = nodes[peak[1]]
-            detections.append(DETECTION(node[0] + '_' + node[1] + '_' +
-                                        node[2], peak[1] / samp_rate,
+            detections.append(DETECTION(str(node[0]) + '_' + str(node[1]) + '_' +
+                                        str(node[2]), peak[1] / samp_rate,
                                         len(realstations), peak[0], thresh,
                                         'brightness', realstations))
     else:
@@ -439,7 +443,7 @@ def coherence(stream_in, stations=['all'], clip=False):
 
     :return: float - coherence, int number of channels used
     """
-    from match_filter import normxcorr2
+    from eqcorrscan.core.match_filter import normxcorr2
     stream = stream_in.copy()  # Copy the data before we remove stations
     # First check that all channels in stream have data of the same length
     maxlen = np.max([len(tr.data) for tr in stream])
@@ -481,7 +485,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                template_length, template_saveloc, coherence_thresh,
                coherence_stations=['all'], coherence_clip=False,
                gap=2.0, clip_level=100, instance=0, pre_pick=0.2,
-               plotsave=True, cores=1):
+               plotsave=True, cores=1, debug=0):
     """
     Calculate the brightness function for a single day.
     Written to calculate the brightness function for a single day of data, \
@@ -494,7 +498,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :param stations: List of station names from in the form where stations[i] \
         refers to nodes[i][:] and lags[i][:]
     :type nodes: list
-    :param nodes: List of node points where nodes[i] referes to stations[i] \
+    :param nodes: List of node points where nodes[i] refers to stations[i] \
         and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
         longitude in degrees, nodes[:][:][2] is depth in km.
     :type lags: numpy.ndarray
@@ -550,14 +554,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         plt.ioff()
-    # from joblib import Parallel, delayed
     from multiprocessing import Pool, cpu_count
     from copy import deepcopy
     from obspy import read as obsread
+    from obspy import Stream
     from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
     from obspy.core.event import EventDescription, CreationInfo, Comment
-    import obspy.Stream
-    import matplotlib.pyplot as plt
     from eqcorrscan.utils import plotting
     # Check that we actually have the correct stations
     realstations = []
@@ -586,7 +588,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     detections = []
     detect_lags = []
     parallel = True
-    plotvar = True
+    plotvar = False
     mem_issue = False
     # Loop through each node in the input
     # Linear run
@@ -675,7 +677,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_trace.stats.network = 'Z'
         cum_net_trace.stats.location = ''
         cum_net_trace.stats.starttime = stream[0].stats.starttime
-        cum_net_trace = obspy.Stream(cum_net_trace)
+        cum_net_trace = Stream(cum_net_trace)
         cum_net_trace += stream.select(channel='*N')
         cum_net_trace += stream.select(channel='*1')
         cum_net_trace.sort(['network', 'station', 'channel'])
@@ -713,9 +715,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                     detection.template_name.split('_')[2])
             print(node)
             # Look up node in nodes and find the associated lags
-            index = nodes.index(node)
+            index = nodes.index((float(node[0]), float(node[1]),
+                                 float(node[2])))
             detect_lags = lags[:, index]
-            ksta = Comment(text='Number of stations=' + len(detect_lags))
+            ksta = Comment(text='Number of stations=' + str(len(detect_lags)))
             event.origins.append(Origin())
             event.origins[0].comments.append(ksta)
             event.origins[0].time = copy_of_stream[0].stats.starttime +\
@@ -740,7 +743,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                                 pre_pick,
                                                 onset='emergent',
                                                 evalutation_mode='automatic'))
-            print('Generating template for detection: ' + str(j))
+            if debug > 0:
+                print('Generating template for detection: ' + str(j))
             template = (_template_gen(event.picks, copy_of_stream,
                         template_length, 'all'))
             template_name = template_saveloc + '/' +\
@@ -751,13 +755,14 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                           coherence_clip)
             coh_thresh = float(coherence_thresh[0]) - kchan / \
                 float(coherence_thresh[1])
+            coherant = False
             if temp_coher > coh_thresh:
                 template.write(template_name, format="MSEED")
                 print('Written template as: ' + template_name)
                 print('---------------------------------coherence LEVEL: ' +
                       str(temp_coher))
                 coherant = True
-            else:
+            elif debug > 0:
                 print('Template was incoherant, coherence level: ' +
                       str(temp_coher))
                 coherant = False
@@ -766,7 +771,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 templates.append(obsread(template_name))
                 nodesout += [node]
                 good_detections.append(detection)
-            else:
+            elif debug > 0:
                 print('No template for you')
     if plotvar:
         all_detections = [(cum_net_trace[-1].stats.starttime +
@@ -787,9 +792,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 cum_net_trace[0].stats.starttime.datetime.strftime('%Y%m%d') +\
                 '_NR_timeseries.pdf'
             plotting.NR_plot(cum_net_trace[0:-1],
-                             obspy.Stream(cum_net_trace[-1]),
+                             Stream(cum_net_trace[-1]),
                              detections=good_detections,
-                             size=(18.5, 10), save=savefile,
+                             size=(18.5, 10), save=True, savefile=savefile,
                              title='Network response')
     nodesout = list(set(nodesout))
     return templates, nodesout

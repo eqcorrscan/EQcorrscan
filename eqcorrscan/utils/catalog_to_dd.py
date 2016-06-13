@@ -200,7 +200,7 @@ def write_event(catalog):
     return
 
 
-def write_catalog(event_list, max_sep=1, min_link=8):
+def write_catalog(event_list, max_sep=8, min_link=8):
     """
     Generate a dt.ct for hypoDD for a series of events.
     Takes input event list from write_event as a list of tuples of event
@@ -332,8 +332,8 @@ def write_catalog(event_list, max_sep=1, min_link=8):
 
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
-                       lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0, coherence_weight=True, plotvar=False):
+                       lowcut=1.0, highcut=10.0, max_sep=8, min_link=8,
+                       cc_thresh=0.0, plotvar=False, debug=0):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -361,12 +361,12 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :param max_sep: Maximum seperation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
-    :type coherence_weight: bool
-    :param coherence_weight: Use coherence to weight the dt.cc file, or the \
-        raw cross-correlation value, defaults to false which uses the cross-\
-        correlation value.
+    :type cc_thresh: float
+    :param cc_thresh: Threshold to include cross-correlation results.
     :type plotvar: bool
     :param plotvar: To show the pick-correction plots, defualts to False.
+    :type debug: int
+    :param debug: Variable debug levels from 0-5, higher=more output.
 
     .. warning:: This is not a fast routine!
 
@@ -391,19 +391,24 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     import glob
     import warnings
 
+    warnings.filterwarnings(action="ignore",
+                            message="Maximum of cross correlation " +
+                                    "lower than 0.8: *")
     corr_list = []
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
     k_events = len(list(event_list))
     for i, master in enumerate(event_list):
         master_sfile = master[1]
+        if debug > 1:
+            print('Computing correlations for master: %s' % master_sfile)
         master_event_id = master[0]
         master_picks = sfile_util.readpicks(master_sfile).picks
         master_event = sfile_util.readheader(master_sfile)
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
-                           master_event.origins[0].depth)
+                           master_event.origins[0].depth / 1000.0)
         master_wavefiles = sfile_util.readwavename(master_sfile)
         masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
         if masterpath:
@@ -413,11 +418,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 try:
                     masterstream += read(os.join(wavbase, wavefile))
                 except:
-                    continue
                     raise IOError("Couldn't find wavefile")
+                    continue
         for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
+            if debug > 2:
+                print('Comparing to event: %s' % slave_sfile)
             slave_event_id = event_list[j][0]
             slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
@@ -429,10 +436,11 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                               ' ' + slave_sfile)
             if len(slave_wavefiles) > 1:
                 for wavefile in slave_wavefiles:
-                    # slavestream+=read(wavbase+'/*/*/'+wavefile)
                     try:
-                        slavestream += read(wavbase + '/' + wavefile)
-                    except:
+                        slavestream += read(wavbase + os.sep + wavefile)
+                    except IOError:
+                        print('No waveform found: %s'
+                              (wavbase + os.sep + wavefile))
                         continue
             # Write out the header line
             event_text = '#' + str(master_event_id).rjust(10) +\
@@ -444,8 +452,11 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth)
+                              slave_event.origins[0].depth / 1000.0)
             if dist_calc(master_location, slave_location) > max_sep:
+                if debug > 0:
+                    print('Seperation exceeds max_sep: %s' %
+                          (dist_calc(master_location, slave_location)))
                 continue
             links = 0
             phases = 0
@@ -467,7 +478,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         select(station=pick.waveform_id.station_code,
                                channel='*' +
                                pick.waveform_id.channel_code[-1])[0]
-                else:
+                elif debug > 1:
                     print('No waveform data for ' +
                           pick.waveform_id.station_code + '.' +
                           pick.waveform_id.channel_code)
@@ -519,11 +530,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         correction = (pick.time - master_ori_time) -\
                             (slave_pick.time + correction - slave_ori_time)
                         links += 1
-                        if cc * cc >= coh_thresh:
-                            if coherence_weight:
-                                weight = cc * cc
-                            else:
-                                weight = cc
+                        if cc >= cc_thresh:
+                            weight = cc
                             phases += 1
                             # added by Caro
                             event_text += pick.waveform_id.station_code.\
@@ -532,9 +540,14 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 ' ' + pick.phase_hint + '\n'
                             event_text2 += pick.waveform_id.station_code\
                                 .ljust(5) + _cc_round(correction, 3).\
-                                rjust(11) + _cc_round(weight**2, 3).rjust(8) +\
+                                rjust(11) +\
+                                _cc_round(weight * weight, 3).rjust(8) +\
                                 ' ' + pick.phase_hint + '\n'
+                            if debug > 3:
+                                print(event_text)
                             # links+=1
+                        else:
+                            print('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
                     except:
                         # Should warn here

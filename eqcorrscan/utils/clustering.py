@@ -760,7 +760,6 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     return groups
 
 
-
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     """
     Remove detections by changing the threshold.
@@ -773,7 +772,7 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     :type old_thresh: float
     :param old_thresh: Old threshold MAD multiplier
     :type new_thresh: float
-    :param new_thresh: New threhsold MAD multiplier
+    :param new_thresh: New threshold MAD multiplier
     :type chan_thresh: int
     :param chan_thresh: Minimum number of channels for a detection
 
