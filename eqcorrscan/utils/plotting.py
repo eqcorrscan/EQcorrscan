@@ -408,19 +408,6 @@ def multi_event_singlechan(streams, catalog, clip=10.0, pre_pick=2.0,
     return traces, clist
 
 
-def cluster_plot(catalog, stream_dict):
-    r"""Function to plot a catalog representing a cluster of events \
-    superimposed on top of each other
-
-    :type catalog: class: obspy.Catalog()
-    :param catalog: catalog of events to plot
-    :type stream_dict: dict
-    :param stream_dict: dictionary of obspy.Stream() classes keyed by \
-        event.ResourceIdentifier() classes for the events in the catalog.
-    """
-
-
-
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', plot_mode='single'):
     r"""Function to plot the stream of data that has been detected in, with\

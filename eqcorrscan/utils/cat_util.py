@@ -421,7 +421,7 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
             new_event = detection.event
         else:
             rid = ResourceIdentifier(id=detection.template_name + '_' +\
-                                        str(detection.detect_time.strftime('%Y%m%dT%H%M%S.%f')),
+                                        detection.detect_time.strftime('%Y%m%dT%H%M%S.%f'),
                                      prefix='smi:local')
             new_event = Event(resource_id=rid)
             cr_i = CreationInfo(author='EQcorrscan',
@@ -429,7 +429,7 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
             new_event.creation_info = cr_i
             thresh_str = 'threshold=' + str(detection.threshold)
             ccc_str = 'detect_val=' + str(detection.detect_val)
-            det_time_str = 'det_time=detection.detect_time'
+            det_time_str = 'det_time=%s' % str(detection.detect_time)
             if detection.chans:
                 used_chans = 'channels used: ' + \
                              ' '.join([str(pair) for pair in detection.chans])
@@ -479,7 +479,7 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
                 plt.close()
             if ccval > cc_thresh:
                 print('Threshold exceeded at %s: %s' % (sta, chan))
-                pick_tm = st_tr_pick + (index * tr.stats.sampling_rate)
+                pick_tm = st_tr_pick + (index / tr.stats.sampling_rate)
             else:
                 print('Correlation at %s: %s not good enough to correct pick' % (sta, chan))
                 pick_tm = st_tr_pick
@@ -498,7 +498,7 @@ def detections_2_cat(detections, template_dict, stream, temp_prepick, max_lag, c
         # Append to new catalog
         new_cat += new_event
         if write_wav:
-            filename = '%s%s_%s.mseed' % (write_wav, detection.template_name, detection.detect_time)
+            filename = '%s%s.mseed' % (write_wav, str(new_event.resource_id))
             print('Writing new stream for detection to %s' % filename)
             new_stream.write(filename, format='MSEED')
     return new_cat
