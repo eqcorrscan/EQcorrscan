@@ -488,7 +488,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='png',
-                 output_cat=False, extract_detections=False):
+                 output_cat=False, extract_detections=False,
+                 arg_check=True):
     """
     Main matched-filter detection function.
     Over-arching code to run the correlations of given templates with a \
@@ -545,6 +546,9 @@ def match_filter(template_names, template_list, st, threshold,
     :type extract_detections: bool
     :param extract_detections: Specifies whether or not to return a list of \
         streams, one stream per detection.
+    :type arg_check: bool
+    :param arg_check: Check arguments, defaults to True, but if running in \
+        bulk, and you are certain of your arguments, then set to False.
 
     :return: :class: 'DETECTIONS' detections for each channel formatted as \
         :class: 'obspy.UTCDateTime' objects.
@@ -579,10 +583,29 @@ def match_filter(template_names, template_list, st, threshold,
     import copy
     from eqcorrscan.utils import plotting
     from eqcorrscan.utils import findpeaks
-    from obspy import Trace, Catalog, UTCDateTime
+    from obspy import Trace, Catalog, UTCDateTime, Stream
     from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
     from obspy.core.event import Comment, WaveformStreamID
     import time
+
+    if arg_check:
+        # Check the arguments to be nice - if arguments wrong type the parallel
+        # output for the error won't be useful
+        if not type(template_names) == list:
+            raise IOError('template_names must be of type: list')
+        if not type(template_list) == list:
+            raise IOError('templates must be of type: list')
+        for template in template_list:
+            if not type(template) == Stream:
+                raise IOError(msg)
+                msg = 'template in template_list must be of type: ' +\
+                      'obspy.core.stream.Stream'
+        if not type(st) == Stream:
+            msg = 'st must be of type: obspy.core.stream.Stream'
+            raise IOError(msg)
+        if threshold_type not in ['MAD', 'absolute', 'av_chan_corr']:
+            msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
+            raise IOError(msg)
 
     # Copy the stream here because we will muck about with it
     stream = st.copy()
