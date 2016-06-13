@@ -46,6 +46,7 @@ def _cc_round(num, dp):
     num = '{0:.{1}f}'.format(num, dp)
     return num
 
+# XXX TODO THESE ALL NEED WRAPPERS FOR SEISAN FILE FORMATS
 
 def _av_weight(W1, W2):
     """
@@ -128,6 +129,30 @@ def readSTATION0(path, stations):
         f.write(line)
     f.close()
     return stalist
+
+
+def inv_to_sta(inventory):
+    """
+    Function to write the HypoDD station.dat input file from obspy.core.inventory object
+
+    :type inventory: obspy.core.inventory
+    :param inventory: Inventory of all necessary stations to write to station.dat
+    :return: List of tuples of station, lat, long, elevation
+    """
+    sta_list = []
+    for net in inventory:
+        stations = [(sta.code, sta.latitude, sta.longitude,
+                     sta.elevation / 1000 - sta.channels[0].depth / 1000)
+                    for sta in net]
+        sta_list += stations
+    f = open('station.dat', 'w')
+    for sta in sta_list:
+        line = ''.join([sta[0].ljust(5), _cc_round(sta[1], 4).ljust(10),
+                        _cc_round(sta[2], 4).ljust(10),
+                        _cc_round(sta[3], 4).rjust(7), '\n'])
+        f.write(line)
+    f.close()
+    return sta_list
 
 
 def sfiles_to_event(sfile_list):
@@ -222,6 +247,7 @@ def write_catalog(catalog, max_sep=1, min_link=8):
     stations = []
     evcount = 0
     for i, master_event in enumerate(catalog):
+        print(i)
         # master_sfile = master[1]
         # master_event_id = master[0]
         master_event_id = i
@@ -323,7 +349,7 @@ def write_catalog(catalog, max_sep=1, min_link=8):
 
 def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0, coherence_weight=True, plotvar=False):
+                       coh_thresh=0.0, coherence_weight=False, plotvar=False):
     """
     Function to write a dt.cc file for hypoDD input - takes an input list of
     events and computes pick refienements by correlation.
