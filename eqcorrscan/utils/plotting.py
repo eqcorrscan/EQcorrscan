@@ -561,10 +561,15 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     """
     _check_save_args(save, savefile)
     import datetime as dt
-    from obspy import UTCDateTime
+    from obspy import UTCDateTime, Stream
     # Sort before plotting
     template = template.sort()
-    ntraces = min(len(template, len(stream)))
+    # Only take traces that match in both
+    template_stachans = [(tr.stats.station, tr.stats.channel) for tr in template]
+    stream = Stream([tr for tr in stream
+                     if (tr.stats.station, tr.stats.channel) in template_stachans])
+    ntraces = min(len(template), len(stream))
+    print('Only plotting %s traces' % str(ntraces))
     fig, axes = plt.subplots(ntraces, 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
