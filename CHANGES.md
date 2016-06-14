@@ -25,7 +25,6 @@ requires you to specify the station and channel to plot.
 * Change docs to have one page per function.
 * Python 3.5 testing underway, all tests pass, but only testing about 65% of
 codebase.
-* Use tox for local testing.
 * Add io functions to match_filter to simplify detection handling including
 writing detections to catalog and to text file.
 * Stricter match_filter testing to enforce exactly the same result with a
@@ -36,6 +35,7 @@ and python 2.
 different parameters for individual stations - note only uses recursive
 sta-lta triggering at the moment.  Useful for template generations alongside
 pickers.
+* Added magnitude of completeness and b-value calculators to utils.mag_calc
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;

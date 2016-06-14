@@ -439,7 +439,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     try:
                         slavestream += read(wavbase + os.sep + wavefile)
                     except IOError:
-                        print('No waveform found: %s'
+                        print('No waveform found: %s' %
                               (wavbase + os.sep + wavefile))
                         continue
             # Write out the header line

@@ -1,7 +1,6 @@
 What's new
 ==========
 
-**Note: We are updating the namespace at the moment, you might find that your scripts break, but you should get a helpful error message telling you how to fix it.**
 
 Version 0.1.2
 -------------
@@ -20,6 +19,12 @@ Version 0.1.2
 * Add tests for stacking - PWS test needs more checks;
 * Add many examples to doc-strings, not complete though;
 * Change docs to have one page per function.
+* Python 3.5 testing underway, all tests pass, but only testing about 65% of codebase.
+* Add io functions to match_filter to simplify detection handling including writing detections to catalog and to text file.
+* Stricter match_filter testing to enforce exactly the same result with a variety of systems.
+* Add hack to template_gen tutorial to fix differences in sorting between python 3.x and python 2.
+* Added advanced network triggering routine from Konstantinos, allows different parameters for individual stations - note only uses recursive sta-lta triggering at the moment.  Useful for template generations alongside pickers.
+* Added magnitude of completeness and b-value calculators to utils.mag_calc
 
 Version 0.1.1
 -------------

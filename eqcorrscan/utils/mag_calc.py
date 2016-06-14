@@ -39,6 +39,162 @@ def dist_calc(loc1, loc2):
     return dist
 
 
+def calc_max_curv(magnitudes, plotvar=False):
+    """
+    Calculate the magnitude of completeness using the maximum curvature method.
+
+    :type magnitudes: list
+    :param magnitudes: List of magnitudes from which to compute the maximum \
+        curvature which will give an estimate of the magnitude of completeness \
+        given the assumption of a power-law scaling.
+    :type plotvar: bool
+    :param plotvar: Turn plotting on and off
+
+    :rtype: float
+    :return: Magnitude at maximum curvature
+
+    .. Note:: Should be used as a guide, often under-estimates Mc.  Personally\
+        not fond of this method.
+
+    .. rubric:: Example
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.mag_calc import calc_max_curv
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime('2012-03-26T00:00:00')
+    >>> t2 = t1 + (3 * 86400)
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+    >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
+    >>> calc_max_curv(magnitudes, plotvar=False)
+    3.6000000000000001
+    """
+    from collections import Counter
+    import matplotlib.pyplot as plt
+
+    counts = Counter(magnitudes)
+    df = np.zeros(len(counts))
+    mag_steps = np.zeros(len(counts))
+    grad = np.zeros(len(counts) - 1)
+    grad_points = grad.copy()
+    for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
+        mag_steps[i] = magnitude
+        df[i] = counts[magnitude]
+    for i, val in enumerate(df):
+        if i > 0:
+            grad[i-1] = (val - df[i-1]) / (mag_steps[i] - mag_steps[i-1])
+            grad_points[i-1] = mag_steps[i] - ((mag_steps[i] -
+                                                mag_steps[i-1]) / 2.0)
+    # Need to find the second order derivative
+    curvature = np.zeros(len(grad) - 1)
+    curvature_points = curvature.copy()
+    for i, _grad in enumerate(grad):
+        if i > 0:
+            curvature[i-1] = (_grad - grad[i-1]) / (grad_points[i] -
+                                                       grad_points[i-1])
+            curvature_points[i-1] = grad_points[i] - ((grad_points[i] -
+                                                       grad_points[i-1]) / 2.0)
+    if plotvar:
+        plt.scatter(mag_steps, df, c='k', label='Magnitude function')
+        plt.plot(mag_steps, df, c='k')
+        plt.scatter(grad_points, grad, c='r', label='Gradient')
+        plt.plot(grad_points, grad, c='r')
+        plt.scatter(curvature_points, curvature, c='g', label='Curvature')
+        plt.plot(curvature_points, curvature, c='g')
+        plt.legend()
+        plt.show()
+    return curvature_points[np.argmax(abs(curvature))]
+
+
+def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
+    """
+    Calculate the b-value for a range of completeness magnitudes.
+
+    Calculates a power-law fit to given magnitudes for each completeness
+    magnitude.  Plots the b-values and residuals for the fitted catalogue
+    against the completeness values. Computes fits using numpy.polyfit,
+    which uses a least-squares technique.
+
+    :type magnitudes: list
+    :param magnitudes: Magnitudes to compute the b-value for.
+    :type completeness: list
+    :param completeness: list of completeness values to comptue b-values for.
+    :type max_mag: float
+    :param max_mag: Maximum magnitude to attempt to fit in magnitudes.
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off.
+
+    :rtype: list
+    :return: List of tuples of (completeness, b-value, residual,\
+        number of magnitudes used)
+
+    .. rubric:: Example
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.mag_calc import calc_b_value
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime('2012-03-26T00:00:00')
+    >>> t2 = t1 + (3 * 86400)
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
+    >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
+    >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
+    ...                         plotvar=False)
+    >>> round(b_values[4][1])
+    1.0
+    """
+    from collections import Counter
+    import matplotlib.pyplot as plt
+
+    b_values = []
+    # Calculate the cdf for all magnitudes
+    counts = Counter(magnitudes)
+    cdf = np.zeros(len(counts))
+    mag_steps = np.zeros(len(counts))
+    for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
+        mag_steps[i] = magnitude
+        if i > 0:
+            cdf[i] = cdf[i-1] + counts[magnitude]
+        else:
+            cdf[i] = counts[magnitude]
+
+    if not max_mag:
+        max_mag = max(magnitudes)
+    for m_c in completeness:
+        if m_c >= max_mag or m_c >= max(magnitudes):
+            warnings.warn('Not computing completeness at %s, above max_mag' %
+                          str(m_c))
+            break
+        complete_mags = []
+        complete_freq = []
+        for i, mag in enumerate(mag_steps):
+            if mag >= m_c <= max_mag:
+                complete_mags.append(mag)
+                complete_freq.append(np.log10(cdf[i]))
+        if len(complete_mags) < 4:
+            warnings.warn('Not computing completeness above ' + str(m_c) +
+                          ', fewer than 4 events')
+            break
+        fit = np.polyfit(complete_mags, complete_freq, 1, full=True)
+        b_values.append((m_c, abs(fit[0][0]), abs(fit[1][0]),
+                         str(len(complete_mags))))
+    if plotvar:
+        fig, ax1 = plt.subplots()
+        b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
+        resid = ax1.scatter(zip(*b_values)[0], zip(*b_values)[2], c='r')
+        ax1.set_ylabel('b-value and residual')
+        plt.xlabel('Completeness magnitude')
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Number of events used in fit')
+        n_ev = ax2.scatter(zip(*b_values)[0], zip(*b_values)[3], c='g')
+        fig.legend((b_vals, resid, n_ev),
+                   ('b-values', 'residuals', 'number of events'),
+                   'lower right')
+        ax1.set_title('Possible completeness values')
+        plt.show()
+    return b_values
+
+
 def _sim_WA(trace, PAZ, seedresp, water_level):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.

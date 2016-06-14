@@ -1,5 +1,5 @@
-Magnitude calculation
-=====================
+Magnitude calculation - Unfinished
+==================================
 
 To be completed
 

@@ -14,6 +14,8 @@ mag_calc
 
        amp_pick_event
        amp_pick_sfile
+       calc_b_value
+       calc_max_curv
        dist_calc
        pick_db
        SVD_moments

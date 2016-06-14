@@ -135,6 +135,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
         plt.close()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -206,6 +207,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -369,6 +371,7 @@ def threeD_gridplot(nodes, save=False, savefile=None):
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -533,6 +536,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return traces, clist, fig
 
 
@@ -617,6 +621,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -714,6 +719,7 @@ def interev_mag(times, mags, save=False, savefile=None):
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -784,6 +790,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -944,6 +951,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -1043,6 +1051,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -1097,6 +1106,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
         else:
             plt.savefig(savefile.split('.') + '_stachan.' +
                         savefile.split('.')[-1])
+            plt.close()
     return fig
 
 
@@ -1172,6 +1182,7 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -1280,6 +1291,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         plt.show()
     else:
         plt.savefig(savefile)
+        plt.close()
     return fig
 
 
@@ -1364,6 +1376,7 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
         plt.suptitle(title)
     if show:
         plt.show()
+        plt.close()
     else:
         return Fig
 
@@ -1415,6 +1428,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     if not axes:
         Fig.set_size_inches(size)
         Fig.show()
+        Fig.close()
     else:
         return ax1, ax2
 

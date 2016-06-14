@@ -197,7 +197,7 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     node_indeces = [0]
     print("\n")
     print(len(nodes))
-    for i in xrange(1, len(nodes)):
+    for i in range(1, len(nodes)):
         if np.all(netdif[i][node_indeces]):
             node_indeces.append(i)
             nodes_out.append(nodes[i])
@@ -356,7 +356,7 @@ def _cum_net_resp(node_lis, instance=0):
         updated_indeces = np.argmax([cum_net_resp, node_energy], axis=0)
         temp = np.array([cum_net_resp, node_energy])
         cum_net_resp = np.array([temp[updated_indeces[j]][j]
-                                 for j in xrange(len(updated_indeces))])
+                                 for j in range(len(updated_indeces))])
         del temp, node_energy
         updated_indeces[updated_indeces == 1] = i
         indeces = updated_indeces
@@ -750,24 +750,24 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
             # In the interests of RAM conservation we write then read
-            # Check coherancy here!
+            # Check coherency here!
             temp_coher, kchan = coherence(template, coherence_stations,
                                           coherence_clip)
             coh_thresh = float(coherence_thresh[0]) - kchan / \
                 float(coherence_thresh[1])
-            coherant = False
+            coherent = False
             if temp_coher > coh_thresh:
                 template.write(template_name, format="MSEED")
                 print('Written template as: ' + template_name)
                 print('---------------------------------coherence LEVEL: ' +
                       str(temp_coher))
-                coherant = True
+                coherent = True
             elif debug > 0:
                 print('Template was incoherant, coherence level: ' +
                       str(temp_coher))
-                coherant = False
+                coherent = False
             del copy_of_stream, tr, template
-            if coherant:
+            if coherent:
                 templates.append(obsread(template_name))
                 nodesout += [node]
                 good_detections.append(detection)

@@ -30,33 +30,50 @@ documentation.  Ideally we would like to have one test for every function!
 
 Installation
 ------------
-A fresh install should be as simple as:
+
+In general we recommend users to install EQcorrscan in a virtual environment,
+for this the virtualenvwrapper package is handy.
+
+Within a virtual environment, a fresh install should be as simple as:
 
 **pip install eqcorrscan**
 
 Most codes should work without any effort on your part.  However you may need to
 install the openCV-python package yourself.
 
-On Linux:
+On Linux with Python 2.7:
 
 **apt-get install python-opencv**
 
-On OSX:
+On OSX with Python 2.7:
 
 **port install py27-numpy**
 **port install opencv +python27**
 or
 **brew install opencv**
 
-Note you may have issues with homebrew if you don't have numpy installed: but if
+You can also install from source; for Python 3 this is a must as you will have
+to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
+|cv3_ubuntu|.
+
+.. |pyimagesearch| raw:: html
+
+   <a href="http://www.pyimagesearch.com/" target="_blank">pyimagesearch</a>
+
+.. |cv3_ubuntu| raw:: html
+
+   <a href="http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/" target="_blank">install cv3 on ubuntu</a>
+
+On Windows you can follow nice instructions |windows_opencv|.
+
+.. |windows_opencv| raw:: html
+
+   <a href="http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0" target="_blank">here</a>
+
+Note you may have issues with these installs if you don't have numpy installed: but if
 you don't have numpy installed then you have bigger issues...
 
-This install has only been tested on Linux and OSX machines.  You
-should be prepared for small differences in the results of your correlations
-relating to floating-point truncation differences between 32 and 64-Bit
-machines.
-
-If you plan to run the bright_lights or generating a synthetic grid of
+If you plan to run the *bright_lights* or generating a synthetic grid of
 templates you will need to have grid csv files, which the authors have
 previously used NonLinLoc to generate.  This is not provided here and should
 be sourced from |NLLoc_link|. This will provide
@@ -72,8 +89,11 @@ required to give.
 Supported environments
 ----------------------
 
-We support Linux, OSX and Windows environments running Python 2.7.  We
-do not yet support Python 3.x, but we are working on it!
+We support Linux, OSX and Windows environments running Python 2.7 and 3.5.
+We don't run our tests on other versions of Python so you might have some issues
+with other Python 3.x series, if you do, let us know.
+
+We do **not** support Python 2.6.
 
 
 Functions

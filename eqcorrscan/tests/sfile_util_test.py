@@ -6,9 +6,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
-from eqcorrscan.utils.sfile_util import eventtopick, picktoevent
 from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor
 from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
+from eqcorrscan.utils.sfile_util import read_event, read_events
 import unittest
 
 
@@ -173,60 +173,60 @@ class TestSfileMethods(unittest.TestCase):
         #     test_cat[0].amplitudes[0].waveform_id
 
         # Test the wrappers for PICK and EVENTINFO classes
-        picks, evinfo = eventtopick(test_cat)
-        # Test the conversion back
-        conv_cat = Catalog()
-        conv_cat.append(picktoevent(evinfo, picks))
-        self.assertEqual(conv_cat[0].picks[0].time, test_cat[0].picks[0].time)
-        self.assertEqual(conv_cat[0].picks[0].backazimuth,
-                         test_cat[0].picks[0].backazimuth)
-        self.assertEqual(conv_cat[0].picks[0].onset,
-                         test_cat[0].picks[0].onset)
-        self.assertEqual(conv_cat[0].picks[0].phase_hint,
-                         test_cat[0].picks[0].phase_hint)
-        self.assertEqual(conv_cat[0].picks[0].polarity,
-                         test_cat[0].picks[0].polarity)
-        self.assertEqual(conv_cat[0].picks[0].waveform_id.station_code,
-                         test_cat[0].picks[0].waveform_id.station_code)
-        self.assertEqual(conv_cat[0].picks[0].waveform_id.channel_code[-1],
-                         test_cat[0].picks[0].waveform_id.channel_code[-1])
-        # self.assertEqual(read_cat[0].origins[0].resource_id,
-        #                  test_cat[0].origins[0].resource_id)
-        self.assertEqual(conv_cat[0].origins[0].time,
-                         test_cat[0].origins[0].time)
-        # Note that time_residuel_RMS is not a quakeML format
-        self.assertEqual(conv_cat[0].origins[0].longitude,
-                         test_cat[0].origins[0].longitude)
-        self.assertEqual(conv_cat[0].origins[0].latitude,
-                         test_cat[0].origins[0].latitude)
-        self.assertEqual(conv_cat[0].origins[0].depth,
-                         test_cat[0].origins[0].depth)
-        self.assertEqual(conv_cat[0].magnitudes[0].mag,
-                         test_cat[0].magnitudes[0].mag)
-        self.assertEqual(conv_cat[0].magnitudes[1].mag,
-                         test_cat[0].magnitudes[1].mag)
-        self.assertEqual(conv_cat[0].magnitudes[2].mag,
-                         test_cat[0].magnitudes[2].mag)
-        self.assertEqual(conv_cat[0].magnitudes[0].creation_info,
-                         test_cat[0].magnitudes[0].creation_info)
-        self.assertEqual(conv_cat[0].magnitudes[1].creation_info,
-                         test_cat[0].magnitudes[1].creation_info)
-        self.assertEqual(conv_cat[0].magnitudes[2].creation_info,
-                         test_cat[0].magnitudes[2].creation_info)
-        self.assertEqual(conv_cat[0].magnitudes[0].magnitude_type,
-                         test_cat[0].magnitudes[0].magnitude_type)
-        self.assertEqual(conv_cat[0].magnitudes[1].magnitude_type,
-                         test_cat[0].magnitudes[1].magnitude_type)
-        self.assertEqual(conv_cat[0].magnitudes[2].magnitude_type,
-                         test_cat[0].magnitudes[2].magnitude_type)
-        self.assertEqual(conv_cat[0].event_descriptions,
-                         test_cat[0].event_descriptions)
-        # self.assertEqual(read_cat[0].amplitudes[0].resource_id,
-        #                  test_cat[0].amplitudes[0].resource_id)
-        self.assertEqual(conv_cat[0].amplitudes[0].period,
-                         test_cat[0].amplitudes[0].period)
-        self.assertEqual(conv_cat[0].amplitudes[0].snr,
-                         test_cat[0].amplitudes[0].snr)
+        # picks, evinfo = eventtopick(test_cat)
+        # # Test the conversion back
+        # conv_cat = Catalog()
+        # conv_cat.append(picktoevent(evinfo, picks))
+        # self.assertEqual(conv_cat[0].picks[0].time, test_cat[0].picks[0].time)
+        # self.assertEqual(conv_cat[0].picks[0].backazimuth,
+        #                  test_cat[0].picks[0].backazimuth)
+        # self.assertEqual(conv_cat[0].picks[0].onset,
+        #                  test_cat[0].picks[0].onset)
+        # self.assertEqual(conv_cat[0].picks[0].phase_hint,
+        #                  test_cat[0].picks[0].phase_hint)
+        # self.assertEqual(conv_cat[0].picks[0].polarity,
+        #                  test_cat[0].picks[0].polarity)
+        # self.assertEqual(conv_cat[0].picks[0].waveform_id.station_code,
+        #                  test_cat[0].picks[0].waveform_id.station_code)
+        # self.assertEqual(conv_cat[0].picks[0].waveform_id.channel_code[-1],
+        #                  test_cat[0].picks[0].waveform_id.channel_code[-1])
+        # # self.assertEqual(read_cat[0].origins[0].resource_id,
+        # #                  test_cat[0].origins[0].resource_id)
+        # self.assertEqual(conv_cat[0].origins[0].time,
+        #                  test_cat[0].origins[0].time)
+        # # Note that time_residuel_RMS is not a quakeML format
+        # self.assertEqual(conv_cat[0].origins[0].longitude,
+        #                  test_cat[0].origins[0].longitude)
+        # self.assertEqual(conv_cat[0].origins[0].latitude,
+        #                  test_cat[0].origins[0].latitude)
+        # self.assertEqual(conv_cat[0].origins[0].depth,
+        #                  test_cat[0].origins[0].depth)
+        # self.assertEqual(conv_cat[0].magnitudes[0].mag,
+        #                  test_cat[0].magnitudes[0].mag)
+        # self.assertEqual(conv_cat[0].magnitudes[1].mag,
+        #                  test_cat[0].magnitudes[1].mag)
+        # self.assertEqual(conv_cat[0].magnitudes[2].mag,
+        #                  test_cat[0].magnitudes[2].mag)
+        # self.assertEqual(conv_cat[0].magnitudes[0].creation_info,
+        #                  test_cat[0].magnitudes[0].creation_info)
+        # self.assertEqual(conv_cat[0].magnitudes[1].creation_info,
+        #                  test_cat[0].magnitudes[1].creation_info)
+        # self.assertEqual(conv_cat[0].magnitudes[2].creation_info,
+        #                  test_cat[0].magnitudes[2].creation_info)
+        # self.assertEqual(conv_cat[0].magnitudes[0].magnitude_type,
+        #                  test_cat[0].magnitudes[0].magnitude_type)
+        # self.assertEqual(conv_cat[0].magnitudes[1].magnitude_type,
+        #                  test_cat[0].magnitudes[1].magnitude_type)
+        # self.assertEqual(conv_cat[0].magnitudes[2].magnitude_type,
+        #                  test_cat[0].magnitudes[2].magnitude_type)
+        # self.assertEqual(conv_cat[0].event_descriptions,
+        #                  test_cat[0].event_descriptions)
+        # # self.assertEqual(read_cat[0].amplitudes[0].resource_id,
+        # #                  test_cat[0].amplitudes[0].resource_id)
+        # self.assertEqual(conv_cat[0].amplitudes[0].period,
+        #                  test_cat[0].amplitudes[0].period)
+        # self.assertEqual(conv_cat[0].amplitudes[0].snr,
+        #                  test_cat[0].amplitudes[0].snr)
 
     def test_write_empty(self):
         """
@@ -287,7 +287,58 @@ class TestSfileMethods(unittest.TestCase):
         self.assertEqual(_float_conv('1.0256'), 1.0256)
         self.assertEqual(_str_conv(1.0256), '1.0256')
 
+    def test_read_wavename(self):
+        from eqcorrscan.utils.sfile_util import readwavename
+        import os
 
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '19-0926-59L.S201309')
+        wavefiles = readwavename(testing_path)
+        self.assertEqual(len(wavefiles), 1)
+
+    def test_station_to_seisan(self):
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.sfile_util import stationtoseisan
+
+        t1 = UTCDateTime(2012, 3, 26)
+        t2 = UTCDateTime(2012, 4, 26)
+        client = Client('GEONET')
+        bulk = [('NZ', 'FOZ', '*', '*', t1, t2),
+                ('NZ', 'JCZ', '*', '*', t1, t2),
+                ('NZ', 'WVZ', '*', '*', t1, t2)]
+        inventory = client.get_stations_bulk(bulk, level="channel")
+        for station in inventory[0]:
+            sta_str = stationtoseisan(station)
+            self.assertEqual(len(sta_str), 27)
+
+        for station in inventory[0]:
+            station.latitude = abs(station.latitude)
+            station.longitude = abs(station.longitude)
+            sta_str = stationtoseisan(station)
+            self.assertEqual(len(sta_str), 27)
+
+        with self.assertRaises(IOError):
+            inventory = client.get_stations_bulk(bulk)
+            for station in inventory[0]:
+                sta_str = stationtoseisan(station)
+
+    def test_read_event(self):
+        """Test the wrapper."""
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '01-0411-15L.S201309')
+        event = read_event(testing_path)
+        self.assertEqual(len(event.origins), 1)
+
+    def test_read_many_events(self):
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'select.out')
+        catalog = read_events(testing_path)
+        self.assertEqual(len(catalog), 50)
 
 
 def basic_test_event():
