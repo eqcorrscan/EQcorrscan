@@ -562,11 +562,15 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     _check_save_args(save, savefile)
     import datetime as dt
     from obspy import UTCDateTime
-    fig, axes = plt.subplots(len(template), 1, sharex=True)
+    # Sort before plotting
+    template = template.sort()
+    ntraces = min(len(template, len(stream)))
+    fig, axes = plt.subplots(ntraces, 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in template])
-    for i, template_tr in enumerate(template):
+    i = 0
+    for template_tr in template:
         image = stream.select(station=template_tr.stats.station,
                               channel='*'+template_tr.stats.channel[-1])
         if not image:
@@ -601,6 +605,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         axes[i].set_ylabel(ylab, rotation=0,
                            horizontalalignment='right')
         axes[i].yaxis.set_ticks([])
+        i += 1
     axes[len(axes) - 1].set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
     if not save:
@@ -1188,6 +1193,9 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    .. Note:: See eqcorrscan.utils.mag_calc.calc_b_value for a least-squares \
+        method of estimating completeness and b-value.
 
     .. rubric:: Example
 
