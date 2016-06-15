@@ -277,7 +277,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
             (case-sensitive).
     :type contbase_list: list
     :param contbase_list: List of tuples of the form \
-        ['path', 'type', 'network'].  Where path is the path to the \
+        ('path', 'type', 'network').  Where path is the path to the \
         continuous database, type is the directory structure, which can be \
         either Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day \
         structure, or, yyyymmdd which is a single directory for every day.
@@ -318,67 +318,50 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     import glob
     from obspy import read as obsread
 
-    # Read in the header of the sfile
-    event = sfile_util.readheader(sfile)
-    day = event.origins[0].time
-
     # Read in pick info
-    catalog = sfile_util.readpicks(sfile)
-    picks = catalog[0].picks
-    print("I have found the following picks")
+    event = sfile_util.readpicks(sfile)
+    day = event.origins[0].time
+    picks = event.picks
     pick_chans = []
     used_picks = []
+    wavefiles = []
     for pick in picks:
         station = pick.waveform_id.station_code
         channel = pick.waveform_id.channel_code
         phase = pick.phase_hint
-        pcktime = pick.time
         if station + channel not in pick_chans and phase in ['P', 'S']:
             pick_chans.append(station + channel)
             used_picks.append(pick)
-            print(pick)
-            # #########Left off here
             for contbase in contbase_list:
                 if contbase[1] == 'yyyy/mm/dd':
-                    daydir = os.path.join([str(day.year),
-                                           str(day.month).zfill(2),
-                                           str(day.day).zfill(2)])
+                    daydir = os.path.join(str(day.year),
+                                          str(day.month).zfill(2),
+                                          str(day.day).zfill(2))
                 elif contbase[1] == 'Yyyyy/Rjjj.01':
-                    daydir = os.path.join(['Y' + str(day.year),
-                                           'R' + str(day.julday).zfill(3) +
-                                           '.01'])
+                    daydir = os.path.join('Y' + str(day.year),
+                                          'R' + str(day.julday).zfill(3) +
+                                          '.01')
                 elif contbase[1] == 'yyyymmdd':
                     daydir = day.datetime.strftime('%Y%m%d')
-                if 'wavefiles' not in locals():
-                    wavefiles = (glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + station +
-                                                         '.*'])))
-                else:
-                    wavefiles += glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + station +
-                                                         '.*']))
-        elif phase in ['P', 'S']:
-            print(' '.join(['Duplicate pick', station, channel,
-                            phase, str(pcktime)]))
-        elif phase == 'IAML':
-            print(' '.join(['Amplitude pick', station, channel,
-                            phase, str(pcktime)]))
+                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
+                                                    '*' + station +
+                                                    '.*'))
+                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
+                                                    station + '.*'))
     picks = used_picks
-    wavefiles = list(set(wavefiles))
+    wavefiles = sorted(list(set(wavefiles)))
 
     # Read in waveform file
-    wavefiles.sort()
     for wavefile in wavefiles:
-        print("I am going to read waveform data from: " + wavefile)
         if 'st' not in locals():
             st = obsread(wavefile)
         else:
             st += obsread(wavefile)
     # Process waveform data
     st.merge(fill_value='interpolate')
-    for tr in st:
-        tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
-                                    samp_rate, debug, day)
+    st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
+                                filt_order=filt_order, samp_rate=samp_rate,
+                                starttime=day, debug=debug)
     # Cut and extract the templates
     st1 = _template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
                         debug=debug)
@@ -567,7 +550,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         from obspy.seishub import Client
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
-    client = Client(url)
+    client = Client(url, timeout=10)
     temp_list = []
     for event in catalog:
         # Figure out which picks we have
@@ -575,10 +558,22 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         picks = event.picks
         print("Fetching the following traces from SeisHub")
         for pick in picks:
-            net = pick.waveform_id.network_code
-            sta = pick.waveform_id.station_code
-            chan = pick.waveform_id.channel_code
-            loc = pick.waveform_id.location_code
+            if pick.waveform_id.network_code:
+                net = pick.waveform_id.network_code
+            else:
+                raise IOError('No network code defined for pick: ' + pick)
+            if pick.waveform_id.station_code:
+                sta = pick.waveform_id.station_code
+            else:
+                raise IOError('No station code defined for pick: ' + pick)
+            if pick.waveform_id.channel_code:
+                chan = pick.waveform_id.channel_code
+            else:
+                raise IOError('No channel code defined for pick: ' + pick)
+            if pick.waveform_id.location_code:
+                loc = pick.waveform_id.location_code
+            else:
+                loc = '*'
             starttime = UTCDateTime(pick.time.date)
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
@@ -590,15 +585,17 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                 print('end-time: ' + str(endtime))
                 print('pick-time: ' + str(pick.time))
             print('.'.join([net, sta, loc, chan]))
-            if sta in client.waveform.getStationIds(network=net):
+            if sta in client.waveform.get_station_ids(network=net):
                 if 'st' not in locals():
-                    st = client.waveform.getWaveform(net, sta, loc, chan,
+                    st = client.waveform.get_waveform(net, sta, loc, chan,
                                                      starttime, endtime)
                 else:
-                    st += client.waveform.getWaveform(net, sta, loc, chan,
+                    st += client.waveform.get_waveform(net, sta, loc, chan,
                                                       starttime, endtime)
             else:
                 print('Station not found in SeisHub DB')
+        if len(st) == 0:
+            raise IOError('No waveforms found')
         if debug > 0:
             st.plot()
         print('Preprocessing data for event: '+str(event.resource_id))
@@ -779,12 +776,20 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
         all channels with picks will be used.
     """
     templates = []
-    for event in catalog:
+    working_catalog = catalog.copy()
+    # copy this here so we don't remove picks from the real catalog
+    stachans = [(tr.stats.station, tr.stats.channel) for tr in st]
+    for event in working_catalog:
         picks = event.picks
         for pick in picks:
-            if pick.time > st[0].stats.starttime and\
-               pick.time < st[0].stats.endtime:
-                continue
+            if st[0].stats.starttime < pick.time < st[0].stats.endtime:
+                pick_stachan = (pick.waveform_id.station_code,
+                                pick.waveform_id.channel_code)
+                if pick_stachan in stachans:
+                    continue
+                else:
+                    # Only keep a pick if there as data for it
+                    picks.remove(pick)
             else:
                 picks.remove(pick)
         if len(picks) > 0:

@@ -71,16 +71,17 @@ def _av_weight(W1, W2):
     >>> _av_weight(0, 0)
     '1.0000'
     """
-    if W1 == ' ':
+
+    if str(W1) in [' ', '']:
         W1 = 1
-    elif W1 == '9':
+    elif str(W1) == '9':
         W1 = 0
     else:
         W1 = 1 - int(W1) / 4.0
 
-    if W2 == ' ':
+    if str(W2) in [' ', '']:
         W2 = 1
-    elif W2 == '9':
+    elif str(W2) == '9':
         W2 = 0
     else:
         W2 = 1 - int(W2) / 4.0
