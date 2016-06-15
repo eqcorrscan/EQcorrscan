@@ -751,7 +751,8 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :type catalog: obspy.core.event.Catalog
     :param catalog: Events to extract templates for
     :type st: obspy.core.stream.Stream
-    :param st: Processed stream to extract from.
+    :param st: Processed stream to extract from, e.g. filtered and re-sampled \
+        to what you want using pre_processing.dayproc.
     :type length: float
     :param length: Length of template in seconds
     :type swin: string
