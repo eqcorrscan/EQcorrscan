@@ -162,7 +162,7 @@ class TestCoreMethods(unittest.TestCase):
 
 
 
-def test_match_filter(samp_rate=20.0, debug=0, plotvar=False,
+def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
                       extract_detections=False, threshold_type='MAD',
                       threshold=10, template_excess=False, stream_excess=False):
     """
@@ -192,7 +192,7 @@ def test_match_filter(samp_rate=20.0, debug=0, plotvar=False,
     # otherwise similar templates will detect events seeded by another
     # template.
     # Test the pre_processing functions
-    data = pre_processing.dayproc(st=data, lowcut=2.0, highcut=8.0,
+    data = pre_processing.dayproc(st=data, lowcut=1.0, highcut=4.0,
                                   filt_order=3, samp_rate=samp_rate,
                                   debug=0, starttime=UTCDateTime(0))
     if stream_excess:
@@ -207,7 +207,7 @@ def test_match_filter(samp_rate=20.0, debug=0, plotvar=False,
         data = data[0:-1]
     # Filter the data and the templates
     for template in templates:
-        pre_processing.shortproc(st=template, lowcut=2.0, highcut=8.0,
+        pre_processing.shortproc(st=template, lowcut=1.0, highcut=4.0,
                                  filt_order=3, samp_rate=samp_rate)
         # if debug > 0:
         #     template.plot()
