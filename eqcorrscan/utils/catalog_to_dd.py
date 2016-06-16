@@ -71,22 +71,35 @@ def _av_weight(W1, W2):
     >>> _av_weight(0, 0)
     '1.0000'
     """
+    import warnings
 
+    # print('Weight 1: ' + str(W1) + ', weight 2: ' + str(W2))
     if str(W1) in [' ', '']:
         W1 = 1
-    elif str(W1) == '9':
+    elif str(W1) in ['-9', '9', '9.0', '-9.0']:
         W1 = 0
     else:
-        W1 = 1 - int(W1) / 4.0
+        W1 = 1 - (int(W1) / 4.0)
+    if W1 < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W2 = 0
 
     if str(W2) in [' ', '']:
         W2 = 1
-    elif str(W2) == '9':
+    elif str(W2) in ['-9', '9', '9.0', '-9.0']:
         W2 = 0
     else:
-        W2 = 1 - int(W2) / 4.0
+        W2 = 1 - (int(W2) / 4.0)
+    if W2 < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W2 = 0
 
     W = (W1 + W2) / 2
+    if W < 0:
+        print('Weight 1: ' + str(W1))
+        print('Weight 2: ' + str(W2))
+        print('Final weight: ' + str(W))
+        raise IOError('Negative average weight calculated, setting to zero')
     return _cc_round(W, 4)
 
 
@@ -306,6 +319,8 @@ def write_catalog(event_list, max_sep=8, min_link=8):
                                     origins[0].arrivals
                                     if arrival.pick_id ==
                                     slave_pick.resource_id][0]
+                    master_weight = str(int(master_weight))
+                    slave_weight = str(int(slave_weight))
                     event_text += pick.waveform_id.station_code.ljust(5) +\
                         _cc_round(pick.time - master_ori_time, 3).rjust(11) +\
                         _cc_round(slave_pick.time -

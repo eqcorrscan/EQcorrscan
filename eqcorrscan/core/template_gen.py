@@ -694,6 +694,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         # Figure out which picks we have
         day = event.origins[0].time
         print("Fetching the following traces from " + client_id)
+        dropped_pick_stations = 0
         for pick in event.picks:
             net = pick.waveform_id.network_code
             sta = pick.waveform_id.station_code
@@ -716,14 +717,18 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                                               starttime, endtime)
                 except FDSNException:
                     warnings.warn('Found no data for this station')
+                    dropped_pick_stations += 1
             else:
                 try:
                     st += client.get_waveforms(net, sta, loc, chan,
                                                starttime, endtime)
                 except FDSNException:
                     warnings.warn('Found no data for this station')
+                    dropped_pick_stations += 1
         if debug > 0:
             st.plot()
+        if not st and dropped_pick_stations == len(event.picks):
+            raise FDSNException('No data available, is the server down?')
         print('Pre-processing data for event: '+str(event.resource_id))
         st.merge(fill_value='interpolate')
         st1 = pre_processing.dayproc(st, lowcut, highcut, filt_order,

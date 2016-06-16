@@ -106,6 +106,9 @@ class ClusteringTestMethods(unittest.TestCase):
         import os
         from eqcorrscan.utils.clustering import group_delays
         from eqcorrscan.tutorials.template_creation import mktemplates
+        from obspy.clients.fdsn.header import FDSNException
+        import warnings
+
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'WAV', 'TEST_')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
@@ -114,7 +117,11 @@ class ClusteringTestMethods(unittest.TestCase):
         self.assertEqual(len(groups), 1)  # All have same lag-times
 
         # Make some templates
-        mktemplates(plot=False)
+        try:
+            mktemplates(plot=False)
+        except FDSNException:
+            warnings.warn('FDSN exception raised, is server down?')
+            return
         stream_list = []
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')

@@ -709,12 +709,8 @@ def match_filter(template_names, template_list, st, threshold,
             rawthresh = threshold * np.median(np.abs(cccsum))
         elif threshold_type == 'absolute':
             rawthresh = threshold
-        elif threshold == 'av_chan_corr':
-            rawthresh = threshold * (cccsum / len(template))
-        else:
-            print('You have not selected the correct threshold type, I will' +
-                  'use MAD as I like it')
-            rawthresh = threshold * np.mean(np.abs(cccsum))
+        elif threshold_type == 'av_chan_corr':
+            rawthresh = threshold * no_chans[i]
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
         print(' '.join(['Threshold is set at:', str(rawthresh)]))
         print(' '.join(['Max of data is:', str(max(cccsum))]))

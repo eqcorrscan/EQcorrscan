@@ -20,7 +20,7 @@ class DespikeTesting(unittest.TestCase):
         spiked[450] = -40
         spiked = Trace(spiked)
         spiked.stats.sampling_rate = 100
-        despiked = median_filter(tr=spiked, multiplier=5,
+        despiked = median_filter(tr=spiked, multiplier=2,
                                  windowlength=0.5, interp_len=0.05)
         self.assertNotEqual(despiked.data[100], 20)
         self.assertNotEqual(despiked.data[400], 40)

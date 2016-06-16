@@ -56,10 +56,16 @@ class TestTemplateGeneration(unittest.TestCase):
         from eqcorrscan.tutorials.template_creation import mktemplates
         import os
         import numpy as np
+        from obspy.clients.fdsn.header import FDSNException
+        import warnings
 
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
-        mktemplates(plot=False)
+        try:
+            mktemplates(plot=False)
+        except FDSNException:
+            warnings.warn('FDSN error, is server down?')
+            return
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
             expected_template = read(os.path.join(testing_path,

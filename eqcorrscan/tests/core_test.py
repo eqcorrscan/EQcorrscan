@@ -9,16 +9,6 @@ import unittest
 
 
 class TestCoreMethods(unittest.TestCase):
-    # def test_lag_calc():
-    #     """
-    #     Function to test the capabilites of lag_calc.  When bugs are found \
-    #     in the code and fixed the cause of the bug should be emulated here \
-    #     to ensure that it is truely fixed.
-    #     """
-    #     # We need to develop a synthetic dataset...
-    #     # This needs to have a list of detection objects, a day of synth
-    #     # data, and a series of templates.
-    #     return True
     def test_perfect_normxcorr2(self):
         """Simple test of normxcorr2 to ensure data are detected
         """
@@ -134,96 +124,153 @@ class TestCoreMethods(unittest.TestCase):
                                 channel=template[0].stats.channel)
         self.assertNotEqual(ccc.max(), 1.0)
 
-    def test_match_filter(self, samp_rate=20.0, debug=0):
-        """
-        Function to test the capabilities of match_filter and just check that \
-        it is working!  Uses synthetic templates and seeded, randomised data.
+    def test_debug_range(self):
+        """Test range of debug outputs"""
+        import matplotlib.pyplot as plt
+        import glob
+        import os
 
-        :type debug: int
-        :param debug: Debug level, higher the number the more output.
-        """
-        from eqcorrscan.utils import pre_processing
-        from eqcorrscan.utils import plotting
-        from eqcorrscan.core.match_filter import match_filter
-        from eqcorrscan.utils.synth_seis import generate_synth_data
-        from obspy import UTCDateTime
-        import string
-        # Generate a random dataset
-        templates, data, seeds = generate_synth_data(nsta=5, ntemplates=2,
-                                                     nseeds=50,
-                                                     samp_rate=samp_rate,
-                                                     t_length=6.0, max_amp=5.0,
-                                                     max_lag=12.0,
-                                                     debug=debug)
-        # Notes to the user: If you use more templates you should ensure they
-        # are more different, e.g. set the data to have larger moveouts,
-        # otherwise similar templates will detect events seeded by another
-        # template.
-        # Test the pre_processing functions
-        data = pre_processing.dayproc(st=data, lowcut=2.0, highcut=8.0,
-                                      filt_order=3, samp_rate=samp_rate,
-                                      debug=0, starttime=UTCDateTime(0))
-        if debug > 0:
-            data.plot()
-        # Filter the data and the templates
+        for debug in range(0, 4):
+            kfalse, ktrue = test_match_filter(debug=debug)
+            self.assertTrue(kfalse / ktrue < 0.25)
+        # Test outputting the streams works
+        kfalse, ktrue, detection_streams = \
+            test_match_filter(extract_detections=True)
+        self.assertEqual(len(detection_streams), ktrue + kfalse)
+        # Test plotting runs
+        test_match_filter(plotvar=True)
+        plt.close('all')
+        # Find the plots
+        plots = glob.glob('cccsum_plot_*.png')
+        self.assertEqual(len(plots), 2)
+        for plot in plots:
+            os.remove(plot)
+        # Test other threshold methods
+        for threshold_type, threshold in [('absolute', 2),
+                                          ('av_chan_corr', 0.5)]:
+            kfalse, ktrue = test_match_filter(threshold_type=threshold_type,
+                                              threshold=threshold)
+            self.assertTrue(kfalse / ktrue < 0.25)
+        # Test case where there are non-matching streams in the template
+        test_match_filter(stream_excess=True)
+        # Test case where there are non-matching streams in the data
+        test_match_filter(template_excess=True)
+        if len(glob.glob('peaks_*.pdf')) > 0:
+            for plot_file in glob.glob('peaks_*.pdf'):
+                os.remove(plot_file)
+
+
+
+
+def test_match_filter(samp_rate=20.0, debug=0, plotvar=False,
+                      extract_detections=False, threshold_type='MAD',
+                      threshold=10, template_excess=False, stream_excess=False):
+    """
+    Function to test the capabilities of match_filter and just check that \
+    it is working!  Uses synthetic templates and seeded, randomised data.
+
+    :type samp_rate: float
+    :param samp_rate: Sampling rate in Hz to use
+    :type debug: int
+    :param debug: Debug level, higher the number the more output.
+    """
+    from eqcorrscan.utils import pre_processing
+    from eqcorrscan.utils import plotting
+    from eqcorrscan.core.match_filter import match_filter
+    from eqcorrscan.utils.synth_seis import generate_synth_data
+    from obspy import UTCDateTime
+    import string
+    # Generate a random dataset
+    templates, data, seeds = generate_synth_data(nsta=5, ntemplates=2,
+                                                 nseeds=50,
+                                                 samp_rate=samp_rate,
+                                                 t_length=6.0, max_amp=5.0,
+                                                 max_lag=12.0,
+                                                 debug=0)
+    # Notes to the user: If you use more templates you should ensure they
+    # are more different, e.g. set the data to have larger moveouts,
+    # otherwise similar templates will detect events seeded by another
+    # template.
+    # Test the pre_processing functions
+    data = pre_processing.dayproc(st=data, lowcut=2.0, highcut=8.0,
+                                  filt_order=3, samp_rate=samp_rate,
+                                  debug=0, starttime=UTCDateTime(0))
+    if stream_excess:
+        i = 0
         for template in templates:
-            pre_processing.shortproc(st=template, lowcut=2.0, highcut=8.0,
-                                     filt_order=3, samp_rate=samp_rate)
-            if debug > 0:
-                template.plot()
-        template_names = list(string.ascii_lowercase)[0:len(templates)]
-        detections =\
-            match_filter(template_names=template_names,
-                         template_list=templates,
-                         st=data, threshold=10.0,
-                         threshold_type='MAD',
-                         trig_int=6.0,
-                         plotvar=False,
-                         plotdir='.',
-                         cores=1,
-                         debug=0,
-                         output_cat=False,
-                         extract_detections=False)
-        # Compare the detections to the seeds
-        print('This test made ' + str(len(detections)) + ' detections')
-        ktrue = 0
-        kfalse = 0
-        for detection in detections:
-            print(detection)
-            i = template_names.index(detection.template_name)
-            t_seeds = seeds[i]
-            dtime_samples = int((detection.detect_time - UTCDateTime(0)) *
-                                samp_rate)
-            if dtime_samples in t_seeds['time']:
-                j = list(t_seeds['time']).index(dtime_samples)
+            template = template.remove(template[i])
+            if i < len(template):
+                i += 1
+            else:
+                i = 0
+    if template_excess:
+        data = data[0:-1]
+    # Filter the data and the templates
+    for template in templates:
+        pre_processing.shortproc(st=template, lowcut=2.0, highcut=8.0,
+                                 filt_order=3, samp_rate=samp_rate)
+        # if debug > 0:
+        #     template.plot()
+    template_names = list(string.ascii_lowercase)[0:len(templates)]
+    detections =\
+        match_filter(template_names=template_names,
+                     template_list=templates,
+                     st=data, threshold=threshold,
+                     threshold_type=threshold_type,
+                     trig_int=6.0,
+                     plotvar=plotvar,
+                     plotdir='.',
+                     cores=1,
+                     debug=debug,
+                     output_cat=False,
+                     extract_detections=extract_detections)
+    if extract_detections:
+        detection_streams = detections[1]
+        detections = detections[0]
+    # Compare the detections to the seeds
+    print('This test made ' + str(len(detections)) + ' detections')
+    ktrue = 0
+    kfalse = 0
+    for detection in detections:
+        print(detection)
+        i = template_names.index(detection.template_name)
+        t_seeds = seeds[i]
+        dtime_samples = int((detection.detect_time - UTCDateTime(0)) *
+                            samp_rate)
+        if dtime_samples in t_seeds['time']:
+            j = list(t_seeds['time']).index(dtime_samples)
+            print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
+            ktrue += 1
+        else:
+            min_diff = min(abs(t_seeds['time'] - dtime_samples))
+            if min_diff < 10:
+                # If there is a match within ten samples then it is
+                # good enough
+                j = list(abs(t_seeds['time'] -
+                             dtime_samples)).index(min_diff)
                 print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
                 ktrue += 1
             else:
-                min_diff = min(abs(t_seeds['time'] - dtime_samples))
-                if min_diff < 10:
-                    # If there is a match within ten samples then it is
-                    # good enough
-                    j = list(abs(t_seeds['time'] -
-                                 dtime_samples)).index(min_diff)
-                    print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
-                    ktrue += 1
-                else:
-                    print('Detection at sample: ' + str(dtime_samples) +
-                          ' does not match anything in seed times:')
-                    kfalse += 1
-                print('Minimum difference in samples is: ' + str(min_diff))
-        # print('Catalog created is of length: ' + str(len(out_cat)))
-        # Plot the detections
-        if debug > 3:
-            for i, template in enumerate(templates):
-                times = [d.detect_time.datetime for d in detections
-                         if d.template_name == template_names[i]]
-                print(times)
-                plotting.detection_multiplot(data, template, times)
-        # Set an 'acceptable' ratio of positive to false detections
-        print(str(ktrue) + ' true detections and ' + str(kfalse) +
-              ' false detections')
-        self.assertTrue(kfalse / ktrue < 0.25)
+                print('Detection at sample: ' + str(dtime_samples) +
+                      ' does not match anything in seed times:')
+                kfalse += 1
+            print('Minimum difference in samples is: ' + str(min_diff))
+    # print('Catalog created is of length: ' + str(len(out_cat)))
+    # Plot the detections
+    if debug > 3:
+        for i, template in enumerate(templates):
+            times = [d.detect_time.datetime for d in detections
+                     if d.template_name == template_names[i]]
+            print(times)
+            plotting.detection_multiplot(data, template, times)
+    # Set an 'acceptable' ratio of positive to false detections
+    print(str(ktrue) + ' true detections and ' + str(kfalse) +
+          ' false detections')
+    if not extract_detections:
+        return kfalse, ktrue
+    else:
+        return kfalse, ktrue, detection_streams
+
 
 if __name__ == '__main__':
     """

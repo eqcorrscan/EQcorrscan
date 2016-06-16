@@ -449,7 +449,7 @@ def coherence(stream_in, stations=['all'], clip=False):
     maxlen = np.max([len(tr.data) for tr in stream])
     if maxlen == 0:
         warnings.warn('template without data')
-        return 0.0
+        return 0.0, len(stream)
     if not stations[0] == 'all':
         for tr in stream:
             if tr.stats.station not in stations:
