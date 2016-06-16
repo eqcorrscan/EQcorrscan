@@ -130,7 +130,7 @@ class TestCoreMethods(unittest.TestCase):
         import glob
         import os
 
-        for debug in range(0, 4):
+        for debug in range(0, 3):
             kfalse, ktrue = test_match_filter(debug=debug)
             self.assertTrue(kfalse / ktrue < 0.25)
         # Test outputting the streams works
