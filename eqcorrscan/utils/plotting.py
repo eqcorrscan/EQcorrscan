@@ -67,7 +67,7 @@ def chunk_data(tr, samp_rate, state='mean'):
                             axis=0)
         stack = np.vstack([max_env, min_env]).T
         trout.data = np.array([stack[i][indeces[i]]
-                              for i in xrange(len(stack))])
+                              for i in range(len(stack))])
     xcenters = xchunks.mean(axis=1)
     trout.stats.starttime = tr.stats.starttime + xcenters[0] /\
         tr.stats.sampling_rate
@@ -211,7 +211,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return fig
 
 
-def cumulative_detections(dates, template_names, show=False, plot_legend=True,
+def cumulative_detections(dates, template_names, show=True, plot_legend=True,
                           save=False, savefile=None):
     r"""Plot cumulative detections in time.
 
@@ -225,8 +225,7 @@ def cumulative_detections(dates, template_names, show=False, plot_legend=True,
     :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type show: bool
-    :param show: Wether or not to show the plot, defaults to False which will \
-        return the axes for editing
+    :param show: Whether or not to show the plot, defaults to True.
     :type plot_legend: bool
     :param plot_legend: Specify whether to plot legend of template names. \
         Defaults to True.
@@ -261,6 +260,7 @@ def cumulative_detections(dates, template_names, show=False, plot_legend=True,
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """
     import matplotlib.dates as mdates
+    from copy import deepcopy
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -274,11 +274,14 @@ def cumulative_detections(dates, template_names, show=False, plot_legend=True,
     # This is an ugly way of looping through colours and linestyles, it would
     # be better with itertools functions...
     fig, ax1 = plt.subplots()
+    min_date = min([min(_dates) for _dates in dates])
     for k, template_dates in enumerate(dates):
         template_dates.sort()
-        counts = np.arange(0, len(template_dates))
-        print(str(i) + ' ' + str(j) + ' ' + str(k))
-        ax1.plot(template_dates, counts, linestyles[j],
+        plot_dates = deepcopy(template_dates)
+        plot_dates.insert(0, min_date)
+        print(plot_dates)
+        counts = np.arange(-1, len(template_dates))
+        ax1.step(plot_dates, counts, linestyles[j],
                  color=colors[i], label=template_names[k],
                  linewidth=3.0)
         if i < len(colors) - 1:
@@ -326,6 +329,7 @@ def cumulative_detections(dates, template_names, show=False, plot_legend=True,
         ax1.xaxis.set_minor_locator(mins)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
+    ax1.set_ylim([0, max([len(_dates) for _dates in dates])])
     plt.setp(labels, rotation=15)
     if plot_legend:
         ax1.legend(loc=2, prop={'size': 8}, ncol=2)
