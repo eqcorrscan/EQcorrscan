@@ -308,12 +308,19 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
     if timedif.total_seconds() >= 10800 and timedif.total_seconds() <= 25200:
         print('Using quarter of an hour stamps')
         hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
+        mins = mdates.HourLocator(byminute=range(0, 60, 5))
     elif timedif.total_seconds() <= 1200:
         print('Using 2 min stamps')
         hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
-    elif timedif.total_seconds > 25200 and timedif.total_seconds() <= 172800:
+        mins = mdates.HourLocator(byminute=range(0, 60, 0.5))
+    elif timedif.total_seconds > 25200 and timedif.total_seconds() <= 86400:
         print('Using hour stamps')
         hours = mdates.HourLocator(byhour=range(0, 24, 3))
+        mins = mdates.HourLocator(byhour=range(0, 24, 1))
+    elif timedif.total_seconds > 86400 and timedif.total_seconds() <= 172800:
+        print('Using hour stamps')
+        hours = mdates.HourLocator(byhour=range(0, 24, 6))
+        mins = mdates.HourLocator(byhour=range(0, 24, 1))
     elif timedif.total_seconds() > 172800:
         print('Using day stamps')
         hours = mdates.AutoDateLocator()
