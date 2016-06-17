@@ -44,10 +44,9 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   - |
-      if [[ "${py:0:1}" == '3' ]]; then
+      if [[ "${py:0:1}" == "3" ]]; then
           env_file="misc/py35_test_env.lis"
           PYFLAKES="pyflakes=1.0.0"
-          opencv="
       else
         env_file="misc/py2_test_env.lis"
         PYFLAKES="pyflakes=0.9.0"
