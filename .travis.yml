@@ -83,7 +83,8 @@ install:
       else
         OPENCV="opencv"
       fi
-  - | if [[ "$OS" == "MacOSX" ]]; then
+  - |
+      if [[ "$OS" == "MacOSX" ]]; then
         conda install $OPENCV
       fi
   - pip install coveralls
