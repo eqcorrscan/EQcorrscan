@@ -597,9 +597,9 @@ def match_filter(template_names, template_list, st, threshold,
             raise IOError('templates must be of type: list')
         for template in template_list:
             if not type(template) == Stream:
-                raise IOError(msg)
                 msg = 'template in template_list must be of type: ' +\
                       'obspy.core.stream.Stream'
+                raise IOError(msg)
         if not type(st) == Stream:
             msg = 'st must be of type: obspy.core.stream.Stream'
             raise IOError(msg)
