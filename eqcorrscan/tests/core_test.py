@@ -126,7 +126,7 @@ class TestCoreMethods(unittest.TestCase):
 
     def test_debug_range(self):
         """Test range of debug outputs"""
-        for debug in range(0, 3):
+        for debug in range(0, 4):
             kfalse, ktrue = test_match_filter(debug=debug)
             self.assertTrue(kfalse / ktrue < 0.25)
 
@@ -137,11 +137,12 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(len(detection_streams), ktrue + kfalse)
 
     def test_plotting(self):
+        import matplotlib
+        matplotlib.use('agg')
         import matplotlib.pyplot as plt
         import glob
         import os
 
-        # Test plotting runs - can't run on Travis
         test_match_filter(plotvar=True)
         plt.close('all')
         # Find the plots
