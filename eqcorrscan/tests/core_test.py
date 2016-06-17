@@ -126,38 +126,43 @@ class TestCoreMethods(unittest.TestCase):
 
     def test_debug_range(self):
         """Test range of debug outputs"""
-        import matplotlib.pyplot as plt
-        import glob
-        import os
-
         for debug in range(0, 3):
             kfalse, ktrue = test_match_filter(debug=debug)
             self.assertTrue(kfalse / ktrue < 0.25)
+
+    def test_detection_extraction(self):
         # Test outputting the streams works
         kfalse, ktrue, detection_streams = \
             test_match_filter(extract_detections=True)
         self.assertEqual(len(detection_streams), ktrue + kfalse)
+
+    def test_plotting(self):
+        import matplotlib.pyplot as plt
+        import glob
+        import os
+
         # Test plotting runs - can't run on Travis
-        # test_match_filter(plotvar=True)
+        test_match_filter(plotvar=True)
         plt.close('all')
         # Find the plots
         plots = glob.glob('cccsum_plot_*.png')
         self.assertEqual(len(plots), 2)
         for plot in plots:
             os.remove(plot)
+
+    def test_threshold_methods(self):
         # Test other threshold methods
         for threshold_type, threshold in [('absolute', 2),
                                           ('av_chan_corr', 0.5)]:
             kfalse, ktrue = test_match_filter(threshold_type=threshold_type,
                                               threshold=threshold)
             self.assertTrue(kfalse / ktrue < 0.25)
+
+    def test_missing_data(self):
         # Test case where there are non-matching streams in the template
         test_match_filter(stream_excess=True)
         # Test case where there are non-matching streams in the data
         test_match_filter(template_excess=True)
-        if len(glob.glob('peaks_*.pdf')) > 0:
-            for plot_file in glob.glob('peaks_*.pdf'):
-                os.remove(plot_file)
 
 
 def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
