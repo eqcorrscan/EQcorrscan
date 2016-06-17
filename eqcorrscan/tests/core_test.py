@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 import unittest
+from eqcorrscan.core.match_filter import match_filter
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -137,8 +138,6 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(len(detection_streams), ktrue + kfalse)
 
     def test_plotting(self):
-        import matplotlib
-        matplotlib.use('agg')
         import matplotlib.pyplot as plt
         import glob
         import os
@@ -180,7 +179,6 @@ def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
     """
     from eqcorrscan.utils import pre_processing
     from eqcorrscan.utils import plotting
-    from eqcorrscan.core.match_filter import match_filter
     from eqcorrscan.utils.synth_seis import generate_synth_data
     from obspy import UTCDateTime
     import string
