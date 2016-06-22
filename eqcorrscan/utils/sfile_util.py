@@ -1149,7 +1149,7 @@ def nordpick(event):
                             _str_conv(velocity).rjust(5) +
                             _str_conv(' ').rjust(4) +
                             _str_conv(azimuthres).rjust(3) +
-                            _str_conv(timeres, rounded=2).rjust(5) +
+                            _str_conv(timeres, rounded=2).rjust(5)[0:5] +
                             _str_conv(' ').rjust(2) +
                             _str_conv(distance, rounded=round_len).rjust(5) +
                             _str_conv(CAZ).rjust(4) + ' ')
