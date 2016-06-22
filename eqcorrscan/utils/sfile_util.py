@@ -1051,18 +1051,15 @@ def nordpick(event):
             if arrival.distance:
                 distance = arrival.distance
                 if distance >= 100.0:
-                    distance = _int_conv(distance)
+                    distance = str(_int_conv(distance))
                 elif 10.0 < distance < 100.0:
-                    distance = round(distance, 1)
-                    round_len = 1
+                    distance = _str_conv(round(distance, 1), 1)
                 elif distance < 10.0:
-                    distance = round(distance, 2)
-                    round_len = 2
+                    distance = _str_conv(round(distance, 2), 2)
                 else:
-                    round_len = False
+                    distance = _str_conv(distance, False)
             else:
                 distance = ' '
-                round_len = False
             # Extract CAZ
             if arrival.azimuth:
                 CAZ = int(arrival.azimuth)
@@ -1151,7 +1148,7 @@ def nordpick(event):
                             _str_conv(azimuthres).rjust(3) +
                             _str_conv(timeres, rounded=2).rjust(5)[0:5] +
                             _str_conv(' ').rjust(2) +
-                            _str_conv(distance, rounded=round_len).rjust(5) +
+                            distance.rjust(5) +
                             _str_conv(CAZ).rjust(4) + ' ')
         # Note that currently finalweight is unsupported, nor is velocity, or
         # angle of incidence.  This is because obspy.event stores slowness in
