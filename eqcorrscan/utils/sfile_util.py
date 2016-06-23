@@ -244,9 +244,9 @@ def readheader(sfile):
                    topline[49:51].strip())
     new_event.origins[0].comments.append(ksta)
     # new_event.origins[0].nsta??? = _int_conv(topline[49:51])
-    if not _float_conv(topline[52:55]) == 999:
+    if not _float_conv(topline[51:55]) == 999:
         new_event.origins[0].time_errors['Time_Residual_RMS'] = \
-            _float_conv(topline[52:55])
+            _float_conv(topline[51:55])
     # Read in magnitudes if they are there.
     if len(topline[59].strip()) > 0:
         new_event.magnitudes.append(Magnitude())
