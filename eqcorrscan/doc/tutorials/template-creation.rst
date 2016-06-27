@@ -107,8 +107,8 @@ download are |basemap_link|.
 
   <a href="http://matplotlib.org/basemap/users/installing.html" target="_blank">here</a>
 
-Important considerations
-------------------------
+**Important considerations**
+
 In this tutorial we enforce downloading of day-long data for the template
 generation.  This is to ensure that the data we make the template from, and
 the data we use for detection are processed in exactly the same way.  If we

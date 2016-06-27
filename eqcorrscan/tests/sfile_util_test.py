@@ -6,7 +6,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
-from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor
+from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor, nordpick
 from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
 from eqcorrscan.utils.sfile_util import read_event, read_select, blanksfile
 import unittest
@@ -430,6 +430,25 @@ class TestSfileMethods(unittest.TestCase):
                                     'test_data', 'select.out')
         catalog = read_select(testing_path)
         self.assertEqual(len(catalog), 50)
+
+    def test_inaccurate_picks(self):
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'bad_picks.sfile')
+        event = readpicks(testing_path)
+        pick_string = nordpick(event)
+        for pick in pick_string:
+            self.assertEqual(len(pick), 80)
+
+    def test_round_len(self):
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'round_len_undef.sfile')
+        event = readpicks(testing_path)
+        pick_string = nordpick(event)
+        for pick in pick_string:
+            self.assertEqual(len(pick), 80)
+
 
 
 def full_test_event():

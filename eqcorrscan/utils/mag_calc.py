@@ -145,6 +145,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     """
     from collections import Counter
     import matplotlib.pyplot as plt
+    from eqcorrscan.utils.plotting import freq_mag
 
     b_values = []
     # Calculate the cdf for all magnitudes
@@ -176,12 +177,21 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
                           ', fewer than 4 events')
             break
         fit = np.polyfit(complete_mags, complete_freq, 1, full=True)
-        b_values.append((m_c, abs(fit[0][0]), abs(fit[1][0]),
-                         str(len(complete_mags))))
+        # Calculate the residuals according to the Wiemer & Wys 2000 definition
+        predicted_freqs = [fit[0][1] - abs(fit[0][0] * M)
+                           for M in complete_mags]
+        r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
+                           for i in range(len(complete_freq))]) * 100) /
+                    np.sum(complete_freq))
+        b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
+        # if plotvar:
+        #     freq_mag(magnitudes=magnitudes, completeness=m_c, max_mag=max_mag)
+        #     print('Residual %s' % r)
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
-        resid = ax1.scatter(zip(*b_values)[0], zip(*b_values)[2], c='r')
+        resid = ax1.scatter(zip(*b_values)[0],
+                            [100 - b for b in zip(*b_values)[2]], c='r')
         ax1.set_ylabel('b-value and residual')
         plt.xlabel('Completeness magnitude')
         ax2 = ax1.twinx()

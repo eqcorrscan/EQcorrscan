@@ -68,7 +68,7 @@ your call.
 .. literalinclude:: ../../tutorials/match_filter.py
 
 
-Slurm example
+SLURM example
 -------------
 
 When the authors of EQcorrscan work on large projects, we use grid computers with
@@ -135,7 +135,4 @@ this section of the script is as follows:
 
 The full script is not included in EQcorrscan, but is available on request.
 
-References
-----------
-* CM Boese, J Townend, E Smith, T Stern (2012). `Microseismicity and stress in the vicinity of the Alpine Fault, central Southern Alps, New Zealand <http://onlinelibrary.wiley.com/doi/10.1029/2011JB008460/full>`_, *JGR*, doi:10.1029/2011JB008460
-* CM Boese, KM Jacobs, EGC Smith, TA Stern, J Townend (2014). `Background and delayed-triggered swarms in the central Southern Alps, South Island, New Zealand <http://onlinelibrary.wiley.com/doi/10.1002/2013GC005171/full>`_, *G-cubed*, doi:10.1002/2013GC005171
+
