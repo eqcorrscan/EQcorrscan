@@ -4,7 +4,6 @@
 .Spotlight-V100
 .Trashes
 .DS_Store
-*.ms
 *.buf
 *.hdr
 templates
@@ -15,10 +14,16 @@ matcherr_*
 build
 dist
 EQcorrscan.egg-info
-*.xml
 .cache
 .eggs
 .tox
 eqcorrscan/tutorials/*.jpg
 pytest_runner*
 .coveralls.yml
+.coverage
+eqcorrscan/doc/_build
+eqcorrscan/doc/submodules/autogen
+station.dat
+*L.S??????
+*R.S??????
+.idea

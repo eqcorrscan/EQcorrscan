@@ -32,11 +32,11 @@ def read_data(archive, arc_type, day, stachans):
     :param arc_type: The type of archive, can be: seishub, FDSN, day_vols
     :type day: datetime.date
     :param day: Date to retrieve data for
-    :type stations: list of tuple
-    :param station: Stations and channels to try and get, will not fail if \
-        stations are not available, but will warn.
+    :type stachans: list
+    :param stachans: List of tuples of Stations and channels to try and get,
+        will not fail if stations are not available, but will warn.
 
-    :returns: obspy.Stream
+    :returns: obspy.core.stream.Stream
 
     .. note:: A note on arc_types, if arc_type is day_vols, then this will \
         look for directories labelled in the IRIS DMC conventions of \
@@ -45,6 +45,31 @@ def read_data(archive, arc_type, day, stachans):
         single-channel files.  This is not implemented in the fasted way \
         possible to allow for a more general situation.  If you require more \
         speed you will need to re-write this.
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.archive_read import read_data
+    >>> from obspy import UTCDateTime
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> stachans = [('FOZ', 'HHZ'), ('JCZ', 'HHZ')]
+    >>> st = read_data('GEONET', 'FDSN', t1, stachans)
+    >>> print(st)
+    2 Trace(s) in Stream:
+    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z | 100.0 Hz, 8640368 samples
+    NZ.JCZ.10.HHZ | 2012-03-25T23:59:57.348391Z - 2012-03-27T00:00:02.958391Z | 100.0 Hz, 8640562 samples
+
+
+    .. rubric:: Example, missing data
+
+    >>> from eqcorrscan.utils.archive_read import read_data
+    >>> from obspy import UTCDateTime
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> stachans = [('FOZ', 'HHZ'), ('GCSZ', 'HHZ')]
+    >>> st = read_data('GEONET', 'FDSN', t1, stachans)
+    >>> print(st)
+    1 Trace(s) in Stream:
+    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z | 100.0 Hz, 8640368 samples
+
     """
     import obspy
     from obspy.clients.fdsn.header import FDSNException
@@ -186,3 +211,8 @@ def _check_available_data(archive, arc_type, day):
                     available_stations.append((station.code,
                                                channel.code))
     return available_stations
+
+
+if __name__ == '__main__':
+   import doctest
+   doctest.testmod()

@@ -1,7 +1,7 @@
 """
 Early development functions to do **very** basic simulations of seismograms \
 to be used as general matched-filter templates and see how well a simple \
-model would fit with real data.
+model would fit with real data.  Mostly used in EQcorrscan for testing.
 
 :copyright:
     Calum Chamberlain, Chet Hopp.
@@ -19,7 +19,7 @@ import numpy as np
 
 def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
     """
-    Function to generate a simulated seismogram from a given S-P time. \
+    Generate a simulated seismogram from a given S-P time. \
     Will generate spikes separated by a given S-P time, which are then \
     convolved with a decaying sine function.  The P-phase is simulated by a \
     positive spike of value 1, the S-arrival is simulated by a decaying \
@@ -45,7 +45,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 
     if flength and 2.5 * SP < flength and 100 < flength:
         additional_length = flength
-    elif 2.5*SP < 100.0:
+    elif 2.5 * SP < 100.0:
         additional_length = 100
     else:
         additional_length = 2.5 * SP
@@ -83,7 +83,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
             synth = synth[SP:]
             if len(synth) < flength:
                 # If this is too short, pad
-                synth = np.append(synth, np.zeros(flength-len(synth)))
+                synth = np.append(synth, np.zeros(flength - len(synth)))
             else:
                 synth = synth[0:flength]
         return synth
@@ -92,8 +92,10 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
 def SVD_sim(SP, lowcut, highcut, samp_rate,
             amp_range=np.arange(-10, 10, 0.01)):
     """
-    Function to generate a basis vectors of a set of simulated seismograms \
-    with a range of S-P amplitude ratios.
+    Generate basis vectors of a set of simulated seismograms.
+
+    Inputs should have a range of S-P amplitude ratios, in theory to simulate \
+    a range of focal mechanisms.
 
     :type SP: int
     :param SP: S-P time in seconds - will be converted to samples according \
@@ -130,7 +132,9 @@ def SVD_sim(SP, lowcut, highcut, samp_rate,
 def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                   samp_rate=100, flength=False, phaseout='all'):
     """
-    Function to generate a group of synthetic seismograms to simulate phase \
+    Generate a group of synthetic seismograms for a grid of sources.
+
+    Used to simulate phase \
     arrivals from a grid of known sources in a three-dimensional model.  Lags \
     must be known and supplied, these can be generated from the bright_lights \
     function: read_tt, and resampled to fit the desired grid dimensions and \
@@ -141,9 +145,9 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 
     :type stations: list
     :param stations: List of the station names
-    :type nodes: list of tuple
+    :type nodes: list
     :param nodes: List of node locations in (lon,lat,depth)
-    :type travel_times: np.ndarray
+    :type travel_times: numpy.ndarray
     :param travel_times: Array of travel times where travel_times[i][:] \
         refers to the travel times for station=stations[i], and \
         travel_times[i][j] refers to stations[i] for nodes[j]
@@ -162,7 +166,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
         will return two channels for each stations, one SYN_Z with the \
         synthetic P-phase, and one SYN_H with the synthetic S-phase.
 
-    :returns: List of :class:obspy.Stream
+    :returns: List of :class: obspy.core.stream.Stream
     """
     import warnings
     if phase not in ['S', 'P']:
@@ -200,14 +204,14 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
             # Check that the template length is long enough to include the SP
             if flength and SP_time * samp_rate < flength - 11 \
                and phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
                 warnings.warn('Cannot make a bulk synthetic with this fixed ' +
-                              'length for station '+station)
+                              'length for station ' + station)
             elif phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time*samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif phaseout in ['P', 'S']:
@@ -235,7 +239,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
                         t_length=3.0, max_amp=10.0, max_lag=20, debug=0):
     """
-    Function to generate a synthetic dataset to be used for testing.
+    Generate a synthetic dataset to be used for testing.
     This will generate both templates and data to scan through.
     Templates will be generated using the utils.synth_seis functions.
     The day of data will be random noise, with random signal-to-noise

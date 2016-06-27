@@ -3,12 +3,16 @@ r"""Functions to generate template waveforms and information to go with them \
 for the application of cross-correlation of seismic data for the detection of \
 repeating events.
 
-.. note:: All of these functions work for a single template, however all of \
-    them call _template_gen, which takes care of pick association and \
-    cutting.  If you have many templates in one day of data it would be \
-    simple to write a wrapper that cuts multiple templates from one day \
-    of processed data rather than re-processing the same day of data \
-    for each template.
+.. note:: By convention templates are generated with P-phases on the \
+    vertical channel and S-phases on the horizontal channels, normal \
+    seismograph naming conventions are assumed, where Z denotes vertical \
+    and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
+    or not.  To this end we will **only** use Z channels if they have a \
+    P-pick, and will use one or other horizontal channels **only** if \
+    there is an S-pick on it.
+
+.. warning:: If there is no phase_hint included in picks, and swin=all, \
+    all channels with picks will be used.
 
 .. note:: All functions use obspy filters, which are implemented such that \
     if both highcut and lowcut are set a bandpass filter will be used, \
@@ -30,14 +34,19 @@ from __future__ import unicode_literals
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
              prepick=0.05, debug=0, plot=False):
-    """Function to read picks and waveforms from SAC data, and generate a \
+    """
+    Generate a multiplexed template from a list of SAC files.
+
+    Function to read picks and waveforms from SAC data, and generate a \
     template from these. Usually sac_files is a list of all single-channel \
     SAC files for a given event, a single, multi-channel template will be \
     created from these traces.
 
-    :type sac_files: list or stream
-    :param sac_files: List or stream of sac waveforms, or list of paths to \
-        sac waveforms.
+    **All files listed in sac_files should be associated with a single event.**
+
+    :type sac_files: list
+    :param sac_files: osbpy.core.stream.Stream of sac waveforms, or
+        list of paths to sac waveforms.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template \
             defaults file
@@ -62,11 +71,25 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type plot: bool
     :param plot: Turns template plotting on or off.
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.core.stream.Stream Newly cut template
 
     .. note:: This functionality is not supported for obspy versions below \
         1.0.0 as references times are not read in by SACIO, which are needed \
         for defining pick times.
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core.template_gen import from_sac
+    >>> import glob
+    >>> # Get all the SAC-files associated with one event.
+    >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> template = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
+    ...                     samp_rate=25.0, filt_order=4, length=2.0,
+    ...                     swin='all', prepick=0.1)
+    >>> print(template[0].stats.sampling_rate)
+    25.0
+    >>> print(len(template))
+    15
     """
     from obspy import read, Stream
     from eqcorrscan.utils.sac_util import sactoevent
@@ -97,10 +120,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
 
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                prepick=0.05, debug=0, plot=False):
-    r"""Function to read in picks from sfile then generate the template from \
+    """
+    Generate multiplexed template from a Nordic (Seisan) s-file.
+    Function to read in picks from sfile then generate the template from \
     the picks within this and the wavefile found in the pick file.
 
-    :type sfile: string
+    :type sfile: str
     :param sfile: sfilename must be the \
         path to a seisan nordic type s-file containing waveform and pick \
         information.
@@ -128,12 +153,36 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type plot: bool
     :param plot: Turns template plotting on or off.
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.core.stream.Stream Newly cut template
 
     .. warning:: This will use whatever data is pointed to in the s-file, if \
         this is not the coninuous data, we recommend using other functions. \
         Differences in processing between short files and day-long files \
         (inherent to resampling) will produce lower cross-correlations.
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core.template_gen import from_sfile
+    >>> sfile = 'eqcorrscan/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+    >>> template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
+    ...                       samp_rate=50.0, filt_order=4, swin='P',
+    ...                       prepick=0.2, length=6)
+    >>> print(len(template))
+    15
+    >>> print(template[0].stats.sampling_rate)
+    50.0
+    >>> template.plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.core.template_gen import from_sfile
+        import os
+        sfile = os.path.realpath('../../..') + \
+            '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+        template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
+                              samp_rate=50.0, filt_order=4, swin='P',
+                              prepick=0.2, length=6)
+        template.plot(equal_scale=False, size=(800, 600))
     """
     # Perform some checks first
     import os
@@ -151,19 +200,38 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         if part == 'REA':
             part = 'WAV'
         new_path_parts.append(part)
+    main_wav_parts = []
+    for part in new_path_parts:
+        main_wav_parts.append(part)
+        if part == 'WAV':
+            break
+    mainwav = os.path.join(*main_wav_parts) + os.path.sep
     # * argument to allow .join() to accept a list
-    wavpath = os.path.join(*new_path_parts) + '/'
+    wavpath = os.path.join(*new_path_parts) + os.path.sep
     # In case of absolute paths (not handled with .split() --> .join())
-    if sfile[0] == '/':
-        wavpath = '/' + wavpath
+    if sfile[0] == os.path.sep:
+        wavpath = os.path.sep + wavpath
+        mainwav = os.path.sep + mainwav
     # Read in waveform file
     for wavefile in wavefiles:
-        print(''.join(["I am going to read waveform data from: ", wavpath,
-                       wavefile]))
+        if debug > 0:
+            print(''.join(["I am going to read waveform data from: ", wavpath,
+                           wavefile]))
         if 'st' not in locals():
-            st = obsread(wavpath + wavefile)
+            if os.path.isfile(wavpath + wavefile):
+                st = obsread(wavpath + wavefile)
+            elif os.path.isfile(wavefile):
+                st = obsread(wavefile)
+            else:
+                # Read from the main WAV directory
+                st = obsread(mainwav + wavefile)
         else:
-            st += obsread(wavpath + wavefile)
+            if os.path.isfile(wavpath + wavefile):
+                st += obsread(wavpath + wavefile)
+            elif os.path.isfile(wavefile):
+                st += obsread(wavefile)
+            else:
+                st += obsread(mainwav + wavefile)
     for tr in st:
         if tr.stats.sampling_rate < samp_rate:
             print('Sampling rate of data is lower than sampling rate asked ' +
@@ -172,15 +240,15 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             raise ValueError("Trace: " + tr.stats.station +
                              " sampling rate: " + str(tr.stats.sampling_rate))
     # Read in pick info
-    catalog = sfile_util.readpicks(sfile)
+    event = sfile_util.readpicks(sfile)
     # Read the list of Picks for this event
-    picks = catalog[0].picks
-    print("I have found the following picks")
-    for pick in picks:
-        print(' '.join([pick.waveform_id.station_code,
-                        pick.waveform_id.channel_code, pick.phase_hint,
-                        str(pick.time)]))
-
+    picks = event.picks
+    if debug > 0:
+        print("I have found the following picks")
+        for pick in picks:
+            print(' '.join([pick.waveform_id.station_code,
+                            pick.waveform_id.channel_code, pick.phase_hint,
+                            str(pick.time)]))
     # Process waveform data
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
@@ -192,21 +260,24 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
 
 def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin, debug=0, plot=False):
-    r"""Function to read in picks from sfile then generate the template from \
-    the picks within this and the wavefiles from the continous database of \
+    """
+    Generate multiplexed template from a Nordic file using continuous data.
+
+    Function to read in picks from s-file then generate the template from \
+    the picks within this and the wavefiles from the continuous database of \
     day-long files.  Included is a section to sanity check that the files are \
     daylong and that they start at the start of the day.  You should ensure \
     this is the case otherwise this may alter your data if your data are \
     daylong but the headers are incorrectly set.
 
-    :type sfile: string
+    :type sfile: str
     :param sfile: sfilename must be the path to a seisan nordic type s-file \
             containing waveform and pick information, all other arguments can \
             be numbers save for swin which must be either P, S or all \
             (case-sensitive).
-    :type contbase_list: List of tuple of string
+    :type contbase_list: list
     :param contbase_list: List of tuples of the form \
-        ['path', 'type', 'network'].  Where path is the path to the \
+        ('path', 'type', 'network').  Where path is the path to the \
         continuous database, type is the directory structure, which can be \
         either Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day \
         structure, or, yyyymmdd which is a single directory for every day.
@@ -247,67 +318,50 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     import glob
     from obspy import read as obsread
 
-    # Read in the header of the sfile
-    event = sfile_util.readheader(sfile)
-    day = event.origins[0].time
-
     # Read in pick info
-    catalog = sfile_util.readpicks(sfile)
-    picks = catalog[0].picks
-    print("I have found the following picks")
+    event = sfile_util.readpicks(sfile)
+    day = event.origins[0].time
+    picks = event.picks
     pick_chans = []
     used_picks = []
+    wavefiles = []
     for pick in picks:
         station = pick.waveform_id.station_code
         channel = pick.waveform_id.channel_code
         phase = pick.phase_hint
-        pcktime = pick.time
         if station + channel not in pick_chans and phase in ['P', 'S']:
             pick_chans.append(station + channel)
             used_picks.append(pick)
-            print(pick)
-            # #########Left off here
             for contbase in contbase_list:
                 if contbase[1] == 'yyyy/mm/dd':
-                    daydir = os.path.join([str(day.year),
-                                           str(day.month).zfill(2),
-                                           str(day.day).zfill(2)])
+                    daydir = os.path.join(str(day.year),
+                                          str(day.month).zfill(2),
+                                          str(day.day).zfill(2))
                 elif contbase[1] == 'Yyyyy/Rjjj.01':
-                    daydir = os.path.join(['Y' + str(day.year),
-                                           'R' + str(day.julday).zfill(3) +
-                                           '.01'])
+                    daydir = os.path.join('Y' + str(day.year),
+                                          'R' + str(day.julday).zfill(3) +
+                                          '.01')
                 elif contbase[1] == 'yyyymmdd':
                     daydir = day.datetime.strftime('%Y%m%d')
-                if 'wavefiles' not in locals():
-                    wavefiles = (glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + station +
-                                                         '.*'])))
-                else:
-                    wavefiles += glob.glob(os.path.join([contbase[0], daydir,
-                                                         '*' + station +
-                                                         '.*']))
-        elif phase in ['P', 'S']:
-            print(' '.join(['Duplicate pick', station, channel,
-                            phase, str(pcktime)]))
-        elif phase == 'IAML':
-            print(' '.join(['Amplitude pick', station, channel,
-                            phase, str(pcktime)]))
+                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
+                                                    '*' + station +
+                                                    '.*'))
+                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
+                                                    station + '.*'))
     picks = used_picks
-    wavefiles = list(set(wavefiles))
+    wavefiles = sorted(list(set(wavefiles)))
 
     # Read in waveform file
-    wavefiles.sort()
     for wavefile in wavefiles:
-        print("I am going to read waveform data from: " + wavefile)
         if 'st' not in locals():
             st = obsread(wavefile)
         else:
             st += obsread(wavefile)
     # Process waveform data
     st.merge(fill_value='interpolate')
-    for tr in st:
-        tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
-                                    samp_rate, debug, day)
+    st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
+                                filt_order=filt_order, samp_rate=samp_rate,
+                                starttime=day, debug=debug)
     # Cut and extract the templates
     st1 = _template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
                         debug=debug)
@@ -316,13 +370,16 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
 
 def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate a template from a local quakeml file \
+    """
+    Generate a multiplexed template from a local quakeML file.
+
+    Function to generate a template from a local quakeml file \
     and an obspy.Stream object.
 
-    :type quakeml: string
+    :type quakeml: str
     :param quakeml: QuakeML file containing pick information, can contain \
         multiple events.
-    :type st: class: obspy.Stream
+    :type st: obspy.core.stream.Stream
     :param st: Stream containing waveform data for template (hopefully). \
         Note that this should be the same length of stream as you will use \
         for the continuous detection, e.g. if you detect in day-long files, \
@@ -357,6 +414,19 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
         ensure templates are generated with **exactly** the same processing \
         as the continuous data.  Not doing this will result in slightly \
         reduced cross-correlation values.
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.core.template_gen import from_quakeml
+    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
+    >>> templates = from_quakeml(quakeml=quakeml, st=st, lowcut=2.0,
+    ...                          highcut=9.0, samp_rate=20.0, filt_order=3,
+    ...                          length=2, prepick=0.1, swin='S')
+    >>> print(len(templates[0]))
+    15
     """
     # Perform some checks first
     import os
@@ -375,27 +445,53 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     st_stachans = []
     # Process waveform data
     st.merge(fill_value='interpolate')
-    for tr in st:
-        tr = pre_processing.dayproc(tr, lowcut, highcut, filt_order,
+    # Work out if the data are daylong or not...
+    data_len = max([len(tr.data)/tr.stats.sampling_rate for tr in st])
+    if 80000 < data_len < 90000:
+        daylong = True
+    else:
+        daylong = False
+    if daylong:
+        st = pre_processing.dayproc(st, lowcut, highcut, filt_order,
                                     samp_rate, debug=debug,
-                                    starttime=UTCDateTime(tr.stats.
+                                    starttime=UTCDateTime(st[0].stats.
                                                           starttime.date))
+    else:
+        st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
+                                      samp_rate, debug=debug)
+    data_start = min([tr.stats.starttime for tr in st])
+    data_end = max([tr.stats.endtime for tr in st])
     # Read QuakeML file into Catalog class
     catalog = read_events(quakeml)
     templates = []
     for event in catalog:
-        # Read in pick info
-        print("I have found the following picks")
+        use_event = True
+        # Check that the event is within the data
         for pick in event.picks:
-            print(' '.join([pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code,
-                            pick.phase_hint, str(pick.time)]))
+            if not data_start < pick.time < data_end:
+                if debug > 0:
+                    print('Pick outside of data span:')
+                    print('Pick time: ' + str(pick.time))
+                    print('Start time: ' + str(data_start))
+                    print('End time: ' + str(data_end))
+                use_event = False
+        if not use_event:
+            warnings.warn('Event is not within data time-span')
+            continue
+        # Read in pick info
+        if debug > 0:
+            print("I have found the following picks")
+        for pick in event.picks:
+            if debug > 0:
+                print(' '.join([pick.waveform_id.station_code,
+                                pick.waveform_id.channel_code,
+                                pick.phase_hint, str(pick.time)]))
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code)
         # Check to see if all picks have a corresponding waveform
         for tr in st:
             st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
-        for i in xrange(len(stations)):
+        for i in range(len(stations)):
             if not '.'.join([stations[i], channels[i]]) in st_stachans:
                 warnings.warn('No data provided for ' + stations[i] + '.' +
                               channels[i])
@@ -409,20 +505,22 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
+    """
+    Generate multiplexed template from SeisHub database.
+    Function to generate templates from a SeisHub database. Must be given \
     an obspy.Catalog class and the SeisHub url as input. The function returns \
     a list of obspy.Stream classes containting steams for each desired \
     template.
 
-    :type catalog: obspy.Catalog
+    :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog class containing desired template events
-    :type url: string
+    :type url: str
     :param url: url of SeisHub database instance
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template \
             defaults file
     :type highcut: float
-    :param lowcut: High cut (Hz), if set to None will look in template \
+    :param highcut: High cut (Hz), if set to None will look in template \
             defaults file
     :type samp_rate: float
     :param samp_rate: New sampling rate in Hz, if set to None will look in \
@@ -442,7 +540,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :type plot: bool
     :param plot: Plot templates or not.
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.core.stream.Stream Newly cut template
     """
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -452,7 +550,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         from obspy.seishub import Client
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
-    client = Client(url)
+    client = Client(url, timeout=10)
     temp_list = []
     for event in catalog:
         # Figure out which picks we have
@@ -460,30 +558,44 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         picks = event.picks
         print("Fetching the following traces from SeisHub")
         for pick in picks:
-            net = pick.waveform_id.network_code
-            sta = pick.waveform_id.station_code
-            chan = pick.waveform_id.channel_code
-            loc = pick.waveform_id.location_code
+            if pick.waveform_id.network_code:
+                net = pick.waveform_id.network_code
+            else:
+                raise IOError('No network code defined for pick: ' + pick)
+            if pick.waveform_id.station_code:
+                sta = pick.waveform_id.station_code
+            else:
+                raise IOError('No station code defined for pick: ' + pick)
+            if pick.waveform_id.channel_code:
+                chan = pick.waveform_id.channel_code
+            else:
+                raise IOError('No channel code defined for pick: ' + pick)
+            if pick.waveform_id.location_code:
+                loc = pick.waveform_id.location_code
+            else:
+                loc = '*'
             starttime = UTCDateTime(pick.time.date)
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correaltions.
+            # of resampling do not impinge on our cross-correlations.
 
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
                 print('pick-time: ' + str(pick.time))
             print('.'.join([net, sta, loc, chan]))
-            if sta in client.waveform.getStationIds(network=net):
+            if sta in client.waveform.get_station_ids(network=net):
                 if 'st' not in locals():
-                    st = client.waveform.getWaveform(net, sta, loc, chan,
+                    st = client.waveform.get_waveform(net, sta, loc, chan,
                                                      starttime, endtime)
                 else:
-                    st += client.waveform.getWaveform(net, sta, loc, chan,
+                    st += client.waveform.get_waveform(net, sta, loc, chan,
                                                       starttime, endtime)
             else:
                 print('Station not found in SeisHub DB')
+        if len(st) == 0:
+            raise IOError('No waveforms found')
         if debug > 0:
             st.plot()
         print('Preprocessing data for event: '+str(event.resource_id))
@@ -500,15 +612,18 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, debug=0, plot=False):
-    r"""Function to generate templates from a SeisHub database.Must be given \
-    an obspy.Catalog class and the SeisHub url as input. The function returns \
-    a list of obspy.Stream classes containting steams for each desired \
+    """
+    Generate multiplexed template from FDSN client.
+    Function to generate templates from an FDSN client. Must be given \
+    an obspy.Catalog class and the client_id as input. The function returns \
+    a list of obspy.Stream classes containing steams for each desired \
     template.
 
-    :type catalog: obspy.Catalog
+    :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog class containing desired template events
-    :type url: string
-    :param url: url of SeisHub database instance
+    :type client_id: str
+    :param client_id: Name of the client, either url, or Obspy \
+        mappable.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template\
             defaults file
@@ -533,7 +648,33 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :type plot: bool
     :param plot: Plot templates or not.
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.core.stream.Stream Newly cut template
+
+    .. rubric:: Example
+
+    >>> import obspy
+    >>> if int(obspy.__version__.split('.')[0]) >= 1:
+    ...     from obspy.clients.fdsn import Client
+    ... else:
+    ...     from obspy.fdsn import Client
+    >>> from obspy.core.event import Catalog
+    >>> from eqcorrscan.core.template_gen import from_client
+    >>> client = Client('NCEDC')
+    >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
+    >>> # We are only taking two picks for this example to speed up the example,
+    >>> # note that you don't have to!
+    >>> catalog[0].picks = catalog[0].picks[0:2]
+    >>> templates = from_client(catalog=catalog, client_id='NCEDC',
+    ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
+    ...                         filt_order=4, length=3.0, prepick=0.15,
+    ...                         swin='all')
+    Fetching the following traces from NCEDC
+    BG.CLV..DPZ
+    BK.BKS.00.HHZ
+    Pre-processing data for event: quakeml:nc.anss.org/Event/NC/72572665
+    >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
+
+    .. figure:: ../../plots/template_gen.from_client.png
     """
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -553,6 +694,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         # Figure out which picks we have
         day = event.origins[0].time
         print("Fetching the following traces from " + client_id)
+        dropped_pick_stations = 0
         for pick in event.picks:
             net = pick.waveform_id.network_code
             sta = pick.waveform_id.station_code
@@ -562,7 +704,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correaltions.
+            # of resampling do not impinge on our cross-correlations.
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
@@ -575,14 +717,18 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                                               starttime, endtime)
                 except FDSNException:
                     warnings.warn('Found no data for this station')
+                    dropped_pick_stations += 1
             else:
                 try:
                     st += client.get_waveforms(net, sta, loc, chan,
                                                starttime, endtime)
                 except FDSNException:
                     warnings.warn('Found no data for this station')
+                    dropped_pick_stations += 1
         if debug > 0:
             st.plot()
+        if not st and dropped_pick_stations == len(event.picks):
+            raise FDSNException('No data available, is the server down?')
         print('Pre-processing data for event: '+str(event.resource_id))
         st.merge(fill_value='interpolate')
         st1 = pre_processing.dayproc(st, lowcut, highcut, filt_order,
@@ -597,16 +743,18 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     return temp_list
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
-                  debug=0):
-    r"""Function to generate a cut template in the obspy \
-    Stream class from a given set of picks and data, also in an obspy stream \
-    class.  Should be given pre-processed data (downsampled and filtered).
+def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
+                       plot=False, debug=0):
+    """
+    Generate multiple templates from one stream of data.
+    Thin wrapper around _template_gen to generate multiple templates from \
+    one stream of continuous data.
 
-    :type picks: List of obspy.core.event.Pick
-    :param picks: Picks to extract data around
-    :type st: :class: 'obspy.Stream'
-    :param st: Stream to etract templates from
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Events to extract templates for
+    :type st: obspy.core.stream.Stream
+    :param st: Processed stream to extract from, e.g. filtered and re-sampled \
+        to what you want using pre_processing.dayproc.
     :type length: float
     :param length: Length of template in seconds
     :type swin: string
@@ -619,7 +767,69 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     :type debug: int
     :param debug: Debug output level from 0-5.
 
-    :returns: obspy.Stream Newly cut template.
+    :returns: list of :class: obspy.core.Stream newly cut templates
+
+    .. note:: By convention templates are generated with P-phases on the \
+        vertical channel and S-phases on the horizontal channels, normal \
+        seismograph naming conventions are assumed, where Z denotes vertical \
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
+        or not.  To this end we will **only** use Z channels if they have a \
+        P-pick, and will use one or other horizontal channels **only** if \
+        there is an S-pick on it.
+
+    .. warning:: If there is no phase_hint included in picks, and swin=all, \
+        all channels with picks will be used.
+    """
+    templates = []
+    working_catalog = catalog.copy()
+    # copy this here so we don't remove picks from the real catalog
+    stachans = [(tr.stats.station, tr.stats.channel) for tr in st]
+    for event in working_catalog:
+        picks = event.picks
+        for pick in picks:
+            if st[0].stats.starttime < pick.time < st[0].stats.endtime:
+                pick_stachan = (pick.waveform_id.station_code,
+                                pick.waveform_id.channel_code)
+                if pick_stachan in stachans:
+                    continue
+                else:
+                    # Only keep a pick if there as data for it
+                    picks.remove(pick)
+            else:
+                picks.remove(pick)
+        if len(picks) > 0:
+            st_clip = st.copy()
+            template = _template_gen(picks, st_clip, length, swin,
+                                     prepick, plot, debug)
+            templates.append(template)
+    return templates
+
+
+def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
+                  debug=0):
+    """
+    Master function to generate a multiplexed template for a single event.
+    Function to generate a cut template in the obspy \
+    Stream class from a given set of picks and data, also in an obspy stream \
+    class.  Should be given pre-processed data (downsampled and filtered).
+
+    :type picks: list
+    :param picks: Picks to extract data around
+    :type st: obspy.core.stream.Stream
+    :param st: Stream to etract templates from
+    :type length: float
+    :param length: Length of template in seconds
+    :type swin: str
+    :param swin: P, S or all, defaults to all
+    :type prepick: float
+    :param prepick: Length in seconds to extract before the pick time \
+            default is 0.05 seconds
+    :type plot: bool
+    :param plot: To plot the template or not, default is True
+    :type debug: int
+    :param debug: Debug output level from 0-5.
+
+    :returns: obspy.core.stream.Stream Newly cut template.
 
     .. note:: By convention templates are generated with P-phases on the \
         vertical channel and S-phases on the horizontal channels, normal \
@@ -640,7 +850,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     stations = []
     channels = []
     st_stachans = []
-    if not swin in ['P', 'all', 'S']:
+    if swin not in ['P', 'all', 'S']:
         raise IOError('Phase type is not in [all, P, S]')
     for pick in picks:
         # Check to see that we are only taking the appropriate picks
@@ -661,7 +871,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     for tr in st:
         st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i, station in enumerate(stations):
-        if not '.'.join([station, channels[i]]) in st_stachans:
+        if '.'.join([station, channels[i]]) not in st_stachans and debug > 0:
             warnings.warn('No data provided for ' + station + '.' +
                           channels[i])
     # Select which channels we actually have picks for
@@ -758,14 +968,16 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
 def extract_from_stack(stack, template, length, pre_pick, pre_pad,
                        Z_include=False, pre_processed=True, samp_rate=None,
                        lowcut=None, highcut=None, filt_order=3):
-    r"""Function to extract a new template from a stack of previous detections.
+    """
+    Extract a multiplexed template from a stack of detections.
+    Function to extract a new template from a stack of previous detections.
     Requires the stack, the template used to make the detections for the \
     stack, and we need to know if the stack has been pre-processed.
 
-    :type stack: :class:obspy.Stream
+    :type stack: obspy.core.stream.Stream
     :param stack: Waveform stack from detections.  Can be of any length and \
         can have delays already included, or not.
-    :type template: :class:obspy.Stream
+    :type template: obspy.core.stream.Stream
     :param template: Template used to make the detections in the stack. Will \
         use the delays of this for the new template.
     :type length: float
@@ -799,7 +1011,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     :param filt_order: If pre_processed=False then this is required, filter \
         order, defaults to False
 
-    :returns: obspy.Stream Newly cut template
+    :returns: obspy.core.stream.Stream Newly cut template
     """
     from eqcorrscan.utils import pre_processing
     import warnings

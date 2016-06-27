@@ -40,6 +40,7 @@ install:
   - "pip install pyimgur"
   - "pip install -U future"
   - "pip install pytest-cov"
+  - "pip install pytest-xdist"
   # list package versions
   - "conda list"
 
@@ -48,4 +49,4 @@ build: false
 
 test_script:
   - "%CMD_IN_ENV% python setup.py develop"
-  - "%CMD_IN_ENV% python setup.py test"
+  - "%CMD_IN_ENV% py.test"

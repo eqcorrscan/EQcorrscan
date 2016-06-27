@@ -145,7 +145,10 @@ def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
     """
     import glob
     from obspy import UTCDateTime
-    import ConfigParser
+    try:
+        import ConfigParser
+    except ImportError:
+        import configparser as ConfigParser
     import ast
     f = open(infile, 'r')
     print('Reading parameters with the following header:')
