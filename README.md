@@ -14,43 +14,8 @@ Windows systems.  We support Python versions 2.7 and 3.5.  The codes likely
 work on Py 3.4 too, but we currently don't test this and recommend users to
 work in Py 3.5.
 
-Installation for all systems should be as simple as:
-
-```bash
-pip install EQcorrscan
-```
-
-If upgrading from a previous version, rather than running install --upgrade, I recommend the following:
-
-```bash
-pip install -U --no-deps EQcorrscan
-```
-
-This will not try to upgrade your dependencies, which is not needed.  You should
-to update your obspy version to 1.0.x which was recently released.  We have tested
-this and support it, nevertheless, if you find any issues then let us know.
-
-*You will likely need sudo/root permissions to run this command.*
-
-If you have any issues installing please report them on the issues pages.
-
-You will need to install openCV (note that openCV versions 2 and 3 work for
-Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
-recommend installing openCV 3). We recommend installing openCV from source,
-this will both optimize it for your machine, and ensure you don't break your python
-by using conda.
-
-If you are running Linux or OSX, installation
-instructions can be found
-[here for ubuntu](http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/)
-and [here for OSX](http://www.pyimagesearch.com/2015/06/15/install-opencv-3-0-and-python-2-7-on-osx/).
-Note these two links are Python dependent and you will need to change your pip
-and python versions appropriate to your system.  Similar instructions are
-available for Windows users.
-
-*A note for Ubuntu users*
-You will need the python3.x-dev libraries to install openCV if installing from
-source.
+Instructions for installing EQcorrscan and the required dependency, openCV
+are linked from the [docs](http://eqcorrscan.readthedocs.io/en/latest/intro.html#installation)
 
 *A note on correlation precision*
 OpenCV computes cross-correlations in the frequency-domain for normal seismic
