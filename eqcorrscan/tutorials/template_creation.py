@@ -9,7 +9,7 @@ def mktemplates(network_code='GEONET',
                            '2016p008194'], plot=True):
     """Functional wrapper to make templates"""
 
-    from collections import Counter
+    from eqcorrscan.utils.catalog_utils import filter_picks
     from eqcorrscan.core import template_gen
 
     # This import section copes with namespace changes between obspy versions
@@ -49,31 +49,7 @@ def mktemplates(network_code='GEONET',
     # We don't need all the picks, lets take the information from the
     # five most used stations - note that this is done to reduce computational
     # costs.
-    all_picks = []
-    for event in catalog:
-        all_picks += [(pick.waveform_id.station_code,
-                       pick.waveform_id.channel_code) for pick in event.picks]
-    # Python 3.x and python 2.7 do not sort in the same way, this is a cludge
-    # to work around that...
-    counted = Counter(all_picks).most_common()
-    # Going to take an initial set that all have atleast 1 less pick than the
-    # highest pick-count...
-    all_picks = []
-    for i in range(counted[0][1]):
-        highest = [item[0] for item in counted if item[1] >= counted[0][1] - i]
-        # Sort them by alphabetical order in station
-        highest = sorted(highest, key=lambda tup: tup[0])
-        all_picks += highest
-        if len(all_picks) > 5:
-            all_picks = all_picks[0:5]
-            break
-
-    for event in catalog:
-        if len(event.picks) == 0:
-            raise IOError('No picks found')
-        event.picks = [pick for pick in event.picks
-                       if (pick.waveform_id.station_code,
-                           pick.waveform_id.channel_code) in all_picks]
+    catalog = filter_picks(catalog, top_n_picks=5)
 
     # Now we can generate the templates
     templates = template_gen.from_client(catalog=catalog,

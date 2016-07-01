@@ -19,6 +19,7 @@ there are now multiple options for location of events.
 
    submodules/utils.archive_read
    submodules/utils.clustering
+   submodules/utils.catalog_utils
    submodules/utils.plotting
    submodules/utils.findpeaks
    submodules/utils.despike
