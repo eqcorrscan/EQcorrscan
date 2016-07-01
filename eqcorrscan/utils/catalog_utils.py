@@ -114,14 +114,17 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
                           for pick in event.picks]
         counted = Counter(all_picks).most_common()
         all_picks = []
+        # Hack around sorting the counter object: Py 2 does it differently to 3
         for i in range(counted[0][1]):
             highest = [item[0] for item in counted
                        if item[1] >= counted[0][1] - i]
             # Sort them by alphabetical order in station
             highest = sorted(highest, key=lambda tup: tup[0])
-            all_picks += highest
-            if len(all_picks) > 5:
-                all_picks = all_picks[0:5]
+            for stachan in highest:
+                if stachan not in all_picks:
+                    all_picks.append(stachan)
+            if len(all_picks) > top_n_picks:
+                all_picks = all_picks[0:top_n_picks]
                 break
         for event in filtered_catalog:
             if len(event.picks) == 0:

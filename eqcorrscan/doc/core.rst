@@ -49,6 +49,15 @@ multi-channel data using > 600 templates in less than 36 hours.
 
 .. _match_filter: submodules/core.match_filter.html
 
+**Lag-Calc**
+lag_calc_ contains functions for generating pick-corrections from
+cross-correlations with a defined template.  Originally this was designed
+for events detected by match_filter_, however you can use any well correlated
+events.  Based on the method of `Shelly and Hardebeck (2010)`_.
+
+.. _lag_calc: submodules/core.lag_calc.html
+.. _Shelly and Hardebeck (2010): http://onlinelibrary.wiley.com/doi/10.1029/2010GL043672/full
+
 
 .. toctree::
    :maxdepth: 1
@@ -56,3 +65,4 @@ multi-channel data using > 600 templates in less than 36 hours.
    submodules/core.bright_lights
    submodules/core.template_gen
    submodules/core.match_filter
+   submodules/core.lag_calc
