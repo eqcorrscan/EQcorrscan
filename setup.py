@@ -16,6 +16,9 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+import sys
+import os
 import eqcorrscan
 # To use a consistent encoding
 from codecs import open
@@ -32,26 +35,49 @@ except ImportError:
     print(msg)
     read_md = lambda f: open(f, 'r').read()
 
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+
 try:
-    import cv2
+    import cv2  # NOQA
 except:
+    print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-long_description = read_md('README.md')
+long_description = "EQcorrscan: matched-filter earthquake detection and " +\
+    "analysis in Python.  Open-source routines for: systematic template " +\
+    "creation, multi-parallel matched-filter detection, clustering of " +\
+    "events, integration with SEISAN, SAC, QuakeML and NonLinLoc, " +\
+    "magnitude calculation by singular value decomposition, and more!"
 
 # Get a list of all the scripts not to be installed
-scriptfiles = glob.glob('eqcorrscan/scripts/*.py')
-# scriptfiles += glob.glob('eqcorrscan/*.sl')
-scriptfiles += glob.glob('eqcorrscan/tutorial.py')
-# scriptfiles += glob.glob('eqcorrscan/WHATVsearch.py')
-# scriptfiles += glob.glob('eqcorrscan/LFE_brightness_search.py')
-# scriptfiles += glob.glob('eqcorrscan/synth_test.py')
+scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
+scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
-
+if sys.version_info.major == 2:
+    if not READ_THE_DOCS:
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'scipy>=0.14', 'multiprocessing',
+                            'LatLon']
+    else:
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'multiprocessing',
+                            'LatLon']
+else:
+    if not READ_THE_DOCS:
+        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'scipy>=0.14', 'LatLon']
+    else:
+        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'LatLon']
+# install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
 
@@ -60,7 +86,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=eqcorrscan.__version__,
 
-    description='EQcorrscan - correlation earthquake detection',
+    description='EQcorrscan - matched-filter earthquake detection and analysis',
     long_description=long_description,
 
     # The project's main homepage.
@@ -86,11 +112,13 @@ setup(
         'Topic :: Scientific/Engineering',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+        'License :: OSI Approved :: GNU Library or Lesser General Public ' +
+        'License (LGPL)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
     ],
 
     # What does your project relate to?
@@ -108,9 +136,11 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['obspy>=0.10.2', 'numpy>=1.8.0', 'matplotlib>=1.1.0',
-                      'joblib>=0.8.4', 'scipy>=0.14'],
+    install_requires=install_requires,
 
+    # Test requirements for using pytest
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'pytest-flake8', 'pytest-cov', 'pytest-xdist'],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
@@ -120,25 +150,4 @@ setup(
     #     'test': ['coverage'],
     # },
 
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
-    # package_data={
-    #    'tutorial_data': ['test_data'],
-    # },
-
-    # Although 'package_data' is the preferred approach, in some case you may
-    # need to place data files outside of your packages. See:
-    # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
-    # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    # data_files=[('tutorial_data', ['eqcorrscan/test_data/tutorial_data.tgz'])],
-
-    # To provide executable scripts, use entry points in preference to the
-    # "scripts" keyword. Entry points provide cross-platform support and allow
-    # pip to create the appropriate form of executable for the target platform.
-    # entry_points={
-    #     'console_scripts': [
-    #         'sample=sample:main',
-    #     ],
-    # },
 )

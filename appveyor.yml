@@ -1,0 +1,52 @@
+
+# AppVeyor.com is a Continuous Integration service to build and run tests under Windows
+
+environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: https://stackoverflow.com/a/13751649
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\misc\\appveyor\\run_with_env.cmd"
+    PYTHON: "C:\\conda"
+    MINICONDA_VERSION: "3.7.0"
+    CI_URL: "--ci-url https://ci.appveyor.com/project/%APPVEYOR_REPO_NAME%/build/1.0.%APPVEYOR_BUILD_NUMBER%-%APPVEYOR_REPO_BRANCH%"
+    PR_URL: "--pr-url https://github.com/%APPVEYOR_REPO_NAME%/pull/%APPVEYOR_PULL_REQUEST_NUMBER%"
+
+  matrix:
+    - PYTHON_VERSION: "2.7"
+      PYTHON_ARCH: "64"
+
+platform:
+  - x64
+
+install:
+  # Install miniconda using a powershell script.
+  - '.\\misc\\appveyor\\trim_path.bat'
+  - "ECHO %PATH%"
+  - "powershell ./misc/appveyor/install-miniconda.ps1"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # Check that we have the expected version and architecture for Python
+  - "%CMD_IN_ENV% python --version"
+  # Install the build and runtime dependencies of the project.
+  - "conda update -q --yes conda"
+  # Create a conda environment using the astropy bonus packages
+  - "conda create -q --yes -n test python=%PYTHON_VERSION%"
+  - "activate test"
+  # Install default dependencies
+  - "conda install -q --yes pip numpy scipy matplotlib=1.3.1 lxml sqlalchemy flake8 mock nose gdal decorator requests basemap pytest pyflakes=0.9.0"
+  # additional dependecies
+  - "choco install opencv -version 2.4.9.20140518"
+  - "powershell copy-item C:\\OpenCV249\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
+  - "pip install pyimgur"
+  - "pip install -U future"
+  - "pip install pytest-cov"
+  - "pip install pytest-xdist"
+  # list package versions
+  - "conda list"
+
+# Not a .NET project
+build: false
+
+test_script:
+  - "%CMD_IN_ENV% python setup.py develop"
+  - "%CMD_IN_ENV% py.test"
