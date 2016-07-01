@@ -49,5 +49,6 @@ through some of the key functionality of the EQcorrscan package.
 
   tutorials/template-creation.rst
   tutorials/matched-filter.rst
+  tutorials/lag-calc.rst
   tutorials/mag-calc.rst
   tutorials/clustering.rst

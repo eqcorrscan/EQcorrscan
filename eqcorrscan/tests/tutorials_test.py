@@ -46,10 +46,6 @@ class TestTutorialScripts(unittest.TestCase):
             self.assertIn(detection.detect_time, expected_times,
                           msg='Detection at %s is not in expected detections'
                           % detection.detect_time)
-            # self.assertIn(round(detection.detect_val, 4),
-            #               expected_correlations,
-            #               msg='Detection with cross-correlation value %s not' +
-            #               ' in expected detections' % detection.detect_val)
         if len(expected_detections) > len(tutorial_detections):
             # This is a fail but we are trying to debug
             actual_times = [tutorial_detection.detect_time
@@ -63,6 +59,37 @@ class TestTutorialScripts(unittest.TestCase):
         templates = glob.glob('tutorial_template_?.ms')
         for template in templates:
             os.remove(template)
+
+
+    def test_lag_calc(self):
+        """Test the lag calculation tutorial."""
+        from eqcorrscan.tutorials.lag_calc import run_tutorial
+
+        shift_len=0.2
+        detections, picked_catalog, templates, template_names = \
+            run_tutorial(shift_len=shift_len)
+
+        self.assertEqual(len(picked_catalog), len(detections))
+        self.assertEqual(len(detections), 7)
+        for event, detection in zip(picked_catalog, detections):
+            template = [t[0] for t in zip(templates, template_names)
+                        if t[1] == detection.template_name][0]
+            template_stachans = [(tr.stats.station, tr.stats.channel)
+                                 for tr in template]
+            for pick in event.picks:
+                # First check that there is a template for the pick
+                stachan = (pick.waveform_id.station_code,
+                           pick.waveform_id.channel_code)
+                self.assertTrue(stachan in template_stachans)
+                # Now check that the pick time is within +/- shift_len of
+                # The template
+                tr = template.select(station=stachan[0], channel=stachan[1])[0]
+                delay = tr.stats.starttime - \
+                        template.sort(['starttime'])[0].stats.starttime
+                re_picked_delay = pick.time - (detection.detect_time + delay)
+                self.assertTrue(abs(pick.time - tr.stats.starttime) <
+                                shift_len)
+
 
 if __name__ == '__main__':
     """
