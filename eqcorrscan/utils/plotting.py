@@ -925,7 +925,10 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
                         pick.waveform_id.channel_code[-1] ==
                         tr.stats.channel[0] + tr.stats.channel[-1]]
             for pick in tr_picks:
-                if 'P' in pick.phase_hint.upper():
+                if not pick.phase_hint:
+                    pcolor = 'k'
+                    label = 'Unknown pick'
+                elif 'P' in pick.phase_hint.upper():
                     pcolor = 'red'
                     label = 'P-pick'
                 elif 'S' in pick.phase_hint.upper():

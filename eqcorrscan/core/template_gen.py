@@ -30,6 +30,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+import warnings
 
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
@@ -110,8 +111,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     event = sactoevent(st, debug=debug)
     # Process the data
     st.merge(fill_value='interpolate')
-    st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
-                                  samp_rate, debug)
+    st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
+                                  filt_order=filt_order,
+                                  samp_rate=samp_rate, debug=debug)
     template = _template_gen(picks=event.picks, st=st, length=length,
                              swin=swin, prepick=prepick, plot=plot,
                              debug=debug)
@@ -251,8 +253,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                             str(pick.time)]))
     # Process waveform data
     st.merge(fill_value='interpolate')
-    st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
-                                  samp_rate, debug)
+    st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
+                                  filt_order=filt_order, samp_rate=samp_rate,
+                                  debug=debug)
     st1 = _template_gen(picks=picks, st=st, length=length, swin=swin,
                         prepick=prepick, plot=plot, debug=debug)
     return st1
@@ -452,19 +455,24 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     else:
         daylong = False
     if daylong:
-        st = pre_processing.dayproc(st, lowcut, highcut, filt_order,
-                                    samp_rate, debug=debug,
+        st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
+                                    filt_order=filt_order, samp_rate=samp_rate,
+                                    debug=debug,
                                     starttime=UTCDateTime(st[0].stats.
                                                           starttime.date))
     else:
-        st = pre_processing.shortproc(st, lowcut, highcut, filt_order,
-                                      samp_rate, debug=debug)
+        st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
+                                      filt_order=filt_order,
+                                      samp_rate=samp_rate, debug=debug)
     data_start = min([tr.stats.starttime for tr in st])
     data_end = max([tr.stats.endtime for tr in st])
     # Read QuakeML file into Catalog class
     catalog = read_events(quakeml)
     templates = []
     for event in catalog:
+        if len(event.picks) == 0:
+            warnings.warn('No picks for event %s' % event.resource_id)
+            continue
         use_event = True
         # Check that the event is within the data
         for pick in event.picks:
@@ -556,6 +564,9 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         # Figure out which picks we have
         day = event.origins[0].time
         picks = event.picks
+        if len(event.picks) == 0:
+            warnings.warn('No picks for event %s' % event.resource_id)
+            continue
         print("Fetching the following traces from SeisHub")
         for pick in picks:
             if pick.waveform_id.network_code:
@@ -600,10 +611,12 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
             st.plot()
         print('Preprocessing data for event: '+str(event.resource_id))
         st.merge(fill_value='interpolate')
-        st1 = pre_processing.dayproc(st, lowcut, highcut, filt_order,
-                                     samp_rate, starttime=starttime,
+        st1 = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
+                                     filt_order=filt_order,
+                                     samp_rate=samp_rate, starttime=starttime,
                                      debug=debug)
-        template = _template_gen(event.picks, st1, length, swin, prepick,
+        template = _template_gen(picks=event.picks, st=st1, length=length,
+                                 swin=swin, prepick=prepick,
                                  plot=plot, debug=debug)
         del st, st1
         temp_list.append(template)
@@ -668,10 +681,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
     ...                         filt_order=4, length=3.0, prepick=0.15,
     ...                         swin='all')
-    Fetching the following traces from NCEDC
     BG.CLV..DPZ
     BK.BKS.00.HHZ
-    Pre-processing data for event: quakeml:nc.anss.org/Event/NC/72572665
+    Pre-processing data
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
     .. figure:: ../../plots/template_gen.from_client.png
@@ -690,17 +702,23 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
 
     client = Client(client_id)
     temp_list = []
-    for event in catalog:
-        # Figure out which picks we have
-        day = event.origins[0].time
-        print("Fetching the following traces from " + client_id)
+    # Group catalog into days and only download the data once per day
+    catalog_days = list(set([event.origins[0].time.date for event in catalog]))
+    for day in catalog_days:
+        day_events = [event for event in catalog
+                      if event.origins[0].time.date == day]
+        all_waveform_info = [pick.waveform_id for pick in event.picks
+                             for event in day_events]
+        all_waveform_info = list(set([(w.network_code, w.station_code,
+                                      w.channel_code, w.location_code)
+                                     for w in all_waveform_info]))
         dropped_pick_stations = 0
-        for pick in event.picks:
-            net = pick.waveform_id.network_code
-            sta = pick.waveform_id.station_code
-            chan = pick.waveform_id.channel_code
-            loc = pick.waveform_id.location_code
-            starttime = UTCDateTime(pick.time.date)
+        for waveform_info in all_waveform_info:
+            net = waveform_info[0]
+            sta = waveform_info[1]
+            chan = waveform_info[2]
+            loc = waveform_info[3]
+            starttime = UTCDateTime(day)
             endtime = starttime + 86400
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
@@ -729,17 +747,20 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             st.plot()
         if not st and dropped_pick_stations == len(event.picks):
             raise FDSNException('No data available, is the server down?')
-        print('Pre-processing data for event: '+str(event.resource_id))
+        print('Pre-processing data')
         st.merge(fill_value='interpolate')
-        st1 = pre_processing.dayproc(st, lowcut, highcut, filt_order,
-                                     samp_rate, starttime=starttime,
+        st1 = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
+                                     filt_order=filt_order,samp_rate=samp_rate,
+                                     starttime=starttime,
                                      debug=debug, parallel=True)
         if debug > 0:
             st1.plot()
-        template = _template_gen(event.picks, st1, length, swin, prepick,
-                                 plot=plot, debug=debug)
+        for event in day_events:
+            template = _template_gen(picks=event.picks, st=st1, length=length,
+                                     swin=swin, prepick=prepick,
+                                     plot=plot, debug=debug)
+            temp_list.append(template)
         del st, st1
-        temp_list.append(template)
     return temp_list
 
 
@@ -799,8 +820,9 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
                 picks.remove(pick)
         if len(picks) > 0:
             st_clip = st.copy()
-            template = _template_gen(picks, st_clip, length, swin,
-                                     prepick, plot, debug)
+            template = _template_gen(picks=picks, st=st_clip, length=length,
+                                     swin=swin, prepick=prepick, plot=plot,
+                                     debug=debug)
             templates.append(template)
     return templates
 
@@ -1028,9 +1050,12 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     for tr in new_template:
         # Process the data if necessary
         if not pre_processed:
-            new_template = pre_processing.shortproc(new_template, lowcut,
-                                                    highcut, filt_order,
-                                                    samp_rate, 0)
+            new_template = pre_processing.shortproc(st=new_template,
+                                                    lowcut=lowcut,
+                                                    highcut=highcut,
+                                                    filt_order=filt_order,
+                                                    samp_rate=samp_rate,
+                                                    debug=0)
         # Find the matching delay
         delay = [d[2] for d in delays if d[0] == tr.stats.station and
                  d[1] == tr.stats.channel[-1]]
