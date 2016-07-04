@@ -707,11 +707,14 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     for day in catalog_days:
         day_events = [event for event in catalog
                       if event.origins[0].time.date == day]
-        all_waveform_info = [pick.waveform_id for pick in event.picks
-                             for event in day_events]
+        all_waveform_info = []
+        for event in day_events:
+            for pick in event.picks:
+                all_waveform_info.append(pick.waveform_id)
         all_waveform_info = list(set([(w.network_code, w.station_code,
                                       w.channel_code, w.location_code)
                                      for w in all_waveform_info]))
+        all_waveform_info.sort()
         dropped_pick_stations = 0
         for waveform_info in all_waveform_info:
             net = waveform_info[0]

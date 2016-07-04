@@ -356,7 +356,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     hands off the actual correlations to a sister function which can be run \
     in parallel.
 
-    :type templates: :class: 'obspy.Stream'
+    :type templates: list
     :param templates: A list of templates, where each one should be an \
         obspy.Stream object containing multiple traces of seismic data and \
         the relevant header information.
