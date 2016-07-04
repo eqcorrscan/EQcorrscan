@@ -5,9 +5,66 @@ Functions to generate pick-corrections for events detected by correlation.
 """
 import numpy as np
 from eqcorrscan.core.match_filter import normxcorr2
+import scipy
+import warnings
 
 
-def _channel_loop(detection, template, min_cc, i=0, debug=0):
+def _xcorr_interp(ccc, dt):
+    """
+    Intrpolate around the maximum correlation value for sub-sample precision.
+
+    :param ccc: Cross-correlation array
+    :type ccc: numpy.ndarray
+    :param dt: sample interval
+    :type dt: float
+
+    :return: Position of interpolated maximum in seconds from start of ccc
+    :rtype: float
+    """
+    if ccc.shape[0] == 1:
+        cc = ccc[0]
+    else:
+        cc = ccc
+    # Code borrowed from obspy.signal.cross_correlation.xcorr_pick_correction
+    cc_curvature = np.concatenate((np.zeros(1), np.diff(cc, 2), np.zeros(1)))
+    cc_t = np.arange(0, len(cc) * dt, dt)
+    peak_index = cc.argmax()
+    first_sample = peak_index
+    # XXX this could be improved..
+    while first_sample > 0 and cc_curvature[first_sample - 1] <= 0:
+        first_sample -= 1
+    last_sample = peak_index
+    while last_sample < len(cc) - 1 and cc_curvature[last_sample + 1] <= 0:
+        last_sample += 1
+    num_samples = last_sample - first_sample + 1
+    if num_samples < 3:
+        msg = "Less than 3 samples selected for fit to cross " + \
+              "correlation: %s" % num_samples
+        raise IndexError(msg)
+    if num_samples < 5:
+        msg = "Less than 5 samples selected for fit to cross " + \
+              "correlation: %s" % num_samples
+        warnings.warn(msg)
+    coeffs, residual = scipy.polyfit(
+        cc_t[first_sample:last_sample + 1],
+        cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
+    # check results of fit
+    if coeffs[0] >= 0:
+        msg = "Fitted parabola opens upwards!"
+        warnings.warn(msg)
+    if residual > 0.1:
+        msg = "Residual in quadratic fit to cross correlation maximum " + \
+              "larger than 0.1: %s" % residual
+        warnings.warn(msg)
+    # X coordinate of vertex of parabola gives time shift to correct
+    # differential pick time. Y coordinate gives maximum correlation
+    # coefficient.
+    shift = -coeffs[1] / 2.0 / coeffs[0]
+    coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
+    return shift
+
+def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
+                  debug=0):
     """
     Inner loop for correlating and assigning picks.
 
@@ -21,6 +78,9 @@ def _channel_loop(detection, template, min_cc, i=0, debug=0):
         template.
     :type template: obspy.core.stream.Stream
     :param template: Stream of data as the template for the detection.
+    :type interpolate: bool
+    :param interpolate: Interpolate the correlation function to achieve \
+        sub-sample precision.
     :type i: int
     :param i: Used to track which process has occurred when running in \
         parallel.
@@ -45,8 +105,18 @@ def _channel_loop(detection, template, min_cc, i=0, debug=0):
             if debug > 3:
                 print('********DEBUG: Maximum cross-corr=%s' % np.amax(ccc))
             if np.amax(ccc) > min_cc:
-                picktime = image[0].stats.starttime + (np.argmax(ccc) *
-                                                       image[0].stats.delta)
+                if interpolate:
+                    try:
+                        interp_max = _xcorr_interp(ccc=ccc,
+                                                   dt=image[0].stats.delta)
+                        print('Yay, interpolated')
+                    except IndexError:
+                        print('Could not interpolate ccc, not smooth')
+                        interp_max = np.argmax(ccc) * image[0].stats.delta
+                    picktime = image[0].stats.starttime + interp_max
+                else:
+                    picktime = image[0].stats.starttime + (np.argmax(ccc) *
+                                                           image[0].stats.delta)
             else:
                 continue
             # Perhaps weight each pick by the cc val or cc val^2?
@@ -81,7 +151,7 @@ def _channel_loop(detection, template, min_cc, i=0, debug=0):
     return (i, event)
 
 
-def _day_loop(detection_streams, template, min_cc):
+def _day_loop(detection_streams, template, min_cc, interpolate=False, debug=0):
     """
     Function to loop through multiple detections for one template.
 
@@ -97,6 +167,9 @@ def _day_loop(detection_streams, template, min_cc):
     :param template: The original template used to detect the detections passed
     :type min_cc: float
     :param min_cc: Minimum cross-correlation value to be allowed for a pick.
+    :type interpolate: bool
+    :param interpolate: Interpolate the correlation function to achieve \
+        sub-sample precision.
 
     :returns: Catalog object containing Event objects for each detection
               created by this template.
@@ -112,10 +185,12 @@ def _day_loop(detection_streams, template, min_cc):
     # Parallelize generation of events for each detection:
     # results is a list of (i, event class)
     results = [pool.apply_async(_channel_loop, args=(detection_streams[i],
-                                                     template, min_cc, i))
-               for i in xrange(len(detection_streams))]
+                                                     template, min_cc,
+                                                     interpolate, i, debug))
+               for i in range(len(detection_streams))]
     pool.close()
     events_list = [p.get() for p in results]
+    pool.join()
     events_list.sort(key=lambda tup: tup[0])  # Sort based on i.
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
@@ -123,7 +198,7 @@ def _day_loop(detection_streams, template, min_cc):
 
 
 def lag_calc(detections, detect_data, template_names, templates,
-             shift_len=0.2, min_cc=0.4):
+             shift_len=0.2, min_cc=0.4, interpolate=False, plot=False):
     """
     Main lag-calculation function for detections of specific events.
 
@@ -149,8 +224,14 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type min_cc: float
     :param min_cc: Minimum cross-correlation value to be considered a pick,
         default=0.4
+    :type interpolate: bool
+    :param interpolate: Interpolate the correlation function to achieve \
+        sub-sample precision.
+    :type plot: bool
+    :param plot: To generate a plot for every detection or not, defaults to \
+        False.
 
-    :returns: Catalog of events with picks.  No origin imformation is \
+    :returns: Catalog of events with picks.  No origin information is \
         included, these events can then be written out via \
         obspy.core.event functions, or to seisan Sfiles using Sfile_util \
         and located.
@@ -172,12 +253,13 @@ def lag_calc(detections, detect_data, template_names, templates,
     """
     from obspy import Stream
     from obspy.core.event import Catalog
+    from eqcorrscan.utils.plotting import plot_repicked
 
     # Establish plugin directory relative to this module
 
     # First work out the delays for each template
     delays = []  # List of tuples of (tempname, (sta, chan, delay))
-    zipped_templates = zip(template_names, templates)
+    zipped_templates = list(zip(template_names, templates))
     for template in zipped_templates:
         temp_delays = []
         for tr in template[1]:
@@ -193,8 +275,16 @@ def lag_calc(detections, detect_data, template_names, templates,
         for tr in detect_data:
             tr_copy = tr.copy()
             # Right now, copying each trace hundreds of times...
-            template = [t for t in zipped_templates if t[0] == detection.
-                        template_name][0]
+            template = [t for t in zipped_templates
+                        if str(t[0]) == str(detection.template_name)]
+            if len(template) > 0:
+                template = template[0]
+            else:
+                warnings.warn('No template with name: %s' %
+                              detection.template_name)
+                for t in zipped_templates:
+                    print(t)
+                continue
             template = template[1].select(station=tr.stats.station,
                                           channel=tr.stats.channel)
             if template:
@@ -224,8 +314,19 @@ def lag_calc(detections, detect_data, template_names, templates,
     for template in zipped_templates:
         template_detections = [detect[1] for detect in detect_streams
                                if detect[0] == template[0]]
-        if len(template_detections) > 0:  # Way to remove this?
-            initial_cat += _day_loop(template_detections, template[1], min_cc)
+        if len(template_detections) > 0:
+            template_cat = _day_loop(detection_streams=template_detections,
+                                     template=template[1], min_cc=min_cc,
+                                     interpolate=interpolate)
+            initial_cat += template_cat
+            if plot:
+                for i, event in enumerate(template_cat):
+                    if len(event.picks) == 0:
+                        print('Made no picks for event')
+                        print(event)
+                        continue
+                    plot_repicked(template[1], event.picks,
+                                  template_detections[i])
     return initial_cat
 
 

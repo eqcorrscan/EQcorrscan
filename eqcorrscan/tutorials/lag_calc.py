@@ -19,8 +19,9 @@ def run_tutorial(shift_len=0.2):
     catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
                                          top_n_picks=5)
     templates = template_gen.from_client(catalog=catalog, client_id='NCEDC',
-                                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
-                                         filt_order=4, length=3.0, prepick=0.15,
+                                         lowcut=2.0, highcut=9.0,
+                                         samp_rate=50.0, filt_order=4,
+                                         length=3.0, prepick=0.15,
                                          swin='all')
     # Download and process the day-long data
     bulk_info = [(tr.stats.network, tr.stats.station, '*',
@@ -29,9 +30,10 @@ def run_tutorial(shift_len=0.2):
     st = client.get_waveforms_bulk(bulk_info)
     st.merge(fill_value='interpolate')
     st = pre_processing.dayproc(st, lowcut=2.0, highcut=9.0,
-                                filt_order=4, samp_rate=20.0,
+                                filt_order=4, samp_rate=50.0,
                                 debug=0, starttime=t1, num_cores=4)
-    template_names = [str(template[0].stats.starttime) for template in templates]
+    template_names = [str(template[0].stats.starttime)
+                      for template in templates]
     detections = match_filter.match_filter(template_names=template_names,
                                            template_list=templates,
                                            st=st, threshold=8.0,
@@ -57,7 +59,8 @@ def run_tutorial(shift_len=0.2):
                                        detect_data=st,
                                        template_names=template_names,
                                        templates=templates,
-                                       shift_len=shift_len, min_cc=0.5)
+                                       shift_len=shift_len, min_cc=0.5,
+                                       interpolate=True, plot=False)
     # Return all of this so that we can use this function for testing.
     return unique_detections, picked_catalog, templates, template_names
 

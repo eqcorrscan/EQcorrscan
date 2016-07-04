@@ -883,7 +883,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     lines = []
     labels = []
     for i, tr in enumerate(template):
-        # Cope with a singe channel template case.
+        # Cope with a single channel template case.
         if len(template) > 1:
             axis = axes[i]
         else:
@@ -968,6 +968,135 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         plt.close()
     return fig
 
+
+def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
+                  savefile=None, title=False):
+    """
+    Plot a template over a detected stream, with picks corrected by lag-calc.
+
+    :param template: Template used to make the detection, will be aligned \
+        according to picks.
+    :type template: obspy.core.stream.Stream
+    :param picks: list of corrected picks.
+    :type picks: list
+    :param det_stream: Stream to plot in the background, should be the \
+        detection, data should encompass the time the picks are made.
+    :type det_stream: obspy.core.stream.Stream
+    :param size: tuple of plot size.
+    :type size: tuple
+    :param save: To save figure or not, if false, will show to screen.
+    :type save: bool
+    :param savefile: File name to save file, required if save==True.
+    :type savefile: str
+    :param title: Title for plot, defaults to None.
+    :type title: str
+
+    :return: Figure handle which can be edited.
+    :rtype: matplotlib.pyplot.figure
+    """
+    _check_save_args(save, savefile)
+    fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
+    if len(template) > 1:
+        axes = axes.ravel()
+    mintime = det_stream.sort(['starttime'])[0].stats.starttime
+    template.sort(['network', 'station', 'starttime'])
+    lengths = []
+    lines = []
+    labels = []
+    n_templates_plotted = 0
+    for i, tr in enumerate(template.sort(['starttime'])):
+        # Cope with a single channel template case.
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
+        tr_picks = [pick for pick in picks if
+                    pick.waveform_id.station_code == tr.stats.station and
+                    pick.waveform_id.channel_code[0] +
+                    pick.waveform_id.channel_code[-1] ==
+                    tr.stats.channel[0] + tr.stats.channel[-1]]
+        if len(tr_picks) > 1:
+            msg = 'Multiple picks on channel %s' % tr.stats.station + ', ' + \
+                  tr.stats.channel
+            raise NotImplementedError(msg)
+        if len(tr_picks) == 0:
+            msg = 'No pick for chanel %s' % tr.stats.station + ', ' + \
+                  tr.stats.channel
+            print(msg)
+        else:
+            pick = tr_picks[0]
+            delay = pick.time - mintime
+            y = tr.data
+            # Normlise
+            y /= max(y)
+            x = np.linspace(0, (len(y) - 1) * tr.stats.delta, len(y))
+            x += delay
+        btr = det_stream.select(station=tr.stats.station,
+                                channel=tr.stats.channel)[0]
+        bdelay = btr.stats.starttime - mintime
+        by = btr.data
+        if len(tr_picks) > 0:
+            by /= max(by[int(delay):int(delay) + len(x)])
+        else:
+            by /= max(by)
+        bx = np.linspace(0, (len(by) - 1) * btr.stats.delta, len(by))
+        bx += bdelay
+        axis.plot(bx, by, 'k', linewidth=1.5)
+        if len(tr_picks) > 0:
+            template_line, = axis.plot(x, y, 'r', linewidth=1.6,
+                                       label='Template')
+            if not pick.phase_hint:
+                pcolor = 'k'
+                label = 'Unknown pick'
+            elif 'P' in pick.phase_hint.upper():
+                pcolor = 'red'
+                label = 'P-pick'
+            elif 'S' in pick.phase_hint.upper():
+                pcolor = 'blue'
+                label = 'S-pick'
+            else:
+                pcolor = 'k'
+                label = 'Unknown pick'
+            pdelay = pick.time - mintime
+            line = axis.axvline(x=pdelay, color=pcolor, linewidth=2,
+                                linestyle='--', label=label)
+            if label not in labels:
+                lines.append(line)
+                labels.append(label)
+            if n_templates_plotted == 0:
+                lines.append(template_line)
+                labels.append('Template')
+            n_templates_plotted += 1
+            lengths.append(max(bx[-1], x[-1]))
+        else:
+            lengths.append(bx[1])
+        axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+                        rotation=0, horizontalalignment='right')
+        axis.yaxis.set_ticks([])
+    axis.set_xlim([0, max(lengths)])
+    if len(template) > 1:
+        axis = axes[len(template) - 1]
+    else:
+        axis = axes
+    axis.set_xlabel('Time (s) from %s' %
+                    mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
+    plt.figlegend(lines, labels, 'upper right')
+    if title:
+        if len(template) > 1:
+            axes[0].set_title(title)
+        else:
+            axes.set_title(title)
+    else:
+        plt.subplots_adjust(top=0.98)
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    if not save:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig(savefile)
+        plt.close()
+    return fig
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,
             size=(18.5, 10), save=False, savefile=None, title=False):

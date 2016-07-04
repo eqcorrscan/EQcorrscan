@@ -60,17 +60,16 @@ class TestTutorialScripts(unittest.TestCase):
         for template in templates:
             os.remove(template)
 
-
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         from eqcorrscan.tutorials.lag_calc import run_tutorial
 
-        shift_len=0.2
+        shift_len = 0.2
         detections, picked_catalog, templates, template_names = \
             run_tutorial(shift_len=shift_len)
 
         self.assertEqual(len(picked_catalog), len(detections))
-        self.assertEqual(len(detections), 7)
+        self.assertEqual(len(detections), 9)
         for event, detection in zip(picked_catalog, detections):
             template = [t[0] for t in zip(templates, template_names)
                         if t[1] == detection.template_name][0]
@@ -87,8 +86,7 @@ class TestTutorialScripts(unittest.TestCase):
                 delay = tr.stats.starttime - \
                         template.sort(['starttime'])[0].stats.starttime
                 re_picked_delay = pick.time - (detection.detect_time + delay)
-                self.assertTrue(abs(pick.time - tr.stats.starttime) <
-                                shift_len)
+                self.assertTrue(abs(re_picked_delay) < shift_len)
 
 
 if __name__ == '__main__':
