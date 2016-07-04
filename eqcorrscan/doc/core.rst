@@ -47,6 +47,28 @@ the batch job submission capability which distributes daily detections across
 multiple nodes.  This allows us to detect earthquakes through > 6 years of
 multi-channel data using > 600 templates in less than 36 hours.
 
+Currently EQcorrscan enforces the use of day-long seismic data when computing
+the matched-filter detections.  This is not strictly needed and has been a
+hang-over from previous versions of this software.  As the figure below shows,
+the only thing that changes between different data lengths are the:
+   * pre-processing (filters and resampling have different effects - this relates to the notes in the template_gen_ functions, this is not an issue as long as you process the same length of data when generating templates as when computing detections);
+   * median-absolute deviation based thresholds.
+Changing to using shorter data lengths seems advantageous, or rather, giving the
+user the freedom to chose based on their memory specs.  It would also allow
+near real-time applications with short chunks of data coming in.
+
+**TO DO**
+
+.. figure:: plots/range_of_threshold_windows_Parkfield1.png
+     :width: 800px
+     :align: center
+     :alt: plots/range_of_threshold_windows_Parkfield1.png
+
+     Plot of a few hours of cross-correlation sum (black) for a five channel template
+     associated with the Parkfield 2004 earthquake with various windowed thresholds,
+     set to 8 x Median Absolute Deviation. x-axis is time in hours, y-axis is
+     cross-correlation sum.
+
 .. _match_filter: submodules/core.match_filter.html
 
 **Lag-Calc**
