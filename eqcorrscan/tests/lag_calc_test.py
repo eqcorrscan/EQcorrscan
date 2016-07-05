@@ -12,7 +12,6 @@ import unittest
 class TestMethods(unittest.TestCase):
     def test_channel_loop(self):
         """Test the main lag_calc function"""
-        from obspy import read
         import os
         from eqcorrscan.core.template_gen import from_sfile
 

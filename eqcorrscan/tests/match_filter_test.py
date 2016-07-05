@@ -175,6 +175,51 @@ class TestCoreMethods(unittest.TestCase):
         test_match_filter(template_excess=True)
 
 
+    def test_short_match_filter(self):
+        """Test using short streams of data."""
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.core import template_gen, match_filter
+        from eqcorrscan.utils import pre_processing, catalog_utils
+
+        client = Client('NCEDC')
+        t1 = UTCDateTime(2004, 9, 28)
+        t2 = t1 + 86400
+        catalog = client.get_events(starttime=t1, endtime=t2,
+                                    minmagnitude=4,
+                                    minlatitude=35.7, maxlatitude=36.1,
+                                    minlongitude=-120.6,
+                                    maxlongitude=-120.2,
+                                    includearrivals=True)
+        catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
+                                             top_n_picks=5)
+        templates = template_gen.from_client(catalog=catalog,
+                                             client_id='NCEDC',
+                                             lowcut=2.0, highcut=9.0,
+                                             samp_rate=50.0, filt_order=4,
+                                             length=3.0, prepick=0.15,
+                                             swin='all', process_len=3600)
+        # Download and process the day-long data
+        bulk_info = [(tr.stats.network, tr.stats.station, '*',
+                      tr.stats.channel[0] + 'H' + tr.stats.channel[1],
+                      t2 - 3600, t2) for tr in templates[0]]
+        # Just downloading an hour of data
+        st = client.get_waveforms_bulk(bulk_info)
+        st.merge(fill_value='interpolate')
+        st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                      filt_order=4, samp_rate=50.0,
+                                      debug=0, num_cores=4)
+        template_names = [str(template[0].stats.starttime)
+                          for template in templates]
+        detections = match_filter.match_filter(template_names=template_names,
+                                               template_list=templates,
+                                               st=st, threshold=8.0,
+                                               threshold_type='MAD',
+                                               trig_int=6.0, plotvar=False,
+                                               plotdir='.', cores=4)
+
+
+
 def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
                       extract_detections=False, threshold_type='MAD',
                       threshold=10, template_excess=False, stream_excess=False):

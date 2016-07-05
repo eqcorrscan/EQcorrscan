@@ -54,7 +54,7 @@ class TestTutorialScripts(unittest.TestCase):
                 self.assertIn(detection.detect_time, actual_times,
                               msg='Expected detection at %s was not made'
                               % detection.detect_time)
-        self.assertEqual(len(tutorial_detections), 23)
+        self.assertEqual(len(tutorial_detections), 22)
         # Cleanup the templates
         templates = glob.glob('tutorial_template_?.ms')
         for template in templates:
@@ -69,7 +69,7 @@ class TestTutorialScripts(unittest.TestCase):
             run_tutorial(shift_len=shift_len)
 
         self.assertEqual(len(picked_catalog), len(detections))
-        self.assertEqual(len(detections), 9)
+        self.assertEqual(len(detections), 8)
         for event, detection in zip(picked_catalog, detections):
             template = [t[0] for t in zip(templates, template_names)
                         if t[1] == detection.template_name][0]

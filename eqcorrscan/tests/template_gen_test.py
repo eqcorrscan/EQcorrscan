@@ -180,11 +180,44 @@ class TestTemplateGeneration(unittest.TestCase):
         try:
             template = from_seishub(test_cat, url=test_url, lowcut=1.0,
                                     highcut=5.0, samp_rate=20, filt_order=4,
-                                    length=3, prepick=0.5, swin='all')
+                                    length=3, prepick=0.5, swin='all',
+                                    process_len=300)
         except URLError:
             warnings.warn('Timed out connection to seishub')
         if 'template' in locals():
             self.assertEqual(len(template), 3)
+
+    def test_catalog_grouping(self):
+        from obspy.core.event import Catalog
+        from eqcorrscan.utils.sfile_util import read_event
+        import glob
+        import os
+        from eqcorrscan.core.template_gen import _group_events
+
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_', '*')
+        catalog = Catalog()
+        sfiles = glob.glob(testing_path)
+        for sfile in sfiles:
+            catalog.append(read_event(sfile=sfile))
+        for process_len, pads in [(60, [5]),
+                                  (300, [5, 60]),
+                                  (3600, [5, 60, 300]),
+                                  (86400, [5, 60, 300])]:
+            for data_pad in pads:
+                sub_catalogs = _group_events(catalog=catalog,
+                                             process_len=process_len,
+                                             data_pad=data_pad)
+                k_events = 0
+                for sub_catalog in sub_catalogs:
+                    min_time = min([event.origins[0].time
+                                    for event in sub_catalog])
+                    min_time -= data_pad
+                    for event in sub_catalog:
+                        self.assertTrue((event.origins[0].time +
+                                         data_pad) - min_time < process_len)
+                        k_events += 1
+                self.assertEqual(k_events, len(catalog))
 
 if __name__ == '__main__':
     unittest.main()

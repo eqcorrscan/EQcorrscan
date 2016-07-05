@@ -512,7 +512,8 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
 
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, debug=0, plot=False):
+                 length, prepick, swin, process_len=86400, data_pad=90,
+                 debug=0, plot=False):
     """
     Generate multiplexed template from SeisHub database.
     Function to generate templates from a SeisHub database. Must be given \
@@ -543,12 +544,22 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :param prepick: Pre-pick time in seconds
     :type swin: str
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type process_len: int
+    :param process_len: Length of data in seconds to download and process.
+    :param data_pad: Length of data (in seconds) required before and after \
+        any event for processing, use to reduce edge-effects of filtering on \
+        the templates.
+    :type data_pad: int
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Plot templates or not.
 
     :returns: obspy.core.stream.Stream Newly cut template
+
+    .. note:: process_len should be set to the same length as used when \
+        computing detections using match_filter.match_filter, e.g. if you read \
+        in day-long data fro match_filter, process_len should be 86400.
     """
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -560,37 +571,36 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     from obspy import UTCDateTime
     client = Client(url, timeout=10)
     temp_list = []
-    for event in catalog:
+    sub_catalogs = _group_events(catalog=catalog, process_len=process_len,
+                                 data_pad=data_pad)
+    for sub_catalog in sub_catalogs:
         # Figure out which picks we have
-        day = event.origins[0].time
-        picks = event.picks
-        if len(event.picks) == 0:
-            warnings.warn('No picks for event %s' % event.resource_id)
-            continue
+        all_waveform_info = []
+        for event in sub_catalog:
+            for pick in event.picks:
+                all_waveform_info.append(pick.waveform_id)
+        _all_waveform_info = []
+        for w in all_waveform_info:
+            _all_waveform_info.append((w.network_code,
+                                       w.station_code,
+                                       w.channel_code,
+                                       w.location_code))
+        all_waveform_info = list(set(_all_waveform_info))
+        del _all_waveform_info
+        all_waveform_info.sort()
         print("Fetching the following traces from SeisHub")
-        for pick in picks:
-            if pick.waveform_id.network_code:
-                net = pick.waveform_id.network_code
-            else:
-                raise IOError('No network code defined for pick: ' + pick)
-            if pick.waveform_id.station_code:
-                sta = pick.waveform_id.station_code
-            else:
-                raise IOError('No station code defined for pick: ' + pick)
-            if pick.waveform_id.channel_code:
-                chan = pick.waveform_id.channel_code
-            else:
-                raise IOError('No channel code defined for pick: ' + pick)
-            if pick.waveform_id.location_code:
-                loc = pick.waveform_id.location_code
-            else:
-                loc = '*'
-            starttime = UTCDateTime(pick.time.date)
-            endtime = starttime + 86400
-            # Here we download a full day of data.  We do this so that minor
-            # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correlations.
-
+        for waveform_info in all_waveform_info:
+            net = waveform_info[0]
+            sta = waveform_info[1]
+            chan = waveform_info[2]
+            loc = waveform_info[3]
+            if not loc:
+                loc = ''
+            starttime = UTCDateTime(sub_catalog[0].origins[0].time -
+                                    data_pad)
+            endtime = starttime + process_len
+            if not endtime > sub_catalog[-1].origins[0].time + data_pad:
+                raise IOError('Events do not fit in processing window')
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
@@ -609,22 +619,29 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
             raise IOError('No waveforms found')
         if debug > 0:
             st.plot()
-        print('Preprocessing data for event: '+str(event.resource_id))
+        print('Pre-processing data for event: '+str(event.resource_id))
         st.merge(fill_value='interpolate')
-        st1 = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
-                                     filt_order=filt_order,
-                                     samp_rate=samp_rate, starttime=starttime,
-                                     debug=debug)
-        template = _template_gen(picks=event.picks, st=st1, length=length,
-                                 swin=swin, prepick=prepick,
-                                 plot=plot, debug=debug)
-        del st, st1
-        temp_list.append(template)
+        # clients download chunks, we need to assert that the data are
+        # the desired length
+        for tr in st:
+            tr.trim(starttime, endtime)
+            print(len(tr))
+        st1 = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
+                                       filt_order=filt_order,
+                                       samp_rate=samp_rate, debug=debug,
+                                       parallel=True)
+        for event in sub_catalog:
+            template = _template_gen(picks=event.picks, st=st1, length=length,
+                                     swin=swin, prepick=prepick,
+                                     plot=plot, debug=debug)
+            del st, st1
+            temp_list.append(template)
     return temp_list
 
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
-                length, prepick, swin, debug=0, plot=False):
+                length, prepick, swin, process_len=86400, data_pad=90,
+                debug=0, plot=False):
     """
     Generate multiplexed template from FDSN client.
     Function to generate templates from an FDSN client. Must be given \
@@ -656,12 +673,22 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :param prepick: Pre-pick time in seconds
     :type swin: str
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type process_len: int
+    :param process_len: Length of data in seconds to download and process.
+    :param data_pad: Length of data (in seconds) required before and after \
+        any event for processing, use to reduce edge-effects of filtering on \
+        the templates.
+    :type data_pad: int
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Plot templates or not.
 
     :returns: obspy.core.stream.Stream Newly cut template
+
+    .. note:: process_len should be set to the same length as used when \
+        computing detections using match_filter.match_filter, e.g. if you read \
+        in day-long data fro match_filter, process_len should be 86400.
 
     .. rubric:: Example
 
@@ -680,7 +707,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     >>> templates = from_client(catalog=catalog, client_id='NCEDC',
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
     ...                         filt_order=4, length=3.0, prepick=0.15,
-    ...                         swin='all')
+    ...                         swin='all', process_len=300)
     BG.CLV..DPZ
     BK.BKS.00.HHZ
     Pre-processing data
@@ -703,12 +730,11 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     client = Client(client_id)
     temp_list = []
     # Group catalog into days and only download the data once per day
-    catalog_days = list(set([event.origins[0].time.date for event in catalog]))
-    for day in catalog_days:
-        day_events = [event for event in catalog
-                      if event.origins[0].time.date == day]
+    sub_catalogs = _group_events(catalog=catalog, process_len=process_len,
+                                 data_pad=data_pad)
+    for sub_catalog in sub_catalogs:
         all_waveform_info = []
-        for event in day_events:
+        for event in sub_catalog:
             for pick in event.picks:
                 all_waveform_info.append(pick.waveform_id)
         all_waveform_info = list(set([(w.network_code, w.station_code,
@@ -721,8 +747,12 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             sta = waveform_info[1]
             chan = waveform_info[2]
             loc = waveform_info[3]
-            starttime = UTCDateTime(day)
-            endtime = starttime + 86400
+            starttime = UTCDateTime(sub_catalog[0].origins[0].time -
+                                    data_pad)
+            endtime = starttime + process_len
+            # Check that endtime is after the last event
+            if not endtime > sub_catalog[-1].origins[0].time + data_pad:
+                raise IOError('Events do not fit in processing window')
             # Here we download a full day of data.  We do this so that minor
             # differences in processing during processing due to the effect
             # of resampling do not impinge on our cross-correlations.
@@ -752,13 +782,19 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             raise FDSNException('No data available, is the server down?')
         print('Pre-processing data')
         st.merge(fill_value='interpolate')
-        st1 = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
-                                     filt_order=filt_order,samp_rate=samp_rate,
-                                     starttime=starttime,
-                                     debug=debug, parallel=True)
+        # clients download chunks, we need to assert that the data are
+        # the desired length
+        for tr in st:
+            tr.trim(starttime, endtime)
+            if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
+                tr.data = tr.data[1:len(tr.data)]
+        st1 = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
+                                       filt_order=filt_order,
+                                       samp_rate=samp_rate,
+                                       debug=debug, parallel=True)
         if debug > 0:
             st1.plot()
-        for event in day_events:
+        for event in sub_catalog:
             template = _template_gen(picks=event.picks, st=st1, length=length,
                                      swin=swin, prepick=prepick,
                                      plot=plot, debug=debug)
@@ -1080,6 +1116,42 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
                     pre_pick)
     return new_template
 
+
+def _group_events(catalog, process_len, data_pad):
+    """
+    Internal function to group events into sub-catalogs based on process_len.
+
+    :param catalog: Catalog to groups into sub-catalogs
+    :type catalog: obspy.core.event.Catalog
+    :param process_len: Length in seconds that data will be processed in
+    :type process_len: int
+    :param data_pad: Length of data (in seconds) required before and after \
+        any event for processing, use to reduce edge-effects of filtering on \
+        the templates.
+    :type data_pad: int
+
+    :return: List of catalogs
+    :rtype: list
+    """
+    from obspy.core.event import Catalog
+    # case for catalog only containing one event
+    if len(catalog) == 1:
+        return [catalog]
+    sub_catalogs = []
+    # Sort catalog by date
+    cat_list = [(event, event.origins[0].time) for event in catalog]
+    cat_list.sort(key=lambda tup: tup[1])
+    catalog = Catalog([tup[0] for tup in cat_list])
+    sub_catalog = Catalog([catalog[0]])
+    for event in catalog[1:]:
+        if (event.origins[0].time + data_pad) - \
+                (sub_catalog[0].origins[0].time - data_pad) < process_len:
+            sub_catalog.append(event)
+        else:
+            sub_catalogs.append(sub_catalog)
+            sub_catalog = Catalog([event])
+    sub_catalogs.append(sub_catalog)
+    return sub_catalogs
 
 if __name__ == "__main__":
     import doctest

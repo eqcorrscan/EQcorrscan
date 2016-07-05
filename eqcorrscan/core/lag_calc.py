@@ -307,8 +307,13 @@ def lag_calc(detections, detect_data, template_names, templates,
                                               delay + shift_len +
                                               template_len))
             del tr_copy
-        # Create tuple of (template name, data stream)
-        detect_streams.append((detection.template_name, Stream(detect_stream)))
+        for tr in detect_stream:
+            if len(tr.data) == 0:
+                detect_stream.remove(tr)
+        if not len(detect_stream) == 0:
+            # Create tuple of (template name, data stream)
+            detect_streams.append((detection.template_name,
+                                   Stream(detect_stream)))
     # Segregate detections by template, then feed to day_loop
     initial_cat = Catalog()
     for template in zipped_templates:

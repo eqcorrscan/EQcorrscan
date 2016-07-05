@@ -26,7 +26,7 @@ install:
       export py=$PYTHON_VERSION;
     else
       export OS="Linux";
-      export py=$TRAVIS_PYTHON_VERSION;
+      export py=$PYTHON_VERSION;
     fi
   - if [[ "$py" == "2.7_with_system_site_packages" ]]; then
       export py="2.7";
@@ -52,6 +52,7 @@ install:
         env_file="misc/py2_test_env.lis"
         PYFLAKES="pyflakes=0.9.0"
       fi
+  - echo $PYTHON_VERSION
   - |
       if [[ "$OS" == "MacOSX" ]]; then
           conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib basemap pyproj flake8 future lxml decorator sqlalchemy mock nose gdal docopt coverage requests

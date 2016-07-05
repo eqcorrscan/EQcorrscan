@@ -628,12 +628,20 @@ def match_filter(template_names, template_list, st, threshold,
             print(template_stachan)
             print('I have daylong data for these stations:')
             print(data_stachan)
-    # Perform a check that the daylong vectors are daylong
+    # Perform a check that the daylong vectors are all the same length
+    min_start_time = min([tr.stats.starttime for tr in stream])
+    max_end_time = max([tr.stats.endtime for tr in stream])
+    longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
+                                                            min_start_time)
     for tr in stream:
-        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
-            msg = ' '.join(['Data are not daylong for', tr.stats.station,
-                            tr.stats.channel])
-            raise ValueError(msg)
+        if not tr.stats.npts == longest_trace_length:
+            msg = 'Data are not equal length, padding short traces'
+            warnings.warn(msg)
+            start_pad = np.zeros(tr.stats.sampling_rate * (tr.stats.starttime -
+                                                           min_start_time))
+            end_pad = np.zeros(tr.stats.sampling_rate * (max_end_time -
+                                                         tr.stats.endtime))
+            tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Perform check that all template lengths are internally consistent
     for i, temp in enumerate(template_list):
         if len(set([tr.stats.npts for tr in temp])) > 1:
@@ -648,7 +656,7 @@ def match_filter(template_names, template_list, st, threshold,
     # data make the data NaN to return NaN ccc_sum
     # Note: this works
     if debug >= 2:
-        print('Ensuring all template channels have matches in daylong data')
+        print('Ensuring all template channels have matches in long data')
     template_stachan = []
     for template in templates:
         for tr in template:

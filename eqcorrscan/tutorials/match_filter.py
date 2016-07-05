@@ -38,39 +38,46 @@ def run_tutorial(plot=False):
     # Get a unique list of stations
     stations = list(set(stations))
 
-    # We are going to look for detections on the day of our template, however, to
-    # generalize, we will write a loop through the days between our templates, in
-    # this case that is only one day.
+    # We will loop through the data chunks at a time, these chunks can be any
+    # size, in general we have used 1 day as our standard, but this can be
+    # as short as five minutes (for MAD thresholds) or shorter for other
+    # threshold metrics. However the chunk size should be the same as your
+    # template process_len.
 
-    template_days = []
-    for template in templates:
-        template_days.append(template[0].stats.starttime.date)
-    template_days = sorted(template_days)
-    kdays = (template_days[-1] - template_days[0]).days + 1
+    # You should test different parameters!!!
+    start_time = UTCDateTime(2016, 1, 4)
+    end_time = UTCDateTime(2016, 1, 5)
+    process_len = 3600
+    chunks = []
+    chunk_start = start_time
+    while chunk_start < end_time:
+        chunk_end = chunk_start + process_len
+        if chunk_end > end_time:
+            chunk_end = end_time
+        chunks.append((chunk_start, chunk_end))
+        chunk_start += process_len
 
     unique_detections = []
+    detections = []
 
-    for i in range(kdays):
-        t1 = UTCDateTime(template_days[0]) + (86400 * i)
-        t2 = t1 + 86400
+    # Set up a client to access the GeoNet database
+    client = Client("GEONET")
 
+    # Note that these chunks do not rely on each other, and could be paralleled
+    # on multiple nodes of a distributed cluster, see the SLURM tutorial for
+    # an example of this.
+    for t1, t2 in chunks:
         # Generate the bulk information to query the GeoNet database
         bulk_info = []
         for station in stations:
             bulk_info.append(('NZ', station[0], '*',
                               station[1][0] + 'H' + station[1][-1], t1, t2))
 
-        # Set up a client to access the GeoNet database
-        client = Client("GEONET")
-
         # Note this will take a little while.
         print('Downloading seismic data, this may take a while')
         st = client.get_waveforms_bulk(bulk_info)
         # Merge the stream, it will be downloaded in chunks
         st.merge(fill_value='interpolate')
-
-        # Work out what data we actually have to cope with possible lost data
-        stations = list(set([tr.stats.station for tr in st]))
 
         # Set how many cores we want to parallel across, we will set this to four
         # as this is the number of templates, if your machine has fewer than four
@@ -85,36 +92,37 @@ def run_tutorial(plot=False):
         # Note that this is, and MUST BE the same as the parameters used for the
         # template creation.
         print('Processing the seismic data')
-        st = pre_processing.dayproc(st, lowcut=2.0, highcut=9.0,
-                                    filt_order=4, samp_rate=20.0,
-                                    debug=0, starttime=t1, num_cores=ncores)
+        st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                      filt_order=4, samp_rate=20.0,
+                                      debug=2, num_cores=ncores, starttime=t1,
+                                      endtime=t2)
         # Convert from list to stream
         st = Stream(st)
 
         # Now we can conduct the matched-filter detection
-        detections = match_filter.match_filter(template_names=template_names,
-                                               template_list=templates,
-                                               st=st, threshold=8.0,
-                                               threshold_type='MAD',
-                                               trig_int=6.0, plotvar=plot,
-                                               plotdir='.', cores=ncores,
-                                               tempdir=False, debug=1,
-                                               plot_format='jpg')
+        detections += match_filter.match_filter(template_names=template_names,
+                                                template_list=templates,
+                                                st=st, threshold=8.0,
+                                                threshold_type='MAD',
+                                                trig_int=6.0, plotvar=plot,
+                                                plotdir='.', cores=ncores,
+                                                tempdir=False, debug=1,
+                                                plot_format='jpg')
 
-        # Now lets try and work out how many unique events we have just to compare
-        # with the GeoNet catalog of 20 events on this day in this sequence
-        for master in detections:
-            keep = True
-            for slave in detections:
-                if not master == slave and\
-                   abs(master.detect_time - slave.detect_time) <= 1.0:
-                    # If the events are within 1s of each other then test which
-                    # was the 'best' match, strongest detection
-                    if not master.detect_val > slave.detect_val:
-                        keep = False
-                        break
-            if keep:
-                unique_detections.append(master)
+    # Now lets try and work out how many unique events we have just to compare
+    # with the GeoNet catalog of 20 events on this day in this sequence
+    for master in detections:
+        keep = True
+        for slave in detections:
+            if not master == slave and\
+               abs(master.detect_time - slave.detect_time) <= 1.0:
+                # If the events are within 1s of each other then test which
+                # was the 'best' match, strongest detection
+                if not master.detect_val > slave.detect_val:
+                    keep = False
+                    break
+        if keep:
+            unique_detections.append(master)
 
     print('We made a total of ' + str(len(unique_detections)) + ' detections')
 

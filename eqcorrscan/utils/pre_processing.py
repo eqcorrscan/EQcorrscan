@@ -46,7 +46,7 @@ def _check_daylong(tr):
 
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
-              parallel=False, num_cores=False):
+              parallel=False, num_cores=False, starttime=None, endtime=None):
     r"""Basic function to bandpass and downsample.
 
     Works in place on data.  This is employed to ensure all parts of the \
@@ -71,6 +71,12 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
+    :type starttime: obspy.core.UTCDateTime
+    :param starttime: Desired data start time, will trim to this before \
+        processing
+    :type endtime: obspy.core.UTCDateTime
+    :param endtime: Desired data end time, will trim to this before \
+        processing
 
     :return: obspy.Stream
 
@@ -125,6 +131,21 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     # Add sanity check for filter
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
+    if starttime and endtime:
+        for tr in st:
+            tr.trim(starttime, endtime)
+            print(len(tr))
+            if len(tr.data) == ((endtime - starttime) *
+                                    tr.stats.sampling_rate) + 1:
+                tr.data = tr.data[1:len(tr.data)]
+    elif starttime:
+        for tr in st:
+            tr.trim(starttime=starttime)
+    elif endtime:
+        for tr in st:
+            tr.trim(endtime=endtime)
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -253,6 +274,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         tracein = False
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -353,7 +376,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
        and full_day:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
-                  ' is not of daylong length, will zero pad')
+                  ' are not of daylong length, will zero pad')
         # Work out when the trace thinks it is starting
         # traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
         #                        str(tr.stats.starttime.month)+'-' +
@@ -361,7 +384,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
                      nearest_sample=True)
-        # If there is one sample too many after this remove the last one
+        # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
@@ -418,11 +441,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate*86400 == tr.stats.npts:
+        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
                 raise ValueError('Data are not daylong for '+tr.stats.station +
                                  '.'+tr.stats.channel)
     # Final visual check for debug
-    if debug >= 4:
+    if debug > 4:
         tr.plot()
     return tr
 

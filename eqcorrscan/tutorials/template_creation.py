@@ -57,7 +57,8 @@ def mktemplates(network_code='GEONET',
                                          lowcut=2.0, highcut=9.0,
                                          samp_rate=20.0, filt_order=4,
                                          length=3.0, prepick=0.15,
-                                         swin='all', debug=0, plot=plot)
+                                         swin='all', process_len=3600,
+                                         debug=0, plot=plot)
 
     # We now have a series of templates! Using Obspys Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the
