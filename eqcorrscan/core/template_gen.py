@@ -908,6 +908,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
         tplot
     from obspy import Stream
     import warnings
+    import numpy as np
+
     stations = []
     channels = []
     st_stachans = []
@@ -930,7 +932,15 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
             channels.append(pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[-1])
     for tr in st:
-        st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
+        # Check that the data can be represented by float16, and check they
+        # are not all zeros
+        if np.all(tr.data.astype(np.float16) == 0):
+            warnings.warn('Trace is all zeros at float16 level,'
+                          'either gain or check. Not using in template.')
+            print(tr)
+            st.remove(tr)
+        else:
+            st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
     for i, station in enumerate(stations):
         if '.'.join([station, channels[i]]) not in st_stachans and debug > 0:
             warnings.warn('No data provided for ' + station + '.' +

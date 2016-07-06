@@ -339,6 +339,9 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
             np.save('inf_cccmean_ccc.npy', ccc[0])
             np.save('inf_cccmean_template.npy', template_data.data)
             np.save('inf_cccmean_image.npy', image)
+        ccc = np.zeros(len(ccc))
+        ccc = ccc.reshape((1, len(ccc)))
+        # Returns zeros
     if debug >= 3:
         print('shape of ccc: ' + str(np.shape(ccc)))
         print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
