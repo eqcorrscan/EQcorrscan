@@ -31,13 +31,13 @@ install:
   - "conda update -q --yes conda"
   # Create a conda environment using the astropy bonus packages
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
-  - "conda config --add channels menpo"
+  #  - "conda config --add channels menpo"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy scipy matplotlib=1.3.1 lxml sqlalchemy flake8 mock nose gdal decorator requests basemap pytest pyflakes=0.9.0 opencv=2.4.11"
+  - "conda install -q --yes pip numpy scipy matplotlib=1.3.1 lxml sqlalchemy flake8 mock nose gdal decorator requests basemap pytest pyflakes=0.9.0"
   # additional dependecies
-  #  - "choco install opencv -version 2.4.9.20140518"
-  #  - "powershell copy-item C:\\OpenCV249\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
+  - "choco install opencv -version 2.4.9.20140518"
+  - "powershell copy-item C:\\OpenCV249\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
   #  - "conda install -c menpo opencv=2.4.11"
   - "pip install pyimgur"
   - "pip install -U future"
