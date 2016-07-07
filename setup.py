@@ -140,7 +140,7 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8', 'pytest-cov', 'pytest-xdist'],
+    tests_require=['pytest', 'pytest-flake8', 'pytest-cov', 'pytest-xdist', 'apipkg'],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
