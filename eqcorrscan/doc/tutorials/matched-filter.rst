@@ -28,7 +28,8 @@ can be as simple as:
      detections = match_filter.match_filter(template_names=template_names,
                                             template_list=templates, st=st,
                                             threshold=8, threshold_type='MAD',
-                                            plotvar=False, cores=4, trig_int=6)
+                                            trig_int=6, plotvar=False, 
+                                            cores=4, trig_int=6)
 
 This will create a list of detections, which are of class detection.  You can
 write out the detections to a csv (colon separated) using the detection.write
