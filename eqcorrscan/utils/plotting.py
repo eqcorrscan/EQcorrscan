@@ -211,19 +211,26 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return fig
 
 
-def cumulative_detections(dates, template_names, show=True, plot_legend=True,
+def cumulative_detections(dates=None, template_names=None, detections=None,
+                          plot_grouped=False, show=True, plot_legend=True,
                           save=False, savefile=None):
     r"""Plot cumulative detections in time.
 
     Simple plotting function to take a list of datetime objects and plot \
     a cumulative detections list.  Can take dates as a list of lists and will \
-    plot each list seperately, e.g. if you have dates from more than one \
+    plot each list separately, e.g. if you have dates from more than one \
     template it will overlay them in different colours.
 
     :type dates: list
     :param dates: Must be a list of lists of datetime.datetime objects
     :type template_names: list
     :param template_names: List of the template names in order of the dates
+    :type detections: list
+    :param detections: List of eqcorrscan.core.match_filter.DETECTION
+    :type plot_grouped: bool
+    :param plot_grouped: Plot detections for each template individually, or \
+        group them all together - set to False (plot template detections \
+        individually) by default.
     :type show: bool
     :param show: Whether or not to show the plot, defaults to True.
     :type plot_legend: bool
@@ -235,6 +242,9 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
     :param savefile: String to save to, required is save=True
 
     :returns: :class: matplotlib.figure
+
+    .. note:: Can either take lists of DETECTION objects directly, or two \
+        lists of dates and template names - either/or, not both.
 
     .. rubric:: Example
 
@@ -261,14 +271,40 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
     """
     import matplotlib.dates as mdates
     from copy import deepcopy
+    from eqcorrscan.core.match_filter import DETECTION
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
               'firebrick', 'purple', 'darkgoldenrod', 'gray']
     linestyles = ['-', '-.', '--', ':']
     # Check that dates is a list of lists
-    if type(dates[0]) != list:
-        dates = [dates]
+    if not detections:
+        if type(dates[0]) != list:
+            dates = [dates]
+    else:
+        dates = []
+        template_names = []
+        for detection in detections:
+            if not type(detection) == DETECTION:
+                msg = 'detection not of type: ' +\
+                    'eqcorrscan.core.match_filter.DETECTION'
+                raise IOError(msg)
+            dates.append(detection.detect_time.datetime)
+            template_names.append(detection.template_name)
+        _dates = []
+        _template_names = []
+        for template_name in list(set(template_names)):
+            _template_names.append(template_name)
+            _dates.append([date for i, date in enumerate(dates)
+                           if template_names[i] == template_name])
+        dates = _dates
+        template_names = _template_names
+    if plot_grouped:
+        _dates = []
+        for template_dates in dates:
+            _dates += template_dates
+        dates = [_dates]
+        template_names = ['all']
     i = 0
     j = 0
     # This is an ugly way of looping through colours and linestyles, it would
@@ -279,7 +315,6 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
-        print(plot_dates)
         counts = np.arange(-1, len(template_dates))
         ax1.step(plot_dates, counts, linestyles[j],
                  color=colors[i], label=template_names[k],
@@ -305,28 +340,25 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
         if min(date_list) < min_date:
             min_date = min(date_list)
     timedif = max_date - min_date
-    if timedif.total_seconds() >= 10800 and timedif.total_seconds() <= 25200:
-        print('Using quarter of an hour stamps')
+    if 10800 <= timedif.total_seconds() <= 25200:
+        hours = mdates.MinuteLocator(byminute=[0, 30])
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 10))
+    elif 7200 <= timedif.total_seconds() < 10800:
         hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
-        mins = mdates.HourLocator(byminute=range(0, 60, 5))
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 5))
     elif timedif.total_seconds() <= 1200:
-        print('Using 2 min stamps')
         hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
-        mins = mdates.HourLocator(byminute=range(0, 60, 0.5))
-    elif timedif.total_seconds > 25200 and timedif.total_seconds() <= 86400:
-        print('Using hour stamps')
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 0.5))
+    elif 25200 < timedif.total_seconds() <= 86400:
         hours = mdates.HourLocator(byhour=range(0, 24, 3))
         mins = mdates.HourLocator(byhour=range(0, 24, 1))
-    elif timedif.total_seconds > 86400 and timedif.total_seconds() <= 172800:
-        print('Using hour stamps')
+    elif 86400 < timedif.total_seconds() <= 172800:
         hours = mdates.HourLocator(byhour=range(0, 24, 6))
         mins = mdates.HourLocator(byhour=range(0, 24, 1))
     elif timedif.total_seconds() > 172800:
-        print('Using day stamps')
         hours = mdates.AutoDateLocator()
         mins = mdates.HourLocator(byhour=range(0, 24, 3))
     else:
-        print('Using 5 min stamps')
         hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
     hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
     ax1.xaxis.set_major_locator(hours)

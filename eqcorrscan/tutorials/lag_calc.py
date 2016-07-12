@@ -1,6 +1,6 @@
 """Tutorial to illustrate the lag_calc usage."""
 
-def run_tutorial(shift_len=0.2):
+def run_tutorial(min_magnitude=2, shift_len=0.2):
     from obspy.clients.fdsn import Client
     from obspy.core.event import Catalog
     from obspy import UTCDateTime
@@ -10,7 +10,8 @@ def run_tutorial(shift_len=0.2):
     client = Client('NCEDC')
     t1 = UTCDateTime(2004, 9, 28)
     t2 = t1 + 86400
-    catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=4,
+    catalog = client.get_events(starttime=t1, endtime=t2,
+                                minmagnitude=min_magnitude,
                                 minlatitude=35.7, maxlatitude=36.1,
                                 minlongitude=-120.6, maxlongitude=-120.2,
                                 includearrivals=True)
