@@ -372,9 +372,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :type lowcut: float
     :param lowcut: Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: Highcut in Hz - deafult=10.0
+    :param highcut: Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: Maximum seperation between event pairs in km
+    :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
     :type cc_thresh: float
@@ -394,6 +394,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
         event using the sfile_util module prior to this step.
+
+    .. note:: There is no provision to taper waveforms within these functions, \
+        if you desire this functionality, you should apply the taper before \
+        calling this.  Note the obspy.Trace.taper functions.
     """
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
