@@ -67,7 +67,7 @@ class TestTutorialScripts(unittest.TestCase):
         shift_len = 0.2
         min_mag = 4
         detections, picked_catalog, templates, template_names = \
-            run_tutorial(min_mag, shift_len=shift_len)
+            run_tutorial(min_magnitude=min_mag, shift_len=shift_len)
 
         self.assertEqual(len(picked_catalog), len(detections))
         self.assertEqual(len(detections), 8)

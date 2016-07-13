@@ -196,7 +196,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     from obspy import read as obsread
     # Read in the header of the sfile
     wavefiles = sfile_util.readwavename(sfile)
-    pathparts = sfile.split('/')[0:-1]
+    pathparts = sfile.split(os.sep)[0:-1]
     new_path_parts = []
     for part in pathparts:
         if part == 'REA':
@@ -207,6 +207,11 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         main_wav_parts.append(part)
         if part == 'WAV':
             break
+    if main_wav_parts[0] == 'C:':
+        main_wav_parts[1] = main_wav_parts[0] + os.sep + main_wav_parts[1]
+        new_path_parts[1] = new_path_parts[0] + os.sep + new_path_parts[1]
+        main_wav_parts.remove(main_wav_parts[0])
+        new_path_parts.remove(new_path_parts[0])
     mainwav = os.path.join(*main_wav_parts) + os.path.sep
     # * argument to allow .join() to accept a list
     wavpath = os.path.join(*new_path_parts) + os.path.sep

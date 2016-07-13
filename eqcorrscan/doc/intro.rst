@@ -38,8 +38,12 @@ Within a virtual environment, a fresh install should be as simple as:
 
 **pip install eqcorrscan**
 
-Most codes should work without any effort on your part.  However you may need to
-install the openCV-python package yourself.
+Most codes should work without any effort on your part.  However you will need to
+install the openCV-python package yourself.  We recommend installing openCV version
+3, and we recommend installing it from source - it is available via anaconda, but
+it will run faster if you compile it yourself, and it will give more consistent
+results.  See |pyimagesearch| for details for install on all operating systems
+(including raspberry pi, which EQcorrscan runs on too :) ).
 
 On Linux with Python 2.7:
 
