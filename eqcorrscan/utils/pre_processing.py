@@ -218,7 +218,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -238,7 +239,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -257,7 +259,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -341,7 +344,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     import warnings
     from obspy.signal.filter import bandpass, lowpass, highpass
     # Add sanity check
-    if highcut and highcut >= 0.5*samp_rate:
+    if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     # Define the start-time
     if starttime:
