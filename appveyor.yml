@@ -30,6 +30,7 @@ install:
   - "%CMD_IN_ENV% python --version"
   # Install the build and runtime dependencies of the project.
   - "conda update -q --yes conda"
+  - "conda config --add channels obspy"
   # Create a conda environment using the astropy bonus packages
   - "conda create -q --yes -n test python=%PYTHON_VERSION% numpy scipy"
   - "activate test"
