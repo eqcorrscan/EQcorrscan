@@ -23,7 +23,7 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(ccc.max(), 1.0)
 
     def test_fail_normxcorr2(self):
-        """Ensure it template is nan then return is nan
+        """Ensure if template is nan then return is nan
         """
         import numpy as np
         from eqcorrscan.core.match_filter import normxcorr2
@@ -68,7 +68,7 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue((np.gradient(expected_ccc).round(2) ==
                          np.gradient(ccc).round(2)).all())
         if not (ccc == expected_ccc).all():
-            warnings.warn('The expected result was not achieved')
+            warnings.warn('The expected result was not achieved, but it has the same shape')
 
     def test_perfect_template_loop(self):
         """Check that perfect correlations are carried through.
@@ -174,7 +174,6 @@ class TestCoreMethods(unittest.TestCase):
         # Test case where there are non-matching streams in the data
         test_match_filter(template_excess=True)
 
-
     def test_short_match_filter(self):
         """Test using short streams of data."""
         from obspy.clients.fdsn import Client
@@ -217,7 +216,6 @@ class TestCoreMethods(unittest.TestCase):
                                                threshold_type='MAD',
                                                trig_int=6.0, plotvar=False,
                                                plotdir='.', cores=4)
-
 
 
 def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,

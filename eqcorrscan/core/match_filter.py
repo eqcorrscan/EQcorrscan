@@ -606,7 +606,8 @@ def match_filter(template_names, template_list, st, threshold,
         if not type(st) == Stream:
             msg = 'st must be of type: obspy.core.stream.Stream'
             raise IOError(msg)
-        if threshold_type not in ['MAD', 'absolute', 'av_chan_corr']:
+        if str(threshold_type) not in [str('MAD'), str('absolute'),
+                                       str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
             raise IOError(msg)
 
@@ -716,11 +717,11 @@ def match_filter(template_names, template_list, st, threshold,
         det_cat = Catalog()
     for i, cccsum in enumerate(cccsums):
         template = templates[i]
-        if threshold_type == 'MAD':
+        if str(threshold_type) == str('MAD'):
             rawthresh = threshold * np.median(np.abs(cccsum))
-        elif threshold_type == 'absolute':
+        elif str(threshold_type) == str('absolute'):
             rawthresh = threshold
-        elif threshold_type == 'av_chan_corr':
+        elif str(threshold_type) == str('av_chan_corr'):
             rawthresh = threshold * no_chans[i]
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
         print(' '.join(['Threshold is set at:', str(rawthresh)]))
