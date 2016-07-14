@@ -165,7 +165,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     .. rubric:: Example
 
     >>> from eqcorrscan.core.template_gen import from_sfile
-    >>> sfile = 'eqcorrscan/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+    >>> import os
+    >>> sfile = os.path.join('eqcorrscan', 'tests', 'test_data',
+    ...                      'REA', 'TEST_', '01-0411-15L.S201309')
     >>> template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
     ...                       samp_rate=50.0, filt_order=4, swin='P',
     ...                       prepick=0.2, length=6)
@@ -179,8 +181,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
 
         from eqcorrscan.core.template_gen import from_sfile
         import os
-        sfile = os.path.realpath('../../..') + \
-            '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+        sfile = os.path.realpath('../../..') + os.sep +\
+            os.path.join('tests', 'test_data', 'REA',
+                         'TEST_', '01-0411-15L.S201309')
         template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
                               samp_rate=50.0, filt_order=4, swin='P',
                               prepick=0.2, length=6)

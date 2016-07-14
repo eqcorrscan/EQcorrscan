@@ -60,8 +60,12 @@ install:
   - |
       if [[ "$OS" == "MacOSX" ]]; then
           conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
-      else
+      elif [[ "$py" == "3.5" ]]; then
           conda create -q -n test-environment --file $env_file
+      elif [[ "$py" == "2.7" ]]; then
+          conda create -q -n test-environment --file $env_file
+      else
+          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
       fi
   - source activate test-environment
   - conda install $PYFLAKES
