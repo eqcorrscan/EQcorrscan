@@ -398,19 +398,198 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
         from obspy.signal.cross_correlation import xcorrPickCorrection \
             as xcorr_pick_correction
     import matplotlib.pyplot as plt
-    from obspy import read
     from eqcorrscan.utils.mag_calc import dist_calc
-    import glob
     import warnings
-
+    from joblib import Parallel, delayed
+    from joblib.pool import has_shareable_memory
     corr_list = []
-    f = open('dt.cc', 'w')
-    f2 = open('dt.cc2', 'w')
-    for i, master_event in enumerate(catalog):
+    with open('dt.cc', 'w') as f, open('dt.cc2', 'w') as f2:
+        for i, master_event in enumerate(catalog):
+            # master_sfile = master[1]
+            # master_event_id = master[0]
+            master_event_id = i
+            print('On loop %d of %d' % (i, len(catalog)))
+            # print(i)
+            # master_picks = sfile_util.readpicks(master_sfile).picks
+            # master_event = sfile_util.readheader(master_sfile)
+            master_picks = master_event.picks
+            master_ori_time = master_event.preferred_origin().time
+            master_location = (master_event.preferred_origin().latitude,
+                               master_event.preferred_origin().longitude,
+                               master_event.preferred_origin().depth / 1000)
+            master_stream = template_dict[master_event.resource_id]
+            # master_wavefiles = sfile_util.readwavename(master_sfile)
+            # masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
+            # if masterpath:
+            #     masterstream = read(masterpath[0])
+            # if len(master_wavefiles) > 1:
+            #     for wavefile in master_wavefiles:
+            #         try:
+            #             masterstream += read(os.join(wavbase, wavefile))
+            #         except:
+            #             continue
+            #             raise IOError("Couldn't find wavefile")
+            for j in range(i+1, len(catalog)):
+                # # Use this tactic to only output unique event pairings
+                # slave_sfile = event_list[j][1]
+                # slave_event_id = event_list[j][0]
+                slave_event_id = j
+                # slave_wavefiles = sfile_util.readwavename(slave_sfile)
+                # try:
+                #     # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
+                #     slavestream = read(wavbase + os.sep + slave_wavefiles[0])
+                # except:
+                #     # print(slavestream)
+                #     raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
+                #                   slave_sfile)
+                # if len(slave_wavefiles) > 1:
+                #     for wavefile in slave_wavefiles:
+                #         # slavestream+=read(wavbase+'/*/*/'+wavefile)
+                #         try:
+                #             slavestream += read(wavbase+'/'+wavefile)
+                #         except:
+                #             continue
+                # # Write out the header line
+                event_text = '#'+str(master_event_id).rjust(10) +\
+                    str(slave_event_id).rjust(10)+' 0.0   \n'
+                event_text2 = '#'+str(master_event_id).rjust(10) +\
+                    str(slave_event_id).rjust(10)+' 0.0   \n'
+                # slave_picks = sfile_util.readpicks(slave_sfile).picks
+                # slave_event = sfile_util.readheader(slave_sfile)
+                slave_event = catalog[j]
+                slave_picks = slave_event.picks
+                slave_ori_time = slave_event.preferred_origin().time
+                slave_location = (slave_event.preferred_origin().latitude,
+                                  slave_event.preferred_origin().longitude,
+                                  slave_event.preferred_origin().depth / 1000)
+                slave_stream = template_dict[slave_event.resource_id]
+                if dist_calc(master_location, slave_location) > max_sep:
+                    continue
+                links = 0
+                phases = 0
+                for pick in master_picks:
+                    if pick.phase_hint[0].upper() not in ['P', 'S']:
+                        continue
+                        # Only use P and S picks, not amplitude or 'other'
+                    # Find station, phase pairs
+                    # Added by Carolin
+                    slave_matches = [p for p in slave_picks
+                                     if p.phase_hint == pick.phase_hint
+                                     and p.waveform_id.station_code ==
+                                     pick.waveform_id.station_code]
+
+                    if master_stream.select(station=pick.waveform_id.station_code,
+                                           channel='*' +
+                                           pick.waveform_id.channel_code[-1]):
+                        mastertr = master_stream.\
+                            select(station=pick.waveform_id.station_code,
+                                   channel='*' +
+                                   pick.waveform_id.channel_code[-1])[0]
+                    else:
+                        print('No waveform data for ' +
+                              pick.waveform_id.station_code + '.' +
+                              pick.waveform_id.channel_code)
+                        # print(pick.waveform_id.station_code +
+                        #       '.' + pick.waveform_id.channel_code +
+                        #       ' ' + slave_sfile+' ' + master_sfile)
+                        break
+                    # Loop through the matches
+                    for slave_pick in slave_matches:
+                        if slave_stream.select(station=slave_pick.waveform_id.
+                                              station_code,
+                                              channel='*'+slave_pick.waveform_id.
+                                              channel_code[-1]):
+                            slavetr = slave_stream.\
+                                select(station=slave_pick.waveform_id.station_code,
+                                       channel='*'+slave_pick.waveform_id.
+                                       channel_code[-1])[0]
+                        else:
+                            print('No slave data for ' +
+                                  slave_pick.waveform_id.station_code + '.' +
+                                  slave_pick.waveform_id.channel_code)
+                            # print(pick.waveform_id.station_code +
+                            #       '.' + pick.waveform_id.channel_code +
+                            #       ' ' + slave_sfile + ' ' + master_sfile)
+                            break
+                        # Correct the picks
+                        try:
+                            correction, cc =\
+                                xcorr_pick_correction(pick.time, mastertr,
+                                                      slave_pick.time,
+                                                      slavetr, pre_pick,
+                                                      extract_len - pre_pick,
+                                                      shift_len, filter="bandpass",
+                                                      filter_options={'freqmin':
+                                                                      lowcut,
+                                                                      'freqmax':
+                                                                      highcut},
+                                                      plot=plotvar)
+                            # Get the differntial travel time using the
+                            # corrected time.
+                            # Check that the correction is within the allowed shift
+                            # This can occur in the obspy routine when the
+                            # correlation function is increasing at the end of the
+                            # window.
+                            if abs(correction) > shift_len:
+                                warnings.warn('Shift correction too large, ' +
+                                              'will not use')
+                                continue
+                            correction = (pick.time - master_ori_time) -\
+                                (slave_pick.time + correction - slave_ori_time)
+                            links += 1
+                            if cc * cc >= coh_thresh:
+                                if coherence_weight:
+                                    weight = cc * cc
+                                else:
+                                    weight = cc
+                                phases += 1
+                                # added by Caro
+                                event_text += pick.waveform_id.station_code.\
+                                    ljust(5) + _cc_round(correction, 3).\
+                                    rjust(11) + _cc_round(weight, 3).rjust(8) +\
+                                    ' '+pick.phase_hint+'\n'
+                                event_text2 += pick.waveform_id.station_code\
+                                    .ljust(5).upper() +\
+                                    _cc_round(correction, 3).rjust(11) +\
+                                    _cc_round(weight, 3).rjust(8) +\
+                                    ' '+pick.phase_hint+'\n'
+
+                                # links+=1
+                            corr_list.append(cc*cc)
+                        except:
+                            # Should warn here
+                            msg = "Couldn't compute correlation correction"
+                            warnings.warn(msg)
+                            continue
+                # print(links)
+                if links >= min_link and phases > 0:
+                    print('Writing to file')
+                    f.write(event_text)
+                    f2.write(event_text2)
+        if plotvar:
+            plt.hist(corr_list, 150)
+            plt.show()
+    return corr_list
+
+
+def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, shift_len,
+                       outdir, lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
+                       coh_thresh=0.0, coherence_weight=False, plotvar=False):
+    import obspy
+    if int(obspy.__version__.split('.')[0]) > 0:
+        from obspy.signal.cross_correlation import xcorr_pick_correction
+    else:
+        from obspy.signal.cross_correlation import xcorrPickCorrection \
+            as xcorr_pick_correction
+    import matplotlib.pyplot as plt
+    from eqcorrscan.utils.mag_calc import dist_calc
+    import warnings
+    corr_list = []
+    with open(outdir + 'dt.cc_' + str(index), 'w') as f, open(outdir + 'dt.cc2_' + str(index), 'w') as f2:
         # master_sfile = master[1]
         # master_event_id = master[0]
-        master_event_id = i
-        # print(i)
+        master_event_id = index
+        master_event = catalog[index]
         # master_picks = sfile_util.readpicks(master_sfile).picks
         # master_event = sfile_util.readheader(master_sfile)
         master_picks = master_event.picks
@@ -430,7 +609,7 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
         #         except:
         #             continue
         #             raise IOError("Couldn't find wavefile")
-        for j in range(i+1, len(catalog)):
+        for j in range(index + 1, len(catalog)):
             # # Use this tactic to only output unique event pairings
             # slave_sfile = event_list[j][1]
             # slave_event_id = event_list[j][0]
@@ -562,15 +741,13 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue
-            print(links)
+            # print(links)
             if links >= min_link and phases > 0:
                 print('Writing to file')
                 f.write(event_text)
                 f2.write(event_text2)
-    if plotvar:
-        plt.hist(corr_list, 150)
-        plt.show()
-    # f.write('\n')
-    f.close()
-    f2.close()
+        if plotvar:
+            plt.hist(corr_list, 150)
+            plt.show()
     return corr_list
+

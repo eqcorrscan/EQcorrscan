@@ -131,6 +131,7 @@ class TestCatalogMethods(unittest.TestCase):
         output_check_file.close()
         os.remove('station.dat')
 
+# TODO The following need to take a catalog. QML file should be added to test_data dir
     def test_write_event(self):
         """Simple test function to test the writing of events.
         """
@@ -139,9 +140,6 @@ class TestCatalogMethods(unittest.TestCase):
         import os
         import glob
 
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_')
-        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
         event_list = sfiles_to_event(sfile_list)
         # Check that we have written a file
         self.assertTrue(os.path.isfile('event.dat'))

@@ -549,6 +549,60 @@ def plot_sta_residuals(catalog, histvar=False, kdevar=True):
     return
 
 
+def seismicity_heatmap(catalog, utm_zone, hemisphere, two_D=True, three_D=False, plotvar=False):
+    """
+    Function to plot a kernel density estimate for areas of dense seismicity. \
+    Can plot in 2D or 3D, but defaults to 2D which will plot 3 subplots of map-view, \
+    and two orthogonal cross sections. 3D will use mayavi to plot the 3 dimensional \
+    KDE.
+
+    Adapted from Stack Overflow soln here: \
+    http://stackoverflow.com/questions/21918529/multivariate-kernel-density-estimation-in-python
+
+    *NOTE: Default conda install of mayavi downgrades numpy to 1.9 and breaks stuff. \
+        Manually updating numpy seems to fix the problem without breaking mayavi.
+
+    :type catalog: obspy.core.Catalog
+    :param catalog: catalog of events for KDE
+    :type utm_zone: str
+    :param utm_zone: Which utm zone the data are located in for purposes of conversion. \
+        Should be in the format '60H'
+    :type hemisphere: str
+    :param hemisphere: string specifying 'North' or 'South'
+    :type two_D: bool
+    :param two_D: Plot estimates in multiple two-D plots
+    :type three_D: bool
+    :param three_D: Plot estimates in one three-D plot
+    :type plotvar: bool
+    :param plotvar: Plotting flag
+    """
+    import numpy as np
+    from scipy import stats
+    from pyproj import Proj
+    from mayavi import mlab
+    if two_D:
+        print('blah')
+    elif three_D:
+        prj = Proj("+proj=utm +zone=%s, %s, +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+                   % (utm_zone, hemisphere.lower()))
+        data = np.asarray([list(prj(ev.preferred_origin().longitude,ev.preferred_origin().latitude)) + [ev.preferred_origin().depth]
+                           for ev in catalog])
+        values = data.T
+        kde = stats.gaussian_kde(values)
+        # Create the grid
+        xmin, ymin, zmin = data.min(axis=0)
+        xmax, ymax, zmax = data.max(axis=0)
+        xi, yi, zi = np.mgrid[xmin:xmax:50j, ymin:ymax:50j, zmin:zmax:50j]
+
+        coords = np.vstack([item.ravel() for item in [xi, yi, zi]])
+        density = kde(coords).reshape(xi.shape)
+
+        # Visualize the density estimate as isosurfaces
+        mlab.contour3d(xi, yi, zi, density, opacity=0.5)
+        mlab.axes()
+        mlab.show()
+
+
 def obspy_3d_plot(inventory, catalog):
     r"""
     Wrapper on threeD_seismplot() to plot obspy.Inventory and
@@ -571,8 +625,8 @@ def obspy_3d_plot(inventory, catalog):
                      sta.elevation / 1000 - sta.channels[0].depth / 1000)
                     for sta in net]
         all_stas += stations
-    threeD_seismplot(all_stas, nodes)
-    return
+    fig = threeD_seismplot(all_stas, nodes)
+    return fig
 
 
 def threeD_seismplot(stations, nodes):
@@ -599,7 +653,7 @@ def threeD_seismplot(stations, nodes):
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
     plt.show()
-    return
+    return fig
 
 
 def pretty_template_plot(template, size=(18.5, 10.5), save=False, title=False,

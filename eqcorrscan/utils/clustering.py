@@ -639,7 +639,7 @@ def dist_mat_km(catalog):
     return dist_mat
 
 
-def space_cluster(catalog, d_thresh, show=True):
+def space_cluster(catalog, d_thresh, output='Catalogs', show=True):
     r"""
     Function to cluster a catalog by distance only - will compute the\
     matrix of physical distances between events and utilize the\
@@ -661,32 +661,42 @@ def space_cluster(catalog, d_thresh, show=True):
     dist_mat = dist_mat_km(catalog)
     dist_vec = squareform(dist_mat)
     Z = linkage(dist_vec, method='average')
-
     # Cluster the linkage using the given threshold as the cutoff
     indices = fcluster(Z, t=d_thresh, criterion='distance')
     group_ids = list(set(indices))
     indices = [(indices[i], i) for i in xrange(len(indices))]
-
     if show:
         # Plot the dendrogram...if it's not way too huge
         dendrogram(Z, color_threshold=d_thresh,
                    distance_sort='ascending')
         plt.show()
-
     # Sort by group id
     indices.sort(key=lambda tup: tup[0])
     groups = []
-    for group_id in group_ids:
-        group = Catalog()
-        for ind in indices:
-            if ind[0] == group_id:
-                group.append(catalog[ind[1]])
-            elif ind[0] > group_id:
-                # Because we have sorted by group id, when the index is greater
-                # than the group_id we can break the inner loop.
-                # Patch applied by CJC 05/11/2015
-                groups.append(group)
-                break
+    if output == 'Catalogs':
+        for group_id in group_ids:
+            group = Catalog()
+            for ind in indices:
+                if ind[0] == group_id:
+                    group.append(catalog[ind[1]])
+                elif ind[0] > group_id:
+                    # Because we have sorted by group id, when the index is greater
+                    # than the group_id we can break the inner loop.
+                    # Patch applied by CJC 05/11/2015
+                    groups.append(group)
+                    break
+    elif output == 'indices':
+        for group_id in group_ids:
+            group = []
+            for ind in indices:
+                if ind[0] == group_id:
+                    group.append(ind)
+                elif ind[0] > group_id:
+                    # Because we have sorted by group id, when the index is greater
+                    # than the group_id we can break the inner loop.
+                    # Patch applied by CJC 05/11/2015
+                    groups.append(group)
+                    break
     return groups
 
 
