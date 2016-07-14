@@ -8,14 +8,14 @@ matrix:
       env: PYTHON_VERSION=3.5
     - os: linux
       env: PYTHON_VERSION=3.4
-    - os: linux
-      env: PYTHON_VERSION=3.3
+    #    - os: linux
+    #      env: PYTHON_VERSION=3.3
+    # There isn't and openCV3 for python 3.3 on Conda
 
     - os: osx
       env: PYTHON_VERSION=2.7
     - os: osx
       env: PYTHON_VERSION=3.5
-#     Conda install on OSX is an issue - gives 0.238 xcorr when should give 1...
 
 sudo: false
 
