@@ -12,11 +12,11 @@ template_gen
        :toctree: autogen
        :nosignatures:
 
-       _template_gen
+       template_gen
        extract_from_stack
        from_client
        from_contbase
-       from_quakeml
+       from_meta_file
        from_sac
        from_seishub
        from_sfile

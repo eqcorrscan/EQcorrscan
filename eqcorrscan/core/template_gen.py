@@ -114,9 +114,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
                                   filt_order=filt_order,
                                   samp_rate=samp_rate, debug=debug)
-    template = _template_gen(picks=event.picks, st=st, length=length,
-                             swin=swin, prepick=prepick, plot=plot,
-                             debug=debug)
+    template = template_gen(picks=event.picks, st=st, length=length,
+                            swin=swin, prepick=prepick, plot=plot,
+                            debug=debug)
     return template
 
 
@@ -256,6 +256,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     if debug > 0:
         print("I have found the following picks")
         for pick in picks:
+            if not pick.waveform_id:
+                continue
             print(' '.join([pick.waveform_id.station_code,
                             pick.waveform_id.channel_code, pick.phase_hint,
                             str(pick.time)]))
@@ -264,8 +266,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
                                   filt_order=filt_order, samp_rate=samp_rate,
                                   debug=debug)
-    st1 = _template_gen(picks=picks, st=st, length=length, swin=swin,
-                        prepick=prepick, plot=plot, debug=debug)
+    st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
+                       prepick=prepick, plot=plot, debug=debug)
     return st1
 
 
@@ -337,6 +339,10 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     used_picks = []
     wavefiles = []
     for pick in picks:
+        if not pick.waveform_id:
+            print('Pick not associated with waveforms, will not use.')
+            print(pick)
+            continue
         station = pick.waveform_id.station_code
         channel = pick.waveform_id.channel_code
         phase = pick.phase_hint
@@ -374,22 +380,35 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                                 filt_order=filt_order, samp_rate=samp_rate,
                                 starttime=day, debug=debug)
     # Cut and extract the templates
-    st1 = _template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
-                        debug=debug)
+    st1 = template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
+                       debug=debug)
     return st1
 
 
-def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
+def from_quakeml(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, debug=0, plot=False):
+    """Depreciated wrapper."""
+    warnings.warn('from_quakeml is depreciated, please use from_meta_file')
+    templates = from_meta_file(meta_file=meta_file, st=st, lowcut=lowcut,
+                               highcut=highcut, samp_rate=samp_rate,
+                               filt_order=filt_order, length=length,
+                               prepick=prepick, swin=swin, debug=debug,
+                               plot=plot)
+    return templates
+
+
+def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
+                   length, prepick, swin, debug=0, plot=False):
     """
     Generate a multiplexed template from a local quakeML file.
 
     Function to generate a template from a local quakeml file \
     and an obspy.Stream object.
 
-    :type quakeml: str
-    :param quakeml: QuakeML file containing pick information, can contain \
-        multiple events.
+    :type meta_file: str
+    :param meta_file: File containing pick information, can contain \
+        multiple events.  File must be formatted in a way readable by \
+        obspy.core.event.read_events.
     :type st: obspy.core.stream.Stream
     :param st: Stream containing waveform data for template (hopefully). \
         Note that this should be the same length of stream as you will use \
@@ -429,20 +448,20 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     .. rubric:: Example
 
     >>> from obspy import read
-    >>> from eqcorrscan.core.template_gen import from_quakeml
+    >>> from eqcorrscan.core.template_gen import from_meta_file
     >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
     >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
-    >>> templates = from_quakeml(quakeml=quakeml, st=st, lowcut=2.0,
-    ...                          highcut=9.0, samp_rate=20.0, filt_order=3,
-    ...                          length=2, prepick=0.1, swin='S')
+    >>> templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
+    ...                            highcut=9.0, samp_rate=20.0, filt_order=3,
+    ...                            length=2, prepick=0.1, swin='S')
     >>> print(len(templates[0]))
     15
     """
     # Perform some checks first
     import os
     import warnings
-    if not os.path.isfile(quakeml):
+    if not os.path.isfile(meta_file):
         raise IOError('QuakeML file does not exist')
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
@@ -475,7 +494,7 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
     data_start = min([tr.stats.starttime for tr in st])
     data_end = max([tr.stats.endtime for tr in st])
     # Read QuakeML file into Catalog class
-    catalog = read_events(quakeml)
+    catalog = read_events(meta_file)
     templates = []
     for event in catalog:
         if len(event.picks) == 0:
@@ -498,6 +517,10 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
         if debug > 0:
             print("I have found the following picks")
         for pick in event.picks:
+            if not pick.waveform_id:
+                print('Pick not associated with waveforms, will not use.')
+                print(pick)
+                continue
             if debug > 0:
                 print(' '.join([pick.waveform_id.station_code,
                                 pick.waveform_id.channel_code,
@@ -513,8 +536,8 @@ def from_quakeml(quakeml, st, lowcut, highcut, samp_rate, filt_order,
                               channels[i])
         st1 = st.copy()
         # Cut and extract the templates
-        template = _template_gen(event.picks, st1, length, swin,
-                                 prepick=prepick, plot=plot, debug=debug)
+        template = template_gen(event.picks, st1, length, swin,
+                                prepick=prepick, plot=plot, debug=debug)
         templates.append(template)
     return templates
 
@@ -586,6 +609,10 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         all_waveform_info = []
         for event in sub_catalog:
             for pick in event.picks:
+                if not pick.waveform_id:
+                    print('Pick not associated with waveforms, will not use.')
+                    print(pick)
+                    continue
                 all_waveform_info.append(pick.waveform_id)
         _all_waveform_info = []
         for w in all_waveform_info:
@@ -617,10 +644,10 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
             if sta in client.waveform.get_station_ids(network=net):
                 if 'st' not in locals():
                     st = client.waveform.get_waveform(net, sta, loc, chan,
-                                                     starttime, endtime)
+                                                      starttime, endtime)
                 else:
                     st += client.waveform.get_waveform(net, sta, loc, chan,
-                                                      starttime, endtime)
+                                                       starttime, endtime)
             else:
                 print('Station not found in SeisHub DB')
         if len(st) == 0:
@@ -639,9 +666,9 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                                        samp_rate=samp_rate, debug=debug,
                                        parallel=True)
         for event in sub_catalog:
-            template = _template_gen(picks=event.picks, st=st1, length=length,
-                                     swin=swin, prepick=prepick,
-                                     plot=plot, debug=debug)
+            template = template_gen(picks=event.picks, st=st1, length=length,
+                                    swin=swin, prepick=prepick,
+                                    plot=plot, debug=debug)
             del st, st1
             temp_list.append(template)
     return temp_list
@@ -744,6 +771,10 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         all_waveform_info = []
         for event in sub_catalog:
             for pick in event.picks:
+                if not pick.waveform_id:
+                    print('Pick not associated with waveforms, will not use.')
+                    print(pick)
+                    continue
                 all_waveform_info.append(pick.waveform_id)
         all_waveform_info = list(set([(w.network_code, w.station_code,
                                       w.channel_code, w.location_code)
@@ -803,9 +834,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         if debug > 0:
             st1.plot()
         for event in sub_catalog:
-            template = _template_gen(picks=event.picks, st=st1, length=length,
-                                     swin=swin, prepick=prepick,
-                                     plot=plot, debug=debug)
+            template = template_gen(picks=event.picks, st=st1, length=length,
+                                    swin=swin, prepick=prepick,
+                                    plot=plot, debug=debug)
             temp_list.append(template)
         del st, st1
     return temp_list
@@ -855,6 +886,11 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     for event in working_catalog:
         picks = event.picks
         for pick in picks:
+            if not pick.waveform_id:
+                print('Pick not associated with waveforms, will not use.')
+                print(pick)
+                picks.remove(pick)
+                continue
             if st[0].stats.starttime < pick.time < st[0].stats.endtime:
                 pick_stachan = (pick.waveform_id.station_code,
                                 pick.waveform_id.channel_code)
@@ -867,15 +903,23 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
                 picks.remove(pick)
         if len(picks) > 0:
             st_clip = st.copy()
-            template = _template_gen(picks=picks, st=st_clip, length=length,
-                                     swin=swin, prepick=prepick, plot=plot,
-                                     debug=debug)
+            template = template_gen(picks=picks, st=st_clip, length=length,
+                                    swin=swin, prepick=prepick, plot=plot,
+                                    debug=debug)
             templates.append(template)
     return templates
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
                   debug=0):
+    warnings.warn('_template_gen is depreciated, please use template_gen')
+    st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
+                       prepick=prepick, plot=plot, debug=debug)
+    return st1
+
+
+def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
+                 debug=0):
     """
     Master function to generate a multiplexed template for a single event.
     Function to generate a cut template in the obspy \
@@ -883,9 +927,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     class.  Should be given pre-processed data (downsampled and filtered).
 
     :type picks: list
-    :param picks: Picks to extract data around
+    :param picks: Picks to extract data around, where each pick is an \
+        obspy.core.event.origins.Pick object.
     :type st: obspy.core.stream.Stream
-    :param st: Stream to etract templates from
+    :param st: Stream to extract templates from
     :type length: float
     :param length: Length of template in seconds
     :type swin: str
@@ -917,13 +962,21 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     from obspy import Stream
     import warnings
     import numpy as np
+    import copy
 
     stations = []
     channels = []
     st_stachans = []
+    picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
+    # the users picks intact.
     if swin not in ['P', 'all', 'S']:
         raise IOError('Phase type is not in [all, P, S]')
-    for pick in picks:
+    for pick in picks_copy:
+        if not pick.waveform_id:
+            print('Pick not assocaited with waveform, will not use it.')
+            print(pick)
+            picks_copy.remove(pick)
+            continue
         # Check to see that we are only taking the appropriate picks
         if swin == 'all':
             # Annoying compatability with seisan two channel codes
@@ -957,7 +1010,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     for tr in st:
         if tr.stats.station in stations:
             # This is used to cope with seisan handling channel codes as
-            # two charectar codes, internally we will do the same.
+            # two character codes, internally we will do the same.
             if len(tr.stats.channel) == 3:
                 temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
             elif len(tr.stats.channel) == 2:
@@ -982,7 +1035,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
         if 'starttime' in locals():
             del starttime
         if swin == 'all':
-            for pick in picks:
+            for pick in picks_copy:
                 if not pick.phase_hint:
                     msg = 'Pick for ' + pick.waveform_id.station_code + '.' +\
                         pick.waveform_id.channel_code + ' has no phase ' +\
@@ -1009,7 +1062,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
                             'S' in pick.phase_hint.upper():
                         starttime = pick.time - prepick
         else:
-            for pick in picks:
+            for pick in picks_copy:
                 if pick.waveform_id.station_code == tr.stats.station and\
                         swin in pick.phase_hint.upper():
                     starttime = pick.time - prepick
@@ -1037,7 +1090,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
                                  10)
         tplot(st1, background=background,
               title='Template for '+str(st1[0].stats.starttime),
-              picks=picks)
+              picks=picks_copy)
         del stplot
     del st
     # st1.plot(size=(800,600))

@@ -1,8 +1,12 @@
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
 * Add lag-calculation and tests for it;
-* Change how lag-calc does the trace splitting to recude memory usage;
+* Change how lag-calc does the trace splitting to reduce memory usage;
 * Added pick-filtering utility to clean up tutorials;
+* Change template generation function names for clarity (wrappers for
+depreciated names);
+* Add more useful error messages when picks are not associated with
+waveforms.
 
 ## 0.1.2
 * Add handling for empty location information in sfiles.

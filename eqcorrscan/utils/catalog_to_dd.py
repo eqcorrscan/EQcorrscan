@@ -66,14 +66,20 @@ def _av_weight(W1, W2):
 
     :returns: str
 
+    .. rubric:: Example
     >>> _av_weight(1, 4)
     '0.3750'
     >>> _av_weight(0, 0)
     '1.0000'
+    >>> _av_weight(' ', ' ')
+    '1.0000'
+    >>> _av_weight(-9, 0)
+    '0.5000'
+    >>> _av_weight(1, -9)
+    '0.3750'
     """
     import warnings
 
-    # print('Weight 1: ' + str(W1) + ', weight 2: ' + str(W2))
     if str(W1) in [' ', '']:
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
@@ -448,10 +454,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             slave_event_id = event_list[j][0]
             slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
-                # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
-                # print(slavestream)
                 raise IOError('No wavefile found: ' + slave_wavefiles[0] +
                               ' ' + slave_sfile)
             if len(slave_wavefiles) > 1:
@@ -565,12 +569,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 ' ' + pick.phase_hint + '\n'
                             if debug > 3:
                                 print(event_text)
-                            # links+=1
                         else:
                             print('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
                     except:
-                        # Should warn here
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue

@@ -10,9 +10,7 @@
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and now
-Windows systems.  We support Python versions 2.7 and 3.5.  The codes likely
-work on Py 3.4 too, but we currently don't test this and recommend users to
-work in Py 3.5.
+Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
 
 Note that, although we support Windows, EQcorrscan is optimized for
 linux style distributions, it will work on Windows, but everything
