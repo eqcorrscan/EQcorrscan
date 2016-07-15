@@ -927,8 +927,8 @@ def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     class.  Should be given pre-processed data (downsampled and filtered).
 
     :type picks: list
-    :param picks: Picks to extract data around, where each pick is an \
-        obspy.core.event.origins.Pick object.
+    :param picks: Picks to extract data around, where each pick in the \
+        list is an obspy.core.event.origin.Pick object.
     :type st: obspy.core.stream.Stream
     :param st: Stream to extract templates from
     :type length: float
