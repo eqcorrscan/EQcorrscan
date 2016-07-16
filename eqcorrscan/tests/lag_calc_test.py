@@ -20,7 +20,7 @@ class TestMethods(unittest.TestCase):
         template = from_sfile(sfile=os.path.join(testing_path,
                                                  '21-1412-02L.S201309'),
                               lowcut=5, highcut=15, samp_rate=40,
-                              filt_order=4, length=3, swin='all')
+                              filt_order=4, length=3, swin='all', prepick=0.05)
         detection = from_sfile(sfile=os.path.join(testing_path,
                                                   '21-1759-04L.S201309'),
                               lowcut=5, highcut=15, samp_rate=40,

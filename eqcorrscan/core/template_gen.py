@@ -34,7 +34,7 @@ import warnings
 
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
-             prepick=0.05, debug=0, plot=False):
+             prepick, all_horiz=False, debug=0, plot=False):
     """
     Generate a multiplexed template from a list of SAC files.
 
@@ -67,6 +67,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
             defaults file.
     :type prepick: float
     :param prepick: Length to extract prior to the pick in seconds.
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Debug level, higher number=more output.
     :type plot: bool
@@ -86,7 +89,7 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
     >>> template = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...                     samp_rate=25.0, filt_order=4, length=2.0,
-    ...                     swin='all', prepick=0.1)
+    ...                     swin='all', prepick=0.1, all_horiz=True)
     >>> print(template[0].stats.sampling_rate)
     25.0
     >>> print(len(template))
@@ -116,12 +119,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
                                   samp_rate=samp_rate, debug=debug)
     template = template_gen(picks=event.picks, st=st, length=length,
                             swin=swin, prepick=prepick, plot=plot,
-                            debug=debug)
+                            debug=debug, all_horiz=all_horiz)
     return template
 
 
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
-               prepick=0.05, debug=0, plot=False):
+               prepick, all_horiz=False, debug=0, plot=False):
     """
     Generate multiplexed template from a Nordic (Seisan) s-file.
     Function to read in picks from sfile then generate the template from \
@@ -150,6 +153,9 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             defaults file.
     :type prepick: float
     :param prepick: Length to extract prior to the pick in seconds.
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Debug level, higher number=more output.
     :type plot: bool
@@ -170,7 +176,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     ...                      'REA', 'TEST_', '01-0411-15L.S201309')
     >>> template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
     ...                       samp_rate=50.0, filt_order=4, swin='P',
-    ...                       prepick=0.2, length=6)
+    ...                       prepick=0.2, length=6, all_horiz=True)
     >>> print(len(template))
     15
     >>> print(template[0].stats.sampling_rate)
@@ -267,12 +273,13 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                                   filt_order=filt_order, samp_rate=samp_rate,
                                   debug=debug)
     st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
-                       prepick=prepick, plot=plot, debug=debug)
+                       prepick=prepick, all_horiz=all_horiz,
+                       plot=plot, debug=debug)
     return st1
 
 
 def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
-                  length, prepick, swin, debug=0, plot=False):
+                  length, prepick, swin, all_horiz=False, debug=0, plot=False):
     """
     Generate multiplexed template from a Nordic file using continuous data.
 
@@ -313,6 +320,9 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :param prepick: Pre-pick time in seconds
     :type swin: str
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
@@ -380,25 +390,27 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                                 filt_order=filt_order, samp_rate=samp_rate,
                                 starttime=day, debug=debug)
     # Cut and extract the templates
-    st1 = template_gen(picks, st, length, swin, prepick=prepick, plot=plot,
-                       debug=debug)
+    st1 = template_gen(picks, st, length, swin, prepick=prepick,
+                       all_horiz=all_horiz, plot=plot, debug=debug)
     return st1
 
 
 def from_quakeml(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, debug=0, plot=False):
+                 length, prepick, swin, all_horiz=False, debug=0,
+                 plot=False):
     """Depreciated wrapper."""
     warnings.warn('from_quakeml is depreciated, please use from_meta_file')
     templates = from_meta_file(meta_file=meta_file, st=st, lowcut=lowcut,
                                highcut=highcut, samp_rate=samp_rate,
                                filt_order=filt_order, length=length,
                                prepick=prepick, swin=swin, debug=debug,
-                               plot=plot)
+                               plot=plot, all_horiz=all_horiz)
     return templates
 
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                   length, prepick, swin, debug=0, plot=False):
+                   length, prepick, swin, all_horiz=False, debug=0,
+                   plot=False):
     """
     Generate a multiplexed template from a local quakeML file.
 
@@ -433,6 +445,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :param prepick: Pre-pick time in seconds
     :type swin: str
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
@@ -454,7 +469,8 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
     >>> templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
     ...                            highcut=9.0, samp_rate=20.0, filt_order=3,
-    ...                            length=2, prepick=0.1, swin='S')
+    ...                            length=2, prepick=0.1, swin='S',
+    ...                            all_horiz=True)
     >>> print(len(templates[0]))
     15
     """
@@ -537,14 +553,15 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
         st1 = st.copy()
         # Cut and extract the templates
         template = template_gen(event.picks, st1, length, swin,
-                                prepick=prepick, plot=plot, debug=debug)
+                                prepick=prepick, plot=plot, debug=debug,
+                                all_horiz=all_horiz)
         templates.append(template)
     return templates
 
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400, data_pad=90,
-                 debug=0, plot=False):
+                 all_horiz=False, debug=0, plot=False):
     """
     Generate multiplexed template from SeisHub database.
     Function to generate templates from a SeisHub database. Must be given \
@@ -581,6 +598,9 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         any event for processing, use to reduce edge-effects of filtering on \
         the templates.
     :type data_pad: int
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
@@ -668,7 +688,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         for event in sub_catalog:
             template = template_gen(picks=event.picks, st=st1, length=length,
                                     swin=swin, prepick=prepick,
-                                    plot=plot, debug=debug)
+                                    all_horiz=all_horiz, plot=plot, debug=debug)
             del st, st1
             temp_list.append(template)
     return temp_list
@@ -676,7 +696,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, process_len=86400, data_pad=90,
-                debug=0, plot=False):
+                all_horiz=False, debug=0, plot=False):
     """
     Generate multiplexed template from FDSN client.
     Function to generate templates from an FDSN client. Must be given \
@@ -714,6 +734,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         any event for processing, use to reduce edge-effects of filtering on \
         the templates.
     :type data_pad: int
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type plot: bool
@@ -723,7 +746,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
 
     .. note:: process_len should be set to the same length as used when \
         computing detections using match_filter.match_filter, e.g. if you read \
-        in day-long data fro match_filter, process_len should be 86400.
+        in day-long data for match_filter, process_len should be 86400.
 
     .. rubric:: Example
 
@@ -742,7 +765,8 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     >>> templates = from_client(catalog=catalog, client_id='NCEDC',
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
     ...                         filt_order=4, length=3.0, prepick=0.15,
-    ...                         swin='all', process_len=300)
+    ...                         swin='all', process_len=300,
+    ...                         all_horiz=True)
     BG.CLV..DPZ
     BK.BKS.00.HHZ
     Pre-processing data
@@ -836,14 +860,14 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         for event in sub_catalog:
             template = template_gen(picks=event.picks, st=st1, length=length,
                                     swin=swin, prepick=prepick,
-                                    plot=plot, debug=debug)
+                                    plot=plot, debug=debug, all_horiz=all_horiz)
             temp_list.append(template)
         del st, st1
     return temp_list
 
 
 def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
-                       plot=False, debug=0):
+                       all_horiz=False, plot=False, debug=0):
     """
     Generate multiple templates from one stream of data.
     Thin wrapper around _template_gen to generate multiple templates from \
@@ -861,6 +885,9 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :type prepick: float
     :param prepick: Length in seconds to extract before the pick time \
             default is 0.05 seconds
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type plot: bool
     :param plot: To plot the template or not, default is True
     :type debug: int
@@ -905,21 +932,22 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
             st_clip = st.copy()
             template = template_gen(picks=picks, st=st_clip, length=length,
                                     swin=swin, prepick=prepick, plot=plot,
-                                    debug=debug)
+                                    debug=debug, all_horiz=all_horiz)
             templates.append(template)
     return templates
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
-                  debug=0):
+                  all_horiz=False, debug=0):
     warnings.warn('_template_gen is depreciated, please use template_gen')
     st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
-                       prepick=prepick, plot=plot, debug=debug)
+                       prepick=prepick, all_horiz=all_horiz, plot=plot,
+                       debug=debug)
     return st1
 
 
-def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
-                 debug=0):
+def template_gen(picks, st, length, swin='all', prepick=0.05,
+                 all_horiz=False, plot=False, debug=0):
     """
     Master function to generate a multiplexed template for a single event.
     Function to generate a cut template in the obspy \
@@ -938,6 +966,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
     :type prepick: float
     :param prepick: Length in seconds to extract before the pick time \
             default is 0.05 seconds
+    :type all_horiz: bool
+    :param all_horiz: To use both horizontal channels even if there is only \
+        a pick on one of them.  Defaults to False.
     :type plot: bool
     :param plot: To plot the template or not, default is True
     :type debug: int
@@ -973,13 +1004,13 @@ def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
         raise IOError('Phase type is not in [all, P, S]')
     for pick in picks_copy:
         if not pick.waveform_id:
-            print('Pick not assocaited with waveform, will not use it.')
+            print('Pick not associated with waveform, will not use it.')
             print(pick)
             picks_copy.remove(pick)
             continue
         # Check to see that we are only taking the appropriate picks
         if swin == 'all':
-            # Annoying compatability with seisan two channel codes
+            # Annoying comparability with seisan two channel codes
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code[0] +
                             pick.waveform_id.channel_code[-1])
@@ -1059,7 +1090,13 @@ def template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
                     elif pick.waveform_id.station_code == tr.stats.station and\
                             tr.stats.channel[-1] in ['1', '2', 'N',
                                                      'E', 'R', 'T'] and\
-                            'S' in pick.phase_hint.upper():
+                            'S' in pick.phase_hint.upper() and\
+                            all_horiz:
+                        starttime = pick.time - prepick
+                    elif pick.waveform_id.station_code == tr.stats.station and\
+                            pick.waveform_id.channel_code[0] + \
+                            pick.waveform_id.channel_code[-1] == \
+                            tr.stats.channel:
                         starttime = pick.time - prepick
         else:
             for pick in picks_copy:
