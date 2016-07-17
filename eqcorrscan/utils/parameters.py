@@ -143,8 +143,6 @@ def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
 
     :returns: parameters as EQcorrscanParameters
     """
-    import glob
-    from obspy import UTCDateTime
     try:
         import ConfigParser
     except ImportError:
@@ -194,3 +192,8 @@ def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
                              )
 
     return parameters
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
