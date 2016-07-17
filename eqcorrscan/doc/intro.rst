@@ -30,33 +30,54 @@ documentation.  Ideally we would like to have one test for every function!
 
 Installation
 ------------
-A fresh install should be as simple as:
+
+In general we recommend users to install EQcorrscan in a virtual environment,
+for this the virtualenvwrapper package is handy.
+
+Within a virtual environment, a fresh install should be as simple as:
 
 **pip install eqcorrscan**
 
-Most codes should work without any effort on your part.  However you may need to
-install the openCV-python package yourself.
+Most codes should work without any effort on your part.  However you will need to
+install the openCV-python package yourself.  We recommend installing openCV version
+3, and we recommend installing it from source - it is available via anaconda, but
+it will run faster if you compile it yourself, and it will give more consistent
+results.  See |pyimagesearch| for details for install on all operating systems
+(including raspberry pi, which EQcorrscan runs on too :) ).
 
-On Linux:
+On Linux with Python 2.7:
 
 **apt-get install python-opencv**
 
-On OSX:
+On OSX with Python 2.7:
 
 **port install py27-numpy**
 **port install opencv +python27**
 or
 **brew install opencv**
 
-Note you may have issues with homebrew if you don't have numpy installed: but if
+You can also install from source; for Python 3 this is a must as you will have
+to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
+|cv3_ubuntu|.
+
+.. |pyimagesearch| raw:: html
+
+   <a href="http://www.pyimagesearch.com/" target="_blank">pyimagesearch</a>
+
+.. |cv3_ubuntu| raw:: html
+
+   <a href="http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/" target="_blank">install cv3 on ubuntu</a>
+
+On Windows you can follow nice instructions |windows_opencv|.
+
+.. |windows_opencv| raw:: html
+
+   <a href="http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0" target="_blank">here</a>
+
+Note you may have issues with these installs if you don't have numpy installed: but if
 you don't have numpy installed then you have bigger issues...
 
-This install has only been tested on Linux and OSX machines.  You
-should be prepared for small differences in the results of your correlations
-relating to floating-point truncation differences between 32 and 64-Bit
-machines.
-
-If you plan to run the bright_lights or generating a synthetic grid of
+If you plan to run the *bright_lights* or generating a synthetic grid of
 templates you will need to have grid csv files, which the authors have
 previously used NonLinLoc to generate.  This is not provided here and should
 be sourced from |NLLoc_link|. This will provide
@@ -72,23 +93,25 @@ required to give.
 Supported environments
 ----------------------
 
-Currently we only support Linux and OSX environments running Python 2.7.  We
-do not yet support Python 3.x as the multiprocessing package we rely on, called
-multiprocessing, has not been ported to Python 3.x.  EQcorrscan is mostly ready
-to go syntax-wise for 3.x, so when the dependencies get ported we should be
-good to go.
+We support Linux, OSX and Windows environments running Python 2.7 and 3.5.
+We don't run our tests on other versions of Python so you might have some issues
+with other Python 3.x series, if you do, let us know.
+
+We do **not** support Python 2.6.
 
 
 Functions
 ---------
 
-This package is divided into sub-directories of *core* and *utils*.  The
-*utils* directory contains simple functions for integration with |seisan_link|,
-these are in the *Sfile_util.py*
+This package is divided into sub-directories of :doc:`core </core>` and :doc:`utils </utils>`.  The
+:doc:`utils </utils>` directory contains simple functions for integration with |seisan_link|,
+these are in the :doc:`sfile_util </submodules/utils.sfile_util>`
 module and functions therein which are essentially barebones and do not have the
-full functionality that seisan can handle.  *utils* also contains a simple
-peak-finding algorithm *find_peaks.py* which looks for peaks within noisy data
-above a certain threshold and within windows.  Many other functions have been
+full functionality that seisan can handle.  :doc:`utils </utils>` also contains a simple
+peak-finding algorithm :doc:`findpeaks </submodules/utils.findpeaks>` which looks for peaks within noisy data
+above a certain threshold and within windows.
+
+Many other functions have been
 added to this module to handle the analysis of repeating and near-repeating
 earthquakes, including stacking routines, clustering algorithms, magnitude
 calculation both by amplitude picking and by singular value decomposition.  I
@@ -101,14 +124,15 @@ my main project focus.
 
   <a href="http://seisan.info/" target="_blank">Seisan</a>
 
-Since earlier versions the *core* modules have moved away from using parameter
+Since earlier versions the :doc:`core </core>` modules have moved away from using parameter
 files, and instead rely on explicit argument calls.  The parameter files are
 still included by not documented here (see inside the par files), and remain
 useful when generating batch scripts (see the scripts in the github repo).
 
-Within *core* you will find the core routines to generate templates,
-*(template_gen)* search for likely templates *(bright_lights)* and
-compute cross-channel correlations from these templates *(match_filter)*.  The
+Within :doc:`core </core>` you will find the core routines to generate templates,
+(:doc:`template_gen </submodules/core.template_gen>`) search for likely templates
+(:doc:`bright_lights </submodules/core.bright_lights>`) and
+compute cross-channel correlations from these templates (:doc:`match_filter </submodules/core.match_filter>`).  The
 bright_lights and match_filter submodules have been designed with parallel
 computing in mind, to the extent that the more cores and machines you have
 running them the better.  These rely on the python multiprocessing module to

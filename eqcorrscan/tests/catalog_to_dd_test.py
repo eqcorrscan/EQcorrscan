@@ -1,6 +1,6 @@
 """
 Functions to test the functions within the eqcorrscan.utils.catalog_to_dd.py \
-submodule.  Uses test data distributed with the EQcorrscan pacakge.
+submodule.  Uses test data distributed with the EQcorrscan package.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -274,9 +274,13 @@ class TestCatalogMethods(unittest.TestCase):
         Hard to test accurately...
         """
         from eqcorrscan.utils.catalog_to_dd import write_correlations
+        from eqcorrscan.utils.catalog_to_dd import write_catalog
         from eqcorrscan.utils.timer import Timer
         import os
         import glob
+
+        max_shift_len = 0.2
+
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_')
         wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -286,15 +290,76 @@ class TestCatalogMethods(unittest.TestCase):
         event_list = zip(event_ids, sfile_list)
         with Timer() as t:
             write_correlations(event_list, wavbase, extract_len=2,
-                               pre_pick=0.5, shift_len=0.2, lowcut=2.0,
-                               highcut=10.0, max_sep=1, min_link=8,
-                               coh_thresh=0.0, plotvar=False)
-        msg = 'Running ' + str(len(event_list)) + ' events took %s s' % t.secs
+                               pre_pick=0.5, shift_len=max_shift_len,
+                               lowcut=2.0, highcut=10.0, max_sep=1, min_link=8,
+                               cc_thresh=0.0, plotvar=False)
+        msg = 'Running ' + str(len(list(event_list))) + \
+              ' events took %s s' % t.secs
         print(msg)
         self.assertTrue(os.path.isfile('dt.cc'))
+        # Generate a complementary dt.ct file and check against that
+        write_catalog(event_list=event_list,
+                      max_sep=1,
+                      min_link=8)
+        cc = open('dt.cc', 'r')
+        cc_pairs = []
+        observations = []
+        pair = cc.readline().split()[1:3]
+        for line in cc:
+            if line[0] == '#':
+                # Append old observations to the previous pair and put in pairs
+                cc_pairs.append({'pair': pair,
+                                 'observations': observations})
+                pair = line.split()[1:3]
+                observations = []
+            else:
+                obs = line.split()
+                observations.append({'station': obs[0],
+                                     'diff_time': float(obs[1]),
+                                     'weight': float(obs[2]),
+                                     'phase': obs[3]})
+        cc.close()
+        ct = open('dt.ct', 'r')
+        ct_pairs = []
+        observations = []
+        pair = ct.readline().split()[1:3]
+        for line in ct:
+            if line[0] == '#':
+                # Append old observations to the previous pair and put in pairs
+                ct_pairs.append({'pair': pair,
+                                 'observations': observations})
+                pair = line.split()[1:3]
+                observations = []
+            else:
+                obs = line.split()
+                # for sub in line.split('-'):
+                #     for item in sub.split():
+                #         obs.append(item)
+                observations.append({'station': obs[0],
+                                     'diff_time': float(obs[1]) - float(obs[2]),
+                                     'weight': float(obs[3]),
+                                     'phase': obs[4]})
+        ct.close()
+        # Everything is in memory, now we need to find matching pairs
+        for cc_pair in cc_pairs:
+            for ct_pair in ct_pairs:
+                if cc_pair['pair'] == ct_pair['pair']:
+                    for cc_obs in cc_pair['observations']:
+                        for ct_obs in ct_pair['observations']:
+                            if cc_obs['station'] == ct_obs['station'] and\
+                               cc_obs['phase'] == ct_obs['phase']:
+                                corr_correction = abs(ct_obs['diff_time'] -
+                                                      cc_obs['diff_time'])
+                                self.assertTrue(corr_correction <
+                                                max_shift_len)
+
         os.remove('dt.cc')
+        os.remove('dt.ct')
+        os.remove('phase.dat')
         if os.path.isfile('dt.cc2'):
             os.remove('dt.cc2')
+        if os.path.isfile('dt.ct2'):
+            os.remove('dt.ct2')
 
     def test_read_phase(self):
         """Function to test the phase reading function"""

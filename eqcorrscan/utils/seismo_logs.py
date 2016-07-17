@@ -23,13 +23,14 @@ from __future__ import unicode_literals
 
 def rt_time_log(logfile, startdate):
     """
+    Open and read reftek raw log-file.
     Function to open and read a log-file as written by a RefTek RT130 \
     datalogger. The information within is then scanned for timing errors \
     above the threshold.
 
-    :type logfile: String
+    :type logfile: str
     :param logfile: The logfile to look in
-    :type startdate: :class: datetime.date
+    :type startdate: datetime.date
     :param startdate: The start of the file as a date - files contain timing \
         and the julian day, but not the year.
 
@@ -39,14 +40,21 @@ def rt_time_log(logfile, startdate):
     import datetime as dt
     import re
     import os
+    import io
+    import warnings
     if os.name == 'nt':
-        f = open(logfile, 'rb')
+        f = io.open(logfile, 'rb')
     else:
-        f = open(logfile, 'r')
+        f = io.open(logfile, 'rb')
     phase_err = []
     lock = []
     # Extract all the phase errors
-    for line in f:
+    for line_binary in f:
+        try:
+            line = line_binary.decode("utf8", "ignore")
+        except UnicodeDecodeError:
+            warnings.warn('Cannot decode line, skipping')
+            continue
         if re.search("INTERNAL CLOCK PHASE ERROR", line):
             match = re.search("INTERNAL CLOCK PHASE ERROR", line)
             d_start = match.start() - 13
@@ -71,22 +79,30 @@ def rt_time_log(logfile, startdate):
 
 def rt_location_log(logfile):
     """
+    Extract location information from a RefTek raw log-file.
     Function to read a specific RefTek RT130 log-file and find all location \
     information.
 
-    :type logfile: String
+    :type logfile: str
     :param logfile: The logfile to look in
 
     :returns: list of tuples of lat, lon, elevation in decimal degrees and km.
     """
     import re
     import os
+    import warnings
     if os.name == 'nt':
         f = open(logfile, 'rb')
     else:
-        f = open(logfile, 'r')
+        f = open(logfile, 'rb')
     locations = []
-    for line in f:
+    for line_binary in f:
+        try:
+            line = line_binary.decode("utf8", "ignore")
+        except UnicodeDecodeError:
+            warnings.warn('Cannot decode line, skipping')
+            print(line_binary)
+            continue
         match = re.search("GPS: POSITION:", line)
         if match:
             # Line is of form:
@@ -105,7 +121,7 @@ def rt_location_log(logfile):
             elev_sign = loc[2][0]
             elev_unit = loc[2][-1]
             if not elev_unit == 'M':
-                raise NotImplementedError('Elevation is not in M')
+                raise NotImplementedError('Elevation is not in M: unit=' + elev_unit)
             elev = int(loc[2][1:-1])
             if elev_sign == '-':
                 elev *= -1
@@ -118,10 +134,16 @@ def rt_location_log(logfile):
 
 def flag_time_err(phase_err, time_thresh=0.02):
     """
-    Fucntion to scan through a list of tuples of time stamps and phase errors \
+    Find large time errors in list.
+    Scan through a list of tuples of time stamps and phase errors \
     and return a list of time stamps with timing errors above a threshold.
 
-    :type phase_err: List of Tuple of float, datetime.datetime
+    .. note:: This becomes important for networks cross-correlations, where \
+    if timing information is uncertain at one site, the relative arrival \
+    time (lag) will be incorrect, which will degrade the cross-correlation sum.
+
+    :type phase_err: list
+    :param phase_err: List of Tuple of float, datetime.datetime
     :type time_thresh: float
     :param time_thresh: Threshold to declare a timing error for
 
@@ -136,9 +158,9 @@ def flag_time_err(phase_err, time_thresh=0.02):
 
 def check_all_logs(directory, time_thresh):
     """
-    Function to check all the log-files in a directory tree for timing errors.
+    Check all the log-files in a directory tree for timing errors.
 
-    :type directory: String
+    :type directory: str
     :param directory: Directory to search within
     :type time_thresh: float
     :param time_thresh: Time threshold in seconds

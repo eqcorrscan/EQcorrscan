@@ -1,3 +1,13 @@
+## 0.1.3
+* Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
+* Add lag-calculation and tests for it;
+* Change how lag-calc does the trace splitting to reduce memory usage;
+* Added pick-filtering utility to clean up tutorials;
+* Change template generation function names for clarity (wrappers for
+depreciated names);
+* Add more useful error messages when picks are not associated with
+waveforms.
+
 ## 0.1.2
 * Add handling for empty location information in sfiles.
 * Added project setup script which creates a useful directory structure and copies
@@ -21,6 +31,21 @@ catalog from a list of detections.
 requires you to specify the station and channel to plot.
 * Add normalize option to stacking routines.
 * Add tests for stacking - PWS test needs more checks.
+* Add many examples to doc-strings, not complete though.
+* Change docs to have one page per function.
+* Python 3.5 testing underway, all tests pass, but only testing about 65% of
+codebase.
+* Add io functions to match_filter to simplify detection handling including
+writing detections to catalog and to text file.
+* Stricter match_filter testing to enforce exactly the same result with a
+variety of systems.
+* Add hack to template_gen tutorial to fix differences in sorting between python 3.x
+and python 2.
+* Added advanced network triggering routine from Konstantinos, allows
+different parameters for individual stations - note only uses recursive
+sta-lta triggering at the moment.  Useful for template generations alongside
+pickers.
+* Added magnitude of completeness and b-value calculators to utils.mag_calc
 
 ## 0.1.1
 * Cope with events not always having time_errors in them in eventtoSfile;

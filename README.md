@@ -10,10 +10,11 @@
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and now
-Windows systems.  Currently we only support python 2.7, but plan to extend
-this coverage in the near future - almost everything is written to work in python 3.x,
-we just need to get the testing going, work out the openCV3 install on travis and
-fix some small variable type changes.
+Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
+
+Note that, although we support Windows, EQcorrscan is optimized for
+linux style distributions, it will work on Windows, but everything
+seems to run about 30x slower at the moment.
 
 Installation for all systems should be as simple as:
 
@@ -27,34 +28,50 @@ If upgrading from a previous version, rather than running install --upgrade, I r
 pip install -U --no-deps EQcorrscan
 ```
 
-This will not try to upgrade your dependencies, which is not needed.  You may wish
-to update your obspy version to 1.0.0 which was recently released.  We have tested
+This will not try to upgrade your dependencies, which is not needed.  You should
+to update your obspy version to 1.0.x which was recently released.  We have tested
 this and support it, nevertheless, if you find any issues then let us know.
 
 *You will likely need sudo/root permissions to run this command.*
 
-If you have any issues installing please let me know.  
+If you have any issues installing please report them on the issues pages.
 
-You will need to install openCV (note that currently only openCV2 is tested,
-we plan on switching to openCV3 by default soon once the install is smoothed,
-this will ease transitions to python3.x) separately using (on Linux):
+You will need to install openCV (note that openCV versions 2 and 3 work for
+Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
+recommend installing openCV 3). We recommend installing openCV from source,
+this will both optimize it for your machine, and ensure you don't break your python
+by using conda.
 
-```bash
-apt-get install python-opencv
-```
+If you are running Linux or OSX, installation
+instructions can be found
+[here for ubuntu](http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/)
+and [here for OSX](http://www.pyimagesearch.com/2015/06/15/install-opencv-3-0-and-python-2-7-on-osx/).
+Note these two links are Python dependent and you will need to change your pip
+and python versions appropriate to your system.  Similar instructions are
+available for Windows users.
 
-Or, for Mac users, this is available on Macports or other similar package managers.
+*A note for Ubuntu users*
+You will need the python3.x-dev libraries to install openCV if installing from
+source.
 
-For Windows users, you should follow the instructions [here](http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0),
-note that you need to copy the cv2.pyd file.
+*A note on correlation precision*
+OpenCV computes cross-correlations in the frequency-domain for normal seismic
+datasets (if the dataset is very small then the cross-correlation will be
+computed in the time-domain, but this is rare for seismic data).  In testing we
+have found that different methods of installing openCV provide different results
+for cross-correlations at the very low-end of cross-correlations.  We think this
+comes down to how the ffts are computed.  However, for moderate to high cross-correlations
+(above 0.05 normalised cross-correlation), all methods provide the same result.
 
-For those who want to run the GUIs (in very early development) you will need to
-install tk, on Windows and OSX this is usually pre-installed, on Linux you
-may need to run:
-
-```bash
-apt-get install python-tk
-```
+The outcome of this is that for very low thresholds, you may see changes in
+your results, however for standard operations this is not an issue.  We have found
+that differences are, on average, 0.0024 - which shifts the mean of a single
+channel cross-correlation from very close to zero, to 0.0024, and alters the
+median.  However we have found that this results in no change in the median
+absolute deviation of the data, so thresholds based on this will be the same,
+although the cross-correlations themselves will be shifted.  You would have to be
+running a very low threshold to see the result of this (0.5 * MAD, rather than
+commonly used values around 8 * MAD).
 
 ## Updates
 
@@ -79,9 +96,9 @@ the gh-pages branch.
 This package contains routines to enable the user to conduct match-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
 and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
-Neither of these packages are installed by this software, due to a range of
-licenses being implemented.  However, both are open-source and should be installed
-before using this package.  This package was written to implement the Matlab routines
+The OpendCV package is not installed by this software, due to a need to build from
+source.  The user should follow the instructions above for OpenCV install.
+This package was written to implement the Matlab routines
 used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
 
 Also within this package are:

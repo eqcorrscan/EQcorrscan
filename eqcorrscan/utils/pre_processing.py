@@ -1,6 +1,5 @@
 """
-Utilities module for the EQcorrscan package written by Calum Chamberlain of \
-Victoria University Wellington.  These functions are designed to do the basic \
+Utilities module whose functions are designed to do the basic \
 processing of the data using obspy modules (which also rely on scipy and \
 numpy).
 
@@ -18,37 +17,42 @@ from __future__ import unicode_literals
 
 
 def _check_daylong(tr):
-    r"""Function to check the data quality of the daylong file - check to see \
+    """
+    Check the data quality of the daylong file.
+    Check to see \
     that the day isn't just zeros, with large steps, if it is then the \
     resampling will hate it.
 
-    :type tr: obspy.Trace
+    :type tr: obspy.core.trace.Trace
     :param tr: Trace to check if the data are daylong.
 
     :return qual: bool
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.pre_processing import _check_daylong
+    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> _check_daylong(st[0])
+    True
     """
     import numpy as np
-    if len(tr.data)-len(np.nonzero(tr.data)) < 0.5*len(tr.data):
+    if len(tr.data) - len(np.nonzero(tr.data)) < 0.5 * len(tr.data):
         qual = False
     else:
         qual = True
     return qual
 
 
-# def despike(tr):
-#     r"""Function to remove spikes above a certain amplitude
-#     """
-#     return
-
-
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
-              parallel=False, num_cores=False):
+              parallel=False, num_cores=False, starttime=None, endtime=None):
     r"""Basic function to bandpass and downsample.
 
     Works in place on data.  This is employed to ensure all parts of the \
     data are processed in the same way.
 
-    :type st: obspy.Stream
+    :type st: obspy.core.stream.Stream
     :param st: Stream to process
     :type highcut: float
     :param highcut: High cut for bandpass in Hz
@@ -67,6 +71,12 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
+    :type starttime: obspy.core.UTCDateTime
+    :param starttime: Desired data start time, will trim to this before \
+        processing
+    :type endtime: obspy.core.UTCDateTime
+    :param endtime: Desired data end time, will trim to this before \
+        processing
 
     :return: obspy.Stream
 
@@ -77,6 +87,39 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         Minor differences in resampling between day-long files (which you \
         are likely to use for continuous detection) and shorter files will \
         reduce your cross-correlations!
+
+    .. rubric:: Example, bandpass
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.pre_processing import shortproc
+    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
+    ...                debug=0, parallel=True, num_cores=2)
+    >>> print(st[0])
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
+
+    .. rubric:: Example, low-pass
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.pre_processing import shortproc
+    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
+    ...                samp_rate=20, debug=0)
+    >>> print(st[0])
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
+
+    .. rubric:: Example, high-pass
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.pre_processing import shortproc
+    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
+    ...                samp_rate=20, debug=0)
+    >>> print(st[0])
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
     """
     from multiprocessing import Pool, cpu_count
     from obspy import Stream, Trace
@@ -88,6 +131,21 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     # Add sanity check for filter
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
+    if starttime and endtime:
+        for tr in st:
+            tr.trim(starttime, endtime)
+            print(len(tr))
+            if len(tr.data) == ((endtime - starttime) *
+                                    tr.stats.sampling_rate) + 1:
+                tr.data = tr.data[1:len(tr.data)]
+    elif starttime:
+        for tr in st:
+            tr.trim(starttime=starttime)
+    elif endtime:
+        for tr in st:
+            tr.trim(endtime=endtime)
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -123,7 +181,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     Works in place on data.  This is employed to ensure all parts of the data \
     are processed in the same way.
 
-    :type st: obspy.Stream
+    :type st: obspy.core.stream.Stream
     :param st: Stream to process (can be trace)
     :type highcut: float
     :param highcut: High cut in Hz for bandpass
@@ -135,7 +193,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     :param samp_rate: Desired sampling rate in Hz
     :type debug: int
     :param debug: Debug output level from 0-5, higher numbers = more output
-    :type starttime: obspy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Desired start of trace
     :type parallel: bool
     :param parallel: Set to True to process traces in parallel, this is often \
@@ -147,6 +205,67 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     :return: obspy.Stream
 
     .. note:: Will convert channel names to two characters long.
+
+    .. rubric:: Example, bandpass
+
+    >>> import obspy
+    >>> if int(obspy.__version__.split('.')[0]) >= 1:
+    ...     from obspy.clients.fdsn import Client
+    ... else:
+    ...     from obspy.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.pre_processing import dayproc
+    >>> client = Client('GEONET')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
+    >>> st = client.get_waveforms_bulk(bulk_info)
+    >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
+    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    >>> print(st[0])
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
+
+
+    .. rubric:: Example, low-pass
+
+    >>> import obspy
+    >>> if int(obspy.__version__.split('.')[0]) >= 1:
+    ...     from obspy.clients.fdsn import Client
+    ... else:
+    ...     from obspy.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.pre_processing import dayproc
+    >>> client = Client('GEONET')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
+    >>> st = client.get_waveforms_bulk(bulk_info)
+    >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
+    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    >>> print(st[0])
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
+
+    .. rubric:: Example, high-pass
+
+    >>> import obspy
+    >>> if int(obspy.__version__.split('.')[0]) >= 1:
+    ...     from obspy.clients.fdsn import Client
+    ... else:
+    ...     from obspy.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.pre_processing import dayproc
+    >>> client = Client('GEONET')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
+    >>> st = client.get_waveforms_bulk(bulk_info)
+    >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
+    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    >>> print(st[0])
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
     """
     from multiprocessing import Pool, cpu_count
     from obspy import Stream, Trace
@@ -158,6 +277,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         tracein = False
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -187,7 +308,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             starttime=False, full_day=False):
-    r"""Basic function to bandpass, downsample and check headers and length \
+    r"""Basic function to process data, usually called by dayproc or shortproc.
+
+    Functionally, this will bandpass, downsample and check headers and length \
     of trace to ensure files start at the start of a day and are daylong.
 
     Works in place on data.  This is employed to ensure all parts of the data \
@@ -195,7 +318,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     .. note:: Usually this function is called via dayproc or shortproc.
 
-    :type tr: obspy.Trace
+    :type tr: obspy.core.trace.Trace
     :param tr: Trace to process
     :type highcut: float
     :param highcut: High cut in Hz, if set to None and lowcut is set, will \
@@ -209,19 +332,19 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :param samp_rate: Desired sampling rate in Hz
     :type debug: int
     :param debug: Debug output level from 0-5, higher numbers = more output
-    :type starttime: obspy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Desired start of trace
     :type full_day: bool
     :param full_day: Whether to expect, and enforce a full day of data or not.
 
     :return: obspy.Stream
 
-    .. note:: Will convert channel names to two charecters long.
+    .. note:: Will convert channel names to two characters long.
     """
     import warnings
     from obspy.signal.filter import bandpass, lowpass, highpass
     # Add sanity check
-    if highcut and highcut >= 0.5*samp_rate:
+    if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     # Define the start-time
     if starttime:
@@ -256,7 +379,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
        and full_day:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
-                  ' is not of daylong length, will zero pad')
+                  ' are not of daylong length, will zero pad')
         # Work out when the trace thinks it is starting
         # traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
         #                        str(tr.stats.starttime.month)+'-' +
@@ -264,7 +387,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
                      nearest_sample=True)
-        # If there is one sample too many after this remove the last one
+        # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
@@ -321,11 +444,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate*86400 == tr.stats.npts:
+        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
                 raise ValueError('Data are not daylong for '+tr.stats.station +
                                  '.'+tr.stats.channel)
     # Final visual check for debug
-    if debug >= 4:
+    if debug > 4:
         tr.plot()
     return tr
 
