@@ -42,6 +42,55 @@ if this is set and the file already exists, it will just add on to the old file.
           detection.write('my_first_detections.csv', append=True)
 
 
+Memory limitations and what to do about it
+------------------------------------------
+
+You may (if you are running large numbers of templates, long data durations, or using
+a machine with small memory) run in to errors to do with memory consumption. The
+most obvious symptom of this is your computer freezing because it has allocated
+all of its RAM, or declaring that it cannot allocate memory.  Because EQcorrscan
+computes correlations in parallel for multiple templates for the same data period,
+it will generate a large number of correlation vectors.  At start-up, EQcorrscan
+will try to assign the memory it needs (although it then requires a little more
+later to do the summation across channels), so you might find that it fills your
+memory very early - this is just to increase efficiency and ensure that the memory
+is available when needed.
+
+To get around memory limitations you can:
+
+* Reduce the number of templates you run in parallel at once - for example you can
+  make groups of a number of templates and run that group in parallel, before running
+  the next group in parallel.  This is not much less efficient, unless you have
+  a machine with more CPU cores than your group-size.
+* Reduce the length of data you are correlating at any one time.  The default is
+  to use day-long files, but there is nothing stopping you using shorter waveform
+  durations.
+* Reduce the number of channels in templates to only those that you need.  Note,
+  EQcorrscan will generate vectors of zeros for templates that are missing a
+  channel that is present in other templates, again for processing efficiency,
+  if not memory efficiency.
+* Reduce your sampling rate.  Obviously this needs to be at-least twice as large
+  as your upper frequency filter, but much above this is wasted data.
+
+As an example of this: we run 100, 5-channel templates sampled at 20 Hz through
+day-long data on a 128GB RAM machine without issue, however, running 200 templates
+is too much memory.
+
+The three threshold parameters
+------------------------------
+
+The match-filter routine has three key threshold parameters:
+
+* **threshold_type** can either be MAD, abs or av_chan_corr.  MAD stands for Median Absolute
+  Deviation and is the most commonly used detection statistic in matched-filter studies.
+  abs is the absolute cross-channel correlation sum, note that if you have different
+  numbers of channels in your templates then this threshold metric probably isn't for you.
+  av_chan_corr sets a threshold in the cross-channel correlation sum based on av_chan_corr x number of channels.
+* **threshold** is the value used for the above metric.
+* **trig_int** is the minimum interval in seconds for a detection using the same template.
+  If there are multiple detections within this window for a single template then EQcorrscan
+  will only give the best one (that exceeds the threshold the most).
+
 Advanced example
 ----------------
 
