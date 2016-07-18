@@ -16,16 +16,16 @@ import numpy as np
 import warnings
 
 
-def cross_chan_coherence(st1, st2, allow_shift, shift_len, i=0):
+def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     Calculate cross-channel coherency.
 
     Determine the cross-channel coherency between two streams of \
     multichannel seismic data.
 
-    :type st1: obspy Stream
+    :type st1: obspy.core.stream.Stream
     :param st1: Stream one
-    :type st2: obspy Stream
+    :type st2: obspy.core.stream.Stream
     :param st2: Stream two
     :type allow_shift: bool
     :param allow_shift: Allow shift?
@@ -35,7 +35,7 @@ def cross_chan_coherence(st1, st2, allow_shift, shift_len, i=0):
     :param i: index used for parallel async processing, returned unaltered
 
     :returns: cross channel coherence, float - normalized by number of\
-        channels, if i, returns tuple of (cccoh, i) where i is int, as intput.
+        channels, if i, returns tuple of (cccoh, i) where i is int, as input.
     """
 
     from eqcorrscan.core.match_filter import normxcorr2
@@ -302,8 +302,7 @@ def SVD(stream_list):
     """
     Compute the SVD of a number of templates.
 
-    Returns the \
-    singular vectors and singular values of the templates.
+    Returns the singular vectors and singular values of the templates.
 
     :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
@@ -423,22 +422,39 @@ def empirical_SVD(stream_list, linear=True):
 
 def min_sub_dimension(stream_list, percent_capture, max_dim=10,
                       plotvar=False):
-    r"""Function to calculate the fraction of energy captured by subspace \
-    dimension for each event used to create the subspace. Will output the \
-    best subspace stream for the given perecent_acpture and maximum subspace \
-    dimension.
+    """Calculate the fraction of energy captured by subspace dimensions.
 
-    :type stream_list: List of :class: obspy.Stream
-    :param stream_list: List of the templates used to create subspace
+    Calculates this for each event used to create the subspace. Will output \
+    the best subspace stream for the given perecent_capture and maximum \
+    subspace dimension.
+
+    :type stream_list: list
+    :param stream_list: List of the templates used to create subspace, each \
+        item in the list should be an obspy.core.stream.Stream object.
     :type percent_capture: float
     :param percent_capture: Minimum average percent capture by the subspace \
         for each event used to create it.
     :type max_dim: int
     :param max_dim: Maximum dimension subspace to calculate energy capture \
-        for. Will default to 10 but cannot be greater than or equal to len(stream_list)
+        for. Will default to 10 but cannot be greater than or equal to \
+        len(stream_list)
     :type plotvar: bool
     :param plotvar: Whether or not to plot energy capture against subspace \
         dimension.
+
+    :returns: Minimum subspace dimension to capture percent_energy
+    :rtype: int
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> import glob
+    >>> from eqcorrscan.utils.clustering import min_sub_dimension
+    >>> stream_list = [read(f) for f in
+    ...                glob.glob('eqcorrscan/tests/test_data/similar_events/*')]
+    >>> dimension = min_sub_dimension(stream_list=stream_list,
+    ...                               percent_capture=80)
+    >>> print("This isn't finished")
     """
     import numpy as np
     import matplotlib.pyplot as plt
@@ -451,8 +467,6 @@ def min_sub_dimension(stream_list, percent_capture, max_dim=10,
     stachans = list(set(stachans))
     if max_dim >= len(stream_list):
         raise IOError('max_dim cannot be >= the number of input events')
-        # msg = 'max_dim cannot be greater than the number of input events'
-        # warnings.warn(msg)
     print('Generating matrix of singular vectors')
     SVectors, SValues, Uvectors, svd_stachans = SVD(stream_list)
     stat_dict = {}
@@ -462,44 +476,53 @@ def min_sub_dimension(stream_list, percent_capture, max_dim=10,
         if i == 0:
             continue
         avg_dict[i] = [0]
-        sub_streams = SVD_2_stream(SVectors, svd_stachans, i, stream_list[0][0].stats.sampling_rate)
+        sub_streams = SVD_2_stream(SVectors, svd_stachans, i,
+                                   stream_list[0][0].stats.sampling_rate)
         for j, ev_st in enumerate(stream_list):
             if j not in stat_dict:
                 stat_dict[j] = [0]
             chan_det_stats = []
             no_chans = 0
             for stachan in stachans:
-                if len(ev_st.select(station=stachan[0], channel=stachan[1])) != 0 and \
-                   len(sub_streams[0].select(station=stachan[0], channel=stachan[1])) != 0:
-                    ev_chan_array = ev_st.select(station=stachan[0], channel=stachan[1])[0].data
+                if len(ev_st.select(station=stachan[0],
+                                    channel=stachan[1])) != 0 and \
+                   len(sub_streams[0].select(station=stachan[0],
+                                             channel=stachan[1])) != 0:
+                    ev_chan_array = ev_st.select(station=stachan[0],
+                                                 channel=stachan[1])[0].data
                     sub_trs_array = []
                     for sub_stream in sub_streams:
-                        sub_trs_array.append(sub_stream.select(station=stachan[0], channel=stachan[1])[0].data)
+                        sub_trs_array.append(sub_stream.
+                                             select(station=stachan[0],
+                                                    channel=stachan[1])[0].data)
                     sub_trs_array = np.asarray(sub_trs_array)
-                    chan_det_stats.append(subspace.det_statistic(sub_trs_array, ev_chan_array))
+                    chan_det_stats.append(subspace.det_statistic(sub_trs_array,
+                                                                 ev_chan_array))
                     no_chans += 1
             if no_chans == 0:
-                print('No matching stachans between detector and event number %02d' % j)
+                print('No matching stachans between detector '
+                      'and event number %02d' % j)
                 continue
             else:
                 stat_dict[j].append(sum(chan_det_stats) / no_chans)
                 avg_dict[i].append(sum(chan_det_stats) / no_chans)
     stat_dict['avg'] = [0]
-    for dim, vals in avg_dict.iteritems():
+    for dim, vals in avg_dict.items():
         stat_dict['avg'].append(np.mean(vals))
     if plotvar:
-        for st_num, det_stats in stat_dict.iteritems():
+        for st_num, det_stats in stat_dict.items():
             if st_num == 'avg':
-                ax1.plot(det_stats, color='red')
+                ax1.plot(det_stats, color='red', label='Average')
             else:
-                ax1.plot(det_stats, '--', color='grey')
+                ax1.plot(det_stats, '--', color='grey', label=st_num)
+        plt.legend()
         plt.show()
     # Find first dimension of avg det_stat that exceeds percent_capture
     for i, stat in enumerate(stat_dict['avg']):
         if stat > percent_capture / 100:
             print('Minimum subspace dimension for this stream_list is %02d' % i)
-            return fig
-    return fig
+            return i
+    return None
 
 
 def SVD_2_stream(SVectors, stachans, k, sampling_rate):

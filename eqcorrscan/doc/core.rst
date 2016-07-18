@@ -51,13 +51,15 @@ Currently EQcorrscan enforces the use of day-long seismic data when computing
 the matched-filter detections.  This is not strictly needed and has been a
 hang-over from previous versions of this software.  As the figure below shows,
 the only thing that changes between different data lengths are the:
-   * pre-processing (filters and resampling have different effects - this relates to the notes in the template_gen_ functions, this is not an issue as long as you process the same length of data when generating templates as when computing detections);
+   * pre-processing (filters and resampling have different effects - this
+     relates to the notes in the template_gen_ functions, this is not an issue
+     as long as you process the same length of data when generating templates
+     as when computing detections);
    * median-absolute deviation based thresholds.
 Changing to using shorter data lengths seems advantageous, or rather, giving the
 user the freedom to chose based on their memory specs.  It would also allow
 near real-time applications with short chunks of data coming in.
 
-**TO DO**
 
 .. figure:: plots/range_of_threshold_windows_Parkfield1.png
      :width: 800px
@@ -81,6 +83,19 @@ events.  Based on the method of `Shelly and Hardebeck (2010)`_.
 .. _Shelly and Hardebeck (2010): http://onlinelibrary.wiley.com/doi/10.1029/2010GL043672/full
 
 
+**Subspace**
+subspace_ contains a subspace detector for either single-channel cases, or
+network cases.  This is modelled on that described by Harris_.  This method
+allows for slightly more variation in detected waveforms than the traditional
+matched-filter method.  In this method, templates are constructed either by
+using the empirical subspace method, or by computing the basis vectors by
+singular-value decomposition.  Both methods are provided as part of EQcorrscan
+in the clustering_ module.
+
+.. _subspace: submodules.core.subspace
+.. _Harris: https://e-reports-ext.llnl.gov/pdf/335299.pdf
+.. _clustering: submodules/utils.clustering
+
 .. toctree::
    :maxdepth: 1
 
@@ -88,3 +103,4 @@ events.  Based on the method of `Shelly and Hardebeck (2010)`_.
    submodules/core.template_gen
    submodules/core.match_filter
    submodules/core.lag_calc
+   submodules/core.subspace

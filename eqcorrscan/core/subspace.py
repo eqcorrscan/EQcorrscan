@@ -1,5 +1,5 @@
 #!/usr/bin/python
-r"""This script contains functions relevant to executing subspace detection \
+r"""This module contains functions relevant to executing subspace detection \
 for earthquake catalogs. The overarching function calls _channel_loop and \
 _template_loop inner functions from match_filter in the same way as \
 the normal matched filtering workflow.
@@ -23,8 +23,11 @@ import warnings
 
 
 def det_statistic(detector, data):
-    r"""Base function to calculate the detection statistic for a given \
-    subspace detector and data stream. The statistic is calculated by \
+    """
+    Base function to calculate the subspace detection statistic.
+
+    Calculates for a given subspace detector and data stream. \
+    The statistic is calculated by \
     projecting the data onto the N dimensional subspace defined by the given \
     detector following the equation: :math:'\\gamma = y^TUU^Ty' where y is \
     the data stream, U is the subspace detector and :math:'\\gamma' is the \
@@ -45,8 +48,10 @@ def subspace_detect(detector_names, detector_list, st, threshold,
                     threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                     tempdir=False, debug=0, plot_format='jpg',
                     output_cat=False, extract_detections=False):
-    r"""Overseer function to handle subspace detection. Modelled after \
-    match_filter.match_filter().
+    """
+    Overseer function to handle subspace detection.
+
+    Modelled after match_filter.match_filter().
     """
     import matplotlib
     matplotlib.use('Agg')
@@ -55,8 +60,7 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     import copy
     from eqcorrscan.core import match_filter
     from eqcorrscan.core.match_filter import DETECTION
-    from eqcorrscan.utils import plotting
-    from eqcorrscan.utils import findpeaks
+    from eqcorrscan.utils import plotting, findpeaks
     from obspy import Trace, Catalog, UTCDateTime, Stream
     from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
     from obspy.core.event import Comment, WaveformStreamID
@@ -288,3 +292,8 @@ def subspace_detect(detector_names, detector_list, st, threshold,
         return detections, detection_streams
     else:
         return detections, det_cat, detection_streams
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

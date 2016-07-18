@@ -6,14 +6,7 @@ with data and output the detections.  The central component of this is \
 the match_template function from the openCV image processing package.  This \
 is a highly optimized and accurate normalized cross-correlation routine.  \
 The details of this code can be found here: \
-<<<<<<< HEAD
-http://www.cs.ubc.ca/research/deaton/remarks_ncc.html \
-
-The matched-filter routine described here was used in a previous Matlab code \
-for the Chamberlain et al. 2014 G-cubed publication.
-=======
 http://docs.opencv.org/2.4/modules/imgproc/doc/object_detection.html
->>>>>>> develop
 
 :copyright:
     Calum Chamberlain, Chet Hopp.
@@ -283,22 +276,13 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
     :type chan: np.array
     :type station: string
     :type channel: string
-    :type subspace: bool
-    :param subspace: Flag for running subspace detection. Defaults to False.
+    :type do_subspace: bool
+    :param do_subspace: Flag for running subspace detection. Defaults to False.
     :type i: int
     :param i: Optional argument, used to keep track of which process is being \
         run.
 
     :returns: tuple of (i, ccc) with ccc as an ndarray
-
-    .. note:: This function currently assumes only one template-channel per \
-        data-channel, while this is normal for a standard matched-filter \
-        routine, if we wanted to implement a subspace detector, this would be \
-        the function to change, I think.  E.g. where I currently take only \
-        the first matching channel, we could loop through all the matching \
-        channels and then sum the correlation sums - however I haven't yet
-        implimented detection based on that.  More reading of the Harris \
-        document required.
     """
     #XXX TODO: Rename ccc to cstat in print statements
     from eqcorrscan.utils.timer import Timer
@@ -317,9 +301,9 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
         # earlier
         if do_subspace:
             sin_vecs = [st.select(station=station, channel=channel)[0].data
-                        for st in template if len(st.select(station=station,
-                                                            channel=channel))
-                        != 0]
+                        for st in template
+                        if len(st.select(station=station,
+                                         channel=channel)) != 0]
             # Convert trace data to np array
             detector = np.asarray(sin_vecs)
             cstat = subspace.det_statistic(detector, data=chan)
@@ -345,14 +329,6 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
         # There is an interesting issue found in the tests that sometimes what
         # should be a perfect correlation results in a max of ccc of 0.99999994
         # Converting to float16 'corrects' this to 1.0 - bad workaround.
-    #XXX Not sure what the following if statement is meant to do
-    # if debug >= 2 and t.secs > 4:
-    #     print("Single if statement took %s s" % t.secs)
-    #     if not 'template_data' or 'sin_vecs' in locals():
-    #         print("Didn't even correlate!")
-    #     print(station + ' ' + channel)
-    # elif debug >= 2:
-    #     print("If statement without correlation took %s s" % t.secs)
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(cstat[0])))
@@ -739,7 +715,10 @@ def match_filter(template_names, template_list, st, threshold,
                 template += nulltrace
     if debug >= 2:
         print('Starting the correlation run for this day')
-    [cccsums, no_chans, chans] = _channel_loop(templates, stream, cores, debug)
+    [cccsums, no_chans, chans] = _channel_loop(templates=templates,
+                                               stream=stream,
+                                               cores=cores,
+                                               debug=debug)
     if len(cccsums[0]) == 0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()

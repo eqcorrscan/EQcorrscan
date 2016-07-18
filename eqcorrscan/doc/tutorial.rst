@@ -21,10 +21,18 @@ The core sub-module contains the main, high-level functions:
 :match_filter:
         The main matched-filter routines, this is split into several
         smaller functions to allow python-based parallel-processing;
+:subspace:
+        Subspace detection routine based on Harris.
 :lag_calc:
         Routines for calculating optimal lag-times for events detected
         by the match-filter routine, these lags can then be used to define new picks
-        for high accuracy re-locations. *Under-development*
+        for high accuracy re-locations.
+:mag-calc:
+        Simple local magnitude calculation and high-precision relative moment
+        calculation using singular-value decomposition.
+:clustering:
+        Routines for clustering earthquakes based on a range of metircs using
+        agglomorative clustering methods.
 
 The :doc:`utils </utils>` sub-module contains useful, but small functions.
 These functions are rarely cpu intensive, but perform vital operations, such
@@ -49,6 +57,7 @@ through some of the key functionality of the EQcorrscan package.
 
   tutorials/template-creation.rst
   tutorials/matched-filter.rst
+  tutorials/subspace.rst
   tutorials/lag-calc.rst
   tutorials/mag-calc.rst
   tutorials/clustering.rst
