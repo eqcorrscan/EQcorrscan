@@ -219,5 +219,21 @@ class TestTemplateGeneration(unittest.TestCase):
                         k_events += 1
                 self.assertEqual(k_events, len(catalog))
 
+    def test_missing_waveform_id(self):
+        from obspy import read
+        from eqcorrscan.core.template_gen import from_meta_file
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        quakeml = os.path.join(testing_path,
+                               '20130901T041115_missingwavid.xml')
+        st = read(os.path.join(testing_path, 'WAV', 'TEST_',
+                               '2013-09-01-0410-35.DFDPC_024_00'))
+        templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
+                                   highcut=9.0, samp_rate=20.0, filt_order=3,
+                                   length=2, prepick=0.1, swin='S')
+        self.assertEqual(len(templates), 1)
+
+
 if __name__ == '__main__':
     unittest.main()
