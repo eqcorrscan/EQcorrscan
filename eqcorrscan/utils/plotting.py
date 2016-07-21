@@ -584,7 +584,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
-                        templatecolour='r', save=False, savefile=None):
+                        templatecolour='r', save=False, savefile=None,
+                        size=(10.5, 7.5)):
     r"""Plot a stream of data with a template on top of it at detection times.
 
     :type stream: obspy.core.stream.Stream
@@ -603,6 +604,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Figure size.
 
     :returns: :class: matplotlib.figure
     """
@@ -612,17 +615,21 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     # Sort before plotting
     template = template.sort()
     # Only take traces that match in both
-    template_stachans = [(tr.stats.station, tr.stats.channel) for tr in template]
+    template_stachans = [(tr.stats.station, tr.stats.channel)
+                         for tr in template]
     stream = Stream([tr for tr in stream
-                     if (tr.stats.station, tr.stats.channel) in template_stachans])
+                     if (tr.stats.station,
+                         tr.stats.channel) in template_stachans])
     ntraces = min(len(template), len(stream))
-    print('Only plotting %s traces' % str(ntraces))
-    fig, axes = plt.subplots(ntraces, 1, sharex=True)
+    fig, axes = plt.subplots(ntraces, 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in template])
-    i = 0
-    for template_tr in template:
+    for i, template_tr in enumerate(template):
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         image = stream.select(station=template_tr.stats.station,
                               channel='*'+template_tr.stats.channel[-1])
         if not image:
@@ -639,8 +646,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
                        for j in range(len(image.data))]
-        axes[i].plot(image_times, image.data / max(image.data),
-                     streamcolour, linewidth=1.2)
+        axis.plot(image_times, image.data / max(image.data),
+                  streamcolour, linewidth=1.2)
         for k, time in enumerate(times):
             lagged_time = UTCDateTime(time) + (template_tr.stats.starttime -
                                                mintime)
@@ -649,16 +656,18 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                               dt.timedelta((j * template_tr.stats.delta) /
                                            86400)
                               for j in range(len(template_tr.data))]
-            axes[i].plot(template_times,
-                         template_tr.data / max(template_tr.data),
-                         templatecolour, linewidth=1.2)
+            axis.plot(template_times,
+                      template_tr.data / max(template_tr.data),
+                      templatecolour, linewidth=1.2)
         ylab = '.'.join([template_tr.stats.station,
                          template_tr.stats.channel])
-        axes[i].set_ylabel(ylab, rotation=0,
-                           horizontalalignment='right')
-        axes[i].yaxis.set_ticks([])
-        i += 1
-    axes[len(axes) - 1].set_xlabel('Time')
+        axis.set_ylabel(ylab, rotation=0,
+                        horizontalalignment='right')
+        axis.yaxis.set_ticks([])
+    if len(template) > 1:
+        axes[len(axes) - 1].set_xlabel('Time')
+    else:
+        axis.set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
     if not save:
         plt.show()
