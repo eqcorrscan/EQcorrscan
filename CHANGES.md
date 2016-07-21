@@ -6,7 +6,9 @@
 * Change template generation function names for clarity (wrappers for
 depreciated names);
 * Add more useful error messages when picks are not associated with
-waveforms.
+waveforms;
+* Add example plots for more plotting functions;
+* Add subspace detector including docs and tutorial.
 
 ## 0.1.2
 * Add handling for empty location information in sfiles.

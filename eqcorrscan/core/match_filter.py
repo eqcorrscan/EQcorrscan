@@ -656,10 +656,10 @@ def match_filter(template_names, template_list, st, threshold,
         if not tr.stats.npts == longest_trace_length:
             msg = 'Data are not equal length, padding short traces'
             warnings.warn(msg)
-            start_pad = np.zeros(tr.stats.sampling_rate * (tr.stats.starttime -
-                                                           min_start_time))
-            end_pad = np.zeros(tr.stats.sampling_rate * (max_end_time -
-                                                         tr.stats.endtime))
+            start_pad = np.zeros(int(tr.stats.sampling_rate *
+                                     (tr.stats.starttime - min_start_time)))
+            end_pad = np.zeros(int(tr.stats.sampling_rate *
+                                   (max_end_time - tr.stats.endtime)))
             tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Perform check that all template lengths are internally consistent
     for i, temp in enumerate(template_list):

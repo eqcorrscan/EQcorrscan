@@ -801,13 +801,21 @@ def dist_mat_km(catalog):
     # Calculate distance vector for each event
     for i, master in enumerate(catalog):
         mast_list = []
-        master_tup = (master.preferred_origin().latitude,
-                      master.preferred_origin().longitude,
-                      master.preferred_origin().depth // 1000)
+        if master.preferred_origin():
+            master_ori = master.preferred_origin()
+        else:
+            master_ori = master.origins[0]
+        master_tup = (master_ori.latitude,
+                      master_ori.longitude,
+                      master_ori.depth // 1000)
         for slave in catalog:
-            slave_tup = (slave.preferred_origin().latitude,
-                         slave.preferred_origin().longitude,
-                         slave.preferred_origin().depth // 1000)
+            if master.preferred_origin():
+                slave_ori = slave.preferred_origin()
+            else:
+                slave_ori = slave.origins[0]
+            slave_tup = (slave_ori.latitude,
+                         slave_ori.longitude,
+                         slave_ori.depth // 1000)
             mast_list.append(dist_calc(master_tup, slave_tup))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
@@ -825,7 +833,7 @@ def space_cluster(catalog, d_thresh, show=True):
 
     Will compute the\
     matrix of physical distances between events and utilize the\
-    scipy.clusering.hierarchy module to perform the clustering.
+    scipy.clustering.hierarchy module to perform the clustering.
 
     :type catalog: obspy.Catalog
     :param catalog: Catalog of events to clustered

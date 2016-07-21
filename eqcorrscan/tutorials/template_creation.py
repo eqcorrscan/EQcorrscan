@@ -60,7 +60,7 @@ def mktemplates(network_code='GEONET',
                                          swin='all', process_len=3600,
                                          debug=0, plot=plot)
 
-    # We now have a series of templates! Using Obspys Stream.write() method we
+    # We now have a series of templates! Using Obspy's Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the
     # following tutorials.
     for i, template in enumerate(templates):

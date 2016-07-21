@@ -605,6 +605,11 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+
+    .. image:: ../../plots/detection_multiplot.png
+
+
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -649,8 +654,16 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                               dt.timedelta((j * template_tr.stats.delta) /
                                            86400)
                               for j in range(len(template_tr.data))]
+            # Normalize the template according to the data detected in
+            normalizer = max(image.data[int((template_times[0] -
+                                            image_times[0]).total_seconds() /
+                                            image.stats.delta):
+                                        int((template_times[-1] -
+                                             image_times[0]).total_seconds() /
+                                            image.stats.delta)] /
+                             max(image.data))
             axes[i].plot(template_times,
-                         template_tr.data / max(template_tr.data),
+                         template_tr.data * normalizer,
                          templatecolour, linewidth=1.2)
         ylab = '.'.join([template_tr.stats.station,
                          template_tr.stats.channel])
@@ -660,6 +673,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         i += 1
     axes[len(axes) - 1].set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
+    plt.xticks(rotation=10)
     if not save:
         plt.show()
     else:
@@ -682,13 +696,45 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> import glob
+    >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
+
+    .. plot::
+
+        import glob, os
+        from eqcorrscan.utils.plotting import interev_mag_sfiles
+        sfiles = glob.glob(os.path.
+                           realpath('../../../tests/test_data/REA/TEST_') +
+                           os.sep + '*')
+        print(sfiles)
+        interev_mag_sfiles(sfiles=sfiles)
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import sfile_util
-    times = [sfile_util.readheader(sfile)[0].origins[0].time
-             for sfile in sfiles]
-    mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
-            for sfile in sfiles]
+    times = []
+    mags = []
+    for sfile in sfiles:
+        head = sfile_util.readheader(sfile)
+        if head.preferred_origin():
+            origin = head.preferred_origin()
+        elif len(head.origins) > 0:
+            origin = head.origins[0]
+        else:
+            origin = False
+        if head.preferred_magnitude():
+            magnitude = head.preferred_magnitude()
+        elif len(head.magnitudes) > 0:
+            magnitude = head.magnitudes[0]
+        else:
+            magnitude = False
+        if origin and magnitude:
+            times.append(origin.time)
+            mags.append(magnitude.mag)
     fig = interev_mag(times, mags, save, savefile)
     return fig
 

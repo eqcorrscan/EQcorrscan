@@ -20,6 +20,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import warnings
+from obspy import Stream
 
 
 def det_statistic(detector, data):
@@ -44,6 +45,101 @@ def det_statistic(detector, data):
     return day_stats
 
 
+def multiplex_detect(detectors, detector_names, stream, cores, debug=0):
+    """
+    Multiplex seismic data according to the method of Harris et al. & detect.
+
+    Maps a standard multiplexed stream of seismic data to a single traces of \
+    multiplexed data as follows:
+
+    Input:
+    x = [x1, x2, x3, ...]
+    y = [y1, y2, y3, ...]
+    z = [z1, z2, z3, ...]
+
+    Output:
+    xyz = [x1, y1, z1, x2, y2, z2, x3, y3, z3, ...]
+
+    :type detectors: list
+    :param detectors:
+    :type detector_names: list
+    :param detector_names: List of strings of names for detectors, used for \
+        book-keeping.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+    :type cores: int
+    :param cores:
+    :type debug: int
+    :param debug:
+
+    :return:
+    :rtype:
+    """
+    no_chans = []
+    chans = []
+    cstats = []
+    for detector in detectors:
+        cstat, kno_chans, kchans = _multi_inner(detector=detector,
+                                                stream=stream)
+        cstats.append(cstat)
+        no_chans.append(kno_chans)
+        chans.append(chans)
+    return cstats, no_chans, chans
+
+
+def _multi_inner(stream, detector):
+    """
+    Inner loop to handle parallel processing
+
+    :param stream:
+    :param detector:
+    :return:
+    """
+    multiplex_stream = Stream()
+    detector_stachans = [(tr.stats.station, tr.stats.channel)
+                          for tr in detector[0]]
+    chans = []
+    for tr in stream:
+        if (tr.stats.station, tr.stats.channel) in detector_stachans:
+            multiplex_stream += tr
+            chans.append((tr.stats.station, tr.stats.channel))
+    no_chans = len(chans)
+    multiplex_stream = _multiplex(stream=multiplex_stream)
+    multiplex_detector = np.array([_multiplex(stream=d) for d in detector])
+    cstat = det_statistic(detector=multiplex_detector, data=multiplex_stream)
+
+    return cstat, no_chans, chans
+
+
+def _multiplex(stream, normalize=True):
+    """
+    Internal multiplexer for multiplex_detect.
+
+    :type stream: obspy.core.stream.Stream
+    :param stream: Stream to multiplex
+    :type normalize: bool
+    :param normalize: Normalize data before multiplexing, will normalize to \
+        rms amplitude.
+
+    :return: trace of multiplexed data
+    :rtype: obspy.core.trace.Trace
+
+    .. Note: Requires all channels to be the same length.
+    """
+    stack = stream[0].data
+    if normalize:
+        stack = stack / np.sqrt(np.mean(np.square(stack)))
+    for tr in stream[1:]:
+        if normalize:
+            data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
+        else:
+            data = tr.data
+        stack = np.dstack(np.array([stack, data]))
+    multiplex = stack.reshape(stack.size, )
+    return multiplex
+
+
+
 def subspace_detect(detector_names, detector_list, st, threshold,
                     threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                     tempdir=False, debug=0, plot_format='jpg',
@@ -52,6 +148,52 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     Overseer function to handle subspace detection.
 
     Modelled after match_filter.match_filter().
+
+    :type detector_names: list
+    :param detector_names: Names (strings) of the detectors, used for \
+        book-keeping.
+    :type detector_list: list
+    :param detector_list: List of subspace detectors, where each detector is \
+        a list of obspy.core.stream.Streams - these are usually the output \
+        from SVD_2_Stream
+    :type st: obspy.core.stream.Stream
+    :param st: Stream of data to scan through
+    :type threshold: float
+    :param threshold: Threshold level for use with threshold_type
+    :type threshold_type: str
+    :param threshold_type: Type of threshold to use, can be: 'MAD', \
+        or 'absolute'  See below for description
+    :type trig_int: float
+    :param trig_int: Minimum trigger interval in seconds, will not trigger \
+        more often than this, and will only take the highest (above threshold) \
+        detection if multiple detections occur within this window.
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off
+    :type plotdir: str
+    :param plotdir: Location to save plots to
+    :type corse: int
+    :param cores: Number of cores to parallel over
+    :type tempdir: str
+    :param tempdir: Directory to output temporary files, used if memory is an \
+        issue
+    :type debug: int
+    :param debug: Debug level from 0-5, higher is more output
+    :type plot_format: str
+    :param plot_format: Format to save plots as, only used if plotvar=True
+    :type output_cat: bool
+    :param output_cat: Switch to output an obspy.core.event.Catalog for the \
+        detections.
+    :type extract_detections: bool
+    :param extract_detections: Switch to extract waveforms for detections or \
+        not.
+
+    :returns: List of detections as eqcorrscan.core.match_filter.DETECTION \
+        objects.
+    :rtype: list
+
+    .. note: Thresholding: MAD is median absolute deviation.  Absolute refers \
+        to the absolute value of the detector.  For the subspace detector, the \
+        statistic is always between 0 and 1.
     """
     import matplotlib
     matplotlib.use('Agg')
@@ -80,14 +222,22 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     if debug >= 3:
         print('I have detector info for these stations:')
         print(detector_stachan)
-        print('I have daylong data for these stations:')
+        print('I have data for these stations:')
         print(data_stachan)
-    # Perform a check that the daylong vectors are daylong
+    # Perform a check that the daylong vectors are all the same length
+    min_start_time = min([tr.stats.starttime for tr in stream])
+    max_end_time = max([tr.stats.endtime for tr in stream])
+    longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
+                                                            min_start_time)
     for tr in stream:
-        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
-            msg = ' '.join(['Data are not daylong for', tr.stats.station,
-                            tr.stats.channel])
-            raise ValueError(msg)
+        if not tr.stats.npts == longest_trace_length:
+            msg = 'Data are not equal length, padding short traces'
+            warnings.warn(msg)
+            start_pad = np.zeros(int(tr.stats.sampling_rate *
+                                     (tr.stats.starttime - min_start_time)))
+            end_pad = np.zeros(int(tr.stats.sampling_rate *
+                                   (max_end_time - tr.stats.endtime)))
+            tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Check that detector_list is list of lists of obspy.Stream
     for i, detector in enumerate(detectors):
         for j, det_st in enumerate(detector):
@@ -156,21 +306,21 @@ def subspace_detect(detector_names, detector_list, st, threshold,
                                               dtype=np.float32)
                     det_st += nulltrace
     if debug >= 2:
-        print('Starting the correlation run for this day')
+        print('Starting the subspace run for this day')
     [cccsums, no_chans, chans] = match_filter._channel_loop(detectors, stream,
                                                             cores,
                                                             do_subspace=True,
                                                             debug=debug)
     if len(cccsums[0]) == 0:
-        raise ValueError('Correlation has not run, zero length cccsum')
+        raise ValueError('Subspace has not run, zero length cccsum')
     outtoc = time.clock()
     print(' '.join(['Looping over detectors and streams took:',
                     str(outtoc - outtic), 's']))
     if debug >= 2:
-        print(' '.join(['The shape of the returned cccsums is:',
+        print(' '.join(['The shape of the returned subspace-stats is:',
                         str(np.shape(cccsums))]))
         print(' '.join(['This is from', str(len(detectors)), 'detectors']))
-        print(' '.join(['Correlated with', str(len(stream)),
+        print(' '.join(['Detected with', str(len(stream)),
                         'channels of data']))
     detections = []
     if output_cat:
@@ -178,14 +328,13 @@ def subspace_detect(detector_names, detector_list, st, threshold,
     # XXX TODO: Need to investigate thresholding for correct detection stats
     for i, cccsum in enumerate(cccsums):
         detector = detectors[i]
-        # Unless I can prove otherwise, we will average cccsums to obtain our detection statistic from 0 to 1
+        # Unless I can prove otherwise, we will average cccsums to obtain our
+        # detection statistic from 0 to 1
         cccsum /= no_chans[i]
         if threshold_type == 'MAD':
             rawthresh = threshold * np.median(np.abs(cccsum))
         elif threshold_type == 'absolute':
             rawthresh = threshold
-        elif threshold == 'av_chan_corr':
-            rawthresh = threshold * (cccsum / len(detector[0]))
         else:
             print('You have not selected the correct threshold type, I will' +
                   'use MAD as I like it')
@@ -207,7 +356,7 @@ def subspace_detect(detector_names, detector_list, st, threshold,
             cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
                                                    sampling_rate / 10)).data
             cccsum_plot = plotting.chunk_data(cccsum_plot, 10,
-                                              'Maxabs').data
+                                              str('Maxabs')).data
             # Enforce same length
             stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
             cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
@@ -271,10 +420,14 @@ def subspace_detect(detector_names, detector_list, st, threshold,
                         else:
                             pick_tm = detecttime + (tr.stats.starttime -
                                                     detecttime)
-                            wv_id = WaveformStreamID(network_code=tr.stats.network,
-                                                     station_code=tr.stats.station,
-                                                     channel_code=tr.stats.channel)
-                            ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+                            wv_id = WaveformStreamID(network_code=tr.stats.
+                                                     network,
+                                                     station_code=tr.stats.
+                                                     station,
+                                                     channel_code=tr.stats.
+                                                     channel)
+                            ev.picks.append(Pick(time=pick_tm,
+                                                 waveform_id=wv_id))
                 detections.append(DETECTION(detector_names[i],
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
@@ -282,7 +435,8 @@ def subspace_detect(detector_names, detector_list, st, threshold,
                 if output_cat:
                     det_cat.append(ev)
         if extract_detections:
-            detection_streams = extract_from_stream(stream, detections)
+            detection_streams = match_filter.extract_from_stream(stream,
+                                                                 detections)
     del stream, detectors
     if output_cat and not extract_detections:
         return detections, det_cat

@@ -90,6 +90,13 @@ class TestTutorialScripts(unittest.TestCase):
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
 
+    def test_subspace(self):
+        """Test the subspace tutorial."""
+        from eqcorrscan.tutorials.subspace import run_tutorial
+
+        detections = run_tutorial(plot=False)
+        self.assertEqual(len(detections), 10)
+
 if __name__ == '__main__':
     """
     Run tutorial tests
