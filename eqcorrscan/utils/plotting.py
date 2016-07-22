@@ -14,6 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
+import warnings
 
 
 def _check_save_args(save, savefile):
@@ -423,7 +424,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
                            freqmin=False, freqmax=False, realign=False,
                            cut=(-3.0, 5.0), PWS=False, title=False,
                            save=False, savefile=None):
-    r"""Plot data from a single channel for multiple events.
+    """
+    Plot data from a single channel for multiple events.
 
     Data will be aligned by their pick-time given in the \
     picks.  Requires an individual stream for each event you want to plot,
@@ -470,33 +472,71 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :returns: new picks
     :rtype: list
     :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read, Catalog
+    >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
+    >>> from eqcorrscan.utils.plotting import multi_event_singlechan
+    >>> import glob
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> catalog = Catalog()
+    >>> streams = []
+    >>> for sfile in sfiles:
+    ...     catalog.append(read_event(sfile))
+    ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...         readwavename(sfile)[0]
+    ...     stream = read(stream_path)
+    ...     # Annoting coping with seisan 2 letter channels
+    ...     for tr in stream:
+    ...         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+    ...     streams.append(stream)
+    >>> multi_event_singlechan(streams=streams, catalog=catalog,
+    ...                        station='GCSZ', channel='EZ') # doctest: +SKIP
+
+    .. image:: ../../plots/multi_event_singlechan.png
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
     import copy
     from eqcorrscan.core.match_filter import normxcorr2
-    from obspy import Stream
+    from obspy import Stream, Catalog
     import warnings
 
-    fig, axes = plt.subplots(len(catalog) + 1, 1, sharex=True, figsize=(7, 12))
+    # Work out how many picks we should have...
+    short_cat = Catalog()
+    short_streams = []
+    for i, event in enumerate(catalog):
+        event_stachans = [(pick.waveform_id.station_code,
+                           pick.waveform_id.channel_code)
+                          for pick in event.picks]
+        if (station, channel) in event_stachans:
+            short_cat.append(event)
+            short_streams.append(streams[i])
+    if len(short_cat) == 0:
+        raise IOError('No picks for ' + station + ' ' + channel)
+    fig, axes = plt.subplots(len(short_cat) + 1, 1, sharex=True, figsize=(7, 12))
     if len(catalog) > 1:
         axes = axes.ravel()
     traces = []
     al_traces = []
-    # Keep input safe
-    clist = copy.deepcopy(catalog)
-    if isinstance(streams, Stream):
-        streams = [streams]
-    st_list = copy.deepcopy(streams)
-    for i, event in enumerate(clist):
+    if isinstance(short_streams, Stream):
+        short_streams = [short_streams]
+    st_list = copy.deepcopy(short_streams)
+    for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
                  pick.waveform_id.station_code == station and
-                 pick.waveform_id.channel_code == channel][0]
+                 pick.waveform_id.channel_code == channel]
+        if len(_pick) == 0:
+            print('No pick for channel')
+            continue
+        else:
+            _pick = _pick[0]
         if st_list[i].select(station=station, channel=channel):
             tr = st_list[i].select(station=station, channel=channel)[0]
         else:
-            print('No data for ' + _pick.waveform_id)
+            print('No data for ' + _pick.waveform_id.station_code)
             continue
         tr.detrend('linear')
         if freqmin:
@@ -580,7 +620,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     else:
         plt.savefig(savefile)
         plt.close()
-    return traces, clist, fig
+    return traces, short_cat, fig
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
@@ -682,7 +722,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag_sfiles(sfiles, save=False, savefile=None):
+def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
     r"""Plot inter-event time versus magnitude for series of events.
 
     **thin** Wrapper for interev_mag.
@@ -694,6 +734,8 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
 
@@ -735,11 +777,12 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
         if origin and magnitude:
             times.append(origin.time)
             mags.append(magnitude.mag)
-    fig = interev_mag(times, mags, save, savefile)
+    fig = interev_mag(times=times, mags=mags, save=save, savefile=savefile,
+                      size=size)
     return fig
 
 
-def interev_mag(times, mags, save=False, savefile=None):
+def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
     r"""Plot inter-event times against magnitude.
 
     :type times: list
@@ -751,8 +794,10 @@ def interev_mag(times, mags, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
-    :returns: :class: matplotlib.figure
+    :returns: matplotlib.figure
 
     .. rubric:: Example
 
@@ -786,7 +831,7 @@ def interev_mag(times, mags, save=False, savefile=None):
     times = [x[0] for x in l]
     mags = [x[1] for x in l]
     # Make two subplots next to each other of time before and time after
-    fig, axes = plt.subplots(1, 2, sharey=True)
+    fig, axes = plt.subplots(1, 2, sharey=True, figsize=size)
     axes = axes.ravel()
     pre_times = []
     post_times = []
@@ -812,8 +857,10 @@ def interev_mag(times, mags, save=False, savefile=None):
     return fig
 
 
-def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
-    r"""Plot obspy.Inventory and obspy.Catalog classes in three dimensions.
+def obspy_3d_plot(inventory, catalog, save=False, savefile=None,
+                  size=(10.5, 7.5)):
+    """
+    Plot obspy Inventory and obspy Catalog classes in three dimensions.
 
     :type inventory: obspy.core.inventory.inventory.Inventory
     :param inventory: Obspy inventory class containing station metadata
@@ -824,27 +871,67 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example:
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.plotting import obspy_3d_plot
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+    ...                             longitude=170, maxradius=5)
+    >>> inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+    ...                                 longitude=170, maxradius=10)
+    >>> obspy_3d_plot(inventory=inventory, catalog=catalog) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.plotting import obspy_3d_plot
+        client = Client('IRIS')
+        t1 = UTCDateTime(2012, 3, 26)
+        t2 = t1 + 86400
+        catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+                                    longitude=170, maxradius=5)
+        inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+                                        longitude=170, maxradius=10)
+        obspy_3d_plot(inventory=inventory, catalog=catalog)
     """
     _check_save_args(save, savefile)
-    from eqcorrscan.utils.plotting import threeD_seismplot
-    nodes = [(ev.preferred_origin().latitude,
-              ev.preferred_origin().longitude,
-              ev.preferred_origin().depth / 1000) for ev in catalog]
+    nodes = []
+    for ev in catalog:
+        nodes.append((ev.preferred_origin().latitude,
+                      ev.preferred_origin().longitude,
+                      ev.preferred_origin().depth / 1000))
     # Will plot borehole instruments at elevation - depth if provided
     all_stas = []
     for net in inventory:
-        stations = [(sta.latitude, sta.longitude,
-                     sta.elevation / 1000 - sta.channels[0].depth / 1000)
-                    for sta in net]
-        all_stas += stations
-    fig = threeD_seismplot(all_stas, nodes, save, savefile)
+        for sta in net:
+            if len(sta.channels) > 0:
+                all_stas.append((sta.latitude, sta.longitude,
+                                 sta.elevation / 1000 -
+                                 sta.channels[0].depth / 1000))
+            else:
+                warnings.warn('No channel information attached, '
+                              'setting elevation without depth')
+                all_stas.append((sta.latitude, sta.longitude,
+                                 sta.elevation / 1000))
+    fig = threeD_seismplot(stations=all_stas, nodes=nodes, save=save,
+                           savefile=savefile, size=size)
     return fig
 
 
-def threeD_seismplot(stations, nodes, save=False, savefile=None):
-    r"""Plot seismicity and stations in a 3D, movable, zoomable space.
+def threeD_seismplot(stations, nodes, save=False, savefile=None,
+                     size=(10.5, 7.5)):
+    """
+    Plot seismicity and stations in a 3D, movable, zoomable space.
 
     Uses matplotlibs Axes3D package.
 
@@ -859,22 +946,44 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
+
+    .. note: See obspy_3d_plot for example output.
     """
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
+    # Cope with +/-180 latitudes...
+    _evlongs = []
+    for evlong in evlongs:
+        if evlong < 0:
+            evlong = float(evlong)
+            evlong += 360
+        _evlongs.append(evlong)
+    evlongs = _evlongs
+    _stalongs = []
+    for stalong in stalongs:
+        if stalong < 0:
+            stalong = float(stalong)
+            stalong += 360
+        _stalongs.append(stalong)
+    stalongs = _stalongs
     evdepths = [-1 * depth for depth in evdepths]
-    fig = plt.figure()
+    fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k")
-    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r")
-    ax.set_ylabel("Latitude (deg)")
-    ax.set_xlabel("Longitude (deg)")
-    ax.set_zlabel("Depth(km)")
+    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k",
+               label='Hypocenters')
+    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r",
+               label='Stations')
+    ax.set_ylabel("Longitude (deg)")
+    ax.set_xlabel("Latitude (deg)")
+    ax.set_zlabel("Elevation (km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
+    plt.legend()
     if not save:
         plt.show()
     else:
@@ -1071,6 +1180,10 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
 
     :return: Figure handle which can be edited.
     :rtype: matplotlib.pyplot.figure
+
+    .. note: Called by lag_calc, hence no example - can be called outside though
+
+    .. image:: ../../plots/plot_repicked.png
     """
     _check_save_args(save, savefile)
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
@@ -1178,7 +1291,8 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
 
 def NR_plot(stream, NR_stream, detections, false_detections=False,
             size=(18.5, 10), save=False, savefile=None, title=False):
-    r"""Plot Network response alongside the streams used.
+    """
+    Plot Network response alongside the stream used.
 
     Highlights detection times in the network response.
 
@@ -1200,6 +1314,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     :param title: String for the title of the plot, set to False
 
     :returns: :class: matplotlib.figure
+
+    .. note: Called by bright_lights, not a general use plot (hence no example)
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -1278,7 +1394,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 
 def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
              savefile=None):
-    r"""Plot singular vectors from the clustering routines.
+    """
+    Plot singular vectors from the clustering routines.
 
     One plot for each stachan.
 
@@ -1333,14 +1450,15 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
 
 def plot_synth_real(real_template, synthetic, channels=False, save=False,
                     savefile=None):
-    r"""Plot multiple channels of data for real data and synthetic.
+    """
+    Plot multiple channels of data for real data and synthetic.
 
     :type real_template: obspy.core.stream.Stream
     :param real_template: Stream of the real template
     :type synthetic: obspy.core.stream.Stream
     :param synthetic: Stream of synthetic template
     :type channels: list
-    :param channels: List of tuples of (station, channel) to plot, default is\
+    :param channels: List of tuples of (station, channel) to plot, default is \
             False, which plots all.
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -1349,6 +1467,37 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    >>> from obspy import read, Stream, Trace
+    >>> from eqcorrscan.utils.synth_seis import seis_sim
+    >>> from eqcorrscan.utils.plotting import plot_synth_real
+    >>> real = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    ...             '2013-09-01-0410-35.DFDPC_024_00')
+    >>> synth = Stream(Trace(seis_sim(SP=2)))
+    >>> synth[0].stats.station = 'GCSZ'
+    >>> synth[0].stats.channel = 'EHZ'
+    >>> synth[0].stats.sampling_rate = 200
+    >>> real = real.select(station='GCSZ', channel='EHZ')
+    >>> real.trim(starttime=real[0].stats.starttime + 43,
+    ...           endtime=real[0].stats.starttime + 45).detrend('simple')
+    >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.utils.plotting import plot_synth_real
+        from obspy import read, Stream, Trace
+        from eqcorrscan.utils.synth_seis import seis_sim
+        import os
+        real = read(os.path.realpath('../../../tests/test_data/WAV/TEST_/' +
+                                     '2013-09-01-0410-35.DFDPC_024_00'))
+        synth = Stream(Trace(seis_sim(SP=2, flength=400)))
+        synth[0].stats.station = 'GCSZ'
+        synth[0].stats.channel = 'EHZ'
+        synth[0].stats.sampling_rate = 200
+        real = real.select(station='GCSZ', channel='EHZ')
+        real.trim(starttime=real[0].stats.starttime + 43,
+                  endtime=real[0].stats.starttime + 45).detrend('simple')
+        plot_synth_real(real_template=real, synthetic=synth)
     """
     _check_save_args(save, savefile)
     from obspy.signal.cross_correlation import xcorr
@@ -1373,6 +1522,10 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     if len(stachans) > 1:
         axes = axes.ravel()
     for i, stachan in enumerate(stachans):
+        if len(stachans) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         real_tr = real_template.select(station=stachan[0],
                                        channel=stachan[1])[0]
         synth_tr = synthetic.select(station=stachan[0],
@@ -1392,13 +1545,16 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
             y = tr.data
             y = y / float(max(abs(y)))
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
-            axes[i].plot(x, y, colours[j], linewidth=2.0, label=labels[j])
-            axes[i].get_yaxis().set_ticks([])
+            axis.plot(x, y, colours[j], linewidth=2.0, label=labels[j])
+            axis.get_yaxis().set_ticks([])
         ylab = stachan[0]+'.'+stachan[1]+' cc='+str(round(corr, 2))
-        axes[i].set_ylabel(ylab, rotation=0)
+        axis.set_ylabel(ylab, rotation=0)
     plt.subplots_adjust(hspace=0)
     # axes[0].legend()
-    axes[-1].set_xlabel('Time (s)')
+    if len(stachans) > 1:
+        axes[-1].set_xlabel('Time (s)')
+    else:
+        axis.set_xlabel('Time (s)')
     if not save:
         plt.show()
     else:
@@ -1548,6 +1704,9 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
 
     :returns: :class: matplotlib.figure
 
+    .. Note:: Currently there is a bug in this that means that interactivity \
+        doesn't work.  Yet to fix.
+
     .. rubric:: Example
 
     >>> from obspy import read
@@ -1555,12 +1714,14 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     >>> st = read()
     >>> spec_trace(st, trc='white') # doctest: +SKIP
 
+
     .. plot::
 
         from obspy import read
         from eqcorrscan.utils.plotting import spec_trace
         st = read()
         spec_trace(st, trc='white')
+
     """
     from obspy import Stream
     if isinstance(traces, Stream):
@@ -1596,15 +1757,15 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     if title:
         plt.suptitle(title)
     if show:
-        plt.show()
-        plt.close()
+        Fig.show()
     else:
         return Fig
 
 
 def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
                 tralpha=0.9, size=(10, 2.5), axes=None, title=None):
-    r"""Function to plot a trace over that traces spectrogram.
+    """
+    Function to plot a trace over that traces spectrogram.
 
     Uses obspys spectrogram routine.
 
@@ -1649,7 +1810,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     if not axes:
         Fig.set_size_inches(size)
         Fig.show()
-        Fig.close()
+        # Fig.close()
     else:
         return ax1, ax2
 
