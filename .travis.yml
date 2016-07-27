@@ -1,4 +1,4 @@
-language: c
+ language: c
 
 matrix:
   include:
@@ -84,6 +84,7 @@ install:
   - pip install pep8-naming
   - pip install pytest
   - pip install pytest-cov
+  - pip install Cython
   #  - pip install obspy==$OBSPY_VERSION
   - pip freeze
   - conda list
