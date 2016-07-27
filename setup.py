@@ -27,6 +27,7 @@ import warnings
 import glob
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+import numpy as np
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -147,7 +148,8 @@ setup(
     # Build our extension for subspace detection
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension("eqcorrscan.core.subspace_statistic",
-                           ["eqcorrscan/core/subspace_statistic.pyx"])]
+                           ["eqcorrscan/core/subspace_statistic.pyx"],
+                           include_dirs=[np.get_include()])]
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
