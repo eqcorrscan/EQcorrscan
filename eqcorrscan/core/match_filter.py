@@ -388,7 +388,6 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
     :returns: list of list of tuples of station, channel for all \
         cross-correlations.
     """
-    # XXX TODO: Should ccc be changed to cstat for consistency with temp loop?
     import time
     from multiprocessing import Pool
     from eqcorrscan.utils.timer import Timer
@@ -803,9 +802,11 @@ def match_filter(template_names, template_list, st, threshold,
                 detecttime = stream[0].stats.starttime +\
                     peak[1] / stream[0].stats.sampling_rate
                 # Detect time must be valid QuakeML uri within resource_id.
-                # This will write a formatted string which is still readable by UTCDateTime
+                # This will write a formatted string which is still
+                # readable by UTCDateTime
                 rid = ResourceIdentifier(id=template_names[i] + '_' +
-                                         str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                                         str(detecttime.
+                                             strftime('%Y%m%dT%H%M%S.%f')),
                                          prefix='smi:local')
                 ev = Event(resource_id=rid)
                 cr_i = CreationInfo(author='EQcorrscan',
@@ -824,7 +825,8 @@ def match_filter(template_names, template_list, st, threshold,
                     if (tr.stats.station, tr.stats.channel) not in chans[i]:
                         continue
                     else:
-                        pick_tm = detecttime + (tr.stats.starttime - min_template_tm)
+                        pick_tm = detecttime + (tr.stats.starttime -
+                                                min_template_tm)
                         wv_id = WaveformStreamID(network_code=tr.stats.network,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)

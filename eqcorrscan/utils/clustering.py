@@ -300,6 +300,14 @@ def group_delays(stream_list):
 
 def SVD(stream_list):
     """
+    Depreciated. Use svd.
+    """
+    warnings.warn('Depreciated, use svd instead.')
+    return svd(stream_list=stream_list)
+
+
+def svd(stream_list):
+    """
     Compute the SVD of a number of templates.
 
     Returns the singular vectors and singular values of the templates.
@@ -307,14 +315,18 @@ def SVD(stream_list):
     :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
 
-    :return: SVector(list of ndarray), SValues(list) for each channel, \
-        Uvalues(list of ndarray) for each channel, \
+    :return: SValues(list) for each channel, SVectors(list of ndarray),  \
+        UVectors(list of ndarray) for each channel, \
         stachans, List of String (station.channel)
 
     .. note:: We recommend that you align the data before computing the \
         SVD, e.g., the P-arrival on all templates for the same channel \
         should appear at the same time in the trace.  See the \
         stacking.align_traces function for a way to do this.
+
+    .. note:: Uses the numpy.linalg.svd function, their U, s and V are mapped \
+        to UVectors, SValues and SVectors respectively.  Their V (and ours) \
+        corresponds to V.H.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:

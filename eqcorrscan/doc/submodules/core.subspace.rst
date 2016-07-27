@@ -6,13 +6,21 @@ subspace
 
     .. comment to end block
 
-    Classes & Functions
-    -------------------
+    Classes
+    -------
+    .. toctree::
+        :maxdepth: 1
+
+        core.subspace.Detector
+
+    Functions
+    ---------
     .. autosummary::
        :toctree: autogen
        :nosignatures:
 
-       det_statistic
+       read_detector
+       multi
        subspace_detect
 
     .. comment to end block

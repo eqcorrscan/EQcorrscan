@@ -28,10 +28,8 @@ def run_tutorial(plot=True):
     from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
     from obspy import UTCDateTime, Catalog
     from eqcorrscan.utils.catalog_utils import filter_picks
-    from eqcorrscan.utils.clustering import space_cluster, SVD, SVD_2_stream
-    from eqcorrscan.utils.pre_processing import shortproc
-    from eqcorrscan.utils.plotting import cumulative_detections
-    from eqcorrscan.core import template_gen, subspace, match_filter
+    from eqcorrscan.utils.clustering import space_cluster
+    from eqcorrscan.core import template_gen, subspace
 
     cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
                             maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
@@ -51,7 +49,7 @@ def run_tutorial(plot=True):
     # templates for each of them
     templates = template_gen.from_client(catalog=cluster,
                                          client_id='GEONET',
-                                         lowcut=2.0, highcut=9.0,
+                                         lowcut=None, highcut=None,
                                          samp_rate=20.0, filt_order=4,
                                          length=3.0, prepick=0.15,
                                          swin='all', process_len=3600,
@@ -59,40 +57,24 @@ def run_tutorial(plot=True):
     # We should note here that the templates are not perfectly aligned, but
     # they are close enough for us to compute a useful singular-value
     # decomposition.
-    SVectors, SValues, Uvectors, stachans = SVD(stream_list=templates)
-    # Convert to streams, which you can plot - we also need them for
-    # subspace_detect - we chose here to use a detector of order five (k).
-    detector = SVD_2_stream(SVectors=SVectors, stachans=stachans, k=5,
-                            sampling_rate=20.0)
-    # We will look for detections on the 13th of May 2016 between midday and 3pm
+    detector = subspace.Detector()
+    detector.construct(streams=templates, lowcut=2.0, highcut=9.0,
+                       filt_order=4, sampling_rate=20, multiplex=True,
+                       name='Wairarapa1').partition(4)
+    # We also want the continuous stream to detect in.
     t1 = UTCDateTime(2016, 5, 13, 12)
     t2 = t1 + 10800
-    bulk_info = [('NZ', stachan.split('.')[0], '*',
-                  stachan.split('.')[1][0] + '?' + stachan.split('.')[1][-1],
-                  t1, t2) for stachan in stachans]
+    bulk_info = [('NZ', stachan[0], '*',
+                  stachan[1][0] + '?' + stachan[1][-1],
+                  t1, t2) for stachan in detector.stachans]
     client = Client('GEONET')
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
-    st = shortproc(st=st, highcut=9, lowcut=2, filt_order=4, samp_rate=20,
-                   parallel=True)
-    detections = subspace.subspace_detect(detector_names=['subspace_detector'],
-                                          detector_list=[detector], st=st,
-                                          threshold=0.25,
-                                          threshold_type='absolute',
-                                          trig_int=6, plotvar=False, cores=4)
-    # We can compare these detections to those obtained by matched-filtering
-    template_names = [str(i) for i in range(len(templates))]
-    match_dets = match_filter.match_filter(template_names=template_names,
-                                           template_list=templates, st=st,
-                                           threshold=8, threshold_type='MAD',
-                                           trig_int=6, plotvar=False, cores=4)
-    # We can visualise the differences quickly
-    for det in match_dets:
-        det.template_name = 'match_filter'
-    if plot:
-        cumulative_detections(detections=detections + match_dets)
-    # We obviously detect different things with the subspace detector and the
-    # matched-filter technique.
+    for tr in st:
+        tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+    detections, det_streams = detector.detect(st=st, threshold=0.5,
+                                              trig_int=0.5,
+                                              extract_detections=True)
     return detections
 
 

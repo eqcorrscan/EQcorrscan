@@ -25,6 +25,8 @@ from codecs import open
 from os import path
 import warnings
 import glob
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -67,7 +69,7 @@ if sys.version_info.major == 2:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'multiprocessing',
-                            'LatLon']
+                            'LatLon', 'h5py', 'Cython']
 else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
@@ -76,7 +78,7 @@ else:
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'LatLon']
+                            'LatLon', 'h5py', 'Cython']
 # install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
@@ -141,6 +143,11 @@ setup(
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov'],
+
+    # Build our extension for subspace detection
+    cmdclass={'build_ext': build_ext},
+    ext_modules=[Extension("eqcorrscan.core.subspace_statistic",
+                           ["eqcorrscan/core/subspace_statistic.pyx"])]
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:

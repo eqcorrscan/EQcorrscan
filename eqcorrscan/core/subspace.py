@@ -1,8 +1,5 @@
-#!/usr/bin/python
 r"""This module contains functions relevant to executing subspace detection \
-for earthquake catalogs. The overarching function calls _channel_loop and \
-_template_loop inner functions from match_filter in the same way as \
-the normal matched filtering workflow.
+for earthquake catalogs.
 
 We recommend that you read Harris' detailed report on subspace detection \
 theory which can be found here: https://e-reports-ext.llnl.gov/pdf/335299.pdf
@@ -20,98 +17,503 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import warnings
-from obspy import Stream
+import time
+import h5py
+import getpass
+import eqcorrscan
+from obspy import Trace, UTCDateTime, Stream
+from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
+    WaveformStreamID, Pick
+from eqcorrscan.utils.clustering import svd
+from eqcorrscan.utils import findpeaks, pre_processing
+from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
 
 
-def det_statistic(detector, data):
+
+class Detector(object):
     """
-    Base function to calculate the subspace detection statistic.
+    Class to serve as the base for subspace detections.
 
-    Calculates for a given subspace detector and data stream. \
-    The statistic is calculated by \
-    projecting the data onto the N dimensional subspace defined by the given \
-    detector following the equation: :math:'\\gamma = y^TUU^Ty' where y is \
-    the data stream, U is the subspace detector and :math:'\\gamma' is the \
-    detection statistic from 0 to 1.
+    :type name: str
+    :param name: Name of subspace detector, used for book-keeping
+    :type sampling_rate: float
+    :param sampling_rate: Sampling rate in Hz of original waveforms
+    :type multiplex: bool
+    :param multiplex: Is this detector multiplexed.
+    :type stachans: list
+    :param stachans: List of tuples of (station, channel) used in detector. \
+        If multiplexed, these must be in the order that multiplexing was done.
+    :type lowcut: float
+    :param lowcut: Lowcut filter in Hz
+    :type highcut: float
+    :param highcut: Highcut filter in Hz
+    :type filt_order: int
+    :param filt_order: Number of corners for filtering
+    :type data: np.ndarray
+    :param data: The actual detector
+    :type u: np.ndarray
+    :param u: Full rank U matrix of left (input) singular vectors.
+    :type sigma: np.ndarray
+    :param sigma: Full rank vector of singular values.
+    :type v: np.ndarray
+    :param v: Full rank right (output) singular vectors.
+    :type dimension: int
+    :param dimension: Dimension of data.
     """
-    day_stats = []
-    for i in range(len(data) - len(detector[0]) + 1):
-        y = data[i:i + len(detector[0])]
-        y = y / np.sqrt((y ** 2).sum(-1))
-        day_stats.append(y.dot(detector.T).dot(detector).dot(y))
-    day_stats = np.asarray(day_stats)
-    if np.all(np.isnan(day_stats)):
-        day_stats = np.zeros(len(day_stats))
-    return day_stats
+    def __init__(self, name=None, sampling_rate=None, multiplex=None,
+                 stachans=None, lowcut=None, highcut=None, filt_order=None,
+                 data=None, u=None, sigma=None, v=None, dimension=None):
+        self.name = name
+        self.sampling_rate = sampling_rate
+        self.multiplex = multiplex
+        self.stachans = stachans
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.filt_order = filt_order
+        self.data = data
+        self.u = u
+        self.sigma = sigma
+        self.v = v
+        self.dimension = dimension
+
+    def __repr__(self):
+        if self.name:
+            out = 'Detector: ' + self.name
+        else:
+            out = 'Empty Detector object'
+        return out
+
+    def __str__(self):
+        out = 'Detector object: \n'
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension']:
+            if self.__getattribute__(key):
+                out += ('\t' + key + ': ' + str(self.__getattribute__(key)) +
+                        '\n')
+        return out
+
+    def __eq__(self, other):
+        if not isinstance(other, Detector):
+            return False
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension', 'stachans']:
+            if not self.__getattribute__(key) == other.__getattribute__(key):
+                return False
+        for key in ['data', 'u', 'v', 'sigma']:
+            if not np.allclose(self.__getattribute__(key),
+                               other.__getattribute__(key)):
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __len__(self):
+        return len(self.data)
+
+    def construct(self, streams, lowcut, highcut, filt_order,
+                  sampling_rate, multiplex, name):
+        """
+        Construct a subspace detector from a list of streams, full rank.
+
+        Subspace detector will be full-rank, further functions can be used \
+        to select the desired dimensions.
+
+        :type streams: list
+        :param streams: List of obspy.core.stream.Stream to be used to \
+            generate the subspace detector.  These should be pre-clustered \
+            and aligned.
+        :type lowcut: float
+        :param lowcut: Lowcut in Hz, can be None to not apply filter
+        :type highcut: float
+        :param highcut: Highcut in Hz, can be None to not apply filter
+        :type filt_order: int
+        :param filt_order: Number of corners for filter.
+        :type sampling_rate: float
+        :param sampling_rate: Desired sampling rate in Hz
+        :type multiplex: bool
+        :param multiplex: Whether to multiplex the data or not.  Data are \
+            multiplexed according to the method of Harris, see the multi \
+            function for details.
+        :type name: str
+        :param name: Name of the detector, used for book-keeping.
+
+        .. note:: The detector will be normalized such that the data, before \
+            computing the singular-value decomposition, will have unit energy. \
+            e.g. We divide the amplitudes of the data by the L1 norm of the \
+            data.
+        """
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.filt_order = filt_order
+        self.sampling_rate = sampling_rate
+        self.name = name
+        self.multiplex = multiplex
+        # Pre-process data
+        p_streams, stachans = _subspace_process(streams=streams,
+                                                lowcut=lowcut,
+                                                highcut=highcut,
+                                                filt_order=filt_order,
+                                                sampling_rate=sampling_rate,
+                                                multiplex=multiplex)
+        # Compute the SVD, use the cluster.SVD function
+        v, sigma, u, dummy = svd(stream_list=p_streams)
+        self.stachans = stachans
+        self.u = u
+        self.v = v
+        self.sigma = sigma
+        self.data = u  # Set the data matrix to be full rank U.
+        self.dimension = np.inf
+
+    def partition(self, dimension):
+        """
+        Partition subspace into desired dimension.
+
+        :type dimension: int
+        :param dimension: Maximum dimension to use.
+        """
+        # Take leftmost 'dimension' input basis vectors
+        for i, channel in enumerate(self.data):
+            self.data[i] = channel[:, 0:dimension]
+        self.dimension = dimension
+
+    def energy_capture(self):
+        """
+        Calculate the average percentage energy capture for this subspace.
+
+        :return: Percentage energy capture
+        :rtype: float
+        """
+        percent_captrue = 0
+        if np.isinf(self.dimension):
+            return 100
+        for channel in self.sigma:
+            fc = np.sum(channel[0:self.dimension]) / np.sum(channel)
+            percent_captrue += fc
+        return 100 * (percent_captrue / len(self.sigma))
+
+    def detect(self, st, threshold, trig_int, process=True,
+               extract_detections=False, debug=0):
+        """
+        Detect within continuous data using the subspace method.
+
+        :type st: obspy.core.stream.Stream
+        :param st: Un-processed stream to detect within using the subspace \
+            detector
+        :type threshold: float
+        :param threshold: Threshold value for detections between 0-1
+        :type trig_int: float
+        :param trig_int: Minimum trigger interval in seconds.
+        :type process: bool
+        :param process: Whether or not to process the stream according to the \
+            parameters defined by the detector.  Default is to process the \
+            data (True).
+        :type extract_detections: bool
+        :param extract_detections: Whether to extract waveforms for each \
+            detection or not, if true will return detections and streams.
+        :type debug: int
+        :param debug: Debug output level from 0-5.
+
+        :return: list of detections
+        :rtype: list of eqcorrscan.core.match_filter.DETECTION
+
+        .. note:: If running in bulk with detectors that all have the same \
+            parameters then you can pre-process the data and set process to \
+            False.  This will speed up this detect function dramatically.
+
+        .. warning:: If the detector and stream are multiplexed then they must \
+            contain the same channels and multiplexed in the same order. This \
+            is handled internally when process=True, but if running in bulk \
+            you must take care.
+        """
+        from eqcorrscan.core import subspace_statistic
+        detections = []
+        # First process the stream
+        if process:
+            if debug > 0:
+                print('Processing Stream')
+            stream, stachans = _subspace_process(streams=[st.copy()],
+                                                 lowcut=self.lowcut,
+                                                 highcut=self.highcut,
+                                                 filt_order=self.filt_order,
+                                                 sampling_rate=self.
+                                                 sampling_rate,
+                                                 multiplex=self.multiplex,
+                                                 stachans=self.stachans,
+                                                 parallel=True)
+        else:
+            # Check the sampling rate at the very least
+            stream = [st]
+            for tr in stream[0]:
+                if not tr.stats.sampling_rate == self.sampling_rate:
+                    raise ValueError('Sampling rates do not match.')
+        outtic = time.clock()
+        if debug > 0:
+            print('Computing detection statistics')
+        stats = np.zeros(len(stream[0][0]) - len(self.data[0][0]) + 1,
+                         dtype=np.float32)
+        for det_channel, in_channel in zip(self.data, stream[0]):
+            stats += subspace_statistic.\
+                det_statistic(detector=det_channel.astype(np.float32),
+                              data=in_channel.data.astype(np.float32))
+            # Hard typing in Cython loop requires float32 type.
+        stats /= len(stream[0])  # Average the non-multiplexed detection
+        # statistics
+        if self.multiplex:
+            trig_int_samples = (len(self.stachans) *
+                                self.sampling_rate * trig_int)
+        else:
+            trig_int_samples = self.sampling_rate * trig_int
+        if debug > 0:
+            print('Finding peaks')
+        peaks = findpeaks.find_peaks2_short(arr=stats, thresh=threshold,
+                                            trig_int=trig_int_samples,
+                                            debug=debug)
+        if peaks:
+            for peak in peaks:
+                if self.multiplex:
+                    detecttime = st[0].stats.starttime + (peak[1] /
+                                                          (self.sampling_rate *
+                                                           len(self.stachans)))
+                else:
+                    detecttime = st[0].stats.starttime + (peak[1] /
+                                                          self.sampling_rate)
+                rid = ResourceIdentifier(id=self.name + '_' +
+                                         str(detecttime),
+                                             prefix='smi:local')
+                ev = Event(resource_id=rid)
+                cr_i = CreationInfo(author='EQcorrscan',
+                                    creation_time=UTCDateTime())
+                ev.creation_info = cr_i
+                # All detection info in Comments for lack of a better idea
+                thresh_str = 'threshold=' + str(threshold)
+                ccc_str = 'detect_val=' + str(peak[0])
+                used_chans = 'channels used: ' +\
+                    ' '.join([str(pair) for pair in self.stachans])
+                ev.comments.append(Comment(text=thresh_str))
+                ev.comments.append(Comment(text=ccc_str))
+                ev.comments.append(Comment(text=used_chans))
+                for stachan in self.stachans:
+                    tr = st.select(station=stachan[0], channel=stachan[1])
+                    if tr:
+                        net_code = tr[0].stats.network
+                    else:
+                        net_code = ''
+                    pick_tm = detecttime
+                    wv_id = WaveformStreamID(network_code=net_code,
+                                             station_code=stachan[0],
+                                             channel_code=stachan[1])
+                    ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+                detections.append(DETECTION(self.name,
+                                            detecttime,
+                                            len(self.stachans),
+                                            peak[0],
+                                            threshold,
+                                            'subspace', self.stachans,
+                                            event=ev))
+        outtoc = time.clock()
+        print('Detection took %s seconds' % str(outtoc - outtic))
+        if extract_detections:
+            detection_streams = extract_from_stream(st, detections)
+            return detections, detection_streams
+        return detections
+
+    def write(self, filename):
+        """
+        Write detector to a file - uses HDF5 file format.
+
+        Meta-data are stored alongside numpy data arrays. See h5py.org for \
+        details of the methods.
+
+        :type filename: str
+        :param filename: Filename to save the detector to.
+        """
+        f = h5py.File(filename, "w")
+        # Must store eqcorrscan version number, username would be useful too.
+        # Reshape data into a numpy array
+        data_write = np.array(self.data)
+        u_array = np.array(self.u)
+        sigma_array = np.array(self.sigma)
+        v_array = np.array(self.v)
+        dset = f.create_dataset(name="data", shape=data_write.shape,
+                                dtype=data_write.dtype)
+        dset[...] = data_write
+        dset.attrs['name'] = self.name
+        dset.attrs['sampling_rate'] = self.sampling_rate
+        dset.attrs['multiplex'] = self.multiplex
+        dset.attrs['lowcut'] = self.lowcut
+        dset.attrs['highcut'] = self.highcut
+        dset.attrs['filt_order'] = self.filt_order
+        dset.attrs['dimension'] = self.dimension
+        dset.attrs['user'] = getpass.getuser()
+        dset.attrs['eqcorrscan_version'] = str(eqcorrscan.__version__)
+        # Convert station-channel list to something writable
+        ascii_stachans = ['.'.join(stachan).encode("ascii", "ignore")
+                          for stachan in self.stachans]
+        stachans = f.create_dataset(name="stachans",
+                                    shape=(len(ascii_stachans),),
+                                    dtype='S10')
+        stachans[...] = ascii_stachans
+        uset = f.create_dataset(name="u", shape=u_array.shape,
+                                dtype=u_array.dtype)
+        uset[...] = u_array
+        sigmaset = f.create_dataset(name="sigma", shape=sigma_array.shape,
+                                    dtype=sigma_array.dtype)
+        sigmaset[...] = sigma_array
+        vset = f.create_dataset(name="v", shape=v_array.shape,
+                                dtype=v_array.dtype)
+        vset[...] = v_array
+        f.flush()
+        f.close()
+
+    def read(self, filename):
+        """
+        Read detector from a file, must be HDF5 format.
+
+        Reads a Detector object from an HDF5 file, usually created by \
+        eqcorrscan.
+
+        :type filename: str
+        :param filename: Filename to save the detector to.
+        """
+        f = h5py.File(filename, "r")
+        self.data = list(f['data'].value)
+        self.u = list(f['u'].value)
+        self.v = list(f['v'].value)
+        self.sigma = list(f['sigma'].value)
+        self.stachans = [tuple(stachan.split('.'))
+                         for stachan in f['stachans'].value]
+        self.dimension = f['data'].attrs['dimension']
+        self.filt_order = f['data'].attrs['filt_order']
+        self.highcut = f['data'].attrs['highcut']
+        self.lowcut = f['data'].attrs['lowcut']
+        self.multiplex = f['data'].attrs['multiplex']
+        self.sampling_rate = f['data'].attrs['sampling_rate']
+        self.name = f['data'].attrs['name']
 
 
-def multiplex_detect(detectors, detector_names, stream, cores, debug=0):
+def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
+                     multiplex, stachans=None, parallel=False):
     """
-    Multiplex seismic data according to the method of Harris et al. & detect.
+    Process stream data, internal function.
 
-    Maps a standard multiplexed stream of seismic data to a single traces of \
-    multiplexed data as follows:
+    :type streams: list
+    :param streams: List of obspy.core.stream.Stream to be used to \
+        generate the subspace detector.  These should be pre-clustered \
+        and aligned.
+    :type lowcut: float
+    :param lowcut: Lowcut in Hz, can be None to not apply filter
+    :type highcut: float
+    :param highcut: Highcut in Hz, can be None to not apply filter
+    :type filt_order: int
+    :param filt_order: Number of corners for filter.
+    :type sampling_rate: float
+    :param sampling_rate: Desired sampling rate in Hz
+    :type multiplex: bool
+    :param multiplex: Whether to multiplex the data or not.  Data are \
+        multiplexed according to the method of Harris, see the multi \
+        function for details.
+    :type stachans: list of tuple
+    :param stachans: list of tuples of (station, channel) to use.
 
-    Input:
-    x = [x1, x2, x3, ...]
-    y = [y1, y2, y3, ...]
-    z = [z1, z2, z3, ...]
-
-    Output:
-    xyz = [x1, y1, z1, x2, y2, z2, x3, y3, z3, ...]
-
-    :type detectors: list
-    :param detectors:
-    :type detector_names: list
-    :param detector_names: List of strings of names for detectors, used for \
-        book-keeping.
-    :type stream: obspy.core.stream.Stream
-    :param stream:
-    :type cores: int
-    :param cores:
-    :type debug: int
-    :param debug:
-
-    :return:
-    :rtype:
+    :return: Processed streams
+    :rtype: list
+    :return: Station, channel pairs in order
+    :rtype: list of tuple
     """
-    no_chans = []
-    chans = []
-    cstats = []
-    for detector in detectors:
-        cstat, kno_chans, kchans = _multi_inner(detector=detector,
-                                                stream=stream)
-        cstats.append(cstat)
-        no_chans.append(kno_chans)
-        chans.append(chans)
-    return cstats, no_chans, chans
+    from multiprocessing import Pool, cpu_count
+    processed_streams = []
+    if not stachans:
+        input_stachans = list(set([(tr.stats.station, tr.stats.channel)
+                                   for st in streams for tr in st]))
+    else:
+        input_stachans = stachans
+    input_stachans.sort()  # Make sure stations and channels are in order
+    # Check that all channels are the same length in seconds
+    first_length = len(streams[0][0].data) /\
+        streams[0][0].stats.sampling_rate
+    for st in streams:
+        for tr in st:
+            if not len(tr) / tr.stats.sampling_rate == first_length:
+                msg = 'All channels of all streams must be the same length'
+                raise IOError(msg)
+    for st in streams:
+        if not parallel:
+            processed_stream = Stream()
+            for stachan in input_stachans:
+                dummy, tr = _internal_process(st=st, lowcut=lowcut,
+                                              highcut=highcut,
+                                              filt_order=filt_order,
+                                              sampling_rate=sampling_rate,
+                                              first_length=first_length,
+                                              stachan=stachan, debug=0)
+                processed_stream += tr
+        else:
+            pool = Pool(processes=cpu_count())
+            results = [pool.apply_async(_internal_process, (st,),
+                                        {'lowcut': lowcut,
+                                         'highcut': highcut,
+                                         'filt_order': filt_order,
+                                         'sampling_rate': sampling_rate,
+                                         'first_length': first_length,
+                                         'stachan': stachan,
+                                         'debug': 0,
+                                         'i': i})
+                       for i, stachan in enumerate(input_stachans)]
+            pool.close()
+            processed_stream = [p.get() for p in results]
+            pool.join()
+            processed_stream.sort(key=lambda tup: tup[0])
+            processed_stream = Stream([p[1] for p in processed_stream])
+        if multiplex:
+            st = multi(stream=processed_stream)
+            st = Stream(Trace(st))
+            st[0].stats.station = 'Multi'
+            st[0].stats.sampling_rate = sampling_rate
+        for tr in st:
+            # Normalize the data
+            tr.data /= np.linalg.norm(tr.data)
+        processed_streams.append(st)
+    return processed_streams, input_stachans
 
 
-def _multi_inner(stream, detector):
+def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
+                      first_length, stachan, debug, i=0):
+    tr = st.select(station=stachan[0], channel=stachan[1])
+    if len(tr) == 0:
+        tr = Trace(np.zeros(first_length * sampling_rate))
+        tr.stats.station = stachan[0]
+        tr.stats.channel = stachan[1]
+        warnings.warn('Padding stream with zero trace for ' +
+                      'station ' + stachan[0] + '.' + stachan[1])
+    elif len(tr) == 1:
+        tr = tr[0]
+        pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
+                               filt_order=filt_order, samp_rate=sampling_rate,
+                               debug=debug)
+    else:
+        msg = ('Multiple channels for ' + stachan[0] + '.' +
+               stachan[1] + ' in a single design stream.')
+        raise IOError(msg)
+    return i, tr
+
+
+def read_detector(filename):
     """
-    Inner loop to handle parallel processing
+    Read detector from a filename.
 
-    :param stream:
-    :param detector:
-    :return:
+    :type filename: str
+    :param filename: Filename to save the detector to.
+
+    :return: Detector object
+    :rtype: eqcorrscan.core.subspace.Detector
     """
-    multiplex_stream = Stream()
-    detector_stachans = [(tr.stats.station, tr.stats.channel)
-                          for tr in detector[0]]
-    chans = []
-    for tr in stream:
-        if (tr.stats.station, tr.stats.channel) in detector_stachans:
-            multiplex_stream += tr
-            chans.append((tr.stats.station, tr.stats.channel))
-    no_chans = len(chans)
-    multiplex_stream = _multiplex(stream=multiplex_stream)
-    multiplex_detector = np.array([_multiplex(stream=d) for d in detector])
-    cstat = det_statistic(detector=multiplex_detector, data=multiplex_stream)
-
-    return cstat, no_chans, chans
+    detector = Detector()
+    detector.read(filename=filename)
+    return detector
 
 
-def _multiplex(stream, normalize=True):
+def multi(stream):
     """
     Internal multiplexer for multiplex_detect.
 
@@ -125,329 +527,47 @@ def _multiplex(stream, normalize=True):
     :rtype: obspy.core.trace.Trace
 
     .. Note: Requires all channels to be the same length.
+
+    Maps a standard multiplexed stream of seismic data to a single traces of \
+    multiplexed data as follows:
+
+    Input:
+    x = [x1, x2, x3, ...]
+    y = [y1, y2, y3, ...]
+    z = [z1, z2, z3, ...]
+
+    Output:
+    xyz = [x1, y1, z1, x2, y2, z2, x3, y3, z3, ...]
     """
     stack = stream[0].data
-    if normalize:
-        stack = stack / np.sqrt(np.mean(np.square(stack)))
     for tr in stream[1:]:
-        if normalize:
-            data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
-        else:
-            data = tr.data
-        stack = np.dstack(np.array([stack, data]))
+        stack = np.dstack(np.array([stack, tr.data]))
     multiplex = stack.reshape(stack.size, )
     return multiplex
 
 
-
-def subspace_detect(detector_names, detector_list, st, threshold,
-                    threshold_type, trig_int, plotvar, plotdir='.', cores=1,
-                    tempdir=False, debug=0, plot_format='jpg',
-                    output_cat=False, extract_detections=False):
+def subspace_detect(detectors, stream, threshold, trig_int):
     """
-    Overseer function to handle subspace detection.
+    Conduct subspace detection with chosen detectors.
 
-    Modelled after match_filter.match_filter().
-
-    :type detector_names: list
-    :param detector_names: Names (strings) of the detectors, used for \
-        book-keeping.
-    :type detector_list: list
-    :param detector_list: List of subspace detectors, where each detector is \
-        a list of obspy.core.stream.Streams - these are usually the output \
-        from SVD_2_Stream
-    :type st: obspy.core.stream.Stream
-    :param st: Stream of data to scan through
-    :type threshold: float
-    :param threshold: Threshold level for use with threshold_type
-    :type threshold_type: str
-    :param threshold_type: Type of threshold to use, can be: 'MAD', \
-        or 'absolute'  See below for description
-    :type trig_int: float
-    :param trig_int: Minimum trigger interval in seconds, will not trigger \
-        more often than this, and will only take the highest (above threshold) \
-        detection if multiple detections occur within this window.
-    :type plotvar: bool
-    :param plotvar: Turn plotting on or off
-    :type plotdir: str
-    :param plotdir: Location to save plots to
-    :type corse: int
-    :param cores: Number of cores to parallel over
-    :type tempdir: str
-    :param tempdir: Directory to output temporary files, used if memory is an \
-        issue
-    :type debug: int
-    :param debug: Debug level from 0-5, higher is more output
-    :type plot_format: str
-    :param plot_format: Format to save plots as, only used if plotvar=True
-    :type output_cat: bool
-    :param output_cat: Switch to output an obspy.core.event.Catalog for the \
-        detections.
-    :type extract_detections: bool
-    :param extract_detections: Switch to extract waveforms for detections or \
-        not.
-
-    :returns: List of detections as eqcorrscan.core.match_filter.DETECTION \
-        objects.
-    :rtype: list
-
-    .. note: Thresholding: MAD is median absolute deviation.  Absolute refers \
-        to the absolute value of the detector.  For the subspace detector, the \
-        statistic is always between 0 and 1.
+    :type detectors: list
+    :param detectors: list of eqcorrscan.core.subspace.Detector to be used for \
+        detection
+    :param stream:
+    :param threshold:
+    :param trig_int:
+    :return:
     """
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    import copy
-    from eqcorrscan.core import match_filter
-    from eqcorrscan.core.match_filter import DETECTION
-    from eqcorrscan.utils import plotting, findpeaks
-    from obspy import Trace, Catalog, UTCDateTime, Stream
-    from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
-    from obspy.core.event import Comment, WaveformStreamID
-    import time
+    # First check that detector parameters are the same
+    parameters = []
+    for detector in detectors:
+        parameters.append(detector.lowcut, detector.highcut,
+                          detector.filt_order, detector.sampling_rate,
+                          detector.multiplex)
+    parameters = list(set(parameters))
+    if not len(parameters) == 1:
+        msg = ('Multiple parameters used for detectors, group your ' +
+               'detectors first')
+        raise IOError(msg)
+    # Now process the stream according to those parameters
 
-    # Copy the stream here because we will muck about with it
-    stream = st.copy()
-    detectors = copy.deepcopy(detector_list)
-    # Collect detector and data channel information
-    detector_stachan = list((tr.stats.station, tr.stats.channel)
-                            for detector in detectors
-                            for det_st in detector
-                            for tr in det_st)
-    data_stachan = list((tr.stats.station, tr.stats.channel) for tr in stream)
-    detector_stachan = list(set(detector_stachan))
-    data_stachan = list(set(data_stachan))
-    if debug >= 3:
-        print('I have detector info for these stations:')
-        print(detector_stachan)
-        print('I have data for these stations:')
-        print(data_stachan)
-    # Perform a check that the daylong vectors are all the same length
-    min_start_time = min([tr.stats.starttime for tr in stream])
-    max_end_time = max([tr.stats.endtime for tr in stream])
-    longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
-                                                            min_start_time)
-    for tr in stream:
-        if not tr.stats.npts == longest_trace_length:
-            msg = 'Data are not equal length, padding short traces'
-            warnings.warn(msg)
-            start_pad = np.zeros(int(tr.stats.sampling_rate *
-                                     (tr.stats.starttime - min_start_time)))
-            end_pad = np.zeros(int(tr.stats.sampling_rate *
-                                   (max_end_time - tr.stats.endtime)))
-            tr.data = np.concatenate([start_pad, tr.data, end_pad])
-    # Check that detector_list is list of lists of obspy.Stream
-    for i, detector in enumerate(detectors):
-        for j, det_st in enumerate(detector):
-            if isinstance(det_st, Stream):
-                continue
-            else:
-                msg = ('Detector %s: stream %02d is not actually a stream! \
-                       Check that detector_list is being given a list of \
-                       lists of obspy.Stream objects.' %
-                       (detector_names[i], j))
-    # Perform check that all detector lengths are internally consistent
-    for i, det in enumerate(detectors):
-        for j, det_st in enumerate(det):
-            if len(set([tr.stats.npts for tr in det_st])) > 1:
-                msg = 'Detector %s, stream %02d contains traces of differing \
-                      length!! THIS WILL CAUSE ISSUES' % (detector_names[i], j)
-                raise ValueError(msg)
-    # Call the _template_loop function to do all the correlation work
-    outtic = time.clock()
-    # Edit here from previous, stable, but slow match_filter
-    # Would be worth testing without an if statement, but with every station in
-    # the possible template stations having data, but for those without real
-    # data make the data NaN to return NaN ccc_sum
-    # Note: this works
-    if debug >= 2:
-        print('Ensuring all detector channels have matches in daylong data')
-    for stachan in detector_stachan:
-        if not stream.select(station=stachan[0], channel=stachan[1]):
-            # Remove detector traces rather than adding NaN data
-            if debug >= 3:
-                print('Removing %s from detectors' % str(stachan))
-            for detector in detectors:
-                for det_st in detector:
-                    if det_st.select(station=stachan[0], channel=stachan[1]):
-                        for tr in det_st.select(station=stachan[0],
-                                                channel=stachan[1]):
-                            det_st.remove(tr)
-    # Remove un-needed channels
-    for tr in stream:
-        if not (tr.stats.station, tr.stats.channel) in detector_stachan:
-            if debug >= 3:
-                print('Removed sta %s, chan %s from data' % (tr.stats.station,
-                                                             tr.stats.channel))
-            stream.remove(tr)
-    # Also pad out detectors to have all channels
-    for detector, detector_name in zip(detectors, detector_names):
-        for i, det_st in enumerate(detector):
-            if debug >= 3:
-                print('Working out padding for detector %s, svec %02d'
-                      % (detector_name, i))
-            if len(det_st) == 0:
-                msg = ('No channels matching in continuous data for ' +
-                       'detector %s: stream %02d' % (detector_name, i))
-                warnings.warn(msg)
-                detectors.remove(detector)
-                detector_names.remove(detector_name)
-                continue
-            for stachan in detector_stachan:
-                if not det_st.select(station=stachan[0], channel=stachan[1]):
-                    nulltrace = Trace()
-                    nulltrace.stats.station = stachan[0]
-                    nulltrace.stats.channel = stachan[1]
-                    nulltrace.stats.sampling_rate = det_st[0].stats.sampling_rate
-                    nulltrace.stats.starttime = det_st[0].stats.starttime
-                    nulltrace.data = np.array([np.NaN] * len(det_st[0].data),
-                                              dtype=np.float32)
-                    det_st += nulltrace
-    if debug >= 2:
-        print('Starting the subspace run for this day')
-    [cccsums, no_chans, chans] = match_filter._channel_loop(detectors, stream,
-                                                            cores,
-                                                            do_subspace=True,
-                                                            debug=debug)
-    if len(cccsums[0]) == 0:
-        raise ValueError('Subspace has not run, zero length cccsum')
-    outtoc = time.clock()
-    print(' '.join(['Looping over detectors and streams took:',
-                    str(outtoc - outtic), 's']))
-    if debug >= 2:
-        print(' '.join(['The shape of the returned subspace-stats is:',
-                        str(np.shape(cccsums))]))
-        print(' '.join(['This is from', str(len(detectors)), 'detectors']))
-        print(' '.join(['Detected with', str(len(stream)),
-                        'channels of data']))
-    detections = []
-    if output_cat:
-        det_cat = Catalog()
-    # XXX TODO: Need to investigate thresholding for correct detection stats
-    for i, cccsum in enumerate(cccsums):
-        detector = detectors[i]
-        # Unless I can prove otherwise, we will average cccsums to obtain our
-        # detection statistic from 0 to 1
-        cccsum /= no_chans[i]
-        if threshold_type == 'MAD':
-            rawthresh = threshold * np.median(np.abs(cccsum))
-        elif threshold_type == 'absolute':
-            rawthresh = threshold
-        else:
-            print('You have not selected the correct threshold type, I will' +
-                  'use MAD as I like it')
-            rawthresh = threshold * np.mean(np.abs(cccsum))
-        # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
-        print(' '.join(['Threshold is set at:', str(rawthresh)]))
-        print(' '.join(['Max of data is:', str(max(cccsum))]))
-        print(' '.join(['Mean of data is:', str(np.mean(cccsum))]))
-        # Set up a trace object for the cccsum as this is easier to plot and
-        # maintains timing
-        if plotvar:
-            stream_plot = copy.deepcopy(stream[0])
-            # Downsample for plotting
-            stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
-            cccsum_plot = Trace(cccsum)
-            cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
-            # Resample here to maintain shape better
-            cccsum_hist = cccsum_plot.copy()
-            cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
-                                                   sampling_rate / 10)).data
-            cccsum_plot = plotting.chunk_data(cccsum_plot, 10,
-                                              str('Maxabs')).data
-            # Enforce same length
-            stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
-            cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
-            cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-            plotting.triple_plot(cccsum_plot, cccsum_hist,
-                                 stream_plot, rawthresh, True,
-                                 plotdir + '/cccsum_plot_' +
-                                 detector_names[i] + '_' +
-                                 stream[0].stats.starttime.
-                                 datetime.strftime('%Y-%m-%d') +
-                                 '.' + plot_format)
-            if debug >= 4:
-                print(' '.join(['Saved the cccsum to:', detector_names[i],
-                                stream[0].stats.starttime.datetime.
-                                strftime('%Y%j')]))
-                np.save(detector_names[i] +
-                        stream[0].stats.starttime.datetime.strftime('%Y%j'),
-                        cccsum)
-        tic = time.clock()
-        if debug >= 4:
-            np.save('cccsum_' + str(i) + '.npy', cccsum)
-        if debug >= 3 and max(cccsum) > rawthresh:
-            peaks = findpeaks.find_peaks2_short(cccsum, rawthresh,
-                                                trig_int * stream[0].stats.
-                                                sampling_rate, debug,
-                                                stream[0].stats.starttime,
-                                                stream[0].stats.sampling_rate)
-        elif max(cccsum) > rawthresh:
-            peaks = findpeaks.find_peaks2_short(cccsum, rawthresh,
-                                                trig_int * stream[0].stats.
-                                                sampling_rate, debug)
-        else:
-            print('No peaks found above threshold')
-            peaks = False
-        toc = time.clock()
-        if debug >= 1:
-            print(' '.join(['Finding peaks took:', str(toc - tic), 's']))
-        if peaks:
-            for peak in peaks:
-                detecttime = stream[0].stats.starttime +\
-                    peak[1] / stream[0].stats.sampling_rate
-                rid = ResourceIdentifier(id=detector_names[i] + '_' +
-                                         str(detecttime),
-                                         prefix='smi:local')
-                ev = Event(resource_id=rid)
-                cr_i = CreationInfo(author='EQcorrscan',
-                                    creation_time=UTCDateTime())
-                ev.creation_info = cr_i
-                # All detection info in Comments for lack of a better idea
-                thresh_str = 'threshold=' + str(rawthresh)
-                ccc_str = 'detect_val=' + str(peak[0])
-                used_chans = 'channels used: ' +\
-                             ' '.join([str(pair) for pair in chans[i]])
-                ev.comments.append(Comment(text=thresh_str))
-                ev.comments.append(Comment(text=ccc_str))
-                ev.comments.append(Comment(text=used_chans))
-                for det_st in detector:
-                    for tr in det_st:
-                        if (tr.stats.station, tr.stats.channel) not in chans[i]:
-                            continue
-                        else:
-                            pick_tm = detecttime + (tr.stats.starttime -
-                                                    detecttime)
-                            wv_id = WaveformStreamID(network_code=tr.stats.
-                                                     network,
-                                                     station_code=tr.stats.
-                                                     station,
-                                                     channel_code=tr.stats.
-                                                     channel)
-                            ev.picks.append(Pick(time=pick_tm,
-                                                 waveform_id=wv_id))
-                detections.append(DETECTION(detector_names[i],
-                                            detecttime,
-                                            no_chans[i], peak[0], rawthresh,
-                                            'corr', chans[i], event=ev))
-                if output_cat:
-                    det_cat.append(ev)
-        if extract_detections:
-            detection_streams = match_filter.extract_from_stream(stream,
-                                                                 detections)
-    del stream, detectors
-    if output_cat and not extract_detections:
-        return detections, det_cat
-    elif not extract_detections:
-        return detections
-    elif extract_detections and not output_cat:
-        return detections, detection_streams
-    else:
-        return detections, det_cat, detection_streams
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

@@ -428,7 +428,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
 
     # Sanity check the time header
-    if tr.stats.starttime.day != day != day and full_day:
+    if tr.stats.starttime.day != day and full_day:
         warnings.warn("Time headers do not match expected date: " +
                       str(tr.stats.starttime))
 
