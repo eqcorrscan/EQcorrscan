@@ -25,7 +25,7 @@ from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
 from eqcorrscan.utils.clustering import svd
-from eqcorrscan.utils import findpeaks, pre_processing
+from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
 
 
@@ -112,7 +112,8 @@ class Detector(object):
         return len(self.data)
 
     def construct(self, streams, lowcut, highcut, filt_order,
-                  sampling_rate, multiplex, name):
+                  sampling_rate, multiplex, name, align, shift_len,
+                  plot=False):
         """
         Construct a subspace detector from a list of streams, full rank.
 
@@ -137,6 +138,13 @@ class Detector(object):
             function for details.
         :type name: str
         :param name: Name of the detector, used for book-keeping.
+        :type align: bool
+        :param align: Whether to align the data or not - needs to be done \
+            at some point
+        :type shift_len: float
+        :param shift_len: Maximum shift allowed for alignment in seconds.
+        :type plot: bool
+        :param plot: Whether to plot the alignment stage or not.
 
         .. note:: The detector will be normalized such that the data, before \
             computing the singular-value decomposition, will have unit energy. \
@@ -155,7 +163,10 @@ class Detector(object):
                                                 highcut=highcut,
                                                 filt_order=filt_order,
                                                 sampling_rate=sampling_rate,
-                                                multiplex=multiplex)
+                                                multiplex=multiplex,
+                                                align=align,
+                                                shift_len=shift_len,
+                                                plot=plot)
         # Compute the SVD, use the cluster.SVD function
         v, sigma, u, dummy = svd(stream_list=p_streams)
         self.stachans = stachans
@@ -242,7 +253,9 @@ class Detector(object):
                                                  sampling_rate,
                                                  multiplex=self.multiplex,
                                                  stachans=self.stachans,
-                                                 parallel=True)
+                                                 parallel=True,
+                                                 align=False,
+                                                 shift_len=None)
         else:
             # Check the sampling rate at the very least
             stream = [st]
@@ -395,9 +408,18 @@ class Detector(object):
         self.name = f['data'].attrs['name'].decode('ascii')
         return self
 
+    def plot(self, stachans='all'):
+        """
+        Plot the detector, lots of subplots.
+
+        :type stachans: list
+        :param stachans: list of tuples of station, channel pairs to plot.
+        """
+
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
-                     multiplex, stachans=None, parallel=False):
+                      multiplex, align, shift_len, stachans=None,
+                      parallel=False, plot=False):
     """
     Process stream data, internal function.
 
@@ -419,6 +441,13 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         function for details.
     :type stachans: list of tuple
     :param stachans: list of tuples of (station, channel) to use.
+    :type align: bool
+    :param align: Whether to align the data or not - needs to be done \
+        at some point
+    :type shift_len: float
+    :param shift_len: Maximum shift allowed for alignment in seconds.
+    :type plot: bool
+    :param plot: Passed down to align traces - used to check alignment process.
 
     :return: Processed streams
     :rtype: list
@@ -452,6 +481,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                                               first_length=first_length,
                                               stachan=stachan, debug=0)
                 processed_stream += tr
+            processed_streams.append(processed_stream)
         else:
             pool = Pool(processes=cpu_count())
             results = [pool.apply_async(_internal_process, (st,),
@@ -469,6 +499,12 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
             pool.join()
             processed_stream.sort(key=lambda tup: tup[0])
             processed_stream = Stream([p[1] for p in processed_stream])
+            processed_streams.append(processed_stream)
+    if align:
+        processed_streams = align_design(design_set=processed_streams,
+                                         shift_len=shift_len, plot=plot)
+    output_streams = []
+    for processed_stream in processed_streams:
         if multiplex:
             st = multi(stream=processed_stream)
             st = Stream(Trace(st))
@@ -477,17 +513,18 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         for tr in st:
             # Normalize the data
             tr.data /= np.linalg.norm(tr.data)
-        processed_streams.append(st)
-    return processed_streams, input_stachans
+        output_streams.append(st)
+    return output_streams, input_stachans
 
 
 def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
                       first_length, stachan, debug, i=0):
     tr = st.select(station=stachan[0], channel=stachan[1])
     if len(tr) == 0:
-        tr = Trace(np.zeros(first_length * sampling_rate))
+        tr = Trace(np.zeros(int(first_length * sampling_rate)))
         tr.stats.station = stachan[0]
         tr.stats.channel = stachan[1]
+        tr.stats.sampling_rate = sampling_rate
         warnings.warn('Padding stream with zero trace for ' +
                       'station ' + stachan[0] + '.' + stachan[1])
     elif len(tr) == 1:
@@ -550,6 +587,76 @@ def multi(stream):
     return multiplex
 
 
+def align_design(design_set, shift_len, plot=False):
+    """
+    Align individual traces within streams of the design set.
+
+    Perform before Detector.construct to align traces before computing the \
+    singular value decomposition.
+
+    :type design_set: list
+    :param design_set: List of obspy.core.stream.Stream to be aligned
+    :type shift_len: float
+    :param shift_len: Maximum shift (plus/minus) in seconds.
+    :type plot: bool
+    :param plot: Whether to plot the aligned traces as we go or not.
+
+    :rtype: list
+    :return: List of obspy.core.stream.Stream of aligned streams
+
+    .. Note:: Assumes only one trace for each channel for each stream in the \
+        design_set. If more are present will only use the first one.
+
+    .. Note:: Will cut all traces to be the same length as required for the \
+        svd, this length will be the shortest trace length - shift_len
+    """
+    trace_lengths = [tr.stats.endtime - tr.stats.starttime for st in design_set
+                     for tr in st]
+    clip_len = min(trace_lengths) - shift_len
+    stachans = [(tr.stats.station, tr.stats.channel) for st in design_set
+                for tr in st]
+    stachans = list(set(stachans))
+    for stachan in stachans:
+        trace_list = []
+        trace_ids = []
+        for i, st in enumerate(design_set):
+            tr = st.select(station=stachan[0], channel=stachan[1])
+            if len(tr) > 0:
+                trace_list.append(tr[0])
+                trace_ids.append(i)
+            if len(tr) > 1:
+                warnings.warn('Too many matches for %s %s' % (stachan[0],
+                                                              stachan[1]))
+        shift_len_samples = int(shift_len * trace_list[0].stats.sampling_rate)
+        shifts, cccs = stacking.align_traces(trace_list=trace_list,
+                                             shift_len=shift_len_samples)
+        for i, shift in enumerate(shifts):
+            st = design_set[trace_ids[i]]
+            if shift > 0:
+                end_t = st.select(station=stachan[0],
+                                  channel=stachan[1])[0].stats.endtime
+                end_t -= shift
+                st.select(station=stachan[0],
+                          channel=stachan[1])[0].trim(end_t - clip_len,
+                                                      end_t)
+            else:
+                start_t = st.select(station=stachan[0],
+                                    channel=stachan[1])[0].stats.starttime
+                start_t -= shift
+                st.select(station=stachan[0],
+                          channel=stachan[1])[0].trim(start_t,
+                                                      start_t + clip_len)
+        if plot:
+            trace_list = []
+            for st in design_set:
+                tr = st.select(station=stachan[0], channel=stachan[1])
+                if len(tr) > 0:
+                    trace_list.append(tr[0])
+            plotting.multi_trace_plot(traces=trace_list, corr=True,
+                                      stack=None)
+    return design_set
+
+
 def subspace_detect(detectors, stream, threshold, trig_int):
     """
     Conduct subspace detection with chosen detectors.
@@ -557,11 +664,22 @@ def subspace_detect(detectors, stream, threshold, trig_int):
     :type detectors: list
     :param detectors: list of eqcorrscan.core.subspace.Detector to be used for \
         detection
-    :param stream:
-    :param threshold:
-    :param trig_int:
-    :return:
+    :type stream: obspy.core.stream.Stream
+    :param stream: Stream to detect within.
+    :type threshold: float
+    :param threshold: Threshold between 0 and 1 for detection, see \
+        Detector.detect.
+    :type trig_int: float
+    :param trig_int: Minimum trigger interval in seconds.
+
+    :rtype: list
+    :return: List of eqcorrscan.core.match_filter.DETECTION detections.
+
+    .. Note:: This will loop through your detectors using their detect method. \
+        If the detectors are multiplexed it will run groups os detectors with \
+        the same channels at the same time.
     """
+    ### TODO: Detector should allow stream to be processed, but not multiplexed to allow for efficient looping, e.g. process the stream once, and multiplex different traces as needed.
     # First check that detector parameters are the same
     parameters = []
     for detector in detectors:

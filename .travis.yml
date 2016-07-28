@@ -90,7 +90,7 @@ install:
   - conda list
   # done installing dependencies
   - git version
-  - pip install .
+  - python setup.py install
 script:
   py.test
 

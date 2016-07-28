@@ -9,7 +9,8 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 
 """
 
-def run_tutorial(plot=True):
+
+def run_tutorial(plot=False):
     """
     Run the tutorial.
 
@@ -33,8 +34,8 @@ def run_tutorial(plot=True):
 
     cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
                             maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
-                            enddate=UTCDateTime(2016, 5, 30))
-    # This gives us a catalog of 89 events - it takes a while to download all
+                            enddate=UTCDateTime(2016, 5, 20))
+    # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!
     # We will filter the picks simply to reduce the cost - you don't have to!
     cat = filter_picks(catalog=cat, top_n_picks=5)
@@ -45,25 +46,25 @@ def run_tutorial(plot=True):
     clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
     # We will work on the largest cluster
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
-    # This cluster contains 42 events, we will now generate simple waveform
+    # This cluster contains 31 events, we will now generate simple waveform
     # templates for each of them
-    templates = template_gen.from_client(catalog=cluster,
-                                         client_id='GEONET',
-                                         lowcut=None, highcut=None,
-                                         samp_rate=20.0, filt_order=4,
-                                         length=3.0, prepick=0.15,
-                                         swin='all', process_len=3600,
-                                         debug=0, plot=False)
-    # We should note here that the templates are not perfectly aligned, but
-    # they are close enough for us to compute a useful singular-value
-    # decomposition.
+    design_set = template_gen.from_client(catalog=cluster,
+                                          client_id='GEONET',
+                                          lowcut=None, highcut=None,
+                                          samp_rate=100.0, filt_order=4,
+                                          length=2.0, prepick=0.5,
+                                          swin='all', process_len=3600,
+                                          debug=0, plot=False)
+    # Construction of the detector will process the traces, then align them,
+    # before multiplexing.
     detector = subspace.Detector()
-    detector.construct(streams=templates, lowcut=2.0, highcut=9.0,
+    detector.construct(streams=design_set, lowcut=2.0, highcut=9.0,
                        filt_order=4, sampling_rate=20, multiplex=True,
-                       name='Wairarapa1').partition(4)
+                       name='Wairarapa1', align=True,
+                       shift_len=0.2, plot=plot).partition(4)
     # We also want the continuous stream to detect in.
-    t1 = UTCDateTime(2016, 5, 13, 12)
-    t2 = t1 + 10800
+    t1 = UTCDateTime(2016, 5, 11, 19)
+    t2 = UTCDateTime(2016, 5, 12)
     bulk_info = [('NZ', stachan[0], '*',
                   stachan[1][0] + '?' + stachan[1][-1],
                   t1, t2) for stachan in detector.stachans]
@@ -72,8 +73,8 @@ def run_tutorial(plot=True):
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     for tr in st:
         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-    detections, det_streams = detector.detect(st=st, threshold=0.5,
-                                              trig_int=0.5,
+    detections, det_streams = detector.detect(st=st, threshold=0.53,
+                                              trig_int=2,
                                               extract_detections=True)
     return detections
 

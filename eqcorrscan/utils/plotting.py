@@ -484,10 +484,10 @@ def multi_event_singlechan(streams, catalog, station, channel,
     >>> streams = []
     >>> for sfile in sfiles:
     ...     catalog.append(read_event(sfile))
-    ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...         readwavename(sfile)[0]
+    ...     wavfile = readwavename(sfile)[0]
+    ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' + wavfile
     ...     stream = read(stream_path)
-    ...     # Annoting coping with seisan 2 letter channels
+    ...     # Annoying coping with seisan 2 letter channels
     ...     for tr in stream:
     ...         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     ...     streams.append(stream)
@@ -499,7 +499,6 @@ def multi_event_singlechan(streams, catalog, station, channel,
     _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
     import copy
-    from eqcorrscan.core.match_filter import normxcorr2
     from obspy import Stream, Catalog
     import warnings
 
@@ -515,9 +514,6 @@ def multi_event_singlechan(streams, catalog, station, channel,
             short_streams.append(streams[i])
     if len(short_cat) == 0:
         raise IOError('No picks for ' + station + ' ' + channel)
-    fig, axes = plt.subplots(len(short_cat) + 1, 1, sharex=True, figsize=(7, 12))
-    if len(catalog) > 1:
-        axes = axes.ravel()
     traces = []
     al_traces = []
     if isinstance(short_streams, Stream):
@@ -574,11 +570,60 @@ def multi_event_singlechan(streams, catalog, station, channel,
         shifts = stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
-            event.picks[0].time -= shifts[i]
+            _pick.time -= shifts[i]
             traces[i].trim(_pick.time - pre_pick,
                            _pick.time + clip - pre_pick,
                            nearest_sample=False)
     # We now have a list of traces
+    if PWS:
+        stack = 'PWS'
+    else:
+        stack = 'linstack'
+    fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
+    if title:
+        fig.set_title(title)
+    plt.subplots_adjust(hspace=0)
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
+        plt.close()
+    return traces, short_cat, fig
+
+
+def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
+                     show=True):
+    """
+    Plot multiple traces (usually from the same station) on the same plot.
+
+    Differs somewhat to obspys stream.plot in that only relative time within \
+    traces is worried about, it will not merge traces together.
+
+    :type traces: list
+    :param traces: List of obspy.core.Trace
+    :type corr: bool
+    :param corr: To calculate the correlation or not, if True, will add this \
+        to the axes
+    :type stack: str
+    :param stack: To plot the stack as the first trace or not, select type of \
+        stack: 'linstack' or 'PWS', or None.
+    :type size: tuple
+    :param size: Size of figure.
+    :type show: bool
+    :param show: Whether to plot the figure to screen or not.
+    """
+    from obspy import Stream
+    from eqcorrscan.utils import stacking
+    from eqcorrscan.core.match_filter import normxcorr2
+
+    if stack in ['linstack', 'PWS']:
+        fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
+                                 figsize=size)
+    else:
+        fig, axes = plt.subplots(len(traces), 1, sharex=True,
+                                 figsize=size)
+    if len(traces) > 1:
+        axes = axes.ravel()
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
     traces.sort(key=lambda tup: tup[1])
     traces = [trace[0] for trace in traces]
@@ -587,40 +632,45 @@ def multi_event_singlechan(streams, catalog, station, channel,
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate  # convert to seconds
-        axes[i + 1].plot(x, y, 'k', linewidth=1.1)
-        axes[i + 1].yaxis.set_ticks([])
+        if not stack:
+            ind = i
+        else:
+            ind = i + 1
+        axes[ind].plot(x, y, 'k', linewidth=1.1)
+        axes[ind].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
-    if PWS:
+    if stack == 'PWS':
         linstack = stacking.PWS_stack(traces)
-    else:
+    elif stack == 'linstack':
         linstack = stacking.linstack(traces)
-    tr = linstack.select(station=station, channel=channel)[0]
-    y = tr.data
-    x = np.arange(len(y))
-    x = x / tr.stats.sampling_rate
-    axes[0].plot(x, y, 'r', linewidth=2.0)
-    axes[0].set_ylabel('Stack', rotation=0)
-    axes[0].yaxis.set_ticks([])
+    if stack in ['linstack', 'PWS']:
+        tr = linstack[0]
+        y = tr.data
+        x = np.arange(len(y))
+        x = x / tr.stats.sampling_rate
+        axes[0].plot(x, y, 'r', linewidth=2.0)
+        axes[0].set_ylabel('Stack', rotation=0)
+        axes[0].yaxis.set_ticks([])
     for i, slave in enumerate(traces):
-        cc = normxcorr2(tr.data, slave[0].data)
-        axes[i + 1].set_ylabel('cc=' + str(round(np.max(cc), 2)), rotation=0)
-        axes[i + 1].text(0.9, 0.15, str(round(np.max(slave[0].data))),
-                         bbox=dict(facecolor='white', alpha=0.95),
-                         transform=axes[i + 1].transAxes)
-        axes[i + 1].text(0.7, 0.85, slave[0].stats.starttime.datetime.
-                         strftime('%Y/%m/%d %H:%M:%S'),
-                         bbox=dict(facecolor='white', alpha=0.95),
-                         transform=axes[i + 1].transAxes)
+        if corr:
+            cc = normxcorr2(tr.data, slave[0].data)
+        if not stack:
+            ind = i
+        else:
+            ind = i + 1
+        if corr:
+            axes[ind].set_ylabel('cc=' + str(round(np.max(cc), 2)), rotation=0)
+        axes[ind].text(0.9, 0.15, str(round(np.max(slave[0].data))),
+                       bbox=dict(facecolor='white', alpha=0.95),
+                       transform=axes[ind].transAxes)
+        axes[ind].text(0.7, 0.85, slave[0].stats.starttime.datetime.
+                       strftime('%Y/%m/%d %H:%M:%S'),
+                       bbox=dict(facecolor='white', alpha=0.95),
+                       transform=axes[ind].transAxes)
     axes[-1].set_xlabel('Time (s)')
-    if title:
-        axes[0].set_title(title)
-    plt.subplots_adjust(hspace=0)
-    if not save:
+    if show:
         plt.show()
-    else:
-        plt.savefig(savefile)
-        plt.close()
-    return traces, short_cat, fig
+    return fig
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
@@ -1289,6 +1339,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
         plt.close()
     return fig
 
+
 def NR_plot(stream, NR_stream, detections, false_detections=False,
             size=(18.5, 10), save=False, savefile=None, title=False):
     """
@@ -1478,8 +1529,8 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     >>> synth[0].stats.channel = 'EHZ'
     >>> synth[0].stats.sampling_rate = 200
     >>> real = real.select(station='GCSZ', channel='EHZ')
-    >>> real.trim(starttime=real[0].stats.starttime + 43,
-    ...           endtime=real[0].stats.starttime + 45).detrend('simple')
+    >>> real = real.trim(starttime=real[0].stats.starttime + 43,
+    ...                  endtime=real[0].stats.starttime + 45).detrend('simple')
     >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP
 
     .. plot::

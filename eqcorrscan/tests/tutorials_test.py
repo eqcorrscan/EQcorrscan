@@ -89,7 +89,6 @@ class TestTutorialScripts(unittest.TestCase):
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
-
     def test_subspace(self):
         """Test the subspace tutorial."""
         from eqcorrscan.tutorials.subspace import run_tutorial

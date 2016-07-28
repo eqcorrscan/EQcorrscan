@@ -15,6 +15,7 @@ if int(obspy.__version__.split('.')[0]) >= 1:
 else:
     from obspy.fdsn import Client
 import os
+import copy
 
 
 class SimpleSubspaceMethods(unittest.TestCase):
@@ -59,24 +60,24 @@ class SubspaceTestingMethods(unittest.TestCase):
 
     def test_write(self):
         """Test writing to an hdf5 file"""
-        templates = self.templates
+        templates = copy.deepcopy(self.templates)
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'))
+                           name=str('Tester'), align=True, shift_len=0.2)
         detector.write('Test_file.h5')
         self.assertTrue(os.path.isfile('Test_file.h5'))
         os.remove('Test_file.h5')
 
     def test_create(self):
         """Test subspace creation - checks that np.dot(U.T, U) is identity."""
-        templates = self.templates
+        templates = copy.deepcopy(self.templates)
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'))
+                           name=str('Tester'), align=True, shift_len=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(identity,
@@ -86,7 +87,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
-                           name=str('Tester'))
+                           name=str('Tester'), align=True, shift_len=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(identity,
@@ -96,12 +97,12 @@ class SubspaceTestingMethods(unittest.TestCase):
     def test_refactor(self):
         """Test subspace refactoring, checks that np.dot(U.T, U) is\
          identity."""
-        templates = self.templates
+        templates = copy.deepcopy(self.templates)
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'))
+                           name=str('Tester'), align=False, shift_len=None)
         for dim in range(2, len(detector.u)):
             detector.partition(dim)
             for u in detector.data:
@@ -113,7 +114,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
-                           name=str('Tester'))
+                           name=str('Tester'), align=True, shift_len=0.2)
         for dim in range(2, len(detector.u)):
             detector.partition(dim)
             for u in detector.data:
@@ -125,13 +126,14 @@ class SubspaceTestingMethods(unittest.TestCase):
     def test_detect(self):
         """Test standard detection with known result."""
 
-        templates = self.templates
+        templates = copy.deepcopy(self.templates)
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester')).partition(4)
-        t1 = UTCDateTime(2016, 5, 13, 12)
-        t2 = t1 + 10800
+                           name=str('Tester'), align=True,
+                           shift_len=0.2).partition(4)
+        t1 = UTCDateTime(2016, 5, 11, 19)
+        t2 = UTCDateTime(2016, 5, 12)
         bulk_info = [('NZ', stachan[0], '*',
                       stachan[1][0] + '?' + stachan[1][-1],
                       t1, t2) for stachan in detector.stachans]
@@ -140,8 +142,8 @@ class SubspaceTestingMethods(unittest.TestCase):
         st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
         for tr in st:
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        detections = detector.detect(st=st, threshold=0.3, trig_int=0, debug=1)
-        self.assertEqual(len(detections), 300)
+        detections = detector.detect(st=st, threshold=0.53, trig_int=2, debug=1)
+        self.assertEqual(len(detections), 10)
 
 
 def get_test_data():
@@ -174,7 +176,7 @@ def get_test_data():
                                          client_id='GEONET',
                                          lowcut=None, highcut=None,
                                          samp_rate=100.0, filt_order=4,
-                                         length=3.0, prepick=0.15,
+                                         length=2.0, prepick=0.5,
                                          swin='all', process_len=3600,
                                          debug=0, plot=False)
     return templates
