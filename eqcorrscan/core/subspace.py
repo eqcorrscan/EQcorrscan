@@ -164,6 +164,7 @@ class Detector(object):
         self.sigma = sigma
         self.data = u  # Set the data matrix to be full rank U.
         self.dimension = np.inf
+        return self
 
     def partition(self, dimension):
         """
@@ -176,6 +177,7 @@ class Detector(object):
         for i, channel in enumerate(self.data):
             self.data[i] = channel[:, 0:dimension]
         self.dimension = dimension
+        return self
 
     def energy_capture(self):
         """
@@ -365,6 +367,7 @@ class Detector(object):
         vset[...] = v_array
         f.flush()
         f.close()
+        return self
 
     def read(self, filename):
         """
@@ -381,15 +384,16 @@ class Detector(object):
         self.u = list(f['u'].value)
         self.v = list(f['v'].value)
         self.sigma = list(f['sigma'].value)
-        self.stachans = [tuple(stachan.split('.'))
+        self.stachans = [tuple(stachan.decode('ascii').split('.'))
                          for stachan in f['stachans'].value]
         self.dimension = f['data'].attrs['dimension']
         self.filt_order = f['data'].attrs['filt_order']
         self.highcut = f['data'].attrs['highcut']
         self.lowcut = f['data'].attrs['lowcut']
-        self.multiplex = f['data'].attrs['multiplex']
+        self.multiplex = bool(f['data'].attrs['multiplex'])
         self.sampling_rate = f['data'].attrs['sampling_rate']
-        self.name = f['data'].attrs['name']
+        self.name = f['data'].attrs['name'].decode('ascii')
+        return self
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,

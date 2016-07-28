@@ -38,7 +38,12 @@ def get_geonet_ids(minlat, maxlat, minlon, maxlon, mindepth=None,
     :returns: list of str of event ids
     """
     import csv
-    import urllib2
+    import sys
+    import io
+    if sys.version_info.major == 2:
+        from urllib2 import urlopen
+    else:
+        from urllib.request import urlopen
 
     base_url = "http://quakesearch.geonet.org.nz/services/1.0.0/csv?"
     bbox_url = "bbox=" + ','.join([str(minlon), str(minlat),
@@ -60,10 +65,13 @@ def get_geonet_ids(minlat, maxlat, minlon, maxlon, mindepth=None,
         url += enddate_url
     print("Downloading info from:")
     print(url)
-    response = urllib2.urlopen(url)
-    quake_search = csv.reader(response)
+    response = urlopen(url)
+    if sys.version_info.major == 3:
+        quake_search = csv.reader(io.TextIOWrapper(response))
+    else:
+        quake_search = csv.reader(response)
 
-    header = quake_search.next()
+    header = next(quake_search)
     # Usually publicID is the first column, error if not true
     if not header[0] == 'publicid':
         raise IOError('Unexpected format, first column is not publicid')
