@@ -70,6 +70,7 @@ install:
   - source activate test-environment
   - conda install $PYFLAKES
   - conda install pyproj
+  - conda install h5py
   #  - |
   #      if [[ "${py:0:1}" == "3" ]] && [[ "$OS" == "MacOSX" ]]; then
   #        conda install opencv3
