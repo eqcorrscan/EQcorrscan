@@ -2,7 +2,11 @@
 
 
 def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
-    from obspy.clients.fdsn import Client
+    import obspy
+    if int(obspy.__version__.split('.')[0]) >= 1:
+        from obspy.clients.fdsn import Client
+    else:
+        from obspy.fdsn import Client
     from obspy.core.event import Catalog
     from obspy import UTCDateTime
     from eqcorrscan.core import template_gen, match_filter, lag_calc

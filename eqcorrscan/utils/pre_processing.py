@@ -360,7 +360,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     qual = _check_daylong(tr)
     if not qual:
         msg = ("Data have more zeros than actual data, please check the raw",
-               " data set-up and manually sort it")
+               " data set-up and manually sort it: " + tr.stats.station + "." +
+               tr.stats.channel)
         raise ValueError(msg)
     tr = tr.detrend('simple')    # Detrend data before filtering
 
