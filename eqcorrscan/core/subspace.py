@@ -21,12 +21,14 @@ import time
 import h5py
 import getpass
 import eqcorrscan
+import copy
 from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
+import matplotlib.pyplot as plt
 
 
 
@@ -43,6 +45,9 @@ class Detector(object):
     :type stachans: list
     :param stachans: List of tuples of (station, channel) used in detector. \
         If multiplexed, these must be in the order that multiplexing was done.
+    :type delays: list
+    :param delays: List of individual trace delays in the order of stachans, \
+        only used if multiplex=False.
     :type lowcut: float
     :param lowcut: Lowcut filter in Hz
     :type highcut: float
@@ -61,12 +66,14 @@ class Detector(object):
     :param dimension: Dimension of data.
     """
     def __init__(self, name=None, sampling_rate=None, multiplex=None,
-                 stachans=None, lowcut=None, highcut=None, filt_order=None,
-                 data=None, u=None, sigma=None, v=None, dimension=None):
+                 stachans=None, lowcut=None, highcut=None,
+                 filt_order=None, data=None, u=None, sigma=None, v=None,
+                 dimension=None):
         self.name = name
         self.sampling_rate = sampling_rate
         self.multiplex = multiplex
         self.stachans = stachans
+        # self.delays = delays
         self.lowcut = lowcut
         self.highcut = highcut
         self.filt_order = filt_order
@@ -113,7 +120,7 @@ class Detector(object):
 
     def construct(self, streams, lowcut, highcut, filt_order,
                   sampling_rate, multiplex, name, align, shift_len,
-                  plot=False):
+                  reject=0.3, no_missed=True, plot=False):
         """
         Construct a subspace detector from a list of streams, full rank.
 
@@ -143,6 +150,14 @@ class Detector(object):
             at some point
         :type shift_len: float
         :param shift_len: Maximum shift allowed for alignment in seconds.
+        :type reject: float
+        :param reject: Minimum correlation to include traces - only used if \
+            align=True.
+        :type no_missed: bool
+        :param: no_missed: Reject streams with missed traces, defaults to \
+            True. A missing trace from lots of events will reduce the quality \
+            of the subspace detector if multiplexed.  Only used when multi \
+            is set to True.
         :type plot: bool
         :param plot: Whether to plot the alignment stage or not.
 
@@ -150,6 +165,13 @@ class Detector(object):
             computing the singular-value decomposition, will have unit energy. \
             e.g. We divide the amplitudes of the data by the L1 norm of the \
             data.
+
+        .. warning:: EQcorrscans alignment will attempt to align over the \
+            whole data window given.  For long (more than 2s) chunks of data \
+            this can give poor results and you might be better off using the \
+            eqcorrscan.stacking.align_traces function externally, focusing \
+            on a smaller window of data.  To do this you would align the data \
+            prior to running construct.
         """
         self.lowcut = lowcut
         self.highcut = highcut
@@ -158,22 +180,21 @@ class Detector(object):
         self.name = name
         self.multiplex = multiplex
         # Pre-process data
-        p_streams, stachans = _subspace_process(streams=streams,
-                                                lowcut=lowcut,
-                                                highcut=highcut,
-                                                filt_order=filt_order,
-                                                sampling_rate=sampling_rate,
-                                                multiplex=multiplex,
-                                                align=align,
-                                                shift_len=shift_len,
-                                                plot=plot)
+        p_streams, stachans = \
+            _subspace_process(streams=copy.deepcopy(streams),
+                              lowcut=lowcut, highcut=highcut,
+                              filt_order=filt_order,
+                              sampling_rate=sampling_rate, multiplex=multiplex,
+                              align=align, shift_len=shift_len, reject=reject,
+                              plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
-        v, sigma, u, dummy = svd(stream_list=p_streams)
+        v, sigma, u, dummy = svd(stream_list=p_streams, full=True)
         self.stachans = stachans
+        # self.delays = delays
         self.u = u
         self.v = v
         self.sigma = sigma
-        self.data = u  # Set the data matrix to be full rank U.
+        self.data = copy.deepcopy(u)  # Set the data matrix to be full rank U.
         self.dimension = np.inf
         return self
 
@@ -205,8 +226,8 @@ class Detector(object):
             percent_captrue += fc
         return 100 * (percent_captrue / len(self.sigma))
 
-    def detect(self, st, threshold, trig_int, process=True,
-               extract_detections=False, debug=0):
+    def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
+               process=True, extract_detections=False, debug=0):
         """
         Detect within continuous data using the subspace method.
 
@@ -217,6 +238,12 @@ class Detector(object):
         :param threshold: Threshold value for detections between 0-1
         :type trig_int: float
         :param trig_int: Minimum trigger interval in seconds.
+        :type moveout: float
+        :param moveout: Maximum allowable moveout window for non-multiplexed,
+            network detection.  See note.
+        :type min_trig: int
+        :param min_trig: Minimum number of stations exceeding threshold for \
+            non-multiplexed, network detection. See note.
         :type process: bool
         :param process: Whether or not to process the stream according to the \
             parameters defined by the detector.  Default is to process the \
@@ -238,6 +265,17 @@ class Detector(object):
             contain the same channels and multiplexed in the same order. This \
             is handled internally when process=True, but if running in bulk \
             you must take care.
+
+        .. note:: Non-multiplexed, network detection.  When the detector is \
+            not multiplexed, but there are multiple channels within the \
+            detector, we do not stack the single-channel detection statistics \
+            because we do not have a one-size-fits-all solution for computing \
+            delays for a subspace detector (if you want to implement one, then \
+            please contribute it!).  Therefore, these parameters provide a \
+            means for declaring a network coincidence trigger using \
+            single-channel detection statistics, in a similar fashion to the \
+            commonly used network-coincidence trigger with energy detection \
+            statistics.
         """
         from eqcorrscan.core import subspace_statistic
         detections = []
@@ -255,7 +293,8 @@ class Detector(object):
                                                  stachans=self.stachans,
                                                  parallel=True,
                                                  align=False,
-                                                 shift_len=None)
+                                                 shift_len=None,
+                                                 reject=False)
         else:
             # Check the sampling rate at the very least
             stream = [st]
@@ -265,14 +304,20 @@ class Detector(object):
         outtic = time.clock()
         if debug > 0:
             print('Computing detection statistics')
-        stats = np.zeros(len(stream[0][0]) - len(self.data[0][0]) + 1,
+        stats = np.zeros((len(stream[0]),
+                          len(stream[0][0]) - len(self.data[0][0]) + 1),
                          dtype=np.float32)
-        for det_channel, in_channel in zip(self.data, stream[0]):
-            stats += subspace_statistic.\
+        for det_channel, in_channel, i in zip(self.data, stream[0],
+                                              np.arange(len(stream[0]))):
+            stats[i] = subspace_statistic.\
                 det_statistic(detector=det_channel.astype(np.float32),
                               data=in_channel.data.astype(np.float32))
+            if debug > 0:
+                print(stats[i].shape)
+            if debug > 3:
+                plt.plot(stats[i])
+                plt.show()
             # Hard typing in Cython loop requires float32 type.
-        stats /= len(stream[0])  # Average the non-multiplexed detection
         # statistics
         if self.multiplex:
             trig_int_samples = (len(self.stachans) *
@@ -281,10 +326,21 @@ class Detector(object):
             trig_int_samples = self.sampling_rate * trig_int
         if debug > 0:
             print('Finding peaks')
-        peaks = findpeaks.find_peaks2_short(arr=stats, thresh=threshold,
-                                            trig_int=trig_int_samples,
-                                            debug=debug)
-        if peaks:
+        peaks = []
+        for i in range(len(stream[0])):
+            peaks.append(findpeaks.find_peaks2_short(arr=stats[i],
+                                                     thresh=threshold,
+                                                     trig_int=trig_int_samples,
+                                                     debug=debug))
+        if not self.multiplex:
+            # Conduct network coincidence triggering
+            peaks = findpeaks.coin_trig(peaks=peaks,
+                                        samp_rate=self.sampling_rate,
+                                        moveout=moveout, min_trig=min_trig,
+                                        stachans=stachans, trig_int=trig_int)
+        else:
+            peaks = peaks[0]
+        if len(peaks) > 0:
             for peak in peaks:
                 if self.multiplex:
                     detecttime = st[0].stats.starttime + (peak[1] /
@@ -408,18 +464,64 @@ class Detector(object):
         self.name = f['data'].attrs['name'].decode('ascii')
         return self
 
-    def plot(self, stachans='all'):
+    def plot(self, stachans='all', size=(10, 7), show=True):
         """
-        Plot the detector, lots of subplots.
+        Plot the output basis vectors for the detector at the given dimension.
+
+        Corresponds to the first n horizontal vectors of the V matrix.
 
         :type stachans: list
         :param stachans: list of tuples of station, channel pairs to plot.
+        :type stachans: list
+        :param stachans: List of tuples of (station, channel) to use.  Can set \
+            to 'all' to use all the station-channel pairs available. If \
+            detector is multiplexed, will just plot that.
+        :type size: tuple
+        :param size: Figure size.
+        :type show: bool
+        :param show: Whether or not to show the figure.
+
+        :returns: Figure
+        :rtype: matplotlib.pyplot.Figure
         """
+        if stachans == 'all' and not self.multiplex:
+            stachans = self.stachans
+        elif self.multiplex:
+            stachans = [('multi', ' ')]
+        fig, axes = plt.subplots(nrows=self.dimension, ncols=len(stachans),
+                                 sharex=True, sharey=True, figsize=size)
+        x = np.arange(len(self.v[0]), dtype=np.float32)
+        if self.multiplex:
+            x /= len(self.stachans) * self.sampling_rate
+        else:
+            x /= self.sampling_rate
+        for column, stachan in enumerate(stachans):
+            channel = self.v[column]
+            for row, vector in enumerate(channel.T[0:self.dimension]):
+                if len(stachans) == 1:
+                    if self.dimension == 1:
+                        axis = axes
+                    else:
+                        axis = axes[row]
+                else:
+                    axis = axes[row, column]
+                if row == 0:
+                    axis.set_title('.'.join(stachan))
+                axis.plot(x, vector, 'k', linewidth=1.1)
+                if column == 0:
+                    axis.set_ylabel('Basis %s' % (row + 1))
+                if row == self.dimension - 1:
+                    axis.set_xlabel('Time (s)')
+        plt.subplots_adjust(hspace=0.05)
+        plt.subplots_adjust(wspace=0.05)
+        if show:
+            plt.show()
+        return fig
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
-                      multiplex, align, shift_len, stachans=None,
-                      parallel=False, plot=False):
+                      multiplex, align, shift_len, reject, no_missed=True,
+                      stachans=None, parallel=False, plot=False):
     """
     Process stream data, internal function.
 
@@ -446,6 +548,12 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         at some point
     :type shift_len: float
     :param shift_len: Maximum shift allowed for alignment in seconds.
+    :type reject: float
+    :param reject: Minimum correlation for traces, only used if align=True.
+    :type no_missed: bool
+    :param: no_missed: Reject streams with missed traces, defaults to True. \
+        A missing trace from lots of events will reduce the quality of the \
+        subspace detector if multiplexed.  Only used when multi is set to True.
     :type plot: bool
     :param plot: Passed down to align traces - used to check alignment process.
 
@@ -453,6 +561,8 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
     :rtype: list
     :return: Station, channel pairs in order
     :rtype: list of tuple
+    :return: List of delays
+    :rtype: list
     """
     from multiprocessing import Pool, cpu_count
     processed_streams = []
@@ -500,19 +610,34 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
             processed_stream.sort(key=lambda tup: tup[0])
             processed_stream = Stream([p[1] for p in processed_stream])
             processed_streams.append(processed_stream)
+        if no_missed and multiplex:
+            for tr in processed_stream:
+                if np.count_nonzero(tr.data) == 0:
+                    processed_streams.remove(processed_stream)
+                    print('Removed stream with empty trace')
+                    break
     if align:
         processed_streams = align_design(design_set=processed_streams,
-                                         shift_len=shift_len, plot=plot)
+                                         shift_len=shift_len,
+                                         reject=reject, multiplex=multiplex,
+                                         plot=plot, no_missed=no_missed)
     output_streams = []
     for processed_stream in processed_streams:
+        if len(processed_stream) == 0:
+            # If we have removed all of the traces from the stream then onwards!
+            continue
         if multiplex:
             st = multi(stream=processed_stream)
             st = Stream(Trace(st))
             st[0].stats.station = 'Multi'
             st[0].stats.sampling_rate = sampling_rate
+        else:
+            st = processed_stream
         for tr in st:
             # Normalize the data
-            tr.data /= np.linalg.norm(tr.data)
+            norm = np.linalg.norm(tr.data)
+            if not norm == 0:
+                tr.data /= norm
         output_streams.append(st)
     return output_streams, input_stachans
 
@@ -525,13 +650,16 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
         tr.stats.station = stachan[0]
         tr.stats.channel = stachan[1]
         tr.stats.sampling_rate = sampling_rate
+        tr.stats.starttime = st[0].stats.starttime  # Do this to make more
+        # sensible plots
         warnings.warn('Padding stream with zero trace for ' +
                       'station ' + stachan[0] + '.' + stachan[1])
     elif len(tr) == 1:
         tr = tr[0]
-        pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
-                               filt_order=filt_order, samp_rate=sampling_rate,
-                               debug=debug)
+        tr.detrend('simple')
+        tr = pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
+                                    filt_order=filt_order,
+                                    samp_rate=sampling_rate, debug=debug)
     else:
         msg = ('Multiple channels for ' + stachan[0] + '.' +
                stachan[1] + ' in a single design stream.')
@@ -560,9 +688,6 @@ def multi(stream):
 
     :type stream: obspy.core.stream.Stream
     :param stream: Stream to multiplex
-    :type normalize: bool
-    :param normalize: Normalize data before multiplexing, will normalize to \
-        rms amplitude.
 
     :return: trace of multiplexed data
     :rtype: obspy.core.trace.Trace
@@ -587,7 +712,8 @@ def multi(stream):
     return multiplex
 
 
-def align_design(design_set, shift_len, plot=False):
+def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
+                 plot=False):
     """
     Align individual traces within streams of the design set.
 
@@ -598,6 +724,16 @@ def align_design(design_set, shift_len, plot=False):
     :param design_set: List of obspy.core.stream.Stream to be aligned
     :type shift_len: float
     :param shift_len: Maximum shift (plus/minus) in seconds.
+    :type reject: float
+    :param reject: Minimum correlation for traces, only used if align=True.
+    :type multiplex: bool
+    :param multiplex: If you are going to multiplex the data, then there has to be \
+        data for all channels, so we will pad with zeros, otherwise there is \
+        no need.
+    :type no_missed: bool
+    :param: no_missed: Reject streams with missed traces, defaults to True. \
+        A missing trace from lots of events will reduce the quality of the \
+        subspace detector if multiplexed.  Only used when multi is set to True.
     :type plot: bool
     :param plot: Whether to plot the aligned traces as we go or not.
 
@@ -608,14 +744,14 @@ def align_design(design_set, shift_len, plot=False):
         design_set. If more are present will only use the first one.
 
     .. Note:: Will cut all traces to be the same length as required for the \
-        svd, this length will be the shortest trace length - shift_len
+        svd, this length will be the shortest trace length - 2 * shift_len
     """
     trace_lengths = [tr.stats.endtime - tr.stats.starttime for st in design_set
                      for tr in st]
-    clip_len = min(trace_lengths) - shift_len
-    stachans = [(tr.stats.station, tr.stats.channel) for st in design_set
-                for tr in st]
-    stachans = list(set(stachans))
+    clip_len = min(trace_lengths) - (2 * shift_len)
+    stachans = list(set([(tr.stats.station, tr.stats.channel)
+                         for st in design_set for tr in st]))
+    remove_set = []
     for stachan in stachans:
         trace_list = []
         trace_ids = []
@@ -629,31 +765,52 @@ def align_design(design_set, shift_len, plot=False):
                                                               stachan[1]))
         shift_len_samples = int(shift_len * trace_list[0].stats.sampling_rate)
         shifts, cccs = stacking.align_traces(trace_list=trace_list,
-                                             shift_len=shift_len_samples)
+                                             shift_len=shift_len_samples,
+                                             positive=True)
         for i, shift in enumerate(shifts):
             st = design_set[trace_ids[i]]
-            if shift > 0:
-                end_t = st.select(station=stachan[0],
-                                  channel=stachan[1])[0].stats.endtime
-                end_t -= shift
-                st.select(station=stachan[0],
-                          channel=stachan[1])[0].trim(end_t - clip_len,
-                                                      end_t)
-            else:
-                start_t = st.select(station=stachan[0],
-                                    channel=stachan[1])[0].stats.starttime
-                start_t -= shift
-                st.select(station=stachan[0],
-                          channel=stachan[1])[0].trim(start_t,
-                                                      start_t + clip_len)
-        if plot:
+            start_t = st.select(station=stachan[0],
+                                channel=stachan[1])[0].stats.starttime
+            start_t += shift_len
+            start_t -= shift
+            st.select(station=stachan[0],
+                      channel=stachan[1])[0].trim(start_t,
+                                                  start_t + clip_len)
+            if cccs[i] < reject:
+                if multiplex and not no_missed:
+                    st.select(station=stachan[0],
+                              channel=stachan[1])[0].data =\
+                        np.zeros(int(clip_len *
+                                     (st.select(station=stachan[0],
+                                                channel=stachan[1])[0].
+                                      stats.sampling_rate) + 1))
+                    warnings.warn('Padding stream with zero trace for ' +
+                                  'station ' + stachan[0] + '.' + stachan[1])
+                elif multiplex and no_missed:
+                    remove_set.append(st)
+                    warnings.warn('Will remove stream due to low-correlation')
+                    continue
+                else:
+                    st.remove(st.select(station=stachan[0],
+                              channel=stachan[1])[0])
+                    print('Removed channel with correlation at %s' % cccs[i])
+                    continue
+    if no_missed:
+        for st in remove_set:
+            if st in design_set:
+                design_set.remove(st)
+    if plot:
+        for stachan in stachans:
             trace_list = []
             for st in design_set:
                 tr = st.select(station=stachan[0], channel=stachan[1])
                 if len(tr) > 0:
                     trace_list.append(tr[0])
-            plotting.multi_trace_plot(traces=trace_list, corr=True,
-                                      stack=None)
+            if len(trace_list) > 1:
+                plotting.multi_trace_plot(traces=trace_list, corr=True,
+                                          stack=None, title='.'.join(stachan))
+            else:
+                print('No plot for you, only one trace left after rejection')
     return design_set
 
 

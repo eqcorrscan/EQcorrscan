@@ -51,32 +51,11 @@ def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
     cdef np.ndarray[DTYPE_t, ndim=2] uut = np.dot(detector, detector.T)
     # Actual loop after static typing
     for i in range(imax):
-        day_stats[i] = _det_statistic(uut=uut, y=_data[i:i + len(detector)])
+        day_stats[i] = np.dot(_data[i:i + len(detector)],
+                              np.dot(uut, _data[i:i + len(detector)].T))
     # Cope with case of errored internal loop
     if np.all(np.isnan(day_stats)):
         return np.zeros(len(day_stats), dtype=DTYPE)
     else:
         return day_stats
 
-
-def _det_statistic(np.ndarray[DTYPE_t, ndim=2] uut,
-                   np.ndarray[DTYPE_t, ndim=1] y):
-    """
-    Internal function for parallel processing.
-
-    Compute a single detection statistic for a single window in a sliding \
-    window subspace detection algorithm
-
-    :type uut: np.ndarray
-    :param uut: U.Ut matrix (detector)
-    :type y: np.ndarry
-    :param y: data array of length len(U)
-
-    :return: Detection statistic
-    :rtype: float
-    """
-    cdef np.ndarray[DTYPE_t, ndim=1] lsq_est_signal = np.dot(uut, y)
-    # Normalize
-    cdef float normalized = (np.dot(lsq_est_signal.T, lsq_est_signal)) /\
-                            (np.dot(y.T, y))
-    return normalized

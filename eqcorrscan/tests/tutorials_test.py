@@ -94,7 +94,7 @@ class TestTutorialScripts(unittest.TestCase):
         from eqcorrscan.tutorials.subspace import run_tutorial
 
         detections = run_tutorial(plot=False)
-        self.assertEqual(len(detections), 10)
+        self.assertEqual(len(detections), 2)
 
 if __name__ == '__main__':
     """

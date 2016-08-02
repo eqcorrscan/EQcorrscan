@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 from eqcorrscan.core import subspace
 import numpy as np
 import unittest
-from obspy import UTCDateTime
+from obspy import read, Stream
 import obspy
 if int(obspy.__version__.split('.')[0]) >= 1:
     from obspy.clients.fdsn import Client
@@ -45,6 +45,23 @@ class SimpleSubspaceMethods(unittest.TestCase):
         _detector.read(path)
         self.assertEqual(detector, _detector)
 
+    def test_align(self):
+        """Check that alignment does as expected."""
+        test_stream = Stream(read()[0])
+        # Shift it
+        length = 15
+        st1 = test_stream.copy().trim(test_stream[0].stats.starttime + 3,
+                                      test_stream[0].stats.starttime +
+                                      3 + length)
+        st2 = test_stream.trim(test_stream[0].stats.starttime,
+                               test_stream[0].stats.starttime + length)
+        aligned = subspace.align_design(design_set=[st1.copy(), st2.copy()],
+                                        shift_len=5, reject=0.3,
+                                        multiplex=False, plot=False)
+        self.assertEqual(aligned[0][0].stats.starttime,
+                         aligned[1][0].stats.starttime)
+
+
 class SubspaceTestingMethods(unittest.TestCase):
     """
     Main tests for the subspace module.
@@ -52,7 +69,7 @@ class SubspaceTestingMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the test templates."""
-        cls.templates = get_test_data()
+        cls.templates, cls.st = get_test_data()
 
     # def test_synthetic(self):
     #     """Test a synthetic case."""
@@ -131,19 +148,24 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=True,
-                           shift_len=0.2).partition(4)
-        t1 = UTCDateTime(2016, 5, 11, 19)
-        t2 = UTCDateTime(2016, 5, 12)
-        bulk_info = [('NZ', stachan[0], '*',
-                      stachan[1][0] + '?' + stachan[1][-1],
-                      t1, t2) for stachan in detector.stachans]
-        client = Client('GEONET')
-        st = client.get_waveforms_bulk(bulk_info)
-        st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
-        for tr in st:
-            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        detections = detector.detect(st=st, threshold=0.53, trig_int=2, debug=1)
-        self.assertEqual(len(detections), 10)
+                           shift_len=6, reject=0.2).partition(9)
+        st = self.st
+        detections = detector.detect(st=st, threshold=0.005, trig_int=2,
+                                     debug=1)
+        self.assertEqual(len(detections), 2)
+
+    def test_not_multiplexed(self):
+        """Test that a non-multiplexed detector gets the same result."""
+        templates = copy.deepcopy(self.templates)
+        detector = subspace.Detector()
+        detector.construct(streams=templates, lowcut=2, highcut=9,
+                           filt_order=4, sampling_rate=20, multiplex=False,
+                           name=str('Tester'), align=True,
+                           shift_len=6, reject=0.2).partition(9)
+        st = self.st
+        detections = detector.detect(st=st, threshold=0.005, trig_int=4,
+                                     debug=0, moveout=2, min_trig=9)
+        self.assertEqual(len(detections), 2)
 
 
 def get_test_data():
@@ -154,32 +176,39 @@ def get_test_data():
     :rtype: list
     """
     from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
-    from obspy import UTCDateTime, Catalog
+    from obspy import UTCDateTime
     from eqcorrscan.utils.catalog_utils import filter_picks
     from eqcorrscan.utils.clustering import space_cluster
-    from eqcorrscan.core import template_gen
+    from obspy.clients.fdsn import Client
 
     cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
                             maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
                             enddate=UTCDateTime(2016, 5, 20))
     cat = filter_picks(catalog=cat, top_n_picks=5)
-    # Then remove events with fewer than three picks
-    cat = Catalog([event for event in cat if len(event.picks) >= 3])
-    # In this tutorial we will only work on one cluster, defined spatially.
-    # You can work on multiple clusters, or try to whole set.
+    stachans = list(set([(pick.waveform_id.station_code,
+                          pick.waveform_id.channel_code) for event in cat
+                         for pick in event.picks]))
     clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
-    # We will work on the largest cluster
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
-    # This cluster contains 42 events, we will now generate simple waveform
-    # templates for each of them
-    templates = template_gen.from_client(catalog=cluster,
-                                         client_id='GEONET',
-                                         lowcut=None, highcut=None,
-                                         samp_rate=100.0, filt_order=4,
-                                         length=2.0, prepick=0.5,
-                                         swin='all', process_len=3600,
-                                         debug=0, plot=False)
-    return templates
+    client = Client('GEONET')
+    design_set = []
+    for event in cluster:
+        t1 = event.origins[0].time
+        t2 = t1 + 25
+        bulk_info = []
+        for station, channel in stachans:
+            bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
+        st = client.get_waveforms_bulk(bulk=bulk_info)
+        st.trim(t1, t2)
+        design_set.append(st)
+    t1 = UTCDateTime(2016, 5, 11, 19)
+    t2 = UTCDateTime(2016, 5, 11, 20)
+    bulk_info = [('NZ', stachan[0], '*',
+                  stachan[1][0:2] + '?',
+                  t1, t2) for stachan in stachans]
+    st = client.get_waveforms_bulk(bulk_info)
+    st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
+    return design_set, st
 
 if __name__ == '__main__':
     unittest.main()

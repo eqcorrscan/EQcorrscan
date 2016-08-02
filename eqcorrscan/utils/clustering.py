@@ -298,15 +298,15 @@ def group_delays(stream_list):
     return groups
 
 
-def SVD(stream_list):
+def SVD(stream_list, full=False):
     """
     Depreciated. Use svd.
     """
     warnings.warn('Depreciated, use svd instead.')
-    return svd(stream_list=stream_list)
+    return svd(stream_list=stream_list, full=full)
 
 
-def svd(stream_list):
+def svd(stream_list, full=False):
     """
     Compute the SVD of a number of templates.
 
@@ -314,6 +314,8 @@ def svd(stream_list):
 
     :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
+    :type full: bool
+    :param full: Whether to compute the full input vector matrix or not.
 
     :return: SValues(list) for each channel, SVectors(list of ndarray),  \
         UVectors(list of ndarray) for each channel, \
@@ -337,9 +339,9 @@ def svd(stream_list):
     stachans = list(set(stachans))
     print(stachans)
     # Initialize a list for the output matrices, one matrix per-channel
-    SValues = []
-    SVectors = []
-    Uvectors = []
+    svalues = []
+    svectors = []
+    uvectors = []
     for stachan in stachans:
         lengths = []
         for st in stream_list:
@@ -348,7 +350,6 @@ def svd(stream_list):
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                print(st)
                 warnings.warn('Stream does not contain ' + stachan)
                 continue
             lengths.append(len(tr.data))
@@ -372,12 +373,12 @@ def svd(stream_list):
             warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
             continue
         chan_mat = np.asarray(chan_mat)
-        U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
-        SValues.append(s)
-        SVectors.append(V)
-        Uvectors.append(U)
+        u, s, v = np.linalg.svd(chan_mat, full_matrices=full)
+        svalues.append(s)
+        svectors.append(v)
+        uvectors.append(u)
         del(chan_mat)
-    return SVectors, SValues, Uvectors, stachans
+    return svectors, svalues, uvectors, stachans
 
 
 def empirical_SVD(stream_list, linear=True):

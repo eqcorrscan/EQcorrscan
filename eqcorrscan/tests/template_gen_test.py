@@ -81,6 +81,32 @@ class TestTemplateGeneration(unittest.TestCase):
             del(template)
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    def test_not_delayed(self):
+        """Test the method of template_gen without applying delays to
+        channels."""
+        from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.catalog_utils import filter_picks
+        cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
+                                maxlon=175.5,
+                                startdate=UTCDateTime(2016, 5, 1),
+                                enddate=UTCDateTime(2016, 5, 2))
+        cat = filter_picks(catalog=cat, top_n_picks=5)
+        template = from_client(catalog=cat, client_id='GEONET',
+                               lowcut=None, highcut=None, samp_rate=100.0,
+                               filt_order=4, length=10.0, prepick=0.5,
+                               swin='all', process_len=3600,
+                               debug=0, plot=False, delayed=False)[0]
+        for tr in template:
+            tr.stats.starttime.precision = 6
+        starttime = template[0].stats.starttime
+        length = template[0].stats.npts
+        print(template)
+        for tr in template:
+            self.assertTrue(abs((tr.stats.starttime - starttime)) <=
+                            tr.stats.delta)
+            self.assertEqual(tr.stats.npts, length)
+
     def test_download_various_methods(self):
         """Will download data from server and store in various databases,
         then create templates using the various methods."""

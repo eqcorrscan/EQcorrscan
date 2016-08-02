@@ -581,7 +581,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
         stack = 'linstack'
     fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
     if title:
-        fig.set_title(title)
+        fig.suptitle(title)
     plt.subplots_adjust(hspace=0)
     if not save:
         plt.show()
@@ -592,7 +592,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
 
 def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
-                     show=True):
+                     show=True, title=None):
     """
     Plot multiple traces (usually from the same station) on the same plot.
 
@@ -611,6 +611,8 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :param size: Size of figure.
     :type show: bool
     :param show: Whether to plot the figure to screen or not.
+    :type title: str
+    :param title: Title to plot
     """
     from obspy import Stream
     from eqcorrscan.utils import stacking
@@ -668,6 +670,8 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
                        bbox=dict(facecolor='white', alpha=0.95),
                        transform=axes[ind].transAxes)
     axes[-1].set_xlabel('Time (s)')
+    if title:
+        fig.suptitle(title)
     if show:
         plt.show()
     return fig

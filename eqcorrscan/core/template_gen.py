@@ -34,7 +34,7 @@ import warnings
 
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
-             prepick, all_horiz=False, debug=0, plot=False):
+             prepick, all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate a multiplexed template from a list of SAC files.
 
@@ -74,6 +74,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     :param debug: Debug level, higher number=more output.
     :type plot: bool
     :param plot: Turns template plotting on or off.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: obspy.core.stream.Stream Newly cut template
 
@@ -119,12 +122,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
                                   samp_rate=samp_rate, debug=debug)
     template = template_gen(picks=event.picks, st=st, length=length,
                             swin=swin, prepick=prepick, plot=plot,
-                            debug=debug, all_horiz=all_horiz)
+                            debug=debug, all_horiz=all_horiz, delayed=delayed)
     return template
 
 
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
-               prepick, all_horiz=False, debug=0, plot=False):
+               prepick, all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiplexed template from a Nordic (Seisan) s-file.
     Function to read in picks from sfile then generate the template from \
@@ -160,6 +163,10 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     :param debug: Debug level, higher number=more output.
     :type plot: bool
     :param plot: Turns template plotting on or off.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
+
 
     :returns: obspy.core.stream.Stream Newly cut template
 
@@ -274,12 +281,13 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                                   debug=debug)
     st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
                        prepick=prepick, all_horiz=all_horiz,
-                       plot=plot, debug=debug)
+                       plot=plot, debug=debug, delayed=delayed)
     return st1
 
 
 def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
-                  length, prepick, swin, all_horiz=False, debug=0, plot=False):
+                  length, prepick, swin, all_horiz=False, delayed=True,
+                  plot=False, debug=0):
     """
     Generate multiplexed template from a Nordic file using continuous data.
 
@@ -327,6 +335,9 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Turns template plotting on or off.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: obspy.Stream Newly cut template
     """
@@ -391,26 +402,28 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                                 starttime=day, debug=debug)
     # Cut and extract the templates
     st1 = template_gen(picks, st, length, swin, prepick=prepick,
-                       all_horiz=all_horiz, plot=plot, debug=debug)
+                       all_horiz=all_horiz, plot=plot, debug=debug,
+                       delayed=delayed)
     return st1
 
 
 def from_quakeml(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, all_horiz=False, debug=0,
-                 plot=False):
+                 length, prepick, swin, all_horiz=False, delayed=True,
+                 plot=False, debug=0):
     """Depreciated wrapper."""
     warnings.warn('from_quakeml is depreciated, please use from_meta_file')
     templates = from_meta_file(meta_file=meta_file, st=st, lowcut=lowcut,
                                highcut=highcut, samp_rate=samp_rate,
                                filt_order=filt_order, length=length,
                                prepick=prepick, swin=swin, debug=debug,
-                               plot=plot, all_horiz=all_horiz)
+                               plot=plot, all_horiz=all_horiz,
+                               delayed=delayed)
     return templates
 
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                   length, prepick, swin, all_horiz=False, debug=0,
-                   plot=False):
+                   length, prepick, swin, all_horiz=False, delayed=True,
+                   plot=False, debug=0):
     """
     Generate a multiplexed template from a local quakeML file.
 
@@ -452,6 +465,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Display template plots or not
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: list of obspy.Stream Newly cut templates
 
@@ -554,14 +570,14 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
         # Cut and extract the templates
         template = template_gen(event.picks, st1, length, swin,
                                 prepick=prepick, plot=plot, debug=debug,
-                                all_horiz=all_horiz)
+                                all_horiz=all_horiz, delayed=delayed)
         templates.append(template)
     return templates
 
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400, data_pad=90,
-                 all_horiz=False, debug=0, plot=False):
+                 all_horiz=False, delayed=True, debug=0, plot=False):
     """
     Generate multiplexed template from SeisHub database.
     Function to generate templates from a SeisHub database. Must be given \
@@ -605,6 +621,9 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Plot templates or not.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: obspy.core.stream.Stream Newly cut template
 
@@ -688,7 +707,8 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         for event in sub_catalog:
             template = template_gen(picks=event.picks, st=st1, length=length,
                                     swin=swin, prepick=prepick,
-                                    all_horiz=all_horiz, plot=plot, debug=debug)
+                                    all_horiz=all_horiz, plot=plot,
+                                    debug=debug, delayed=delayed)
             del st, st1
             temp_list.append(template)
     return temp_list
@@ -696,7 +716,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, process_len=86400, data_pad=90,
-                all_horiz=False, debug=0, plot=False):
+                all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiplexed template from FDSN client.
     Function to generate templates from an FDSN client. Must be given \
@@ -741,6 +761,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type plot: bool
     :param plot: Plot templates or not.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: obspy.core.stream.Stream Newly cut template
 
@@ -860,14 +883,15 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         for event in sub_catalog:
             template = template_gen(picks=event.picks, st=st1, length=length,
                                     swin=swin, prepick=prepick,
-                                    plot=plot, debug=debug, all_horiz=all_horiz)
+                                    plot=plot, debug=debug,
+                                    all_horiz=all_horiz, delayed=delayed)
             temp_list.append(template)
         del st, st1
     return temp_list
 
 
 def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
-                       all_horiz=False, plot=False, debug=0):
+                       all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiple templates from one stream of data.
     Thin wrapper around _template_gen to generate multiple templates from \
@@ -892,6 +916,9 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :param plot: To plot the template or not, default is True
     :type debug: int
     :param debug: Debug output level from 0-5.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: list of :class: obspy.core.Stream newly cut templates
 
@@ -932,7 +959,8 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
             st_clip = st.copy()
             template = template_gen(picks=picks, st=st_clip, length=length,
                                     swin=swin, prepick=prepick, plot=plot,
-                                    debug=debug, all_horiz=all_horiz)
+                                    debug=debug, all_horiz=all_horiz,
+                                    delayed=delayed)
             templates.append(template)
     return templates
 
@@ -947,7 +975,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
 
 
 def template_gen(picks, st, length, swin='all', prepick=0.05,
-                 all_horiz=False, plot=False, debug=0):
+                 all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Master function to generate a multiplexed template for a single event.
     Function to generate a cut template in the obspy \
@@ -973,6 +1001,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     :param plot: To plot the template or not, default is True
     :type debug: int
     :param debug: Debug output level from 0-5.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
 
     :returns: obspy.core.stream.Stream Newly cut template.
 
@@ -987,7 +1018,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
     """
-    import copy
     from eqcorrscan.utils.plotting import pretty_template_plot as\
         tplot
     from obspy import Stream
@@ -1061,6 +1091,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     del st1
     if plot:
         stplot = st.copy()
+    # Get the earliest pick-time and use that if we are not using delayed.
+    event_start_time = min([pick.time for pick in picks_copy])
+    event_start_time -= prepick
     # Cut the data
     for tr in st:
         if 'starttime' in locals():
@@ -1106,6 +1139,8 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         if 'starttime' in locals():
             if debug > 0:
                 print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
+            if not delayed:
+                starttime = event_start_time
             tr.trim(starttime=starttime, endtime=starttime + length,
                     nearest_sample=False)
             if debug > 0:

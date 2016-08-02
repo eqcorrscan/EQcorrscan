@@ -13,6 +13,22 @@ calculate the detection statistics.  We do this to make use of numpy's vectorize
 calculations, while taking advantage of the speed-ups afforded by compiling
 the sliding window loop.
 
+Important
+---------
+
+How you generate you detector is likely to be the most important thing, careful
+selection and alignment is key, and because of this we haven't provided a total
+*cookie-cutter* system for doing this.  You have freedom to chose your parameters,
+how to process, how you align, what traces to keep, whether you multiplex or not,
+etc.  This also means you have a lot of freedom to **get it wrong**. You will
+have to do significant testing with your own dataset to work out what works and
+what doesn't.  Anything that you find that doesn't work well in EQcorrscans
+system, it would be great to hear about so that we can make it better.
+
+The following examples demonstrate some of the options, but not all of them.
+The advanced example is the example used to test and develop subspace and took
+a fair amount of effort over a number of weeks.
+
 Simple example
 --------------
 

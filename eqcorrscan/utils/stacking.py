@@ -93,7 +93,7 @@ def PWS_stack(streams, weight=2, normalize=True):
     return Phasestack
 
 
-def align_traces(trace_list, shift_len, master=False):
+def align_traces(trace_list, shift_len, master=False, positive=False):
     """
     Align traces relative to each other based on their cross-correlation value.
     Uses the obspy.signal.cross_correlation.xcorr function to find the optimum
@@ -114,6 +114,9 @@ def align_traces(trace_list, shift_len, master=False):
     :type master: obspy.core.trace.Trace
     :param master: Master trace to align to, if set to False will align to \
         the largest amplitude trace (default)
+    :type positive: bool
+    :param positive: Return the maximum positive cross-correlation, or the \
+        absolute maximum, defaults to False (absolute maximum).
 
     :returns: list of shifts for best alignment in seconds
     """
@@ -135,7 +138,11 @@ def align_traces(trace_list, shift_len, master=False):
     for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
-        shift, cc = xcorr(master, traces[i], shift_len)
+        shift, cc, cc_vec = xcorr(tr1=master, tr2=traces[i],
+                                  shift_len=shift_len, full_xcorr=True)
+        if cc < 0 and positive:
+            cc = cc_vec.max()
+            shift = cc_vec.argmax() - shift_len
         shifts.append(shift / master.stats.sampling_rate)
         ccs.append(cc)
     return shifts, ccs
