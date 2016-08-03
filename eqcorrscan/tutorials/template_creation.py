@@ -6,10 +6,10 @@ data available online.
 
 def mktemplates(network_code='GEONET',
                 publicIDs=['2016p008122', '2016p008353', '2016p008155',
-                           '2016p008194']):
+                           '2016p008194'], plot=True):
     """Functional wrapper to make templates"""
 
-    from collections import Counter
+    from eqcorrscan.utils.catalog_utils import filter_picks
     from eqcorrscan.core import template_gen
 
     # This import section copes with namespace changes between obspy versions
@@ -43,21 +43,13 @@ def mktemplates(network_code='GEONET',
                                          includearrivals=True)
 
     # Lets plot the catalog to see what we have
-    catalog.plot(projection='local', resolution='h')
+    if plot:
+        catalog.plot(projection='local', resolution='h')
 
     # We don't need all the picks, lets take the information from the
-    # five most used stations
-    all_picks = []
-    for event in catalog:
-        all_picks += [(pick.waveform_id.station_code) for pick in event.picks]
-    all_picks = Counter(all_picks).most_common(5)
-    all_picks = [pick[0] for pick in all_picks]
-
-    for event in catalog:
-        if len(event.picks) == 0:
-            raise IOError('No picks found')
-        event.picks = [pick for pick in event.picks
-                       if pick.waveform_id.station_code in all_picks]
+    # five most used stations - note that this is done to reduce computational
+    # costs.
+    catalog = filter_picks(catalog, top_n_picks=5)
 
     # Now we can generate the templates
     templates = template_gen.from_client(catalog=catalog,
@@ -65,7 +57,8 @@ def mktemplates(network_code='GEONET',
                                          lowcut=2.0, highcut=9.0,
                                          samp_rate=20.0, filt_order=4,
                                          length=3.0, prepick=0.15,
-                                         swin='all', debug=1, plot=True)
+                                         swin='all', process_len=3600,
+                                         debug=0, plot=plot)
 
     # We now have a series of templates! Using Obspys Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the

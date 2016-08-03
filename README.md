@@ -4,42 +4,74 @@
 [![Join the chat at https://gitter.im/calum-chamberlain/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/calum-chamberlain/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/69bpa53loaq473w7?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan)
+[![Coverage Status](https://coveralls.io/repos/github/calum-chamberlain/EQcorrscan/badge.svg?branch=develop)](https://coveralls.io/github/calum-chamberlain/EQcorrscan?branch=develop)
 [![DOI](https://zenodo.org/badge/18852/calum-chamberlain/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/calum-chamberlain/EQcorrscan)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 # Installation
-Installation has been tested on both OSX and Linux (Ubuntu), we currently do not support
-Windows systems, but plan to in the future (check the appveyor status, when it passes we
-might be good to go!).  Installation for Linux and OS X should be as simple as:
+Installation has been tested on both OSX and Linux (Ubuntu), and now
+Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
 
-```pip install EQcorrscan```
+Note that, although we support Windows, EQcorrscan is optimized for
+linux style distributions, it will work on Windows, but everything
+seems to run about 30x slower at the moment.
+
+Installation for all systems should be as simple as:
+
+```bash
+pip install EQcorrscan
+```
 
 If upgrading from a previous version, rather than running install --upgrade, I recommend the following:
 
-```pip install -U --no-deps EQcorrscan```
+```bash
+pip install -U --no-deps EQcorrscan
+```
 
-This will not try to upgrade your dependencies, which is not needed.  You may wish
-to update your obspy version to 1.0.0 which was recently released.  We have tested
+This will not try to upgrade your dependencies, which is not needed.  You should
+to update your obspy version to 1.0.x which was recently released.  We have tested
 this and support it, nevertheless, if you find any issues then let us know.
 
-*You will likely need sudo permissions to run this command.*
+*You will likely need sudo/root permissions to run this command.*
 
-If you have any issues installing please let me know.  You will need to install openCV
-separately using (on Linux):
+If you have any issues installing please report them on the issues pages.
 
-```apt-get install python-opencv```
+You will need to install openCV (note that openCV versions 2 and 3 work for
+Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
+recommend installing openCV 3). We recommend installing openCV from source,
+this will both optimize it for your machine, and ensure you don't break your python
+by using conda.
 
-Or, for Mac users, this is available on Macports or other similar package managers.
+If you are running Linux or OSX, installation
+instructions can be found
+[here for ubuntu](http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/)
+and [here for OSX](http://www.pyimagesearch.com/2015/06/15/install-opencv-3-0-and-python-2-7-on-osx/).
+Note these two links are Python dependent and you will need to change your pip
+and python versions appropriate to your system.  Similar instructions are
+available for Windows users.
 
-For those who want to un the GUIs (in very early development) you will need to
-install tk, on Windows and OSX this is usually pre-installed, on Linux you
-may need to run:
+*A note for Ubuntu users*
+You will need the python3.x-dev libraries to install openCV if installing from
+source.
 
-```apt-get install python-tk```
+*A note on correlation precision*
+OpenCV computes cross-correlations in the frequency-domain for normal seismic
+datasets (if the dataset is very small then the cross-correlation will be
+computed in the time-domain, but this is rare for seismic data).  In testing we
+have found that different methods of installing openCV provide different results
+for cross-correlations at the very low-end of cross-correlations.  We think this
+comes down to how the ffts are computed.  However, for moderate to high cross-correlations
+(above 0.05 normalised cross-correlation), all methods provide the same result.
 
-You will also need **Qt** and **PyQT** > 4.4.  Installation for these can be
-a bit of a dog, you will need to google around - hopefully I can have better
-instructions here soon.
+The outcome of this is that for very low thresholds, you may see changes in
+your results, however for standard operations this is not an issue.  We have found
+that differences are, on average, 0.0024 - which shifts the mean of a single
+channel cross-correlation from very close to zero, to 0.0024, and alters the
+median.  However we have found that this results in no change in the median
+absolute deviation of the data, so thresholds based on this will be the same,
+although the cross-correlations themselves will be shifted.  You would have to be
+running a very low threshold to see the result of this (0.5 * MAD, rather than
+commonly used values around 8 * MAD).
 
 ## Updates
 
@@ -64,9 +96,9 @@ the gh-pages branch.
 This package contains routines to enable the user to conduct match-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
 and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
-Neither of these packages are installed by this software, due to a range of
-licenses being implemented.  However, both are open-source and should be installed
-before using this package.  This package was written to implement the Matlab routines
+The OpendCV package is not installed by this software, due to a need to build from
+source.  The user should follow the instructions above for OpenCV install.
+This package was written to implement the Matlab routines
 used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
 
 Also within this package are:
@@ -93,7 +125,9 @@ is distributed under the LGPL GNU License, Copyright Calum Chamberlain and Chet 
 # Contributing
 
 Please fork this project and work on it there then create a pull request to
-merge back into develop.
+merge back to this main repository.  If you are working on a bug-fix then
+use the *develop* branch, otherwise, create a feature branch and work
+on your addition there.
 
 When you make changes please run the tests in the test directory to ensure
 everything merges with minimum effort.  If there is not yet a test to cope

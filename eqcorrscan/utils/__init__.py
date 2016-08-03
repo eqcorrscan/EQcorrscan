@@ -32,9 +32,11 @@ import importlib
 import warnings
 
 
-__all__ = ['sfile_util', 'pre_processing', 'findpeaks', 'plotting',
-           'mag_calc', 'catalog_to_dd', 'clustering',
-           'seismo_logs', 'stacking', 'synth_seis', 'timer']
+__all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils',
+           'clustering', 'despike', 'findpeaks', 'mag_calc',
+           'parameters', 'picker', 'plotting', 'pre_processing',
+           'sac_util', 'seismo_logs', 'sfile_util', 'stacking',
+           'synth_seis', 'timer', 'trigger']
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {

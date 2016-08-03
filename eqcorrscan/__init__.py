@@ -34,9 +34,15 @@ import sys
 import importlib
 import warnings
 
+<<<<<<< HEAD
 __all__ = ['core', 'utils', 'par']
 
 __version__ = '0.1.2rc'
+=======
+__all__ = ['core', 'utils']
+
+__version__ = '0.1.3rc'
+>>>>>>> upstream/develop
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {

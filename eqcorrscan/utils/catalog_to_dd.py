@@ -19,6 +19,10 @@ Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 
+.. todo: Change from forced seisan usage, to using obspy events.  This happens \
+    internally already, but the insides should be extracted and thin wrappers \
+    written for seisan.
+
 :copyright:
     Calum Chamberlain, Chet Hopp.
 
@@ -41,6 +45,9 @@ def _cc_round(num, dp):
     :param dp: Number of decimal places to round to.
 
     :returns: str
+
+    >>> _cc_round(0.25364, 2)
+    '0.25'
     """
     num = round(num, dp)
     num = '{0:.{1}f}'.format(num, dp)
@@ -58,29 +65,54 @@ def _av_weight(W1, W2):
     :param W2: Seisan input weight (0-4)
 
     :returns: str
+
+    .. rubric:: Example
+    >>> _av_weight(1, 4)
+    '0.3750'
+    >>> _av_weight(0, 0)
+    '1.0000'
+    >>> _av_weight(' ', ' ')
+    '1.0000'
+    >>> _av_weight(-9, 0)
+    '0.5000'
+    >>> _av_weight(1, -9)
+    '0.3750'
     """
-    if W1 == ' ':
+    import warnings
+
+    if str(W1) in [' ', '']:
         W1 = 1
-    elif W1 == '9':
+    elif str(W1) in ['-9', '9', '9.0', '-9.0']:
         W1 = 0
     else:
-        W1 = 1 - int(W1) / 4.0
+        W1 = 1 - (int(W1) / 4.0)
+    if W1 < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W2 = 0
 
-    if W2 == ' ':
+    if str(W2) in [' ', '']:
         W2 = 1
-    elif W2 == '9':
+    elif str(W2) in ['-9', '9', '9.0', '-9.0']:
         W2 = 0
     else:
-        W2 = 1 - int(W2) / 4.0
+        W2 = 1 - (int(W2) / 4.0)
+    if W2 < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W2 = 0
 
     W = (W1 + W2) / 2
+    if W < 0:
+        print('Weight 1: ' + str(W1))
+        print('Weight 2: ' + str(W2))
+        print('Final weight: ' + str(W))
+        raise IOError('Negative average weight calculated, setting to zero')
     return _cc_round(W, 4)
 
 
 def readSTATION0(path, stations):
     """
-    Function to read the STATION0.HYP file on the path given.  Outputs written
-    in station.dat file.
+    Read a Seisan STATION0.HYP file on the path given.
+    Outputs writtenin station.dat file.
 
     :type path: str
     :param path: Path to the STATION0.HYP file
@@ -88,6 +120,9 @@ def readSTATION0(path, stations):
     :param station: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
+
+    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2'])
+    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, 170.36038333333335, 95.0)]
     """
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
@@ -102,7 +137,7 @@ def readSTATION0(path, stations):
             if lat[4] == '.':
                 lat = (int(lat[0:2]) + float(lat[2:-1]) / 60) * NS
             else:
-                lat = (int(lat[0:2])+float(lat[2:4] + '.' + lat[4:-1]) /
+                lat = (int(lat[0:2]) + float(lat[2:4] + '.' + lat[4:-1]) /
                        60) * NS
             lon = line[14:23]
             if lon[-1] == 'S':
@@ -112,7 +147,7 @@ def readSTATION0(path, stations):
             if lon[5] == '.':
                 lon = (int(lon[0:3]) + float(lon[3:-1]) / 60) * EW
             else:
-                lon = (int(lon[0:3]) + float(lon[3:5]+'.'+lon[5:-1]) /
+                lon = (int(lon[0:3]) + float(lon[3:5] + '.' + lon[5:-1]) /
                        60) * EW
             elev = float(line[23:-1].strip())
             # Note, negative altitude can be indicated in 1st column
@@ -124,7 +159,7 @@ def readSTATION0(path, stations):
     for sta in stalist:
         line = ''.join([sta[0].ljust(5), _cc_round(sta[1], 4).ljust(10),
                         _cc_round(sta[2], 4).ljust(10),
-                        _cc_round(sta[3]/1000, 4).rjust(7), '\n'])
+                        _cc_round(sta[3] / 1000, 4).rjust(7), '\n'])
         f.write(line)
     f.close()
     return stalist
@@ -132,7 +167,7 @@ def readSTATION0(path, stations):
 
 def sfiles_to_event(sfile_list):
     """
-    Function to write out an event.dat file of the events
+    Write an event.dat file from a list of Seisan events
 
     :type sfile_list: list
     :param sfile_list: List of s-files to sort and put into the database
@@ -156,9 +191,9 @@ def sfiles_to_event(sfile_list):
 
 def write_event(catalog):
     """
-    Function to write obspy.core.Catalog to a hypoDD format event.dat file.
+    Write obspy.core.event.Catalog to a hypoDD format event.dat file.
 
-    :type catalog: osbpy.core.Catalog
+    :type catalog: osbpy.core.event.Catalog
     :param catalog: A catalog of obspy events
     """
     f = open('event.dat', 'w')
@@ -169,30 +204,31 @@ def write_event(catalog):
             t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
         else:
             t_RMS = ' '
-        f.write(str(evinfo.time.year)+str(evinfo.time.month).zfill(2) +
-                str(evinfo.time.day).zfill(2)+'  ' +
+        f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
+                str(evinfo.time.day).zfill(2) + '  ' +
                 str(evinfo.time.hour).rjust(2) +
                 str(evinfo.time.minute).zfill(2) +
                 str(evinfo.time.second).zfill(2) +
-                str(evinfo.time.microsecond)[0:2].zfill(2)+'  ' +
-                str(evinfo.latitude).ljust(8, '0')+'   ' +
-                str(evinfo.longitude).ljust(8, '0')+'  ' +
-                str(evinfo.depth / 1000).rjust(7).ljust(9, '0')+'   ' +
-                str(Mag_1)+'    0.00    0.00   ' +
+                str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
+                str(evinfo.latitude).ljust(8, '0') + '   ' +
+                str(evinfo.longitude).ljust(8, '0') + '  ' +
+                str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
+                str(Mag_1) + '    0.00    0.00   ' +
                 str(t_RMS).ljust(4, '0') +
-                str(i).rjust(11)+'\n')
+                str(i).rjust(11) + '\n')
     f.close()
     return
 
 
-def write_catalog(event_list, max_sep=1, min_link=8):
+def write_catalog(event_list, max_sep=8, min_link=8):
     """
-    Function to write the dt.ct file needed by hypoDD - takes input event list
-    from write_event as a list of tuples of event id and sfile.  It will read
+    Generate a dt.ct for hypoDD for a series of events.
+    Takes input event list from write_event as a list of tuples of event
+    id and sfile.  It will read
     the pick information from the seisan formated s-file using the sfile_util
     utilities.
 
-    :type event_list: list of tuple
+    :type event_list: list
     :param event_list: List of tuples of event_id (int) and sfile (String)
     :type max_sep: float
     :param max_sep: Maximum seperation between event pairs in km
@@ -207,6 +243,8 @@ def write_catalog(event_list, max_sep=1, min_link=8):
         event using the sfile_util module prior to this step.
     """
     from eqcorrscan.utils.mag_calc import dist_calc
+    # Cope with possibly being passed a zip in python 3.x
+    event_list = list(event_list)
     f = open('dt.ct', 'w')
     f2 = open('dt.ct2', 'w')
     fphase = open('phase.dat', 'w')
@@ -224,13 +262,14 @@ def write_catalog(event_list, max_sep=1, min_link=8):
             master_magnitude = master_event.magnitudes[0].mag or ' '
         else:
             master_magnitude = ' '
-        header = '# '+master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
-            ' '+str(master_location[0]).ljust(8)+' ' +\
-            str(master_location[1]).ljust(8)+' ' +\
-            str(master_location[2]).ljust(4)+' ' +\
-            str(master_magnitude).ljust(4)+' 0.0 0.0 0.0' +\
+        header = '# ' + \
+            master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
+            ' ' + str(master_location[0]).ljust(8) + ' ' +\
+            str(master_location[1]).ljust(8) + ' ' +\
+            str(master_location[2]).ljust(4) + ' ' +\
+            str(master_magnitude).ljust(4) + ' 0.0 0.0 0.0' +\
             str(master_event_id).rjust(4)
-        fphase.write(header+'\n')
+        fphase.write(header + '\n')
         for pick in master_event.picks:
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
@@ -243,19 +282,20 @@ def write_catalog(event_list, max_sep=1, min_link=8):
                     weight = 0.0
                 else:
                     weight = 1 - weight / 4.0
-                fphase.write(pick.waveform_id.station_code+'  ' +
+                fphase.write(pick.waveform_id.station_code + '  ' +
                              _cc_round(pick.time -
                                        master_ori_time, 3).rjust(6) +
-                             '   '+str(weight).ljust(5)+pick.phase_hint+'\n')
-        for j in range(i+1, len(event_list)):
+                             '   ' + str(weight).ljust(5) +
+                             pick.phase_hint + '\n')
+        for j in range(i + 1, len(event_list)):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
             slave_event_id = event_list[j][0]
             # Write out the header line
-            event_text = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+'\n'
-            event_text2 = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+'\n'
+            event_text = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + '\n'
+            event_text2 = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + '\n'
             slave_event = sfile_util.readpicks(slave_sfile)
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
@@ -270,8 +310,8 @@ def write_catalog(event_list, max_sep=1, min_link=8):
                     # Only use P and S picks, not amplitude or 'other'
                 # Added by Carolin
                 slave_matches = [p for p in slave_event.picks
-                                 if p.phase_hint == pick.phase_hint
-                                 and p.waveform_id.station_code.upper() ==
+                                 if p.phase_hint == pick.phase_hint and
+                                 p.waveform_id.station_code.upper() ==
                                  pick.waveform_id.station_code.upper()]
                 # Loop through the matches
                 for slave_pick in slave_matches:
@@ -285,23 +325,27 @@ def write_catalog(event_list, max_sep=1, min_link=8):
                                     origins[0].arrivals
                                     if arrival.pick_id ==
                                     slave_pick.resource_id][0]
+                    master_weight = str(int(master_weight))
+                    slave_weight = str(int(slave_weight))
                     event_text += pick.waveform_id.station_code.ljust(5) +\
-                        _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
-                        _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
+                        _cc_round(pick.time - master_ori_time, 3).rjust(11) +\
+                        _cc_round(slave_pick.time -
+                                  slave_ori_time, 3).rjust(8) +\
                         _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' '+pick.phase_hint+'\n'
+                        ' ' + pick.phase_hint + '\n'
                     # Added by Carolin
                     event_text2 += pick.waveform_id.station_code.ljust(5) +\
-                        _cc_round(pick.time-master_ori_time, 3).rjust(11) +\
-                        _cc_round(slave_pick.time-slave_ori_time, 3).rjust(8) +\
+                        _cc_round(pick.time - master_ori_time, 3).rjust(11) +\
+                        _cc_round(slave_pick.time -
+                                  slave_ori_time, 3).rjust(8) +\
                         _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' '+pick.phase_hint+'\n'
+                        ' ' + pick.phase_hint + '\n'
                     stations.append(pick.waveform_id.station_code)
             if links >= min_link:
                 f.write(event_text)
                 f2.write(event_text2)
                 evcount += 1
-    print('You have '+str(evcount)+' links')
+    print('You have ' + str(evcount) + ' links')
     # f.write('\n')
     f.close()
     f2.close()
@@ -310,13 +354,17 @@ def write_catalog(event_list, max_sep=1, min_link=8):
 
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
-                       lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0, coherence_weight=True, plotvar=False):
+                       lowcut=1.0, highcut=10.0, max_sep=8, min_link=8,
+                       cc_thresh=0.0, plotvar=False, debug=0):
     """
-    Function to write a dt.cc file for hypoDD input - takes an input list of
-    events and computes pick refienements by correlation.
+    Write a dt.cc file for hypoDD input for a given list of events.
 
-    :type event_list: list of tuple
+    Takes an input list of events and computes pick refinements by correlation.
+    Outputs two files, dt.cc and dt.cc2, each provides a different weight,
+    dt.cc uses weights of the cross-correlation, and dt.cc2 provides weights
+    as the square of the cross-correlation.
+
+    :type event_list: list
     :param event_list: List of tuples of event_id (int) and sfile (String)
     :type wavbase: str
     :param wavbase: Path to the seisan wave directory that the wavefiles in the
@@ -330,17 +378,17 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :type lowcut: float
     :param lowcut: Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: Highcut in Hz - deafult=10.0
+    :param highcut: Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: Maximum seperation between event pairs in km
+    :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
-    :type coherence_weight: bool
-    :param coherence_weight: Use coherence to weight the dt.cc file, or the \
-        raw cross-correlation value, defaults to false which uses the cross-\
-        correlation value.
+    :type cc_thresh: float
+    :param cc_thresh: Threshold to include cross-correlation results.
     :type plotvar: bool
     :param plotvar: To show the pick-correction plots, defualts to False.
+    :type debug: int
+    :param debug: Variable debug levels from 0-5, higher=more output.
 
     .. warning:: This is not a fast routine!
 
@@ -352,6 +400,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
         event using the sfile_util module prior to this step.
+
+    .. note:: There is no provision to taper waveforms within these functions, \
+        if you desire this functionality, you should apply the taper before \
+        calling this.  Note the obspy.Trace.taper functions.
     """
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
@@ -365,18 +417,24 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     import glob
     import warnings
 
+    warnings.filterwarnings(action="ignore",
+                            message="Maximum of cross correlation " +
+                                    "lower than 0.8: *")
     corr_list = []
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
+    k_events = len(list(event_list))
     for i, master in enumerate(event_list):
         master_sfile = master[1]
+        if debug > 1:
+            print('Computing correlations for master: %s' % master_sfile)
         master_event_id = master[0]
         master_picks = sfile_util.readpicks(master_sfile).picks
         master_event = sfile_util.readheader(master_sfile)
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
-                           master_event.origins[0].depth)
+                           master_event.origins[0].depth / 1000.0)
         master_wavefiles = sfile_util.readwavename(master_sfile)
         masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
         if masterpath:
@@ -386,39 +444,43 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 try:
                     masterstream += read(os.join(wavbase, wavefile))
                 except:
-                    continue
                     raise IOError("Couldn't find wavefile")
-        for j in range(i+1, len(event_list)):
+                    continue
+        for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
+            if debug > 2:
+                print('Comparing to event: %s' % slave_sfile)
             slave_event_id = event_list[j][0]
             slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
-                # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
-                # print(slavestream)
-                raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
-                              slave_sfile)
+                raise IOError('No wavefile found: ' + slave_wavefiles[0] +
+                              ' ' + slave_sfile)
             if len(slave_wavefiles) > 1:
                 for wavefile in slave_wavefiles:
-                    # slavestream+=read(wavbase+'/*/*/'+wavefile)
                     try:
-                        slavestream += read(wavbase+'/'+wavefile)
-                    except:
+                        slavestream += read(wavbase + os.sep + wavefile)
+                    except IOError:
+                        print('No waveform found: %s' %
+                              (wavbase + os.sep + wavefile))
                         continue
             # Write out the header line
-            event_text = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+' 0.0   \n'
-            event_text2 = '#'+str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10)+' 0.0   \n'
+            event_text = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + ' 0.0   \n'
+            event_text2 = '#' + str(master_event_id).rjust(10) +\
+                str(slave_event_id).rjust(10) + ' 0.0   \n'
             slave_picks = sfile_util.readpicks(slave_sfile).picks
             slave_event = sfile_util.readheader(slave_sfile)
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth)
+                              slave_event.origins[0].depth / 1000.0)
             if dist_calc(master_location, slave_location) > max_sep:
+                if debug > 0:
+                    print('Seperation exceeds max_sep: %s' %
+                          (dist_calc(master_location, slave_location)))
                 continue
             links = 0
             phases = 0
@@ -429,8 +491,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 # Find station, phase pairs
                 # Added by Carolin
                 slave_matches = [p for p in slave_picks
-                                 if p.phase_hint == pick.phase_hint
-                                 and p.waveform_id.station_code ==
+                                 if p.phase_hint == pick.phase_hint and
+                                 p.waveform_id.station_code ==
                                  pick.waveform_id.station_code]
 
                 if masterstream.select(station=pick.waveform_id.station_code,
@@ -440,23 +502,23 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         select(station=pick.waveform_id.station_code,
                                channel='*' +
                                pick.waveform_id.channel_code[-1])[0]
-                else:
+                elif debug > 1:
                     print('No waveform data for ' +
                           pick.waveform_id.station_code + '.' +
                           pick.waveform_id.channel_code)
                     print(pick.waveform_id.station_code +
                           '.' + pick.waveform_id.channel_code +
-                          ' ' + slave_sfile+' ' + master_sfile)
+                          ' ' + slave_sfile + ' ' + master_sfile)
                     break
                 # Loop through the matches
                 for slave_pick in slave_matches:
                     if slavestream.select(station=slave_pick.waveform_id.
                                           station_code,
-                                          channel='*'+slave_pick.waveform_id.
+                                          channel='*' + slave_pick.waveform_id.
                                           channel_code[-1]):
                         slavetr = slavestream.\
                             select(station=slave_pick.waveform_id.station_code,
-                                   channel='*'+slave_pick.waveform_id.
+                                   channel='*' + slave_pick.waveform_id.
                                    channel_code[-1])[0]
                     else:
                         print('No slave data for ' +
@@ -479,7 +541,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                                                   'freqmax':
                                                                   highcut},
                                                   plot=plotvar)
-                        # Get the differntial travel time using the
+                        # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
                         # This can occur in the obspy routine when the
@@ -492,27 +554,25 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         correction = (pick.time - master_ori_time) -\
                             (slave_pick.time + correction - slave_ori_time)
                         links += 1
-                        if cc * cc >= coh_thresh:
-                            if coherence_weight:
-                                weight = cc * cc
-                            else:
-                                weight = cc
+                        if cc >= cc_thresh:
+                            weight = cc
                             phases += 1
                             # added by Caro
                             event_text += pick.waveform_id.station_code.\
                                 ljust(5) + _cc_round(correction, 3).\
                                 rjust(11) + _cc_round(weight, 3).rjust(8) +\
-                                ' '+pick.phase_hint+'\n'
+                                ' ' + pick.phase_hint + '\n'
                             event_text2 += pick.waveform_id.station_code\
-                                .ljust(5).upper() +\
-                                _cc_round(correction, 3).rjust(11) +\
-                                _cc_round(weight, 3).rjust(8) +\
-                                ' '+pick.phase_hint+'\n'
-
-                            # links+=1
-                        corr_list.append(cc*cc)
+                                .ljust(5) + _cc_round(correction, 3).\
+                                rjust(11) +\
+                                _cc_round(weight * weight, 3).rjust(8) +\
+                                ' ' + pick.phase_hint + '\n'
+                            if debug > 3:
+                                print(event_text)
+                        else:
+                            print('cc too low: %s' % cc)
+                        corr_list.append(cc * cc)
                     except:
-                        # Should warn here
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue
@@ -526,3 +586,92 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     f.close()
     f2.close()
     return
+
+
+def read_phase(ph_file):
+    """
+    Read hypoDD phase files into Obspy catalog class.
+
+    :type ph_file: str
+    :param ph_file: Phase file to read event info from.
+
+    :returns: obspy.core.event.catlog
+
+    >>> from obspy.core.event.catalog import Catalog
+    >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
+    >>> isinstance(catalog, Catalog)
+    True
+    """
+    from obspy.core.event import Catalog
+    ph_catalog = Catalog()
+    f = open(ph_file, 'r')
+    # Topline of each event is marked by # in position 0
+    for line in f:
+        if line[0] == '#':
+            if 'event_text' not in locals():
+                event_text = {'header': line.rstrip(),
+                              'picks': []}
+            else:
+                ph_catalog.append(_phase_to_event(event_text))
+                event_text = {'header': line.rstrip(),
+                              'picks': []}
+        else:
+            event_text['picks'].append(line.rstrip())
+    ph_catalog.append(_phase_to_event(event_text))
+    return ph_catalog
+
+
+def _phase_to_event(event_text):
+    """
+    Function to convert the text for one event in hypoDD phase format to \
+    event object.
+
+    :type event_text: dict
+    :param event_text: dict of two elements, header and picks, header is a \
+        str, picks is a list of str.
+
+    :returns: obspy.core.event.Event
+    """
+    from obspy.core.event import Event, Origin, Magnitude
+    from obspy.core.event import Pick, WaveformStreamID, Arrival
+    from obspy import UTCDateTime
+    ph_event = Event()
+    # Extract info from header line
+    # YR, MO, DY, HR, MN, SC, LAT, LON, DEP, MAG, EH, EZ, RMS, ID
+    header = event_text['header'].split()
+    ph_event.origins.append(Origin())
+    ph_event.origins[0].time = UTCDateTime(year=int(header[1]),
+                                           month=int(header[2]),
+                                           day=int(header[3]),
+                                           hour=int(header[4]),
+                                           minute=int(header[5]),
+                                           second=int(header[6].split('.')[0]),
+                                           microsecond=int(float(('0.' +
+                                                                  header[6].
+                                                                  split('.')[1])) *
+                                                           1000000))
+    ph_event.origins[0].latitude = float(header[7])
+    ph_event.origins[0].longitude = float(header[8])
+    ph_event.origins[0].depth = float(header[9]) * 1000
+    ph_event.origins[0].time_errors['Time_Residual_RMS'] = float(header[13])
+    ph_event.magnitudes.append(Magnitude())
+    ph_event.magnitudes[0].mag = float(header[10])
+    ph_event.magnitudes[0].magnitude_type = 'M'
+    # Extract arrival info from picks!
+    for i, pick_line in enumerate(event_text['picks']):
+        pick = pick_line.split()
+        _waveform_id = WaveformStreamID(station_code=pick[0])
+        pick_time = ph_event.origins[0].time + float(pick[1])
+        ph_event.picks.append(Pick(waveform_id=_waveform_id,
+                                   phase_hint=pick[3],
+                                   time=pick_time))
+        ph_event.origins[0].arrivals.append(Arrival(phase=ph_event.picks[i],
+                                                    pick_id=ph_event.picks[i].
+                                                    resource_id))
+        ph_event.origins[0].arrivals[i].time_weight = float(pick[2])
+    return ph_event
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

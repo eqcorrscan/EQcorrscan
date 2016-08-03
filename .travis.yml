@@ -1,28 +1,27 @@
-language: python
-os:
-  - linux
-  # - osx  # Note, travis doesn't support python builds on osx
-python: "2.7"
-virtualenv:
-    system_site_packages: true
+language: c
+
+matrix:
+  include:
+    - os: linux
+      env: PYTHON_VERSION=2.7
+    - os: linux
+      env: PYTHON_VERSION=3.5
+    - os: linux
+      env: PYTHON_VERSION=3.4
+    #    - os: linux
+    #      env: PYTHON_VERSION=3.3
+    # There isn't and openCV3 for python 3.3 on Conda
+
+    - os: osx
+      env: PYTHON_VERSION=2.7
+    - os: osx
+      env: PYTHON_VERSION=3.5
+
 sudo: false
 
-# Test with multiple obspy versions, allow some backwards compatability
 env:
-  - OBSPY_VERSION=0.10.2
-  - OBSPY_VERSION=1.0.1
-
-addons:
-  apt:
-    source:
-      - lucid
-    packages:
-      # - python-opencv
-      - pandoc
-
-# before install:
-#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update        ; fi
-#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install pandoc; fi
+  global:
+    - OBSPY_VERSION=1.0.1
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -30,7 +29,10 @@ install:
       export py=$PYTHON_VERSION;
     else
       export OS="Linux";
-      export py=$TRAVIS_PYTHON_VERSION;
+      export py=$PYTHON_VERSION;
+    fi
+  - if [[ "$py" == "2.7_with_system_site_packages" ]]; then
+      export py="2.7";
     fi
   - if [[ "${py:0:1}" == '2' ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-${OS}-x86_64.sh -O miniconda.sh;
@@ -41,60 +43,60 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+  - conda config --add channels menpo
+  - conda config --add channels obspy
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
   - |
-      if [[ "${py:0:1}" == '3' ]]; then
-        NUMPY_VERSION=1.9.2
-        SCIPY_VERSION=0.16.0
-        MPL_VERSION=1.4.3
-        BASEMAP_VERSION=1.0.7
+      if [[ "${py:0:1}" == "3" ]]; then
+        env_file="misc/py35_test_env.lis"
+        PYFLAKES="pyflakes=1.0.0"
       else
-        NUMPY_VERSION=1.8.2
-        SCIPY_VERSION=0.14.0
-        MPL_VERSION=1.3.1
-        BASEMAP_VERSION=1.0.7
+        env_file="misc/py2_test_env.lis"
+        PYFLAKES="pyflakes=0.9.0"
       fi
-  - conda create -q -n test-environment
-        python=$py
-        numpy=$NUMPY_VERSION
-        scipy=$SCIPY_VERSION
-        matplotlib=$MPL_VERSION
-        basemap=$BASEMAP_VERSION
-        flake8
-        future
-        lxml
-        sqlalchemy
-        mock
-        gdal
-        pyproj
-        docopt
-        coverage
-        requests
-        pytest
-        pytest-pep8
-        opencv
-        pyflakes=0.9.0
+  - echo $PYTHON_VERSION
+  - |
+      if [[ "$OS" == "MacOSX" ]]; then
+          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
+      elif [[ "$py" == "3.5" ]]; then
+          conda create -q -n test-environment --file $env_file
+      elif [[ "$py" == "2.7" ]]; then
+          conda create -q -n test-environment --file $env_file
+      else
+          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
+      fi
   - source activate test-environment
-  # install packages not available via conda
-  # - pip install -r requirements.txt
+  - conda install $PYFLAKES
+  - conda install pyproj
+  #  - |
+  #      if [[ "${py:0:1}" == "3" ]] && [[ "$OS" == "MacOSX" ]]; then
+  #        conda install opencv3
+  #        conda install obspy
+  #      fi
+  #      elif [[ "$OS" == "MacOSX" ]]; then
+  #        conda install -c menpo opencv3=3.1.0
+  #      fi
   - pip install coveralls
   - pip install geographiclib
-  - pip install pypandoc
-  # current pyimgur stable release has a py2.6 incompatibility
-  - pip install https://github.com/megies/PyImgur/archive/py26.zip
-  - pip install obspy==$OBSPY_VERSION
+  - pip install https://github.com/megies/PyImgur/archive/py3.zip
+  - pip install pep8-naming
+  - pip install pytest
+  - pip install pytest-cov
+  #  - pip install obspy==$OBSPY_VERSION
   - pip freeze
   - conda list
   # done installing dependencies
   - git version
   - pip install .
 script:
-  # Run the tests available, more should be added
-  # - python eqcorrscan/tests/install_test.py
-  # py.test
-  python setup.py test
+  py.test
+
+after_success:
+  # Check how much code is actually tested and send this report to coveralls
+  - coverage combine
+  - coveralls
 
 notifications:
     email: false

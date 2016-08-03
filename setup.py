@@ -18,6 +18,7 @@
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 import sys
+import os
 import eqcorrscan
 # To use a consistent encoding
 from codecs import open
@@ -34,9 +35,12 @@ except ImportError:
     print(msg)
     read_md = lambda f: open(f, 'r').read()
 
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+
 try:
     import cv2  # NOQA
 except:
+    print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
@@ -53,6 +57,27 @@ long_description = "EQcorrscan: matched-filter earthquake detection and " +\
 scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
 scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
+if sys.version_info.major == 2:
+    if not READ_THE_DOCS:
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'scipy>=0.14', 'multiprocessing',
+                            'LatLon']
+    else:
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'multiprocessing',
+                            'LatLon']
+else:
+    if not READ_THE_DOCS:
+        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'scipy>=0.14', 'LatLon']
+    else:
+        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
+                            'LatLon']
+# install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
 
@@ -93,6 +118,7 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
     ],
 
     # What does your project relate to?
@@ -110,13 +136,11 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy>=1.8.0', 'obspy>=0.10.2', 'matplotlib>=1.3.0',
-                      'joblib>=0.8.4', 'scipy>=0.14', 'multiprocessing',
-                      'LatLon'],
+    install_requires=install_requires,
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8'],
+    tests_require=['pytest', 'pytest-flake8', 'pytest-cov'],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:

@@ -15,17 +15,22 @@ out to nordic format files, which can be easily converted to hypoDD files,
 there are now multiple options for location of events.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
+   submodules/utils.archive_read
+   submodules/utils.catalog_to_dd
+   submodules/utils.catalog_utils
    submodules/utils.clustering
-   submodules/utils.plotting
+   submodules/utils.despike
    submodules/utils.findpeaks
-   submodules/utils.locate
    submodules/utils.mag_calc
+   submodules/utils.parameters
+   submodules/utils.picker
+   submodules/utils.plotting
    submodules/utils.pre_processing
+   submodules/utils.sac_util
    submodules/utils.seismo_logs
    submodules/utils.sfile_util
    submodules/utils.stacking
    submodules/utils.synth_seis
-   submodules/utils.catalog_to_dd
-   submodules/utils.sac_util
+   submodules/utils.trigger

@@ -15,9 +15,9 @@ Welcome to EQcorrscan's documentation
 EQcorrscan
 ----------
 
-A python package to conduct match-filter earthquake detections.  Codes are stored
+A Python package to conduct matched-filter earthquake detections.  Codes are stored
 on github, the master and development branches are |github_link|, or the latest stable(ish) release
-can be found |releases_link|
+can be found |releases_link|.
 
 .. |releases_link| raw:: html
 
@@ -27,12 +27,18 @@ can be found |releases_link|
 
   <a href="https://github.com/calum-chamberlain/EQcorrscan" target="_blank">on github</a>
 
-This package contains routines to enable the user to conduct match-filter earthquake
-detections using |Obspy_link| bindings when reading
-and writing seismic data, and the correlation routine in |opencv_link|.
-Neither of these packages are installed by this software, due to a range of
-licenses being implemented.  However, both are open-source and should be installed
-before using this package.  This package was written to implement the matlab routines
+This package contains routines to enable the user to conduct :doc:`matched-filter </submodules/core.match_filter>` earthquake
+detections, and do some fun things with the detections (stacking, clustering,
+singular-value decomposition, pick correction...).
+
+EQcorrscan uses
+|Obspy_link| bindings when reading and writing seismic data, and for handling most
+of the event metadata, which ensures that detections can be easily migrated between
+softwares. Matched-filter correlations are calculated using |opencv_link|.
+OpenCV is not installed alongside EQcorrscan and must be installed
+before using this package.
+
+This package was written to implement the matlab routines
 used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
 
 .. |Obspy_link| raw:: html
@@ -45,12 +51,12 @@ used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes
 
 Also within this package are:
 
-* Clustering routines for seismic data;
-* Peak finding algorithm (basic);
-* Automatic amplitude picker for local magnitude scale;
-* |seisan_link| S-file integration for database management and routine earthquake location;
-* Stacking routines including phase-weighted stacking based on Thurber at al. (2014);
-* Brightness based template creation based on the work of Frank et al. (2014)
+* :doc:`Clustering routines for seismic data </submodules/utils.clustering>`;
+* :doc:`Peak finding algorithm (basic) </submodules/utils.findpeaks>`;
+* :doc:`Automatic amplitude picker for local magnitude scale </submodules/utils.mag_calc>`;
+* |seisan_link| :doc:`S-file integration </submodules/utils.sfile_util>` for database management and routine earthquake location;
+* :doc:`Stacking routines </submodules/utils.stacking>` including phase-weighted stacking based on Thurber at al. (2014);
+* :doc:`Brightness based template creation </submodules/core.bright_lights>` based on the work of Frank et al. (2014)
 
 .. |seisan_link| raw:: html
 
@@ -71,7 +77,7 @@ Contents:
 
 .. toctree::
    :numbered:
-   :maxdepth: 4
+   :maxdepth: 2
 
    intro
    updates
