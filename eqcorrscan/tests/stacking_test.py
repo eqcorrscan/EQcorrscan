@@ -93,6 +93,56 @@ class TestStackingMethods(unittest.TestCase):
         for shift_in, shift_out in zip(shifts_in, shifts):
             self.assertEqual(-1 * shift_in, shift_out)
 
+    def test_known_align(self):
+        """Test alignment with a known outcome."""
+        from obspy import read
+        import os
+        import glob
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'WAV', 'TEST_')
+        trace_list = []
+        for wavfile in glob.glob(os.path.join(testing_path, '*')):
+            st = read(wavfile)
+            tr = st.select(station='WZ11', channel='HHZ')
+            if len(tr) == 1:
+                trace_list.append(tr[0])
+        shifts, ccs = align_traces(trace_list=trace_list, shift_len=100)
+        ccs = [float(str(cc)) for cc in ccs]
+        f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              'test_data', 'known_alignment.csv'), 'r')
+        known_shifts = [line.rstrip().split(', ') for line in f]
+        f.close()
+        known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
+        known_shifts, known_ccs = zip(*known_shifts)
+        self.assertEqual(shifts, list(known_shifts))
+        self.assertEqual(ccs, list(known_ccs))
+
+    def test_known_align_positive(self):
+        """Test a known alignment case with forced positive correlation."""
+        from obspy import read
+        import os
+        import glob
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'WAV', 'TEST_')
+        trace_list = []
+        for wavfile in glob.glob(os.path.join(testing_path, '*')):
+            st = read(wavfile)
+            tr = st.select(station='WZ11', channel='HHZ')
+            if len(tr) == 1:
+                trace_list.append(tr[0])
+        shifts, ccs = align_traces(trace_list=trace_list, shift_len=100,
+                                   positive=True)
+        ccs = [float(str(cc)) for cc in ccs]
+        f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              'test_data', 'known_positive_alignment.csv'),
+                 'r')
+        known_shifts = [line.rstrip().split(', ') for line in f]
+        f.close()
+        known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
+        known_shifts, known_ccs = zip(*known_shifts)
+        self.assertEqual(shifts, list(known_shifts))
+        self.assertEqual(ccs, list(known_ccs))
+
 if __name__ == '__main__':
     """
     Run stacking tests

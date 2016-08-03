@@ -106,9 +106,86 @@ class SubspaceTestingMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile('Test_file.h5'))
         os.remove('Test_file.h5')
 
-    def test_create(self):
+    def test_create_multiplexed_unaligned(self):
         """Test subspace creation - checks that np.dot(U.T, U) is identity."""
         templates = copy.deepcopy(self.templates)
+        templates = [template.select(station='HOWZ') for template in templates]
+        # Test a multiplexed version
+        detector = subspace.Detector()
+        detector.construct(streams=templates, lowcut=2, highcut=9,
+                           filt_order=4, sampling_rate=20, multiplex=True,
+                           name=str('Tester'), align=False, shift_len=0)
+        for u in detector.data:
+            identity = np.dot(u.T, u).astype(np.float16)
+            self.assertTrue(np.allclose(identity,
+                                        np.diag(np.ones(len(identity),
+                                                        dtype=np.float16))))
+        comparison_detector = \
+            subspace.read_detector(os.path.join(os.path.
+                                                abspath(os.path.
+                                                        dirname(__file__)),
+                                                'test_data', 'subspace',
+                                                'master_detector_multi_unaligned.h5'))
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension', 'stachans']:
+            print(key)
+            self.assertEqual(comparison_detector.__getattribute__(key),
+                             detector.__getattribute__(key))
+        for key in ['data', 'u', 'v', 'sigma']:
+            print(key)
+            list_item = detector.__getattribute__(key)
+            other_list = comparison_detector.__getattribute__(key)
+            self.assertEqual(len(list_item), len(other_list))
+            for item, other_item in zip(list_item, other_list):
+                if not np.allclose(item, other_item):
+                    print(item)
+                    print(other_item)
+                self.assertTrue(np.allclose(item, other_item))
+        # Finally check that the __eq__ method works if all the above passes.
+        self.assertEqual(detector, comparison_detector)
+
+    def test_create_nonmultiplexed_unaligned(self):
+        """Test creation of a non-multiplexed detector."""
+        # Test a non-multiplexed version
+        detector = subspace.Detector()
+        templates = copy.deepcopy(self.templates)
+        templates = [template.select(station='HOWZ') for template in templates]
+        detector.construct(streams=templates, lowcut=2, highcut=9,
+                           filt_order=4, sampling_rate=20, multiplex=False,
+                           name=str('Tester'), align=False, shift_len=0)
+        for u in detector.data:
+            identity = np.dot(u.T, u).astype(np.float16)
+            self.assertTrue(np.allclose(identity,
+                                        np.diag(np.ones(len(identity),
+                                                        dtype=np.float16))))
+        comparison_detector = \
+            subspace.read_detector(os.path.join(os.path.
+                                                abspath(os.path.
+                                                        dirname(__file__)),
+                                                'test_data', 'subspace',
+                                                'master_detector_unaligned.h5'))
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension', 'stachans']:
+            print(key)
+            self.assertEqual(comparison_detector.__getattribute__(key),
+                             detector.__getattribute__(key))
+        for key in ['data', 'u', 'v', 'sigma']:
+            print(key)
+            list_item = detector.__getattribute__(key)
+            other_list = comparison_detector.__getattribute__(key)
+            self.assertEqual(len(list_item), len(other_list))
+            for item, other_item in zip(list_item, other_list):
+                if not np.allclose(item, other_item):
+                    print(item)
+                    print(other_item)
+                self.assertTrue(np.allclose(item, other_item))
+        # Finally check that the __eq__ method works if all the above passes.
+        self.assertEqual(detector, comparison_detector)
+
+    def test_create_multiplexed_aligned(self):
+        """Test subspace creation - checks that np.dot(U.T, U) is identity."""
+        templates = copy.deepcopy(self.templates)
+        templates = [template.select(station='HOWZ') for template in templates]
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
@@ -119,9 +196,36 @@ class SubspaceTestingMethods(unittest.TestCase):
             self.assertTrue(np.allclose(identity,
                                         np.diag(np.ones(len(identity),
                                                         dtype=np.float16))))
+        comparison_detector = \
+            subspace.read_detector(os.path.join(os.path.
+                                                abspath(os.path.
+                                                        dirname(__file__)),
+                                                'test_data', 'subspace',
+                                                'master_detector_multi.h5'))
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension', 'stachans']:
+            print(key)
+            self.assertEqual(comparison_detector.__getattribute__(key),
+                             detector.__getattribute__(key))
+        for key in ['data', 'u', 'v', 'sigma']:
+            print(key)
+            list_item = detector.__getattribute__(key)
+            other_list = comparison_detector.__getattribute__(key)
+            self.assertEqual(len(list_item), len(other_list))
+            for item, other_item in zip(list_item, other_list):
+                if not np.allclose(item, other_item):
+                    print(item)
+                    print(other_item)
+                self.assertTrue(np.allclose(item, other_item))
+        # Finally check that the __eq__ method works if all the above passes.
+        self.assertEqual(detector, comparison_detector)
+
+    def test_create_nonmultiplexed_aligned(self):
+        """Test creation of a non-multiplexed detector."""
         # Test a non-multiplexed version
         detector = subspace.Detector()
         templates = copy.deepcopy(self.templates)
+        templates = [template.select(station='HOWZ') for template in templates]
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True, shift_len=6,
@@ -152,6 +256,8 @@ class SubspaceTestingMethods(unittest.TestCase):
                     print(item)
                     print(other_item)
                 self.assertTrue(np.allclose(item, other_item))
+        # Finally check that the __eq__ method works if all the above passes.
+        self.assertEqual(detector, comparison_detector)
 
     def test_refactor(self):
         """Test subspace refactoring, checks that np.dot(U.T, U) is\

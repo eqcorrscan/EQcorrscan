@@ -123,7 +123,7 @@ class Detector(object):
         return len(self.data)
 
     def construct(self, streams, lowcut, highcut, filt_order,
-                  sampling_rate, multiplex, name, align, shift_len,
+                  sampling_rate, multiplex, name, align, shift_len=0,
                   reject=0.3, no_missed=True, plot=False):
         """
         Construct a subspace detector from a list of streams, full rank.
@@ -439,7 +439,7 @@ class Detector(object):
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
-           process=True, extract_detections=False, debug=0):
+            process=True, extract_detections=False, debug=0):
     """
     Detect within continuous data using the subspace method.
 
