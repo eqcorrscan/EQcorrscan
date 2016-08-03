@@ -107,9 +107,13 @@ class Detector(object):
             if not self.__getattribute__(key) == other.__getattribute__(key):
                 return False
         for key in ['data', 'u', 'v', 'sigma']:
-            if not np.allclose(self.__getattribute__(key),
-                               other.__getattribute__(key)):
+            list_item = self.__getattribute__(key)
+            other_list = other.__getattribute__(key)
+            if not len(list_item) == len(other_list):
                 return False
+            for item, other_item in zip(list_item, other_list):
+                if not np.allclose(item, other_item):
+                    return False
         return True
 
     def __ne__(self, other):
@@ -401,23 +405,21 @@ class Detector(object):
         """
         f = h5py.File(filename, "w")
         # Must store eqcorrscan version number, username would be useful too.
-        # Reshape data into a numpy array
-        data_write = np.array(self.data)
-        u_array = np.array(self.u)
-        sigma_array = np.array(self.sigma)
-        v_array = np.array(self.v)
-        dset = f.create_dataset(name="data", shape=data_write.shape,
-                                dtype=data_write.dtype)
-        dset[...] = data_write
-        dset.attrs['name'] = self.name
-        dset.attrs['sampling_rate'] = self.sampling_rate
-        dset.attrs['multiplex'] = self.multiplex
-        dset.attrs['lowcut'] = self.lowcut
-        dset.attrs['highcut'] = self.highcut
-        dset.attrs['filt_order'] = self.filt_order
-        dset.attrs['dimension'] = self.dimension
-        dset.attrs['user'] = getpass.getuser()
-        dset.attrs['eqcorrscan_version'] = str(eqcorrscan.__version__)
+        data_group = f.create_group(name="data")
+        for i, data in enumerate(self.data):
+            dset = data_group.create_dataset(name="data_" + str(i),
+                                             shape=data.shape, dtype=data.dtype)
+            dset[...] = data
+        data_group.attrs['length'] = len(self.data)
+        data_group.attrs['name'] = self.name.encode("ascii", "ignore")
+        data_group.attrs['sampling_rate'] = self.sampling_rate
+        data_group.attrs['multiplex'] = self.multiplex
+        data_group.attrs['lowcut'] = self.lowcut
+        data_group.attrs['highcut'] = self.highcut
+        data_group.attrs['filt_order'] = self.filt_order
+        data_group.attrs['dimension'] = self.dimension
+        data_group.attrs['user'] = getpass.getuser()
+        data_group.attrs['eqcorrscan_version'] = str(eqcorrscan.__version__)
         # Convert station-channel list to something writable
         ascii_stachans = ['.'.join(stachan).encode("ascii", "ignore")
                           for stachan in self.stachans]
@@ -425,15 +427,25 @@ class Detector(object):
                                     shape=(len(ascii_stachans),),
                                     dtype='S10')
         stachans[...] = ascii_stachans
-        uset = f.create_dataset(name="u", shape=u_array.shape,
-                                dtype=u_array.dtype)
-        uset[...] = u_array
-        sigmaset = f.create_dataset(name="sigma", shape=sigma_array.shape,
-                                    dtype=sigma_array.dtype)
-        sigmaset[...] = sigma_array
-        vset = f.create_dataset(name="v", shape=v_array.shape,
-                                dtype=v_array.dtype)
-        vset[...] = v_array
+        u_group = f.create_group("u")
+        for i, u in enumerate(self.u):
+            uset = u_group.create_dataset(name="u_" + str(i),
+                                          shape=u.shape, dtype=u.dtype)
+            uset[...] = u
+        u_group.attrs['length'] = len(self.u)
+        sigma_group = f.create_group("sigma")
+        for i, sigma in enumerate(self.sigma):
+            sigmaset = sigma_group.create_dataset(name="sigma_" + str(i),
+                                                  shape=sigma.shape,
+                                                  dtype=sigma.dtype)
+            sigmaset[...] = sigma
+        sigma_group.attrs['length'] = len(self.sigma)
+        v_group = f.create_group("v")
+        for i, v in enumerate(self.v):
+            vset = v_group.create_dataset(name="v_" + str(i),
+                                          shape=v.shape, dtype=v.dtype)
+            vset[...] = v
+        v_group.attrs['length'] = len(self.v)
         f.flush()
         f.close()
         return self
@@ -449,10 +461,18 @@ class Detector(object):
         :param filename: Filename to save the detector to.
         """
         f = h5py.File(filename, "r")
-        self.data = list(f['data'].value)
-        self.u = list(f['u'].value)
-        self.v = list(f['v'].value)
-        self.sigma = list(f['sigma'].value)
+        self.data = []
+        for i in range(f['data'].attrs['length']):
+            self.data.append(f['data']['data_' + str(i)].value)
+        self.u = []
+        for i in range(f['u'].attrs['length']):
+            self.u.append(f['u']['u_' + str(i)].value)
+        self.sigma = []
+        for i in range(f['sigma'].attrs['length']):
+            self.sigma.append(f['sigma']['sigma_' + str(i)].value)
+        self.v = []
+        for i in range(f['v'].attrs['length']):
+            self.v.append(f['v']['v_' + str(i)].value)
         self.stachans = [tuple(stachan.decode('ascii').split('.'))
                          for stachan in f['stachans'].value]
         self.dimension = f['data'].attrs['dimension']
@@ -461,7 +481,10 @@ class Detector(object):
         self.lowcut = f['data'].attrs['lowcut']
         self.multiplex = bool(f['data'].attrs['multiplex'])
         self.sampling_rate = f['data'].attrs['sampling_rate']
-        self.name = f['data'].attrs['name'].decode('ascii')
+        if isinstance(f['data'].attrs['name'], str):
+            self.name = f['data'].attrs['name']
+        else:
+            self.name = f['data'].attrs['name'].decode('ascii')
         return self
 
     def plot(self, stachans='all', size=(10, 7), show=True):
@@ -833,16 +856,19 @@ def subspace_detect(detectors, stream, threshold, trig_int):
     :return: List of eqcorrscan.core.match_filter.DETECTION detections.
 
     .. Note:: This will loop through your detectors using their detect method. \
-        If the detectors are multiplexed it will run groups os detectors with \
+        If the detectors are multiplexed it will run groups of detectors with \
         the same channels at the same time.
     """
     ### TODO: Detector should allow stream to be processed, but not multiplexed to allow for efficient looping, e.g. process the stream once, and multiplex different traces as needed.
     # First check that detector parameters are the same
     parameters = []
     for detector in detectors:
-        parameters.append(detector.lowcut, detector.highcut,
-                          detector.filt_order, detector.sampling_rate,
-                          detector.multiplex)
+        parameters.append({'lowcut': detector.lowcut,
+                           'highcut': detector.highcut,
+                           'filt_order': detector.filt_order,
+                           'sampling_rate': detector.sampling_rate,
+                           'multiplex': detector.multiplex,
+                           'stachans': detector.stachans})
     parameters = list(set(parameters))
     if not len(parameters) == 1:
         msg = ('Multiple parameters used for detectors, group your ' +

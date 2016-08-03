@@ -282,7 +282,6 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
 
         >>> peaks = [[(0.5, 100), (0.3, 800)], [(0.4, 120), (0.7, 850)]]
         >>> triggers = coin_trig(peaks, [('a', 'Z'), ('b', 'Z')], 10, 3, 2, 1)
-        Added largest detection
         >>> print(triggers)
         [(0.45, 100.0)]
     """
@@ -305,20 +304,20 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
                 trig_val += slave[1]
         if coincidence >= min_trig:
             coincidence_triggers.append((trig_val / coincidence,
-                                         trig_time * samp_rate))
-    # Sort by trigger-value, largest to smallest
+                                         trig_time))
+    # Sort by trigger-value, largest to smallest - remove duplicate detections
     if coincidence_triggers:
         coincidence_triggers.sort(key=lambda tup: tup[0], reverse=True)
-        print('Added largest detection')
         output = [coincidence_triggers[0]]
         for coincidence_trigger in coincidence_triggers[1:]:
             add = True
             for peak in output:
-                if abs(coincidence_trigger[1] - peak[1]) < trig_int * samp_rate:
+                if abs(coincidence_trigger[1] - peak[1]) > trig_int:
                     add = False
                     break
             if add:
-                output.append(coincidence_trigger)
+                output.append((coincidence_trigger[0],
+                               coincidence_trigger[1] * samp_rate))
         output.sort(key=lambda tup: tup[1])
         return output
     else:

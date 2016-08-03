@@ -14,10 +14,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 cimport numpy as np
+import cython
 
 DTYPE = np.float32
 ctypedef np.float32_t DTYPE_t
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
                   np.ndarray[DTYPE_t, ndim=1] data):
     """
@@ -39,23 +42,23 @@ def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
     :rtype: np.ndarray
     """
     cdef int i
-    cdef int imax = len(data) - len(detector[0]) + 1
-    cdef np.ndarray[DTYPE_t, ndim=1] day_stats = \
-        np.zeros(len(data) - len(detector[0]) + 1, dtype=DTYPE)
+    cdef int datamax = data.shape[0]
+    cdef int ulen = detector.shape[1]
+    cdef int umax = detector.shape[0]
+    cdef int imax = datamax - ulen + 1
+    cdef np.ndarray[DTYPE_t, ndim=1] stats = np.zeros(imax, dtype=DTYPE)
     # Check that there will not be an empty window
     cdef np.ndarray[DTYPE_t, ndim=1] _data = \
-        np.concatenate([data, np.zeros((len(detector) * (len(data) -
-                                                         len(detector[0])
-                                                         + 1)) -
-                                       len(data), dtype=DTYPE)])
+        np.concatenate([data, np.zeros((umax * imax) -
+                                       datamax, dtype=DTYPE)])
     cdef np.ndarray[DTYPE_t, ndim=2] uut = np.dot(detector, detector.T)
     # Actual loop after static typing
     for i in range(imax):
-        day_stats[i] = np.dot(_data[i:i + len(detector)],
-                              np.dot(uut, _data[i:i + len(detector)].T))
+        stats[i] = np.dot(_data[i:i + umax],
+                          np.dot(uut, _data[i:i + umax].T))
     # Cope with case of errored internal loop
-    if np.all(np.isnan(day_stats)):
-        return np.zeros(len(day_stats), dtype=DTYPE)
+    if np.all(np.isnan(stats)):
+        return np.zeros(imax, dtype=DTYPE)
     else:
-        return day_stats
+        return stats
 
