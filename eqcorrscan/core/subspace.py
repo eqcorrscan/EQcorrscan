@@ -210,7 +210,10 @@ class Detector(object):
         :param dimension: Maximum dimension to use.
         """
         # Take leftmost 'dimension' input basis vectors
-        for i, channel in enumerate(self.data):
+        for i, channel in enumerate(self.u):
+            if channel.shape[1] < dimension:
+                raise IndexError('Channel is max dimension %s'
+                                 % channel.shape[1])
             self.data[i] = channel[:, 0:dimension]
         self.dimension = dimension
         return self
@@ -281,117 +284,10 @@ class Detector(object):
             commonly used network-coincidence trigger with energy detection \
             statistics.
         """
-        from eqcorrscan.core import subspace_statistic
-        detections = []
-        # First process the stream
-        if process:
-            if debug > 0:
-                print('Processing Stream')
-            stream, stachans = _subspace_process(streams=[st.copy()],
-                                                 lowcut=self.lowcut,
-                                                 highcut=self.highcut,
-                                                 filt_order=self.filt_order,
-                                                 sampling_rate=self.
-                                                 sampling_rate,
-                                                 multiplex=self.multiplex,
-                                                 stachans=self.stachans,
-                                                 parallel=True,
-                                                 align=False,
-                                                 shift_len=None,
-                                                 reject=False)
-        else:
-            # Check the sampling rate at the very least
-            stream = [st]
-            for tr in stream[0]:
-                if not tr.stats.sampling_rate == self.sampling_rate:
-                    raise ValueError('Sampling rates do not match.')
-        outtic = time.clock()
-        if debug > 0:
-            print('Computing detection statistics')
-        stats = np.zeros((len(stream[0]),
-                          len(stream[0][0]) - len(self.data[0][0]) + 1),
-                         dtype=np.float32)
-        for det_channel, in_channel, i in zip(self.data, stream[0],
-                                              np.arange(len(stream[0]))):
-            stats[i] = subspace_statistic.\
-                det_statistic(detector=det_channel.astype(np.float32),
-                              data=in_channel.data.astype(np.float32))
-            if debug > 0:
-                print(stats[i].shape)
-            if debug > 3:
-                plt.plot(stats[i])
-                plt.show()
-            # Hard typing in Cython loop requires float32 type.
-        # statistics
-        if self.multiplex:
-            trig_int_samples = (len(self.stachans) *
-                                self.sampling_rate * trig_int)
-        else:
-            trig_int_samples = self.sampling_rate * trig_int
-        if debug > 0:
-            print('Finding peaks')
-        peaks = []
-        for i in range(len(stream[0])):
-            peaks.append(findpeaks.find_peaks2_short(arr=stats[i],
-                                                     thresh=threshold,
-                                                     trig_int=trig_int_samples,
-                                                     debug=debug))
-        if not self.multiplex:
-            # Conduct network coincidence triggering
-            peaks = findpeaks.coin_trig(peaks=peaks,
-                                        samp_rate=self.sampling_rate,
-                                        moveout=moveout, min_trig=min_trig,
-                                        stachans=stachans, trig_int=trig_int)
-        else:
-            peaks = peaks[0]
-        if len(peaks) > 0:
-            for peak in peaks:
-                if self.multiplex:
-                    detecttime = st[0].stats.starttime + (peak[1] /
-                                                          (self.sampling_rate *
-                                                           len(self.stachans)))
-                else:
-                    detecttime = st[0].stats.starttime + (peak[1] /
-                                                          self.sampling_rate)
-                rid = ResourceIdentifier(id=self.name + '_' +
-                                         str(detecttime),
-                                             prefix='smi:local')
-                ev = Event(resource_id=rid)
-                cr_i = CreationInfo(author='EQcorrscan',
-                                    creation_time=UTCDateTime())
-                ev.creation_info = cr_i
-                # All detection info in Comments for lack of a better idea
-                thresh_str = 'threshold=' + str(threshold)
-                ccc_str = 'detect_val=' + str(peak[0])
-                used_chans = 'channels used: ' +\
-                    ' '.join([str(pair) for pair in self.stachans])
-                ev.comments.append(Comment(text=thresh_str))
-                ev.comments.append(Comment(text=ccc_str))
-                ev.comments.append(Comment(text=used_chans))
-                for stachan in self.stachans:
-                    tr = st.select(station=stachan[0], channel=stachan[1])
-                    if tr:
-                        net_code = tr[0].stats.network
-                    else:
-                        net_code = ''
-                    pick_tm = detecttime
-                    wv_id = WaveformStreamID(network_code=net_code,
-                                             station_code=stachan[0],
-                                             channel_code=stachan[1])
-                    ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                detections.append(DETECTION(self.name,
-                                            detecttime,
-                                            len(self.stachans),
-                                            peak[0],
-                                            threshold,
-                                            'subspace', self.stachans,
-                                            event=ev))
-        outtoc = time.clock()
-        print('Detection took %s seconds' % str(outtoc - outtic))
-        if extract_detections:
-            detection_streams = extract_from_stream(st, detections)
-            return detections, detection_streams
-        return detections
+        return _detect(detector=self, st=st, threshold=threshold,
+                       trig_int=trig_int, moveout=moveout, min_trig=min_trig,
+                       process=process, extract_detections=extract_detections,
+                       debug=debug)
 
     def write(self, filename):
         """
@@ -540,6 +436,155 @@ class Detector(object):
         if show:
             plt.show()
         return fig
+
+
+def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
+           process=True, extract_detections=False, debug=0):
+    """
+    Detect within continuous data using the subspace method.
+
+    Not to be called directly, use the detector.detect method.
+
+    :type detector: eqcorrscan.core.subspace.Detector
+    :param detector: Detector to use.
+    :type st: obspy.core.stream.Stream
+    :param st: Un-processed stream to detect within using the subspace \
+        detector
+    :type threshold: float
+    :param threshold: Threshold value for detections between 0-1
+    :type trig_int: float
+    :param trig_int: Minimum trigger interval in seconds.
+    :type moveout: float
+    :param moveout: Maximum allowable moveout window for non-multiplexed,
+        network detection.  See note.
+    :type min_trig: int
+    :param min_trig: Minimum number of stations exceeding threshold for \
+        non-multiplexed, network detection. See note.
+    :type process: bool
+    :param process: Whether or not to process the stream according to the \
+        parameters defined by the detector.  Default is to process the \
+        data (True).
+    :type extract_detections: bool
+    :param extract_detections: Whether to extract waveforms for each \
+        detection or not, if true will return detections and streams.
+    :type debug: int
+    :param debug: Debug output level from 0-5.
+
+    :return: list of detections
+    :rtype: list of eqcorrscan.core.match_filter.DETECTION
+    """
+    from eqcorrscan.core import subspace_statistic
+    detections = []
+    # First process the stream
+    if process:
+        if debug > 0:
+            print('Processing Stream')
+        stream, stachans = _subspace_process(streams=[st.copy()],
+                                             lowcut=detector.lowcut,
+                                             highcut=detector.highcut,
+                                             filt_order=detector.filt_order,
+                                             sampling_rate=detector.
+                                             sampling_rate,
+                                             multiplex=detector.multiplex,
+                                             stachans=detector.stachans,
+                                             parallel=True,
+                                             align=False,
+                                             shift_len=None,
+                                             reject=False)
+    else:
+        # Check the sampling rate at the very least
+        for tr in st:
+            if not tr.stats.sampling_rate == detector.sampling_rate:
+                raise ValueError('Sampling rates do not match.')
+        stream = [st]
+        stachans = detector.stachans
+    outtic = time.clock()
+    if debug > 0:
+        print('Computing detection statistics')
+    stats = np.zeros((len(stream[0]),
+                      len(stream[0][0]) - len(detector.data[0][0]) + 1),
+                     dtype=np.float32)
+    for det_channel, in_channel, i in zip(detector.data, stream[0],
+                                          np.arange(len(stream[0]))):
+        stats[i] = subspace_statistic.\
+            det_statistic(detector=det_channel.astype(np.float32),
+                          data=in_channel.data.astype(np.float32))
+        if debug > 0:
+            print(stats[i].shape)
+        if debug > 3:
+            plt.plot(stats[i])
+            plt.show()
+        # Hard typing in Cython loop requires float32 type.
+    # statistics
+    if detector.multiplex:
+        trig_int_samples = (len(detector.stachans) *
+                            detector.sampling_rate * trig_int)
+    else:
+        trig_int_samples = detector.sampling_rate * trig_int
+    if debug > 0:
+        print('Finding peaks')
+    peaks = []
+    for i in range(len(stream[0])):
+        peaks.append(findpeaks.find_peaks2_short(arr=stats[i],
+                                                 thresh=threshold,
+                                                 trig_int=trig_int_samples,
+                                                 debug=debug))
+    if not detector.multiplex:
+        # Conduct network coincidence triggering
+        peaks = findpeaks.coin_trig(peaks=peaks,
+                                    samp_rate=detector.sampling_rate,
+                                    moveout=moveout, min_trig=min_trig,
+                                    stachans=stachans, trig_int=trig_int)
+    else:
+        peaks = peaks[0]
+    if len(peaks) > 0:
+        for peak in peaks:
+            if detector.multiplex:
+                detecttime = st[0].stats.starttime + (peak[1] /
+                                                      (detector.sampling_rate *
+                                                       len(detector.stachans)))
+            else:
+                detecttime = st[0].stats.starttime + (peak[1] /
+                                                      detector.sampling_rate)
+            rid = ResourceIdentifier(id=detector.name + '_' +
+                                     str(detecttime),
+                                         prefix='smi:local')
+            ev = Event(resource_id=rid)
+            cr_i = CreationInfo(author='EQcorrscan',
+                                creation_time=UTCDateTime())
+            ev.creation_info = cr_i
+            # All detection info in Comments for lack of a better idea
+            thresh_str = 'threshold=' + str(threshold)
+            ccc_str = 'detect_val=' + str(peak[0])
+            used_chans = 'channels used: ' +\
+                ' '.join([str(pair) for pair in detector.stachans])
+            ev.comments.append(Comment(text=thresh_str))
+            ev.comments.append(Comment(text=ccc_str))
+            ev.comments.append(Comment(text=used_chans))
+            for stachan in detector.stachans:
+                tr = st.select(station=stachan[0], channel=stachan[1])
+                if tr:
+                    net_code = tr[0].stats.network
+                else:
+                    net_code = ''
+                pick_tm = detecttime
+                wv_id = WaveformStreamID(network_code=net_code,
+                                         station_code=stachan[0],
+                                         channel_code=stachan[1])
+                ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+            detections.append(DETECTION(detector.name,
+                                        detecttime,
+                                        len(detector.stachans),
+                                        peak[0],
+                                        threshold,
+                                        'subspace', detector.stachans,
+                                        event=ev))
+    outtoc = time.clock()
+    print('Detection took %s seconds' % str(outtoc - outtic))
+    if extract_detections:
+        detection_streams = extract_from_stream(st, detections)
+        return detections, detection_streams
+    return detections
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
@@ -837,7 +882,8 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
     return design_set
 
 
-def subspace_detect(detectors, stream, threshold, trig_int):
+def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
+                    min_trig=1, parallel=True, num_cores=None):
     """
     Conduct subspace detection with chosen detectors.
 
@@ -851,6 +897,17 @@ def subspace_detect(detectors, stream, threshold, trig_int):
         Detector.detect.
     :type trig_int: float
     :param trig_int: Minimum trigger interval in seconds.
+    :type moveout: float
+    :param moveout: Maximum allowable moveout window for non-multiplexed,
+        network detection.  See note.
+    :type min_trig: int
+    :param min_trig: Minimum number of stations exceeding threshold for \
+        non-multiplexed, network detection. See note in Detector.detect.
+    :type parallel: bool
+    :param parallel: Whether to run detectors in parallel in groups.
+    :type num_cores: int
+    :param num_cores: How many cpu cores to use if parallel==True. If set to \
+        None (default), will use all avaiable cores.
 
     :rtype: list
     :return: List of eqcorrscan.core.match_filter.DETECTION detections.
@@ -859,20 +916,60 @@ def subspace_detect(detectors, stream, threshold, trig_int):
         If the detectors are multiplexed it will run groups of detectors with \
         the same channels at the same time.
     """
-    ### TODO: Detector should allow stream to be processed, but not multiplexed to allow for efficient looping, e.g. process the stream once, and multiplex different traces as needed.
+    from multiprocessing import Pool, cpu_count
     # First check that detector parameters are the same
     parameters = []
+    detections = []
     for detector in detectors:
-        parameters.append({'lowcut': detector.lowcut,
-                           'highcut': detector.highcut,
-                           'filt_order': detector.filt_order,
-                           'sampling_rate': detector.sampling_rate,
-                           'multiplex': detector.multiplex,
-                           'stachans': detector.stachans})
-    parameters = list(set(parameters))
-    if not len(parameters) == 1:
-        msg = ('Multiple parameters used for detectors, group your ' +
-               'detectors first')
-        raise IOError(msg)
-    # Now process the stream according to those parameters
+        parameter = (detector.lowcut, detector.highcut,
+                     detector.filt_order, detector.sampling_rate,
+                     detector.multiplex, detector.stachans)
+        if parameter not in parameters:
+            parameters.append(parameter)
+    for parameter_set in parameters:
+        parameter_detectors = []
+        for detector in detectors:
+            det_par = (detector.lowcut, detector.highcut, detector.filt_order,
+                       detector.sampling_rate, detector.multiplex,
+                       detector.stachans)
+            if det_par == parameter_set:
+                parameter_detectors.append(detector)
+        stream, stachans = \
+            _subspace_process(streams=[stream.copy()],
+                              lowcut=parameter_set[0],
+                              highcut=parameter_set[1],
+                              filt_order=parameter_set[2],
+                              sampling_rate=parameter_set[3],
+                              multiplex=parameter_set[4],
+                              stachans=parameter_set[5],
+                              parallel=True, align=False, shift_len=None,
+                              reject=False)
+        if not parallel:
+            for detector in parameter_detectors:
+                detections += _detect(detector=detector, st=stream[0],
+                                      threshold=threshold, trig_int=trig_int,
+                                      moveout=moveout, min_trig=min_trig,
+                                      process=False, extract_detections=False,
+                                      debug=0)
+        else:
+            if num_cores:
+                ncores = num_cores
+            else:
+                ncores = cpu_count()
+            pool = Pool(processes=ncores)
+            results = [pool.apply_async(_detect,
+                                        args=(detector, stream[0], threshold,
+                                              trig_int, moveout, min_trig,
+                                              False, False, 0))
+                       for detector in parameter_detectors]
+            pool.close()
+            _detections = [p.get() for p in results]
+            pool.join()
+            for d in _detections:
+                if isinstance(d, list):
+                    detections += d
+                else:
+                    detections.append(d)
+    return detections
+
 

@@ -283,12 +283,12 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
         >>> peaks = [[(0.5, 100), (0.3, 800)], [(0.4, 120), (0.7, 850)]]
         >>> triggers = coin_trig(peaks, [('a', 'Z'), ('b', 'Z')], 10, 3, 2, 1)
         >>> print(triggers)
-        [(0.45, 100.0)]
+        [(0.45, 100)]
     """
     triggers = []
     for stachan, _peaks in zip(stachans, peaks):
         for peak in _peaks:
-            trigger = (peak[1] / samp_rate, peak[0], '.'.join(stachan))
+            trigger = (peak[1], peak[0], '.'.join(stachan))
             triggers.append(trigger)
     coincidence_triggers = []
     for i, master in enumerate(triggers):
@@ -297,7 +297,8 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
         trig_time = master[0]
         trig_val = master[1]
         for slave in slaves:
-            if abs(slave[0] - master[0]) < moveout and slave[2] != master[2]:
+            if abs(slave[0] - master[0]) <= (moveout * samp_rate) and \
+              slave[2] != master[2]:
                 coincidence += 1
                 if slave[0] < master[0]:
                     trig_time = slave[0]
@@ -312,12 +313,15 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
         for coincidence_trigger in coincidence_triggers[1:]:
             add = True
             for peak in output:
-                if abs(coincidence_trigger[1] - peak[1]) > trig_int:
+                # If the event occurs within the trig_int time then do not add
+                # it, and break out of the inner loop.
+                if abs(coincidence_trigger[1] - peak[1]) < (trig_int *
+                                                            samp_rate):
                     add = False
                     break
             if add:
                 output.append((coincidence_trigger[0],
-                               coincidence_trigger[1] * samp_rate))
+                               coincidence_trigger[1]))
         output.sort(key=lambda tup: tup[1])
         return output
     else:

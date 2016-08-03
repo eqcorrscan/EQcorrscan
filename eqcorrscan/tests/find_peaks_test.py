@@ -26,6 +26,15 @@ class TestPeakFinding(unittest.TestCase):
                          'updated?')
         self.assertTrue((np.array(peaks) == expected_peaks).all())
 
+    def test_coincidence(self):
+        """Test the coincidence trigger."""
+        from eqcorrscan.utils.findpeaks import coin_trig
+        peaks = [[(0.5, 100), (0.3, 800), (0.3, 105)],
+                 [(0.4, 120), (0.7, 850)]]
+        triggers = coin_trig(peaks, [('a', 'Z'), ('b', 'Z')], samp_rate=10,
+                             moveout=3, min_trig=2, trig_int=1)
+        self.assertEqual(triggers, [(0.45, 100)])
+
 if __name__ == '__main__':
     """
     Run tests
