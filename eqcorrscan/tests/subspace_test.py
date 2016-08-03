@@ -88,10 +88,6 @@ class SubspaceTestingMethods(unittest.TestCase):
         """Set up the test templates."""
         cls.templates, cls.st = get_test_data()
 
-    # def test_synthetic(self):
-    #     """Test a synthetic case."""
-    #     self.assertEqual('This passes', 'Not yet')
-
     def test_write(self):
         """Test writing to an hdf5 file"""
         templates = copy.deepcopy(self.templates)
@@ -125,14 +121,37 @@ class SubspaceTestingMethods(unittest.TestCase):
                                                         dtype=np.float16))))
         # Test a non-multiplexed version
         detector = subspace.Detector()
+        templates = copy.deepcopy(self.templates)
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
-                           name=str('Tester'), align=True, shift_len=0.2)
+                           name=str('Tester'), align=True, shift_len=6,
+                           reject=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(identity,
                                         np.diag(np.ones(len(identity),
                                                         dtype=np.float16))))
+        comparison_detector = \
+            subspace.read_detector(os.path.join(os.path.
+                                                abspath(os.path.
+                                                        dirname(__file__)),
+                                                'test_data', 'subspace',
+                                                'master_detector.h5'))
+        for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
+                    'filt_order', 'dimension', 'stachans']:
+            print(key)
+            self.assertEqual(comparison_detector.__getattribute__(key),
+                             detector.__getattribute__(key))
+        for key in ['data', 'u', 'v', 'sigma']:
+            print(key)
+            list_item = detector.__getattribute__(key)
+            other_list = comparison_detector.__getattribute__(key)
+            self.assertEqual(len(list_item), len(other_list))
+            for item, other_item in zip(list_item, other_list):
+                if not np.allclose(item, other_item):
+                    print(item)
+                    print(other_item)
+                self.assertTrue(np.allclose(item, other_item))
 
     def test_refactor(self):
         """Test subspace refactoring, checks that np.dot(U.T, U) is\
