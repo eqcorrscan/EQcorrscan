@@ -487,9 +487,46 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     cccsums = cccs_matrix[0]
     return cccsums, no_chans, chans
 
+def reverse_threshold_gen(template_names, template_list, st, cores=1, tempdir=False, plot=False, debug=0):
+    import numpy as np
+    import copy
+    from eqcorrscan.utils import findpeaks
+    from obspy import Trace
+    import time
+    #reverse the templates in time and run through channel loop
+    reversed_templates = copy.deepcopy(template_list)
+    for reversed_template in reversed_templates:
+    	for reversed_tr in reversed_template:
+	    reversed_tr.data=reversed_tr.data[::-1]
+
+    stream = st.copy()
+    for tr in stream:
+	    if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
+        	    msg = ' '.join(['Data are not daylong for', tr.stats.station,
+                            tr.stats.channel])
+		    raise ValueError(msg)
+    template_stachan = []
+    for template in reversed_templates:
+	for tr in template:
+		template_stachan += [(tr.stats.station, tr.stats.channel)]
+    template_stachan = list(set(template_stachan))
+    for stachan in template_stachan:
+	print('station' + stachan[0], 'channel' + stachan[1])
+	print(stream[0].stats.station, stream[0].stats.channel)
+        if not stream.select(station=stachan[0]+"*", channel=stachan[1]):
+            for template in reversed_templates:
+                if template.select(station=stachan[0], channel=stachan[1]):
+                    for tr in template.select(station=stachan[0],
+                                              channel=stachan[1]):
+                        template.remove(tr)
+    for tr in stream:
+	if not (tr.stats.station, tr.stats.channel) in template_stachan:
+            stream.remove(tr)
+    [reversed_cccsums, reversed_nochans, reversed_chans] = _channel_loop(reversed_templates,stream,cores,debug)
+    return reversed_cccsums
 
 def match_filter(template_names, template_list, st, threshold,
-                 threshold_type, trig_int, plotvar, plotdir='.', cores=1,
+		threshold_type, trig_int, plotvar, rev_thresholds='None',plotdir='.', cores=1,
                  tempdir=False, debug=0, plot_format='png',
                  output_cat=False, extract_detections=False,
                  arg_check=True):
@@ -529,6 +566,10 @@ def match_filter(template_names, template_list, st, threshold,
     :param trig_int: Minimum gap between detections in seconds.
     :type plotvar: bool
     :param plotvar: Turn plotting on or off
+    :type rev_thresholds: ndarray
+    :param rev_thresholds: array containing reversed thresholds \
+		    for templates, only used for threshold_type = reversed_cc\
+		    and generated separately
     :type plotdir: str
     :param plotdir: Path to plotting folder, plots will be output here, \
         defaults to run location.
@@ -723,6 +764,8 @@ def match_filter(template_names, template_list, st, threshold,
             rawthresh = threshold
         elif str(threshold_type) == str('av_chan_corr'):
             rawthresh = threshold * no_chans[i]
+	elif str(threshold_type) == str('reversed_cc'):
+		rawthresh=rev_thresholds[i]
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
         print(' '.join(['Threshold is set at:', str(rawthresh)]))
         print(' '.join(['Max of data is:', str(max(cccsum))]))

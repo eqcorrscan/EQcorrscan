@@ -409,7 +409,7 @@ def from_quakeml(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                   length, prepick, swin, all_horiz=False, debug=0,
+                   length, prepick, swin, return_plotbg=False, return_stats=False, all_horiz=False, debug=0,
                    plot=False):
     """
     Generate a multiplexed template from a local quakeML file.
@@ -445,6 +445,10 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :param prepick: Pre-pick time in seconds
     :type swin: str
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :type return_stats: bool
+    :param return_stats: To return information stored in xmlfile such as\
+		    latitude, longitude and unique event id for post-\
+		    processing.
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
@@ -512,6 +516,15 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     # Read QuakeML file into Catalog class
     catalog = read_events(meta_file)
     templates = []
+    if return_plotbg:
+	    backgrounds = []
+	    picksarray = []
+    if return_stats:
+	    magnitudes = []
+	    evt_ids = []
+	    lats = []
+	    lons = []
+	    depths = []
     for event in catalog:
         if len(event.picks) == 0:
             warnings.warn('No picks for event %s' % event.resource_id)
@@ -552,11 +565,32 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                               channels[i])
         st1 = st.copy()
         # Cut and extract the templates
-        template = template_gen(event.picks, st1, length, swin,
+	if return_stats:
+		evtid = event.resource_id.id.split('/')[1]
+		if debug > 0:
+			print('using event id ' + evtid)
+		evt_ids.append(evtid)
+		lats.append(event.origins[0].latitude)
+		lons.append(event.origins[0].longitude)
+		depths.append(event.origins[0].depth)
+		magnitudes.append(event.magnitudes[0].mag)
+	if return_plotbg:
+		template, background, picks = template_gen(event.picks, st1, length, swin, prepick=prepick, plot=plot, return_plotbg=return_plotbg, debug=debug, all_horiz=all_horiz)
+		backgrounds.append(background)
+		picksarray.append(picks)
+	else:
+        	template = template_gen(event.picks, st1, length, swin,
                                 prepick=prepick, plot=plot, debug=debug,
                                 all_horiz=all_horiz)
         templates.append(template)
-    return templates
+    if return_stats and return_plotbg:
+	    return templates, backgrounds, picksarray, magnitudes, evt_ids, lats, lons, depths
+    elif return_stats:
+	    return templates, magnitudes, evt_ids, lats, lons, depths
+    elif return_plotbg:
+	    return templates, backgrounds, picksarray
+    else:
+            return templates
 
 
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
@@ -947,7 +981,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
 
 
 def template_gen(picks, st, length, swin='all', prepick=0.05,
-                 all_horiz=False, plot=False, debug=0):
+                 all_horiz=False, plot=False, return_plotbg=False, debug=0):
     """
     Master function to generate a multiplexed template for a single event.
     Function to generate a cut template in the obspy \
@@ -971,6 +1005,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         a pick on one of them.  Defaults to False.
     :type plot: bool
     :param plot: To plot the template or not, default is True
+    :type return_plotbg: bool
+    :param return_plotbg: whether or not to output the background stream and\
+		    picks array
     :type debug: int
     :param debug: Debug output level from 0-5.
 
@@ -1131,7 +1168,10 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         del stplot
     del st
     # st1.plot(size=(800,600))
-    return st1
+    if return_plotbg:
+	    return st1, background, picks_copy
+    else:
+    	    return st1
 
 
 def extract_from_stack(stack, template, length, pre_pick, pre_pad,
