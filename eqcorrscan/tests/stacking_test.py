@@ -61,7 +61,7 @@ class TestStackingMethods(unittest.TestCase):
         self.assertEqual(len(synth[0].data), len(stack[0].data))
 
     def test_align_traces(self):
-        """Test the utils.stacking.align_traces fucntion."""
+        """Test the utils.stacking.align_traces function."""
         # Generate synth data
         import numpy as np
         from obspy import Trace

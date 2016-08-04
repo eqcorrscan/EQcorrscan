@@ -190,7 +190,8 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'), align=True, shift_len=0.2)
+                           name=str('Tester'), align=True, shift_len=3.0,
+                           reject=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(identity,

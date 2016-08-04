@@ -120,7 +120,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False):
 
     :returns: list of shifts for best alignment in seconds
     """
-    from obspy.signal.cross_correlation import xcorr
+    from eqcorrscan.core.sliding_normxcorr import sliding_normxcorr as xcorr
     from copy import deepcopy
     traces = deepcopy(trace_list)
     if not master:
@@ -138,7 +138,8 @@ def align_traces(trace_list, shift_len, master=False, positive=False):
     for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
-        shift, cc, cc_vec = xcorr(tr1=master, tr2=traces[i],
+        shift, cc, cc_vec = xcorr(arr1=master.data.astype(np.float32),
+                                  arr2=traces[i].data.astype(np.float32),
                                   shift_len=shift_len, full_xcorr=True)
         if cc < 0 and positive:
             cc = cc_vec.max()
