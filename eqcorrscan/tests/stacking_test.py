@@ -102,8 +102,9 @@ class TestStackingMethods(unittest.TestCase):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'WAV', 'TEST_')
         # testing_path = 'eqcorrscan/tests/test_data/WAV/TEST_/'
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
         trace_list = []
-        for wavfile in glob.glob(os.path.join(testing_path, '*')):
+        for wavfile in wavefiles:
             st = read(wavfile)
             tr = st.select(station='FRAN', channel='SH1')
             if len(tr) == 1:
@@ -119,8 +120,8 @@ class TestStackingMethods(unittest.TestCase):
         known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
         known_shifts, known_ccs = zip(*known_shifts)
         self.assertEqual(shifts, list(known_shifts))
-        ccs = [round(cc, 5) for cc in ccs]
-        known_ccs = [round(cc, 5) for cc in known_ccs]
+        ccs = [round(cc, 3) for cc in ccs]
+        known_ccs = [round(cc, 3) for cc in known_ccs]
         self.assertEqual(ccs, list(known_ccs))
 
     def test_known_align_positive(self):
@@ -130,8 +131,9 @@ class TestStackingMethods(unittest.TestCase):
         import glob
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'WAV', 'TEST_')
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
         trace_list = []
-        for wavfile in glob.glob(os.path.join(testing_path, '*')):
+        for wavfile in wavefiles:
             st = read(wavfile)
             tr = st.select(station='FRAN', channel='SH1')
             if len(tr) == 1:
@@ -148,8 +150,8 @@ class TestStackingMethods(unittest.TestCase):
         known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
         known_shifts, known_ccs = zip(*known_shifts)
         self.assertEqual(shifts, list(known_shifts))
-        ccs = [round(cc, 5) for cc in ccs]
-        known_ccs = [round(cc, 5) for cc in known_ccs]
+        ccs = [round(cc, 3) for cc in ccs]
+        known_ccs = [round(cc, 3) for cc in known_ccs]
         self.assertEqual(ccs, list(known_ccs))
 
 if __name__ == '__main__':
