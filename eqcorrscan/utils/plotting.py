@@ -76,6 +76,36 @@ def chunk_data(tr, samp_rate, state='mean'):
     return trout
 
 
+def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
+               savefile=None):
+    """
+    Plot a template overlying an image aligned by correlation.
+
+    :type template: np.ndarray
+    :param template: Short template image
+    :type image: np.ndarray
+    :param image: Long master image
+    :type shift: int
+    :param shift: Shift to apply to template relative to image, in samples
+    :type cc: float
+    :param cc: Cross-correlation at shift
+    :type cc_vec: np.ndarray
+    :param cc_vec: Cross-correlation vector.
+    """
+    _check_save_args(save, savefile)
+    if not cc or not shift:
+        if not cc_vec:
+            raise IOError('Must provide either cc_vec, or cc and shift')
+        shift = np.abs(cc_vec).argmax()
+        cc = cc_vec[shift]
+    x = np.arange(len(image))
+    plt.plot(x, image / abs(image).max(), 'k', lw=1.3, label='Image')
+    x = np.arange(len(template)) + shift
+    plt.plot(x, template / abs(template).max(), 'r', lw=1.1, label='Template')
+    plt.title('Shift=%s, Correlation=%s' % (shift, cc))
+    plt.show()
+
+
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
                 savefile=None):
     r"""Plot a day-long seismogram, correlogram and histogram.

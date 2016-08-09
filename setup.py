@@ -149,10 +149,10 @@ setup(
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension("eqcorrscan.core.subspace_statistic",
                            ["eqcorrscan/core/subspace_statistic.pyx"],
-                           include_dirs=[np.get_include()]),
-                 Extension("eqcorrscan.core.sliding_normxcorr",
-                           ["eqcorrscan/core/sliding_normxcorr.pyx"],
                            include_dirs=[np.get_include()])]
+                 # Extension("eqcorrscan.core.sliding_normxcorr",
+                 #           ["eqcorrscan/core/sliding_normxcorr.pyx"],
+                 #           include_dirs=[np.get_include()])]
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:

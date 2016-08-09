@@ -253,6 +253,11 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
+                print(item.shape)
+                print(other_item.shape)
+                print('Next')
+            for item, other_item in zip(list_item, other_list):
+                self.assertEqual(item.shape, other_item.shape)
                 if not np.allclose(item, other_item):
                     print(item)
                     print(other_item)
@@ -303,7 +308,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         st = self.st
         detections = detector.detect(st=st, threshold=0.009, trig_int=2,
                                      debug=1)
-        self.assertEqual(len(detections), 2)
+        self.assertEqual(len(detections), 1)
 
     def test_not_multiplexed(self):
         """Test that a non-multiplexed detector gets the same result."""
@@ -339,7 +344,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                                               min_trig=5,
                                               parallel=False, num_cores=2)
         print(detections)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 5)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
                                               threshold=0.05,
@@ -347,7 +352,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                                               min_trig=5,
                                               parallel=True, num_cores=2)
         print(detections)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 5)
 
     def partition_fail(self):
         templates = copy.deepcopy(self.templates)
@@ -357,6 +362,15 @@ class SubspaceTestingMethods(unittest.TestCase):
                                 filt_order=4, sampling_rate=20, multiplex=False,
                                 name=str('Tester'), align=True,
                                 shift_len=6, reject=0.2).partition(9)
+
+    # def test_subspace_process(self):
+    #     """Test the processing against a fixed result."""
+    #     self.assertEqual("This isn't written yet", "Nup")
+    #
+    # def test_subspace_svd(self):
+    #     """Test the svd with a known outcome - attempting to debug why \
+    #     detectors are different on different systems."""
+    #     self.assertEqual("This isn't written yet", "Nup")
 
 
 def get_test_data():

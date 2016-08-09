@@ -93,7 +93,8 @@ def PWS_stack(streams, weight=2, normalize=True):
     return Phasestack
 
 
-def align_traces(trace_list, shift_len, master=False, positive=False):
+def align_traces(trace_list, shift_len, master=False, positive=False,
+                 plot=False):
     """
     Align traces relative to each other based on their cross-correlation value.
     Uses the obspy.signal.cross_correlation.xcorr function to find the optimum
@@ -117,11 +118,14 @@ def align_traces(trace_list, shift_len, master=False, positive=False):
     :type positive: bool
     :param positive: Return the maximum positive cross-correlation, or the \
         absolute maximum, defaults to False (absolute maximum).
+    :type plot: bool
+    :param plot: If true, will plot each trace aligned with the master.
 
     :returns: list of shifts for best alignment in seconds
     """
-    from eqcorrscan.core.sliding_normxcorr import sliding_normxcorr as xcorr
+    from eqcorrscan.core.match_filter import normxcorr2
     from copy import deepcopy
+    from eqcorrscan.utils.plotting import xcorr_plot
     traces = deepcopy(trace_list)
     if not master:
         # Use trace with largest MAD amplitude as master
@@ -138,9 +142,18 @@ def align_traces(trace_list, shift_len, master=False, positive=False):
     for i in range(len(traces)):
         if not master.stats.sampling_rate == traces[i].stats.sampling_rate:
             raise ValueError('Sampling rates not the same')
-        shift, cc, cc_vec = xcorr(arr1=master.data.astype(np.float32),
-                                  arr2=traces[i].data.astype(np.float32),
-                                  shift_len=shift_len, full_xcorr=True)
+        cc_vec = normxcorr2(template=traces[i].data.
+                            astype(np.float32)[shift_len:-shift_len],
+                            image=master.data.astype(np.float32))
+        cc_vec = cc_vec[0]
+        shift = np.abs(cc_vec).argmax()
+        cc = cc_vec[shift]
+        if plot:
+            xcorr_plot(template=traces[i].data.
+                       astype(np.float32)[shift_len:-shift_len],
+                       image=master.data.astype(np.float32), shift=shift,
+                       cc=cc)
+        shift -= shift_len
         if cc < 0 and positive:
             cc = cc_vec.max()
             shift = cc_vec.argmax() - shift_len

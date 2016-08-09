@@ -284,7 +284,6 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
 
     :returns: tuple of (i, ccc) with ccc as an ndarray
     """
-    #XXX TODO: Rename ccc to cstat in print statements
     from eqcorrscan.utils.timer import Timer
     from eqcorrscan.core import subspace
     if do_subspace:

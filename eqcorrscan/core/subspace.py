@@ -192,7 +192,9 @@ class Detector(object):
                               align=align, shift_len=shift_len, reject=reject,
                               plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
-        v, sigma, u, dummy = svd(stream_list=p_streams, full=True)
+        v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
+        if not multi:
+            stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
         self.stachans = stachans
         # self.delays = delays
         self.u = u
@@ -636,7 +638,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
     processed_streams = []
     if not stachans:
         input_stachans = list(set([(tr.stats.station, tr.stats.channel)
-                                   for st in streams for tr in st]))
+                                   for st in streams for tr in st.sort()]))
     else:
         input_stachans = stachans
     input_stachans.sort()  # Make sure stations and channels are in order
@@ -694,13 +696,23 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         if len(processed_stream) == 0:
             # If we have removed all of the traces from the stream then onwards!
             continue
+        # Need to order the stream according to input_stachans
+        _st = Stream()
+        for stachan in input_stachans:
+            tr = processed_stream.select(station=stachan[0],
+                                         channel=stachan[1])
+            if len(tr) >= 1:
+                _st += tr[0]
+            elif multiplex and len(tr) == 0:
+                raise IndexError('Missing data for %s.%s' %
+                                 (stachan[0], stachan[1]))
         if multiplex:
-            st = multi(stream=processed_stream)
+            st = multi(stream=_st)
             st = Stream(Trace(st))
             st[0].stats.station = 'Multi'
             st[0].stats.sampling_rate = sampling_rate
         else:
-            st = processed_stream
+            st = _st
         for tr in st:
             # Normalize the data
             norm = np.linalg.norm(tr.data)
@@ -727,7 +739,8 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
         tr.detrend('simple')
         tr = pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
                                     filt_order=filt_order,
-                                    samp_rate=sampling_rate, debug=debug)
+                                    samp_rate=sampling_rate, debug=debug,
+                                    seisan=False)
     else:
         msg = ('Multiple channels for ' + stachan[0] + '.' +
                stachan[1] + ' in a single design stream.')
