@@ -307,7 +307,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
-            starttime=False, full_day=False):
+            starttime=False, full_day=False, seisan=True):
     r"""Basic function to process data, usually called by dayproc or shortproc.
 
     Functionally, this will bandpass, downsample and check headers and length \
@@ -336,6 +336,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :param starttime: Desired start of trace
     :type full_day: bool
     :param full_day: Whether to expect, and enforce a full day of data or not.
+    :type seisan: bool
+    :param seisan: Whether channels are named like seisan channels (which are \
+        two letters rather than three) - defaults to True.
 
     :return: obspy.Stream
 
@@ -360,16 +363,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     qual = _check_daylong(tr)
     if not qual:
         msg = ("Data have more zeros than actual data, please check the raw",
-               " data set-up and manually sort it")
+               " data set-up and manually sort it: " + tr.stats.station + "." +
+               tr.stats.channel)
         raise ValueError(msg)
     tr = tr.detrend('simple')    # Detrend data before filtering
-
-    # If there is one sample too many remove the first sample - this occurs
-    # at station FOZ where the first sample is zero when it shouldn't be,
-    # Not real sample: generated during data download
-    # if full_day:
-    #     if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
-    #         tr.data = tr.data[1:len(tr.data)]
     if debug > 0:
         print('I have '+str(len(tr.data))+' data points for ' +
               tr.stats.station+'.'+tr.stats.channel+' before processing')
@@ -380,12 +377,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' are not of daylong length, will zero pad')
-        # Work out when the trace thinks it is starting
-        # traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
-        #                        str(tr.stats.starttime.month)+'-' +
-        #                        str(tr.stats.starttime.day))
         # Use obspy's trim function with zero padding
-        tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime + 86400, pad=True, fill_value=0,
                      nearest_sample=True)
         # If there is one sample too many after this remove the first one
         # by convention
@@ -425,10 +418,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         warnings.warn('No filters applied')
 
     # Account for two letter channel names in s-files and therefore templates
-    tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
+    if seisan:
+        tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
 
     # Sanity check the time header
-    if tr.stats.starttime.day != day != day and full_day:
+    if tr.stats.starttime.day != day and full_day:
         warnings.warn("Time headers do not match expected date: " +
                       str(tr.stats.starttime))
 

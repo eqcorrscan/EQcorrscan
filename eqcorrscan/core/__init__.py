@@ -28,7 +28,8 @@ Pre-requisites:
     python-pylab    - used for plotting
 """
 
-__all__ = ['template_gen', 'match_filter', 'bright_lights']
+__all__ = ['template_gen', 'match_filter', 'bright_lights', 'lag_calc',
+           'subspace', 'subspace_statistic']
 
 if __name__ == '__main__':
     import doctest

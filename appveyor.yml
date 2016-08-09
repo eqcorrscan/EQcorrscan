@@ -36,7 +36,7 @@ install:
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy scipy opencv3 matplotlib obspy mock flake8 pytest pyflakes=0.9.0"
+  - "conda install -q --yes pip numpy scipy opencv3 matplotlib obspy mock flake8 pytest pyflakes=0.9.0 cython h5py"
   # additional dependecies
   #  - "choco install opencv"
   #  - "powershell copy-item C:\\OpenCV\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."

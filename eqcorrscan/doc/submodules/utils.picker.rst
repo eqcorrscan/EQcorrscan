@@ -14,6 +14,5 @@ picker
 
        cross_net
        stalta_pick
-       synth_compare
 
     .. comment to end block

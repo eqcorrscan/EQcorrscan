@@ -200,10 +200,11 @@ def write_event(catalog):
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
         Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
+        if 'time_errors' in event.origins[0]:
+            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or 0.0
         else:
-            t_RMS = ' '
+            print('No time residual in header')
+            t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2) + '  ' +
                 str(evinfo.time.hour).rjust(2) +

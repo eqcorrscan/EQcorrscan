@@ -28,13 +28,13 @@ mag_calc
     at any point.
 
     .. autosummary::
-      :toctree: autogen
-      :nosignatures:
+       :toctree: autogen
+       :nosignatures:
 
-      _sim_WA
-      _pairwise
-      _max_p2t
-      _find_resp
-      _GSE2_PAZ_read
+       _sim_WA
+       _pairwise
+       _max_p2t
+       _find_resp
+       _GSE2_PAZ_read
 
     .. comment to end block
