@@ -36,7 +36,7 @@ import warnings
 
 __all__ = ['core', 'utils']
 
-__version__ = '0.1.3rc'
+__version__ = '0.1.3'
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {

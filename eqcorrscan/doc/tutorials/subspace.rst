@@ -96,8 +96,16 @@ True.
 Advanced Example
 ----------------
 
+This example computes detections for a short data-period during an earthquake
+sequence in the Wairarapa region of New Zealand's North Island.  This example only
+shows one subspace detector, but could be extended, using the various :doc:`clustering <../submodules/utils.clustering>`
+routines in EQcorrscan, to create many subspace detectors.  These could be run
+using the :doc:`subspace_detect <../submodules/autogen/eqcorrscan.core.subspace.subspace_detect>`
+function, which runs similar
+detectors in parallel through the given data.
+
 .. literalinclude:: ../../tutorials/subspace.py
 
 .. |Harris2006| raw:: html
 
-    <a href="https://e-reports-ext.llnl.gov/pdf/335299.pdf" tarfer="_blank">Harris (2006)</a>
+    <a href="https://e-reports-ext.llnl.gov/pdf/335299.pdf" target="_blank">Harris (2006)</a>

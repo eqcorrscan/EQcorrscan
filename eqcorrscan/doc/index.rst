@@ -1,22 +1,19 @@
-.. EQcorrscan documentation master file, created by
-   sphinx-quickstart on Mon Mar 23 21:20:41 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to EQcorrscan's documentation
-=====================================
-
 .. image:: EQcorrscan_logo.png
-    :width: 300px
+    :width: 600px
     :align: left
     :alt: EQcorrscan_logo.png
     :target: https://github.com/calum-chamberlain/EQcorrscan/releases
 
 EQcorrscan
-----------
+==========
 
-A Python package to conduct matched-filter earthquake detections.  Codes are stored
-on github, the master and development branches are |github_link|, or the latest stable(ish) release
+A Python package for the detection and analysis of repeating and near-repeating seismicity.
+EQcorrscan contains an efficient, multi-parallel,
+:doc:`matched-filter </submodules/core.match_filter>` detection routine, as well as
+routines to implement :doc:`subspace </submodules/core.subspace>` detection,
+and detection based on :doc:`brightness </submodules/core.bright_lights>`.
+
+Code is stored on github, the development branches are |github_link|, or the latest stable release
 can be found |releases_link|.
 
 .. |releases_link| raw:: html
@@ -27,19 +24,11 @@ can be found |releases_link|.
 
   <a href="https://github.com/calum-chamberlain/EQcorrscan" target="_blank">on github</a>
 
-This package contains routines to enable the user to conduct :doc:`matched-filter </submodules/core.match_filter>` earthquake
-detections, and do some fun things with the detections (stacking, clustering,
-singular-value decomposition, pick correction...).
-
-EQcorrscan uses
-|Obspy_link| bindings when reading and writing seismic data, and for handling most
+EQcorrscan uses |Obspy_link| bindings when reading and writing seismic data, and for handling most
 of the event metadata, which ensures that detections can be easily migrated between
 softwares. Matched-filter correlations are calculated using |opencv_link|.
 OpenCV is not installed alongside EQcorrscan and must be installed
 before using this package.
-
-This package was written to implement the matlab routines
-used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
 
 .. |Obspy_link| raw:: html
 
@@ -62,9 +51,9 @@ Also within this package are:
 
   <a href="http://seisan.info/" target="_blank">Seisan</a>
 
-This package is written by Calum Chamberlain of Victoria University of Wellington, and
-is distributed under the LGPL GNU Licence, Copyright Calum Chamberlain &
-Chet Hopp 2015 & 2016.
+This package is written by Calum Chamberlain and Chet Hopp of Victoria
+University of Wellington, New Zealand, and is distributed under the LGPL GNU
+Licence, Copyright Calum Chamberlain & Chet Hopp 2015 & 2016.
 
 References
 ----------

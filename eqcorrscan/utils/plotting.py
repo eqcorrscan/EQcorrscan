@@ -81,16 +81,28 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     """
     Plot a template overlying an image aligned by correlation.
 
-    :type template: np.ndarray
+    :type template: numpy.ndarray
     :param template: Short template image
-    :type image: np.ndarray
+    :type image: numpy.ndarray
     :param image: Long master image
     :type shift: int
     :param shift: Shift to apply to template relative to image, in samples
     :type cc: float
     :param cc: Cross-correlation at shift
-    :type cc_vec: np.ndarray
+    :type cc_vec: numpy.ndarray
     :param cc_vec: Cross-correlation vector.
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.plotting import xcorr_plot
+    >>> from eqcorrscan.utils.stacking import align_traces
+    >>> st = read().detrend('simple').filter('bandpass', freqmin=2, freqmax=15)
+    >>> shifts, ccs = align_traces([st[0], st[1]], 40)
+    >>> xcorr_plot(template=st[1].data, image=st[0].data, shift=shifts[1],
+    ...            cc=ccs[1])
+
+    .. image:: ../../plots/xcorr_plot.png
     """
     _check_save_args(save, savefile)
     if not cc or not shift:
@@ -125,6 +137,23 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :param savefile: Path to save figure to, only required if save=True
 
     :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.core.match_filter import normxcorr2
+    >>> from eqcorrscan.utils.plotting import triple_plot
+    >>> st = read()
+    >>> template = st[0].copy.trim(st[0].stats.starttime + 8,
+    ...                            st[0].stats.starttime + 12)
+    >>> tr = st[0]
+    >>> ccc = normxcorr2(template=template.data, image=tr.data)
+    >>> tr.data = tr.data[0:len(ccc[0])]
+    >>> triple_plot(cccsum=ccc, cccsum_hist=ccc, trace=tr,
+    ...             threshold=0.8) # doctest: +SKIP
+
+
+    .. image:: ../../plots/triple_plot.png
     """
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
@@ -424,6 +453,18 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     :param savefile: required if save=True, path to save figure to.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.plotting import threeD_gridplot
+    >>> nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
+    >>> threeD_gridplot(nodes=nodes)  # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.utils.plotting import threeD_gridplot
+        nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
+        threeD_gridplot(nodes=nodes)
     """
     _check_save_args(save, savefile)
     lats = []
@@ -1044,7 +1085,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
 
     :returns: :class: matplotlib.figure
 
-    .. note: See obspy_3d_plot for example output.
+    .. Note:: See obspy_3d_plot for example output.
     """
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
@@ -1409,7 +1450,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 
     :returns: :class: matplotlib.figure
 
-    .. note: Called by bright_lights, not a general use plot (hence no example)
+    .. Note:: Called by bright_lights, not a general use plot (hence no example)
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -1509,9 +1550,50 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
         additionally according to station and channel.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> import glob
+    >>> from eqcorrscan.utils.plotting import SVD_plot
+    >>> from eqcorrscan.utils.clustering import svd, SVD_2_stream
+    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
+    >>> streams = [read(w) for w in wavefiles[1:10]]
+    >>> stream_list = []
+    >>> for st in streams:
+    ...     tr = st.select(station='GCSZ', channel='EHZ')
+    ...     tr.detrend('simple').resample(100).filter('bandpass', freqmin=2,
+    ...                                               freqmax=8)
+    ...     stream_list.append(tr)
+    >>> svec, sval, uvec, stachans = svd(stream_list=stream_list)
+    >>> SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+    ...                          sampling_rate=100)
+    >>> SVD_plot(SVStreams=SVstreams, SValues=sval,
+    ...          stachans=stachans) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy import read
+        import glob, os
+        from eqcorrscan.utils.plotting import SVD_plot
+        from eqcorrscan.utils.clustering import svd, SVD_2_stream
+        wavefiles = glob.glob(os.path.realpath('../../..') +
+                             '/tests/test_data/WAV/TEST_/*')
+        streams = [read(w) for w in wavefiles[1:10]]
+        stream_list = []
+        for st in streams:
+            tr = st.select(station='GCSZ', channel='EHZ')
+            st.detrend('simple').resample(100).filter('bandpass', freqmin=5,
+                                                      freqmax=40)
+            stream_list.append(tr)
+        svec, sval, uvec, stachans = svd(stream_list=stream_list)
+        SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+                                 sampling_rate=100)
+        SVD_plot(SVStreams=SVstreams, SValues=sval,
+                 stachans=stachans)
     """
     _check_save_args(save, savefile)
-    for stachan in stachans:
+    for sval, stachan in zip(SValues, stachans):
         print(stachan)
         plot_traces = [SVStream.select(station=stachan.split('.')[0],
                                        channel=stachan.split('.')[1])[0]
@@ -1523,7 +1605,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
             y = tr.data
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
             axes[i].plot(x, y, 'k', linewidth=1.1)
-            ylab = 'SV '+str(i+1)+'='+str(round(SValues[i] / len(SValues), 2))
+            ylab = 'SV %s = %s' % (i+1, round(sval[i] / len(sval), 2))
             axes[i].set_ylabel(ylab, rotation=0)
             axes[i].yaxis.set_ticks([])
             print(i)
@@ -1565,13 +1647,14 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     >>> from obspy import read, Stream, Trace
     >>> from eqcorrscan.utils.synth_seis import seis_sim
     >>> from eqcorrscan.utils.plotting import plot_synth_real
-    >>> real = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...             '2013-09-01-0410-35.DFDPC_024_00')
-    >>> synth = Stream(Trace(seis_sim(SP=2)))
-    >>> synth[0].stats.station = 'GCSZ'
+    >>> real = read()
+    >>> synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+    >>> synth[0].stats.station = 'RJOB'
     >>> synth[0].stats.channel = 'EHZ'
-    >>> synth[0].stats.sampling_rate = 200
-    >>> real = real.select(station='GCSZ', channel='EHZ')
+    >>> synth[0].stats.sampling_rate = 100
+    >>> synth.filter('bandpass', freqmin=2, freqmax=8)
+    >>> real = real.select(station='RJOB', channel='EHZ').detrend('simple').
+    ...     filter('bandpass', freqmin=2, freqmax=8)
     >>> real = real.trim(starttime=real[0].stats.starttime + 43,
     ...                  endtime=real[0].stats.starttime + 45).detrend('simple')
     >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP
@@ -1582,15 +1665,15 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         from obspy import read, Stream, Trace
         from eqcorrscan.utils.synth_seis import seis_sim
         import os
-        real = read(os.path.realpath('../../../tests/test_data/WAV/TEST_/' +
-                                     '2013-09-01-0410-35.DFDPC_024_00'))
-        synth = Stream(Trace(seis_sim(SP=2, flength=400)))
-        synth[0].stats.station = 'GCSZ'
+        real = read()
+        synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+        synth[0].stats.station = 'RJOB'
         synth[0].stats.channel = 'EHZ'
-        synth[0].stats.sampling_rate = 200
-        real = real.select(station='GCSZ', channel='EHZ')
-        real.trim(starttime=real[0].stats.starttime + 43,
-                  endtime=real[0].stats.starttime + 45).detrend('simple')
+        synth[0].stats.sampling_rate = 100
+        synth.filter('bandpass', freqmin=2, freqmax=8)
+        real = real.select(station='RJOB', channel='EHZ').detrend('simple').filter('bandpass', freqmin=2, freqmax=8)
+        real.trim(starttime=real[0].stats.starttime + 4.9,
+                  endtime=real[0].stats.starttime + 6.9).detrend('simple')
         plot_synth_real(real_template=real, synthetic=synth)
     """
     _check_save_args(save, savefile)
@@ -1798,9 +1881,6 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
 
     :returns: :class: matplotlib.figure
 
-    .. Note:: Currently there is a bug in this that means that interactivity \
-        doesn't work.  Yet to fix.
-
     .. rubric:: Example
 
     >>> from obspy import read
@@ -1821,7 +1901,7 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     if isinstance(traces, Stream):
         traces.sort(['station', 'channel'])
     if not Fig:
-        Fig = plt.figure(figsize=size)
+        Fig = plt.figure()
     for i, tr in enumerate(traces):
         if i == 0:
             ax = Fig.add_subplot(len(traces), 1, i+1)
@@ -1829,29 +1909,30 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
             ax = Fig.add_subplot(len(traces), 1, i+1, sharex=ax)
         ax1, ax2 = _spec_trace(tr, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
-        ax2.set_yticks([])
+        ax.set_yticks([])
         if i < len(traces) - 1:
             plt.setp(ax1.get_xticklabels(), visible=False)
         if type(traces) == list:
-            ax2.text(0.005, 0.85, tr.stats.starttime.datetime.
+            ax.text(0.005, 0.85, tr.stats.starttime.datetime.
                      strftime('%Y/%m/%d %H:%M:%S'),
                      bbox=dict(facecolor='white', alpha=0.8),
                      transform=ax2.transAxes)
         else:
-            ax2.text(0.005, 0.85, '.'.join([tr.stats.station,
+            ax.text(0.005, 0.85, '.'.join([tr.stats.station,
                                             tr.stats.channel]),
                      bbox=dict(facecolor='white', alpha=0.8),
                      transform=ax2.transAxes)
-        ax2.text(0.005, 0.02, str(np.max(tr.data).round(1)),
+        ax.text(0.005, 0.02, str(np.max(tr.data).round(1)),
                  bbox=dict(facecolor='white', alpha=0.95),
                  transform=ax2.transAxes)
-    ax1.set_xlabel('Time (s)')
+    ax.set_xlabel('Time (s)')
     Fig.subplots_adjust(hspace=0)
+    Fig.set_size_inches(w=size[0], h=size[1], forward=True)
     Fig.text(0.04, 0.5, 'Frequency (Hz)', va='center', rotation='vertical')
     if title:
         plt.suptitle(title)
     if show:
-        Fig.show()
+        plt.show()
     else:
         return Fig
 

@@ -121,7 +121,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
     :type plot: bool
     :param plot: If true, will plot each trace aligned with the master.
 
-    :returns: list of shifts for best alignment in seconds
+    :returns: list of shifts and correlations for best alignment in seconds
     """
     from eqcorrscan.core.match_filter import normxcorr2
     from copy import deepcopy
