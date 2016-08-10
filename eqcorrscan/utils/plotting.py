@@ -14,6 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pylab as plt
+import warnings
 
 
 def _check_save_args(save, savefile):
@@ -75,6 +76,48 @@ def chunk_data(tr, samp_rate, state='mean'):
     return trout
 
 
+def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
+               savefile=None):
+    """
+    Plot a template overlying an image aligned by correlation.
+
+    :type template: numpy.ndarray
+    :param template: Short template image
+    :type image: numpy.ndarray
+    :param image: Long master image
+    :type shift: int
+    :param shift: Shift to apply to template relative to image, in samples
+    :type cc: float
+    :param cc: Cross-correlation at shift
+    :type cc_vec: numpy.ndarray
+    :param cc_vec: Cross-correlation vector.
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.utils.plotting import xcorr_plot
+    >>> from eqcorrscan.utils.stacking import align_traces
+    >>> st = read().detrend('simple').filter('bandpass', freqmin=2, freqmax=15)
+    >>> shifts, ccs = align_traces([st[0], st[1]], 40)
+    >>> xcorr_plot(template=st[1].data, image=st[0].data, shift=shifts[1],
+    ...            cc=ccs[1]) # doctest: +SKIP
+
+    .. image:: ../../plots/xcorr_plot.png
+    """
+    _check_save_args(save, savefile)
+    if not cc or not shift:
+        if not cc_vec:
+            raise IOError('Must provide either cc_vec, or cc and shift')
+        shift = np.abs(cc_vec).argmax()
+        cc = cc_vec[shift]
+    x = np.arange(len(image))
+    plt.plot(x, image / abs(image).max(), 'k', lw=1.3, label='Image')
+    x = np.arange(len(template)) + shift
+    plt.plot(x, template / abs(template).max(), 'r', lw=1.1, label='Template')
+    plt.title('Shift=%s, Correlation=%s' % (shift, cc))
+    plt.show()
+
+
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
                 savefile=None):
     r"""Plot a day-long seismogram, correlogram and histogram.
@@ -94,6 +137,23 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :param savefile: Path to save figure to, only required if save=True
 
     :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> from eqcorrscan.core.match_filter import normxcorr2
+    >>> from eqcorrscan.utils.plotting import triple_plot
+    >>> st = read()
+    >>> template = st[0].copy().trim(st[0].stats.starttime + 8,
+    ...                            st[0].stats.starttime + 12)
+    >>> tr = st[0]
+    >>> ccc = normxcorr2(template=template.data, image=tr.data)
+    >>> tr.data = tr.data[0:len(ccc[0])]
+    >>> triple_plot(cccsum=ccc, cccsum_hist=ccc, trace=tr,
+    ...             threshold=0.8) # doctest: +SKIP
+
+
+    .. image:: ../../plots/triple_plot.png
     """
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
@@ -211,19 +271,26 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     return fig
 
 
-def cumulative_detections(dates, template_names, show=True, plot_legend=True,
+def cumulative_detections(dates=None, template_names=None, detections=None,
+                          plot_grouped=False, show=True, plot_legend=True,
                           save=False, savefile=None):
     r"""Plot cumulative detections in time.
 
     Simple plotting function to take a list of datetime objects and plot \
     a cumulative detections list.  Can take dates as a list of lists and will \
-    plot each list seperately, e.g. if you have dates from more than one \
+    plot each list separately, e.g. if you have dates from more than one \
     template it will overlay them in different colours.
 
     :type dates: list
     :param dates: Must be a list of lists of datetime.datetime objects
     :type template_names: list
     :param template_names: List of the template names in order of the dates
+    :type detections: list
+    :param detections: List of eqcorrscan.core.match_filter.DETECTION
+    :type plot_grouped: bool
+    :param plot_grouped: Plot detections for each template individually, or \
+        group them all together - set to False (plot template detections \
+        individually) by default.
     :type show: bool
     :param show: Whether or not to show the plot, defaults to True.
     :type plot_legend: bool
@@ -235,6 +302,9 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
     :param savefile: String to save to, required is save=True
 
     :returns: :class: matplotlib.figure
+
+    .. note:: Can either take lists of DETECTION objects directly, or two \
+        lists of dates and template names - either/or, not both.
 
     .. rubric:: Example
 
@@ -261,14 +331,40 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
     """
     import matplotlib.dates as mdates
     from copy import deepcopy
+    from eqcorrscan.core.match_filter import DETECTION
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
               'firebrick', 'purple', 'darkgoldenrod', 'gray']
     linestyles = ['-', '-.', '--', ':']
     # Check that dates is a list of lists
-    if type(dates[0]) != list:
-        dates = [dates]
+    if not detections:
+        if type(dates[0]) != list:
+            dates = [dates]
+    else:
+        dates = []
+        template_names = []
+        for detection in detections:
+            if not type(detection) == DETECTION:
+                msg = 'detection not of type: ' +\
+                    'eqcorrscan.core.match_filter.DETECTION'
+                raise IOError(msg)
+            dates.append(detection.detect_time.datetime)
+            template_names.append(detection.template_name)
+        _dates = []
+        _template_names = []
+        for template_name in list(set(template_names)):
+            _template_names.append(template_name)
+            _dates.append([date for i, date in enumerate(dates)
+                           if template_names[i] == template_name])
+        dates = _dates
+        template_names = _template_names
+    if plot_grouped:
+        _dates = []
+        for template_dates in dates:
+            _dates += template_dates
+        dates = [_dates]
+        template_names = ['all']
     i = 0
     j = 0
     # This is an ugly way of looping through colours and linestyles, it would
@@ -279,7 +375,6 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
-        print(plot_dates)
         counts = np.arange(-1, len(template_dates))
         ax1.step(plot_dates, counts, linestyles[j],
                  color=colors[i], label=template_names[k],
@@ -305,28 +400,25 @@ def cumulative_detections(dates, template_names, show=True, plot_legend=True,
         if min(date_list) < min_date:
             min_date = min(date_list)
     timedif = max_date - min_date
-    if timedif.total_seconds() >= 10800 and timedif.total_seconds() <= 25200:
-        print('Using quarter of an hour stamps')
+    if 10800 <= timedif.total_seconds() <= 25200:
+        hours = mdates.MinuteLocator(byminute=[0, 30])
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 10))
+    elif 7200 <= timedif.total_seconds() < 10800:
         hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
-        mins = mdates.HourLocator(byminute=range(0, 60, 5))
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 5))
     elif timedif.total_seconds() <= 1200:
-        print('Using 2 min stamps')
         hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
-        mins = mdates.HourLocator(byminute=range(0, 60, 0.5))
-    elif timedif.total_seconds > 25200 and timedif.total_seconds() <= 86400:
-        print('Using hour stamps')
+        mins = mdates.MinuteLocator(byminute=range(0, 60, 0.5))
+    elif 25200 < timedif.total_seconds() <= 86400:
         hours = mdates.HourLocator(byhour=range(0, 24, 3))
         mins = mdates.HourLocator(byhour=range(0, 24, 1))
-    elif timedif.total_seconds > 86400 and timedif.total_seconds() <= 172800:
-        print('Using hour stamps')
+    elif 86400 < timedif.total_seconds() <= 172800:
         hours = mdates.HourLocator(byhour=range(0, 24, 6))
         mins = mdates.HourLocator(byhour=range(0, 24, 1))
     elif timedif.total_seconds() > 172800:
-        print('Using day stamps')
         hours = mdates.AutoDateLocator()
         mins = mdates.HourLocator(byhour=range(0, 24, 3))
     else:
-        print('Using 5 min stamps')
         hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
     hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
     ax1.xaxis.set_major_locator(hours)
@@ -361,6 +453,18 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     :param savefile: required if save=True, path to save figure to.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.plotting import threeD_gridplot
+    >>> nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
+    >>> threeD_gridplot(nodes=nodes)  # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.utils.plotting import threeD_gridplot
+        nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
+        threeD_gridplot(nodes=nodes)
     """
     _check_save_args(save, savefile)
     lats = []
@@ -391,7 +495,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
                            freqmin=False, freqmax=False, realign=False,
                            cut=(-3.0, 5.0), PWS=False, title=False,
                            save=False, savefile=None):
-    r"""Plot data from a single channel for multiple events.
+    """
+    Plot data from a single channel for multiple events.
 
     Data will be aligned by their pick-time given in the \
     picks.  Requires an individual stream for each event you want to plot,
@@ -438,33 +543,67 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :returns: new picks
     :rtype: list
     :returns: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read, Catalog
+    >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
+    >>> from eqcorrscan.utils.plotting import multi_event_singlechan
+    >>> import glob
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> catalog = Catalog()
+    >>> streams = []
+    >>> for sfile in sfiles:
+    ...     catalog.append(read_event(sfile))
+    ...     wavfile = readwavename(sfile)[0]
+    ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' + wavfile
+    ...     stream = read(stream_path)
+    ...     # Annoying coping with seisan 2 letter channels
+    ...     for tr in stream:
+    ...         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+    ...     streams.append(stream)
+    >>> multi_event_singlechan(streams=streams, catalog=catalog,
+    ...                        station='GCSZ', channel='EZ') # doctest: +SKIP
+
+    .. image:: ../../plots/multi_event_singlechan.png
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import stacking
     import copy
-    from eqcorrscan.core.match_filter import normxcorr2
-    from obspy import Stream
+    from obspy import Stream, Catalog
     import warnings
 
-    fig, axes = plt.subplots(len(catalog) + 1, 1, sharex=True, figsize=(7, 12))
-    if len(catalog) > 1:
-        axes = axes.ravel()
+    # Work out how many picks we should have...
+    short_cat = Catalog()
+    short_streams = []
+    for i, event in enumerate(catalog):
+        event_stachans = [(pick.waveform_id.station_code,
+                           pick.waveform_id.channel_code)
+                          for pick in event.picks]
+        if (station, channel) in event_stachans:
+            short_cat.append(event)
+            short_streams.append(streams[i])
+    if len(short_cat) == 0:
+        raise IOError('No picks for ' + station + ' ' + channel)
     traces = []
     al_traces = []
-    # Keep input safe
-    clist = copy.deepcopy(catalog)
-    if isinstance(streams, Stream):
-        streams = [streams]
-    st_list = copy.deepcopy(streams)
-    for i, event in enumerate(clist):
+    if isinstance(short_streams, Stream):
+        short_streams = [short_streams]
+    st_list = copy.deepcopy(short_streams)
+    for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
                  pick.waveform_id.station_code == station and
-                 pick.waveform_id.channel_code == channel][0]
+                 pick.waveform_id.channel_code == channel]
+        if len(_pick) == 0:
+            print('No pick for channel')
+            continue
+        else:
+            _pick = _pick[0]
         if st_list[i].select(station=station, channel=channel):
             tr = st_list[i].select(station=station, channel=channel)[0]
         else:
-            print('No data for ' + _pick.waveform_id)
+            print('No data for ' + _pick.waveform_id.station_code)
             continue
         tr.detrend('linear')
         if freqmin:
@@ -502,11 +641,62 @@ def multi_event_singlechan(streams, catalog, station, channel,
         shifts = stacking.align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
-            event.picks[0].time -= shifts[i]
+            _pick.time -= shifts[i]
             traces[i].trim(_pick.time - pre_pick,
                            _pick.time + clip - pre_pick,
                            nearest_sample=False)
     # We now have a list of traces
+    if PWS:
+        stack = 'PWS'
+    else:
+        stack = 'linstack'
+    fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
+    if title:
+        fig.suptitle(title)
+    plt.subplots_adjust(hspace=0)
+    if not save:
+        plt.show()
+    else:
+        plt.savefig(savefile)
+        plt.close()
+    return traces, short_cat, fig
+
+
+def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
+                     show=True, title=None):
+    """
+    Plot multiple traces (usually from the same station) on the same plot.
+
+    Differs somewhat to obspys stream.plot in that only relative time within \
+    traces is worried about, it will not merge traces together.
+
+    :type traces: list
+    :param traces: List of obspy.core.Trace
+    :type corr: bool
+    :param corr: To calculate the correlation or not, if True, will add this \
+        to the axes
+    :type stack: str
+    :param stack: To plot the stack as the first trace or not, select type of \
+        stack: 'linstack' or 'PWS', or None.
+    :type size: tuple
+    :param size: Size of figure.
+    :type show: bool
+    :param show: Whether to plot the figure to screen or not.
+    :type title: str
+    :param title: Title to plot
+    """
+    from obspy import Stream
+    from eqcorrscan.utils import stacking
+    from eqcorrscan.core.match_filter import normxcorr2
+
+    if stack in ['linstack', 'PWS']:
+        fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
+                                 figsize=size)
+    else:
+        fig, axes = plt.subplots(len(traces), 1, sharex=True,
+                                 figsize=size)
+    if len(traces) > 1:
+        axes = axes.ravel()
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
     traces.sort(key=lambda tup: tup[1])
     traces = [trace[0] for trace in traces]
@@ -515,44 +705,52 @@ def multi_event_singlechan(streams, catalog, station, channel,
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate  # convert to seconds
-        axes[i + 1].plot(x, y, 'k', linewidth=1.1)
-        axes[i + 1].yaxis.set_ticks([])
+        if not stack:
+            ind = i
+        else:
+            ind = i + 1
+        axes[ind].plot(x, y, 'k', linewidth=1.1)
+        axes[ind].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
-    if PWS:
+    if stack == 'PWS':
         linstack = stacking.PWS_stack(traces)
-    else:
+    elif stack == 'linstack':
         linstack = stacking.linstack(traces)
-    tr = linstack.select(station=station, channel=channel)[0]
-    y = tr.data
-    x = np.arange(len(y))
-    x = x / tr.stats.sampling_rate
-    axes[0].plot(x, y, 'r', linewidth=2.0)
-    axes[0].set_ylabel('Stack', rotation=0)
-    axes[0].yaxis.set_ticks([])
+    if stack in ['linstack', 'PWS']:
+        tr = linstack[0]
+        y = tr.data
+        x = np.arange(len(y))
+        x = x / tr.stats.sampling_rate
+        axes[0].plot(x, y, 'r', linewidth=2.0)
+        axes[0].set_ylabel('Stack', rotation=0)
+        axes[0].yaxis.set_ticks([])
     for i, slave in enumerate(traces):
-        cc = normxcorr2(tr.data, slave[0].data)
-        axes[i + 1].set_ylabel('cc=' + str(round(np.max(cc), 2)), rotation=0)
-        axes[i + 1].text(0.9, 0.15, str(round(np.max(slave[0].data))),
-                         bbox=dict(facecolor='white', alpha=0.95),
-                         transform=axes[i + 1].transAxes)
-        axes[i + 1].text(0.7, 0.85, slave[0].stats.starttime.datetime.
-                         strftime('%Y/%m/%d %H:%M:%S'),
-                         bbox=dict(facecolor='white', alpha=0.95),
-                         transform=axes[i + 1].transAxes)
+        if corr:
+            cc = normxcorr2(tr.data, slave[0].data)
+        if not stack:
+            ind = i
+        else:
+            ind = i + 1
+        if corr:
+            axes[ind].set_ylabel('cc=' + str(round(np.max(cc), 2)), rotation=0)
+        axes[ind].text(0.9, 0.15, str(round(np.max(slave[0].data))),
+                       bbox=dict(facecolor='white', alpha=0.95),
+                       transform=axes[ind].transAxes)
+        axes[ind].text(0.7, 0.85, slave[0].stats.starttime.datetime.
+                       strftime('%Y/%m/%d %H:%M:%S'),
+                       bbox=dict(facecolor='white', alpha=0.95),
+                       transform=axes[ind].transAxes)
     axes[-1].set_xlabel('Time (s)')
     if title:
-        axes[0].set_title(title)
-    plt.subplots_adjust(hspace=0)
-    if not save:
+        fig.suptitle(title)
+    if show:
         plt.show()
-    else:
-        plt.savefig(savefile)
-        plt.close()
-    return traces, clist, fig
+    return fig
 
 
 def detection_multiplot(stream, template, times, streamcolour='k',
-                        templatecolour='r', save=False, savefile=None):
+                        templatecolour='r', save=False, savefile=None,
+                        size=(10.5, 7.5)):
     r"""Plot a stream of data with a template on top of it at detection times.
 
     :type stream: obspy.core.stream.Stream
@@ -571,8 +769,15 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Figure size.
 
     :returns: :class: matplotlib.figure
+
+
+    .. image:: ../../plots/detection_multiplot.png
+
+
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -580,17 +785,21 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     # Sort before plotting
     template = template.sort()
     # Only take traces that match in both
-    template_stachans = [(tr.stats.station, tr.stats.channel) for tr in template]
+    template_stachans = [(tr.stats.station, tr.stats.channel)
+                         for tr in template]
     stream = Stream([tr for tr in stream
-                     if (tr.stats.station, tr.stats.channel) in template_stachans])
+                     if (tr.stats.station,
+                         tr.stats.channel) in template_stachans])
     ntraces = min(len(template), len(stream))
-    print('Only plotting %s traces' % str(ntraces))
-    fig, axes = plt.subplots(ntraces, 1, sharex=True)
+    fig, axes = plt.subplots(ntraces, 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in template])
-    i = 0
-    for template_tr in template:
+    for i, template_tr in enumerate(template):
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         image = stream.select(station=template_tr.stats.station,
                               channel='*'+template_tr.stats.channel[-1])
         if not image:
@@ -607,8 +816,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         image_times = [image.stats.starttime.datetime +
                        dt.timedelta((j * image.stats.delta) / 86400)
                        for j in range(len(image.data))]
-        axes[i].plot(image_times, image.data / max(image.data),
-                     streamcolour, linewidth=1.2)
+        axis.plot(image_times, image.data / max(image.data),
+                  streamcolour, linewidth=1.2)
         for k, time in enumerate(times):
             lagged_time = UTCDateTime(time) + (template_tr.stats.starttime -
                                                mintime)
@@ -617,17 +826,28 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                               dt.timedelta((j * template_tr.stats.delta) /
                                            86400)
                               for j in range(len(template_tr.data))]
-            axes[i].plot(template_times,
-                         template_tr.data / max(template_tr.data),
-                         templatecolour, linewidth=1.2)
+            # Normalize the template according to the data detected in
+            normalizer = max(image.data[int((template_times[0] -
+                                            image_times[0]).total_seconds() /
+                                            image.stats.delta):
+                                        int((template_times[-1] -
+                                             image_times[0]).total_seconds() /
+                                            image.stats.delta)] /
+                             max(image.data))
+            axis.plot(template_times,
+                      template_tr.data * normalizer,
+                      templatecolour, linewidth=1.2)
         ylab = '.'.join([template_tr.stats.station,
                          template_tr.stats.channel])
-        axes[i].set_ylabel(ylab, rotation=0,
-                           horizontalalignment='right')
-        axes[i].yaxis.set_ticks([])
-        i += 1
-    axes[len(axes) - 1].set_xlabel('Time')
+        axis.set_ylabel(ylab, rotation=0,
+                        horizontalalignment='right')
+        axis.yaxis.set_ticks([])
+    if len(template) > 1:
+        axes[len(axes) - 1].set_xlabel('Time')
+    else:
+        axis.set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
+    plt.xticks(rotation=10)
     if not save:
         plt.show()
     else:
@@ -636,7 +856,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag_sfiles(sfiles, save=False, savefile=None):
+def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
     r"""Plot inter-event time versus magnitude for series of events.
 
     **thin** Wrapper for interev_mag.
@@ -648,20 +868,55 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> import glob
+    >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
+
+    .. plot::
+
+        import glob, os
+        from eqcorrscan.utils.plotting import interev_mag_sfiles
+        sfiles = glob.glob(os.path.
+                           realpath('../../../tests/test_data/REA/TEST_') +
+                           os.sep + '*')
+        print(sfiles)
+        interev_mag_sfiles(sfiles=sfiles)
     """
     _check_save_args(save, savefile)
     from eqcorrscan.utils import sfile_util
-    times = [sfile_util.readheader(sfile)[0].origins[0].time
-             for sfile in sfiles]
-    mags = [sfile_util.readheader(sfile)[0].magnitudes[0].mag
-            for sfile in sfiles]
-    fig = interev_mag(times, mags, save, savefile)
+    times = []
+    mags = []
+    for sfile in sfiles:
+        head = sfile_util.readheader(sfile)
+        if head.preferred_origin():
+            origin = head.preferred_origin()
+        elif len(head.origins) > 0:
+            origin = head.origins[0]
+        else:
+            origin = False
+        if head.preferred_magnitude():
+            magnitude = head.preferred_magnitude()
+        elif len(head.magnitudes) > 0:
+            magnitude = head.magnitudes[0]
+        else:
+            magnitude = False
+        if origin and magnitude:
+            times.append(origin.time)
+            mags.append(magnitude.mag)
+    fig = interev_mag(times=times, mags=mags, save=save, savefile=savefile,
+                      size=size)
     return fig
 
 
-def interev_mag(times, mags, save=False, savefile=None):
+def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
     r"""Plot inter-event times against magnitude.
 
     :type times: list
@@ -673,8 +928,10 @@ def interev_mag(times, mags, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
-    :returns: :class: matplotlib.figure
+    :returns: matplotlib.figure
 
     .. rubric:: Example
 
@@ -708,7 +965,7 @@ def interev_mag(times, mags, save=False, savefile=None):
     times = [x[0] for x in l]
     mags = [x[1] for x in l]
     # Make two subplots next to each other of time before and time after
-    fig, axes = plt.subplots(1, 2, sharey=True)
+    fig, axes = plt.subplots(1, 2, sharey=True, figsize=size)
     axes = axes.ravel()
     pre_times = []
     post_times = []
@@ -734,8 +991,10 @@ def interev_mag(times, mags, save=False, savefile=None):
     return fig
 
 
-def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
-    r"""Plot obspy.Inventory and obspy.Catalog classes in three dimensions.
+def obspy_3d_plot(inventory, catalog, save=False, savefile=None,
+                  size=(10.5, 7.5)):
+    """
+    Plot obspy Inventory and obspy Catalog classes in three dimensions.
 
     :type inventory: obspy.core.inventory.inventory.Inventory
     :param inventory: Obspy inventory class containing station metadata
@@ -746,27 +1005,67 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example:
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.plotting import obspy_3d_plot
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+    ...                             longitude=170, maxradius=5)
+    >>> inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+    ...                                 longitude=170, maxradius=10)
+    >>> obspy_3d_plot(inventory=inventory, catalog=catalog) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.plotting import obspy_3d_plot
+        client = Client('IRIS')
+        t1 = UTCDateTime(2012, 3, 26)
+        t2 = t1 + 86400
+        catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+                                    longitude=170, maxradius=5)
+        inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+                                        longitude=170, maxradius=10)
+        obspy_3d_plot(inventory=inventory, catalog=catalog)
     """
     _check_save_args(save, savefile)
-    from eqcorrscan.utils.plotting import threeD_seismplot
-    nodes = [(ev.preferred_origin().latitude,
-              ev.preferred_origin().longitude,
-              ev.preferred_origin().depth / 1000) for ev in catalog]
+    nodes = []
+    for ev in catalog:
+        nodes.append((ev.preferred_origin().latitude,
+                      ev.preferred_origin().longitude,
+                      ev.preferred_origin().depth / 1000))
     # Will plot borehole instruments at elevation - depth if provided
     all_stas = []
     for net in inventory:
-        stations = [(sta.latitude, sta.longitude,
-                     sta.elevation / 1000 - sta.channels[0].depth / 1000)
-                    for sta in net]
-        all_stas += stations
-    fig = threeD_seismplot(all_stas, nodes, save, savefile)
+        for sta in net:
+            if len(sta.channels) > 0:
+                all_stas.append((sta.latitude, sta.longitude,
+                                 sta.elevation / 1000 -
+                                 sta.channels[0].depth / 1000))
+            else:
+                warnings.warn('No channel information attached, '
+                              'setting elevation without depth')
+                all_stas.append((sta.latitude, sta.longitude,
+                                 sta.elevation / 1000))
+    fig = threeD_seismplot(stations=all_stas, nodes=nodes, save=save,
+                           savefile=savefile, size=size)
     return fig
 
 
-def threeD_seismplot(stations, nodes, save=False, savefile=None):
-    r"""Plot seismicity and stations in a 3D, movable, zoomable space.
+def threeD_seismplot(stations, nodes, save=False, savefile=None,
+                     size=(10.5, 7.5)):
+    """
+    Plot seismicity and stations in a 3D, movable, zoomable space.
 
     Uses matplotlibs Axes3D package.
 
@@ -781,22 +1080,44 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None):
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
+    :type size: tuple
+    :param size: Size of figure in inches.
 
     :returns: :class: matplotlib.figure
+
+    .. Note:: See obspy_3d_plot for example output.
     """
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
+    # Cope with +/-180 latitudes...
+    _evlongs = []
+    for evlong in evlongs:
+        if evlong < 0:
+            evlong = float(evlong)
+            evlong += 360
+        _evlongs.append(evlong)
+    evlongs = _evlongs
+    _stalongs = []
+    for stalong in stalongs:
+        if stalong < 0:
+            stalong = float(stalong)
+            stalong += 360
+        _stalongs.append(stalong)
+    stalongs = _stalongs
     evdepths = [-1 * depth for depth in evdepths]
-    fig = plt.figure()
+    fig = plt.figure(figsize=size)
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k")
-    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r")
-    ax.set_ylabel("Latitude (deg)")
-    ax.set_xlabel("Longitude (deg)")
-    ax.set_zlabel("Depth(km)")
+    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k",
+               label='Hypocenters')
+    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r",
+               label='Stations')
+    ax.set_ylabel("Longitude (deg)")
+    ax.set_xlabel("Latitude (deg)")
+    ax.set_zlabel("Elevation (km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
+    plt.legend()
     if not save:
         plt.show()
     else:
@@ -883,7 +1204,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     lines = []
     labels = []
     for i, tr in enumerate(template):
-        # Cope with a singe channel template case.
+        # Cope with a single channel template case.
         if len(template) > 1:
             axis = axes[i]
         else:
@@ -925,7 +1246,10 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
                         pick.waveform_id.channel_code[-1] ==
                         tr.stats.channel[0] + tr.stats.channel[-1]]
             for pick in tr_picks:
-                if 'P' in pick.phase_hint.upper():
+                if not pick.phase_hint:
+                    pcolor = 'k'
+                    label = 'Unknown pick'
+                elif 'P' in pick.phase_hint.upper():
                     pcolor = 'red'
                     label = 'P-pick'
                 elif 'S' in pick.phase_hint.upper():
@@ -966,9 +1290,144 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     return fig
 
 
+def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
+                  savefile=None, title=False):
+    """
+    Plot a template over a detected stream, with picks corrected by lag-calc.
+
+    :param template: Template used to make the detection, will be aligned \
+        according to picks.
+    :type template: obspy.core.stream.Stream
+    :param picks: list of corrected picks.
+    :type picks: list
+    :param det_stream: Stream to plot in the background, should be the \
+        detection, data should encompass the time the picks are made.
+    :type det_stream: obspy.core.stream.Stream
+    :param size: tuple of plot size.
+    :type size: tuple
+    :param save: To save figure or not, if false, will show to screen.
+    :type save: bool
+    :param savefile: File name to save file, required if save==True.
+    :type savefile: str
+    :param title: Title for plot, defaults to None.
+    :type title: str
+
+    :return: Figure handle which can be edited.
+    :rtype: matplotlib.pyplot.figure
+
+    .. note: Called by lag_calc, hence no example - can be called outside though
+
+    .. image:: ../../plots/plot_repicked.png
+    """
+    _check_save_args(save, savefile)
+    fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
+    if len(template) > 1:
+        axes = axes.ravel()
+    mintime = det_stream.sort(['starttime'])[0].stats.starttime
+    template.sort(['network', 'station', 'starttime'])
+    lengths = []
+    lines = []
+    labels = []
+    n_templates_plotted = 0
+    for i, tr in enumerate(template.sort(['starttime'])):
+        # Cope with a single channel template case.
+        if len(template) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
+        tr_picks = [pick for pick in picks if
+                    pick.waveform_id.station_code == tr.stats.station and
+                    pick.waveform_id.channel_code[0] +
+                    pick.waveform_id.channel_code[-1] ==
+                    tr.stats.channel[0] + tr.stats.channel[-1]]
+        if len(tr_picks) > 1:
+            msg = 'Multiple picks on channel %s' % tr.stats.station + ', ' + \
+                  tr.stats.channel
+            raise NotImplementedError(msg)
+        if len(tr_picks) == 0:
+            msg = 'No pick for chanel %s' % tr.stats.station + ', ' + \
+                  tr.stats.channel
+            print(msg)
+        else:
+            pick = tr_picks[0]
+            delay = pick.time - mintime
+            y = tr.data
+            # Normlise
+            y /= max(y)
+            x = np.linspace(0, (len(y) - 1) * tr.stats.delta, len(y))
+            x += delay
+        btr = det_stream.select(station=tr.stats.station,
+                                channel=tr.stats.channel)[0]
+        bdelay = btr.stats.starttime - mintime
+        by = btr.data
+        if len(tr_picks) > 0:
+            by /= max(by[int(delay):int(delay) + len(x)])
+        else:
+            by /= max(by)
+        bx = np.linspace(0, (len(by) - 1) * btr.stats.delta, len(by))
+        bx += bdelay
+        axis.plot(bx, by, 'k', linewidth=1.5)
+        if len(tr_picks) > 0:
+            template_line, = axis.plot(x, y, 'r', linewidth=1.6,
+                                       label='Template')
+            if not pick.phase_hint:
+                pcolor = 'k'
+                label = 'Unknown pick'
+            elif 'P' in pick.phase_hint.upper():
+                pcolor = 'red'
+                label = 'P-pick'
+            elif 'S' in pick.phase_hint.upper():
+                pcolor = 'blue'
+                label = 'S-pick'
+            else:
+                pcolor = 'k'
+                label = 'Unknown pick'
+            pdelay = pick.time - mintime
+            line = axis.axvline(x=pdelay, color=pcolor, linewidth=2,
+                                linestyle='--', label=label)
+            if label not in labels:
+                lines.append(line)
+                labels.append(label)
+            if n_templates_plotted == 0:
+                lines.append(template_line)
+                labels.append('Template')
+            n_templates_plotted += 1
+            lengths.append(max(bx[-1], x[-1]))
+        else:
+            lengths.append(bx[1])
+        axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+                        rotation=0, horizontalalignment='right')
+        axis.yaxis.set_ticks([])
+    axis.set_xlim([0, max(lengths)])
+    if len(template) > 1:
+        axis = axes[len(template) - 1]
+    else:
+        axis = axes
+    axis.set_xlabel('Time (s) from %s' %
+                    mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
+    plt.figlegend(lines, labels, 'upper right')
+    if title:
+        if len(template) > 1:
+            axes[0].set_title(title)
+        else:
+            axes.set_title(title)
+    else:
+        plt.subplots_adjust(top=0.98)
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    if not save:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig(savefile)
+        plt.close()
+    return fig
+
+
 def NR_plot(stream, NR_stream, detections, false_detections=False,
             size=(18.5, 10), save=False, savefile=None, title=False):
-    r"""Plot Network response alongside the streams used.
+    """
+    Plot Network response alongside the stream used.
 
     Highlights detection times in the network response.
 
@@ -990,6 +1449,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     :param title: String for the title of the plot, set to False
 
     :returns: :class: matplotlib.figure
+
+    .. Note:: Called by bright_lights, not a general use plot (hence no example)
     """
     _check_save_args(save, savefile)
     import datetime as dt
@@ -1068,7 +1529,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 
 def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
              savefile=None):
-    r"""Plot singular vectors from the clustering routines.
+    """
+    Plot singular vectors from the clustering routines.
 
     One plot for each stachan.
 
@@ -1088,9 +1550,50 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
         additionally according to station and channel.
 
     :returns: :class: matplotlib.figure
+
+    .. rubric:: Example
+
+    >>> from obspy import read
+    >>> import glob
+    >>> from eqcorrscan.utils.plotting import SVD_plot
+    >>> from eqcorrscan.utils.clustering import svd, SVD_2_stream
+    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
+    >>> streams = [read(w) for w in wavefiles[1:10]]
+    >>> stream_list = []
+    >>> for st in streams:
+    ...     tr = st.select(station='GCSZ', channel='EHZ')
+    ...     tr = tr.detrend('simple').resample(100).filter('bandpass', freqmin=2,
+    ...                                                    freqmax=8)
+    ...     stream_list.append(tr)
+    >>> svec, sval, uvec, stachans = svd(stream_list=stream_list)
+    >>> SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+    ...                          sampling_rate=100)
+    >>> SVD_plot(SVStreams=SVstreams, SValues=sval,
+    ...          stachans=stachans) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy import read
+        import glob, os
+        from eqcorrscan.utils.plotting import SVD_plot
+        from eqcorrscan.utils.clustering import svd, SVD_2_stream
+        wavefiles = glob.glob(os.path.realpath('../../..') +
+                             '/tests/test_data/WAV/TEST_/*')
+        streams = [read(w) for w in wavefiles[1:10]]
+        stream_list = []
+        for st in streams:
+            tr = st.select(station='GCSZ', channel='EHZ')
+            st.detrend('simple').resample(100).filter('bandpass', freqmin=5,
+                                                      freqmax=40)
+            stream_list.append(tr)
+        svec, sval, uvec, stachans = svd(stream_list=stream_list)
+        SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+                                 sampling_rate=100)
+        SVD_plot(SVStreams=SVstreams, SValues=sval,
+                 stachans=stachans)
     """
     _check_save_args(save, savefile)
-    for stachan in stachans:
+    for sval, stachan in zip(SValues, stachans):
         print(stachan)
         plot_traces = [SVStream.select(station=stachan.split('.')[0],
                                        channel=stachan.split('.')[1])[0]
@@ -1102,7 +1605,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
             y = tr.data
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
             axes[i].plot(x, y, 'k', linewidth=1.1)
-            ylab = 'SV '+str(i+1)+'='+str(round(SValues[i] / len(SValues), 2))
+            ylab = 'SV %s = %s' % (i+1, round(sval[i] / len(sval), 2))
             axes[i].set_ylabel(ylab, rotation=0)
             axes[i].yaxis.set_ticks([])
             print(i)
@@ -1123,14 +1626,15 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
 
 def plot_synth_real(real_template, synthetic, channels=False, save=False,
                     savefile=None):
-    r"""Plot multiple channels of data for real data and synthetic.
+    """
+    Plot multiple channels of data for real data and synthetic.
 
     :type real_template: obspy.core.stream.Stream
     :param real_template: Stream of the real template
     :type synthetic: obspy.core.stream.Stream
     :param synthetic: Stream of synthetic template
     :type channels: list
-    :param channels: List of tuples of (station, channel) to plot, default is\
+    :param channels: List of tuples of (station, channel) to plot, default is \
             False, which plots all.
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
@@ -1139,6 +1643,40 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     :param savefile: Filename to save to, required for save=True
 
     :returns: :class: matplotlib.figure
+
+    >>> from obspy import read, Stream, Trace
+    >>> from eqcorrscan.utils.synth_seis import seis_sim
+    >>> from eqcorrscan.utils.plotting import plot_synth_real
+    >>> real = read()
+    >>> synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+    >>> synth[0].stats.station = 'RJOB'
+    >>> synth[0].stats.channel = 'EHZ'
+    >>> synth[0].stats.sampling_rate = 100
+    >>> synth = synth.filter('bandpass', freqmin=2, freqmax=8)
+    >>> real = real.select(station='RJOB',
+    ...                    channel='EHZ').detrend('simple').filter('bandpass',
+    ...                                                            freqmin=2,
+    ...                                                            freqmax=8)
+    >>> real = real.trim(starttime=real[0].stats.starttime + 43,
+    ...                  endtime=real[0].stats.starttime + 45).detrend('simple')
+    >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.utils.plotting import plot_synth_real
+        from obspy import read, Stream, Trace
+        from eqcorrscan.utils.synth_seis import seis_sim
+        import os
+        real = read()
+        synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+        synth[0].stats.station = 'RJOB'
+        synth[0].stats.channel = 'EHZ'
+        synth[0].stats.sampling_rate = 100
+        synth.filter('bandpass', freqmin=2, freqmax=8)
+        real = real.select(station='RJOB', channel='EHZ').detrend('simple').filter('bandpass', freqmin=2, freqmax=8)
+        real.trim(starttime=real[0].stats.starttime + 4.9,
+                  endtime=real[0].stats.starttime + 6.9).detrend('simple')
+        plot_synth_real(real_template=real, synthetic=synth)
     """
     _check_save_args(save, savefile)
     from obspy.signal.cross_correlation import xcorr
@@ -1163,6 +1701,10 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     if len(stachans) > 1:
         axes = axes.ravel()
     for i, stachan in enumerate(stachans):
+        if len(stachans) > 1:
+            axis = axes[i]
+        else:
+            axis = axes
         real_tr = real_template.select(station=stachan[0],
                                        channel=stachan[1])[0]
         synth_tr = synthetic.select(station=stachan[0],
@@ -1182,13 +1724,16 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
             y = tr.data
             y = y / float(max(abs(y)))
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
-            axes[i].plot(x, y, colours[j], linewidth=2.0, label=labels[j])
-            axes[i].get_yaxis().set_ticks([])
+            axis.plot(x, y, colours[j], linewidth=2.0, label=labels[j])
+            axis.get_yaxis().set_ticks([])
         ylab = stachan[0]+'.'+stachan[1]+' cc='+str(round(corr, 2))
-        axes[i].set_ylabel(ylab, rotation=0)
+        axis.set_ylabel(ylab, rotation=0)
     plt.subplots_adjust(hspace=0)
     # axes[0].legend()
-    axes[-1].set_xlabel('Time (s)')
+    if len(stachans) > 1:
+        axes[-1].set_xlabel('Time (s)')
+    else:
+        axis.set_xlabel('Time (s)')
     if not save:
         plt.show()
     else:
@@ -1345,18 +1890,20 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     >>> st = read()
     >>> spec_trace(st, trc='white') # doctest: +SKIP
 
+
     .. plot::
 
         from obspy import read
         from eqcorrscan.utils.plotting import spec_trace
         st = read()
         spec_trace(st, trc='white')
+
     """
     from obspy import Stream
     if isinstance(traces, Stream):
         traces.sort(['station', 'channel'])
     if not Fig:
-        Fig = plt.figure(figsize=size)
+        Fig = plt.figure()
     for i, tr in enumerate(traces):
         if i == 0:
             ax = Fig.add_subplot(len(traces), 1, i+1)
@@ -1364,37 +1911,38 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
             ax = Fig.add_subplot(len(traces), 1, i+1, sharex=ax)
         ax1, ax2 = _spec_trace(tr, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
-        ax2.set_yticks([])
+        ax.set_yticks([])
         if i < len(traces) - 1:
             plt.setp(ax1.get_xticklabels(), visible=False)
         if type(traces) == list:
-            ax2.text(0.005, 0.85, tr.stats.starttime.datetime.
+            ax.text(0.005, 0.85, tr.stats.starttime.datetime.
                      strftime('%Y/%m/%d %H:%M:%S'),
                      bbox=dict(facecolor='white', alpha=0.8),
                      transform=ax2.transAxes)
         else:
-            ax2.text(0.005, 0.85, '.'.join([tr.stats.station,
+            ax.text(0.005, 0.85, '.'.join([tr.stats.station,
                                             tr.stats.channel]),
                      bbox=dict(facecolor='white', alpha=0.8),
                      transform=ax2.transAxes)
-        ax2.text(0.005, 0.02, str(np.max(tr.data).round(1)),
+        ax.text(0.005, 0.02, str(np.max(tr.data).round(1)),
                  bbox=dict(facecolor='white', alpha=0.95),
                  transform=ax2.transAxes)
-    ax1.set_xlabel('Time (s)')
+    ax.set_xlabel('Time (s)')
     Fig.subplots_adjust(hspace=0)
+    Fig.set_size_inches(w=size[0], h=size[1], forward=True)
     Fig.text(0.04, 0.5, 'Frequency (Hz)', va='center', rotation='vertical')
     if title:
         plt.suptitle(title)
     if show:
         plt.show()
-        plt.close()
     else:
         return Fig
 
 
 def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
                 tralpha=0.9, size=(10, 2.5), axes=None, title=None):
-    r"""Function to plot a trace over that traces spectrogram.
+    """
+    Function to plot a trace over that traces spectrogram.
 
     Uses obspys spectrogram routine.
 
@@ -1439,7 +1987,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     if not axes:
         Fig.set_size_inches(size)
         Fig.show()
-        Fig.close()
+        # Fig.close()
     else:
         return ax1, ax2
 

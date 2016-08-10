@@ -46,7 +46,7 @@ def _check_daylong(tr):
 
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
-              parallel=False, num_cores=False):
+              parallel=False, num_cores=False, starttime=None, endtime=None):
     r"""Basic function to bandpass and downsample.
 
     Works in place on data.  This is employed to ensure all parts of the \
@@ -71,6 +71,12 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
+    :type starttime: obspy.core.UTCDateTime
+    :param starttime: Desired data start time, will trim to this before \
+        processing
+    :type endtime: obspy.core.UTCDateTime
+    :param endtime: Desired data end time, will trim to this before \
+        processing
 
     :return: obspy.Stream
 
@@ -125,6 +131,21 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     # Add sanity check for filter
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
+    if starttime and endtime:
+        for tr in st:
+            tr.trim(starttime, endtime)
+            print(len(tr))
+            if len(tr.data) == ((endtime - starttime) *
+                                    tr.stats.sampling_rate) + 1:
+                tr.data = tr.data[1:len(tr.data)]
+    elif starttime:
+        for tr in st:
+            tr.trim(starttime=starttime)
+    elif endtime:
+        for tr in st:
+            tr.trim(endtime=endtime)
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -197,7 +218,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -217,7 +239,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -236,7 +259,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> client = Client('GEONET')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HH*', t1, t2)]
+    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
+    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
@@ -253,6 +277,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         tracein = False
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+    if debug > 4:
+        parallel = False
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -281,7 +307,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
-            starttime=False, full_day=False):
+            starttime=False, full_day=False, seisan=True):
     r"""Basic function to process data, usually called by dayproc or shortproc.
 
     Functionally, this will bandpass, downsample and check headers and length \
@@ -310,6 +336,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :param starttime: Desired start of trace
     :type full_day: bool
     :param full_day: Whether to expect, and enforce a full day of data or not.
+    :type seisan: bool
+    :param seisan: Whether channels are named like seisan channels (which are \
+        two letters rather than three) - defaults to True.
 
     :return: obspy.Stream
 
@@ -318,7 +347,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     import warnings
     from obspy.signal.filter import bandpass, lowpass, highpass
     # Add sanity check
-    if highcut and highcut >= 0.5*samp_rate:
+    if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
     # Define the start-time
     if starttime:
@@ -334,16 +363,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     qual = _check_daylong(tr)
     if not qual:
         msg = ("Data have more zeros than actual data, please check the raw",
-               " data set-up and manually sort it")
+               " data set-up and manually sort it: " + tr.stats.station + "." +
+               tr.stats.channel)
         raise ValueError(msg)
     tr = tr.detrend('simple')    # Detrend data before filtering
-
-    # If there is one sample too many remove the first sample - this occurs
-    # at station FOZ where the first sample is zero when it shouldn't be,
-    # Not real sample: generated during data download
-    # if full_day:
-    #     if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
-    #         tr.data = tr.data[1:len(tr.data)]
     if debug > 0:
         print('I have '+str(len(tr.data))+' data points for ' +
               tr.stats.station+'.'+tr.stats.channel+' before processing')
@@ -353,15 +376,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
        and full_day:
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
-                  ' is not of daylong length, will zero pad')
-        # Work out when the trace thinks it is starting
-        # traceday = UTCDateTime(str(tr.stats.starttime.year)+'-' +
-        #                        str(tr.stats.starttime.month)+'-' +
-        #                        str(tr.stats.starttime.day))
+                  ' are not of daylong length, will zero pad')
         # Use obspy's trim function with zero padding
-        tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime + 86400, pad=True, fill_value=0,
                      nearest_sample=True)
-        # If there is one sample too many after this remove the last one
+        # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
@@ -399,10 +418,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         warnings.warn('No filters applied')
 
     # Account for two letter channel names in s-files and therefore templates
-    tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
+    if seisan:
+        tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
 
     # Sanity check the time header
-    if tr.stats.starttime.day != day != day and full_day:
+    if tr.stats.starttime.day != day and full_day:
         warnings.warn("Time headers do not match expected date: " +
                       str(tr.stats.starttime))
 
@@ -418,11 +438,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         # by convention
         if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate*86400 == tr.stats.npts:
+        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
                 raise ValueError('Data are not daylong for '+tr.stats.station +
                                  '.'+tr.stats.channel)
     # Final visual check for debug
-    if debug >= 4:
+    if debug > 4:
         tr.plot()
     return tr
 

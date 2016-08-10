@@ -66,14 +66,20 @@ def _av_weight(W1, W2):
 
     :returns: str
 
+    .. rubric:: Example
     >>> _av_weight(1, 4)
     '0.3750'
     >>> _av_weight(0, 0)
     '1.0000'
+    >>> _av_weight(' ', ' ')
+    '1.0000'
+    >>> _av_weight(-9, 0)
+    '0.5000'
+    >>> _av_weight(1, -9)
+    '0.3750'
     """
     import warnings
 
-    # print('Weight 1: ' + str(W1) + ', weight 2: ' + str(W2))
     if str(W1) in [' ', '']:
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
@@ -194,10 +200,11 @@ def write_event(catalog):
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
         Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
+        if 'time_errors' in event.origins[0]:
+            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or 0.0
         else:
-            t_RMS = ' '
+            print('No time residual in header')
+            t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2) + '  ' +
                 str(evinfo.time.hour).rjust(2) +
@@ -372,9 +379,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :type lowcut: float
     :param lowcut: Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: Highcut in Hz - deafult=10.0
+    :param highcut: Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: Maximum seperation between event pairs in km
+    :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
     :type cc_thresh: float
@@ -394,6 +401,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
         event using the sfile_util module prior to this step.
+
+    .. note:: There is no provision to taper waveforms within these functions, \
+        if you desire this functionality, you should apply the taper before \
+        calling this.  Note the obspy.Trace.taper functions.
     """
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
@@ -444,10 +455,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             slave_event_id = event_list[j][0]
             slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
-                # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
-                # print(slavestream)
                 raise IOError('No wavefile found: ' + slave_wavefiles[0] +
                               ' ' + slave_sfile)
             if len(slave_wavefiles) > 1:
@@ -561,12 +570,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 ' ' + pick.phase_hint + '\n'
                             if debug > 3:
                                 print(event_text)
-                            # links+=1
                         else:
                             print('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
                     except:
-                        # Should warn here
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue

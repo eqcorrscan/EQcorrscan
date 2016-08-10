@@ -81,6 +81,32 @@ class TestTemplateGeneration(unittest.TestCase):
             del(template)
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    def test_not_delayed(self):
+        """Test the method of template_gen without applying delays to
+        channels."""
+        from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.catalog_utils import filter_picks
+        cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
+                                maxlon=175.5,
+                                startdate=UTCDateTime(2016, 5, 1),
+                                enddate=UTCDateTime(2016, 5, 2))
+        cat = filter_picks(catalog=cat, top_n_picks=5)
+        template = from_client(catalog=cat, client_id='GEONET',
+                               lowcut=None, highcut=None, samp_rate=100.0,
+                               filt_order=4, length=10.0, prepick=0.5,
+                               swin='all', process_len=3600,
+                               debug=0, plot=False, delayed=False)[0]
+        for tr in template:
+            tr.stats.starttime.precision = 6
+        starttime = template[0].stats.starttime
+        length = template[0].stats.npts
+        print(template)
+        for tr in template:
+            self.assertTrue(abs((tr.stats.starttime - starttime)) <=
+                            tr.stats.delta)
+            self.assertEqual(tr.stats.npts, length)
+
     def test_download_various_methods(self):
         """Will download data from server and store in various databases,
         then create templates using the various methods."""
@@ -180,11 +206,60 @@ class TestTemplateGeneration(unittest.TestCase):
         try:
             template = from_seishub(test_cat, url=test_url, lowcut=1.0,
                                     highcut=5.0, samp_rate=20, filt_order=4,
-                                    length=3, prepick=0.5, swin='all')
+                                    length=3, prepick=0.5, swin='all',
+                                    process_len=300)
         except URLError:
             warnings.warn('Timed out connection to seishub')
         if 'template' in locals():
             self.assertEqual(len(template), 3)
+
+    def test_catalog_grouping(self):
+        from obspy.core.event import Catalog
+        from eqcorrscan.utils.sfile_util import read_event
+        import glob
+        import os
+        from eqcorrscan.core.template_gen import _group_events
+
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_', '*')
+        catalog = Catalog()
+        sfiles = glob.glob(testing_path)
+        for sfile in sfiles:
+            catalog.append(read_event(sfile=sfile))
+        for process_len, pads in [(60, [5]),
+                                  (300, [5, 60]),
+                                  (3600, [5, 60, 300]),
+                                  (86400, [5, 60, 300])]:
+            for data_pad in pads:
+                sub_catalogs = _group_events(catalog=catalog,
+                                             process_len=process_len,
+                                             data_pad=data_pad)
+                k_events = 0
+                for sub_catalog in sub_catalogs:
+                    min_time = min([event.origins[0].time
+                                    for event in sub_catalog])
+                    min_time -= data_pad
+                    for event in sub_catalog:
+                        self.assertTrue((event.origins[0].time +
+                                         data_pad) - min_time < process_len)
+                        k_events += 1
+                self.assertEqual(k_events, len(catalog))
+
+    def test_missing_waveform_id(self):
+        from obspy import read
+        from eqcorrscan.core.template_gen import from_meta_file
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data')
+        quakeml = os.path.join(testing_path,
+                               '20130901T041115_missingwavid.xml')
+        st = read(os.path.join(testing_path, 'WAV', 'TEST_',
+                               '2013-09-01-0410-35.DFDPC_024_00'))
+        templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
+                                   highcut=9.0, samp_rate=20.0, filt_order=3,
+                                   length=2, prepick=0.1, swin='S')
+        self.assertEqual(len(templates), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

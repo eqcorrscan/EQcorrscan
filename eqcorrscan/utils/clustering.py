@@ -16,35 +16,48 @@ import numpy as np
 import warnings
 
 
-def cross_chan_coherence(st1, st2, i=0):
+def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     Calculate cross-channel coherency.
 
     Determine the cross-channel coherency between two streams of \
     multichannel seismic data.
 
-    :type st1: obspy Stream
+    :type st1: obspy.core.stream.Stream
     :param st1: Stream one
-    :type st2: obspy Stream
+    :type st2: obspy.core.stream.Stream
     :param st2: Stream two
+    :type allow_shift: bool
+    :param allow_shift: Allow shift?
+    :type shift_len: int
+    :param shift_len: Samples to shift
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
 
     :returns: cross channel coherence, float - normalized by number of\
-        channels, if i, returns tuple of (cccoh, i) where i is int, as intput.
+        channels, if i, returns tuple of (cccoh, i) where i is int, as input.
     """
 
     from eqcorrscan.core.match_filter import normxcorr2
+    from obspy.signal.cross_correlation import xcorr
     cccoh = 0.0
     kchan = 0
-    for tr in st1:
-        tr1 = tr.data
-        # Assume you only have one waveform for each channel
-        tr2 = st2.select(station=tr.stats.station,
-                         channel=tr.stats.channel)
-        if tr2:
-            cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
-            kchan += 1
+    if allow_shift:
+        for tr in st1:
+            tr2 = st2.select(station=tr.stats.station, channel=tr.stats.channel)
+            if tr2:
+                index, corval = xcorr(tr, tr2[0], shift_len)
+                cccoh += corval
+                kchan += 1
+    else:
+        for tr in st1:
+            tr1 = tr.data
+            # Assume you only have one waveform for each channel
+            tr2 = st2.select(station=tr.stats.station,
+                             channel=tr.stats.channel)
+            if tr2:
+                cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
+                kchan += 1
     if kchan:
         cccoh = cccoh / kchan
         return (cccoh, i)
@@ -53,7 +66,7 @@ def cross_chan_coherence(st1, st2, i=0):
         return (0, i)
 
 
-def distance_matrix(stream_list, cores=1):
+def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
     """
     Compute distance matrix for waveforms based on cross-correlations.
 
@@ -64,6 +77,10 @@ def distance_matrix(stream_list, cores=1):
 
     :type stream_list: List of obspy.Streams
     :param stream_list: List of the streams to compute the distance matrix for
+    :type allow_shift: bool
+    :param allow_shift: To allow templates to shift or not?
+    :type shift_len: int
+    :param shift_len: How many samples for templates to shift in time
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
@@ -80,6 +97,8 @@ def distance_matrix(stream_list, cores=1):
         # Parallel processing
         results = [pool.apply_async(cross_chan_coherence, args=(master,
                                                                 stream_list[j],
+                                                                allow_shift,
+                                                                shift_len,
                                                                 j))
                    for j in range(len(stream_list))]
         pool.close()
@@ -102,7 +121,8 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
+def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
+            shift_len=0, save_corrmat=False,
             cores='all', debug=1):
     """
     Cluster template waveforms based on average correlations.
@@ -124,11 +144,15 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     :param show: plot linkage on screen if True, defaults to True
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
+    :type allow_shift: bool
+    :param allow_shift: Whether to allow the templates to shift when correlating
+    :type shift_len: int
+    :param shift_len: How many samples to allow the templates to shift in time
     :type save_corrmat: bool
     :param save_corrmat: If True will save the distance matrix to \
         dist_mat.npy in the local directory.
     :type cores: int
-    :param cores: numebr of cores to use when computing the distance matrix, \
+    :param cores: number of cores to use when computing the distance matrix, \
         defaults to 'all' which will work out how many cpus are available \
         and hog them.
     :type debug: int
@@ -151,7 +175,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     # Compute the distance matrix
     if debug >= 1:
         print('Computing the distance matrix using '+str(num_cores)+' cores')
-    dist_mat = distance_matrix(stream_list, cores=num_cores)
+    dist_mat = distance_matrix(stream_list, allow_shift, shift_len, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         if debug >= 1:
@@ -274,24 +298,37 @@ def group_delays(stream_list):
     return groups
 
 
-def SVD(stream_list):
+def SVD(stream_list, full=False):
+    """
+    Depreciated. Use svd.
+    """
+    warnings.warn('Depreciated, use svd instead.')
+    return svd(stream_list=stream_list, full=full)
+
+
+def svd(stream_list, full=False):
     """
     Compute the SVD of a number of templates.
 
-    Returns the \
-    singular vectors and singular values of the templates.
+    Returns the singular vectors and singular values of the templates.
 
-    :type stream_list: List of Obspy.Stream
+    :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
+    :type full: bool
+    :param full: Whether to compute the full input vector matrix or not.
 
-    :return: SVector(list of ndarray), SValues(list) for each channel, \
-        Uvalues(list of ndarray) for each channel, \
+    :return: SValues(list) for each channel, SVectors(list of ndarray),  \
+        UVectors(list of ndarray) for each channel, \
         stachans, List of String (station.channel)
 
     .. note:: We recommend that you align the data before computing the \
         SVD, e.g., the P-arrival on all templates for the same channel \
         should appear at the same time in the trace.  See the \
         stacking.align_traces function for a way to do this.
+
+    .. note:: Uses the numpy.linalg.svd function, their U, s and V are mapped \
+        to UVectors, SValues and SVectors respectively.  Their V (and ours) \
+        corresponds to V.H.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
@@ -300,11 +337,11 @@ def SVD(stream_list):
         for tr in st:
             stachans.append(tr.stats.station+'.'+tr.stats.channel)
     stachans = list(set(stachans))
-    print(stachans)
+    stachans.sort()
     # Initialize a list for the output matrices, one matrix per-channel
-    SValues = []
-    SVectors = []
-    Uvectors = []
+    svalues = []
+    svectors = []
+    uvectors = []
     for stachan in stachans:
         lengths = []
         for st in stream_list:
@@ -313,7 +350,6 @@ def SVD(stream_list):
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                print(st)
                 warnings.warn('Stream does not contain ' + stachan)
                 continue
             lengths.append(len(tr.data))
@@ -337,12 +373,12 @@ def SVD(stream_list):
             warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
             continue
         chan_mat = np.asarray(chan_mat)
-        U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
-        SValues.append(s)
-        SVectors.append(V)
-        Uvectors.append(U)
+        u, s, v = np.linalg.svd(chan_mat, full_matrices=full)
+        svalues.append(s)
+        svectors.append(v)
+        uvectors.append(u)
         del(chan_mat)
-    return SVectors, SValues, Uvectors, stachans
+    return svectors, svalues, uvectors, stachans
 
 
 def empirical_SVD(stream_list, linear=True):
@@ -422,10 +458,15 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     for i in range(k):
         SVstream = []
         for j, stachan in enumerate(stachans):
-            SVstream.append(Trace(SVectors[j][i],
-                                  header={'station': stachan.split('.')[0],
-                                          'channel': stachan.split('.')[1],
-                                          'sampling_rate': sampling_rate}))
+            if len(SVectors[j]) <= k:
+                warnings.warn('Too few traces at %s for a %02d ' % (stachan, k)
+                              + 'dimensional subspace. Detector streams will' +
+                              ' not include this stachan.')
+            else:
+                SVstream.append(Trace(SVectors[j][i],
+                                      header={'station': stachan.split('.')[0],
+                                              'channel': stachan.split('.')[1],
+                                              'sampling_rate': sampling_rate}))
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
@@ -473,8 +514,9 @@ def corr_cluster(trace_list, thresh=0.9):
     return output
 
 
-def extract_detections(detections, templates, contbase_list, extract_len=90.0,
-                       outdir=None, extract_Z=True, additional_stations=[]):
+def extract_detections(detections, templates, archive, arc_type,
+                       extract_len=90.0, outdir=None, extract_Z=True,
+                       additional_stations=[]):
     """
     Extract waveforms associated with detections
 
@@ -483,22 +525,20 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
     They will also be saved if outdir is set.  The default is unset.  The \
     default extract_len is 90 seconds per channel.
 
-    :type detections: list tuple of of :class: datetime.datetime, string
-    :param detections: List of datetime objects, and their associated \
-        template name.
-    :type templates: list of tuple of string and :class: obspy.Stream
-    :param templates: A list of the tuples of the template name and the \
+    :type detections: list
+    :param detections: List of eqcorrscan.core.match_filter.DETECTION objects.
+    :type templates: list
+    :param templates: A list of tuples of the template name and the \
         template Stream used to detect detections.
-    :type contbase_list: list of tuple of string
-    :param contbase_list: List of tuples of the form \
-        ['path', 'type', 'network']  Where path is the path to the continuous \
-        database, type is the directory structure, which can be either \
-        Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure, \
-        or, yyyymmdd which is a single directory for every day.
+    :type archive: str
+    :param archive: Either name of archive or path to continuous data, see \
+        eqcorrscan.utils.archive_read for details
+    :type arc_type: str
+    :param arc_type: Type of archive, either seishub, FDSN, day_vols
     :type extract_len: float
     :param extract_len: Length to extract around the detection (will be \
         equally cut around the detection time) in seconds.  Default is 90.0.
-    :type outdir: bool or str
+    :type outdir: str
     :param outdir: Default is None, with None set, no files will be saved, \
         if set each detection will be saved into this directory with files \
         named according to the detection time, NOT than the waveform \
@@ -507,32 +547,66 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
     :param extract_Z: Set to True to also extract Z channels for detections \
         delays will be the same as horizontal channels, only applies if \
         only horizontal channels were used in the template.
-    :type additional_stations: list of tuple
-    :param additional_stations: List of stations, chanels and networks to \
-        also extract data for using an average delay.
+    :type additional_stations: list
+    :param additional_stations: List of tuples of (station, channel, network) \
+        to also extract data for using an average delay.
 
-    :returns: list of :class: obspy.Stream
+    :returns: list of streams
+    :rtype: obspy.core.stream.Stream
+
+    .. rubric: Example
+
+    >>> from eqcorrscan.utils.clustering import extract_detections
+    >>> from eqcorrscan.core.match_filter import DETECTION
+    >>> from obspy import read, UTCDateTime
+    >>> import os
+    >>> # Use some dummy detections, you would use real one
+    >>> detections = [DETECTION('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr'),
+    ...               DETECTION('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr')]
+    >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
+    >>> archive = os.path.join(path_to_templates, 'day_vols')
+    >>> template_files = [os.path.join(path_to_templates, 'temp1.ms'),
+    ...                   os.path.join(path_to_templates, 'temp2.ms')]
+    >>> templates = [('temp' + str(i), read(filename))
+    ...              for i, filename in enumerate(template_files)]
+    >>> extracted = extract_detections(detections, templates,
+    ...                                archive=archive, arc_type='day_vols')
+    Working on detections for day: 2012-03-26T00:00:00.000000Z
+    Cutting for detections at: 2012/03/26 09:15:00
+    Cutting for detections at: 2012/03/26 18:05:00
+    >>> print(extracted[0].sort())
+    2 Trace(s) in Stream:
+    AF.EORO..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z | 1.0 Hz, 91 samples
+    AF.WHYM..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z | 1.0 Hz, 91 samples
+    >>> print(extracted[1].sort())
+    2 Trace(s) in Stream:
+    AF.EORO..SHZ | 2012-03-26T18:04:15.000000Z - 2012-03-26T18:05:45.000000Z | 1.0 Hz, 91 samples
+    AF.WHYM..SHZ | 2012-03-26T18:04:15.000000Z - 2012-03-26T18:05:45.000000Z | 1.0 Hz, 91 samples
     """
-    from obspy import read
     from obspy import UTCDateTime
     import os
-    # Sort the template according to starttimes, needed so that stachan[i]
+    from eqcorrscan.utils.archive_read import read_data
+    # Sort the template according to start-times, needed so that stachan[i]
     # corresponds to delays[i]
     all_delays = []  # List of tuples of template name, delays
     all_stachans = []
     for template in templates:
         templatestream = template[1].sort(['starttime'])
-        stachans = [(tr.stats.station, tr.stats.channel, tr.stats.network)
+        stachans = [(tr.stats.station, tr.stats.channel)
                     for tr in templatestream]
         mintime = templatestream[0].stats.starttime
         delays = [tr.stats.starttime - mintime for tr in templatestream]
         all_delays.append((template[0], delays))
         all_stachans.append((template[0], stachans))
     # Sort the detections and group by day
-    detections.sort()
-    detection_days = [detection[0].date() for detection in detections]
+    detections.sort(key=lambda d: d.detect_time)
+    detection_days = [detection.detect_time.date
+                      for detection in detections]
     detection_days = list(set(detection_days))
     detection_days.sort()
+    detection_days = [UTCDateTime(d) for d in detection_days]
 
     # Initialize output list
     detection_wavefiles = []
@@ -549,8 +623,7 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
             j = 0
             for i, stachan in enumerate(stachans):
                 if j == 1:
-                    new_stachans.append((stachan[0], stachan[1][0]+'Z',
-                                         stachan[2]))
+                    new_stachans.append((stachan[0], stachan[1][0]+'Z'))
                     new_delays.append(delays[i])
                     new_stachans.append(stachan)
                     new_delays.append(delays[i])
@@ -578,52 +651,33 @@ def extract_detections(detections, templates, contbase_list, extract_len=90.0,
         print('Working on detections for day: ' + str(detection_day))
         stachans = list(set([stachans[1] for stachans in all_stachans][0]))
         # List of all unique stachans - read in all data
-        for stachan in stachans:
-            print('Extracting data for ' + '.'.join(stachan))
-            contbase = [base for base in contbase_list
-                        if base[2] == stachan[2]][0]
-            if contbase[1] == 'yyyymmdd':
-                dayfile = detection_day.strftime('%Y%m%d') + '/*' +\
-                    stachan[0] + '.' + stachan[1][0] + '?' + stachan[1][-1] +\
-                    '.*'
-            elif contbase[1] == 'Yyyyy/Rjjj.01':
-                dayfile = detection_day.strftime('Y%Y/R%j.01')+'/'+stachan[0] +\
-                    '.*.'+stachan[1][0]+'?'+stachan[1][-1]+'.' +\
-                    detection_day.strftime('%Y.%j')
-            if 'st' not in locals():
-                try:
-                    st = read(contbase[0]+'/'+dayfile)
-                except:
-                    print('No data for '+contbase[0]+'/'+dayfile)
-            else:
-                try:
-                    st += read(contbase[0]+'/'+dayfile)
-                except:
-                    print('No data for '+contbase[0]+'/'+dayfile)
+        st = read_data(archive=archive, arc_type=arc_type, day=detection_day,
+                       stachans=stachans)
         st.merge(fill_value='interpolate')
         day_detections = [detection for detection in detections
-                          if detection[0].date() == detection_day]
+                          if UTCDateTime(detection.detect_time.date) ==
+                          detection_day]
         del stachans, delays
         for detection in day_detections:
-            template = detection[1]
-            t_stachans = [stachans[1] for stachans in all_stachans
-                          if stachans[0] == template][0]
-            t_delays = [delays[1] for delays in all_delays
-                        if delays[0] == template][0]
+            template = [t[1] for t in templates
+                        if t[0] == detection.template_name]
             print('Cutting for detections at: ' +
-                  detection[0].strftime('%Y/%m/%d %H:%M:%S'))
+                  detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
-                tr.trim(starttime=UTCDateTime(detection[0]) - extract_len / 2,
-                        endtime=UTCDateTime(detection[0]) + extract_len / 2)
+                tr.trim(starttime=UTCDateTime(detection.detect_time) -
+                        extract_len / 2,
+                        endtime=UTCDateTime(detection.detect_time) +
+                        extract_len / 2)
             if outdir:
                 if not os.path.isdir(outdir+'/'+template):
                     os.makedirs(outdir+'/'+template)
                 detect_wav.write(outdir+'/'+template+'/' +
-                                 detection[0].strftime('%Y-%m-%d_%H-%M-%S') +
+                                 detection.detect_time.
+                                 strftime('%Y-%m-%d_%H-%M-%S') +
                                  '.ms', format='MSEED', encoding='STEIM2')
                 print('Written file: '+outdir+'/'+template+'/' +
-                      detection[0].strftime('%Y-%m-%d_%H-%M-%S')+'.ms')
+                      detection.detect_time.strftime('%Y-%m-%d_%H-%M-%S')+'.ms')
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -655,13 +709,21 @@ def dist_mat_km(catalog):
     # Calculate distance vector for each event
     for i, master in enumerate(catalog):
         mast_list = []
-        master_tup = (master.preferred_origin().latitude,
-                      master.preferred_origin().longitude,
-                      master.preferred_origin().depth // 1000)
+        if master.preferred_origin():
+            master_ori = master.preferred_origin()
+        else:
+            master_ori = master.origins[0]
+        master_tup = (master_ori.latitude,
+                      master_ori.longitude,
+                      master_ori.depth // 1000)
         for slave in catalog:
-            slave_tup = (slave.preferred_origin().latitude,
-                         slave.preferred_origin().longitude,
-                         slave.preferred_origin().depth // 1000)
+            if master.preferred_origin():
+                slave_ori = slave.preferred_origin()
+            else:
+                slave_ori = slave.origins[0]
+            slave_tup = (slave_ori.latitude,
+                         slave_ori.longitude,
+                         slave_ori.depth // 1000)
             mast_list.append(dist_calc(master_tup, slave_tup))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
@@ -679,7 +741,7 @@ def space_cluster(catalog, d_thresh, show=True):
 
     Will compute the\
     matrix of physical distances between events and utilize the\
-    scipy.clusering.hierarchy module to perform the clustering.
+    scipy.clustering.hierarchy module to perform the clustering.
 
     :type catalog: obspy.Catalog
     :param catalog: Catalog of events to clustered
@@ -777,22 +839,33 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     :param chan_thresh: Minimum number of channels for a detection
 
     :returns: List of detections
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.utils.clustering import re_thresh_csv
+    >>> import os
+    >>> det_file = os.path.join('eqcorrscan', 'tests', 'test_data',
+    ...                         'expected_tutorial_detections.txt')
+    >>> detections = re_thresh_csv(path=det_file, old_thresh=8, new_thresh=10,
+    ...                            chan_thresh=3)
+    Read in 22 detections
+    Left with 17 detections
     """
-    f = open(path, 'r')
+    from eqcorrscan.core.match_filter import read_detections
+    old_detections = read_detections(path)
     old_thresh = float(old_thresh)
     new_thresh = float(new_thresh)
     # Be nice, ensure that the thresholds are float
     detections = []
     detections_in = 0
     detections_out = 0
-    for line in f:
-        if not line.split(', ')[0] == 'template' and len(line) > 2:
-            detections_in += 1
-            if abs(float(line.split(', ')[3])) >=\
-               (new_thresh / old_thresh) * float(line.split(', ')[2]) and\
-               int(line.split(', ')[4]) >= chan_thresh:
-                detections_out += 1
-                detections.append(line.split(', '))
+    for detection in old_detections:
+        detections_in += 1
+        if abs(detection.detect_val) >=\
+           (new_thresh / old_thresh) * detection.threshold and\
+           detection.no_chans >= chan_thresh:
+            detections_out += 1
+            detections.append(detection)
     print('Read in '+str(detections_in)+' detections')
     print('Left with '+str(detections_out)+' detections')
     return detections
