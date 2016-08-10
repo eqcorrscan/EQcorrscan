@@ -27,3 +27,6 @@ station.dat
 *L.S??????
 *R.S??????
 .idea
+.coverage.*
+eqcorrscan/core/subspace_statistic.c
+eqcorrscan/core/sliding_normxcorr.c

@@ -22,6 +22,7 @@ plotting
        NR_plot
        obspy_3d_plot
        peaks_plot
+       plot_repicked
        plot_synth_real
        pretty_template_plot
        spec_trace
@@ -29,5 +30,6 @@ plotting
        threeD_gridplot
        threeD_seismplot
        triple_plot
+       xcorr_plot
 
     .. comment to end block

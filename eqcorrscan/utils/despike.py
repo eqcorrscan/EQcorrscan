@@ -206,4 +206,4 @@ def template_remove(tr, template, cc_thresh, windowlength,
 
 if __name__ == '__main__':
     import doctest
-    doctest.modtest()
+    doctest.testmod()

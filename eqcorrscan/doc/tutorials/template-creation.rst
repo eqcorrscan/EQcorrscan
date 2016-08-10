@@ -50,6 +50,23 @@ this.  In practice, five picks (and therefore traces in a template) is often
 sufficient for matched-filter detections.  However, you should test this on your
 own data.
 
+Some other things that you might want to consider when generating templates
+include:
+
+* Template-length, you probably only want to include the real earthquake signal in your template,
+  so really long templates are probably not the best idea.
+* On the same note, don't include much (if any) data before the P-phase, unless you have
+  good reason to - assuming your noise is random, including noise will reduce the
+  correlations.
+* Consider your frequency band - look for peak power in the chosen waveform
+  **relative to the noise**.
+* Coda waves often describe scatterers - scattered waves are very interesting,
+  but may reduce the generality of your templates.  If this is what you want, include
+  coda, if you want a more general template, I would suggest not including coda.
+  For examples of this you could try generating a lot of templates from a sequence
+  and computing the SVD of the templates to see where the most coherent energy is
+  (in the first basis vector), or just computing the stack of the waveforms.
+
 Storing templates
 -----------------
 
