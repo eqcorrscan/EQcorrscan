@@ -338,7 +338,6 @@ def svd(stream_list, full=False):
             stachans.append(tr.stats.station+'.'+tr.stats.channel)
     stachans = list(set(stachans))
     stachans.sort()
-    print(stachans)
     # Initialize a list for the output matrices, one matrix per-channel
     svalues = []
     svectors = []

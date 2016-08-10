@@ -100,7 +100,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     >>> st = read().detrend('simple').filter('bandpass', freqmin=2, freqmax=15)
     >>> shifts, ccs = align_traces([st[0], st[1]], 40)
     >>> xcorr_plot(template=st[1].data, image=st[0].data, shift=shifts[1],
-    ...            cc=ccs[1])
+    ...            cc=ccs[1]) # doctest: +SKIP
 
     .. image:: ../../plots/xcorr_plot.png
     """
@@ -144,7 +144,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     >>> from eqcorrscan.core.match_filter import normxcorr2
     >>> from eqcorrscan.utils.plotting import triple_plot
     >>> st = read()
-    >>> template = st[0].copy.trim(st[0].stats.starttime + 8,
+    >>> template = st[0].copy().trim(st[0].stats.starttime + 8,
     ...                            st[0].stats.starttime + 12)
     >>> tr = st[0]
     >>> ccc = normxcorr2(template=template.data, image=tr.data)
@@ -1562,8 +1562,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     >>> stream_list = []
     >>> for st in streams:
     ...     tr = st.select(station='GCSZ', channel='EHZ')
-    ...     tr.detrend('simple').resample(100).filter('bandpass', freqmin=2,
-    ...                                               freqmax=8)
+    ...     tr = tr.detrend('simple').resample(100).filter('bandpass', freqmin=2,
+    ...                                                    freqmax=8)
     ...     stream_list.append(tr)
     >>> svec, sval, uvec, stachans = svd(stream_list=stream_list)
     >>> SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
@@ -1652,9 +1652,11 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     >>> synth[0].stats.station = 'RJOB'
     >>> synth[0].stats.channel = 'EHZ'
     >>> synth[0].stats.sampling_rate = 100
-    >>> synth.filter('bandpass', freqmin=2, freqmax=8)
-    >>> real = real.select(station='RJOB', channel='EHZ').detrend('simple').
-    ...     filter('bandpass', freqmin=2, freqmax=8)
+    >>> synth = synth.filter('bandpass', freqmin=2, freqmax=8)
+    >>> real = real.select(station='RJOB',
+    ...                    channel='EHZ').detrend('simple').filter('bandpass',
+    ...                                                            freqmin=2,
+    ...                                                            freqmax=8)
     >>> real = real.trim(starttime=real[0].stats.starttime + 43,
     ...                  endtime=real[0].stats.starttime + 45).detrend('simple')
     >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP

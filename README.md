@@ -1,5 +1,5 @@
 # EQcorrscan
-## A python package to conduct matched-filter earthquake detections.
+## A python package for the detection and anlysis of repeating and near-repeating earthquakes.
 
 [![Join the chat at https://gitter.im/calum-chamberlain/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/calum-chamberlain/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/calum-chamberlain/EQcorrscan.svg?branch=master)](https://travis-ci.org/calum-chamberlain/EQcorrscan)
@@ -9,38 +9,31 @@
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 
 # Installation
-Installation has been tested on both OSX and Linux (Ubuntu), and now
+Installation has been tested on both OSX and Linux (Ubuntu), and
 Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
-
 Note that, although we support Windows, EQcorrscan is optimized for
-linux style distributions, it will work on Windows, but everything
-seems to run about 30x slower at the moment.
+linux style distributions.
 
-Installation for all systems should be as simple as:
+Installation for all systems should be as simple as (we recommend running
+within a virtual environment so that installing dependencies does not
+affect your system Python, or other packages):
 
 ```bash
 pip install EQcorrscan
 ```
 
-If upgrading from a previous version, rather than running install --upgrade, I recommend the following:
+If upgrading from a previous version:
 
 ```bash
-pip install -U --no-deps EQcorrscan
+pip install -U EQcorrscan
 ```
-
-This will not try to upgrade your dependencies, which is not needed.  You should
-to update your obspy version to 1.0.x which was recently released.  We have tested
-this and support it, nevertheless, if you find any issues then let us know.
-
-*You will likely need sudo/root permissions to run this command.*
 
 If you have any issues installing please report them on the issues pages.
 
 You will need to install openCV (note that openCV versions 2 and 3 work for
 Python 2.7, but only openCV version 3 works for Python 3.x, therefore we
 recommend installing openCV 3). We recommend installing openCV from source,
-this will both optimize it for your machine, and ensure you don't break your python
-by using conda.
+this will both optimize it for your machine.
 
 If you are running Linux or OSX, installation
 instructions can be found
@@ -93,13 +86,13 @@ the gh-pages branch.
 
 # Functionality
 
-This package contains routines to enable the user to conduct match-filter earthquake
+This package contains routines to enable the user to conduct matched-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
 and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
-The OpendCV package is not installed by this software, due to a need to build from
+The OpenCV package is not installed by this software, due to a need to build from
 source.  The user should follow the instructions above for OpenCV install.
-This package was written to implement the Matlab routines
-used by Chamberlain et al. (2014) for the detection of low-frequency earthquakes.
+
+We have also added subspace detection and correlation derived pick adjustment.
 
 Also within this package are:
 * Clustering routines for seismic data;
@@ -111,10 +104,9 @@ Also within this package are:
 * Brightness based template creation based on the work of Frank et al. (2014);
 * Singular Value Decomposition derived magnitude calculations based on Rubinstein & Ellsworth (2010).
 
-We are currently hovering around 9,000 lines of code (including doc-strings) - it is probably worth
-having a look at the docs to check what functions we have.  We plan to write a series of tutorials to be
-included on the EQcorrscan API to highlight key functions, currently our tutorials only show
-how to do the core matched-filter detection.
+We are currently hovering around 15,000 lines of code (including doc-strings) - it is probably worth
+having a look at the docs to check what functions we have.  We are writing a series of tutorials
+included on the EQcorrscan API to highlight key functions.
 
 # Licence
 
@@ -136,18 +128,6 @@ with your changes then please write one.
 Please document your functions following the other documentation within the
 functions, these doc-scripts will then be built into the main documentation
 using Sphinx.
-
-We are trying to implement a better branching model, following that found [here](http://nvie.com/posts/a-successful-git-branching-model/).
-To this end, please fork the development branch if you want to develop
-things, and flag issues in the master for us to bugfix.
-If you have a feature you want to develop please create a new branch
-from the development branch and work on it there, we can then merge
-it back in to the development branch when it is stable enough.
-
-This branching model (git-flow) is pretty well established, and I would recommend
-you to install [git-flow](https://github.com/nvie/gitflow/wiki/Installation) and
-read their [documentation](https://github.com/nvie/gitflow). It seems pretty intuitive and
-will keep us all branching in the same way.
 
 # References
 * CJ Chamberlain, DR Shelly, J Townend, TA Stern (2014) [Low‐frequency earthquakes reveal punctuated slow slip on the deep extent of the Alpine Fault, New Zealand](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005436/full), __G-cubed__,doi:10.1002/2014GC005436
