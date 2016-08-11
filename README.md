@@ -6,8 +6,8 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/eqcorrscan/EQcorrscan/badge.svg?branch=master)](https://coveralls.io/github/eqcorrscan/EQcorrscan?branch=master)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.59976.svg)](http://dx.doi.org/10.5281/zenodo.59976)
-<!--[![DOI](https://zenodo.org/badge/18852/eqcorrscan/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/eqcorrscan/EQcorrscan)-->
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
+<!--[![DOI](https://zenodo.org/badge/18852/eqcorrscan/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/eqcorrscan/EQcorrscan)-->
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and
