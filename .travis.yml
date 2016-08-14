@@ -107,7 +107,7 @@ notifications:
     email: false
     webhooks:
       urls:
-        - https://webhooks.gitter.im/e/10122f10ed5043c58ae7
+        - https://webhooks.gitter.im/e/b964418fdb22a8840c58
       on_success: change  # options: [always|never|change] default: always
       on_failure: always  # options: [always|never|change] default: always
       on_start: never     # options: [always|never|change] default: always
