@@ -360,7 +360,7 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
     """
     Internal loop for parallel processing.
 
-    Loop to generate cross channel correaltion sums for a series of templates \
+    Loop to generate cross channel correlation sums for a series of templates \
     hands off the actual correlations to a sister function which can be run \
     in parallel.
 
@@ -370,9 +370,8 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
         the relevant header information. If do_subspace is True, templates \
         should be a list of lists of obspy.Stream objects, one list for each \
         detector of length n, where n is the number of singular vectors.
-    :param stream: A single obspy.Stream object containing daylong seismic \
-        data to be correlated through using the templates.  This is in effect \
-        the image.
+    :param stream: A single obspy.Stream object to be correlated with the \
+        templates.  This is in effect the image in normxcorr2 and cv2.
     :type cores: int
     :param cores: Number of cores to loop over
     :type do_subspace: bool

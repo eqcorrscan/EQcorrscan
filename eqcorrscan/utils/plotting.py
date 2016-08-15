@@ -99,14 +99,16 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     >>> from eqcorrscan.utils.stacking import align_traces
     >>> st = read().detrend('simple').filter('bandpass', freqmin=2, freqmax=15)
     >>> shifts, ccs = align_traces([st[0], st[1]], 40)
-    >>> xcorr_plot(template=st[1].data, image=st[0].data, shift=shifts[1],
-    ...            cc=ccs[1]) # doctest: +SKIP
+    >>> shift = shifts[1] * st[1].stats.sampling_rate
+    >>> cc = ccs[1]
+    >>> xcorr_plot(template=st[1].data, image=st[0].data, shift=shift,
+    ...            cc=cc) # doctest: +SKIP
 
     .. image:: ../../plots/xcorr_plot.png
     """
     _check_save_args(save, savefile)
-    if not cc or not shift:
-        if not cc_vec:
+    if not isinstance(cc, float) or not isinstance(shift, int):
+        if not isinstance(cc_vec, np.ndarray):
             raise IOError('Must provide either cc_vec, or cc and shift')
         shift = np.abs(cc_vec).argmax()
         cc = cc_vec[shift]
