@@ -134,6 +134,8 @@ def read_detections(fname):
     for index, line in enumerate(f):
         if index == 0:
             continue  # Skip header
+        if line.rstrip().split('; ')[0] == 'Template name':
+            continue  # Skip any repeated headers
         detection = line.rstrip().split('; ')
         detection[1] = UTCDateTime(detection[1])
         detection[2] = int(detection[2])
@@ -267,8 +269,7 @@ def normxcorr2(template, image):
     return ccc
 
 
-def _template_loop(template, chan, station, channel, do_subspace=False,
-                   debug=0, i=0):
+def _template_loop(template, chan, station, channel, debug=0, i=0):
     r"""Sister loop to handle the correlation of a single template (of \
     multiple channels) with a single channel of data.
 
@@ -276,87 +277,53 @@ def _template_loop(template, chan, station, channel, do_subspace=False,
     :type chan: np.array
     :type station: string
     :type channel: string
-    :type do_subspace: bool
-    :param do_subspace: Flag for running subspace detection. Defaults to False.
     :type i: int
     :param i: Optional argument, used to keep track of which process is being \
         run.
 
     :returns: tuple of (i, ccc) with ccc as an ndarray
     """
-    from eqcorrscan.utils.timer import Timer
-    from eqcorrscan.core import subspace
-    if do_subspace:
-        temp_len = len(template[0][0].data)
-    else:
-        temp_len = len(template[0].data)
-    cstat = np.array([np.nan] * (len(chan) - temp_len + 1), dtype=np.float16)
-    cstat = cstat.reshape((1, len(cstat)))           # Set default value for
-    # cross-channel correlation in case there are no data that match our
-    # channels.
-    with Timer() as t:
-        # While each bit of this loop isn't slow, looping through the if
-        # statement when I don't need to adds up, I should work this out
-        # earlier
-        if do_subspace:
-            sin_vecs = [st.select(station=station, channel=channel)[0].data
-                        for st in template
-                        if len(st.select(station=station,
-                                         channel=channel)) != 0]
-            # Convert trace data to np array
-            detector = np.asarray(sin_vecs)
-            cstat = subspace.det_statistic(detector, data=chan)
-            cstat = cstat.reshape((1, len(cstat)))
-            # Do not convert subspace statistic to float16 due to overrunning
-            # 16 bit precision in the mean calculation. np.isinf(np.mean())=T
-            # cstat = cstat.astype(np.float16)
-        else:
-            template_data = template.select(station=station,
-                                            channel=channel)
-            # I will for now assume that you only have one template per-channel
-            template_data = template_data[0]
-            delay = template_data.stats.starttime - \
-                template.sort(['starttime'])[0].stats.starttime
-            pad = np.array([0] * int(round(delay *
-                                           template_data.stats.sampling_rate)))
-            image = np.append(chan, pad)[len(pad):]
-            cstat = (normxcorr2(template_data.data, image))
-            cstat = cstat.astype(np.float16)
-        # Convert to float16 to save memory for large problems - lose some
-        # accuracy which will affect detections very close to threshold
-        #
-        # There is an interesting issue found in the tests that sometimes what
-        # should be a perfect correlation results in a max of ccc of 0.99999994
-        # Converting to float16 'corrects' this to 1.0 - bad workaround.
+    template_data = template.select(station=station,
+                                    channel=channel)[0]  # Assume only one
+    # template per-channel
+    delay = template_data.stats.starttime - \
+        template.sort(['starttime'])[0].stats.starttime
+    pad = np.array([0] * int(round(delay *
+                                   template_data.stats.sampling_rate)))
+    image = np.append(chan, pad)[len(pad):]
+    ccc = (normxcorr2(template_data.data, image))
+    ccc = ccc.astype(np.float16)
+    # Convert to float16 to save memory for large problems - lose some
+    # accuracy which will affect detections very close to threshold
+    #
+    # There is an interesting issue found in the tests that sometimes what
+    # should be a perfect correlation results in a max of ccc of 0.99999994
+    # Converting to float16 'corrects' this to 1.0 - bad workaround.
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
-              channel + ' ccc MAX: ' + str(np.max(cstat[0])))
+              channel + ' ccc MAX: ' + str(np.max(ccc[0])))
         print('********* DEBUG:  ' + station + '.' +
-              channel + ' ccc MEAN: ' + str(np.mean(cstat[0])))
-    if np.isinf(np.mean(cstat[0])):
+              channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
+    if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
         if debug >= 3:
-            np.save('inf_cccmean_ccc_%02d.npy' % i, cstat[0])
-            if do_subspace:
-                np.save('inf_cccmean_template_%02d.npy' % i, sin_vecs)
-                np.save('inf_cccmean_image_%02d.npy' % i, chan)
-            else:
-                np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
-                np.save('inf_cccmean_image_%02d.npy' % i, image)
+            np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
+            np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
+            np.save('inf_cccmean_image_%02d.npy' % i, image)
         ccc = np.zeros(len(ccc))
         ccc = ccc.reshape((1, len(ccc)))
         # Returns zeros
     if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(cstat)))
-        print('A single ccc is using: ' + str(cstat.nbytes / 1000000) + 'MB')
-        print('ccc type is: ' + str(type(cstat)))
+        print('shape of ccc: ' + str(np.shape(ccc)))
+        print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
+        print('ccc type is: ' + str(type(ccc)))
     if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(cstat)))
+        print('shape of ccc: ' + str(np.shape(ccc)))
         print("Parallel worker " + str(i) + " complete")
-    return (i, cstat)
+    return i, ccc
 
 
-def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
+def _channel_loop(templates, stream, cores=1, debug=0):
     """
     Internal loop for parallel processing.
 
@@ -374,8 +341,6 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
         templates.  This is in effect the image in normxcorr2 and cv2.
     :type cores: int
     :param cores: Number of cores to loop over
-    :type do_subspace: bool
-    :param do_subspace: Flag for running subspace detection. Defaults to False.
     :type debug: int
     :param debug: Debug level.
 
@@ -389,6 +354,7 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
     import time
     from multiprocessing import Pool
     from eqcorrscan.utils.timer import Timer
+
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -400,10 +366,7 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
 
     # Note: This requires all templates to be the same length, and all channels
     # to be the same length
-    if do_subspace:
-        temp_len = len(templates[0][0][0].data)
-    else:
-        temp_len = len(templates[0][0].data)
+    temp_len = len(templates[0][0].data)
     cccs_matrix = np.array([np.array([np.array([0.0] * (len(stream[0].data) -
                                      temp_len + 1))] *
                             len(templates))] * 2, dtype=np.float32)
@@ -424,7 +387,7 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
             pool = Pool(processes=num_cores)
             results = [pool.apply_async(_template_loop,
                                         args=(templates[i], tr_data, station,
-                                              channel, do_subspace, debug, i))
+                                              channel, debug, i))
                        for i in range(len(templates))]
             pool.close()
         if debug >= 1:
@@ -502,7 +465,7 @@ def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
 
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
-                 tempdir=False, debug=0, plot_format='png',
+                 debug=0, plot_format='png',
                  output_cat=False, extract_detections=False,
                  arg_check=True):
     """
@@ -544,8 +507,6 @@ def match_filter(template_names, template_list, st, threshold,
     :type plotdir: str
     :param plotdir: Path to plotting folder, plots will be output here, \
         defaults to run location.
-    :type tempdir: str
-    :param tempdir: Directory to put temporary files, or False
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
