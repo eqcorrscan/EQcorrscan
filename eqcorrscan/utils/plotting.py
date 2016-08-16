@@ -117,7 +117,14 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     x = np.arange(len(template)) + shift
     plt.plot(x, template / abs(template).max(), 'r', lw=1.1, label='Template')
     plt.title('Shift=%s, Correlation=%s' % (shift, cc))
-    plt.show()
+    fig = plt.gcf()
+    if not save:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig(savefile)
+        plt.close()
+    return fig
 
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
