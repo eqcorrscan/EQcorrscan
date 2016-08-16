@@ -449,6 +449,28 @@ class TestSfileMethods(unittest.TestCase):
         for pick in pick_string:
             self.assertEqual(len(pick), 80)
 
+    def test_read_moment(self):
+        """Test the reading of seismic moment from the s-file."""
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'automag.out')
+        event = read_event(testing_path)
+        mag = [m for m in event.magnitudes if m.magnitude_type == 'MW']
+        self.assertEqual(len(mag), 1)
+        self.assertEqual(mag[0], 0.7)
+
+    def test_read_moment_info(self):
+        """Test reading the info from spectral analysis."""
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'automag.out')
+        event = read_event(testing_path)
+        self.assertEqual('This passes', 'No it does not')
+
+    def test_write_moment_info(self):
+        """Test writing the moment info."""
+        import os
+        self.assertEqual('This passes', 'No it does not')
 
 
 def full_test_event():

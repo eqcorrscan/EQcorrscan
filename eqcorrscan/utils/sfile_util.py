@@ -187,10 +187,18 @@ def readheader(sfile):
     >>> print(event.origins[0].time)
     2013-09-01T04:11:15.700000Z
     """
+    return _readheader(f=open(sfile, 'r'))
+
+
+def _readheader(f):
+    """Internal header reader.
+    :type f: file
+    :param f: File open in read-mode.
+
+    :returns: obspy.core.event.Event"""
     import warnings
     from obspy.core.event import Event, Origin, Magnitude, Comment
     from obspy.core.event import EventDescription, CreationInfo
-    f = open(sfile, 'r')
     # Base populate to allow for empty parts of file
     new_event = Event()
     topline = f.readline()
@@ -298,6 +306,28 @@ def readheader(sfile):
     return new_event
 
 
+def read_spectral_info(sfile):
+    """ Read sepcatrl infor from an sfile.
+
+    :type sfile: str
+    :param sfile: Sfile to read from.
+
+    :returns:
+    """
+    f = open(sfile, 'r')
+    return _read_spectral_info(f)
+
+
+def _read_spectral_info(f):
+    """Internal spectral reader.
+
+    :type f: file
+    :param f: File open in read mode.
+
+    :returns:
+    """
+
+
 def read_event(sfile):
     """
     Read all information from a Nordic formatted s-file.
@@ -310,8 +340,7 @@ def read_event(sfile):
     :returns: event
     :rtype: obspy.core.event.Event.
     """
-    event = readpicks(sfile)
-    return event
+    return readpicks(sfile)
 
 
 def read_select(select_file):
@@ -374,13 +403,26 @@ def readpicks(sfile):
     >>> print(event.picks[0].time)
     2013-09-01T04:11:17.240000Z
     """
-    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    # Get wavefile name for use in resource_ids
-    wav_names = readwavename(sfile)
-    # First we need to read the header to get the timing info
-    new_event = readheader(sfile)
-    evtime = new_event.origins[0].time
     f = open(sfile, 'r')
+    new_event = _readheader(f=f)
+    wav_names = _readwavename(f=f)
+    return _read_picks(f=f, wav_names=wav_names, new_event=new_event)
+
+
+def _read_picks(f, wav_names, new_event):
+    """Internal pick reader. Use a public function instead.
+
+    :type f: file
+    :param f: File open in read mode
+    :type wav_names: list
+    :param wav_names: List of waveform files in the sfile
+    :type new_event: obspy.core.Event
+    :param new_event: event to associate picks with.
+
+    :returns: populated event.
+    """
+    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
+    evtime = new_event.origins[0].time
     pickline = []
     # Set a default, ignored later unless overwritten
     SNR = 999
@@ -555,7 +597,17 @@ def readwavename(sfile):
     ...              '01-0411-15L.S201309')
     ['2013-09-01-0410-35.DFDPC_024_00']
     """
-    f = open(sfile)
+    return _readwavename(f=open(sfile))
+
+
+def _readwavename(f):
+    """
+    Internal wavename reader.
+
+    :type f: file
+    :param f: File open in read-mode
+    :return: list of wavefile names
+    """
     wavename = []
     for line in f:
         if len(line) == 81 and line[79] == '6':
