@@ -107,8 +107,9 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     .. image:: ../../plots/xcorr_plot.png
     """
     _check_save_args(save, savefile)
-    if not isinstance(cc, float) or not isinstance(shift, int):
+    if cc is None or shift is None:
         if not isinstance(cc_vec, np.ndarray):
+            print('Given cc: %s and shift: %s' % (cc, shift))
             raise IOError('Must provide either cc_vec, or cc and shift')
         shift = np.abs(cc_vec).argmax()
         cc = cc_vec[shift]
