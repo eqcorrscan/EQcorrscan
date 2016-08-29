@@ -130,6 +130,7 @@ class TestCoreMethods(unittest.TestCase):
         # debug == 3 fails on travis for some reason:
         # doesn't output any detections, fine on appveyor and local machine
         for debug in range(0, 3):
+            print('Testing for debug level=%s' % debug)
             kfalse, ktrue = test_match_filter(debug=debug)
             if ktrue > 0:
                 self.assertTrue(kfalse / ktrue < 0.25)

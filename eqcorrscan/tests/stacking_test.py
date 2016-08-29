@@ -61,7 +61,7 @@ class TestStackingMethods(unittest.TestCase):
         self.assertEqual(len(synth[0].data), len(stack[0].data))
 
     def test_align_traces(self):
-        """Test the utils.stacking.align_traces fucntion."""
+        """Test the utils.stacking.align_traces function."""
         # Generate synth data
         import numpy as np
         from obspy import Trace
@@ -92,6 +92,67 @@ class TestStackingMethods(unittest.TestCase):
         shifts, ccs = align_traces(traces, shift_len=11, master=False)
         for shift_in, shift_out in zip(shifts_in, shifts):
             self.assertEqual(-1 * shift_in, shift_out)
+
+    def test_known_align(self):
+        """Test alignment with a known outcome."""
+        from obspy import read
+        import os
+        import glob
+        # from eqcorrscan.utils.stacking import align_traces
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'WAV', 'TEST_')
+        # testing_path = 'eqcorrscan/tests/test_data/WAV/TEST_/'
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
+        trace_list = []
+        for wavfile in wavefiles:
+            st = read(wavfile)
+            tr = st.select(station='FRAN', channel='SH1')
+            if len(tr) == 1:
+                tr.detrend('simple').filter('bandpass', freqmin=2, freqmax=20)
+                trace_list.append(tr[0])
+        shifts, ccs = align_traces(trace_list=trace_list, shift_len=200)
+                                   # plot=True)
+        ccs = [float(str(cc)) for cc in ccs]
+        f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              'test_data', 'known_alignment.csv'), 'r')
+        known_shifts = [line.rstrip().split(', ') for line in f]
+        f.close()
+        known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
+        known_shifts, known_ccs = zip(*known_shifts)
+        self.assertEqual(shifts, list(known_shifts))
+        ccs = [round(cc, 3) for cc in ccs]
+        known_ccs = [round(cc, 3) for cc in known_ccs]
+        self.assertEqual(ccs, list(known_ccs))
+
+    def test_known_align_positive(self):
+        """Test a known alignment case with forced positive correlation."""
+        from obspy import read
+        import os
+        import glob
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'WAV', 'TEST_')
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
+        trace_list = []
+        for wavfile in wavefiles:
+            st = read(wavfile)
+            tr = st.select(station='FRAN', channel='SH1')
+            if len(tr) == 1:
+                tr.detrend('simple').filter('bandpass', freqmin=2, freqmax=20)
+                trace_list.append(tr[0])
+        shifts, ccs = align_traces(trace_list=trace_list, shift_len=200,
+                                   positive=True)
+        ccs = [float(str(cc)) for cc in ccs]
+        f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              'test_data', 'known_positive_alignment.csv'),
+                 'r')
+        known_shifts = [line.rstrip().split(', ') for line in f]
+        f.close()
+        known_shifts = [(float(a[0]), float(a[1])) for a in known_shifts]
+        known_shifts, known_ccs = zip(*known_shifts)
+        self.assertEqual(shifts, list(known_shifts))
+        ccs = [round(cc, 3) for cc in ccs]
+        known_ccs = [round(cc, 3) for cc in known_ccs]
+        self.assertEqual(ccs, list(known_ccs))
 
 if __name__ == '__main__':
     """

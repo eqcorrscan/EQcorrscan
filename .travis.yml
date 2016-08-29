@@ -70,6 +70,7 @@ install:
   - source activate test-environment
   - conda install $PYFLAKES
   - conda install pyproj
+  - conda install h5py
   #  - |
   #      if [[ "${py:0:1}" == "3" ]] && [[ "$OS" == "MacOSX" ]]; then
   #        conda install opencv3
@@ -84,14 +85,18 @@ install:
   - pip install pep8-naming
   - pip install pytest
   - pip install pytest-cov
+  - pip install Cython
   #  - pip install obspy==$OBSPY_VERSION
   - pip freeze
   - conda list
   # done installing dependencies
   - git version
-  - pip install .
+  - python setup.py install
+
 script:
-  py.test
+  # Need to ignore the files in current directory to ensure we find the
+  # installed version of EQcorrscan with compiled code.
+  - python setup.py test
 
 after_success:
   # Check how much code is actually tested and send this report to coveralls
@@ -102,7 +107,7 @@ notifications:
     email: false
     webhooks:
       urls:
-        - https://webhooks.gitter.im/e/10122f10ed5043c58ae7
+        - https://webhooks.gitter.im/e/b964418fdb22a8840c58
       on_success: change  # options: [always|never|change] default: always
       on_failure: always  # options: [always|never|change] default: always
       on_start: never     # options: [always|never|change] default: always

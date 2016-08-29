@@ -267,107 +267,115 @@ def normxcorr2(template, image):
     return ccc
 
 
-def _template_loop(template, chan, station, channel, debug=0, i=0):
-    """
-    Internal loop for parallel processing.
-    Sister loop to handle the correlation of a single template (of \
+def _template_loop(template, chan, station, channel, do_subspace=False,
+                   debug=0, i=0):
+    r"""Sister loop to handle the correlation of a single template (of \
     multiple channels) with a single channel of data.
 
-    :type template: obspy.Stream
+    :type template: obspy.Stream or list of obspy.Stream if subspace is True
     :type chan: np.array
     :type station: string
     :type channel: string
+    :type do_subspace: bool
+    :param do_subspace: Flag for running subspace detection. Defaults to False.
     :type i: int
     :param i: Optional argument, used to keep track of which process is being \
         run.
 
     :returns: tuple of (i, ccc) with ccc as an ndarray
-
-    .. note:: This function currently assumes only one template-channel per \
-        data-channel, while this is normal for a standard matched-filter \
-        routine, if we wanted to impliment a subspace detector, this would be \
-        the function to change, I think.  E.g. where I currently take only \
-        the first matching channel, we could loop through all the matching \
-        channels and then sum the correlation sums - however I haven't yet
-        implimented detection based on that.  More reading of the Harris \
-        document required.
     """
     from eqcorrscan.utils.timer import Timer
-
-    ccc = np.array([np.nan] * (len(chan) - len(template[0].data) + 1),
-                   dtype=np.float16)
-    ccc = ccc.reshape((1, len(ccc)))           # Set default value for
+    from eqcorrscan.core import subspace
+    if do_subspace:
+        temp_len = len(template[0][0].data)
+    else:
+        temp_len = len(template[0].data)
+    cstat = np.array([np.nan] * (len(chan) - temp_len + 1), dtype=np.float16)
+    cstat = cstat.reshape((1, len(cstat)))           # Set default value for
     # cross-channel correlation in case there are no data that match our
     # channels.
-
     with Timer() as t:
         # While each bit of this loop isn't slow, looping through the if
         # statement when I don't need to adds up, I should work this out
         # earlier
-        template_data = template.select(station=station,
-                                        channel=channel)
-        # I will for now assume that you only have one template per-channel
-        template_data = template_data[0]
-        delay = template_data.stats.starttime - \
-            template.sort(['starttime'])[0].stats.starttime
-        pad = np.array([0] * int(round(delay *
-                                       template_data.stats.sampling_rate)))
-        image = np.append(chan, pad)[len(pad):]
-        ccc = (normxcorr2(template_data.data, image))
-        ccc = ccc.astype(np.float16)
+        if do_subspace:
+            sin_vecs = [st.select(station=station, channel=channel)[0].data
+                        for st in template
+                        if len(st.select(station=station,
+                                         channel=channel)) != 0]
+            # Convert trace data to np array
+            detector = np.asarray(sin_vecs)
+            cstat = subspace.det_statistic(detector, data=chan)
+            cstat = cstat.reshape((1, len(cstat)))
+            # Do not convert subspace statistic to float16 due to overrunning
+            # 16 bit precision in the mean calculation. np.isinf(np.mean())=T
+            # cstat = cstat.astype(np.float16)
+        else:
+            template_data = template.select(station=station,
+                                            channel=channel)
+            # I will for now assume that you only have one template per-channel
+            template_data = template_data[0]
+            delay = template_data.stats.starttime - \
+                template.sort(['starttime'])[0].stats.starttime
+            pad = np.array([0] * int(round(delay *
+                                           template_data.stats.sampling_rate)))
+            image = np.append(chan, pad)[len(pad):]
+            cstat = (normxcorr2(template_data.data, image))
+            cstat = cstat.astype(np.float16)
         # Convert to float16 to save memory for large problems - lose some
         # accuracy which will affect detections very close to threshold
         #
         # There is an interesting issue found in the tests that sometimes what
         # should be a perfect correlation results in a max of ccc of 0.99999994
         # Converting to float16 'corrects' this to 1.0 - bad workaround.
-    if debug >= 2 and t.secs > 4:
-        print("Single if statement took %s s" % t.secs)
-        if not template_data:
-            print("Didn't even correlate!")
-        print(station + ' ' + channel)
-    elif debug >= 2:
-        print("If statement without correlation took %s s" % t.secs)
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
-              channel + ' ccc MAX: ' + str(np.max(ccc[0])))
+              channel + ' ccc MAX: ' + str(np.max(cstat[0])))
         print('********* DEBUG:  ' + station + '.' +
-              channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
-    if np.isinf(np.mean(ccc[0])):
+              channel + ' ccc MEAN: ' + str(np.mean(cstat[0])))
+    if np.isinf(np.mean(cstat[0])):
         warnings.warn('Mean of ccc is infinite, check!')
         if debug >= 3:
-            np.save('inf_cccmean_ccc.npy', ccc[0])
-            np.save('inf_cccmean_template.npy', template_data.data)
-            np.save('inf_cccmean_image.npy', image)
+            np.save('inf_cccmean_ccc_%02d.npy' % i, cstat[0])
+            if do_subspace:
+                np.save('inf_cccmean_template_%02d.npy' % i, sin_vecs)
+                np.save('inf_cccmean_image_%02d.npy' % i, chan)
+            else:
+                np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
+                np.save('inf_cccmean_image_%02d.npy' % i, image)
         ccc = np.zeros(len(ccc))
         ccc = ccc.reshape((1, len(ccc)))
         # Returns zeros
     if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(ccc)))
-        print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
-        print('ccc type is: ' + str(type(ccc)))
+        print('shape of ccc: ' + str(np.shape(cstat)))
+        print('A single ccc is using: ' + str(cstat.nbytes / 1000000) + 'MB')
+        print('ccc type is: ' + str(type(cstat)))
     if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(ccc)))
+        print('shape of ccc: ' + str(np.shape(cstat)))
         print("Parallel worker " + str(i) + " complete")
-    return (i, ccc)
+    return (i, cstat)
 
 
-def _channel_loop(templates, stream, cores=1, debug=0):
+def _channel_loop(templates, stream, cores=1, do_subspace=False, debug=0):
     """
     Internal loop for parallel processing.
-    Loop to generate cross channel correaltion sums for a series of templates \
+
+    Loop to generate cross channel correlation sums for a series of templates \
     hands off the actual correlations to a sister function which can be run \
     in parallel.
 
     :type templates: list
     :param templates: A list of templates, where each one should be an \
         obspy.Stream object containing multiple traces of seismic data and \
-        the relevant header information.
-    :param stream: A single obspy.Stream object containing daylong seismic \
-        data to be correlated through using the templates.  This is in effect \
-        the image.
-    :type core: int
-    :param core: Number of cores to loop over
+        the relevant header information. If do_subspace is True, templates \
+        should be a list of lists of obspy.Stream objects, one list for each \
+        detector of length n, where n is the number of singular vectors.
+    :param stream: A single obspy.Stream object to be correlated with the \
+        templates.  This is in effect the image in normxcorr2 and cv2.
+    :type cores: int
+    :param cores: Number of cores to loop over
+    :type do_subspace: bool
+    :param do_subspace: Flag for running subspace detection. Defaults to False.
     :type debug: int
     :param debug: Debug level.
 
@@ -392,8 +400,12 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 
     # Note: This requires all templates to be the same length, and all channels
     # to be the same length
+    if do_subspace:
+        temp_len = len(templates[0][0][0].data)
+    else:
+        temp_len = len(templates[0][0].data)
     cccs_matrix = np.array([np.array([np.array([0.0] * (len(stream[0].data) -
-                                     len(templates[0][0].data) + 1))] *
+                                     temp_len + 1))] *
                             len(templates))] * 2, dtype=np.float32)
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
@@ -412,7 +424,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
             pool = Pool(processes=num_cores)
             results = [pool.apply_async(_template_loop,
                                         args=(templates[i], tr_data, station,
-                                              channel, debug, i))
+                                              channel, do_subspace, debug, i))
                        for i in range(len(templates))]
             pool.close()
         if debug >= 1:
@@ -641,10 +653,10 @@ def match_filter(template_names, template_list, st, threshold,
         if not tr.stats.npts == longest_trace_length:
             msg = 'Data are not equal length, padding short traces'
             warnings.warn(msg)
-            start_pad = np.zeros(tr.stats.sampling_rate * (tr.stats.starttime -
-                                                           min_start_time))
-            end_pad = np.zeros(tr.stats.sampling_rate * (max_end_time -
-                                                         tr.stats.endtime))
+            start_pad = np.zeros(int(tr.stats.sampling_rate *
+                                     (tr.stats.starttime - min_start_time)))
+            end_pad = np.zeros(int(tr.stats.sampling_rate *
+                                   (max_end_time - tr.stats.endtime)))
             tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Perform check that all template lengths are internally consistent
     for i, temp in enumerate(template_list):
@@ -700,7 +712,10 @@ def match_filter(template_names, template_list, st, threshold,
                 template += nulltrace
     if debug >= 2:
         print('Starting the correlation run for this day')
-    [cccsums, no_chans, chans] = _channel_loop(templates, stream, cores, debug)
+    [cccsums, no_chans, chans] = _channel_loop(templates=templates,
+                                               stream=stream,
+                                               cores=cores,
+                                               debug=debug)
     if len(cccsums[0]) == 0:
         raise ValueError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
@@ -785,9 +800,11 @@ def match_filter(template_names, template_list, st, threshold,
                 detecttime = stream[0].stats.starttime +\
                     peak[1] / stream[0].stats.sampling_rate
                 # Detect time must be valid QuakeML uri within resource_id.
-                # This will write a formatted string which is still readable by UTCDateTime
+                # This will write a formatted string which is still
+                # readable by UTCDateTime
                 rid = ResourceIdentifier(id=template_names[i] + '_' +
-                                         str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                                         str(detecttime.
+                                             strftime('%Y%m%dT%H%M%S.%f')),
                                          prefix='smi:local')
                 ev = Event(resource_id=rid)
                 cr_i = CreationInfo(author='EQcorrscan',
@@ -806,7 +823,8 @@ def match_filter(template_names, template_list, st, threshold,
                     if (tr.stats.station, tr.stats.channel) not in chans[i]:
                         continue
                     else:
-                        pick_tm = detecttime + (tr.stats.starttime - min_template_tm)
+                        pick_tm = detecttime + (tr.stats.starttime -
+                                                min_template_tm)
                         wv_id = WaveformStreamID(network_code=tr.stats.network,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)

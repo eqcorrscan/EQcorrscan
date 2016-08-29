@@ -16,35 +16,48 @@ import numpy as np
 import warnings
 
 
-def cross_chan_coherence(st1, st2, i=0):
+def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     Calculate cross-channel coherency.
 
     Determine the cross-channel coherency between two streams of \
     multichannel seismic data.
 
-    :type st1: obspy Stream
+    :type st1: obspy.core.stream.Stream
     :param st1: Stream one
-    :type st2: obspy Stream
+    :type st2: obspy.core.stream.Stream
     :param st2: Stream two
+    :type allow_shift: bool
+    :param allow_shift: Allow shift?
+    :type shift_len: int
+    :param shift_len: Samples to shift
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
 
     :returns: cross channel coherence, float - normalized by number of\
-        channels, if i, returns tuple of (cccoh, i) where i is int, as intput.
+        channels, if i, returns tuple of (cccoh, i) where i is int, as input.
     """
 
     from eqcorrscan.core.match_filter import normxcorr2
+    from obspy.signal.cross_correlation import xcorr
     cccoh = 0.0
     kchan = 0
-    for tr in st1:
-        tr1 = tr.data
-        # Assume you only have one waveform for each channel
-        tr2 = st2.select(station=tr.stats.station,
-                         channel=tr.stats.channel)
-        if tr2:
-            cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
-            kchan += 1
+    if allow_shift:
+        for tr in st1:
+            tr2 = st2.select(station=tr.stats.station, channel=tr.stats.channel)
+            if tr2:
+                index, corval = xcorr(tr, tr2[0], shift_len)
+                cccoh += corval
+                kchan += 1
+    else:
+        for tr in st1:
+            tr1 = tr.data
+            # Assume you only have one waveform for each channel
+            tr2 = st2.select(station=tr.stats.station,
+                             channel=tr.stats.channel)
+            if tr2:
+                cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
+                kchan += 1
     if kchan:
         cccoh = cccoh / kchan
         return (cccoh, i)
@@ -53,7 +66,7 @@ def cross_chan_coherence(st1, st2, i=0):
         return (0, i)
 
 
-def distance_matrix(stream_list, cores=1):
+def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
     """
     Compute distance matrix for waveforms based on cross-correlations.
 
@@ -64,6 +77,10 @@ def distance_matrix(stream_list, cores=1):
 
     :type stream_list: List of obspy.Streams
     :param stream_list: List of the streams to compute the distance matrix for
+    :type allow_shift: bool
+    :param allow_shift: To allow templates to shift or not?
+    :type shift_len: int
+    :param shift_len: How many samples for templates to shift in time
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
@@ -80,6 +97,8 @@ def distance_matrix(stream_list, cores=1):
         # Parallel processing
         results = [pool.apply_async(cross_chan_coherence, args=(master,
                                                                 stream_list[j],
+                                                                allow_shift,
+                                                                shift_len,
                                                                 j))
                    for j in range(len(stream_list))]
         pool.close()
@@ -102,7 +121,8 @@ def distance_matrix(stream_list, cores=1):
     return dist_mat
 
 
-def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
+def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
+            shift_len=0, save_corrmat=False,
             cores='all', debug=1):
     """
     Cluster template waveforms based on average correlations.
@@ -124,11 +144,15 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     :param show: plot linkage on screen if True, defaults to True
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
+    :type allow_shift: bool
+    :param allow_shift: Whether to allow the templates to shift when correlating
+    :type shift_len: int
+    :param shift_len: How many samples to allow the templates to shift in time
     :type save_corrmat: bool
     :param save_corrmat: If True will save the distance matrix to \
         dist_mat.npy in the local directory.
     :type cores: int
-    :param cores: numebr of cores to use when computing the distance matrix, \
+    :param cores: number of cores to use when computing the distance matrix, \
         defaults to 'all' which will work out how many cpus are available \
         and hog them.
     :type debug: int
@@ -151,7 +175,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, save_corrmat=False,
     # Compute the distance matrix
     if debug >= 1:
         print('Computing the distance matrix using '+str(num_cores)+' cores')
-    dist_mat = distance_matrix(stream_list, cores=num_cores)
+    dist_mat = distance_matrix(stream_list, allow_shift, shift_len, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         if debug >= 1:
@@ -274,24 +298,37 @@ def group_delays(stream_list):
     return groups
 
 
-def SVD(stream_list):
+def SVD(stream_list, full=False):
+    """
+    Depreciated. Use svd.
+    """
+    warnings.warn('Depreciated, use svd instead.')
+    return svd(stream_list=stream_list, full=full)
+
+
+def svd(stream_list, full=False):
     """
     Compute the SVD of a number of templates.
 
-    Returns the \
-    singular vectors and singular values of the templates.
+    Returns the singular vectors and singular values of the templates.
 
-    :type stream_list: List of Obspy.Stream
+    :type stream_list: List of :class: obspy.Stream
     :param stream_list: List of the templates to be analysed
+    :type full: bool
+    :param full: Whether to compute the full input vector matrix or not.
 
-    :return: SVector(list of ndarray), SValues(list) for each channel, \
-        Uvalues(list of ndarray) for each channel, \
+    :return: SValues(list) for each channel, SVectors(list of ndarray),  \
+        UVectors(list of ndarray) for each channel, \
         stachans, List of String (station.channel)
 
     .. note:: We recommend that you align the data before computing the \
         SVD, e.g., the P-arrival on all templates for the same channel \
         should appear at the same time in the trace.  See the \
         stacking.align_traces function for a way to do this.
+
+    .. note:: Uses the numpy.linalg.svd function, their U, s and V are mapped \
+        to UVectors, SValues and SVectors respectively.  Their V (and ours) \
+        corresponds to V.H.
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
@@ -300,11 +337,11 @@ def SVD(stream_list):
         for tr in st:
             stachans.append(tr.stats.station+'.'+tr.stats.channel)
     stachans = list(set(stachans))
-    print(stachans)
+    stachans.sort()
     # Initialize a list for the output matrices, one matrix per-channel
-    SValues = []
-    SVectors = []
-    Uvectors = []
+    svalues = []
+    svectors = []
+    uvectors = []
     for stachan in stachans:
         lengths = []
         for st in stream_list:
@@ -313,7 +350,6 @@ def SVD(stream_list):
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                print(st)
                 warnings.warn('Stream does not contain ' + stachan)
                 continue
             lengths.append(len(tr.data))
@@ -337,12 +373,12 @@ def SVD(stream_list):
             warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
             continue
         chan_mat = np.asarray(chan_mat)
-        U, s, V = np.linalg.svd(chan_mat, full_matrices=False)
-        SValues.append(s)
-        SVectors.append(V)
-        Uvectors.append(U)
+        u, s, v = np.linalg.svd(chan_mat, full_matrices=full)
+        svalues.append(s)
+        svectors.append(v)
+        uvectors.append(u)
         del(chan_mat)
-    return SVectors, SValues, Uvectors, stachans
+    return svectors, svalues, uvectors, stachans
 
 
 def empirical_SVD(stream_list, linear=True):
@@ -422,10 +458,15 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     for i in range(k):
         SVstream = []
         for j, stachan in enumerate(stachans):
-            SVstream.append(Trace(SVectors[j][i],
-                                  header={'station': stachan.split('.')[0],
-                                          'channel': stachan.split('.')[1],
-                                          'sampling_rate': sampling_rate}))
+            if len(SVectors[j]) <= k:
+                warnings.warn('Too few traces at %s for a %02d ' % (stachan, k)
+                              + 'dimensional subspace. Detector streams will' +
+                              ' not include this stachan.')
+            else:
+                SVstream.append(Trace(SVectors[j][i],
+                                      header={'station': stachan.split('.')[0],
+                                              'channel': stachan.split('.')[1],
+                                              'sampling_rate': sampling_rate}))
         SVstreams.append(Stream(SVstream))
     return SVstreams
 
@@ -668,13 +709,21 @@ def dist_mat_km(catalog):
     # Calculate distance vector for each event
     for i, master in enumerate(catalog):
         mast_list = []
-        master_tup = (master.preferred_origin().latitude,
-                      master.preferred_origin().longitude,
-                      master.preferred_origin().depth // 1000)
+        if master.preferred_origin():
+            master_ori = master.preferred_origin()
+        else:
+            master_ori = master.origins[0]
+        master_tup = (master_ori.latitude,
+                      master_ori.longitude,
+                      master_ori.depth // 1000)
         for slave in catalog:
-            slave_tup = (slave.preferred_origin().latitude,
-                         slave.preferred_origin().longitude,
-                         slave.preferred_origin().depth // 1000)
+            if master.preferred_origin():
+                slave_ori = slave.preferred_origin()
+            else:
+                slave_ori = slave.origins[0]
+            slave_tup = (slave_ori.latitude,
+                         slave_ori.longitude,
+                         slave_ori.depth // 1000)
             mast_list.append(dist_calc(master_tup, slave_tup))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
@@ -692,7 +741,7 @@ def space_cluster(catalog, d_thresh, show=True):
 
     Will compute the\
     matrix of physical distances between events and utilize the\
-    scipy.clusering.hierarchy module to perform the clustering.
+    scipy.clustering.hierarchy module to perform the clustering.
 
     :type catalog: obspy.Catalog
     :param catalog: Catalog of events to clustered

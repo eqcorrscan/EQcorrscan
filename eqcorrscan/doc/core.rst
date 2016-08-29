@@ -13,8 +13,8 @@ miniseed files, where each file is a single template.
 
 .. _Obspy: http://docs.obspy.org/
 
-**Brightness**
-
+Brightness
+----------
 bright_lights_ contains a series of functions to detect events using the
 brightness-based beamforming method of `Frank et. al (2014)`_.  This has been
 tested significantly, but has failed to detect events unambiguously in the
@@ -23,8 +23,8 @@ central Southern Alps.  As such development of these functions has ceased.
 .. _bright_lights: submodules/core.bright_lights.html
 .. _Frank et. al (2014): http://gji.oxfordjournals.org/content/197/2/1215.short
 
-**Template generation**
-
+Template generation
+-------------------
 template_gen_ contains routines for cutting waveforms around picks for use as
 templates in match_filter_.  Included in this are wrappers to directly read in
 Seisan formattaed pick files and waveforms associated with the picks, and
@@ -33,8 +33,8 @@ and catalogs, and seishub databases.
 
 .. _template_gen: submodules/core.template_gen.html
 
-**Matched-Filter**
-
+Matched-Filter
+--------------
 match_filter_ contains the core routines for earthquake detection by
 cross-correlation.  This is optimized for large-scale, multi-paralleled
 detection, with large numbers of templates.  Because we are unsure of your
@@ -47,17 +47,12 @@ the batch job submission capability which distributes daily detections across
 multiple nodes.  This allows us to detect earthquakes through > 6 years of
 multi-channel data using > 600 templates in less than 36 hours.
 
-Currently EQcorrscan enforces the use of day-long seismic data when computing
-the matched-filter detections.  This is not strictly needed and has been a
-hang-over from previous versions of this software.  As the figure below shows,
-the only thing that changes between different data lengths are the:
-   * pre-processing (filters and resampling have different effects - this relates to the notes in the template_gen_ functions, this is not an issue as long as you process the same length of data when generating templates as when computing detections);
-   * median-absolute deviation based thresholds.
-Changing to using shorter data lengths seems advantageous, or rather, giving the
-user the freedom to chose based on their memory specs.  It would also allow
-near real-time applications with short chunks of data coming in.
+Of note: EQcorrscan does not enforce a length of data to process, it is up to the
+user to exercise caution when thresholding cross-correlation sums.  As the figure
+below shows, if using the median absolute deviation (MAD) thresholding metric
+the user should be aware that this changes with time, and those variations
+can be significant when using short windows of data.
 
-**TO DO**
 
 .. figure:: plots/range_of_threshold_windows_Parkfield1.png
      :width: 800px
@@ -71,7 +66,8 @@ near real-time applications with short chunks of data coming in.
 
 .. _match_filter: submodules/core.match_filter.html
 
-**Lag-Calc**
+Lag-Calc
+--------
 lag_calc_ contains functions for generating pick-corrections from
 cross-correlations with a defined template.  Originally this was designed
 for events detected by match_filter_, however you can use any well correlated
@@ -81,10 +77,17 @@ events.  Based on the method of `Shelly and Hardebeck (2010)`_.
 .. _Shelly and Hardebeck (2010): http://onlinelibrary.wiley.com/doi/10.1029/2010GL043672/full
 
 
-.. toctree::
-   :maxdepth: 1
+Subspace
+--------
+subspace_ contains a subspace detector for either single-channel cases, or
+network cases.  This is modelled on that described by Harris_.  This method
+allows for slightly more variation in detected waveforms than the traditional
+matched-filter method.  In this method, templates are constructed either by
+using the empirical subspace method, or by computing the basis vectors by
+singular-value decomposition.  Both methods are provided as part of EQcorrscan
+in the clustering_ module.
 
-   submodules/core.bright_lights
-   submodules/core.template_gen
-   submodules/core.match_filter
-   submodules/core.lag_calc
+.. _subspace: submodules/core.subspace.html
+.. _Harris: https://e-reports-ext.llnl.gov/pdf/335299.pdf
+.. _clustering: submodules/utils.clustering.html
+

@@ -13,10 +13,8 @@ sfile_util
        :nosignatures:
 
        blanksfile
-       eventtopick
        eventtosfile
        nordpick
-       picktoevent
        populatesfile
        readheader
        readpicks

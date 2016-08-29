@@ -203,7 +203,8 @@ def write_event(catalog):
         if event.origins[0].time_errors.Time_Residual_RMS:
             t_RMS = event.origins[0].time_errors.Time_Residual_RMS
         else:
-            t_RMS = ' '
+            print('No time residual in header')
+            t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2) + '  ' +
                 str(evinfo.time.hour).rjust(2) +

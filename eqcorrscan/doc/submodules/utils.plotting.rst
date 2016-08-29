@@ -30,5 +30,6 @@ plotting
        threeD_gridplot
        threeD_seismplot
        triple_plot
+       xcorr_plot
 
     .. comment to end block

@@ -354,8 +354,8 @@ def lag_calc(detections, detect_data, template_names, templates,
                         print('Made no picks for event')
                         print(event)
                         continue
-                    plot_repicked(template[1], event.picks,
-                                  template_detections[i])
+                    plot_repicked(template=template[1], picks=event.picks,
+                                  det_stream=detect_streams[i])
     return initial_cat
 
 
