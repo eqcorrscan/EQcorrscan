@@ -524,6 +524,9 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
                                                                       'freqmax':
                                                                       highcut},
                                                       plot=plotvar)
+                            if cc > 1.0:
+                                warnings.warn('CC > 1.0. Ignoring')
+                                continue
                             # Get the differntial travel time using the
                             # corrected time.
                             # Check that the correction is within the allowed shift
