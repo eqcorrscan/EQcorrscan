@@ -145,35 +145,34 @@ class TestCatalogMethods(unittest.TestCase):
         event_list = sfiles_to_event(sfile_list)
         # Check that we have written a file
         self.assertTrue(os.path.isfile('event.dat'))
-        f = open('event.dat', 'r')
-        for line, event in zip(f, event_list):
-            header = sfile_util.readheader(event[1])
-            event_id_input = event[0]
-            output_event_info = line.strip().split()
-            # Check that the event id's match
-            self.assertEqual(event_id_input, int(output_event_info[-1]))
-            time_string = str(header.origins[0].time.year) +\
-                str(header.origins[0].time.month).zfill(2) +\
-                str(header.origins[0].time.day).zfill(2)+'  ' +\
-                str(header.origins[0].time.hour).rjust(2) +\
-                str(header.origins[0].time.minute).zfill(2) +\
-                str(header.origins[0].time.second).zfill(2) +\
-                str(header.origins[0].time.microsecond)[0:2].zfill(2)
-            self.assertEqual(output_event_info[0:2], time_string.split())
-            self.assertEqual(header.origins[0].latitude,
-                             float(output_event_info[2]))
-            self.assertEqual(header.origins[0].longitude,
-                             float(output_event_info[3]))
-            self.assertEqual(header.origins[0].depth / 1000,
-                             float(output_event_info[4]))
-            if header.magnitudes[0]:
-                self.assertEqual(header.magnitudes[0].mag,
-                                 float(output_event_info[5]))
-            if header.origins[0].time_errors.Time_Residual_RMS:
-                self.assertEqual(header.origins[0].time_errors.
-                                 Time_Residual_RMS,
-                                 float(output_event_info[-2]))
-        f.close()
+        with open('event.dat', 'r') as f:
+            for line, event in zip(f, event_list):
+                header = sfile_util.readheader(event[1])
+                event_id_input = event[0]
+                output_event_info = line.strip().split()
+                # Check that the event id's match
+                self.assertEqual(event_id_input, int(output_event_info[-1]))
+                time_string = str(header.origins[0].time.year) +\
+                    str(header.origins[0].time.month).zfill(2) +\
+                    str(header.origins[0].time.day).zfill(2)+'  ' +\
+                    str(header.origins[0].time.hour).rjust(2) +\
+                    str(header.origins[0].time.minute).zfill(2) +\
+                    str(header.origins[0].time.second).zfill(2) +\
+                    str(header.origins[0].time.microsecond)[0:2].zfill(2)
+                self.assertEqual(output_event_info[0:2], time_string.split())
+                self.assertEqual(header.origins[0].latitude,
+                                 float(output_event_info[2]))
+                self.assertEqual(header.origins[0].longitude,
+                                 float(output_event_info[3]))
+                self.assertEqual(header.origins[0].depth / 1000,
+                                 float(output_event_info[4]))
+                if header.magnitudes[0]:
+                    self.assertEqual(header.magnitudes[0].mag,
+                                     float(output_event_info[5]))
+                if header.origins[0].time_errors.Time_Residual_RMS:
+                    self.assertEqual(header.origins[0].time_errors.
+                                     Time_Residual_RMS,
+                                     float(output_event_info[-2]))
         os.remove('event.dat')
 
     def test_write_catalog(self):

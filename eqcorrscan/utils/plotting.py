@@ -304,7 +304,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         for template_dates in dates:
             _dates += template_dates
         dates = [_dates]
-        template_names = ['all']
+        template_names = ['All templates']
     i = 0
     j = 0
     # This is an ugly way of looping through colours and linestyles, it would
@@ -360,12 +360,14 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         mins = mdates.HourLocator(byhour=range(0, 24, 3))
     else:
         hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
-    hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
-    ax1.xaxis.set_major_locator(hours)
-    ax1.xaxis.set_major_formatter(hrFMT)
     # Minor locator overruns maxticks for ~year-long datasets
     if timedif.total_seconds() < 172800:
         ax1.xaxis.set_minor_locator(mins)
+        hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
+    else:
+        hrFMT = mdates.DateFormatter('%Y/%m/%d')
+    ax1.xaxis.set_major_locator(hours)
+    ax1.xaxis.set_major_formatter(hrFMT)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
     ax1.set_ylim([0, max([len(_dates) for _dates in dates])])

@@ -200,8 +200,8 @@ def write_event(catalog):
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
         Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
+        if event.origins[0].time_errors.Time_Residual_RMS:
+            t_RMS = event.origins[0].time_errors.Time_Residual_RMS
         else:
             t_RMS = ' '
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
