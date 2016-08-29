@@ -45,7 +45,7 @@ def get_geonet_ids(minlat, maxlat, minlon, maxlon, mindepth=None,
     else:
         from urllib.request import urlopen
 
-    base_url = "http://quakesearch.geonet.org.nz/services/1.0.0/csv?"
+    base_url = "http://quakesearch.geonet.org.nz/csv?"
     bbox_url = "bbox=" + ','.join([str(minlon), str(minlat),
                                    str(maxlon), str(maxlat)])
     url = base_url + bbox_url

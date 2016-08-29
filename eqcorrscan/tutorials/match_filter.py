@@ -110,8 +110,7 @@ def run_tutorial(plot=False):
                                                 threshold_type='MAD',
                                                 trig_int=6.0, plotvar=plot,
                                                 plotdir='.', cores=ncores,
-                                                tempdir=False, debug=1,
-                                                plot_format='jpg')
+                                                debug=1, plot_format='jpg')
 
     # Now lets try and work out how many unique events we have just to compare
     # with the GeoNet catalog of 20 events on this day in this sequence

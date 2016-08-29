@@ -15,6 +15,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
 import warnings
+import os
 
 
 def dist_calc(loc1, loc2):
@@ -67,7 +68,7 @@ def calc_max_curv(magnitudes, plotvar=False):
     >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> calc_max_curv(magnitudes, plotvar=False)
-    3.6000000000000001
+    3.1000000000000001
     """
     from collections import Counter
     import matplotlib.pyplot as plt
@@ -79,7 +80,10 @@ def calc_max_curv(magnitudes, plotvar=False):
     grad_points = grad.copy()
     for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
         mag_steps[i] = magnitude
-        df[i] = counts[magnitude]
+        if i > 0:
+            df[i] = counts[magnitude] + df[i-1]
+        else:
+            df[i] = counts[magnitude]
     for i, val in enumerate(df):
         if i > 0:
             grad[i-1] = (val - df[i-1]) / (mag_steps[i] - mag_steps[i-1])
@@ -118,7 +122,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :type magnitudes: list
     :param magnitudes: Magnitudes to compute the b-value for.
     :type completeness: list
-    :param completeness: list of completeness values to comptue b-values for.
+    :param completeness: list of completeness values to compute b-values for.
     :type max_mag: float
     :param max_mag: Maximum magnitude to attempt to fit in magnitudes.
     :type plotvar: bool
@@ -145,7 +149,6 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     """
     from collections import Counter
     import matplotlib.pyplot as plt
-    from eqcorrscan.utils.plotting import freq_mag
 
     b_values = []
     # Calculate the cdf for all magnitudes
@@ -184,9 +187,6 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
                            for i in range(len(complete_freq))]) * 100) /
                     np.sum(complete_freq))
         b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
-        # if plotvar:
-        #     freq_mag(magnitudes=magnitudes, completeness=m_c, max_mag=max_mag)
-        #     print('Residual %s' % r)
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
@@ -450,20 +450,10 @@ def _pairwise(iterable):
         return zip(a, b)
 
 
-def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
-                   winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
-    """Depreciated, please use amp_pick_sfile"""
-    warnings.warn('Depreciation warning: Amp_pick_sfile is depreciated, ' +
-                  'use amp_pick_sfile')
-    event = amp_pick_sfile(sfile, datapath, respdir, chans, var_wintype,
-                           winlen, pre_pick, pre_filt, lowcut,
-                           highcut, corners)
-    return event
-
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
+                   highcut=20.0, corners=4, min_snr=1.0, plot=False,
+                   remove_old=False):
     """
     Pick amplitudes for local magnitude for a single event.
     Looks for maximum peak-to-trough amplitude for a channel in a stream, and \
@@ -529,17 +519,30 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
+        below on signal-to-noise ratio calculation.
+    :type plot: bool
+    :param plot: Turn plotting on or off.
+    :type remove_old: bool
+    :param remove_old: If True, will remove old amplitude picks from event and \
+        overwrite with knew picks. Defaults to False.
 
     :returns: obspy.core.event
+
+    .. Note:: Signal-to-noise ratio is calculated using the filtered data by \
+        dividing the maximum amplitude in the signal window (pick window) \
+        by the normalized noise amplitude (taken from the whole window \
+        supplied).
     """
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
     ps_multiplier = 0.34
-    from obspy import read
     from scipy.signal import iirfilter
     from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
     import warnings
     from obspy.core.event import Amplitude, Pick, WaveformStreamID
+    import matplotlib.pyplot as plt
     # Convert these picks into a lists
     stations = []  # List of stations
     channels = []  # List of channels
@@ -547,6 +550,12 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     picktypes = []  # List of pick types
     distances = []  # List of hypocentral distances
     picks_out = []
+    if remove_old and event.amplitudes:
+        for amp in event.amplitudes:
+            # Find the pick and remove it too
+            pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
+            event.picks.remove(pick)
+            event.amplitudes.remove(amp)
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
             picks_out.append(pick)  # Need to be able to remove this if there
@@ -573,96 +582,25 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # sta+chan]
                 warnings.warn('There is no station and channel match in the ' +
                               'wavefile!')
-                break
+                continue
             else:
                 tr = tr[0]
             # Apply the pre-filter
             if pre_filt:
                 try:
-                    tr.detrend('simple')
+                    tr.split().detrend('simple').merge(fill_value=0)
                 except:
+                    print('Some issue splitting this one')
                     dummy = tr.split()
                     dummy.detrend('simple')
-                    tr = dummy.merge()[0]
-                tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
-                          corners=corners)
-            sta_picks = [i for i in range(len(stations))
-                         if stations[i] == sta]
-            pick_id = event.picks[sta_picks[0]].resource_id
-            arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick_id][0]
-            hypo_dist = arrival.distance
-            CAZ = arrival.azimuth
-            if var_wintype:
-                if 'S' in [picktypes[i] for i in sta_picks] and\
-                   'P' in [picktypes[i] for i in sta_picks]:
-                    # If there is an S-pick we can use this :D
-                    S_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    try:
-                        tr.trim(starttime=S_pick-pre_pick,
-                                endtime=S_pick+(S_pick-P_pick)*winlen)
-                    except ValueError:
-                        break
-                elif 'S' in [picktypes[i] for i in sta_picks]:
-                    S_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_modelled = S_pick - hypo_dist * ps_multiplier
-                    try:
-                        tr.trim(starttime=S_pick-pre_pick,
-                                endtime=S_pick + (S_pick - P_modelled) *
-                                winlen)
-                    except ValueError:
-                        break
-                else:
-                    # In this case we only have a P pick
-                    P_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    S_modelled = P_pick + hypo_dist * ps_multiplier
-                    try:
-                        tr.trim(starttime=S_modelled - pre_pick,
-                                endtime=S_modelled + (S_modelled - P_pick) *
-                                winlen)
-                    except ValueError:
-                        break
-                # Work out the window length based on p-s time or distance
-            elif 'S' in [picktypes[i] for i in sta_picks]:
-                # If the window is fixed we still need to find the start time,
-                # which can be based either on the S-pick (this elif), or
-                # on the hypocentral distance and the P-pick
-
-                # Take the minimum S-pick time if more than one S-pick is
-                # available
-                S_pick = [picktimes[i] for i in sta_picks
-                          if picktypes[i] == 'S']
-                S_pick = min(S_pick)
+                    tr = dummy.merge(fill_value=0)
                 try:
-                    tr.trim(starttime=S_pick - pre_pick,
-                            endtime=S_pick + winlen)
-                except ValueError:
-                    break
-            else:
-                # In this case, there is no S-pick and the window length is
-                # fixed we need to calculate an expected S_pick based on the
-                # hypocentral distance, this will be quite hand-wavey as we
-                # are not using any kind of velocity model.
-                P_pick = [picktimes[i] for i in sta_picks
-                          if picktypes[i] == 'P']
-                P_pick = min(P_pick)
-                hypo_dist = [distances[i] for i in sta_picks
-                             if picktypes[i] == 'P'][0]
-                S_modelled = P_pick + hypo_dist * ps_multiplier
-                try:
-                    tr.trim(starttime=S_modelled - pre_pick,
-                            endtime=S_modelled + winlen)
-                except ValueError:
-                    break
+                    tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
+                              corners=corners)
+                except NotImplementedError:
+                    print('For some reason trace is not continuous:')
+                    print(tr)
+                    continue
             # Find the response information
             resp_info = _find_resp(tr.stats.station, tr.stats.channel,
                                    tr.stats.network, tr.stats.starttime,
@@ -684,6 +622,84 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                               tr.stats.channel+' at time: ' +
                               str(tr.stats.starttime))
                 continue
+            noise = tr.copy()  # Copy the data to use for noise calculation
+            sta_picks = [i for i in range(len(stations))
+                         if stations[i] == sta]
+            pick_id = event.picks[sta_picks[0]].resource_id
+            arrival = [arrival for arrival in event.origins[0].arrivals
+                       if arrival.pick_id == pick_id][0]
+            hypo_dist = arrival.distance
+            CAZ = arrival.azimuth
+            if var_wintype and hypo_dist:
+                if 'S' in [picktypes[i] for i in sta_picks] and\
+                   'P' in [picktypes[i] for i in sta_picks]:
+                    # If there is an S-pick we can use this :D
+                    S_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'S']
+                    S_pick = min(S_pick)
+                    P_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'P']
+                    P_pick = min(P_pick)
+                    try:
+                        tr.trim(starttime=S_pick-pre_pick,
+                                endtime=S_pick+(S_pick-P_pick) * winlen)
+                    except ValueError:
+                        continue
+                elif 'S' in [picktypes[i] for i in sta_picks]:
+                    S_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'S']
+                    S_pick = min(S_pick)
+                    P_modelled = S_pick - hypo_dist * ps_multiplier
+                    try:
+                        tr.trim(starttime=S_pick-pre_pick,
+                                endtime=S_pick + (S_pick - P_modelled) *
+                                winlen)
+                    except ValueError:
+                        continue
+                else:
+                    # In this case we only have a P pick
+                    P_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'P']
+                    P_pick = min(P_pick)
+                    S_modelled = P_pick + hypo_dist * ps_multiplier
+                    try:
+                        tr.trim(starttime=S_modelled - pre_pick,
+                                endtime=S_modelled + (S_modelled - P_pick) *
+                                winlen)
+                    except ValueError:
+                        continue
+                # Work out the window length based on p-s time or distance
+            elif 'S' in [picktypes[i] for i in sta_picks]:
+                # If the window is fixed we still need to find the start time,
+                # which can be based either on the S-pick (this elif), or
+                # on the hypocentral distance and the P-pick
+
+                # Take the minimum S-pick time if more than one S-pick is
+                # available
+                S_pick = [picktimes[i] for i in sta_picks
+                          if picktypes[i] == 'S']
+                S_pick = min(S_pick)
+                try:
+                    tr.trim(starttime=S_pick - pre_pick,
+                            endtime=S_pick + winlen)
+                except ValueError:
+                    continue
+            else:
+                # In this case, there is no S-pick and the window length is
+                # fixed we need to calculate an expected S_pick based on the
+                # hypocentral distance, this will be quite hand-wavey as we
+                # are not using any kind of velocity model.
+                P_pick = [picktimes[i] for i in sta_picks
+                          if picktypes[i] == 'P']
+                P_pick = min(P_pick)
+                hypo_dist = [distances[i] for i in sta_picks
+                             if picktypes[i] == 'P'][0]
+                S_modelled = P_pick + hypo_dist * ps_multiplier
+                try:
+                    tr.trim(starttime=S_modelled - pre_pick,
+                            endtime=S_modelled + winlen)
+                except ValueError:
+                    continue
             if len(tr.data) <= 10:
                 # Should remove the P and S picks if len(tr.data)==0
                 warnings.warn('No data found for: '+tr.stats.station)
@@ -691,12 +707,26 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # ' removing picks'
                 # picks_out=[picks_out[i] for i in range(len(picks_out))\
                 # if i not in sta_picks]
-                break
+                continue
             # Get the amplitude
             amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            # Calculate the normalized noise amplitude
+            noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
             if amplitude == 0.0:
-                break
+                continue
+            if amplitude / noise_amplitude < min_snr:
+                print('Signal to noise ratio of %s is below threshold.' %
+                      (amplitude / noise_amplitude))
+                continue
+            if plot:
+                plt.plot(np.arange(len(tr.data)), tr.data, 'k')
+                plt.scatter(tr.stats.sampling_rate * delay, amplitude / 2)
+                plt.scatter(tr.stats.sampling_rate * (delay + period),
+                            -amplitude / 2)
+                plt.show()
             print('Amplitude picked: ' + str(amplitude))
+            print('Signal-to-noise ratio is: %s' %
+                  (amplitude / noise_amplitude))
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
             if pre_filt:
@@ -754,7 +784,8 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
 
 def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
+                   highcut=20.0, corners=4, min_snr=1.0, plot=False,
+                   remove_old=False):
     """
     Function to pick amplitudes for local magnitudes from NORDIC s-files.
 
@@ -798,6 +829,14 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
+        in amp_pick_event on signal-to-noise ratio calculation.
+    :type plot: bool
+    :param plot: Turn plotting on or off.
+    :type remove_old: bool
+    :param remove_old: If True, will remove old amplitude picks from event and \
+        overwrite with knew picks. Defaults to False.
 
     :returns: obspy.core.event
     """
@@ -807,27 +846,43 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     # First we need to work out what stations have what picks
     event = sfile_util.readpicks(sfile)
     # Read in waveforms
-    stream = read(datapath+'/'+sfile_util.readwavename(sfile)[0])
+    try:
+        stream = read(os.path.join(datapath,
+                                   sfile_util.readwavename(sfile)[0]))
+    except IOError:
+        stream = read(os.path.join(datapath,
+                                   str(event.origins[0].time.year),
+                                   str(event.origins[0].time.month).zfill(2),
+                                   sfile_util.readwavename(sfile)[0]))
     if len(sfile_util.readwavename(sfile)) > 1:
         for wavfile in sfile_util.readwavename(sfile):
-            stream += read(datapath+'/'+wavfile)
+            try:
+                stream += read(os.path.join(datapath, wavfile))
+            except IOError:
+                stream += read(os.path.join(datapath,
+                                            str(event.origins[0].time.year),
+                                            str(event.origins[0].time.month).
+                                            zfill(2),
+                                            wavfile))
     stream.merge()  # merge the data, just in case!
     event_picked = amp_pick_event(event=event, st=stream, respdir=respdir,
                                   chans=chans, var_wintype=var_wintype,
                                   winlen=winlen, pre_pick=pre_pick,
                                   pre_filt=pre_filt, lowcut=lowcut,
-                                  highcut=highcut, corners=corners)
-    new_sfile = sfile_util.eventtosfile(event=event, userID=str('EQCO'),
+                                  highcut=highcut, corners=corners,
+                                  min_snr=min_snr, plot=plot,
+                                  remove_old=remove_old)
+    new_sfile = sfile_util.eventtosfile(event=event_picked, userID=str('EQCO'),
                                         evtype=str('L'), outdir=str('.'),
                                         wavefiles=sfile_util.
                                         readwavename(sfile))
     shutil.move(new_sfile, 'mag_calc.out')
-    return event
+    return event_picked
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     """
-    Calculate relative moments using singular-value decomposition.
+    Calculate relative moments/amplitudes using singular-value decomposition.
 
     Convert basis vectors calculated by singular value \
     decomposition (see the SVD functions in clustering) into relative \
@@ -1052,19 +1107,18 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
                                           '%d-%H%M-%SL.S%Y%m')
                      for i in range(len(sfiles))]
         sfiles = [sfiles[i] for i in range(len(sfiles))
-                  if datetimes[i] > startdate and
-                  datetimes[i] < enddate]
+                  if startdate < datetimes[i] < enddate]
         if not wavepath:
             wavedir = "/".join(indir.split('/')[:-2])+'/WAV/' +\
                 indir.split('/')[-1]+'/'+str(day.year)+'/' +\
                 str(day.month).zfill(2)
         else:
-        	wavedir = wavepath+'/'+str(day.year)+'/' +\
+            wavedir = wavepath+'/'+str(day.year)+'/' +\
                     str(day.month).zfill(2)
         sfiles.sort()
         for sfile in sfiles:
             # Make the picks!
-            print('				Working on Sfile: '+sfile)
+            print('\tWorking on Sfile: '+sfile)
             event = Amp_pick_sfile(sfile, wavedir, calpath)
             del event
             # Copy the mag_calc.out file to the correct place

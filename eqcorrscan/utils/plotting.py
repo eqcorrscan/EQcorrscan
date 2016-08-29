@@ -1817,7 +1817,8 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         magnitudes = [mag for mag in magnitudes if not np.isinf(mag)]
     fig, ax1 = plt.subplots()
     # Set up the bins, the bin-size could be a variables
-    bins = np.arange(min(magnitudes), max(magnitudes), binsize)
+    bins = np.arange(int(min(magnitudes) - 1), int(max(magnitudes) + 1),
+                     binsize)
     n, bins, patches = ax1.hist(magnitudes, bins, facecolor='Black',
                                 alpha=0.5, label='Magnitudes')
     ax1.set_ylabel('Frequency')
