@@ -962,9 +962,13 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     # Sometimes the randomisation generates a singular matrix - rather than
     # attempting to regulerize this matrix I propose undertaking the
     # randomisation step a further time
+    if len(stachans) == 1:
+        print('Only provided data from one station-channel - '
+              'will not try to invert')
+        return U[0][:, 0], event_list[0]
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
-        # Copy the relevant vectors so as not to detroy them
+        # Copy the relevant vectors so as not to destroy them
         U_working = copy.deepcopy(U[i])
         V_working = copy.deepcopy(V[i])
         s_working = copy.deepcopy(s[i])
@@ -1026,7 +1030,6 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
                 else:
                     result = 0
                 row.append(result)
-            print(row)
             # Add each row to the K matrix
             k.append(row)
         # k is now a square matrix, we need to flesh it out to be K_width
