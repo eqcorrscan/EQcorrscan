@@ -7,6 +7,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/eqcorrscan/EQcorrscan/badge.svg?branch=master)](https://coveralls.io/github/eqcorrscan/EQcorrscan?branch=master)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.59976.svg)](http://dx.doi.org/10.5281/zenodo.59976)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
+[![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
 <!--[![DOI](https://zenodo.org/badge/18852/eqcorrscan/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/eqcorrscan/EQcorrscan)-->
 
 # Installation
