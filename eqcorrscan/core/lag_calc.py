@@ -89,10 +89,11 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
     :rtype: obspy.core.event.Event
     """
     from obspy.core.event import Event, Pick, WaveformStreamID
-    from obspy.core.event import ResourceIdentifier
+    from obspy.core.event import ResourceIdentifier, Comment
     event = Event()
     s_stachans = {}
     used_s_sta = []
+    cccsum = 0
     for tr in template:
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
@@ -100,24 +101,29 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
         image = detection.select(station=temp_sta,
                                  channel=temp_chan)
         if image:
-            ccc = normxcorr2(tr.data, image[0].data)
-            # Convert the maximum cross-correlation time to an actual time
+            if interpolate:
+                try:
+                    ccc = normxcorr2(tr.data, image[0].data)
+                    cc_max = _xcorr_interp(ccc=ccc,
+                                           dt=image[0].stats.delta)
+                except IndexError:
+                    print('Could not interpolate ccc, not smooth')
+                    ccc = normxcorr2(tr.data, image[0].data)
+                    cc_max = np.amax(ccc)
+                    ccc = np.argmax(ccc) * image[0].stats.delta
+                # Convert the maximum cross-correlation time to an actual time
+                picktime = image[0].stats.starttime + ccc
+            else:
+                # Convert the maximum cross-correlation time to an actual time
+                ccc = normxcorr2(tr.data, image[0].data)
+                cc_max = np.amax(ccc)
+                picktime = image[0].stats.starttime + (np.argmax(ccc) *
+                                                       image[0].stats.delta)
             if debug > 3:
                 print('********DEBUG: Maximum cross-corr=%s' % np.amax(ccc))
-            if np.amax(ccc) > min_cc:
-                if interpolate:
-                    try:
-                        interp_max = _xcorr_interp(ccc=ccc,
-                                                   dt=image[0].stats.delta)
-                    except IndexError:
-                        print('Could not interpolate ccc, not smooth')
-                        interp_max = np.argmax(ccc) * image[0].stats.delta
-                    picktime = image[0].stats.starttime + interp_max
-                else:
-                    picktime = image[0].stats.starttime + (np.argmax(ccc) *
-                                                           image[0].stats.delta)
-            else:
+            if cc_max < min_cc:
                 continue
+            cccsum += np.amax(ccc)
             # Perhaps weight each pick by the cc val or cc val^2?
             # weight = np.amax(ccc) ** 2
             if temp_chan[-1:] == 'Z':
@@ -146,7 +152,11 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
             event.picks.append(Pick(waveform_id=_waveform_id,
                                     time=picktime,
                                     method_id=ResourceIdentifier('EQcorrscan'),
-                                    phase_hint=phase))
+                                    phase_hint=phase,
+                                    creation_info='eqcorrscan.core.lag_calc',
+                                    comments=[Comment(text='cc_max=%s' % cc_max)]))
+    ccc_str = ("detect_val=%s" % cccsum)
+    event.comments.append(Comment(text=ccc_str))
     return (i, event)
 
 
