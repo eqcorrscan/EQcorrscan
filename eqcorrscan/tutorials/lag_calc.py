@@ -87,7 +87,8 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
                                             template_names=template_names,
                                             templates=templates,
                                             shift_len=shift_len, min_cc=0.5,
-                                            interpolate=True, plot=False)
+                                            interpolate=True, plot=False,
+                                            parallel=True, debug=3)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
 

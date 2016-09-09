@@ -61,7 +61,8 @@ def _xcorr_interp(ccc, dt):
     # coefficient.
     shift = -coeffs[1] / 2.0 / coeffs[0]
     coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
-    return shift
+    return shift, coeff
+
 
 def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                   debug=0):
@@ -104,15 +105,15 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
             if interpolate:
                 try:
                     ccc = normxcorr2(tr.data, image[0].data)
-                    cc_max = _xcorr_interp(ccc=ccc,
-                                           dt=image[0].stats.delta)
+                    shift, cc_max = _xcorr_interp(ccc=ccc,
+                                                  dt=image[0].stats.delta)
                 except IndexError:
                     print('Could not interpolate ccc, not smooth')
                     ccc = normxcorr2(tr.data, image[0].data)
                     cc_max = np.amax(ccc)
-                    ccc = np.argmax(ccc) * image[0].stats.delta
+                    shift = np.argmax(ccc) * image[0].stats.delta
                 # Convert the maximum cross-correlation time to an actual time
-                picktime = image[0].stats.starttime + ccc
+                picktime = image[0].stats.starttime + shift
             else:
                 # Convert the maximum cross-correlation time to an actual time
                 ccc = normxcorr2(tr.data, image[0].data)
@@ -120,10 +121,10 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                 picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                        image[0].stats.delta)
             if debug > 3:
-                print('********DEBUG: Maximum cross-corr=%s' % np.amax(ccc))
+                print('********DEBUG: Maximum cross-corr=%s' % cc_max)
             if cc_max < min_cc:
                 continue
-            cccsum += np.amax(ccc)
+            cccsum += cc_max
             # Perhaps weight each pick by the cc val or cc val^2?
             # weight = np.amax(ccc) ** 2
             if temp_chan[-1:] == 'Z':
@@ -157,11 +158,11 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                                     comments=[Comment(text='cc_max=%s' % cc_max)]))
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
-    return (i, event)
+    return i, event
 
 
 def _day_loop(detection_streams, template, min_cc, interpolate=False,
-              cores=False, debug=0):
+              cores=False, debug=0, parallel=True):
     """
     Function to loop through multiple detections for one template.
 
@@ -194,17 +195,25 @@ def _day_loop(detection_streams, template, min_cc, interpolate=False,
         num_cores = cores
     if num_cores > len(detection_streams):
         num_cores = len(detection_streams)
-    pool = Pool(processes=num_cores)
-    # Parallelize generation of events for each detection:
-    # results is a list of (i, event class)
-    results = [pool.apply_async(_channel_loop, args=(detection_streams[i],
-                                                     template, min_cc,
-                                                     interpolate, i, debug))
-               for i in range(len(detection_streams))]
-    pool.close()
-    events_list = [p.get() for p in results]
-    pool.join()
-    events_list.sort(key=lambda tup: tup[0])  # Sort based on i.
+    if parallel:
+        pool = Pool(processes=num_cores)
+        # Parallelize generation of events for each detection:
+        # results will be a list of (i, event class)
+        results = [pool.apply_async(_channel_loop, args=(detection_streams[i],
+                                                         template, min_cc,
+                                                         interpolate, i, debug))
+                   for i in range(len(detection_streams))]
+        pool.close()
+        events_list = [p.get() for p in results]
+        pool.join()
+        events_list.sort(key=lambda tup: tup[0])  # Sort based on index.
+    else:
+        events_list = []
+        for i in range(len(detection_streams)):
+            events_list.append(_channel_loop(detection_streams[i],
+                                             template, min_cc,
+                                             interpolate,
+                                             i, debug))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
@@ -274,7 +283,8 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
 
 
 def lag_calc(detections, detect_data, template_names, templates,
-             shift_len=0.2, min_cc=0.4, cores=1, interpolate=False, plot=False):
+             shift_len=0.2, min_cc=0.4, cores=1, interpolate=False,
+             plot=False, parallel=True, debug=0):
     """
     Main lag-calculation function for detections of specific events.
 
@@ -316,10 +326,6 @@ def lag_calc(detections, detect_data, template_names, templates,
         and located.
     :rtype: obspy.core.event.Catalog
 
-    .. rubric: Example
-
-    >>> from eqcorrscan.core import lag_calc
-
     .. note:: Picks output in catalog are generated relative to the template \
         start-time.  For example, if you generated your template with a \
         pre_pick time of 0.2 seconds, you should expect picks generated by \
@@ -356,7 +362,8 @@ def lag_calc(detections, detect_data, template_names, templates,
         if len(template_detections) > 0:
             template_cat = _day_loop(detection_streams=detect_streams,
                                      template=template[1], min_cc=min_cc,
-                                     interpolate=interpolate, cores=cores)
+                                     interpolate=interpolate, cores=cores,
+                                     parallel=parallel, debug=debug)
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):
