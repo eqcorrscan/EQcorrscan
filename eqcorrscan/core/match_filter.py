@@ -310,7 +310,7 @@ def _template_loop(template, chan, station, channel, debug=0, i=0):
             np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
             np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
             np.save('inf_cccmean_image_%02d.npy' % i, image)
-        ccc = np.zeros(len(ccc))
+        ccc = np.zeros(max(ccc.shape))
         ccc = ccc.reshape((1, len(ccc)))
         # Returns zeros
     if debug >= 3:

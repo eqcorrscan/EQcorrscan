@@ -9,6 +9,7 @@ from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
 from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor, nordpick
 from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
 from eqcorrscan.utils.sfile_util import read_event, read_select, blanksfile
+from eqcorrscan.utils.sfile_util import read_spectral_info
 import unittest
 
 
@@ -449,6 +450,33 @@ class TestSfileMethods(unittest.TestCase):
         for pick in pick_string:
             self.assertEqual(len(pick), 80)
 
+    def test_read_moment(self):
+        """Test the reading of seismic moment from the s-file."""
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'automag.out')
+        event = read_event(testing_path)
+        mag = [m for m in event.magnitudes if m.magnitude_type == 'MW']
+        self.assertEqual(len(mag), 1)
+        self.assertEqual(mag[0].mag, 0.7)
+
+    def test_read_moment_info(self):
+        """Test reading the info from spectral analysis."""
+        import os
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'automag.out')
+        spec_inf = read_spectral_info(testing_path)
+        self.assertEqual(len(spec_inf), 5)
+        # This should actually test that what we are reading in is correct.
+        average = [s for s in spec_inf if s['station'] == 'AVERAGE'][0]
+        check_av = {u'channel': '', u'corner_freq': 5.97,  u'decay': 0.0,
+                    u'moment': 12589254117.941662,  u'moment_mag': 0.7,
+                    u'source_radius': 0.231,
+                    u'spectral_level': 0.3981071705534972,
+                    u'station': 'AVERAGE',  u'stress_drop': 0.006,
+                    u'window_length': 1.6}
+        for key in average.keys():
+            self.assertEqual(average.get(key), check_av.get(key))
 
 
 def full_test_event():

@@ -187,10 +187,22 @@ def readheader(sfile):
     >>> print(event.origins[0].time)
     2013-09-01T04:11:15.700000Z
     """
+    f = open(sfile, 'r')
+    header = _readheader(f=f)
+    f.close()
+    return header
+
+
+def _readheader(f):
+    """Internal header reader.
+    :type f: file
+    :param f: File open in read-mode.
+
+    :returns: obspy.core.event.Event"""
     import warnings
     from obspy.core.event import Event, Origin, Magnitude, Comment
     from obspy.core.event import EventDescription, CreationInfo
-    f = open(sfile, 'r')
+    f.seek(0)
     # Base populate to allow for empty parts of file
     new_event = Event()
     topline = f.readline()
@@ -272,7 +284,6 @@ def readheader(sfile):
             CreationInfo(agency_id=topline[76:79].strip())
         new_event.magnitudes[2].origin_id = new_event.origins[0].\
             resource_id
-    f.close()
     # convert the nordic notation of magnitude to more general notation
     for _magnitude in new_event.magnitudes:
         _magnitude.magnitude_type = _nortoevmag(_magnitude.magnitude_type)
@@ -298,6 +309,141 @@ def readheader(sfile):
     return new_event
 
 
+def read_spectral_info(sfile):
+    """
+    Read spectral info from an sfile.
+
+    :type sfile: str
+    :param sfile: Sfile to read from.
+
+    :returns: dictionary of spectral information, units as in seisan manual, \
+        expect for logs which have been converted to floats.
+    """
+    f = open(sfile, 'r')
+    spec_inf = _read_spectral_info(f=f)
+    f.close()
+    return spec_inf
+
+
+def _read_spectral_info(f):
+    """Internal spectral reader.
+
+    :type f: file
+    :param f: File open in read mode.
+
+    :returns: dictionary of spectral information, units as in seisan manual, \
+        expect for logs which have been converted to floats.
+    """
+    event = _readheader(f=f)
+    f.seek(0)
+    origin_date = UTCDateTime(event.origins[0].time.date)
+    relevant_lines = []
+    for line in f:
+        if str(line[1:5]) == str('SPEC'):
+            relevant_lines.append(line)
+    spec_inf = []
+    if len(relevant_lines) == 0:
+        return spec_inf
+    for line in relevant_lines:
+        spec_str = str(line.rstrip().lstrip())
+        if str(spec_str[5:12]) == str('AVERAGE'):
+            info = {}
+            info['station'] = str('AVERAGE')
+            info['channel'] = str('')
+            info['moment'] = _float_conv(spec_str[16:22])
+            if info['moment'] == 999:
+                info['moment'] = np.nan
+            else:
+                info['moment'] = 10 ** info['moment']
+            info['stress_drop'] = _float_conv(spec_str[24:30])
+            info['spectral_level'] = _float_conv(spec_str[32:38])
+            if info['spectral_level'] == 999:
+                info['spectral_level'] = np.nan
+            else:
+                info['spectral_level'] = 10 ** info['spectral_level']
+            info['corner_freq'] = _float_conv(spec_str[40:46])
+            info['source_radius'] = _float_conv(spec_str[47:54])
+            info['decay'] = _float_conv(spec_str[56:62])
+            info['window_length'] = _float_conv(spec_str[64:70])
+            info['moment_mag'] = _float_conv(spec_str[72:78])
+            spec_inf.append(info)
+            continue
+        if str(spec_str[5:7]) == str('SD'):
+            info = {}
+            info['station'] = str('STANDARD_DEVIATION')
+            info['channel'] = str('')
+            info['moment'] = _float_conv(spec_str[16:22])
+            if info['moment'] == 999:
+                info['moment'] = np.nan
+            else:
+                info['moment'] = 10 ** info['moment']
+            info['stress_drop'] = _float_conv(spec_str[24:30])
+            info['spectral_level'] = _float_conv(spec_str[32:38])
+            if info['spectral_level'] == 999:
+                info['spectral_level'] = np.nan
+            else:
+                info['spectral_level'] = 10 ** info['spectral_level']
+            info['corner_freq'] = _float_conv(spec_str[40:46])
+            info['source_radius'] = _float_conv(spec_str[47:54])
+            info['decay'] = _float_conv(spec_str[56:62])
+            info['window_length'] = _float_conv(spec_str[64:70])
+            info['moment_mag'] = _float_conv(spec_str[72:78])
+            spec_inf.append(info)
+            continue
+        stachans = [str('.'.join([i['station'], i['channel']]))
+                    for i in spec_inf]
+        stachan = str('.'.join([spec_str[4:9].strip(),
+                               ''.join(spec_str[9:13].split())]))
+        if stachan in stachans:
+            info = [i for i in spec_inf if
+                    str(i['station']) == str(spec_str[4:9].strip()) and
+                    str(i['channel']) == str(''.join(spec_str[9:13].
+                                                     split()))][0]
+            new_stachan = False
+        else:
+            info = {}
+            info['station'] = spec_str[4:9].strip()
+            info['channel'] = ''.join(spec_str[9:13].split())
+            new_stachan = True
+        if spec_str[14] == 'T':
+            info['starttime'] = origin_date + (int(spec_str[15:17]) * 3600) +\
+                (int(spec_str[17:19]) * 60) + int(spec_str[19:21])
+            if info['starttime'] < event.origins[0].time:
+                # Wrong day, case of origin at end of day
+                info['starttime'] += 86400
+            info['kappa'] = _float_conv(spec_str[23:30])
+            info['distance'] = _float_conv(spec_str[32:38])
+            if spec_str[38:40] == 'VS':
+                info['velocity'] = _float_conv(spec_str[40:46])
+                info['velocity_type'] = 'S'
+            elif spec_str[38:40] == 'VP':
+                info['velocity'] = _float_conv(spec_str[40:46])
+                info['velocity_type'] = 'P'
+            info['density'] = _float_conv(spec_str[48:54])
+            info['Q0'] = _float_conv(spec_str[56:62])
+            info['QA'] = _float_conv(spec_str[64:70])
+        elif spec_str[14] == 'M':
+            info['moment'] = _float_conv(spec_str[16:22])
+            if info['moment'] == 999:
+                info['moment'] = np.nan
+            else:
+                info['moment'] = 10 ** info['moment']
+            info['stress_drop'] = _float_conv(spec_str[24:30])
+            info['spectral_level'] = _float_conv(spec_str[32:38])
+            if info['spectral_level'] == 999:
+                info['spectral_level'] = np.nan
+            else:
+                info['spectral_level'] = 10 ** info['spectral_level']
+            info['corner_freq'] = _float_conv(spec_str[40:46])
+            info['source_radius'] = _float_conv(spec_str[47:54])
+            info['decay'] = _float_conv(spec_str[56:62])
+            info['window_length'] = _float_conv(spec_str[64:70])
+            info['moment_mag'] = _float_conv(spec_str[72:78])
+        if new_stachan:
+            spec_inf.append(info)
+    return spec_inf
+
+
 def read_event(sfile):
     """
     Read all information from a Nordic formatted s-file.
@@ -310,8 +456,7 @@ def read_event(sfile):
     :returns: event
     :rtype: obspy.core.event.Event.
     """
-    event = readpicks(sfile)
-    return event
+    return readpicks(sfile)
 
 
 def read_select(select_file):
@@ -344,6 +489,7 @@ def read_select(select_file):
             catalog += read_event(tmp_sfile.name)
             os.remove(tmp_sfile.name)
             event_str = []
+    f.close()
     return catalog
 
 
@@ -374,13 +520,29 @@ def readpicks(sfile):
     >>> print(event.picks[0].time)
     2013-09-01T04:11:17.240000Z
     """
-    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
-    # Get wavefile name for use in resource_ids
-    wav_names = readwavename(sfile)
-    # First we need to read the header to get the timing info
-    new_event = readheader(sfile)
-    evtime = new_event.origins[0].time
     f = open(sfile, 'r')
+    new_event = _readheader(f=f)
+    wav_names = _readwavename(f=f)
+    event = _read_picks(f=f, wav_names=wav_names, new_event=new_event)
+    f.close()
+    return event
+
+
+def _read_picks(f, wav_names, new_event):
+    """Internal pick reader. Use a public function instead.
+
+    :type f: file
+    :param f: File open in read mode
+    :type wav_names: list
+    :param wav_names: List of waveform files in the sfile
+    :type new_event: obspy.core.Event
+    :param new_event: event to associate picks with.
+
+    :returns: populated event.
+    """
+    from obspy.core.event import Pick, WaveformStreamID, Arrival, Amplitude
+    f.seek(0)
+    evtime = new_event.origins[0].time
     pickline = []
     # Set a default, ignored later unless overwritten
     SNR = 999
@@ -534,7 +696,6 @@ def readpicks(sfile):
         if CAZ != 999:
             new_event.origins[0].arrivals[pick_index].azimuth =\
                 CAZ
-    f.close()
     # Write event to catalog object for ease of .write() method
     return new_event
 
@@ -555,12 +716,24 @@ def readwavename(sfile):
     ...              '01-0411-15L.S201309')
     ['2013-09-01-0410-35.DFDPC_024_00']
     """
-    f = open(sfile)
+    f = open(sfile, 'r')
+    wavenames = _readwavename(f=f)
+    f.close()
+    return wavenames
+
+
+def _readwavename(f):
+    """
+    Internal wavename reader.
+
+    :type f: file
+    :param f: File open in read-mode
+    :return: list of wavefile names
+    """
     wavename = []
     for line in f:
         if len(line) == 81 and line[79] == '6':
             wavename.append(line[1:79].strip())
-    f.close()
     return wavename
 
 
