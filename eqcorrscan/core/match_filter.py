@@ -37,7 +37,7 @@ from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
 from eqcorrscan.utils.timer import Timer
-from eqcorrscan.utils import findpeaks
+from eqcorrscan.utils import findpeaks, plotting
 
 
 class MatchFilterError(Exception):
@@ -57,7 +57,183 @@ class MatchFilterError(Exception):
         return 'MatchFilterError: ' + self.value
 
 
-class DETECTION(object):
+class Family(object):
+    """
+    Container for Detection objects from a single template.
+
+    :type template: eqcorrscan.core.match_filter.Template
+    :param template: The template used to detect the family
+    :type detections: list
+    :param detections: list of Detection objects
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog of detections, with information for the individual\
+        detections
+    """
+    def __init__(self, template, detections=[], catalog=Catalog()):
+        """Instantiation of Family object."""
+        self.template = template
+        self.detections = detections
+        self.catalog = catalog
+
+    def __repr__(self):
+        print_str = ('Family of %s detections from template %s' %
+                     (len(self.detections), self.template.name))
+        return(print_str)
+
+    def sort(self):
+        """Sort by detection time."""
+        sort_list = [(d.detect_time, d, event)
+                     for d, event in zip(self.detections, self.catalog)]
+        sort_list.sort(key=lambda tup: tup[0])
+        self.detections = [item[1] for item in sort_list]
+        self.catalog = Catalog([item[2] for item in sort_list])
+        return self
+
+    def plot(self):
+        """Plot the detections in time."""
+        plotting.cumulative_detections(detections=self.detections,
+                                       template_names=[self.template.name])
+
+    def __add__(self, other):
+        """Extend method."""
+        if isinstance(other, Family):
+            if other.template == self.template:
+                self.detections += other.detections
+                self.catalog += other.catalog
+            else:
+                raise NotImplementedError('Templates do not match')
+        elif isinstance(other, Detection):
+            self.detections += other
+            self.catalog += other.event
+        else:
+            raise NotImplementedError('Can only extend with a Detection or '
+                                      'Family object.')
+        return self
+
+    def __eq__(self, other):
+        """Check equality."""
+        if not self.template == other.template:
+            return False
+        if not self.detections == other.detections:
+            return False
+        if not self.catalog == other.catalog:
+            return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def write(self, filename, format='fam'):
+        """Write Family out, select output format.
+
+        :type format: str
+        :param format:
+            One of either 'fam', 'csv', or any obspy supported catalog output.
+        :type filename: str
+        :param filename: Path to write file to.
+
+        .. NOTE:: csv format will write out detection objects, all other
+            outputs will write the catalog.  These cannot be rebuilt into
+            a Family object.  The only format that can be read back into
+            Family objects is the 'fam' type, which writes an HDF5 formatted
+            file.
+        """
+        if format.lower() == 'fam':
+            self._write_fam(filename=filename)
+        elif format.lower() == 'csv':
+            if os.path.isfile(filename):
+                raise IOError('Will not overwrite existing filename %s'
+                              % filename)
+            for detection in self.detections:
+                detection.write(fname=filename, append=True)
+        else:
+            self.catalog.write(fielname=filename, format=format)
+        return self
+
+    def _write_fam(self, filename):
+        """Write an HDF5 formatted file containing the family.
+
+        :type filename: str
+        :param filename: Path to write to.
+        """
+
+    def read(self, filename):
+        """Read a family from an HDF5 formatted file."""
+        return self
+
+
+class Template(object):
+    """Template holder."""
+    def __init__(self, name=None, st=None, lowcut=None, highcut=None,
+                 samp_rate=None, filt_order=None, event=None):
+        self.name = name
+        self.st = st
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.samp_rate = samp_rate
+        self.filt_order = filt_order
+        self.event = event
+
+    def __repr__(self):
+        print_str = ('Template %s: \n\t%s channels;\n\t lowcut: %s Hz;'
+                     '\n\t highcut: %s Hz;\n\t sampling rate %s Hz'
+                     % (self.name, len(self.st), self.lowcut, self.highcut,
+                        self.samp_rate))
+        return print_str
+
+    def __eq__(self, other):
+        for key in self.keys():
+            if not self[key] == other[key]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def write(self):
+        """Write template to HDF5 format with metadata."""
+
+    def read(self):
+        """Read template from HDF5 format with metadata."""
+
+    def detect(self, stream):
+        """Detect using a single template within a continuous stream.
+
+        :returns: Family of detections."""
+        family = Family()
+        return family
+
+
+class Selection(object):
+    """Holder for multiple templates."""
+    def __init__(self, templates=[]):
+        self.templates = templates
+
+    def __add__(self, other):
+        if isinstance(other, Selection):
+            self.templates += other.templates
+        elif isinstance(other, Template):
+            self.templates.append(other)
+        else:
+            raise NotImplementedError('Must be either Template ot Selection')
+        return self
+
+    def __eq__(self, other):
+        for t_1, t_2 in zip(self.templates.sort(), other.templates.sort()):
+            if not t_1 == t_2:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def detect(self, stream):
+        """ Detect with template in continuous data."""
+        families = []
+        return families
+
+
+class Detection(object):
     """
     Single detection from detection routines in eqcorrscan.
     Information required for a full detection based on cross-channel \
@@ -125,7 +301,7 @@ class DETECTION(object):
                               'detection value=', str(self.detect_val), '\n',
                               'threshold=', str(self.threshold), '\n',
                               'detection type=', str(self.typeofdet)])
-        return "DETECTION(" + print_str + ")"
+        return "Detection(" + print_str + ")"
 
     def __str__(self):
         """Full print."""
@@ -191,7 +367,7 @@ def read_detections(fname):
         detection[3] = ast.literal_eval(detection[3])
         detection[4] = float(detection[4])
         detection[5] = float(detection[5])
-        detections.append(DETECTION(template_name=detection[0],
+        detections.append(Detection(template_name=detection[0],
                                     detect_time=detection[1],
                                     no_chans=detection[2],
                                     detect_val=detection[4],
@@ -905,7 +1081,7 @@ def match_filter(template_names, template_list, st, threshold,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)
                         ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                detections.append(DETECTION(_template_names[i],
+                detections.append(Detection(template_names[i],
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
                                             'corr', chans[i], event=ev))
