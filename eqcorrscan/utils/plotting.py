@@ -1373,9 +1373,9 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
         bdelay = btr.stats.starttime - mintime
         by = btr.data
         if len(tr_picks) > 0:
-            by /= max(by[int(delay):int(delay) + len(x)])
+            by = by / max(by[int(delay):int(delay) + len(x)])
         else:
-            by /= max(by)
+            by = by / max(by)
         bx = np.linspace(0, (len(by) - 1) * btr.stats.delta, len(by))
         bx += bdelay
         axis.plot(bx, by, 'k', linewidth=1.5)
