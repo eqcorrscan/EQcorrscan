@@ -1,7 +1,7 @@
 """Tutorial to illustrate the lag_calc usage."""
 
 
-def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
+def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.clients.fdsn import Client
@@ -86,8 +86,8 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
                                             detect_data=st,
                                             template_names=template_names,
                                             templates=templates,
-                                            shift_len=shift_len, min_cc=0.5,
-                                            interpolate=True, plot=False,
+                                            shift_len=shift_len, min_cc=min_cc,
+                                            interpolate=False, plot=False,
                                             parallel=True, debug=3)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names

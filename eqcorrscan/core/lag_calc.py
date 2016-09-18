@@ -371,8 +371,21 @@ def lag_calc(detections, detect_data, template_names, templates,
                         print('Made no picks for event')
                         print(event)
                         continue
-                    plot_repicked(template=template[1], picks=event.picks,
-                                  det_stream=detect_streams[i])
+                    plot_stream = detect_streams[i].copy()
+                    pick_stachans = [(pick.waveform_id.station_code,
+                                      pick.waveform_id.channel_code)
+                                     for pick in event.picks]
+                    for tr in plot_stream:
+                        if (tr.stats.station, tr.stats.channel) \
+                                not in pick_stachans:
+                            plot_stream.remove(tr)
+                    template_plot = template[1].copy()
+                    for tr in template_plot:
+                        if (tr.stats.station, tr.stats.channel) \
+                                not in pick_stachans:
+                            template_plot.remove(tr)
+                    plot_repicked(template=template_plot, picks=event.picks,
+                                  det_stream=plot_stream)
     return initial_cat
 
 
