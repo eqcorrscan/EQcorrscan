@@ -56,7 +56,7 @@ class DETECTION(object):
     def __init__(self, template_name, detect_time,
                  no_chans, detect_val,
                  threshold, typeofdet,
-                 chans=None, event=None):
+                 chans=None, event=None, id=None):
         """Main class of DETECTION."""
         self.template_name = template_name
         self.detect_time = detect_time
@@ -66,10 +66,18 @@ class DETECTION(object):
         self.threshold = threshold
         self.typeofdet = typeofdet
         self.event = event
+        if id is not None:
+            self.id = id
+        else:
+            self.id = (''.join(template_name.split(' ')) + '_' +
+                       detect_time.strftime('%Y%m%d-%H%M%S%f'))
+        if event is not None:
+            event.resource_id = self.id
 
     def __repr__(self):
         """Simple print."""
         print_str = ' '.join(['template name=', self.template_name, '\n',
+                              'detection id=', self.id, '\n',
                               'detection time=', str(self.detect_time), '\n',
                               'number of channels=', str(self.no_chans), '\n',
                               'channels=', str(self.chans), '\n',

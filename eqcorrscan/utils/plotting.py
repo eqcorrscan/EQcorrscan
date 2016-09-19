@@ -12,9 +12,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
-import matplotlib.pylab as plt
 import warnings
+import datetime as dt
+
+import matplotlib.pylab as plt
+import matplotlib.dates as mdates
+from copy import deepcopy
+from collections import Counter
+from obspy import UTCDateTime, Stream, Catalog
+from obspy.signal.cross_correlation import xcorr
+
+from eqcorrscan.core.match_filter import DETECTION, normxcorr2
+from eqcorrscan.utils import stacking, sfile_util
 
 
 def _check_save_args(save, savefile):
@@ -339,9 +350,6 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """
-    import matplotlib.dates as mdates
-    from copy import deepcopy
-    from eqcorrscan.core.match_filter import DETECTION
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -580,11 +588,6 @@ def multi_event_singlechan(streams, catalog, station, channel,
     .. image:: ../../plots/multi_event_singlechan.png
     """
     _check_save_args(save, savefile)
-    from eqcorrscan.utils import stacking
-    import copy
-    from obspy import Stream, Catalog
-    import warnings
-
     # Work out how many picks we should have...
     short_cat = Catalog()
     short_streams = []
@@ -601,7 +604,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     al_traces = []
     if isinstance(short_streams, Stream):
         short_streams = [short_streams]
-    st_list = copy.deepcopy(short_streams)
+    st_list = deepcopy(short_streams)
     for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
@@ -697,10 +700,6 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :type title: str
     :param title: Title to plot
     """
-    from obspy import Stream
-    from eqcorrscan.utils import stacking
-    from eqcorrscan.core.match_filter import normxcorr2
-
     if stack in ['linstack', 'PWS']:
         fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
                                  figsize=size)
@@ -763,7 +762,8 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', save=False, savefile=None,
                         size=(10.5, 7.5)):
-    r"""Plot a stream of data with a template on top of it at detection times.
+    """
+    Plot a stream of data with a template on top of it at detection times.
 
     :type stream: obspy.core.stream.Stream
     :param stream: Stream of data to be plotted as the base (black)
@@ -789,11 +789,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     .. image:: ../../plots/detection_multiplot.png
 
-
     """
     _check_save_args(save, savefile)
-    import datetime as dt
-    from obspy import UTCDateTime, Stream
     # Sort before plotting
     template = template.sort()
     # Only take traces that match in both
@@ -846,6 +843,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                                              image_times[0]).total_seconds() /
                                             image.stats.delta)] /
                              max(image.data))
+            normalizer /= max(template_tr.data)
             axis.plot(template_times,
                       template_tr.data * normalizer,
                       templatecolour, linewidth=1.2)
@@ -853,7 +851,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                          template_tr.stats.channel])
         axis.set_ylabel(ylab, rotation=0,
                         horizontalalignment='right')
-        axis.yaxis.set_ticks([])
+        # axis.yaxis.set_ticks([])
     if len(template) > 1:
         axes[len(axes) - 1].set_xlabel('Time')
     else:
@@ -903,7 +901,6 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
         interev_mag_sfiles(sfiles=sfiles)
     """
     _check_save_args(save, savefile)
-    from eqcorrscan.utils import sfile_util
     times = []
     mags = []
     for sfile in sfiles:
@@ -1467,8 +1464,6 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     .. Note:: Called by bright_lights, not a general use plot (hence no example)
     """
     _check_save_args(save, savefile)
-    import datetime as dt
-    import matplotlib.dates as mdates
     fig, axes = plt.subplots(len(stream)+1, 1, sharex=True, figsize=size)
     if len(stream) > 1:
         axes = axes.ravel()
@@ -1693,8 +1688,6 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         plot_synth_real(real_template=real, synthetic=synth)
     """
     _check_save_args(save, savefile)
-    from obspy.signal.cross_correlation import xcorr
-    from obspy import Stream
     colours = ['k', 'r']
     labels = ['Real', 'Synthetic']
     if channels:
@@ -1807,8 +1800,6 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
         magnitudes = [event.preferred_magnitude().mag for event in catalog]
         freq_mag(magnitudes, completeness=4, max_mag=7)
     """
-    from collections import Counter
-    import warnings
     _check_save_args(save, savefile)
     # Ensure magnitudes are sorted
     magnitudes.sort()
@@ -1914,7 +1905,6 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
         spec_trace(st, trc='white')
 
     """
-    from obspy import Stream
     if isinstance(traces, Stream):
         traces.sort(['station', 'channel'])
     if not Fig:

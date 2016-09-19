@@ -3,11 +3,32 @@ Functions to generate pick-corrections for events detected by correlation.
 
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import numpy as np
-from eqcorrscan.core.match_filter import normxcorr2
 import scipy
 import warnings
+import logging
+import sys
 
+from multiprocessing import Pool, cpu_count
+
+from obspy import Stream
+from obspy.core.event import Catalog
+from obspy.core.event import Event, Pick, WaveformStreamID
+from obspy.core.event import ResourceIdentifier, Comment
+
+from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
+from eqcorrscan.core.match_filter import normxcorr2
+
+# Set up logging
+log = logging.getLogger(__name__)
+ch = logging.StreamHandler(stream=sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(name)s -' +
+                              ' %(levelname)s - %(message)s')
 
 def _xcorr_interp(ccc, dt):
     """
@@ -64,8 +85,7 @@ def _xcorr_interp(ccc, dt):
     return shift, coeff
 
 
-def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
-                  debug=0):
+def _channel_loop(detection, template, min_cc, detection_id, interpolate, i):
     """
     Inner loop for correlating and assigning picks.
 
@@ -79,6 +99,8 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
         template.
     :type template: obspy.core.stream.Stream
     :param template: Stream of data as the template for the detection.
+    :type detection_id: str
+    :param detection_id: Detection ID to associate the event with.
     :type interpolate: bool
     :param interpolate: Interpolate the correlation function to achieve \
         sub-sample precision.
@@ -89,8 +111,6 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
     :returns: Event object containing net, sta, chan information
     :rtype: obspy.core.event.Event
     """
-    from obspy.core.event import Event, Pick, WaveformStreamID
-    from obspy.core.event import ResourceIdentifier, Comment
     event = Event()
     s_stachans = {}
     used_s_sta = []
@@ -108,7 +128,7 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                     shift, cc_max = _xcorr_interp(ccc=ccc,
                                                   dt=image[0].stats.delta)
                 except IndexError:
-                    print('Could not interpolate ccc, not smooth')
+                    log.error('Could not interpolate ccc, not smooth')
                     ccc = normxcorr2(tr.data, image[0].data)
                     cc_max = np.amax(ccc)
                     shift = np.argmax(ccc) * image[0].stats.delta
@@ -120,8 +140,7 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                 cc_max = np.amax(ccc)
                 picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                        image[0].stats.delta)
-            if debug > 3:
-                print('********DEBUG: Maximum cross-corr=%s' % cc_max)
+            log.debug('********DEBUG: Maximum cross-corr=%s' % cc_max)
             if cc_max < min_cc:
                 continue
             cccsum += cc_max
@@ -155,14 +174,16 @@ def _channel_loop(detection, template, min_cc, interpolate=False, i=0,
                                     method_id=ResourceIdentifier('EQcorrscan'),
                                     phase_hint=phase,
                                     creation_info='eqcorrscan.core.lag_calc',
-                                    comments=[Comment(text='cc_max=%s' % cc_max)]))
+                                    comments=[Comment(text='cc_max=%s'
+                                                      % cc_max)]))
+            event.resource_id = detection_id
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
     return i, event
 
 
-def _day_loop(detection_streams, template, min_cc, interpolate=False,
-              cores=False, debug=0, parallel=True):
+def _day_loop(detection_streams, template, min_cc, detection_ids, interpolate,
+              cores, parallel):
     """
     Function to loop through multiple detections for one template.
 
@@ -178,6 +199,9 @@ def _day_loop(detection_streams, template, min_cc, interpolate=False,
     :param template: The original template used to detect the detections passed
     :type min_cc: float
     :param min_cc: Minimum cross-correlation value to be allowed for a pick.
+    :type detection_ids: list
+    :param detection_ids: List of detection ids to associate events with an
+        input detection.
     :type interpolate: bool
     :param interpolate: Interpolate the correlation function to achieve \
         sub-sample precision.
@@ -186,9 +210,6 @@ def _day_loop(detection_streams, template, min_cc, interpolate=False,
               created by this template.
     :rtype: obspy.core.event.Catalog
     """
-    from multiprocessing import Pool, cpu_count
-    # Used to run detections in parallel
-    from obspy.core.event import Catalog
     if not cores:
         num_cores = cpu_count()
     else:
@@ -197,11 +218,13 @@ def _day_loop(detection_streams, template, min_cc, interpolate=False,
         num_cores = len(detection_streams)
     if parallel:
         pool = Pool(processes=num_cores)
+        log.debug('Made pool of %i workers' % num_cores)
         # Parallelize generation of events for each detection:
         # results will be a list of (i, event class)
         results = [pool.apply_async(_channel_loop, args=(detection_streams[i],
                                                          template, min_cc,
-                                                         interpolate, i, debug))
+                                                         detection_ids[i],
+                                                         interpolate, i))
                    for i in range(len(detection_streams))]
         pool.close()
         events_list = [p.get() for p in results]
@@ -212,27 +235,27 @@ def _day_loop(detection_streams, template, min_cc, interpolate=False,
         for i in range(len(detection_streams)):
             events_list.append(_channel_loop(detection_streams[i],
                                              template, min_cc,
-                                             interpolate,
-                                             i, debug))
+                                             detection_ids[i], interpolate, i))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
 
 
 def _prepare_data(detect_data, detections, zipped_templates, delays,
-                  shift_len):
-    """Prepare data for lag_calc - reduce memory here.
+                  shift_len, plot):
+    """
+    Prepare data for lag_calc - reduce memory here.
 
     :type detect_data: obspy.core.Stream
     :type detections: list
     :type zipped_templates: zip
     :type delays: list
     :type shift_len: float
+    :type plot: bool
 
     :returns: List of detect_streams to be worked on
     :rtype: list
     """
-    from obspy import Stream
     detect_streams = []
     for detection in detections:
         # Stream to be saved for new detection
@@ -272,6 +295,15 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                                               delay + shift_len +
                                               template_len))
             del tr_copy
+        if plot:
+            background = detect_data.copy().trim(starttime=detection.
+                                                 detect_time - (shift_len + 5),
+                                                 endtime=detection.
+                                                 detect_time + shift_len + 7)
+            detection_multiplot(stream=background,
+                                template=Stream(detect_stream),
+                                times=[detection.detect_time -
+                                       shift_len])
         for tr in detect_stream:
             if len(tr.data) == 0:
                 detect_stream.remove(tr)
@@ -316,6 +348,8 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type interpolate: bool
     :param interpolate: Interpolate the correlation function to achieve \
         sub-sample precision.
+    :type parallel: bool
+    :param parallel: Turn parallel processing on or off.
     :type plot: bool
     :param plot: To generate a plot for every detection or not, defaults to \
         False.
@@ -336,40 +370,69 @@ def lag_calc(detections, detect_data, template_names, templates,
     .. warning:: Because of the above note, origin times will be consistently \
         shifted by the static pre_pick applied to the templates.
     """
-    from obspy.core.event import Catalog
-    from eqcorrscan.utils.plotting import plot_repicked
-
-    # First work out the delays for each template
+    if debug > 0:
+        log.setLevel(logging.WARNING)
+        ch.setLevel(logging.WARNING)
+    if debug > 2:
+        log.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+    if debug > 3:
+        log.setLevel(0)
+        ch.setLevel(0)
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+    # First check that sample rates are equal for everything
+    for tr in detect_data:
+        if tr.stats.sampling_rate != detect_data[0].stats.sampling_rate:
+            raise NotImplementedError('Sampling rates are not equal')
+    for template in templates:
+        for tr in template:
+            if tr.stats.sampling_rate != detect_data[0].stats.sampling_rate:
+                raise NotImplementedError('Sampling rates are not equal')
+    # Work out the delays for each template
     delays = []  # List of tuples of (tempname, (sta, chan, delay))
     zipped_templates = list(zip(template_names, templates))
+    detect_stachans = [(tr.stats.station, tr.stats.channel)
+                       for tr in detect_data]
     for template in zipped_templates:
         temp_delays = []
-        for tr in template[1]:
+        # Remove channels not present in continuous data
+        _template = template[1].copy()
+        for tr in _template:
+            if (tr.stats.station, tr.stats.channel) not in detect_stachans:
+                _template.remove(tr)
+        for tr in _template:
             temp_delays.append((tr.stats.station, tr.stats.channel,
-                                tr.stats.starttime - template[1].
+                                tr.stats.starttime - _template.
                                 sort(['starttime'])[0].stats.starttime))
         delays.append((template[0], temp_delays))
+        del _template
     # Segregate detections by template, then feed to day_loop
     initial_cat = Catalog()
     for template in zipped_templates:
+        log.info('Running lag-calc for template %s' % template[0])
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
+        det_ids = [d.id for d in template_detections]
+        log.info('There are %i detections' % len(template_detections))
         detect_streams = _prepare_data(detect_data=detect_data,
                                        detections=template_detections,
                                        zipped_templates=zipped_templates,
-                                       delays=delays, shift_len=shift_len)
+                                       delays=delays, shift_len=shift_len,
+                                       plot=plot)
         detect_streams = [detect_stream[1] for detect_stream in detect_streams]
         if len(template_detections) > 0:
             template_cat = _day_loop(detection_streams=detect_streams,
                                      template=template[1], min_cc=min_cc,
+                                     detection_ids=det_ids,
                                      interpolate=interpolate, cores=cores,
-                                     parallel=parallel, debug=debug)
+                                     parallel=parallel)
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):
                     if len(event.picks) == 0:
-                        print('Made no picks for event')
-                        print(event)
+                        log.warning('Made no picks for event at time %s' %
+                                    event)
                         continue
                     plot_stream = detect_streams[i].copy()
                     pick_stachans = [(pick.waveform_id.station_code,
@@ -386,7 +449,21 @@ def lag_calc(detections, detect_data, template_names, templates,
                             template_plot.remove(tr)
                     plot_repicked(template=template_plot, picks=event.picks,
                                   det_stream=plot_stream)
-    return initial_cat
+    sys.stdout.flush()
+    # Order the catalogue to match the input
+    output_cat = Catalog()
+    for det in detections:
+        event = [e for e in initial_cat if e.resource_id == det.id]
+        if len(event) == 1:
+            output_cat.append(event[0])
+        elif len(event) == 0:
+            print('No picks made for detection:')
+            print(det)
+            output_cat.append(Event())
+        else:
+            raise NotImplementedError('Multiple events with same id,'
+                                      ' should not happen')
+    return output_cat
 
 
 if __name__ == '__main__':
