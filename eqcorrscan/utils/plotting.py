@@ -1364,8 +1364,8 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
             pick = tr_picks[0]
             delay = pick.time - mintime
             y = tr.data
-            # Normlise
-            y /= max(y)
+            # Normalise
+            y = y / max(y)
             x = np.linspace(0, (len(y) - 1) * tr.stats.delta, len(y))
             x += delay
         btr = det_stream.select(station=tr.stats.station,
@@ -1373,7 +1373,9 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
         bdelay = btr.stats.starttime - mintime
         by = btr.data
         if len(tr_picks) > 0:
-            by = by / max(by[int(delay):int(delay) + len(x)])
+            by = by / max(by[int((delay - bdelay) * btr.stats.sampling_rate):
+                             int((delay - bdelay) * btr.stats.sampling_rate) +
+                             len(x)])
         else:
             by = by / max(by)
         bx = np.linspace(0, (len(by) - 1) * btr.stats.delta, len(by))
