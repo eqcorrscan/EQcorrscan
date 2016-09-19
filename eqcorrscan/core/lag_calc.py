@@ -29,6 +29,8 @@ log = logging.getLogger(__name__)
 ch = logging.StreamHandler(stream=sys.stdout)
 formatter = logging.Formatter('%(asctime)s - %(name)s -' +
                               ' %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+log.addHandler(ch)
 
 def _xcorr_interp(ccc, dt):
     """
@@ -379,7 +381,6 @@ def lag_calc(detections, detect_data, template_names, templates,
     if debug > 3:
         log.setLevel(0)
         ch.setLevel(0)
-    ch.setFormatter(formatter)
     log.addHandler(ch)
     # First check that sample rates are equal for everything
     for tr in detect_data:

@@ -415,10 +415,16 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     if peaks:
         for peak in peaks:
             node = nodes[peak[1]]
-            detections.append(DETECTION(str(node[0]) + '_' + str(node[1]) + '_' +
-                                        str(node[2]), peak[1] / samp_rate,
-                                        len(realstations), peak[0], thresh,
-                                        'brightness', realstations))
+            detections.append(DETECTION(template_name=str(node[0]) +
+                                        '_' + str(node[1]) + '_' + str(node[2]),
+                                        detect_time=peak[1] / samp_rate,
+                                        no_chans=len(realstations),
+                                        detect_val=peak[0], threshold=thresh,
+                                        typeofdet='brightness',
+                                        chans=realstations,
+                                        id=str(node[0]) + '_' + str(node[1]) +
+                                        '_' + str(node[2]) +
+                                        str(peak[1] / samp_rate)))
     else:
         detections = []
     print('I have found ' + str(len(peaks)) + ' possible detections')
