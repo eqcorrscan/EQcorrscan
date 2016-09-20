@@ -377,6 +377,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' are not of daylong length, will zero pad')
+        if tr.stats.endtime - tr.stats.starttime < 72000:
+            msg = ('Data for %s.%s are less than 20 hours long, will not pad'
+                   % (tr.stats.station, tr.stats.channel))
+            raise NotImplementedError(msg)
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime + 86400, pad=True, fill_value=0,
                      nearest_sample=True)

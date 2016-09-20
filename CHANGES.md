@@ -1,3 +1,12 @@
+## 0.1.4
+* Bug in plot_repicked removed where data were not normalized properly;
+* Bug in lag_calc where data were missing in the continuous data fixed
+(this led to incorrect picks, major bug!);
+* Output cccsum in lag-calc output;
+* Add id to DETECTION objects, which is consistent with the events
+within DETECTION objects and catalog output, and used in lag_calc to
+allow linking of detections to catalog events;
+
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
 * Add lag-calculation and tests for it;

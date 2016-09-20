@@ -761,7 +761,7 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
 
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', save=False, savefile=None,
-                        size=(10.5, 7.5)):
+                        size=(10.5, 7.5), title=None):
     """
     Plot a stream of data with a template on top of it at detection times.
 
@@ -783,6 +783,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param savefile: Filename to save to, required for save=True
     :type size: tuple
     :param size: Figure size.
+    :type title: str
+    :param title: Title for plot.
 
     :returns: :class: matplotlib.figure
 
@@ -836,13 +838,19 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                                            86400)
                               for j in range(len(template_tr.data))]
             # Normalize the template according to the data detected in
-            normalizer = max(image.data[int((template_times[0] -
-                                            image_times[0]).total_seconds() /
-                                            image.stats.delta):
-                                        int((template_times[-1] -
-                                             image_times[0]).total_seconds() /
-                                            image.stats.delta)] /
-                             max(image.data))
+            try:
+                normalizer = max(image.data[int((template_times[0] -
+                                                image_times[0]).
+                                                total_seconds() /
+                                                image.stats.delta):
+                                            int((template_times[-1] -
+                                                 image_times[0]).
+                                                total_seconds() /
+                                                image.stats.delta)] /
+                                 max(image.data))
+            except ValueError:
+                # Occurs when there is no data in the image at this time...
+                normalizer = max(image.data)
             normalizer /= max(template_tr.data)
             axis.plot(template_times,
                       template_tr.data * normalizer,
@@ -858,6 +866,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         axis.set_xlabel('Time')
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
     plt.xticks(rotation=10)
+    if title:
+        plt.suptitle(title)
     if not save:
         plt.show()
     else:

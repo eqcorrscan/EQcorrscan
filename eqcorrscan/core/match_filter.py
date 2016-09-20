@@ -19,8 +19,36 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
+
+import cv2
 import warnings
+import ast
+import os
+import time
+import copy
+
+from multiprocessing import Pool
+from collections import Counter
+from obspy import Trace, Catalog, UTCDateTime, Stream
+from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
+from obspy.core.event import Comment, WaveformStreamID
+
+from eqcorrscan.utils.timer import Timer
+from eqcorrscan.utils import findpeaks
+
+
+class MatchFilterError(Exception):
+    """Default error for match-filter errors."""
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return 'MatchFilterError: ' + self.value
 
 
 class DETECTION(object):
@@ -106,7 +134,6 @@ class DETECTION(object):
             and file doesn't exist, will create new file and warn.  If False
             will overwrite old files.
         """
-        import os
         if append and os.path.isfile(fname):
             f = open(fname, 'a')
         else:
@@ -135,8 +162,6 @@ def read_detections(fname):
 
     .. note:: Does not return DETECTIONS containing events
     """
-    from obspy import UTCDateTime
-    import ast
     f = open(fname, 'r')
     detections = []
     for index, line in enumerate(f):
@@ -185,7 +210,6 @@ def get_catalog(detections):
 
     :returns: obspy.core.event.Catalog
     """
-    from obspy.core.event import Catalog
     catalog = Catalog()
     for detection in detections:
         catalog.append(detection.event)
@@ -220,21 +244,6 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
     return streams
 
 
-def detections_to_catalog(detections):
-    r"""Helper to convert from list of detections to obspy catalog.
-
-    :type detections: list
-    :param detections: list of eqcorrscan.core.match_filter.detection
-
-    :returns: obspy.core.event.Catalog
-    """
-    from obspy.core.event import Catalog
-    catalog = Catalog()
-    for detection in detections:
-        catalog.append(detection.event)
-    return catalog
-
-
 def normxcorr2(template, image):
     """
     Thin wrapper on openCV match_template function.
@@ -257,7 +266,6 @@ def normxcorr2(template, image):
     :return: New numpy.ndarray object of the correlation values for \
         the correlation of the image with the template.
     """
-    import cv2
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
@@ -359,15 +367,9 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     :returns: list of list of tuples of station, channel for all \
         cross-correlations.
     """
-    import time
-    from multiprocessing import Pool
-    from eqcorrscan.utils.timer import Timer
-
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
-    if 'cccs_matrix' in locals():
-        del cccs_matrix
     # Initialize cccs_matrix, which will be two arrays of len(templates) arrays
     # where the arrays cccs_matrix[0[:]] will be the cross channel sum for each
     # template.
@@ -564,33 +566,26 @@ def match_filter(template_names, template_list, st, threshold,
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     plt.ioff()
-    import copy
     from eqcorrscan.utils import plotting
-    from eqcorrscan.utils import findpeaks
-    from obspy import Trace, Catalog, UTCDateTime, Stream
-    from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
-    from obspy.core.event import Comment, WaveformStreamID
-    import time
-
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
         if not type(template_names) == list:
-            raise IOError('template_names must be of type: list')
+            raise MatchFilterError('template_names must be of type: list')
         if not type(template_list) == list:
-            raise IOError('templates must be of type: list')
+            raise MatchFilterError('templates must be of type: list')
         for template in template_list:
             if not type(template) == Stream:
                 msg = 'template in template_list must be of type: ' +\
                       'obspy.core.stream.Stream'
-                raise IOError(msg)
+                raise MatchFilterError(msg)
         if not type(st) == Stream:
             msg = 'st must be of type: obspy.core.stream.Stream'
-            raise IOError(msg)
+            raise MatchFilterError(msg)
         if str(threshold_type) not in [str('MAD'), str('absolute'),
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
-            raise IOError(msg)
+            raise MatchFilterError(msg)
 
     # Copy the stream here because we will muck about with it
     stream = st.copy()
@@ -632,7 +627,7 @@ def match_filter(template_names, template_list, st, threshold,
         if len(set([tr.stats.npts for tr in temp])) > 1:
             msg = 'Template %s contains traces of differing length!! THIS \
                   WILL CAUSE ISSUES' % template_names[i]
-            raise ValueError(msg)
+            raise MatchFilterError(msg)
     # Call the _template_loop function to do all the correlation work
     outtic = time.clock()
     # Edit here from previous, stable, but slow match_filter
@@ -660,6 +655,14 @@ def match_filter(template_names, template_list, st, threshold,
     for tr in stream:
         if not (tr.stats.station, tr.stats.channel) in template_stachan:
             stream.remove(tr)
+    # Check for duplicate channels
+    stachans = [(tr.stats.station, tr.stats.channel) for tr in stream]
+    c_stachans = Counter(stachans)
+    for key in c_stachans.keys():
+        if c_stachans[key] > 1:
+            msg = ('Multiple channels for %s.%s, likely a data issue'
+                   % (key[0], key[1]))
+            raise MatchFilterError(msg)
     # Also pad out templates to have all channels
     for template, template_name in zip(templates, template_names):
         if len(template) == 0:
@@ -686,7 +689,7 @@ def match_filter(template_names, template_list, st, threshold,
                                                cores=cores,
                                                debug=debug)
     if len(cccsums[0]) == 0:
-        raise ValueError('Correlation has not run, zero length cccsum')
+        raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
     print(' '.join(['Looping over templates and streams took:',
                     str(outtoc - outtic), 's']))
