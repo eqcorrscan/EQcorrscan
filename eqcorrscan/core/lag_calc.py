@@ -104,7 +104,7 @@ def _xcorr_interp(ccc, dt):
 
 
 def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
-                  pre_lag_ccsum=None):
+                  pre_lag_ccsum=None, detect_chans=0):
     """
     Inner loop for correlating and assigning picks.
 
@@ -130,6 +130,9 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     :param pre_lag_ccsum: Cross-correlation sum before lag-calc, will check \
         that the cross-correlation sum is increased by lag-calc (using all \
         channels, ignoring min_cc)
+    :type detect_chans: int
+    :param detect_chans: Number of channels originally used in detections, \
+        must match the number used here to allow for cccsum checking.
 
     :returns: Event object containing net, sta, chan information
     :rtype: obspy.core.event.Event
@@ -139,6 +142,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     used_s_sta = []
     cccsum = 0
     checksum = 0
+    used_chans = 0
     for tr in template:
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
@@ -166,6 +170,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                                                        image[0].stats.delta)
             log.debug('********DEBUG: Maximum cross-corr=%s' % cc_max)
             checksum += cc_max
+            used_chans += 1
             if cc_max < min_cc:
                 continue
             cccsum += cc_max
@@ -204,10 +209,15 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             event.resource_id = detection_id
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
-    if pre_lag_ccsum is not None and checksum - pre_lag_ccsum < -0.05:
-        msg = ('lag-calc has decreased cccsum from %f to %f - '
-               'report this error' % (pre_lag_ccsum, checksum))
-        raise LagCalcError(msg)
+    if used_chans == detect_chans:
+        if pre_lag_ccsum is not None and checksum - pre_lag_ccsum < -0.05:
+            msg = ('lag-calc has decreased cccsum from %f to %f - '
+                   'report this error' % (pre_lag_ccsum, checksum))
+            raise LagCalcError(msg)
+    else:
+        warnings.warn('Cannot check is cccsum is better, used %i channels '
+                      'for detection, but %i are used here'
+                      % (detect_chans, used_chans))
     return i, event
 
 
@@ -255,7 +265,9 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
                                                          detections[i].id,
                                                          interpolate, i,
                                                          detections[i].
-                                                         detect_val))
+                                                         detect_val,
+                                                         detections[i].
+                                                         no_chans))
                    for i in range(len(detection_streams))]
         pool.close()
         events_list = [p.get() for p in results]
@@ -267,7 +279,8 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
             events_list.append(_channel_loop(detection_streams[i],
                                              template, min_cc,
                                              detections[i].id, interpolate, i,
-                                             detections[i].detect_val))
+                                             detections[i].detect_val,
+                                             detections[i].no_chans))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
@@ -335,6 +348,12 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 msg = ('No data in %s.%s for detection at time %s' %
                        (tr.stats.station, tr.stats.channel,
                         detection.detect_time))
+                log.debug(msg)
+                warnings.warn(msg)
+                detect_stream.remove(tr)
+            if tr.stats.endtime - tr.stats.starttime < template_len:
+                msg = ("Insufficient data for %s.%s will not use."
+                       % (tr.stats.station, tr.stats.channel))
                 log.debug(msg)
                 warnings.warn(msg)
                 detect_stream.remove(tr)

@@ -6,6 +6,9 @@
 * Add id to DETECTION objects, which is consistent with the events
 within DETECTION objects and catalog output, and used in lag_calc to
 allow linking of detections to catalog events;
+* Add lots of logging and error messages to lag-calc to ensure user 
+understands limits;
+* Add error to day-proc to ensure user is aware of risks of padding;
 
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
