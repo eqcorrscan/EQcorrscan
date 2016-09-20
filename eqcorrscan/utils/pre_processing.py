@@ -173,8 +173,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     return st
 
 
-def dayproc(st, lowcut, highcut, filt_order, samp_rate,
-            starttime, debug=0, parallel=True, num_cores=False):
+def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
+            parallel=True, num_cores=False, ignore_length=False):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -201,10 +201,18 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
+    :type ignore_length: bool
+    :param ignore_length: See warning below.
 
     :return: obspy.Stream
 
     .. note:: Will convert channel names to two characters long.
+
+    .. warning::
+        Will fail if data are less than 20 hours long - this number is arbitrary
+        and is chosen to alert the user to the dangers of padding to day-long,
+        if you don't care you can ignore this error by setting
+        `ignore_length=True`. Use at your own risk!
 
     .. rubric:: Example, bandpass
 
@@ -289,7 +297,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
                                                      'samp_rate': samp_rate,
                                                      'debug': debug,
                                                      'starttime': starttime,
-                                                     'full_day': True})
+                                                     'full_day': True,
+                                                     'ignore_length':
+                                                         ignore_length})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -299,7 +309,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=starttime, full_day=True)
+                    starttime=starttime, full_day=True,
+                    ignore_length=ignore_length)
     if tracein:
         st.merge()
         return st[0]
@@ -307,7 +318,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
-            starttime=False, full_day=False, seisan=True):
+            starttime=False, full_day=False, seisan=True, ignore_length=False):
     r"""Basic function to process data, usually called by dayproc or shortproc.
 
     Functionally, this will bandpass, downsample and check headers and length \
@@ -339,6 +350,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :type seisan: bool
     :param seisan: Whether channels are named like seisan channels (which are \
         two letters rather than three) - defaults to True.
+    :type ignore_length: bool
+    :param ignore_length: See warning in dayproc.
 
     :return: obspy.Stream
 
@@ -377,9 +390,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if debug >= 2:
             print('Data for '+tr.stats.station+'.'+tr.stats.channel +
                   ' are not of daylong length, will zero pad')
-        if tr.stats.endtime - tr.stats.starttime < 72000:
-            msg = ('Data for %s.%s are less than 20 hours long, will not pad'
-                   % (tr.stats.station, tr.stats.channel))
+        if tr.stats.endtime - tr.stats.starttime < 72000 and not ignore_length:
+            msg = ('Data for %s.%s is %i hours long, which is less than 20 '
+                   'hours, will not pad' % (tr.stats.station, tr.stats.channel,
+                                            (tr.stats.endtime -
+                                             tr.stats.starttime) / 3600))
             raise NotImplementedError(msg)
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime + 86400, pad=True, fill_value=0,
