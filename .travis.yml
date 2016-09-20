@@ -64,6 +64,8 @@ install:
           conda create -q -n test-environment --file $env_file
       elif [[ "$py" == "2.7" ]]; then
           conda create -q -n test-environment --file $env_file
+      elif [[ "$py" == "3.4" ]]; then
+          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib=1.5.1 obspy flake8 mock coverage opencv3
       else
           conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
       fi
