@@ -9,6 +9,14 @@ allow linking of detections to catalog events;
 * Add lots of logging and error messages to lag-calc to ensure user 
 understands limits;
 * Add error to day-proc to ensure user is aware of risks of padding;
+* Change utils.pre_processing.process to accept different length of 
+data enforcement, not just full day (allow for overlap in processing,
+which might be useful for reducing day start and end effects);
+* Bug-fix in mag_calc.amp_pick_event, broke loop if data were missing;
+* Lots of docs adjustment to sort order of doc-strings and hyper-links;
+* Allow multiple uses of the same channel in templates (e.g. you can
+now use a template with two windows from the same channel, such as a P
+and an S);
 
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;

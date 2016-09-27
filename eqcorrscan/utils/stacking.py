@@ -3,7 +3,7 @@ Utility module of the EQcorrscan package to allow for different methods of \
 stacking of seismic signal in one place.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -13,7 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
+
+from scipy.signal import hilbert
+from copy import deepcopy
+
+from eqcorrscan.core.match_filter import normxcorr2
 
 
 def linstack(streams, normalize=True):
@@ -27,18 +33,16 @@ def linstack(streams, normalize=True):
     :param normalize: Normalize traces before stacking, normalizes by the RMS \
         amplitude.
 
-    :returns: stack - Stream
+    :returns: stacked data
+    :rtype: :class:`obspy.core.stream.Stream`
     """
-    # import matplotlib.pyplot as plt
     stack = streams[np.argmax([len(stream) for stream in streams])].copy()
     if normalize:
         for tr in stack:
             tr.data = tr.data / np.sqrt(np.mean(np.square(tr.data)))
             tr.data = np.nan_to_num(tr.data)
     for i in range(1, len(streams)):
-        # print("Stacking stream "+str(i))
         for tr in stack:
-            # print(tr.stats.station+'.'+tr.stats.channel)
             matchtr = streams[i].select(station=tr.stats.station,
                                         channel=tr.stats.channel)
             if matchtr:
@@ -60,15 +64,15 @@ def PWS_stack(streams, weight=2, normalize=True):
     .. note:: It is recommended to align the traces before stacking.
 
     :type streams: list
-    :param streams: List of obspy Streams to stack
+    :param streams: List of :class:`obspy.core.stream.Stream` to stack.
     :type weight: float
     :param weight: Exponent to the phase stack used for weighting.
     :type normalize: bool
     :param normalize: Normalize traces before stacking.
 
-    :return: obspy.Stream
+    :return: Stacked stream.
+    :rtype: :class:`obspy.core.stream.Stream`
     """
-    from scipy.signal import hilbert
     # First get the linear stack which we will weight by the phase stack
     Linstack = linstack(streams)
     # Compute the instantaneous phase
@@ -85,7 +89,6 @@ def PWS_stack(streams, weight=2, normalize=True):
     # Compute the phase stack
     print("Computing the phase stack")
     Phasestack = linstack(instaphases, normalize=normalize)
-    # print(type(Phasestack))
     # Compute the phase-weighted stack
     for tr in Phasestack:
         tr.data = Linstack.select(station=tr.stats.station)[0].data *\
@@ -97,13 +100,15 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
                  plot=False):
     """
     Align traces relative to each other based on their cross-correlation value.
-    Uses the obspy.signal.cross_correlation.xcorr function to find the optimum
-    shift to align traces relative to a master event.  Either uses a given
-    master to align traces, or uses the first trace in the list.
-    
-    .. Note:: The cross-correlation function may yield an error/warning
+
+    Uses the :func:`obspy.signal.cross_correlation.xcorr` function to find the
+    optimum shift to align traces relative to a master event.  Either uses a
+    given master to align traces, or uses the first trace in the list.
+
+    .. Note::
+        The cross-correlation function may yield an error/warning
         about shift_len being too large: this is raised by the
-        obspy.signal.cross_correlation.xcorr routine when the shift_len
+        :func:`obspy.signal.cross_correlation.xcorr` routine when the shift_len
         is greater than half the length of either master or a trace, then
         the correlation will not be robust.  We may switch to a different
         correlation routine later.
@@ -121,10 +126,9 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
     :type plot: bool
     :param plot: If true, will plot each trace aligned with the master.
 
-    :returns: list of shifts and correlations for best alignment in seconds
+    :returns: list of shifts and correlations for best alignment in seconds.
+    :rtype: list
     """
-    from eqcorrscan.core.match_filter import normxcorr2
-    from copy import deepcopy
     from eqcorrscan.utils.plotting import xcorr_plot
     traces = deepcopy(trace_list)
     if not master:

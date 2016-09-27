@@ -1,13 +1,14 @@
 """
 Helper functions for common handling tasks for catalog objects.
 
-.. note:: These functions are tools to aid simplification of general scripts, \
-    they do not cover all use cases, however if you have a use case you want \
-    to see here, then let the authors know, or implement it yourself and \
-    contribute it back to the project.
+.. note:: These functions are tools to aid simplification of general scripts,
+    they do not cover all use cases, however if you have a use case you want
+    to see here, then let the authors know, or implement it yourself and
+    contribute it back to the project, or, if its really good, give it to the
+    obspy guys!
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -16,6 +17,7 @@ Helper functions for common handling tasks for catalog objects.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def filter_picks(catalog, stations=None, channels=None, networks=None,
@@ -36,16 +38,19 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     :param top_n_picks: Filter only the top N most used station-channel pairs.
     :type top_n_picks: int
 
-    :return: Filtered Catalog - if events are left with no picks, they are \
-        removed from the catalog.
+    :return:
+        Filtered Catalog - if events are left with no picks, they are removed
+        from the catalog.
     :rtype: obspy.core.event.Catalog
 
-    .. note:: Will filter first by station, then by channel, then by network, \
-        if using top_n_picks, this will be done last, after the other filters \
+    .. note::
+        Will filter first by station, then by channel, then by network, if
+        using top_n_picks, this will be done last, after the other filters
         have been applied.
 
-    .. note:: Doesn't work in place on the catalog, your input catalog will be \
-        safe unless you overwrite it.
+    .. note::
+        Doesn't work in place on the catalog, your input catalog will be safe
+        unless you overwrite it.
 
     .. note:: Doesn't expand wildcard characters.
 

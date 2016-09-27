@@ -50,6 +50,12 @@ def mktemplates(network_code='GEONET',
     # five most used stations - note that this is done to reduce computational
     # costs.
     catalog = filter_picks(catalog, top_n_picks=5)
+    # We only want the P picks in this example, but you can use others or all
+    #  picks if you want.
+    for event in catalog:
+        for pick in event.picks:
+            if pick.phase_hint == 'S':
+                event.picks.remove(pick)
 
     # Now we can generate the templates
     templates = template_gen.from_client(catalog=catalog,

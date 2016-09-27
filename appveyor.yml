@@ -43,7 +43,7 @@ install:
   - "pip install pyimgur"
   - "pip install -U future"
   - "pip install pytest-cov"
-  - "pip install pytest-xdist"
+  - "pip install pytest-flake8"
   # list package versions
   - "conda list"
 

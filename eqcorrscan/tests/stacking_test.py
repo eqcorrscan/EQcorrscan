@@ -111,7 +111,6 @@ class TestStackingMethods(unittest.TestCase):
                 tr.detrend('simple').filter('bandpass', freqmin=2, freqmax=20)
                 trace_list.append(tr[0])
         shifts, ccs = align_traces(trace_list=trace_list, shift_len=200)
-                                   # plot=True)
         ccs = [float(str(cc)) for cc in ccs]
         f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                               'test_data', 'known_alignment.csv'), 'r')

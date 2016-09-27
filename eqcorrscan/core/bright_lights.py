@@ -1,16 +1,18 @@
 #!/usr/bin/python
 r"""
-Code to determine the brightness function of seismic data according to a \
-three-dimensional travel-time grid.  This travel-time grid can be \
-generated using the grid2time function of the NonLinLoc package by Anthony \
-Lomax which can be found here: http://alomax.free.fr/nlloc/ NonLinLoc is not \
-distributed within this package but it is a very useful stand-alone library \
-for seismic event location.
+Code to determine the brightness function of seismic data according to a
+three-dimensional travel-time grid.  This travel-time grid can be
+generated using the grid2time function of the NonLinLoc package by Anthony
+Lomax which can be found here: `NonLinLoc <http://alomax.free.fr/nlloc/>`_.
+NonLinLoc is not distributed within this package but it is a very useful
+stand-alone library for seismic event location.
 
-This code is based on the method of Frank & Shapiro 2014.\
+This code is based on the method of
+`Frank & Shapiro 2014
+<http://gji.oxfordjournals.org/content/197/2/1215.short>`_.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -20,14 +22,30 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
 import warnings
+import csv
+import glob
+import sys
+import os
+
+from obspy import Stream, Trace, read as obsread
+from multiprocessing import Pool, cpu_count
+from copy import deepcopy
+from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
+from obspy.core.event import EventDescription, CreationInfo, Comment
+
+from eqcorrscan.core.match_filter import DETECTION, normxcorr2
+from eqcorrscan.utils import findpeaks
+from eqcorrscan.core.template_gen import _template_gen
 
 
 def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
              lags_switch=True):
     """
     Read in .csv files of slowness generated from Grid2Time.
+
     Converts these data to a useful format here.
 
     It should be noted that this can read either P or S travel-time grids, not
@@ -37,17 +55,28 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     :param path: The path to the .csv Grid2Time outputs
     :type stations: list
     :param stations: List of station names to read slowness files for.
+    :type phase: str
+    :param phase: Input phase type.
     :type phaseout: str
-    :param phaseout: What phase to return the lagtimes in
+    :param phaseout: What phase to return the lagtimes in.
     :type ps_ratio: float
     :param ps_ratio: p to s ratio for conversion
     :type lags_switch: bool
     :param lags_switch: Return lags or raw travel-times, if set to true will \
         return lags.
 
-    :return: list stations, list of lists of tuples nodes, np.ndarray of \
-        lags. station[1] refers to nodes[1] and lags[1] nodes[1][1] refers to \
-        station[1] and lags[1][1] nodes[n][n] is a tuple of latitude, \
+    :returns: Stations
+    :rtype: list
+    :returns: List of lists of tuples of node locations
+    :rtype: list
+    :returns: Array of lags.
+    :rtype: :class:`numpy.ndarray`
+
+    .. note::
+        **Output:**
+
+        station[1] refers to nodes[1] and lags[1] nodes[1][1] refers
+        to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
         longitude and depth.
 
     .. note:: This function currently needs comma separated grid files in \
@@ -56,10 +85,6 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
         directly.  If you find you need this capability let us know and we \
         can try and implement it.
     """
-
-    import csv
-    import glob
-
     # Locate the slowness file information
     gridfiles = []
     stations_out = []
@@ -107,35 +132,46 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
 def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners):
     """
     Resample the lagtime grid to a given volume.
+
     For use if the grid from Grid2Time is too large or you want to run a
     faster, downsampled scan.
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i] \
-        refers to nodes[i][:] and lags[i][:]
+    :param stations:
+        List of station names from in the form where stations[i] refers to
+        nodes[i][:] and lags[i][:]
     :type nodes: list
-    :param nodes: List of node points where nodes[i] referes to stations[i] \
-        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
-        lonitude in degrees, nodes[:][:][2] is depth in km.
+    :param nodes:
+        List of node points where nodes[i] referes to stations[i] and
+        nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in
+        degrees, nodes[:][:][2] is depth in km.
     :type lags: numpy.ndarray
-    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
-        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
-        seconds.
+    :param lags:
+        Array of arrays where lags[i][:] refers to stations[i]. lags[i][j]
+        should be the delay to the nodes[i][j] for stations[i] in seconds.
     :type mindepth: float
     :param mindepth: Upper limit of volume
     :type maxdepth: float
     :param maxdepth: Lower limit of volume
-    :type corners: matplotlib.Path
-    :param corners: matplotlib path of the corners for the 2D polygon to cut \
-        to in lat and long
+    :type corners: matplotlib.path.Path
+    :param corners:
+        matplotlib Path of the corners for the 2D polygon to cut to in lat and
+        lon.
 
-    :return: list stations, list of lists of tuples nodes, :class: \
-        'numpy.array' lags station[1] refers to nodes[1] and lags[1] \
-        nodes[1][1] refers to station[1] and lags[1][1] \
-        nodes[n][n] is a tuple of latitude, longitude and depth.
+    :returns: Stations
+    :rtype: list
+    :returns: List of lists of tuples of node locations
+    :rtype: list
+    :returns: Array of lags.
+    :rtype: :class:`numpy.ndarray`
+
+    .. note::
+        **Output:**
+
+        station[1] refers to nodes[1] and lags[1] nodes[1][1] refers
+        to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
+        longitude and depth.
     """
-    import numpy as np
-
     resamp_nodes = []
     resamp_lags = []
     # Cut the volume
@@ -159,31 +195,40 @@ def _rm_similarlags(stations, nodes, lags, threshold):
     Remove nodes that have a very similar network moveout to another node.
 
     This function will, for each node, calculate the difference in lagtime
-    at each station at every node, then sum these for each node to get a \
-    cumulative difference in network moveout.  This will result in an \
+    at each station at every node, then sum these for each node to get a
+    cumulative difference in network moveout.  This will result in an
     array of arrays with zeros on the diagonal.
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i] \
-        refers to nodes[i][:] and lags[i][:]
+    :param stations:
+        List of station names from in the form where stations[i] refers to
+        nodes[i][:] and lags[i][:]
     :type nodes: list
-    :param nodes: List of node points where nodes[i] referes to stations[i] \
-        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
-        longitude in degrees, nodes[:][:][2] is depth in km.
+    :param nodes:
+        List of node points where nodes[i] referes to stations[i] and
+        nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in
+        degrees, nodes[:][:][2] is depth in km.
     :type lags: numpy.ndarray
-    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
-        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
-        seconds
-    :type threhsold: float
+    :param lags:
+        Array of arrays where lags[i][:] refers to stations[i]. lags[i][j]
+        should be the delay to the nodes[i][j] for stations[i] in seconds.
+    :type threshold: float
     :param threshold: Threshold for removal in seconds
 
-    :returns: list stations, list of lists of tuples nodes, :class: \
-        'numpy.array' lags station[1] refers to nodes[1] and lags[1] \
-        nodes[1][1] refers to station[1] and lags[1][1] \
-        nodes[n][n] is a tuple of latitude, longitude and depth.
-    """
-    import sys
+    :returns: Stations
+    :rtype: list
+    :returns: List of lists of tuples of node locations
+    :rtype: list
+    :returns: Array of lags.
+    :rtype: :class:`numpy.ndarray`
 
+    .. note::
+        **Output:**
+
+        station[1] refers to nodes[1] and lags[1] nodes[1][1] refers
+        to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
+        longitude and depth.
+    """
     netdif = abs((lags.T -
                   lags.T[0]).sum(axis=1).reshape(1, len(nodes))) > threshold
     for i in range(len(nodes)):
@@ -207,12 +252,16 @@ def _rm_similarlags(stations, nodes, lags, threshold):
 
 
 def _rms(array):
-    """Calculate RMS of array.
-
-    .. note:: Just a lazy function using numpy functions.
     """
-    from numpy import sqrt, mean, square
-    return sqrt(mean(square(array)))
+    Calculate RMS of array.
+
+    :type array: numpy.ndarray
+    :param array: Array to calculate the RMS for.
+
+    :returns: RMS of array
+    :rtype: float
+    """
+    return np.sqrt(np.mean(np.square(array)))
 
 
 def _node_loop(stations, lags, stream, clip_level,
@@ -240,18 +289,13 @@ def _node_loop(stations, lags, stream, clip_level,
     :type plot: bool
     :param plot: Turn plotting on or off, defaults to False.
 
-    :return: (i, energy (np.ndarray))
-
-    .. note:: This is an internal function to ease parallel processing and \
-        should not be called directly.
+    :returns: index
+    :rtype: int
+    :returns: network response
+    :rtype: numpy.ndarray
     """
-    import warnings
-    import os
-
     if plot:
         import matplotlib.pyplot as plt
-        import obspy.Stream
-        import obspy.Trace
         fig, axes = plt.subplots(len(stream) + 1, 1, sharex=True)
         axes = axes.ravel()
 
@@ -299,12 +343,12 @@ def _node_loop(stations, lags, stream, clip_level,
             axes[l].plot(lagged_energy * 200, 'r')
             axes[l].plot(tr.data, 'k')
             # energy_tr=Trace(energy[l])
-            energy_tr = obspy.Trace(lagged_energy)
+            energy_tr = Trace(lagged_energy)
             # energy_tr=Trace(tr.data)
             energy_tr.stats.station = tr.stats.station
             energy_tr.stats.sampling_rate = tr.stats.sampling_rate
             if 'energy_stream' not in locals():
-                energy_stream = obspy.Stream(energy_tr)
+                energy_stream = Stream(energy_tr)
             else:
                 energy_stream += energy_tr
     energy = np.sum(energy, axis=0).reshape(1, len(lagged_energy))
@@ -312,7 +356,7 @@ def _node_loop(stations, lags, stream, clip_level,
     # Convert any nans to zeros
     energy = np.nan_to_num(energy)
     if plot:
-        energy_tr = obspy.Trace(energy[0])
+        energy_tr = Trace(energy[0])
         energy_tr.stats.station = 'Stack'
         energy_tr.stats.sampling_rate = tr.stats.sampling_rate
         energy_tr.stats.network = 'Energy'
@@ -322,12 +366,12 @@ def _node_loop(stations, lags, stream, clip_level,
         plt.show()
         # energy_stream.plot(equal_scale=False, size=(800,600))
     if not mem_issue:
-        return (i, energy)
+        return i, energy
     else:
         if not os.path.isdir('tmp' + str(instance)):
             os.makedirs('tmp' + str(instance))
         np.save('tmp' + str(instance) + '/node_' + str(i), energy)
-        return (i, str('tmp' + str(instance) + '/node_' + str(i)))
+        return i, str('tmp' + str(instance) + '/node_' + str(i))
 
 
 def _cum_net_resp(node_lis, instance=0):
@@ -337,15 +381,13 @@ def _cum_net_resp(node_lis, instance=0):
     :type node_lis: numpy.ndarray
     :param node_lis: List of nodes (ints) to read from
     :type instance: int
-    :param instance: Instance flag for parallelisation, defaults to 0.
+    :param instance: Instance flag for parallel workflows, defaults to 0.
 
-    :returns: numpy.ndarray cum_net_resp, list of indeces used
-
-    .. note:: This is an internal function to ease parallel processing and \
-        should not be called directly.
+    :returns: cumulative network response
+    :rtype: numpy.ndarray
+    :returns: node indeces for each sample of the cumulative network response.
+    :rtype: list
     """
-    import os
-
     cum_net_resp = np.load('tmp' + str(instance) +
                            '/node_' + str(node_lis[0]) + '.npy')[0]
     os.remove('tmp' + str(instance) + '/node_' + str(node_lis[0]) + '.npy')
@@ -382,19 +424,16 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz
     :type realstations: list
-    :param realstations: List of stations used to make the cumulative network \
-        response, will be reported in the DETECTION
+    :param realstations:
+        List of stations used to make the cumulative network response, will be
+        reported in the :class:`eqcorrscan.core.match_filter.DETECTION`
     :type length: float
     :param length: Maximum length of peak to look for in seconds
 
-    :return: detections as :class: DETECTION
-
-    .. note:: This is an internal function to ease parallel processing and \
-        should not be called directly.
+    :returns:
+        Detections as :class:`eqcorrscan.core.match_filter.DETECTION` objects.
+    :rtype: list
     """
-    from eqcorrscan.core.match_filter import DETECTION
-    from eqcorrscan.utils import findpeaks
-
     cum_net_resp = np.nan_to_num(cum_net_resp)  # Force no NaNs
     if np.isnan(cum_net_resp).any():
         raise ValueError("Nans present")
@@ -416,7 +455,8 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
         for peak in peaks:
             node = nodes[peak[1]]
             detections.append(DETECTION(template_name=str(node[0]) +
-                                        '_' + str(node[1]) + '_' + str(node[2]),
+                                        '_' + str(node[1]) + '_' +
+                                        str(node[2]),
                                         detect_time=peak[1] / samp_rate,
                                         no_chans=len(realstations),
                                         detect_val=peak[0], threshold=thresh,
@@ -434,9 +474,9 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
 def coherence(stream_in, stations=['all'], clip=False):
     """
     Determine the average network coherence of a given template or detection.
-    You will want your stream to contain only \
-    signal as noise will reduce the coherence (assuming it is incoherent \
-    random noise).
+
+    You will want your stream to contain only signal as noise will reduce the
+    coherence (assuming it is incoherent random noise).
 
     :type stream_in: obspy.core.stream.Stream
     :param stream_in: The stream of seismic data you want to calculate the \
@@ -444,12 +484,12 @@ def coherence(stream_in, stations=['all'], clip=False):
     :type stations: list
     :param stations: List of stations to use for coherence, default is all
     :type clip: tuple
-    :param clip: Default is to use all the data given - \
+    :param clip: Default is to use all the data given (`False`) - \
             tuple of start and end in seconds from start of trace
 
-    :return: float - coherence, int number of channels used
+    :return: tuple of coherence and number of channels used.
+    :rtype: tuple
     """
-    from eqcorrscan.core.match_filter import normxcorr2
     stream = stream_in.copy()  # Copy the data before we remove stations
     # First check that all channels in stream have data of the same length
     maxlen = np.max([len(tr.data) for tr in stream])
@@ -476,15 +516,15 @@ def coherence(stream_in, stations=['all'], clip=False):
     if clip:
         for tr in stream:
             tr.trim(tr.stats.starttime + clip[0], tr.stats.starttime + clip[1])
-    coherence = 0.0
+    _coherence = 0.0
     # Loop through channels and generate a correlation value for each
     # unique cross-channel pairing
     for i in range(len(stream)):
         for j in range(i + 1, len(stream)):
-            coherence += np.abs(normxcorr2(stream[i].data,
-                                           stream[j].data))[0][0]
-    coherence = 2 * coherence / (len(stream) * (len(stream) - 1))
-    return coherence, len(stream)
+            _coherence += np.abs(normxcorr2(stream[i].data,
+                                            stream[j].data))[0][0]
+    _coherence = 2 * _coherence / (len(stream) * (len(stream) - 1))
+    return _coherence, len(stream)
 
 
 def brightness(stations, nodes, lags, stream, threshold, thresh_type,
@@ -494,78 +534,87 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                plotsave=True, cores=1, debug=0):
     """
     Calculate the brightness function for a single day.
-    Written to calculate the brightness function for a single day of data, \
+
+    Written to calculate the brightness function for a single day of data,
     using moveouts from a 3D travel-time grid.
 
-    Note data in stream must be all of the same length and have the same
-    sampling rates.
+    .. Note::
+        Data in stream must be all of the same length and have the same
+        sampling rates, see :func:`eqcorrscan.utils.pre_processing.dayproc`
 
     :type stations: list
-    :param stations: List of station names from in the form where stations[i] \
-        refers to nodes[i][:] and lags[i][:]
+    :param stations:
+        List of station names from in the form where stations[i] refers to
+        nodes[i][:] and lags[i][:]
     :type nodes: list
-    :param nodes: List of node points where nodes[i] refers to stations[i] \
-        and nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is \
-        longitude in degrees, nodes[:][:][2] is depth in km.
+    :param nodes:
+        List of node points where nodes[i] refers to stations[i] and
+        nodes[:][:][0] is latitude in degrees, nodes[:][:][1] is longitude in
+        degrees, nodes[:][:][2] is depth in km.
     :type lags: numpy.ndarray
-    :param lags: Array of arrays where lags[i][:] refers to stations[i]. \
-        lags[i][j] should be the delay to the nodes[i][j] for stations[i] in \
-        seconds.
+    :param lags:
+        Array of arrays where lags[i][:] refers to stations[i]. lags[i][j]
+        should be the delay to the nodes[i][j] for stations[i] in seconds.
     :type stream: obspy.core.stream.Stream
     :param stream: Data through which to look for detections.
     :type threshold: float
-    :param threshold: Threshold value for detection of template within the \
-        brightness function
+    :param threshold:
+        Threshold value for detection of template within the brightness
+        function.
     :type thresh_type: str
-    :param thresh_type: Either MAD or abs where MAD is the Median Absolute \
-        Deviation and abs is an absolute brightness.
+    :param thresh_type:
+        Either MAD or abs where MAD is the Median Absolute Deviation and abs
+        is an absolute brightness.
     :type template_length: float
     :param template_length: Length of template to extract in seconds
     :type template_saveloc: str
     :param template_saveloc: Path of where to save the templates.
     :type coherence_thresh: tuple
-    :param coherence_thresh: Threshold for removing incoherent peaks in the \
-            network response, those below this will not be used as templates. \
-            Must be in the form of (a,b) where the coherence is given by: \
-            a-kchan/b where kchan is the number of channels used to compute \
-            the coherence
+    :param coherence_thresh:
+            Threshold for removing incoherent peaks in the network response,
+            those below this will not be used as templates. Must be in the
+            form of (a,b) where the coherence is given by: :math:`a-kchan/b`
+            where kchan is the number of channels used to compute the
+            coherence.
     :type coherence_stations: list
-    :param coherence_stations: List of stations to use in the coherence \
-            thresholding - defaults to 'all' which uses all the stations.
+    :param coherence_stations:
+        List of stations to use in the coherence thresholding - defaults to
+        `all` which uses all the stations.
     :type coherence_clip: tuple
-    :param coherence_clip: Start and end in seconds of data to window around, \
-            defaults to False, which uses all the data given.
+    :param coherence_clip:
+        Start and end in seconds of data to window around, defaults to False,
+        which uses all the data given.
+    :type gap: float
+    :param gap: Minimum inter-event time in seconds for detections.
+    :type clip_level: float
+    :param clip_level:
+        Multiplier applied to the mean deviation of the energy as an upper
+        limit, used to remove spikes (earthquakes, lightning, electrical
+        spikes) from the energy stack.
+    :type instance: int
+    :param instance:
+        Optional, used for tracking when using a distributed computing system.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
     :type plotsave: bool
-    :param plotsave: Save or show plots, if False will try and show the plots \
-            on screen - as this is designed for bulk use this is set to \
-            True to save any plots rather than show them if you create \
-            them - changes the backend of matplotlib, so if is set to \
-            False you will see NO PLOTS!
+    :param plotsave:
+        Save or show plots, if `False` will try and show the plots on screen -
+        as this is designed for bulk use this is set to `True` to save any
+        plots rather than show them if you create them - changes the backend
+        of matplotlib, so if is set to `False` you will see NO PLOTS!
     :type cores: int
     :param cores: Number of cores to use, defaults to 1.
-    :type clip_level: float
-    :param clip_level: Multiplier applied to the mean deviation of the energy \
-                    as an upper limit, used to remove spikes (earthquakes, \
-                    lightning, electrical spikes) from the energy stack.
-    :type gap: float
-    :param gap: Minimum inter-event time in seconds for detections
+    :type debug: int
+    :param debug: Debug level from 0-5, higher is more output.
 
-    :return: list of templates as :class: `obspy.core.stream.Stream` objects
+    :return: list of templates as :class:`obspy.core.stream.Stream` objects
+    :rtype: list
     """
-    from eqcorrscan.core.template_gen import _template_gen
     if plotsave:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         plt.ioff()
-    from multiprocessing import Pool, cpu_count
-    from copy import deepcopy
-    from obspy import read as obsread
-    from obspy import Stream
-    from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
-    from obspy.core.event import EventDescription, CreationInfo, Comment
     from eqcorrscan.utils import plotting
     # Check that we actually have the correct stations
     realstations = []
@@ -788,7 +837,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                            for detection in good_detections]
         if not plotsave:
             plotting.NR_plot(cum_net_trace[0:-1],
-                             obspy.Stream(cum_net_trace[-1]),
+                             Stream(cum_net_trace[-1]),
                              detections=good_detections,
                              size=(18.5, 10),
                              title='Network response')

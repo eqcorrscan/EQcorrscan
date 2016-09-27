@@ -85,7 +85,7 @@ class TestTutorialScripts(unittest.TestCase):
                 # The template
                 tr = template.select(station=stachan[0], channel=stachan[1])[0]
                 delay = tr.stats.starttime - \
-                        template.sort(['starttime'])[0].stats.starttime
+                    template.sort(['starttime'])[0].stats.starttime
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
                 # Check that ccs increases

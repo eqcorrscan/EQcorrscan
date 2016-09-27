@@ -1,7 +1,12 @@
 """
 Functions to generate pick-corrections for events detected by correlation.
 
+:copyright:
+    EQcorrscan developers.
 
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -114,28 +119,33 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     Only outputs picks for picks above min_cc.
 
     :type detection: obspy.core.stream.Stream
-    :param detection: Stream of data for the slave event detected using \
-        template.
+    :param detection:
+        Stream of data for the slave event detected using template.
     :type template: obspy.core.stream.Stream
     :param template: Stream of data as the template for the detection.
+    :type min_cc: float
+    :param min_cc: Minimum cross-correlation value to allow a pick to be made.
     :type detection_id: str
     :param detection_id: Detection ID to associate the event with.
     :type interpolate: bool
-    :param interpolate: Interpolate the correlation function to achieve \
-        sub-sample precision.
+    :param interpolate:
+        Interpolate the correlation function to achieve sub-sample precision.
     :type i: int
-    :param i: Used to track which process has occurred when running in \
-        parallel.
+    :param i:
+        Used to track which process has occurred when running in parallel.
     :type pre_lag_ccsum: float
-    :param pre_lag_ccsum: Cross-correlation sum before lag-calc, will check \
-        that the cross-correlation sum is increased by lag-calc (using all \
-        channels, ignoring min_cc)
+    :param pre_lag_ccsum:
+        Cross-correlation sum before lag-calc, will check that the
+        cross-correlation sum is increased by lag-calc (using all channels,
+        ignoring min_cc)
     :type detect_chans: int
-    :param detect_chans: Number of channels originally used in detections, \
-        must match the number used here to allow for cccsum checking.
+    :param detect_chans:
+        Number of channels originally used in detections, must match the number
+        used here to allow for cccsum checking.
 
-    :returns: Event object containing net, sta, chan information
-    :rtype: obspy.core.event.Event
+    :returns:
+        Event object containing network, station, channel and pick information.
+    :rtype: :class:`obspy.core.event.Event`
     """
     event = Event()
     s_stachans = {}
@@ -231,23 +241,25 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
     long as you have the RAM!
 
     :type detection_streams: list
-    :param detection_streams: List of all the detections for this template that
-        you want to compute the optimum pick for. Individual things in list
-        should be of obspy.core.stream.Stream type.
+    :param detection_streams:
+        List of all the detections for this template that you want to compute
+        the optimum pick for. Individual things in list should be of
+        :class:`obspy.core.stream.Stream` type.
     :type template: obspy.core.stream.Stream
     :param template: The original template used to detect the detections passed
     :type min_cc: float
     :param min_cc: Minimum cross-correlation value to be allowed for a pick.
     :type detections: list
-    :param detections: List of detections to associate events with an input \
-        detection.
+    :param detections:
+        List of detections to associate events with an input detection.
     :type interpolate: bool
-    :param interpolate: Interpolate the correlation function to achieve \
-        sub-sample precision.
+    :param interpolate:
+        Interpolate the correlation function to achieve sub-sample precision.
 
-    :returns: Catalog object containing Event objects for each detection
-              created by this template.
-    :rtype: obspy.core.event.Catalog
+    :returns:
+        Catalog object containing Event objects for each detection created by
+        this template.
+    :rtype: :class:`obspy.core.event.Catalog`
     """
     if not cores:
         num_cores = cpu_count()
@@ -291,12 +303,21 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     """
     Prepare data for lag_calc - reduce memory here.
 
-    :type detect_data: obspy.core.Stream
+    :type detect_data: obspy.core.stream.Stream
+    :param detect_data: Stream to extract detection streams from.
     :type detections: list
+    :param detections:
+        List of :class:`eqcorrscan.core.match_filter.DETECTION` to get
+        data for.
     :type zipped_templates: zip
+    :param zipped_templates: Zipped list of (template_name, template)
     :type delays: list
+    :param delays: List of lists of the delays for each template
     :type shift_len: float
+    :param shift_len: Shift length in seconds allowed for picking.
     :type plot: bool
+    :param plot:
+        Whether to plot the data extracted or not, used for debugging.
 
     :returns: List of detect_streams to be worked on
     :rtype: list
@@ -395,42 +416,52 @@ def lag_calc(detections, detect_data, template_names, templates,
 
     Overseer function to take a list of detection objects, cut the data for
     them to lengths of the same length of the template + shift_len on
-    either side. This will then write out SEISAN s-file or QuakeML for the
-    detections with pick times based on the lag-times found at the maximum
+    either side. This will output a :class:`obspy.core.event.Catalog` of
+    picked events. Pick times are based on the lag-times found at the maximum
     correlation, providing that correlation is above the min_cc.
 
     :type detections: list
-    :param detections: List of DETECTION objects
+    :param detections:
+        List of :class:`eqcorrscan.core.match_filter.DETECTION` objects.
     :type detect_data: obspy.core.stream.Stream
-    :param detect_data: All the data needed to cut from - can be a gappy Stream
+    :param detect_data:
+        All the data needed to cut from - can be a gappy Stream.
     :type template_names: list
-    :param template_names: List of the template names, used to help identify \
-        families of events. Must be in the same order as templates.
+    :param template_names:
+        List of the template names, used to help identify families of events.
+        Must be in the same order as templates.
     :type templates: list
-    :param templates: List of the templates, templates are of type: \
-        obspy.core.stream.Stream.
+    :param templates:
+        List of the templates, templates should be
+        :class:`obspy.core.stream.Stream` objects.
     :type shift_len: float
-    :param shift_len: Shift length allowed for the pick in seconds, will be
-        plus/minus this amount - default=0.2
+    :param shift_len:
+        Shift length allowed for the pick in seconds, will be plus/minus this
+        amount - default=0.2
     :type min_cc: float
-    :param min_cc: Minimum cross-correlation value to be considered a pick,
-        default=0.4
+    :param min_cc:
+        Minimum cross-correlation value to be considered a pick, default=0.4.
     :type cores: int
-    :param cores: Number of cores to use in parallel processing, defaults to \
-        one.
+    :param cores:
+        Number of cores to use in parallel processing, defaults to one.
     :type interpolate: bool
-    :param interpolate: Interpolate the correlation function to achieve \
-        sub-sample precision.
+    :param interpolate:
+        Interpolate the correlation function to achieve sub-sample precision.
+    :type plot: bool
+    :param plot:
+        To generate a plot for every detection or not, defaults to False
     :type parallel: bool
     :param parallel: Turn parallel processing on or off.
-    :type plot: bool
-    :param plot: To generate a plot for every detection or not, defaults to \
-        False.
+    :type debug: int
+    :param debug: Debug output level, 0-5 with 5 being the most output.
+    .
 
-    :returns: Catalog of events with picks.  No origin information is \
-        included, these events can then be written out via \
-        obspy.core.event functions, or to seisan Sfiles using Sfile_util \
-        and located.
+    :returns:
+        Catalog of events with picks.  No origin information is included.
+        These events can then be written out via
+        :func:`obspy.core.event.Catalog.write`, or to Nordic Sfiles using
+        :func:`eqcorrscan.utils.sfile_util.eventtosfile` and located
+        externally.
     :rtype: obspy.core.event.Catalog
 
     .. note:: Picks output in catalog are generated relative to the template \
@@ -442,6 +473,25 @@ def lag_calc(detections, detect_data, template_names, templates,
 
     .. warning:: Because of the above note, origin times will be consistently \
         shifted by the static pre_pick applied to the templates.
+
+    .. note::
+        Individual channel cross-correlations are stored as a
+        :class:`obspy.core.event.Comment` for each pick, and the summed
+        cross-correlation value resulting from these is stored as a
+        :class:`obspy.core.event.Comment` in the main
+        :class:`obspy.core.event.Event` object.
+
+    .. note::
+        The order of events is preserved (e.g. detections[n] == output[n]),
+        providing picks have been made for that event.  If no picks have
+        been made for an event, it will not be included in the output.
+        However, as each detection has an ID associated with it, these can
+        be mapped to the output resource_id for each Event in the output
+        Catalog. e.g.
+
+            detections[n].id == output[m].resource_id
+
+        if the output[m] is for the same event as detections[n].
     """
     if debug > 0:
         log.setLevel(logging.WARNING)
@@ -453,6 +503,10 @@ def lag_calc(detections, detect_data, template_names, templates,
         log.setLevel(0)
         ch.setLevel(0)
     log.addHandler(ch)
+    if debug > 2 and plot:
+        prep_plot = True
+    else:
+        prep_plot = False
     # First check that sample rates are equal for everything
     for tr in detect_data:
         if tr.stats.sampling_rate != detect_data[0].stats.sampling_rate:
@@ -490,7 +544,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                                        detections=template_detections,
                                        zipped_templates=zipped_templates,
                                        delays=delays, shift_len=shift_len,
-                                       plot=plot)
+                                       plot=prep_plot)
         detect_streams = [detect_stream[1] for detect_stream in detect_streams]
         if len(template_detections) > 0:
             template_cat = _day_loop(detection_streams=detect_streams,

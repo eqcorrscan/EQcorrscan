@@ -5,7 +5,7 @@ We recommend that you read Harris' detailed report on subspace detection \
 theory which can be found here: https://e-reports-ext.llnl.gov/pdf/335299.pdf
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -31,7 +31,6 @@ from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
 import matplotlib.pyplot as plt
 
 
-
 class Detector(object):
     """
     Class to serve as the base for subspace detections.
@@ -43,24 +42,22 @@ class Detector(object):
     :type multiplex: bool
     :param multiplex: Is this detector multiplexed.
     :type stachans: list
-    :param stachans: List of tuples of (station, channel) used in detector. \
+    :param stachans:
+        List of tuples of (station, channel) used in detector.
         If multiplexed, these must be in the order that multiplexing was done.
-    :type delays: list
-    :param delays: List of individual trace delays in the order of stachans, \
-        only used if multiplex=False.
     :type lowcut: float
     :param lowcut: Lowcut filter in Hz
     :type highcut: float
     :param highcut: Highcut filter in Hz
     :type filt_order: int
     :param filt_order: Number of corners for filtering
-    :type data: np.ndarray
+    :type data: numpy.ndarray
     :param data: The actual detector
-    :type u: np.ndarray
+    :type u: numpy.ndarray
     :param u: Full rank U matrix of left (input) singular vectors.
-    :type sigma: np.ndarray
+    :type sigma: numpy.ndarray
     :param sigma: Full rank vector of singular values.
-    :type v: np.ndarray
+    :type v: numpy.ndarray
     :param v: Full rank right (output) singular vectors.
     :type dimension: int
     :param dimension: Dimension of data.
@@ -132,9 +129,9 @@ class Detector(object):
         to select the desired dimensions.
 
         :type streams: list
-        :param streams: List of obspy.core.stream.Stream to be used to \
-            generate the subspace detector.  These should be pre-clustered \
-            and aligned.
+        :param streams:
+            List of :class:`obspy.core.stream.Stream` to be used to generate
+            the subspace detector.  These should be pre-clustered and aligned.
         :type lowcut: float
         :param lowcut: Lowcut in Hz, can be None to not apply filter
         :type highcut: float
@@ -144,38 +141,41 @@ class Detector(object):
         :type sampling_rate: float
         :param sampling_rate: Desired sampling rate in Hz
         :type multiplex: bool
-        :param multiplex: Whether to multiplex the data or not.  Data are \
-            multiplexed according to the method of Harris, see the multi \
-            function for details.
+        :param multiplex:
+            Whether to multiplex the data or not.  Data are multiplexed
+            according to the method of Harris, see the multi function for
+            details.
         :type name: str
         :param name: Name of the detector, used for book-keeping.
         :type align: bool
-        :param align: Whether to align the data or not - needs to be done \
-            at some point
+        :param align:
+            Whether to align the data or not - needs to be done at some point
         :type shift_len: float
         :param shift_len: Maximum shift allowed for alignment in seconds.
         :type reject: float
-        :param reject: Minimum correlation to include traces - only used if \
-            align=True.
+        :param reject:
+            Minimum correlation to include traces - only used if align=True.
         :type no_missed: bool
-        :param: no_missed: Reject streams with missed traces, defaults to \
-            True. A missing trace from lots of events will reduce the quality \
-            of the subspace detector if multiplexed.  Only used when multi \
-            is set to True.
+        :param no_missed:
+            Reject streams with missed traces, defaults to True. A missing
+            trace from lots of events will reduce the quality of the subspace
+            detector if multiplexed.  Only used when multi is set to True.
         :type plot: bool
         :param plot: Whether to plot the alignment stage or not.
 
-        .. note:: The detector will be normalized such that the data, before \
-            computing the singular-value decomposition, will have unit energy. \
-            e.g. We divide the amplitudes of the data by the L1 norm of the \
+        .. note::
+            The detector will be normalized such that the data, before
+            computing the singular-value decomposition, will have unit energy.
+            e.g. We divide the amplitudes of the data by the L1 norm of the
             data.
 
-        .. warning:: EQcorrscans alignment will attempt to align over the \
-            whole data window given.  For long (more than 2s) chunks of data \
-            this can give poor results and you might be better off using the \
-            eqcorrscan.stacking.align_traces function externally, focusing \
-            on a smaller window of data.  To do this you would align the data \
-            prior to running construct.
+        .. warning::
+            EQcorrscan's alignment will attempt to align over the whole data
+            window given.  For long (more than 2s) chunks of data this can give
+            poor results and you might be better off using the
+            :func:`eqcorrscan.utils.stacking.align_traces` function externally,
+            focusing on a smaller window of data.  To do this you would align
+            the data prior to running construct.
         """
         self.lowcut = lowcut
         self.highcut = highcut
@@ -241,49 +241,60 @@ class Detector(object):
         Detect within continuous data using the subspace method.
 
         :type st: obspy.core.stream.Stream
-        :param st: Un-processed stream to detect within using the subspace \
-            detector
+        :param st:
+            Un-processed stream to detect within using the subspace detector.
         :type threshold: float
         :param threshold: Threshold value for detections between 0-1
         :type trig_int: float
         :param trig_int: Minimum trigger interval in seconds.
         :type moveout: float
-        :param moveout: Maximum allowable moveout window for non-multiplexed,
-            network detection.  See note.
+        :param moveout:
+            Maximum allowable moveout window for non-multiplexed, network
+            detection.  See note.
         :type min_trig: int
-        :param min_trig: Minimum number of stations exceeding threshold for \
-            non-multiplexed, network detection. See note.
+        :param min_trig:
+            Minimum number of stations exceeding threshold for non-multiplexed,
+            network detection. See note.
         :type process: bool
-        :param process: Whether or not to process the stream according to the \
-            parameters defined by the detector.  Default is to process the \
-            data (True).
+        :param process:
+            Whether or not to process the stream according to the parameters
+            defined by the detector.  Default is True, which will process the
+            data.
         :type extract_detections: bool
-        :param extract_detections: Whether to extract waveforms for each \
-            detection or not, if true will return detections and streams.
+        :param extract_detections:
+            Whether to extract waveforms for each detection or not, if True
+            will return detections and streams.
         :type debug: int
         :param debug: Debug output level from 0-5.
 
-        :return: list of detections
-        :rtype: list of eqcorrscan.core.match_filter.DETECTION
+        :return: list of :class:`eqcorrscan.core.match_filter.DETECTION`
+        :rtype: list
 
-        .. note:: If running in bulk with detectors that all have the same \
-            parameters then you can pre-process the data and set process to \
+        .. warning::
+            Subspace is currently in beta, see note in the subspace tutorial
+            for information.
+
+        .. note::
+            If running in bulk with detectors that all have the same
+            parameters then you can pre-process the data and set process to
             False.  This will speed up this detect function dramatically.
 
-        .. warning:: If the detector and stream are multiplexed then they must \
-            contain the same channels and multiplexed in the same order. This \
-            is handled internally when process=True, but if running in bulk \
+        .. warning::
+            If the detector and stream are multiplexed then they must
+            contain the same channels and multiplexed in the same order. This
+            is handled internally when process=True, but if running in bulk
             you must take care.
 
-        .. note:: Non-multiplexed, network detection.  When the detector is \
-            not multiplexed, but there are multiple channels within the \
-            detector, we do not stack the single-channel detection statistics \
-            because we do not have a one-size-fits-all solution for computing \
-            delays for a subspace detector (if you want to implement one, then \
-            please contribute it!).  Therefore, these parameters provide a \
-            means for declaring a network coincidence trigger using \
-            single-channel detection statistics, in a similar fashion to the \
-            commonly used network-coincidence trigger with energy detection \
+        .. note::
+            Non-multiplexed, network detection.  When the detector is
+            not multiplexed, but there are multiple channels within the
+            detector, we do not stack the single-channel detection statistics
+            because we do not have a one-size-fits-all solution for computing
+            delays for a subspace detector (if you want to implement one, then
+            please contribute it!).  Therefore, these parameters provide a
+            means for declaring a network coincidence trigger using
+            single-channel detection statistics, in a similar fashion to the
+            commonly used network-coincidence trigger with energy detection
             statistics.
         """
         return _detect(detector=self, st=st, threshold=threshold,
@@ -306,7 +317,8 @@ class Detector(object):
         data_group = f.create_group(name="data")
         for i, data in enumerate(self.data):
             dset = data_group.create_dataset(name="data_" + str(i),
-                                             shape=data.shape, dtype=data.dtype)
+                                             shape=data.shape,
+                                             dtype=data.dtype)
             dset[...] = data
         data_group.attrs['length'] = len(self.data)
         data_group.attrs['name'] = self.name.encode("ascii", "ignore")
@@ -394,7 +406,7 @@ class Detector(object):
         :type stachans: list
         :param stachans: list of tuples of station, channel pairs to plot.
         :type stachans: list
-        :param stachans: List of tuples of (station, channel) to use.  Can set \
+        :param stachans: List of tuples of (station, channel) to use.  Can set\
             to 'all' to use all the station-channel pairs available. If \
             detector is multiplexed, will just plot that.
         :type size: tuple
@@ -550,7 +562,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                                                       detector.sampling_rate)
             rid = ResourceIdentifier(id=detector.name + '_' +
                                      str(detecttime),
-                                         prefix='smi:local')
+                                     prefix='smi:local')
             ev = Event(resource_id=rid)
             cr_i = CreationInfo(author='EQcorrscan',
                                 creation_time=UTCDateTime())
@@ -694,7 +706,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
     output_streams = []
     for processed_stream in processed_streams:
         if len(processed_stream) == 0:
-            # If we have removed all of the traces from the stream then onwards!
+            # If we have removed all of the traces then onwards!
             continue
         # Need to order the stream according to input_stachans
         _st = Stream()
@@ -740,7 +752,7 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
         tr = pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
                                     filt_order=filt_order,
                                     samp_rate=sampling_rate, debug=debug,
-                                    seisan=False)
+                                    seisan_chan_names=False)
     else:
         msg = ('Multiple channels for ' + stachan[0] + '.' +
                stachan[1] + ' in a single design stream.')
@@ -808,9 +820,9 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
     :type reject: float
     :param reject: Minimum correlation for traces, only used if align=True.
     :type multiplex: bool
-    :param multiplex: If you are going to multiplex the data, then there has to be \
-        data for all channels, so we will pad with zeros, otherwise there is \
-        no need.
+    :param multiplex: If you are going to multiplex the data, then there has \
+        to be data for all channels, so we will pad with zeros, otherwise \
+        there is no need.
     :type no_missed: bool
     :param: no_missed: Reject streams with missed traces, defaults to True. \
         A missing trace from lots of events will reduce the quality of the \
@@ -901,32 +913,38 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
     Conduct subspace detection with chosen detectors.
 
     :type detectors: list
-    :param detectors: list of eqcorrscan.core.subspace.Detector to be used for \
-        detection
+    :param detectors:
+        list of :class:`eqcorrscan.core.subspace.Detector` to be used
+        for detection.
     :type stream: obspy.core.stream.Stream
     :param stream: Stream to detect within.
     :type threshold: float
-    :param threshold: Threshold between 0 and 1 for detection, see \
-        Detector.detect.
+    :param threshold:
+        Threshold between 0 and 1 for detection, see :func:`Detector.detect`
     :type trig_int: float
     :param trig_int: Minimum trigger interval in seconds.
     :type moveout: float
-    :param moveout: Maximum allowable moveout window for non-multiplexed,
-        network detection.  See note.
+    :param moveout:
+        Maximum allowable moveout window for non-multiplexed, network
+        detection.  See note.
     :type min_trig: int
-    :param min_trig: Minimum number of stations exceeding threshold for \
-        non-multiplexed, network detection. See note in Detector.detect.
+    :param min_trig:
+        Minimum number of stations exceeding threshold for non-multiplexed,
+        network detection. See note in :func:`Detector.detect`.
     :type parallel: bool
     :param parallel: Whether to run detectors in parallel in groups.
     :type num_cores: int
-    :param num_cores: How many cpu cores to use if parallel==True. If set to \
-        None (default), will use all avaiable cores.
+    :param num_cores:
+        How many cpu cores to use if parallel==True. If set to None (default),
+        will use all available cores.
 
     :rtype: list
-    :return: List of eqcorrscan.core.match_filter.DETECTION detections.
+    :return:
+        List of :class:`eqcorrscan.core.match_filter.DETECTION` detections.
 
-    .. Note:: This will loop through your detectors using their detect method. \
-        If the detectors are multiplexed it will run groups of detectors with \
+    .. Note::
+        This will loop through your detectors using their detect method.
+        If the detectors are multiplexed it will run groups of detectors with
         the same channels at the same time.
     """
     from multiprocessing import Pool, cpu_count
@@ -984,5 +1002,3 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
                 else:
                     detections.append(d)
     return detections
-
-

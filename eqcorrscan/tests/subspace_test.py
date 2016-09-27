@@ -5,19 +5,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from eqcorrscan.core import subspace, subspace_statistic
-from eqcorrscan.core.subspace import _subspace_process
+
+
 import numpy as np
 import unittest
-from obspy import Stream
-import obspy
-if int(obspy.__version__.split('.')[0]) >= 1:
-    from obspy.clients.fdsn import Client
-else:
-    from obspy.fdsn import Client
-from obspy import read
 import os
 import copy
+
+from obspy import Stream, read
+
+from eqcorrscan.core import subspace, subspace_statistic
 
 
 class SimpleSubspaceMethods(unittest.TestCase):
@@ -121,11 +118,12 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         np.diag(np.ones(len(identity),
                                                         dtype=np.float16))))
         comparison_detector = \
-            subspace.read_detector(os.path.join(os.path.
-                                                abspath(os.path.
-                                                        dirname(__file__)),
-                                                'test_data', 'subspace',
-                                                'master_detector_multi_unaligned.h5'))
+            subspace.read_detector(os.path.
+                                   join(os.path.
+                                        abspath(os.path.
+                                                dirname(__file__)),
+                                        'test_data', 'subspace',
+                                        'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             print(key)
@@ -159,11 +157,12 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         np.diag(np.ones(len(identity),
                                                         dtype=np.float16))))
         comparison_detector = \
-            subspace.read_detector(os.path.join(os.path.
-                                                abspath(os.path.
-                                                        dirname(__file__)),
-                                                'test_data', 'subspace',
-                                                'master_detector_unaligned.h5'))
+            subspace.read_detector(os.path.
+                                   join(os.path.
+                                        abspath(os.path.
+                                                dirname(__file__)),
+                                        'test_data', 'subspace',
+                                        'master_detector_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             print(key)
@@ -198,11 +197,12 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         np.diag(np.ones(len(identity),
                                                         dtype=np.float16))))
         comparison_detector = \
-            subspace.read_detector(os.path.join(os.path.
-                                                abspath(os.path.
-                                                        dirname(__file__)),
-                                                'test_data', 'subspace',
-                                                'master_detector_multi.h5'))
+            subspace.read_detector(os.path.
+                                   join(os.path.
+                                        abspath(os.path.
+                                                dirname(__file__)),
+                                        'test_data', 'subspace',
+                                        'master_detector_multi.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             print(key)
@@ -279,8 +279,9 @@ class SubspaceTestingMethods(unittest.TestCase):
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
                 self.assertTrue(np.allclose(identity,
-                                            np.diag(np.ones(len(identity),
-                                                            dtype=np.float16))))
+                                            np.diag(np.
+                                                    ones(len(identity),
+                                                         dtype=np.float16))))
         # Test a non-multiplexed version
         detector = subspace.Detector()
         templates = copy.deepcopy(self.templates)
@@ -293,8 +294,9 @@ class SubspaceTestingMethods(unittest.TestCase):
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
                 self.assertTrue(np.allclose(identity,
-                                            np.diag(np.ones(len(identity),
-                                                            dtype=np.float16))))
+                                            np.diag(np.
+                                                    ones(len(identity),
+                                                         dtype=np.float16))))
 
     def test_detect(self):
         """Test standard detection with known result."""
@@ -359,18 +361,10 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector2 = subspace.Detector()
         with self.assertRaises(IndexError):
             detector2.construct(streams=templates[0:10], lowcut=2, highcut=9,
-                                filt_order=4, sampling_rate=20, multiplex=False,
-                                name=str('Tester'), align=True,
-                                shift_len=6, reject=0.2).partition(9)
-
-    # def test_subspace_process(self):
-    #     """Test the processing against a fixed result."""
-    #     self.assertEqual("This isn't written yet", "Nup")
-    #
-    # def test_subspace_svd(self):
-    #     """Test the svd with a known outcome - attempting to debug why \
-    #     detectors are different on different systems."""
-    #     self.assertEqual("This isn't written yet", "Nup")
+                                filt_order=4, sampling_rate=20,
+                                multiplex=False, name=str('Tester'),
+                                align=True, shift_len=6,
+                                reject=0.2).partition(9)
 
 
 def get_test_data():

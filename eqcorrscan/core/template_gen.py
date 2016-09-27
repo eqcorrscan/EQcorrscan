@@ -1,26 +1,30 @@
 #!/usr/bin/python
-r"""Functions to generate template waveforms and information to go with them \
-for the application of cross-correlation of seismic data for the detection of \
+"""
+Functions to generate template waveforms and information to go with them
+for the application of cross-correlation of seismic data for the detection of
 repeating events.
 
-.. note:: By convention templates are generated with P-phases on the \
-    vertical channel and S-phases on the horizontal channels, normal \
-    seismograph naming conventions are assumed, where Z denotes vertical \
-    and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
-    or not.  To this end we will **only** use Z channels if they have a \
-    P-pick, and will use one or other horizontal channels **only** if \
+.. note::
+    By convention templates are generated with P-phases on the
+    vertical channel and S-phases on the horizontal channels, normal
+    seismograph naming conventions are assumed, where Z denotes vertical
+    and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
+    or not.  To this end we will **only** use Z channels if they have a
+    P-pick, and will use one or other horizontal channels **only** if
     there is an S-pick on it.
 
-.. warning:: If there is no phase_hint included in picks, and swin=all, \
-    all channels with picks will be used.
+.. warning::
+    If there is no phase_hint included in picks, and swin=all, all channels
+    with picks will be used.
 
-.. note:: All functions use obspy filters, which are implemented such that \
-    if both highcut and lowcut are set a bandpass filter will be used, \
-    but of highcut is not set (None) then a highpass filter will be used and \
+.. note::
+    All functions use obspy filters, which are implemented such that
+    if both highcut and lowcut are set a bandpass filter will be used,
+    but of highcut is not set (None) then a highpass filter will be used and
     if only the highcut is set then a lowpass filter will be used.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -30,7 +34,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import warnings
+import numpy as np
+import copy
+
+from obspy import Stream
 
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
@@ -60,25 +69,26 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type filt_order: int
     :param filt_order: Filter level, if set to None will look in \
             template defaults file
-    :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type length: float
     :param length: Extract length in seconds, if None will look in template \
             defaults file.
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type prepick: float
     :param prepick: Length to extract prior to the pick in seconds.
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Debug level, higher number=more output.
-    :type plot: bool
-    :param plot: Turns template plotting on or off.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Turns template plotting on or off.
+    :type debug: int
+    :param debug: Debug level, higher number=more output.
 
-    :returns: obspy.core.stream.Stream Newly cut template
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
 
     .. note:: This functionality is not supported for obspy versions below \
         1.0.0 as references times are not read in by SACIO, which are needed \
@@ -130,6 +140,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                prepick, all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiplexed template from a Nordic (Seisan) s-file.
+
     Function to read in picks from sfile then generate the template from \
     the picks within this and the wavefile found in the pick file.
 
@@ -149,26 +160,26 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type filt_order: int
     :param filt_order: Filter level, if set to None will look in \
             template defaults file
-    :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type length: float
     :param length: Extract length in seconds, if None will look in template \
             defaults file.
+    :type swin: str
+    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type prepick: float
     :param prepick: Length to extract prior to the pick in seconds.
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Debug level, higher number=more output.
-    :type plot: bool
-    :param plot: Turns template plotting on or off.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Turns template plotting on or off.
+    :type debug: int
+    :param debug: Debug level, higher number=more output.
 
-
-    :returns: obspy.core.stream.Stream Newly cut template
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
 
     .. warning:: This will use whatever data is pointed to in the s-file, if \
         this is not the coninuous data, we recommend using other functions. \
@@ -313,7 +324,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :param lowcut: Low cut (Hz), if set to None will look in template \
             defaults file
     :type highcut: float
-    :param lowcut: High cut (Hz), if set to None will look in template \
+    :param highcut: High cut (Hz), if set to None will look in template \
             defaults file
     :type samp_rate: float
     :param samp_rate: New sampling rate in Hz, if set to None will look in \
@@ -331,15 +342,16 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Level of debugging output, higher=more
-    :type plot: bool
-    :param plot: Turns template plotting on or off.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Turns template plotting on or off.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
 
-    :returns: obspy.Stream Newly cut template
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
     """
     # Perform some checks first
     import os
@@ -433,7 +445,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :type meta_file: str
     :param meta_file: File containing pick information, can contain \
         multiple events.  File must be formatted in a way readable by \
-        obspy.core.event.read_events.
+        :func:`obspy.core.event.read_events`.
     :type st: obspy.core.stream.Stream
     :param st: Stream containing waveform data for template (hopefully). \
         Note that this should be the same length of stream as you will use \
@@ -443,7 +455,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :param lowcut: Low cut (Hz), if set to None will look in template \
             defaults file
     :type highcut: float
-    :param lowcut: High cut (Hz), if set to None will look in template \
+    :param highcut: High cut (Hz), if set to None will look in template \
             defaults file
     :type samp_rate: float
     :param samp_rate: New sampling rate in Hz, if set to None will look in \
@@ -461,15 +473,16 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Level of debugging output, higher=more
-    :type plot: bool
-    :param plot: Display template plots or not
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Display template plots or not
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
 
-    :returns: list of obspy.Stream Newly cut templates
+    :returns: List of templates of :class:`obspy.core.stream.Stream`
+    :rtype: list
 
     .. warning:: We suggest giving this function a full day of data, to \
         ensure templates are generated with **exactly** the same processing \
@@ -508,7 +521,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     # Process waveform data
     st.merge(fill_value='interpolate')
     # Work out if the data are daylong or not...
-    data_len = max([len(tr.data)/tr.stats.sampling_rate for tr in st])
+    data_len = max([len(tr.data) / tr.stats.sampling_rate for tr in st])
     if 80000 < data_len < 90000:
         daylong = True
     else:
@@ -580,6 +593,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  all_horiz=False, delayed=True, debug=0, plot=False):
     """
     Generate multiplexed template from SeisHub database.
+
     Function to generate templates from a SeisHub database. Must be given \
     an obspy.Catalog class and the SeisHub url as input. The function returns \
     a list of obspy.Stream classes containting steams for each desired \
@@ -617,19 +631,25 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Level of debugging output, higher=more
-    :type plot: bool
-    :param plot: Plot templates or not.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Plot templates or not.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
 
-    :returns: obspy.core.stream.Stream Newly cut template
+    :returns: List of templates of :class:`obspy.core.stream.Stream``.
+    :rtype: list
 
-    .. note:: process_len should be set to the same length as used when \
-        computing detections using match_filter.match_filter, e.g. if you read \
+    .. note::
+        process_len should be set to the same length as used when computing
+        detections using match_filter.match_filter, e.g. if you read
         in day-long data fro match_filter, process_len should be 86400.
+
+    .. warning::
+        Not tested in continuous integration (due to lack of seishub client),
+        let us know of any failures.
     """
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -693,7 +713,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
             raise IOError('No waveforms found')
         if debug > 0:
             st.plot()
-        print('Pre-processing data for event: '+str(event.resource_id))
+        print('Pre-processing data for event: %s' % event.resource_id)
         st.merge(fill_value='interpolate')
         # clients download chunks, we need to assert that the data are
         # the desired length
@@ -719,6 +739,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiplexed template from FDSN client.
+
     Function to generate templates from an FDSN client. Must be given \
     an obspy.Catalog class and the client_id as input. The function returns \
     a list of obspy.Stream classes containing steams for each desired \
@@ -728,12 +749,12 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :param catalog: Catalog class containing desired template events
     :type client_id: str
     :param client_id: Name of the client, either url, or Obspy \
-        mappable.
+        mappable (see the :mod:`obspy.clients.fdsn` documentation).
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will look in template\
             defaults file
     :type highcut: float
-    :param lowcut: High cut (Hz), if set to None will look in template\
+    :param highcut: High cut (Hz), if set to None will look in template\
             defaults file
     :type samp_rate: float
     :param samp_rate: New sampling rate in Hz, if set to None will look in\
@@ -757,18 +778,20 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
-    :type debug: int
-    :param debug: Level of debugging output, higher=more
-    :type plot: bool
-    :param plot: Plot templates or not.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
+    :type plot: bool
+    :param plot: Plot templates or not.
+    :type debug: int
+    :param debug: Level of debugging output, higher=more
 
-    :returns: obspy.core.stream.Stream Newly cut template
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: process_len should be set to the same length as used when \
-        computing detections using match_filter.match_filter, e.g. if you read \
+    .. note::
+        process_len should be set to the same length as used when computing
+        detections using match_filter.match_filter, e.g. if you read
         in day-long data for match_filter, process_len should be 86400.
 
     .. rubric:: Example
@@ -782,8 +805,8 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     >>> from eqcorrscan.core.template_gen import from_client
     >>> client = Client('NCEDC')
     >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
-    >>> # We are only taking two picks for this example to speed up the example,
-    >>> # note that you don't have to!
+    >>> # We are only taking two picks for this example to speed up the
+    >>> # example, note that you don't have to!
     >>> catalog[0].picks = catalog[0].picks[0:2]
     >>> templates = from_client(catalog=catalog, client_id='NCEDC',
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
@@ -894,6 +917,7 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
                        all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Generate multiple templates from one stream of data.
+
     Thin wrapper around _template_gen to generate multiple templates from \
     one stream of continuous data.
 
@@ -912,15 +936,16 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: To plot the template or not, default is True
     :type debug: int
     :param debug: Debug output level from 0-5.
-    :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
 
-    :returns: list of :class: obspy.core.Stream newly cut templates
+    :returns: list of :class:`obspy.core.stream.Stream` newly cut templates
+    :rtype: list
 
     .. note:: By convention templates are generated with P-phases on the \
         vertical channel and S-phases on the horizontal channels, normal \
@@ -978,9 +1003,10 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                  all_horiz=False, delayed=True, plot=False, debug=0):
     """
     Master function to generate a multiplexed template for a single event.
-    Function to generate a cut template in the obspy \
-    Stream class from a given set of picks and data, also in an obspy stream \
-    class.  Should be given pre-processed data (downsampled and filtered).
+
+    Function to generate a cut template as :class:`obspy.core.stream.Stream`
+    from a given set of picks and data.  Should be given pre-processed
+    data (downsampled and filtered).
 
     :type picks: list
     :param picks: Picks to extract data around, where each pick in the \
@@ -997,15 +1023,16 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
+    :type delayed: bool
+    :param delayed: If True, each channel will begin relative to it's own \
+        pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: To plot the template or not, default is True
     :type debug: int
     :param debug: Debug output level from 0-5.
-    :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
 
-    :returns: obspy.core.stream.Stream Newly cut template.
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
 
     .. note:: By convention templates are generated with P-phases on the \
         vertical channel and S-phases on the horizontal channels, normal \
@@ -1020,11 +1047,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     """
     from eqcorrscan.utils.plotting import pretty_template_plot as\
         tplot
-    from obspy import Stream
-    import warnings
-    import numpy as np
-    import copy
-
     stations = []
     channels = []
     st_stachans = []
@@ -1095,11 +1117,11 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     event_start_time = min([pick.time for pick in picks_copy])
     event_start_time -= prepick
     # Cut the data
+    st1 = Stream()
     for tr in st:
-        if 'starttime' in locals():
-            del starttime
-        if swin == 'all':
-            for pick in picks_copy:
+        for pick in picks_copy:
+            starttime = None
+            if swin == 'all':
                 if not pick.phase_hint:
                     msg = 'Pick for ' + pick.waveform_id.station_code + '.' +\
                         pick.waveform_id.channel_code + ' has no phase ' +\
@@ -1112,56 +1134,48 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                             tr.stats.channel:
                         starttime = pick.time - prepick
                 else:
-                    # If there is phase information then we should use our
-                    # convention.
                     if pick.waveform_id.station_code == tr.stats.station and \
                             pick.waveform_id.channel_code[0] + \
                             pick.waveform_id.channel_code[-1] ==\
-                            tr.stats.channel \
-                            and 'P' in pick.phase_hint.upper():
-                        starttime = pick.time - prepick
-                    elif pick.waveform_id.station_code == tr.stats.station and\
-                            tr.stats.channel[-1] in ['1', '2', 'N',
-                                                     'E', 'R', 'T'] and\
-                            'S' in pick.phase_hint.upper() and\
-                            all_horiz:
-                        starttime = pick.time - prepick
-                    elif pick.waveform_id.station_code == tr.stats.station and\
-                            pick.waveform_id.channel_code[0] + \
-                            pick.waveform_id.channel_code[-1] == \
                             tr.stats.channel:
                         starttime = pick.time - prepick
-        else:
-            for pick in picks_copy:
+                    # Cope with taking all the horizontals for S-picks.
+                    elif all_horiz and pick.waveform_id.station_code ==\
+                            tr.stats.station:
+                        if tr.stats.channel[-1] not in ['Z', 'U']\
+                                and pick.phase_hint == 'S':
+                            starttime = pick.time - prepick
+            else:
                 if pick.waveform_id.station_code == tr.stats.station and\
                         swin in pick.phase_hint.upper():
                     starttime = pick.time - prepick
-        if 'starttime' in locals():
-            if debug > 0:
-                print("Cutting " + tr.stats.station + '.' + tr.stats.channel)
-            if not delayed:
-                starttime = event_start_time
-            tr.trim(starttime=starttime, endtime=starttime + length,
-                    nearest_sample=False)
-            if debug > 0:
-                print('Cut starttime = ' + str(tr.stats.starttime))
-                print('Cut endtime = ' + str(tr.stats.endtime))
-            if 'st1' not in locals():
-                st1 = Stream(tr)
-            else:
-                st1 += tr
-        elif debug > 0:
-            print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
-        # Ensure that the template is the correct length
-        if len(tr.data) == (tr.stats.sampling_rate * length) + 1:
-            tr.data = tr.data[0:-1]
+            if starttime is not None:
+                if debug > 0:
+                    print("Cutting " + tr.stats.station + '.' +
+                          tr.stats.channel)
+                if not delayed:
+                    starttime = event_start_time
+                tr_cut = tr.copy().trim(starttime=starttime,
+                                        endtime=starttime + length,
+                                        nearest_sample=False)
+                # Ensure that the template is the correct length
+                if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
+                                        length) + 1:
+                    tr_cut.data = tr_cut.data[0:-1]
+                if debug > 0:
+                    print('Cut starttime = ' + str(tr_cut.stats.starttime))
+                    print('Cut endtime = ' + str(tr_cut.stats.endtime))
+                st1 += tr_cut
+            elif debug > 0:
+                print('No pick for ' + tr.stats.station + '.' +
+                      tr.stats.channel)
     if plot:
         background = stplot.trim(st1.sort(['starttime'])[0].stats.starttime -
                                  10,
                                  st1.sort(['starttime'])[-1].stats.endtime +
                                  10)
         tplot(st1, background=background,
-              title='Template for '+str(st1[0].stats.starttime),
+              title='Template for ' + str(st1[0].stats.starttime),
               picks=picks_copy)
         del stplot
     del st
@@ -1174,6 +1188,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
                        lowcut=None, highcut=None, filt_order=3):
     """
     Extract a multiplexed template from a stack of detections.
+
     Function to extract a new template from a stack of previous detections.
     Requires the stack, the template used to make the detections for the \
     stack, and we need to know if the stack has been pre-processed.
@@ -1215,7 +1230,8 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     :param filt_order: If pre_processed=False then this is required, filter \
         order, defaults to False
 
-    :returns: obspy.core.stream.Stream Newly cut template
+    :returns: Newly cut template.
+    :rtype: :class:`obspy.core.stream.Stream`
     """
     from eqcorrscan.utils import pre_processing
     import warnings

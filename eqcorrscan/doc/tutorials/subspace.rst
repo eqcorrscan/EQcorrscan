@@ -13,6 +13,14 @@ calculate the detection statistics.  We do this to make use of numpy's vectorize
 calculations, while taking advantage of the speed-ups afforded by compiling
 the sliding window loop.
 
+WARNING
+-------
+
+Subspace in EQcorrscan is in **beta**, you must check your results match what
+you expect - if you find errors please report them.  Although our test-cases run
+correctly, changes in data quality may affect the routines in ways we have not
+accounted for.
+
 Important
 ---------
 

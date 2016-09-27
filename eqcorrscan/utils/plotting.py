@@ -2,7 +2,7 @@
 Utility code for most of the plots used as part of the EQcorrscan package.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -36,10 +36,11 @@ def _check_save_args(save, savefile):
 
 
 def chunk_data(tr, samp_rate, state='mean'):
-    r"""Downsample data for plotting.
+    """
+    Downsample data for plotting.
 
-    Computes the maximum of data within chunks, useful for plotting waveforms \
-    or cccsums, large datasets that would otherwise exceed the complexity \
+    Computes the maximum of data within chunks, useful for plotting waveforms
+    or cccsums, large datasets that would otherwise exceed the complexity
     allowed, and overflow.
 
     :type tr: obspy.core.trace.Trace
@@ -47,11 +48,12 @@ def chunk_data(tr, samp_rate, state='mean'):
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz
     :type state: str
-    :param state: Either 'Min', 'Max', 'Mean' or 'Maxabs' to return one of \
-        these for the chunks. Maxabs will return the largest (positive or \
-        negative) for that chunk.
+    :param state:
+        Either 'Min', 'Max', 'Mean' or 'Maxabs' to return one of these for the
+        chunks. Maxabs will return the largest (positive or negative) for
+        that chunk.
 
-    :returns: :class: obspy.Trace
+    :returns: :class:`obspy.core.trace.Trace`
     """
     trout = tr.copy()  # Don't do it inplace on data
     x = np.arange(len(tr.data))
@@ -102,6 +104,12 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     :param cc: Cross-correlation at shift
     :type cc_vec: numpy.ndarray
     :param cc_vec: Cross-correlation vector.
+    :type save: bool
+    :param save: Whether to save the plot or not.
+    :type savefile: str
+    :param savefile: File name to save to
+
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -141,7 +149,8 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
                 savefile=None):
-    r"""Plot a day-long seismogram, correlogram and histogram.
+    """
+    Plot a seismogram, correlogram and histogram.
 
     :type cccsum: numpy.ndarray
     :param cccsum: Array of the cross-channel cross-correlation sum
@@ -157,7 +166,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     :type savefile: str
     :param savefile: Path to save figure to, only required if save=True
 
-    :returns: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -222,7 +231,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
                savefile=None):
-    r"""Plot peaks to check that the peak finding routine is running correctly.
+    """
+    Plot peaks to check that the peak finding routine is running correctly.
 
     Used in debugging for the EQcorrscan module.
 
@@ -239,7 +249,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     :type savefile: str
     :param savefile: Path to save to, only used if save=True
 
-    :returns: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -295,11 +305,12 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 def cumulative_detections(dates=None, template_names=None, detections=None,
                           plot_grouped=False, show=True, plot_legend=True,
                           save=False, savefile=None):
-    r"""Plot cumulative detections in time.
+    """
+    Plot cumulative detections in time.
 
-    Simple plotting function to take a list of datetime objects and plot \
-    a cumulative detections list.  Can take dates as a list of lists and will \
-    plot each list separately, e.g. if you have dates from more than one \
+    Simple plotting function to take a list of datetime objects and plot
+    a cumulative detections list.  Can take dates as a list of lists and will
+    plot each list separately, e.g. if you have dates from more than one
     template it will overlay them in different colours.
 
     :type dates: list
@@ -307,7 +318,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type detections: list
-    :param detections: List of eqcorrscan.core.match_filter.DETECTION
+    :param detections: List of :class:`eqcorrscan.core.match_filter.DETECTION`
     :type plot_grouped: bool
     :param plot_grouped: Plot detections for each template individually, or \
         group them all together - set to False (plot template detections \
@@ -322,10 +333,12 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type savefile: str
     :param savefile: String to save to, required is save=True
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
-    .. note:: Can either take lists of DETECTION objects directly, or two \
-        lists of dates and template names - either/or, not both.
+    .. note::
+        Can either take lists of
+        :class:`eqcorrscan.core.match_filter.DETECTION` objects directly, or
+        two lists of dates and template names - either/or, not both.
 
     .. rubric:: Example
 
@@ -388,7 +401,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     # This is an ugly way of looping through colours and linestyles, it would
     # be better with itertools functions...
     fig, ax1 = plt.subplots()
-    min_date = min([min(_dates) for _dates in dates])
+    min_date = min([min(_d) for _d in dates])
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
@@ -448,7 +461,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     ax1.xaxis.set_major_formatter(hrFMT)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
-    ax1.set_ylim([0, max([len(_dates) for _dates in dates])])
+    ax1.set_ylim([0, max([len(_d) for _d in dates])])
     plt.setp(labels, rotation=15)
     if plot_legend:
         ax1.legend(loc=2, prop={'size': 8}, ncol=2)
@@ -472,7 +485,7 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     :type savefile: str
     :param savefile: required if save=True, path to save figure to.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -518,15 +531,19 @@ def multi_event_singlechan(streams, catalog, station, channel,
     """
     Plot data from a single channel for multiple events.
 
-    Data will be aligned by their pick-time given in the \
-    picks.  Requires an individual stream for each event you want to plot,
-    events are stored in the catalog object, and there must be picks present
-    for the streams you wish to plot.  Events will be aligned if `realign=True`,
-    in this case the traces will be aligned using the window defined by `cut`.
+    Data will be aligned by their pick-time given in the appropriate picks.
+    Requires an individual stream for each event you want to plot,
+    events are stored in the
+    :class:`obspy.core.event.Catalog` object, and there must be picks present
+    for the streams you wish to plot.  Events will be aligned if
+    `realign=True`, in this case the traces will be aligned using the window
+    defined by `cut`.
 
     :type streams: list
-    :param streams: List of the streams to use, can contain more traces than \
-        you plan on plotting - must be in the same order as events in catalog.
+    :param streams:
+        List of the :class:`obspy.core.stream.Stream` objects to use, can
+        contain more traces than you plan on plotting (e.g. from more channels)
+         - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog of events, one for each stream.
     :type station: str
@@ -543,14 +560,15 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type freqmax: float
     :param freqmax: High cut for bandpass in Hz
     :type realign: bool
-    :param realign: To compute best alignment based on correlation or not.
+    :param realign:
+        To compute best alignment based on correlation with the stack or not.
     :type cut: tuple
     :param cut: tuple of start and end times for cut in seconds from the \
         pick, used for alignment.  Will only use this window to align the \
         traces.
     :type PWS: bool
     :param PWS: compute Phase Weighted Stack, if False, will compute linear \
-        stack.
+        stack for alignment.
     :type title: str
     :param title: Plot title.
     :type save: bool
@@ -559,10 +577,14 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
 
-    :returns: Aligned and cut traces
-    :returns: new picks
+    :returns: Aligned and cut :class:`obspy.core.trace.Trace`
     :rtype: list
-    :returns: matplotlib.figure
+    :returns:
+        New picks in based on alignment (if alignment is performed, if not
+        will return the same as input)
+    :rtype: :class:`obspy.core.event.Catalog`
+    :returns: Figure object for further editing
+    :rtype: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -766,9 +788,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     Plot a stream of data with a template on top of it at detection times.
 
     :type stream: obspy.core.stream.Stream
-    :param stream: Stream of data to be plotted as the base (black)
+    :param stream: Stream of data to be plotted as the background.
     :type template: obspy.core.stream.Stream
-    :param template: Template to be plotted on top of the base stream (red)
+    :param template: Template to be plotted on top of the base stream.
     :type times: list
     :param times: list of times of detections in the order of the channels in
                 template.
@@ -786,7 +808,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :type title: str
     :param title: Title for plot.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
 
     .. image:: ../../plots/detection_multiplot.png
@@ -812,7 +834,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         else:
             axis = axes
         image = stream.select(station=template_tr.stats.station,
-                              channel='*'+template_tr.stats.channel[-1])
+                              channel='*' + template_tr.stats.channel[-1])
         if not image:
             msg = ' '.join(['No data for', template_tr.stats.station,
                             template_tr.stats.channel])
@@ -877,9 +899,10 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
 
 def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
-    r"""Plot inter-event time versus magnitude for series of events.
+    """
+    Plot inter-event time versus magnitude for series of events.
 
-    **thin** Wrapper for interev_mag.
+    Wrapper for :func:`eqcorrscan.utils.plotting.interev_mag`.
 
     :type sfiles: list
     :param sfiles: List of sfiles to read from
@@ -891,7 +914,7 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
     :type size: tuple
     :param size: Size of figure in inches.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -950,7 +973,7 @@ def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
     :type size: tuple
     :param size: Size of figure in inches.
 
-    :returns: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -1027,7 +1050,7 @@ def obspy_3d_plot(inventory, catalog, save=False, savefile=None,
     :type size: tuple
     :param size: Size of figure in inches.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example:
 
@@ -1102,9 +1125,10 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
     :type size: tuple
     :param size: Size of figure in inches.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
-    .. Note:: See obspy_3d_plot for example output.
+    .. Note::
+        See :func:`eqcorrscan.utils.plotting.obspy_3d_plot` for example output.
     """
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
@@ -1148,12 +1172,10 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
 def pretty_template_plot(template, size=(10.5, 7.5), save=False,
                          savefile=None, title=False, background=False,
                          picks=False):
-    r"""Plot of a single template possibly within background data.
+    """
+    Plot of a single template, possibly within background data.
 
-    Designed to work better than the default obspy plotting routine for \
-    short data lengths.
-
-    :type template: :class: obspy.core.stream.Stream
+    :type template: obspy.core.stream.Stream
     :param template: Template stream to plot
     :type size: tuple
     :param size: tuple of plot size
@@ -1163,30 +1185,33 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     :param savefile: String to save plot as, required if save=True.
     :type title: bool
     :param title: String if set will be the plot title
-    :type background: :class: obspy.core.stream.stream
+    :type background: obspy.core.stream.stream
     :param background: Stream to plot the template within.
     :type picks: list
-    :param picks: List of obspy type picks.
+    :param picks: List of :class:`obspy.core.event.origin.Pick` picks.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
     >>> from obspy import read
+    >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
     >>> from eqcorrscan.utils import sfile_util
     >>>
-    >>> test_file = 'eqcorrscan/tests/test_data/REA/TEST_/01-0411-15L.S201309'
-    >>> test_wavefile = 'eqcorrscan/tests/test_data/WAV/TEST_/' +\
-    ...     '2013-09-01-0410-35.DFDPC_024_00'
+    >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
+    ...                          'TEST_', '01-0411-15L.S201309')
+    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
+    ...                              'TEST_',
+    ...                              '2013-09-01-0410-35.DFDPC_024_00')
     >>> event = sfile_util.readpicks(test_file)
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
     >>> template = template_gen._template_gen(event.picks, st, 2)
-    >>> pretty_template_plot(template, background=st,
+    >>> pretty_template_plot(template, background=st, # doctest +SKIP
     ...                      picks=event.picks) # doctest: +SKIP
 
     .. plot::
@@ -1314,15 +1339,17 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
     """
     Plot a template over a detected stream, with picks corrected by lag-calc.
 
+    :type template: obspy.core.stream.Stream
     :param template: Template used to make the detection, will be aligned \
         according to picks.
-    :type template: obspy.core.stream.Stream
-    :param picks: list of corrected picks.
+    :param picks:
+        list of corrected picks, each pick must be an
+        :class:`obspy.core.event.origin.Pick` object.
     :type picks: list
     :param det_stream: Stream to plot in the background, should be the \
         detection, data should encompass the time the picks are made.
     :type det_stream: obspy.core.stream.Stream
-    :param size: tuple of plot size.
+    :param size: Plot size.
     :type size: tuple
     :param save: To save figure or not, if false, will show to screen.
     :type save: bool
@@ -1332,9 +1359,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), save=False,
     :type title: str
 
     :return: Figure handle which can be edited.
-    :rtype: matplotlib.pyplot.figure
-
-    .. note: Called by lag_calc, hence no example - can be called outside though
+    :rtype: :class:`matplotlib.figure.Figure`
 
     .. image:: ../../plots/plot_repicked.png
     """
@@ -1452,29 +1477,33 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 
     Highlights detection times in the network response.
 
-    :type stream: :class: obspy.core.stream.Stream
+    :type stream: obspy.core.stream.Stream
     :param stream: Stream to plot
-    :type NR_stream: :class: obspy.core.stream.Stream
+    :type NR_stream: obspy.core.stream.Stream
     :param NR_stream: Stream for the network response
     :type detections: list
-    :param detections: List of the detections
+    :param detections: List of the detection time as :class:`datetime.datetime`
     :type false_detections: list
-    :param false_detections: Either False (default) or list of false detection\
-     times
+    :param false_detections:
+        Either False (default) or list of false detection times
+        (:class:`datetime.datetime`).
     :type size: tuple
-    :param size: Size of figure, default is (18.5,10)
+    :param size: Size of figure, default is (18.5, 10)
     :type save: bool
-    :param save: Save figure or plot to screen, if not False, must be string\
-        of save path.
+    :param save:
+        Save figure or plot to screen, if not False, must be string of save
+        path.
     :type title: str
     :param title: String for the title of the plot, set to False
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
-    .. Note:: Called by bright_lights, not a general use plot (hence no example)
+    .. Note::
+        Called by :mod:`eqcorrscan.core.bright_lights`, not a general use
+        plot (hence no example)
     """
     _check_save_args(save, savefile)
-    fig, axes = plt.subplots(len(stream)+1, 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(len(stream) + 1, 1, sharex=True, figsize=size)
     if len(stream) > 1:
         axes = axes.ravel()
     else:
@@ -1490,7 +1519,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
              for s in xrange(len(y))]
         x = mdates.date2num(x)
         axes[i].plot(x, y, 'k', linewidth=1.1)
-        axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+        axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+                           rotation=0)
         axes[i].yaxis.set_ticks([])
         axes[i].set_xlim(x[0], x[-1])
     # Plot the network response
@@ -1502,7 +1532,8 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
          for s in range(len(y))]
     x = mdates.date2num(x)
     axes[i].plot(x, y, 'k', linewidth=1.1)
-    axes[i].set_ylabel(tr.stats.station+'.'+tr.stats.channel, rotation=0)
+    axes[i].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
+                       rotation=0)
     axes[i].yaxis.set_ticks([])
     axes[-1].set_xlabel('Time')
     axes[-1].set_xlim(x[0], x[-1])
@@ -1549,26 +1580,28 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
 def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
              savefile=None):
     """
-    Plot singular vectors from the clustering routines.
+    Plot singular vectors from the :mod:`eqcorrscan.utils.clustering` routines.
 
-    One plot for each stachan.
+    One plot for each channel.
 
     :type SVStreams: list
-    :param SVStreams: See clustering.SVD_2_Stream - will assume these are\
-            ordered by power, e.g. first singular vector in the first stream
+    :param SVStreams:
+        See :func:`eqcorrscan.utils.clustering.SVD_2_stream` - these should be
+        ordered by power, e.g. first singular vector in the first stream.
     :type SValues: list
-    :param SValues: List of floats of the singular values corresponding to \
-        the SVStreams
+    :param SValues:
+        List of floats of the singular values corresponding to the SVStreams
     :type stachans: list
     :param stachans: List of station.channel
     :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
+    :param save:
+        False will plot to screen, true will save plot and not show to screen.
     :type savefile: str
-    :param savefile: Filename to save to, required for save=True, will label \
-        additionally according to station and channel.
+    :param savefile:
+        Filename to save to, required for save=True, will label additionally
+        according to station and channel.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -1581,7 +1614,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     >>> stream_list = []
     >>> for st in streams:
     ...     tr = st.select(station='GCSZ', channel='EHZ')
-    ...     tr = tr.detrend('simple').resample(100).filter('bandpass', freqmin=2,
+    ...     tr = tr.detrend('simple').resample(100).filter('bandpass',
+    ...                                                    freqmin=2,
     ...                                                    freqmax=8)
     ...     stream_list.append(tr)
     >>> svec, sval, uvec, stachans = svd(stream_list=stream_list)
@@ -1624,7 +1658,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
             y = tr.data
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
             axes[i].plot(x, y, 'k', linewidth=1.1)
-            ylab = 'SV %s = %s' % (i+1, round(sval[i] / len(sval), 2))
+            ylab = 'SV %s = %s' % (i + 1, round(sval[i] / len(sval), 2))
             axes[i].set_ylabel(ylab, rotation=0)
             axes[i].yaxis.set_ticks([])
             print(i)
@@ -1643,8 +1677,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     return fig
 
 
-def plot_synth_real(real_template, synthetic, channels=False, save=False,
-                    savefile=None):
+def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
+                    save=False, savefile=None):
     """
     Plot multiple channels of data for real data and synthetic.
 
@@ -1655,19 +1689,21 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     :type channels: list
     :param channels: List of tuples of (station, channel) to plot, default is \
             False, which plots all.
+    :type size: tuple
+    :param size: Plot size.
     :type save: bool
     :param save: False will plot to screen, true will save plot and not show \
         to screen.
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     >>> from obspy import read, Stream, Trace
     >>> from eqcorrscan.utils.synth_seis import seis_sim
     >>> from eqcorrscan.utils.plotting import plot_synth_real
     >>> real = read()
-    >>> synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+    >>> synth = Stream(Trace(seis_sim(sp=100, flength=200)))
     >>> synth[0].stats.station = 'RJOB'
     >>> synth[0].stats.channel = 'EHZ'
     >>> synth[0].stats.sampling_rate = 100
@@ -1677,8 +1713,10 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     ...                                                            freqmin=2,
     ...                                                            freqmax=8)
     >>> real = real.trim(starttime=real[0].stats.starttime + 43,
-    ...                  endtime=real[0].stats.starttime + 45).detrend('simple')
-    >>> plot_synth_real(real_template=real, synthetic=synth) # doctest: +SKIP
+    ...                  endtime=real[0].stats.starttime +
+    ...                  45).detrend('simple')
+    >>> plot_synth_real(real_template=real, synthetic=synth,
+    ...                 size=(7, 4)) # doctest: +SKIP
 
     .. plot::
 
@@ -1692,10 +1730,11 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         synth[0].stats.channel = 'EHZ'
         synth[0].stats.sampling_rate = 100
         synth.filter('bandpass', freqmin=2, freqmax=8)
-        real = real.select(station='RJOB', channel='EHZ').detrend('simple').filter('bandpass', freqmin=2, freqmax=8)
+        real = real.select(station='RJOB', channel='EHZ').detrend('simple').\
+            filter('bandpass', freqmin=2, freqmax=8)
         real.trim(starttime=real[0].stats.starttime + 4.9,
                   endtime=real[0].stats.starttime + 6.9).detrend('simple')
-        plot_synth_real(real_template=real, synthetic=synth)
+        plot_synth_real(real_template=real, synthetic=synth, size=(7, 4))
     """
     _check_save_args(save, savefile)
     colours = ['k', 'r']
@@ -1714,7 +1753,7 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
     # Extract the station and channels
     stachans = list(set([(tr.stats.station, tr.stats.channel)
                          for tr in real_template]))
-    fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=(5, 10))
+    fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=size)
     if len(stachans) > 1:
         axes = axes.ravel()
     for i, stachan in enumerate(stachans):
@@ -1727,7 +1766,7 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
         synth_tr = synthetic.select(station=stachan[0],
                                     channel=stachan[1])[0]
         shift, corr = xcorr(real_tr, synth_tr, 2)
-        print('Shifting by: '+str(shift)+' samples')
+        print('Shifting by: ' + str(shift) + ' samples')
         if corr < 0:
             synth_tr.data = synth_tr.data * -1
             corr = corr * -1
@@ -1743,7 +1782,7 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
             x = np.linspace(0, len(y) * tr.stats.delta, len(y))
             axis.plot(x, y, colours[j], linewidth=2.0, label=labels[j])
             axis.get_yaxis().set_ticks([])
-        ylab = stachan[0]+'.'+stachan[1]+' cc='+str(round(corr, 2))
+        ylab = stachan[0] + '.' + stachan[1] + ' cc=' + str(round(corr, 2))
         axis.set_ylabel(ylab, rotation=0)
     plt.subplots_adjust(hspace=0)
     # axes[0].legend()
@@ -1761,11 +1800,12 @@ def plot_synth_real(real_template, synthetic, channels=False, save=False,
 
 def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
              savefile=None):
-    r"""Plot a frequency-magnitude histogram and cumulative density plot.
+    """
+    Plot a frequency-magnitude histogram and cumulative density plot.
 
-    This can compute a b-value, but not a completeness at \
-    the moment.  B-value is computed by linear fitting to section of curve \
-    between completeness and max_mag.
+    Currently this will compute a b-value, for a goiven completeness.
+    B-value is computed by linear fitting to section of curve between
+    completeness and max_mag.
 
     :type magnitudes: list
     :param magnitudes: list of float of magnitudes
@@ -1781,10 +1821,12 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     :type savefile: str
     :param savefile: Filename to save to, required for save=True
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
-    .. Note:: See eqcorrscan.utils.mag_calc.calc_b_value for a least-squares \
-        method of estimating completeness and b-value.
+    .. Note::
+        See :func:`eqcorrscan.utils.mag_calc.calc_b_value` for a least-squares
+        method of estimating completeness and b-value. For estimating maximum
+        curvature see :func:`eqcorrscan.utils.mag_calc.calc_max_curv`.
 
     .. rubric:: Example
 
@@ -1836,7 +1878,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
         mag_steps[i] = magnitude
         if i > 0:
-            cdf[i] = cdf[i-1] + counts[magnitude]
+            cdf[i] = cdf[i - 1] + counts[magnitude]
         else:
             cdf[i] = counts[magnitude]
     ax2 = ax1.twinx()
@@ -1867,20 +1909,22 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, save=False,
     return fig
 
 
-def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
-               tralpha=0.9, size=(10, 13), Fig=None, title=None, show=True):
-    r"""Wrapper for _spec_trace, plots data with spectrogram beneath.
+def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
+               size=(10, 13), fig=None, title=None, show=True):
+    """
+    Plots seismic data with spectrogram behind.
 
-    Takes a stream or list of traces and plots \
-    the trace with the spectra beneath it - this just does the overseeing to \
-    work out if it needs to add subplots or not.
+    Takes a stream or list of traces and plots the trace with the spectra
+    beneath it.
 
     :type traces: list
-    :param traces: Traces to be plotted, can be a single obspy.Stream, or a \
-        list of obspy.Trace
+    :param traces: Traces to be plotted, can be a single
+        :class:`obspy.core.stream.Stream`, or a list of
+        :class:`obspy.core.trace.Trace`.
     :type cmap: str
-    :param cmap: [Matplotlib colormap](http://matplotlib.org/examples/color/ \
-        colormaps_reference.html)
+    :param cmap:
+        `Matplotlib colormap
+        <http://matplotlib.org/examples/color/colormaps_reference.html>`_.
     :type wlen: float
     :param wlen: Window length for fft in seconds
     :type log: bool
@@ -1892,12 +1936,14 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
         to opaque (1.0).
     :type size: tuple
     :param size: Plot size, tuple of floats, inches
-    :type Fig: matplotlib Fig
-    :param axes: Figure to plot onto, defaults to self generating.
+    :type fig: matplotlib.figure.Figure
+    :param fig: Figure to plot onto, defaults to self generating.
+    :type title: str
+    :param title: Title of plot.
     :type show: bool
     :param show: To show plot or not, if false, will return Fig.
 
-    :returns: :class: matplotlib.figure
+    :returns: :class:`matplotlib.figure.Figure`
 
     .. rubric:: Example
 
@@ -1917,41 +1963,41 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k',
     """
     if isinstance(traces, Stream):
         traces.sort(['station', 'channel'])
-    if not Fig:
-        Fig = plt.figure()
+    if not fig:
+        fig = plt.figure()
     for i, tr in enumerate(traces):
         if i == 0:
-            ax = Fig.add_subplot(len(traces), 1, i+1)
+            ax = fig.add_subplot(len(traces), 1, i + 1)
         else:
-            ax = Fig.add_subplot(len(traces), 1, i+1, sharex=ax)
-        ax1, ax2 = _spec_trace(tr, wlen=wlen, log=log, trc=trc,
+            ax = fig.add_subplot(len(traces), 1, i + 1, sharex=ax)
+        ax1, ax2 = _spec_trace(tr, cmap=cmap, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
         ax.set_yticks([])
         if i < len(traces) - 1:
             plt.setp(ax1.get_xticklabels(), visible=False)
         if type(traces) == list:
             ax.text(0.005, 0.85, tr.stats.starttime.datetime.
-                     strftime('%Y/%m/%d %H:%M:%S'),
-                     bbox=dict(facecolor='white', alpha=0.8),
-                     transform=ax2.transAxes)
+                    strftime('%Y/%m/%d %H:%M:%S'),
+                    bbox=dict(facecolor='white', alpha=0.8),
+                    transform=ax2.transAxes)
         else:
             ax.text(0.005, 0.85, '.'.join([tr.stats.station,
-                                            tr.stats.channel]),
-                     bbox=dict(facecolor='white', alpha=0.8),
-                     transform=ax2.transAxes)
+                                           tr.stats.channel]),
+                    bbox=dict(facecolor='white', alpha=0.8),
+                    transform=ax2.transAxes)
         ax.text(0.005, 0.02, str(np.max(tr.data).round(1)),
-                 bbox=dict(facecolor='white', alpha=0.95),
-                 transform=ax2.transAxes)
+                bbox=dict(facecolor='white', alpha=0.95),
+                transform=ax2.transAxes)
     ax.set_xlabel('Time (s)')
-    Fig.subplots_adjust(hspace=0)
-    Fig.set_size_inches(w=size[0], h=size[1], forward=True)
-    Fig.text(0.04, 0.5, 'Frequency (Hz)', va='center', rotation='vertical')
+    fig.subplots_adjust(hspace=0)
+    fig.set_size_inches(w=size[0], h=size[1], forward=True)
+    fig.text(0.04, 0.5, 'Frequency (Hz)', va='center', rotation='vertical')
     if title:
         plt.suptitle(title)
     if show:
         plt.show()
     else:
-        return Fig
+        return fig
 
 
 def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',

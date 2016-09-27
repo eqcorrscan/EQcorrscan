@@ -6,13 +6,19 @@ parameters
 
     .. comment to end block
 
-    Classes & Functions
-    -------------------
+    Classes
+    -------
+    .. toctree::
+        :maxdepth: 1
+
+        utils.parameters.EQcorrscanParameters
+
+    Functions
+    ---------
     .. autosummary::
        :toctree: autogen
        :nosignatures:
 
-       EQcorrscanParameters
        read_parameters
 
     .. comment to end block

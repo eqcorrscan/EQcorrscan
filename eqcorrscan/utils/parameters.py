@@ -2,16 +2,74 @@
 Default parameters for eqcorrscan, only used if the quickstart options are run.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import warnings
+import os
+import getpass
+
+from obspy import UTCDateTime
+
+import eqcorrscan
+
 
 class EQcorrscanParameters:
     """
     Standard class for defining parameters in EQcorrscan.
+
+    These parameters are set using the quickstart script of EQcorrscan for
+    matched-filter analysis.  The quickstart functionality is currently in
+    development.
+
+    :type template_names: list
+    :param template_names: List of str of template names.
+    :type lowcut: float
+    :param lowcut: Low-cut iun Hz
+    :type highcut: float
+    :param highcut: High-cut in Hz
+    :type filt_order: int
+    :param filt_order: Number of corners in filter
+    :type samp_rate: float
+    :param samp_rate: Desired sampling rate in Hz
+    :type debug: int
+    :param debug: 0-5 debug level, higher number is more output
+    :type startdate: obspy.core.utcdatetime.UTCDateTime
+    :param startdate: Start date for match-filter analysis.
+    :type enddate: obspy.core.utcdatetime.UTCDateTime
+    :param enddate: End date for matched-filter analysis
+    :type archive: str
+    :param archive: Path to archive, or FDSN name
+    :type arc_type: str
+    :param arc_type:
+        Type of archive (see :func:`eqcorrscan.utils.archive_read` for
+        available options.
+    :type cores: int
+    :param cores: Number of cores to parallel over
+    :type plotvar: bool
+    :param plotvar: Whether to show plots or not
+    :type plotdir: str
+    :param plotdir: Output plot location
+    :type plot_format: str
+    :param plot_format: Output plot type
+    :type tempdir: str
+    :param tempdir: Location of temporary files (if needed)
+    :type threshold: float
+    :param threshold: Threshold for matched-filter detection
+    :type threshold_type: str
+    :param threshold_type:
+        Threshold type for matched-filter detection, see
+        :func:`eqcorrscan.core.match_filter.match_filter` for available types.
+    :type trigger_interval: float
+    :param trigger_interval: Minimum trigger interval in seconds.
     """
     def __init__(self, template_names, lowcut, highcut, filt_order, samp_rate,
                  debug, startdate, enddate, archive, arc_type, cores, plotvar,
@@ -20,8 +78,6 @@ class EQcorrscanParameters:
         """
         Standard parameter options.
         """
-        from obspy import UTCDateTime
-        import warnings
         if isinstance(template_names, list):
             self.template_names = [str(template_name)
                                    for template_name in template_names]
@@ -63,8 +119,12 @@ class EQcorrscanParameters:
         return "EQcorrscanParameters()"
 
     def __str__(self):
-        """Note that we are not using the __dict__ attribute because it is \
-        not recommened"""
+        """
+        String output for EQcorrscanParameters.
+
+        Note that we are not using the __dict__ attribute because it is \
+        not recommened
+        """
         print_str = ' '.join(["EQcorrscan parameters:",
                               "\n   template_names:", str(self.template_names),
                               "\n   lowcut:", str(self.lowcut),
@@ -91,15 +151,13 @@ class EQcorrscanParameters:
     def write(self, outfile='../parameters/EQcorrscan_parameters.txt',
               overwrite=False):
         """
-        Function to write the parameters to a file - will be user readable.
+        Function to write the parameters to a file - user readable.
 
         :type outfile: str
         :param outfile: Full path to filename to store parameters in.
+        :type overwrite: bool
+        :param overwrite: Whether to overwrite the old file or not.
         """
-        import os
-        import getpass
-        from obspy import UTCDateTime
-        import eqcorrscan
         outpath = os.sep.join(outfile.split(os.sep)[0:-1])
         if len(outpath) > 0 and not os.path.isdir(outpath):
             msg = ' '.join([os.path.join(outfile.split(os.sep)[0:-1]),
@@ -141,7 +199,8 @@ def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
     :type infile: str
     :param infile: Full path to parameter file.
 
-    :returns: parameters as EQcorrscanParameters
+    :returns: parameters read from file.
+    :rtype: :class:`eqcorrscan.utils.parameters.EQcorrscanParameters`
     """
     try:
         import ConfigParser

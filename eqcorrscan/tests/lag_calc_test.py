@@ -12,6 +12,7 @@ import os
 from eqcorrscan.core import lag_calc
 from eqcorrscan.core.template_gen import from_sfile
 
+
 class TestMethods(unittest.TestCase):
     def test_channel_loop(self):
         """Test the main lag_calc function"""
@@ -23,8 +24,9 @@ class TestMethods(unittest.TestCase):
                               filt_order=4, length=3, swin='all', prepick=0.05)
         detection = from_sfile(sfile=os.path.join(testing_path,
                                                   '21-1759-04L.S201309'),
-                              lowcut=5, highcut=15, samp_rate=40,
-                              filt_order=4, length=4, swin='all', prepick=0.55)
+                               lowcut=5, highcut=15, samp_rate=40,
+                               filt_order=4, length=4, swin='all',
+                               prepick=0.55)
 
         i, event = lag_calc._channel_loop(detection=detection,
                                           template=template,
@@ -55,8 +57,9 @@ class TestMethods(unittest.TestCase):
                               filt_order=4, length=3, swin='all', prepick=0.05)
         detection = from_sfile(sfile=os.path.join(testing_path,
                                                   '21-1759-04L.S201309'),
-                              lowcut=5, highcut=15, samp_rate=40,
-                              filt_order=4, length=4, swin='all', prepick=0.55)
+                               lowcut=5, highcut=15, samp_rate=40,
+                               filt_order=4, length=4, swin='all',
+                               prepick=0.55)
 
         i, event = lag_calc._channel_loop(detection=detection,
                                           template=template,

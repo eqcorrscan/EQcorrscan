@@ -26,6 +26,11 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     # costs.
     catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
                                          top_n_picks=5)
+    # There is a duplicate pick in event 3 in the catalog - this has the effect
+    # of reducing our detections - check it yourself.
+    for pick in catalog[3].picks:
+        if pick.waveform_id.station_code == 'PHOB' and pick.onset == 'emergent':
+            catalog[3].picks.remove(pick)
     print('Generating templates')
     templates = template_gen.from_client(catalog=catalog, client_id='NCEDC',
                                          lowcut=2.0, highcut=9.0,
