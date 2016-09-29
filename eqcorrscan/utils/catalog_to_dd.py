@@ -203,15 +203,11 @@ def write_event(catalog):
                 str(evinfo.time.minute).zfill(2) +
                 str(evinfo.time.second).zfill(2) +
                 str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
-                "{:8.4f}".format(evinfo.latitude) + '   ' +
-                # str(evinfo.latitude).ljust(8, '0') + '   ' +
-                "{:8.4f}".format(evinfo.longitude) + '  ' +
-                # str(evinfo.longitude).ljust(8, '0') + '  ' +
-                "{:9.4f}".format(evinfo.depth / 1000) + '   ' +
-                # str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
+                str(evinfo.latitude).ljust(8, '0') + '   ' +
+                str(evinfo.longitude).ljust(8, '0') + '  ' +
+                str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
                 str(Mag_1) + '    0.00    0.00   ' +
-                "{:4.2f}".format(t_RMS) +
-                # str(t_RMS).ljust(4, '0') +
+                str(t_RMS).ljust(4, '0') +
                 str(i).rjust(11) + '\n')
     f.close()
     return
@@ -400,62 +396,28 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
     import matplotlib.pyplot as plt
     from eqcorrscan.utils.mag_calc import dist_calc
     import warnings
-    from joblib import Parallel, delayed
-    from joblib.pool import has_shareable_memory
+
+    warnings.filterwarnings(action="ignore",
+                            message="Maximum of cross correlation " +
+                                    "lower than 0.8: *")
     corr_list = []
     with open('dt.cc', 'w') as f, open('dt.cc2', 'w') as f2:
         for i, master_event in enumerate(catalog):
-            # master_sfile = master[1]
-            # master_event_id = master[0]
             master_event_id = i
             print('On loop %d of %d' % (i, len(catalog)))
-            # print(i)
-            # master_picks = sfile_util.readpicks(master_sfile).picks
-            # master_event = sfile_util.readheader(master_sfile)
             master_picks = master_event.picks
             master_ori_time = master_event.preferred_origin().time
             master_location = (master_event.preferred_origin().latitude,
                                master_event.preferred_origin().longitude,
                                master_event.preferred_origin().depth / 1000)
             master_stream = template_dict[master_event.resource_id]
-            # master_wavefiles = sfile_util.readwavename(master_sfile)
-            # masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
-            # if masterpath:
-            #     masterstream = read(masterpath[0])
-            # if len(master_wavefiles) > 1:
-            #     for wavefile in master_wavefiles:
-            #         try:
-            #             masterstream += read(os.join(wavbase, wavefile))
-            #         except:
-            #             continue
-            #             raise IOError("Couldn't find wavefile")
             for j in range(i+1, len(catalog)):
-                # # Use this tactic to only output unique event pairings
-                # slave_sfile = event_list[j][1]
-                # slave_event_id = event_list[j][0]
                 slave_event_id = j
-                # slave_wavefiles = sfile_util.readwavename(slave_sfile)
-                # try:
-                #     # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
-                #     slavestream = read(wavbase + os.sep + slave_wavefiles[0])
-                # except:
-                #     # print(slavestream)
-                #     raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
-                #                   slave_sfile)
-                # if len(slave_wavefiles) > 1:
-                #     for wavefile in slave_wavefiles:
-                #         # slavestream+=read(wavbase+'/*/*/'+wavefile)
-                #         try:
-                #             slavestream += read(wavbase+'/'+wavefile)
-                #         except:
-                #             continue
-                # # Write out the header line
+                # Write out the header line
                 event_text = '#'+str(master_event_id).rjust(10) +\
                     str(slave_event_id).rjust(10)+' 0.0   \n'
                 event_text2 = '#'+str(master_event_id).rjust(10) +\
                     str(slave_event_id).rjust(10)+' 0.0   \n'
-                # slave_picks = sfile_util.readpicks(slave_sfile).picks
-                # slave_event = sfile_util.readheader(slave_sfile)
                 slave_event = catalog[j]
                 slave_picks = slave_event.picks
                 slave_ori_time = slave_event.preferred_origin().time
@@ -577,7 +539,7 @@ def write_correlations(catalog, template_dict, extract_len, pre_pick, shift_len,
 
 def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, shift_len,
                        outdir, lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
-                       coh_thresh=0.0, coherence_weight=False, plotvar=False):
+                       coh_thresh=0.0, coherence_weight=False, plotvar=False, debug=1):
     import obspy
     if int(obspy.__version__.split('.')[0]) > 0:
         from obspy.signal.cross_correlation import xcorr_pick_correction
@@ -589,56 +551,22 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
     import warnings
     corr_list = []
     with open(outdir + 'dt.cc_' + str(index), 'w') as f, open(outdir + 'dt.cc2_' + str(index), 'w') as f2:
-        # master_sfile = master[1]
-        # master_event_id = master[0]
         master_event_id = index
         master_event = catalog[index]
-        # master_picks = sfile_util.readpicks(master_sfile).picks
-        # master_event = sfile_util.readheader(master_sfile)
         master_picks = master_event.picks
         master_ori_time = master_event.preferred_origin().time
         master_location = (master_event.preferred_origin().latitude,
                            master_event.preferred_origin().longitude,
                            master_event.preferred_origin().depth / 1000)
         master_stream = template_dict[master_event.resource_id]
-        # master_wavefiles = sfile_util.readwavename(master_sfile)
-        # masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
-        # if masterpath:
-        #     masterstream = read(masterpath[0])
-        # if len(master_wavefiles) > 1:
-        #     for wavefile in master_wavefiles:
-        #         try:
-        #             masterstream += read(os.join(wavbase, wavefile))
-        #         except:
-        #             continue
-        #             raise IOError("Couldn't find wavefile")
         for j in range(index + 1, len(catalog)):
             # # Use this tactic to only output unique event pairings
-            # slave_sfile = event_list[j][1]
-            # slave_event_id = event_list[j][0]
             slave_event_id = j
-            # slave_wavefiles = sfile_util.readwavename(slave_sfile)
-            # try:
-            #     # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
-            #     slavestream = read(wavbase + os.sep + slave_wavefiles[0])
-            # except:
-            #     # print(slavestream)
-            #     raise IOError('No wavefile found: '+slave_wavefiles[0]+' ' +
-            #                   slave_sfile)
-            # if len(slave_wavefiles) > 1:
-            #     for wavefile in slave_wavefiles:
-            #         # slavestream+=read(wavbase+'/*/*/'+wavefile)
-            #         try:
-            #             slavestream += read(wavbase+'/'+wavefile)
-            #         except:
-            #             continue
             # # Write out the header line
             event_text = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
             event_text2 = '#'+str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10)+' 0.0   \n'
-            # slave_picks = sfile_util.readpicks(slave_sfile).picks
-            # slave_event = sfile_util.readheader(slave_sfile)
             slave_event = catalog[j]
             slave_picks = slave_event.picks
             slave_ori_time = slave_event.preferred_origin().time
@@ -647,6 +575,9 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                               slave_event.preferred_origin().depth / 1000)
             slave_stream = template_dict[slave_event.resource_id]
             if dist_calc(master_location, slave_location) > max_sep:
+                if debug > 0:
+                    print('Seperation exceeds max_sep: %s' %
+                          (dist_calc(master_location, slave_location)))
                 continue
             links = 0
             phases = 0
@@ -668,31 +599,25 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                         select(station=pick.waveform_id.station_code,
                                channel='*' +
                                pick.waveform_id.channel_code[-1])[0]
-                else:
+                elif debug > 1:
                     print('No waveform data for ' +
                           pick.waveform_id.station_code + '.' +
                           pick.waveform_id.channel_code)
-                    # print(pick.waveform_id.station_code +
-                    #       '.' + pick.waveform_id.channel_code +
-                    #       ' ' + slave_sfile+' ' + master_sfile)
                     break
                 # Loop through the matches
                 for slave_pick in slave_matches:
                     if slave_stream.select(station=slave_pick.waveform_id.
                                           station_code,
-                                          channel='*'+slave_pick.waveform_id.
+                                          channel='*' + slave_pick.waveform_id.
                                           channel_code[-1]):
                         slavetr = slave_stream.\
                             select(station=slave_pick.waveform_id.station_code,
-                                   channel='*'+slave_pick.waveform_id.
+                                   channel='*' + slave_pick.waveform_id.
                                    channel_code[-1])[0]
                     else:
                         print('No slave data for ' +
                               slave_pick.waveform_id.station_code + '.' +
                               slave_pick.waveform_id.channel_code)
-                        # print(pick.waveform_id.station_code +
-                        #       '.' + pick.waveform_id.channel_code +
-                        #       ' ' + slave_sfile + ' ' + master_sfile)
                         break
                     # Correct the picks
                     try:
@@ -707,7 +632,7 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                                                                   'freqmax':
                                                                   highcut},
                                                   plot=plotvar)
-                        # Get the differntial travel time using the
+                        # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
                         # This can occur in the obspy routine when the
@@ -720,33 +645,29 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                         correction = (pick.time - master_ori_time) -\
                             (slave_pick.time + correction - slave_ori_time)
                         links += 1
-                        if cc * cc >= coh_thresh:
-                            if coherence_weight:
-                                weight = cc * cc
-                            else:
-                                weight = cc
+                        if cc >= coh_thresh:
+                            weight = cc
                             phases += 1
                             # added by Caro
                             event_text += pick.waveform_id.station_code.\
                                 ljust(5) + _cc_round(correction, 3).\
                                 rjust(11) + _cc_round(weight, 3).rjust(8) +\
-                                ' '+pick.phase_hint+'\n'
+                                ' ' + pick.phase_hint + '\n'
                             event_text2 += pick.waveform_id.station_code\
-                                .ljust(5).upper() +\
-                                _cc_round(correction, 3).rjust(11) +\
-                                _cc_round(weight, 3).rjust(8) +\
-                                ' '+pick.phase_hint+'\n'
-
-                            # links+=1
-                        corr_list.append(cc*cc)
+                                .ljust(5) + _cc_round(correction, 3).\
+                                rjust(11) +\
+                                _cc_round(weight * weight, 3).rjust(8) +\
+                                ' ' + pick.phase_hint + '\n'
+                            if debug > 3:
+                                print(event_text)
+                        else:
+                            print('cc too low: %s' % cc)
+                        corr_list.append(cc * cc)
                     except:
-                        # Should warn here
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue
-            # print(links)
             if links >= min_link and phases > 0:
-                print('Writing to file')
                 f.write(event_text)
                 f2.write(event_text2)
         if plotvar:
@@ -754,3 +675,91 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
             plt.show()
     return corr_list
 
+
+def read_phase(ph_file):
+    """
+    Read hypoDD phase files into Obspy catalog class.
+
+    :type ph_file: str
+    :param ph_file: Phase file to read event info from.
+
+    :returns: obspy.core.event.catlog
+
+    >>> from obspy.core.event.catalog import Catalog
+    >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
+    >>> isinstance(catalog, Catalog)
+    True
+    """
+    from obspy.core.event import Catalog
+    ph_catalog = Catalog()
+    f = open(ph_file, 'r')
+    # Topline of each event is marked by # in position 0
+    for line in f:
+        if line[0] == '#':
+            if 'event_text' not in locals():
+                event_text = {'header': line.rstrip(),
+                              'picks': []}
+            else:
+                ph_catalog.append(_phase_to_event(event_text))
+                event_text = {'header': line.rstrip(),
+                              'picks': []}
+        else:
+            event_text['picks'].append(line.rstrip())
+    ph_catalog.append(_phase_to_event(event_text))
+    return ph_catalog
+
+
+def _phase_to_event(event_text):
+    """
+    Function to convert the text for one event in hypoDD phase format to \
+    event object.
+
+    :type event_text: dict
+    :param event_text: dict of two elements, header and picks, header is a \
+        str, picks is a list of str.
+
+    :returns: obspy.core.event.Event
+    """
+    from obspy.core.event import Event, Origin, Magnitude
+    from obspy.core.event import Pick, WaveformStreamID, Arrival
+    from obspy import UTCDateTime
+    ph_event = Event()
+    # Extract info from header line
+    # YR, MO, DY, HR, MN, SC, LAT, LON, DEP, MAG, EH, EZ, RMS, ID
+    header = event_text['header'].split()
+    ph_event.origins.append(Origin())
+    ph_event.origins[0].time = UTCDateTime(year=int(header[1]),
+                                           month=int(header[2]),
+                                           day=int(header[3]),
+                                           hour=int(header[4]),
+                                           minute=int(header[5]),
+                                           second=int(header[6].split('.')[0]),
+                                           microsecond=int(float(('0.' +
+                                                                  header[6].
+                                                                  split('.')[1])) *
+                                                           1000000))
+    ph_event.origins[0].latitude = float(header[7])
+    ph_event.origins[0].longitude = float(header[8])
+    ph_event.origins[0].depth = float(header[9]) * 1000
+    ph_event.origins[0].time_errors['Time_Residual_RMS'] = float(header[13])
+    ph_event.magnitudes.append(Magnitude())
+    ph_event.magnitudes[0].mag = float(header[10])
+    ph_event.magnitudes[0].magnitude_type = 'M'
+    # Extract arrival info from picks!
+    for i, pick_line in enumerate(event_text['picks']):
+        pick = pick_line.split()
+        _waveform_id = WaveformStreamID(station_code=pick[0])
+        pick_time = ph_event.origins[0].time + float(pick[1])
+        ph_event.picks.append(Pick(waveform_id=_waveform_id,
+                                   phase_hint=pick[3],
+                                   time=pick_time))
+        ph_event.origins[0].arrivals.append(Arrival(phase=ph_event.picks[i],
+                                                    pick_id=ph_event.picks[i].
+                                                    resource_id))
+        ph_event.origins[0].arrivals[i].time_weight = float(pick[2])
+    return ph_event
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
