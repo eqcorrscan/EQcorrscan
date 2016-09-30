@@ -541,6 +541,7 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                        outdir, lowcut=1.0, highcut=10.0, max_sep=4, min_link=8,
                        coh_thresh=0.0, coherence_weight=False, plotvar=False, debug=1):
     import obspy
+    import warnings
     if int(obspy.__version__.split('.')[0]) > 0:
         from obspy.signal.cross_correlation import xcorr_pick_correction
     else:
@@ -548,7 +549,11 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
             as xcorr_pick_correction
     import matplotlib.pyplot as plt
     from eqcorrscan.utils.mag_calc import dist_calc
-    import warnings
+
+    warnings.filterwarnings(action="ignore",
+                            message="Maximum of cross correlation " +
+                                    "lower than 0.8: *")
+
     corr_list = []
     with open(outdir + 'dt.cc_' + str(index), 'w') as f, open(outdir + 'dt.cc2_' + str(index), 'w') as f2:
         master_event_id = index
@@ -632,6 +637,9 @@ def write_corr_parallel(index, catalog, template_dict, extract_len, pre_pick, sh
                                                                   'freqmax':
                                                                   highcut},
                                                   plot=plotvar)
+                        if cc > 1.0:
+                            warnings.warn('CC > 1.0. Ignoring')
+                            continue
                         # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
