@@ -268,13 +268,8 @@ def write_catalog(catalog, max_sep=1, min_link=8):
                 weight = [arrival.time_weight
                           for arrival in master_event.preferred_origin().arrivals
                           if arrival.pick_id == pick.resource_id][0]
-                # Convert seisan weight to hypoDD 0-1 weights
-                # if weight == 0:
-                #     weight = 1.0
-                # elif weight == 9:
-                #     weight = 0.0
-                # else:
-                #     weight = 1 - weight / 4.0
+                if weight < 0.:
+                    continue
                 fphase.write(pick.waveform_id.station_code + '  ' +
                              _cc_round(pick.time -
                                        master_ori_time, 3).rjust(6) +
