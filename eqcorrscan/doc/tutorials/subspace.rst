@@ -63,7 +63,8 @@ aligned (see clustering submodule for alignment methods).
 .. code-block:: python
 
     detector.construct(streams=streams, lowcut=2, highcut=9, filt_order=4,
-                       sampling_rate=20, multiplex=True, name='Test_1')
+                       sampling_rate=20, multiplex=True, name='Test_1',
+                       align=True, shift_len=0.5)
 
 This will populate all the attributes of your *detector* object, and fill the
 *detector.data* with the full input basis vector matrix.

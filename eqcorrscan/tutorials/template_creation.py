@@ -14,12 +14,8 @@ def mktemplates(network_code='GEONET',
 
     # This import section copes with namespace changes between obspy versions
     import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-        from obspy import read_events
-    else:
-        from obspy.fdsn import Client
-        from obspy import readEvents as read_events
+    from obspy.clients.fdsn import Client
+    from obspy import read_events
     from obspy.core.event import Catalog
 
     # We want to download some QuakeML files from the New Zealand GeoNet

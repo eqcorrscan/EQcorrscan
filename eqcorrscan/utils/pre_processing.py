@@ -17,10 +17,11 @@ from __future__ import unicode_literals
 
 import numpy as np
 import warnings
+import datetime as dt
 
 from multiprocessing import Pool, cpu_count
 
-from obspy import Stream, Trace
+from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
 
 
@@ -382,8 +383,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+
     # Define the start-time
     if starttime:
+        # Be nice and allow a datetime object.
+        if isinstance(starttime, dt.date) or isinstance(starttime,
+                                                        dt.datetime):
+            starttime = UTCDateTime(starttime)
         day = starttime.date
     else:
         day = tr.stats.starttime.date

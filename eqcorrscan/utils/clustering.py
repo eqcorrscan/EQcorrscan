@@ -21,7 +21,7 @@ from multiprocessing import Pool, cpu_count
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from obspy.signal.cross_correlation import xcorr
-from obspy import Stream
+from obspy import Stream, Catalog
 
 from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.utils.mag_calc import dist_calc
@@ -793,12 +793,27 @@ def space_cluster(catalog, d_thresh, show=True):
 
     :returns: list of :class:`obspy.core.event.Catalog` objects
     :rtype: list
-    """
-    from scipy.spatial.distance import squareform
-    from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-    import matplotlib.pyplot as plt
-    from obspy import Catalog
 
+    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> client = Client("NCEDC")
+    >>> starttime = UTCDateTime("2002-01-01")
+    >>> endtime = UTCDateTime("2002-02-01")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                        minmagnitude=2)
+    >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
+
+    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> client = Client("IRIS")
+    >>> starttime = UTCDateTime("2002-01-01")
+    >>> endtime = UTCDateTime("2002-02-01")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                        minmagnitude=6, catalog="ISC")
+    >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
+    """
     # Compute the distance matrix and linkage
     dist_mat = dist_mat_km(catalog)
     dist_vec = squareform(dist_mat)
@@ -849,13 +864,27 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
 
     :returns: list of :class:`obspy.core.event.Catalog` objects
     :rtype: list
+
+    >>> from eqcorrscan.utils.clustering import space_time_cluster
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> client = Client("IRIS")
+    >>> starttime = UTCDateTime("2002-01-01")
+    >>> endtime = UTCDateTime("2002-02-01")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                         minmagnitude=6, catalog="ISC")
+    >>> groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
     """
     initial_spatial_groups = space_cluster(catalog=catalog, d_thresh=d_thresh,
                                            show=False)
+    # Need initial_spatial_groups to be lists at the moment
+    initial_spatial_lists = []
+    for group in initial_spatial_groups:
+        initial_spatial_lists.append(list(group))
     # Check within these groups and throw them out if they are not close in
     # time.
     groups = []
-    for group in initial_spatial_groups:
+    for group in initial_spatial_lists:
         for master in group:
             for event in group:
                 if abs(event.preferred_origin().time -
@@ -864,7 +893,7 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
                     groups.append([event])
                     group.remove(event)
         groups.append(group)
-    return groups
+    return [Catalog(group) for group in groups]
 
 
 def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):

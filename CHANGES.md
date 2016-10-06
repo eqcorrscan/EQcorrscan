@@ -17,6 +17,7 @@ which might be useful for reducing day start and end effects);
 * Allow multiple uses of the same channel in templates (e.g. you can
 now use a template with two windows from the same channel, such as a P
 and an S);
+* Add evaluation mode filter to utils.catalog_utils.filter_picks.
 
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
