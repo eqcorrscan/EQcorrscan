@@ -151,7 +151,7 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov', 'pytest-flake8'],
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'],
 
     # Build our extension for subspace detection
     cmdclass=cmd_class,
