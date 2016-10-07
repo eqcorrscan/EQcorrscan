@@ -57,18 +57,19 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - |
-      if [[ "$OS" == "MacOSX" ]]; then
-          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
-      elif [[ "$py" == "3.5" ]]; then
-          conda create -q -n test-environment --file $env_file
-      elif [[ "$py" == "2.7" ]]; then
-          conda create -q -n test-environment --file $env_file
-      elif [[ "$py" == "3.4" ]]; then
-          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib=1.5.1 obspy flake8 mock coverage opencv3
-      else
-          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
-      fi
+  - conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
+#  - |
+#      if [[ "$OS" == "MacOSX" ]]; then
+#          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
+#      elif [[ "$py" == "3.5" ]]; then
+#          conda create -q -n test-environment --file $env_file
+#      elif [[ "$py" == "2.7" ]]; then
+#          conda create -q -n test-environment --file $env_file
+#      elif [[ "$py" == "3.4" ]]; then
+#          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib=1.5.1 obspy flake8 mock coverage opencv3
+#      else
+#          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
+#      fi
   - source activate test-environment
   - conda install $PYFLAKES
   - conda install pyproj
@@ -85,9 +86,7 @@ install:
   - pip install geographiclib
   - pip install https://github.com/megies/PyImgur/archive/py3.zip
   - pip install pep8-naming
-  - pip install pytest
-  - pip install pytest-cov
-  - pip install pytest-pep8
+  - pip install pytest pytest-cov pytest-pep8
   - pip install Cython
   #  - pip install obspy==$OBSPY_VERSION
   - pip freeze
@@ -97,8 +96,6 @@ install:
   - python setup.py install
 
 script:
-  # Need to ignore the files in current directory to ensure we find the
-  # installed version of EQcorrscan with compiled code.
   - python setup.py test
 
 after_success:

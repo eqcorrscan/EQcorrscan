@@ -421,7 +421,9 @@ class Detector(object):
             stachans = self.stachans
         elif self.multiplex:
             stachans = [('multi', ' ')]
-        fig, axes = plt.subplots(nrows=self.dimension, ncols=len(stachans),
+        if np.isinf(self.dimension):
+            nrows = self.data[0].shape[1]
+        fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
                                  sharex=True, sharey=True, figsize=size)
         x = np.arange(len(self.v[0]), dtype=np.float32)
         if self.multiplex:
@@ -430,9 +432,9 @@ class Detector(object):
             x /= self.sampling_rate
         for column, stachan in enumerate(stachans):
             channel = self.v[column]
-            for row, vector in enumerate(channel.T[0:self.dimension]):
+            for row, vector in enumerate(channel.T[0:nrows]):
                 if len(stachans) == 1:
-                    if self.dimension == 1:
+                    if nrows == 1:
                         axis = axes
                     else:
                         axis = axes[row]
@@ -443,7 +445,7 @@ class Detector(object):
                 axis.plot(x, vector, 'k', linewidth=1.1)
                 if column == 0:
                     axis.set_ylabel('Basis %s' % (row + 1))
-                if row == self.dimension - 1:
+                if row == nrows - 1:
                     axis.set_xlabel('Time (s)')
         plt.subplots_adjust(hspace=0.05)
         plt.subplots_adjust(wspace=0.05)

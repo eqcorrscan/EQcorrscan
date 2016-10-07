@@ -1,8 +1,9 @@
 ## 0.1.4
-* Bug in plot_repicked removed where data were not normalized properly;
-* Bug in lag_calc where data were missing in the continuous data fixed
-(this led to incorrect picks, major bug!);
-* Output cccsum in lag-calc output;
+* Bug-fix in plot_repicked removed where data were not normalized
+properly;
+* Bug-fix in lag_calc where data were missing in the continuous data 
+fixed (this led to incorrect picks, **major bug!**);
+* Output cross-channel correlation sum in lag-calc output;
 * Add id to DETECTION objects, which is consistent with the events
 within DETECTION objects and catalog output, and used in lag_calc to
 allow linking of detections to catalog events;
@@ -17,7 +18,10 @@ which might be useful for reducing day start and end effects);
 * Allow multiple uses of the same channel in templates (e.g. you can
 now use a template with two windows from the same channel, such as a P
 and an S);
-* Add evaluation mode filter to utils.catalog_utils.filter_picks.
+* Add evaluation mode filter to utils.catalog_utils.filter_picks;
+* Update subspace plot to work when detector is not partitioned;
+* Make tests run a little faster;
+* Add pep8 testing for all code.
 
 ## 0.1.3
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;

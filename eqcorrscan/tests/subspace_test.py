@@ -92,13 +92,15 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'), align=True, shift_len=0.2)
+                           name=str('Tester'), align=True, shift_len=0.8,
+                           reject=0.2)
         detector.write('Test_file.h5')
         self.assertTrue(os.path.isfile('Test_file.h5'))
         os.remove('Test_file.h5')
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
-                           name=str('Tester'), align=True, shift_len=0.2)
+                           name=str('Tester'), align=True, shift_len=0.8,
+                           reject=0.2)
         detector.write('Test_file.h5')
         self.assertTrue(os.path.isfile('Test_file.h5'))
         os.remove('Test_file.h5')
@@ -106,7 +108,7 @@ class SubspaceTestingMethods(unittest.TestCase):
     def test_create_multiplexed_unaligned(self):
         """Test subspace creation - checks that np.dot(U.T, U) is identity."""
         templates = copy.deepcopy(self.templates)
-        templates = [template.select(station='HOWZ') for template in templates]
+        templates = [template.select(station='TMWZ') for template in templates]
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
@@ -126,11 +128,11 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
-            print(key)
+            # print(key)
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            print(key)
+            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
@@ -147,7 +149,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         # Test a non-multiplexed version
         detector = subspace.Detector()
         templates = copy.deepcopy(self.templates)
-        templates = [template.select(station='HOWZ') for template in templates]
+        templates = [template.select(station='TMWZ') for template in templates]
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=False, shift_len=0)
@@ -165,11 +167,11 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         'master_detector_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
-            print(key)
+            # print(key)
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            print(key)
+            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
@@ -184,7 +186,7 @@ class SubspaceTestingMethods(unittest.TestCase):
     def test_create_multiplexed_aligned(self):
         """Test subspace creation - checks that np.dot(U.T, U) is identity."""
         templates = copy.deepcopy(self.templates)
-        templates = [template.select(station='HOWZ') for template in templates]
+        templates = [template.select(station='TMWZ') for template in templates]
         # Test a multiplexed version
         detector = subspace.Detector()
         detector.construct(streams=templates, lowcut=2, highcut=9,
@@ -205,11 +207,11 @@ class SubspaceTestingMethods(unittest.TestCase):
                                         'master_detector_multi.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
-            print(key)
+            # print(key)
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            print(key)
+            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
@@ -226,7 +228,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         # Test a non-multiplexed version
         detector = subspace.Detector()
         templates = copy.deepcopy(self.templates)
-        templates = [template.select(station='HOWZ') for template in templates]
+        templates = [template.select(station='TMWZ') for template in templates]
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True, shift_len=6,
@@ -244,18 +246,18 @@ class SubspaceTestingMethods(unittest.TestCase):
                                                 'master_detector.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
-            print(key)
+            # print(key)
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            print(key)
+            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
-            for item, other_item in zip(list_item, other_list):
-                print(item.shape)
-                print(other_item.shape)
-                print('Next')
+            # for item, other_item in zip(list_item, other_list):
+            #     print(item.shape)
+            #     print(other_item.shape)
+            #     print('Next')
             for item, other_item in zip(list_item, other_list):
                 self.assertEqual(item.shape, other_item.shape)
                 if not np.allclose(item, other_item):
@@ -310,7 +312,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         st = self.st
         detections = detector.detect(st=st, threshold=0.009, trig_int=2,
                                      debug=1)
-        self.assertEqual(len(detections), 1)
+        self.assertEqual(len(detections), 2)
 
     def test_not_multiplexed(self):
         """Test that a non-multiplexed detector gets the same result."""
@@ -323,7 +325,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         st = self.st
         detections = detector.detect(st=st, threshold=0.05, trig_int=4,
                                      debug=0, moveout=2, min_trig=5)
-        self.assertEqual(len(detections), 2)
+        self.assertEqual(len(detections), 1)
 
     def test_multi_detectors(self):
         """Test the efficient looping in subspace."""
@@ -345,16 +347,14 @@ class SubspaceTestingMethods(unittest.TestCase):
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=False, num_cores=2)
-        print(detections)
-        self.assertEqual(len(detections), 5)
+        self.assertEqual(len(detections), 4)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
                                               threshold=0.05,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=True, num_cores=2)
-        print(detections)
-        self.assertEqual(len(detections), 5)
+        self.assertEqual(len(detections), 4)
 
     def partition_fail(self):
         templates = copy.deepcopy(self.templates)
@@ -381,8 +381,8 @@ def get_test_data():
     from obspy.clients.fdsn import Client
 
     cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                            maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
-                            enddate=UTCDateTime(2016, 5, 20))
+                            maxlon=175.5, startdate=UTCDateTime(2016, 5, 11),
+                            enddate=UTCDateTime(2016, 5, 13))
     cat = filter_picks(catalog=cat, top_n_picks=5)
     stachans = list(set([(pick.waveform_id.station_code,
                           pick.waveform_id.channel_code) for event in cat
@@ -391,15 +391,17 @@ def get_test_data():
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     client = Client('GEONET')
     design_set = []
+    bulk_info = []
     for event in cluster:
-        t1 = event.origins[0].time
-        t2 = t1 + 25
-        bulk_info = []
+        t1 = event.origins[0].time + 5
+        t2 = t1 + 15
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-        st = client.get_waveforms_bulk(bulk=bulk_info)
-        st.trim(t1, t2)
-        design_set.append(st)
+    st = client.get_waveforms_bulk(bulk=bulk_info)
+    for event in cluster:
+        t1 = event.origins[0].time + 5
+        t2 = t1 + 15
+        design_set.append(st.copy().trim(t1, t2))
     t1 = UTCDateTime(2016, 5, 11, 19)
     t2 = UTCDateTime(2016, 5, 11, 20)
     bulk_info = [('NZ', stachan[0], '*',

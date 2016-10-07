@@ -5,16 +5,27 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from eqcorrscan.core.match_filter import match_filter
+
+import numpy as np
 import unittest
+import os
+import warnings
+
+from obspy import read, Stream, Trace, UTCDateTime
+from obspy.clients.fdsn import Client
+from obspy.core.event import Pick
+
+from eqcorrscan.core import template_gen
+from eqcorrscan.utils import pre_processing, catalog_utils
+from eqcorrscan.core.match_filter import match_filter, normxcorr2
+from eqcorrscan.core.match_filter import _template_loop
+from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 
 
 class TestCoreMethods(unittest.TestCase):
     def test_perfect_normxcorr2(self):
         """Simple test of normxcorr2 to ensure data are detected
         """
-        import numpy as np
-        from eqcorrscan.core.match_filter import normxcorr2
         template = np.random.randn(100).astype(np.float32)
         image = np.zeros(1000).astype(np.float32)
         image[200] = 1.0
@@ -25,8 +36,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_fail_normxcorr2(self):
         """Ensure if template is nan then return is nan
         """
-        import numpy as np
-        from eqcorrscan.core.match_filter import normxcorr2
         template = np.array([np.nan] * 100)
         image = np.zeros(1000)
         image[200] = 1.0
@@ -37,8 +46,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_normal_normxcorr2(self):
         """Check that if match is not perfect correlation max isn't unity
         """
-        import numpy as np
-        from eqcorrscan.core.match_filter import normxcorr2
         template = np.random.randn(100) * 10.0
         image = np.zeros(1000)
         image[200] = 1.0
@@ -50,11 +57,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_set_normxcorr2(self):
         """Check that correlations output are the same irrespective of version.
         """
-        import numpy as np
-        from eqcorrscan.core.match_filter import normxcorr2
-        from obspy import read
-        import os
-        import warnings
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         template = read(os.path.join(testing_path, 'test_template.ms'))
@@ -74,9 +76,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_perfect_template_loop(self):
         """Check that perfect correlations are carried through.
         """
-        from obspy import Stream, Trace
-        import numpy as np
-        from eqcorrscan.core.match_filter import _template_loop
         template = Stream(Trace(np.random.randn(100).astype(np.float32)))
         template[0].stats.station = 'test'
         template[0].stats.channel = 'SZ'
@@ -90,9 +89,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_false_template_loop(self):
         """Check that perfect correlations are carried through.
         """
-        from obspy import Stream, Trace
-        import numpy as np
-        from eqcorrscan.core.match_filter import _template_loop
         template = Stream(Trace(np.array([np.nan] * 100)))
         template[0].stats.station = 'test'
         template[0].stats.channel = 'SZ'
@@ -106,9 +102,6 @@ class TestCoreMethods(unittest.TestCase):
     def test_normal_template_loop(self):
         """Check that perfect correlations are carried through.
         """
-        from obspy import Stream, Trace
-        import numpy as np
-        from eqcorrscan.core.match_filter import _template_loop
         template = Stream(Trace(np.random.randn(100) * 10.0))
         template[0].stats.station = 'test'
         template[0].stats.channel = 'SZ'
@@ -160,13 +153,6 @@ class TestCoreMethods(unittest.TestCase):
         """
         Test using a template with duplicate channels.
         """
-        from obspy.clients.fdsn import Client
-        from obspy.core.event import Pick
-        from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
-        from obspy import UTCDateTime
-        from eqcorrscan.core import template_gen, match_filter
-        from eqcorrscan.utils import pre_processing, catalog_utils
-
         client = Client('GEONET')
         t1 = UTCDateTime(2016, 9, 4)
         t2 = t1 + 86400
@@ -201,22 +187,16 @@ class TestCoreMethods(unittest.TestCase):
         st.trim(t1 + (4 * 3600), t1 + (5 * 3600))
         template_names = [str(template[0].stats.starttime)
                           for template in templates]
-        detections = match_filter.match_filter(template_names=template_names,
-                                               template_list=templates,
-                                               st=st, threshold=8.0,
-                                               threshold_type='MAD',
-                                               trig_int=6.0, plotvar=False,
-                                               plotdir='.', cores=4)
+        detections = match_filter(template_names=template_names,
+                                  template_list=templates, st=st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=4)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
     def test_short_match_filter(self):
         """Test using short streams of data."""
-        from obspy.clients.fdsn import Client
-        from obspy import UTCDateTime
-        from eqcorrscan.core import template_gen, match_filter
-        from eqcorrscan.utils import pre_processing, catalog_utils
-
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28)
         t2 = t1 + 86400
@@ -247,12 +227,11 @@ class TestCoreMethods(unittest.TestCase):
                                       debug=0, num_cores=4)
         template_names = [str(template[0].stats.starttime)
                           for template in templates]
-        detections = match_filter.match_filter(template_names=template_names,
-                                               template_list=templates,
-                                               st=st, threshold=8.0,
-                                               threshold_type='MAD',
-                                               trig_int=6.0, plotvar=False,
-                                               plotdir='.', cores=4)
+        detections = match_filter(template_names=template_names,
+                                  template_list=templates, st=st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=4)
         self.assertEqual(len(detections), 5)
 
 

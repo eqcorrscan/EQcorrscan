@@ -754,8 +754,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         # Generate a catalog of detections
         detections_cat = Catalog()
         for j, detection in enumerate(detections):
-            print('Converting for detection ' + str(j) + ' of ' +
-                  str(len(detections)))
+            if debug > 3:
+                print('Converting for detection ' + str(j) + ' of ' +
+                      str(len(detections)))
             # Create an event for each detection
             event = Event()
             # Set up some header info for the event

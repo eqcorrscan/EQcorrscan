@@ -54,15 +54,17 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # the detection statistics by that amount before stacking and detection.
     client = Client('GEONET')
     design_set = []
+    bulk_info = []
     for event in cluster:
         t1 = event.origins[0].time
         t2 = t1 + 25
-        bulk_info = []
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-        st = client.get_waveforms_bulk(bulk=bulk_info)
-        st.trim(t1, t2)
-        design_set.append(st)
+    st = client.get_waveforms_bulk(bulk=bulk_info)
+    for event in cluster:
+        t1 = event.origins[0].time
+        t2 = t1 + 25
+        design_set.append(st.copy().trim(t1, t2))
     # Construction of the detector will process the traces, then align them,
     # before multiplexing.
     detector = subspace.Detector()
