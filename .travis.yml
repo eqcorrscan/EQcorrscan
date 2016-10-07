@@ -19,10 +19,6 @@ matrix:
 
 sudo: false
 
-env:
-  global:
-    - OBSPY_VERSION=1.0.1
-
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
@@ -88,7 +84,6 @@ install:
   - pip install pep8-naming
   - pip install pytest pytest-cov pytest-pep8
   - pip install Cython
-  #  - pip install obspy==$OBSPY_VERSION
   - pip freeze
   - conda list
   # done installing dependencies

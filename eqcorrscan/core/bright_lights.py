@@ -750,7 +750,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     nodesout = []
     good_detections = []
     if detections:
-        print('Converting detections in to templates')
+        print('Converting detections into templates')
         # Generate a catalog of detections
         detections_cat = Catalog()
         for j, detection in enumerate(detections):
@@ -769,7 +769,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             node = (detection.template_name.split('_')[0],
                     detection.template_name.split('_')[1],
                     detection.template_name.split('_')[2])
-            print(node)
             # Look up node in nodes and find the associated lags
             index = nodes.index((float(node[0]), float(node[1]),
                                  float(node[2])))

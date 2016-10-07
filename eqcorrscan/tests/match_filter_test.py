@@ -232,6 +232,8 @@ class TestCoreMethods(unittest.TestCase):
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
                                   cores=4)
+        if not len(detections) == 5:
+            print(detections)
         self.assertEqual(len(detections), 5)
 
 
