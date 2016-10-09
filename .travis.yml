@@ -89,10 +89,9 @@ install:
   # done installing dependencies
   - git version
   - python setup.py install
-  - travis_wait mvn install
 
 script:
-  - python setup.py test
+  - travis_wait python setup.py test
 
 after_success:
   # Check how much code is actually tested and send this report to coveralls
