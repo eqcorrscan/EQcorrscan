@@ -91,7 +91,7 @@ install:
   - python setup.py install
 
 script:
-  - travis_wait python setup.py test
+  - travis_wait 50 python setup.py test
 
 after_success:
   # Check how much code is actually tested and send this report to coveralls
