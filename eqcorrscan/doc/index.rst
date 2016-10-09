@@ -13,16 +13,20 @@ EQcorrscan contains an efficient, multi-parallel,
 routines to implement :doc:`subspace </submodules/core.subspace>` detection,
 and detection based on :doc:`brightness </submodules/core.bright_lights>`.
 
-Code is stored on github, the development branches are |github_link|, or the latest stable release
-can be found |releases_link|.
+Code is stored on |github|, the development branches are |github_dev|, or the
+latest stable release can be found |releases_link|.
+
+.. |github| raw:: html
+
+    <a href="https://github.com/eqcorrscan/EQcorrscan" target="_blank">github</a>
 
 .. |releases_link| raw:: html
 
-  <a href="https://github.com/calum-chamberlain/EQcorrscan/releases" target="_blank">here</a>
+  <a href="https://github.com/eqcorrscan/EQcorrscan/releases" target="_blank">here</a>
 
-.. |github_link| raw:: html
+.. |github_dev| raw:: html
 
-  <a href="https://github.com/calum-chamberlain/EQcorrscan" target="_blank">on github</a>
+  <a href="https://github.com/eqcorrscan/EQcorrscan/tree/develop" target="_blank">here</a>
 
 EQcorrscan uses |Obspy_link| bindings when reading and writing seismic data, and for handling most
 of the event metadata, which ensures that detections can be easily migrated between

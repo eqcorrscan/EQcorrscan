@@ -144,3 +144,41 @@ handle parallelisation at lower-levels.  You can also do some 'brute-force'
 parallelisation on a day level when computing detections over multiple days.
 I tend to run one day per node of a cluster computer, with each day running
 templates in parallel.
+
+Running tests
+-------------
+
+One of the main goals of EQcorrscan is to improve reliability and reproducibility
+of earthquake detection.  To this end, EQcorrscan has a moderate test-base (you
+can check how much of our codebase if tested by looked at the badges in the
+|github| repository).  You can also run these tests yourself locally to ensure
+that everything runs as you would expect in your environment.  Although every
+effort has been made to ensure these tests run smoothly on all supported environments
+(using the ci bots), if you do find any issues, please let us know on the
+|github| page.
+
+.. |github| raw:: html
+
+    <a href="https://github.com/eqcorrscan/EQcorrscan" target="_blank">github</a>
+
+To run the tests you will need to have pytest installed along with a couple of
+extras (pytest-pep8 and pytest-cov).  These can be installed by pip:
+
+.. code-block:: bash
+
+    pip install pytest pytest-pep8 pytest-cov
+
+You will also need to have a clone of the github repository:
+
+.. code-block:: bash
+
+    git clone https://github.com/eqcorrscan/EQcorrscan.git
+
+You can then run the tests from within the repository directory:
+
+.. code-block:: bash
+
+    python setup.py test
+
+Tests will take about half an hour to run (as of v.0.1.4) and will provide
+a coverage report at the end and notify you of any failures.
