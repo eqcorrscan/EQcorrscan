@@ -89,6 +89,7 @@ install:
   # done installing dependencies
   - git version
   - python setup.py install
+  - travis_wait mvn install
 
 script:
   - python setup.py test
