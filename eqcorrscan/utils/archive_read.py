@@ -7,7 +7,7 @@ Helper functions for reading data from archives for the EQcorrscan package.
     contribute it back to the project.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -21,14 +21,14 @@ from __future__ import unicode_literals
 
 def read_data(archive, arc_type, day, stachans, length=86400):
     """
-    Function to read the appropriate data from your archive for your selected \
-    day.
+    Function to read the appropriate data from an archive for a day.
 
     :type archive: str
-    :param archive: The archive source - if arc_type is seishub, this should \
-        be a url, if the arc_type is FDSN then this can be either a url or a \
-        known obspy client.  If arc_type is day_vols, then this is the path \
-        to the top directory.
+    :param archive:
+        The archive source - if arc_type is seishub, this should be a url,
+        if the arc_type is FDSN then this can be either a url or a known obspy
+        client.  If arc_type is day_vols, then this is the path to the top
+        directory.
     :type arc_type: str
     :param arc_type: The type of archive, can be: seishub, FDSN, day_volves
     :type day: datetime.date
@@ -39,7 +39,8 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     :type length: float
     :param length: Data length to extract in seconds, defaults to 1 day.
 
-    :returns: obspy.core.stream.Stream
+    :returns: Stream of data
+    :rtype: obspy.core.stream.Stream
 
     .. note:: A note on arc_types, if arc_type is day_vols, then this will \
         look for directories labelled in the IRIS DMC conventions of \
@@ -58,8 +59,10 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     >>> st = read_data('GEONET', 'FDSN', t1, stachans)
     >>> print(st)
     2 Trace(s) in Stream:
-    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z | 100.0 Hz, 8640368 samples
-    NZ.JCZ.10.HHZ | 2012-03-25T23:59:57.348391Z - 2012-03-27T00:00:02.958391Z | 100.0 Hz, 8640562 samples
+    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z \
+| 100.0 Hz, 8640368 samples
+    NZ.JCZ.10.HHZ | 2012-03-25T23:59:57.348391Z - 2012-03-27T00:00:02.958391Z \
+| 100.0 Hz, 8640562 samples
 
 
     .. rubric:: Example, missing data
@@ -71,7 +74,8 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     >>> st = read_data('GEONET', 'FDSN', t1, stachans)
     >>> print(st)
     1 Trace(s) in Stream:
-    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z | 100.0 Hz, 8640368 samples
+    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z \
+| 100.0 Hz, 8640368 samples
 
 
     .. rubric:: Example, local day-volumes
@@ -84,8 +88,10 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     ...                t1, stachans)
     >>> print(st)
     2 Trace(s) in Stream:
-    AF.WHYM..SHZ | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.000000Z | 1.0 Hz, 86400 samples
-    AF.EORO..SHZ | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.000000Z | 1.0 Hz, 86400 samples
+    AF.WHYM..SHZ | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.000000Z \
+| 1.0 Hz, 86400 samples
+    AF.EORO..SHZ | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.000000Z \
+| 1.0 Hz, 86400 samples
     """
     import obspy
     import os
@@ -172,7 +178,16 @@ def _get_station_file(path_name, station, channel, debug=0):
 
 def _parallel_checking_loop(wavfile, station, channel, debug=0):
     """
-    Inner loop for parallel
+    Inner loop for parallel checks.
+
+    :type wavfile: str
+    :param wavfile: Wavefile path name to look in.
+    :type station: str
+    :param station: Channel name to check for
+    :type channel: str
+    :param channel: Channel name to check for
+    :type debug: int
+    :param debug: Debug level, if > 1, will output what it it working on.
     """
     from obspy import read
     if debug > 1:
@@ -197,7 +212,8 @@ def _check_available_data(archive, arc_type, day):
 
     :returns: list of tuples of (station, channel) as available.
 
-    ..note:: Currently the seishub options are untested.
+    .. note:: Currently the seishub options are untested.
+
     """
     from obspy import read, UTCDateTime
     import glob

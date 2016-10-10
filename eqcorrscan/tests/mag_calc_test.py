@@ -56,8 +56,8 @@ class TestMagCalcMethods(unittest.TestCase):
         with NamedTemporaryFile() as tf:
             respf = tf.name
             old_iris_client = OldIris_Client()
-            # fetch RESP information from "old" IRIS web service, see obspy.fdsn
-            # for accessing the new IRIS FDSN web services
+            # fetch RESP information from "old" IRIS web service, see
+            # obspy.fdsn for accessing the new IRIS FDSN web services
             old_iris_client.resp('NZ', 'BFZ', '10', 'HHZ', t1, t2,
                                  filename=respf)
             date = t1
@@ -93,7 +93,7 @@ class TestMagCalcMethods(unittest.TestCase):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         GSEfile = os.path.join(testing_path, 'POCR2SH_1.2008-01-01-0000_GSE')
-        PAZ, date, station, channel, sensor = _GSE2_PAZ_read(GSEfile=GSEfile)
+        PAZ, date, station, channel, sensor = _GSE2_PAZ_read(gsefile=GSEfile)
         # Check that all the elements are there
         self.assertEqual(date, dt.datetime(2008, 11, 6, 0, 0))
         self.assertEqual(station, 'POCR2')

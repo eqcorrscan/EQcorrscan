@@ -13,6 +13,14 @@ calculate the detection statistics.  We do this to make use of numpy's vectorize
 calculations, while taking advantage of the speed-ups afforded by compiling
 the sliding window loop.
 
+WARNING
+-------
+
+Subspace in EQcorrscan is in **beta**, you must check your results match what
+you expect - if you find errors please report them.  Although our test-cases run
+correctly, changes in data quality may affect the routines in ways we have not
+accounted for.
+
 Important
 ---------
 
@@ -55,7 +63,8 @@ aligned (see clustering submodule for alignment methods).
 .. code-block:: python
 
     detector.construct(streams=streams, lowcut=2, highcut=9, filt_order=4,
-                       sampling_rate=20, multiplex=True, name='Test_1')
+                       sampling_rate=20, multiplex=True, name='Test_1',
+                       align=True, shift_len=0.5)
 
 This will populate all the attributes of your *detector* object, and fill the
 *detector.data* with the full input basis vector matrix.

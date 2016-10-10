@@ -5,19 +5,33 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import unittest
-from eqcorrscan.core.template_gen import *
+import glob
+import os
+import obspy
+import numpy as np
+import warnings
+import shutil
+
+from obspy import read, UTCDateTime, read_events, Stream
+from obspy.clients.fdsn.header import FDSNException
+from obspy.clients.fdsn import Client
+from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
+
+from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
+from eqcorrscan.core.template_gen import from_meta_file, from_client
+from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
+from eqcorrscan.tutorials.template_creation import mktemplates
+from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.sfile_util import eventtosfile, read_event
 
 
 class TestTemplateGeneration(unittest.TestCase):
     """Test the reading a writing of pick info."""
     def test_sac_template_gen(self):
         """Test template generation."""
-        from eqcorrscan.core.template_gen import from_sac
-        import glob
-        import os
-        import obspy
-
         samp_rate = 20
         length = 8
 
@@ -52,13 +66,6 @@ class TestTemplateGeneration(unittest.TestCase):
 
         Checks that the tutorial generates the templates we expect it to!
         """
-        from obspy import read
-        from eqcorrscan.tutorials.template_creation import mktemplates
-        import os
-        import numpy as np
-        from obspy.clients.fdsn.header import FDSNException
-        import warnings
-
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         try:
@@ -84,9 +91,6 @@ class TestTemplateGeneration(unittest.TestCase):
     def test_not_delayed(self):
         """Test the method of template_gen without applying delays to
         channels."""
-        from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
-        from obspy import UTCDateTime
-        from eqcorrscan.utils.catalog_utils import filter_picks
         cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
                                 maxlon=175.5,
                                 startdate=UTCDateTime(2016, 5, 1),
@@ -108,26 +112,15 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertEqual(tr.stats.npts, length)
 
     def test_download_various_methods(self):
-        """Will download data from server and store in various databases,
-        then create templates using the various methods."""
-        import obspy
-        if int(obspy.__version__.split('.')[0]) >= 1:
-            from obspy.clients.fdsn import Client
-            from obspy import read_events
-        else:
-            from obspy.fdsn import Client
-            from obspy import readEvents as read_events
-        from obspy.core.event import Catalog
-        from obspy import UTCDateTime
-        from eqcorrscan.utils.sfile_util import eventtosfile
-        import os
-        import shutil
-
+        """
+        Will download data from server and store in various databases,
+        then create templates using the various methods.
+        """
         client = Client('GEONET')
         # get the events
         catalog = Catalog()
         data_stream = client._download('http://quakeml.geonet.org.nz/' +
-                                           'quakeml/1.2/2016p008194')
+                                       'quakeml/1.2/2016p008194')
         data_stream.seek(0, 0)
         catalog += read_events(data_stream, format="quakeml")
         data_stream.close()
@@ -164,19 +157,14 @@ class TestTemplateGeneration(unittest.TestCase):
                                  lowcut=1.0, highcut=5.0, samp_rate=20,
                                  filt_order=4, length=3, prepick=0.5,
                                  swin='all')
+        self.assertTrue(isinstance(template, Stream))
         shutil.rmtree(continuous_st[0].stats.starttime.strftime('Y%Y'))
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
-        from obspy.core.event import Catalog, Event, Origin, Pick
-        from obspy.core.event import WaveformStreamID
-        from obspy import UTCDateTime
-        import warnings
         from future import standard_library
         with standard_library.hooks():
             from urllib.request import URLError
-
-
         t = UTCDateTime(2009, 9, 3)
         test_cat = Catalog()
         test_cat.append(Event())
@@ -188,7 +176,7 @@ class TestTemplateGeneration(unittest.TestCase):
         test_cat[0].\
             picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
                                                            channel_code='EHZ',
-                                                            network_code='BW'),
+                                                           network_code='BW'),
                               phase_hint='PG', time=t + 2000))
         test_cat[0].\
             picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
@@ -214,12 +202,6 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertEqual(len(template), 3)
 
     def test_catalog_grouping(self):
-        from obspy.core.event import Catalog
-        from eqcorrscan.utils.sfile_util import read_event
-        import glob
-        import os
-        from eqcorrscan.core.template_gen import _group_events
-
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_', '*')
         catalog = Catalog()
@@ -246,9 +228,6 @@ class TestTemplateGeneration(unittest.TestCase):
                 self.assertEqual(k_events, len(catalog))
 
     def test_missing_waveform_id(self):
-        from obspy import read
-        from eqcorrscan.core.template_gen import from_meta_file
-        import os
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         quakeml = os.path.join(testing_path,

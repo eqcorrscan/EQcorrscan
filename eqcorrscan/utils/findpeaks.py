@@ -1,7 +1,7 @@
 r"""Functions to find peaks in data above a certain threshold.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -12,9 +12,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import random
+import numpy as np
+
+from obspy import UTCDateTime
+from scipy import ndimage
+
 
 def is_prime(number):
-    r"""Function to test primality of a number. Function lifted from online \
+    """
+    Function to test primality of a number. Function lifted from online
     resource:
         http://www.codeproject.com/Articles/691200/Primality-test-algorithms-Prime-test-The-fastest-w
 
@@ -32,7 +39,6 @@ def is_prime(number):
     >>> is_prime(3)
     True
     """
-    import random
     ''' if number != 1 '''
     if number > 1:
         ''' repeat the test few times '''
@@ -40,7 +46,7 @@ def is_prime(number):
             ''' Draw a RANDOM number in range of number ( Z_number )  '''
             randomNumber = random.randint(2, number - 1)
             ''' Test if a^(n-1) = 1 mod n '''
-            if pow(randomNumber, number-1, number) != 1:
+            if pow(randomNumber, number - 1, number) != 1:
                 return False
         return True
     else:
@@ -50,11 +56,12 @@ def is_prime(number):
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       samp_rate=1.0):
-    r"""Determine peaks in an array of data above a certain \
-    threshold. Uses a mask to remove data below threshold and finds peaks in \
-    what is left.
+    """
+    Determine peaks in an array of data above a certain threshold.
 
-    :type arr: ndarray
+    Uses a mask to remove data below threshold and finds peaks in what is left.
+
+    :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
     :param thresh: The threshold below which will be considered noise and \
@@ -64,12 +71,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         if multiple peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
-    :type starttime: osbpy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
 
     :return: peaks: Lists of tuples of peak values and locations.
+    :rtype: list
 
 
     >>> import numpy as np
@@ -80,9 +88,6 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     >>> find_peaks2_short(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
     """
-    from scipy import ndimage
-    import numpy as np
-    from obspy import UTCDateTime
     if not starttime:
         starttime = UTCDateTime(0)
     # Set everything below the threshold to zero
@@ -174,13 +179,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
                    samp_rate=1.0):
-    r"""Determine peaks in an array of data above a certain \
-    threshold: depreciated.
+    """
+    Determine peaks in an array of data above a certain threshold: depreciated.
 
     Depreciated peak-finding routine, very slow, but accurate.  If all else \
     fails this one should work.
 
-    :type arr: ndarray
+    :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
     :param thresh: The threshold below which will be considered noise and \
@@ -188,12 +193,13 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
         if multiple peaks within this window this code will find the highest.
-    :type starttime: osbpy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
 
     :return: peaks: Lists of tuples of peak values and locations.
+    :rtype: list
 
     >>> import numpy as np
     >>> arr = np.random.randn(100)
@@ -203,8 +209,6 @@ def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
     >>> find_peaks_dep(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
     """
-    import numpy as np
-    from obspy import UTCDateTime
     if not starttime:
         starttime = UTCDateTime(0)
     # Perform some checks
@@ -260,6 +264,9 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
     """
     Find network coincidence triggers within peaks of detection statistics.
 
+    Useful for finding network detections from sets of detections on individual
+    stations.
+
     :type peaks: list
     :param peaks: List of lists of tuples of (peak, index) for each \
         station-channel.  Index should be in samples.
@@ -273,17 +280,17 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
     :type min_trig: int
     :param min_trig: Minimum station-channels required to declare a trigger.
     :type trig_int: float
-    :param trig_int: Minimum allowable time between network triggers in seconds.
+    :param trig_int:
+        Minimum allowable time between network triggers in seconds.
 
-    :return: List of tuples of (peak, index), for the earliest detected station.
+    :return:
+        List of tuples of (peak, index), for the earliest detected station.
     :rtype: list
 
-    .. rubric:: Example
-
-        >>> peaks = [[(0.5, 100), (0.3, 800)], [(0.4, 120), (0.7, 850)]]
-        >>> triggers = coin_trig(peaks, [('a', 'Z'), ('b', 'Z')], 10, 3, 2, 1)
-        >>> print(triggers)
-        [(0.45, 100)]
+    >>> peaks = [[(0.5, 100), (0.3, 800)], [(0.4, 120), (0.7, 850)]]
+    >>> triggers = coin_trig(peaks, [('a', 'Z'), ('b', 'Z')], 10, 3, 2, 1)
+    >>> print(triggers)
+    [(0.45, 100)]
     """
     triggers = []
     for stachan, _peaks in zip(stachans, peaks):
@@ -292,13 +299,13 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
             triggers.append(trigger)
     coincidence_triggers = []
     for i, master in enumerate(triggers):
-        slaves = triggers[i+1:]
+        slaves = triggers[i + 1:]
         coincidence = 1
         trig_time = master[0]
         trig_val = master[1]
         for slave in slaves:
             if abs(slave[0] - master[0]) <= (moveout * samp_rate) and \
-              slave[2] != master[2]:
+               slave[2] != master[2]:
                 coincidence += 1
                 if slave[0] < master[0]:
                     trig_time = slave[0]

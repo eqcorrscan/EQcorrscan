@@ -4,7 +4,7 @@ processing of the data using obspy modules (which also rely on scipy and \
 numpy).
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -15,18 +15,28 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
+import warnings
+import datetime as dt
+
+from multiprocessing import Pool, cpu_count
+
+from obspy import Stream, Trace, UTCDateTime
+from obspy.signal.filter import bandpass, lowpass, highpass
+
 
 def _check_daylong(tr):
     """
     Check the data quality of the daylong file.
-    Check to see \
-    that the day isn't just zeros, with large steps, if it is then the \
-    resampling will hate it.
+
+    Check to see that the day isn't just zeros, with large steps, if it is
+    then the resampling will hate it.
 
     :type tr: obspy.core.trace.Trace
     :param tr: Trace to check if the data are daylong.
 
-    :return qual: bool
+    :return quality (simply good or bad)
+    :rtype: bool
 
     .. rubric:: Example
 
@@ -37,7 +47,6 @@ def _check_daylong(tr):
     >>> _check_daylong(st[0])
     True
     """
-    import numpy as np
     if len(tr.data) - len(np.nonzero(tr.data)) < 0.5 * len(tr.data):
         qual = False
     else:
@@ -47,17 +56,18 @@ def _check_daylong(tr):
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
               parallel=False, num_cores=False, starttime=None, endtime=None):
-    r"""Basic function to bandpass and downsample.
+    """
+    Basic function to bandpass and downsample.
 
-    Works in place on data.  This is employed to ensure all parts of the \
+    Works in place on data.  This is employed to ensure all parts of the
     data are processed in the same way.
 
     :type st: obspy.core.stream.Stream
     :param st: Stream to process
-    :type highcut: float
-    :param highcut: High cut for bandpass in Hz
     :type lowcut: float
     :param lowcut: Low cut for bandpass in Hz
+    :type highcut: float
+    :param highcut: High cut for bandpass in Hz
     :type filt_order: int
     :param filt_order: Number of corners for bandpass filter
     :type samp_rate: float
@@ -71,22 +81,24 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type num_cores: int
     :param num_cores: Control the number of cores for parallel processing, \
         if set to False then this will use all the cores.
-    :type starttime: obspy.core.UTCDateTime
-    :param starttime: Desired data start time, will trim to this before \
-        processing
-    :type endtime: obspy.core.UTCDateTime
-    :param endtime: Desired data end time, will trim to this before \
-        processing
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
+    :param starttime:
+        Desired data start time, will trim to this before processing
+    :type endtime: obspy.core.utcdatetime.UTCDateTime
+    :param endtime:
+        Desired data end time, will trim to this before processing
 
-    :return: obspy.Stream
+    :return: Processed stream
+    :rtype: :class:`obspy.core.stream.Stream`
 
     .. note:: Will convert channel names to two characters long.
 
-    .. warning:: If you intend to use this for processing templates you \
-        should consider how resampling will effect your cross-correlations. \
-        Minor differences in resampling between day-long files (which you \
-        are likely to use for continuous detection) and shorter files will \
-        reduce your cross-correlations!
+    .. warning::
+        If you intend to use this for processing templates you should consider
+        how resampling will impact your cross-correlations. Minor differences
+        in resampling between day-long files (which you are likely to use for
+        continuous detection) and shorter files will reduce your
+        cross-correlations!
 
     .. rubric:: Example, bandpass
 
@@ -97,7 +109,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...                debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
+ 20.0 Hz, 1800 samples
 
     .. rubric:: Example, low-pass
 
@@ -108,7 +121,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
+ 20.0 Hz, 1800 samples
 
     .. rubric:: Example, high-pass
 
@@ -119,10 +133,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z | 20.0 Hz, 1800 samples
+    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
+ 20.0 Hz, 1800 samples
     """
-    from multiprocessing import Pool, cpu_count
-    from obspy import Stream, Trace
     if isinstance(st, Trace):
         tracein = True
         st = Stream(st)
@@ -138,7 +151,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
             tr.trim(starttime, endtime)
             print(len(tr))
             if len(tr.data) == ((endtime - starttime) *
-                                    tr.stats.sampling_rate) + 1:
+                                tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
     elif starttime:
         for tr in st:
@@ -156,7 +169,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
                                                      'samp_rate': samp_rate,
                                                      'debug': debug,
                                                      'starttime': False,
-                                                     'full_day': False})
+                                                     'clip': False})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -166,15 +179,15 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=False, full_day=False)
+                    starttime=False, clip=False)
     if tracein:
         st.merge()
         return st[0]
     return st
 
 
-def dayproc(st, lowcut, highcut, filt_order, samp_rate,
-            starttime, debug=0, parallel=True, num_cores=False):
+def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
+            parallel=True, num_cores=False, ignore_length=False):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -182,29 +195,42 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     are processed in the same way.
 
     :type st: obspy.core.stream.Stream
-    :param st: Stream to process (can be trace)
-    :type highcut: float
-    :param highcut: High cut in Hz for bandpass
+    :param st: Stream to process (can be trace).
     :type lowcut: float
-    :type lowcut: Low cut in Hz for bandpass
+    :param lowcut: Low cut in Hz for bandpass.
+    :type highcut: float
+    :param highcut: High cut in Hz for bandpass.
     :type filt_order: int
-    :param filt_order: Corners for bandpass
+    :param filt_order: Corners for bandpass.
     :type samp_rate: float
-    :param samp_rate: Desired sampling rate in Hz
-    :type debug: int
-    :param debug: Debug output level from 0-5, higher numbers = more output
+    :param samp_rate: Desired sampling rate in Hz.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
-    :param starttime: Desired start of trace
+    :param starttime: Desired start-date of trace.
+    :type debug: int
+    :param debug: Debug output level from 0-5, higher numbers = more output.
     :type parallel: bool
-    :param parallel: Set to True to process traces in parallel, this is often \
-        faster than serial processing of traces: defaults to True
+    :param parallel:
+        Set to True to process traces in parallel, this is often faster than
+        serial processing of traces: defaults to True.
     :type num_cores: int
-    :param num_cores: Control the number of cores for parallel processing, \
-        if set to False then this will use all the cores.
+    :param num_cores:
+        Control the number of cores for parallel processing, if set to False
+        then this will use all the cores.
+    :type ignore_length: bool
+    :param ignore_length: See warning below.
 
-    :return: obspy.Stream
+    :return: Processed stream.
+    :rtype: :class:`obspy.core.stream.Stream`
 
     .. note:: Will convert channel names to two characters long.
+
+    .. warning::
+        Will fail if data are less than 19.2 hours long - this number is
+        arbitrary and is chosen to alert the user to the dangers of padding
+        to day-long, if you don't care you can ignore this error by setting
+        `ignore_length=True`. Use this option at your own risk!  It will also
+        warn any-time it has to pad data - if you see strange artifacts in your
+        detections, check whether the data have gaps.
 
     .. rubric:: Example, bandpass
 
@@ -224,7 +250,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+ 20.0 Hz, 1728000 samples
 
 
     .. rubric:: Example, low-pass
@@ -245,7 +272,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+ 20.0 Hz, 1728000 samples
 
     .. rubric:: Example, high-pass
 
@@ -265,10 +293,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z | 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+ 20.0 Hz, 1728000 samples
     """
-    from multiprocessing import Pool, cpu_count
-    from obspy import Stream, Trace
     # Add sanity check for filter
     if isinstance(st, Trace):
         st = Stream(st)
@@ -289,7 +316,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
                                                      'samp_rate': samp_rate,
                                                      'debug': debug,
                                                      'starttime': starttime,
-                                                     'full_day': True})
+                                                     'clip': True,
+                                                     'ignore_length':
+                                                         ignore_length,
+                                                     'length': 86400})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -299,7 +329,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=starttime, full_day=True)
+                    starttime=starttime, clip=True,
+                    ignore_length=ignore_length, length=86400)
     if tracein:
         st.merge()
         return st[0]
@@ -307,56 +338,64 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate,
 
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
-            starttime=False, full_day=False, seisan=True):
-    r"""Basic function to process data, usually called by dayproc or shortproc.
+            starttime=False, clip=False, length=86400,
+            seisan_chan_names=True, ignore_length=False):
+    """
+    Basic function to process data, usually called by dayproc or shortproc.
 
-    Functionally, this will bandpass, downsample and check headers and length \
+    Functionally, this will bandpass, downsample and check headers and length
     of trace to ensure files start at the start of a day and are daylong.
-
-    Works in place on data.  This is employed to ensure all parts of the data \
-    are processed in the same way.
+    This is a simple wrapper on obspy functions, we include it here to provide
+    a system to ensure all parts of the dataset are processed in the same way.
 
     .. note:: Usually this function is called via dayproc or shortproc.
 
     :type tr: obspy.core.trace.Trace
     :param tr: Trace to process
+    :type lowcut: float
+    :param lowcut: Low cut in Hz, if set to None and highcut is set, will use \
+        a lowpass filter.
     :type highcut: float
     :param highcut: High cut in Hz, if set to None and lowcut is set, will \
         use a highpass filter.
-    :type lowcut: float
-    :type lowcut: Low cut in Hz, if set to None and highcut is set, will use \
-        a lowpass filter.
     :type filt_order: int
     :param filt_order: Number of corners for filter.
     :type samp_rate: float
-    :param samp_rate: Desired sampling rate in Hz
+    :param samp_rate: Desired sampling rate in Hz.
     :type debug: int
-    :param debug: Debug output level from 0-5, higher numbers = more output
+    :param debug: Debug output level from 0-5, higher numbers = more output.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Desired start of trace
-    :type full_day: bool
-    :param full_day: Whether to expect, and enforce a full day of data or not.
-    :type seisan: bool
-    :param seisan: Whether channels are named like seisan channels (which are \
-        two letters rather than three) - defaults to True.
+    :type clip: bool
+    :param clip: Whether to expect, and enforce a set length of data or not.
+    :type length: float
+    :param length: Use to set a fixed length for data from the given starttime.
+    :type seisan_chan_names: bool
+    :param seisan_chan_names:
+        Whether channels are named like seisan channels (which are two letters
+        rather than SEED convention of three) - defaults to True.
+    :type ignore_length: bool
+    :param ignore_length: See warning in dayproc.
 
-    :return: obspy.Stream
-
-    .. note:: Will convert channel names to two characters long.
+    :return: Processed stream.
+    :type: :class:`obspy.core.stream.Stream`
     """
-    import warnings
-    from obspy.signal.filter import bandpass, lowpass, highpass
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
+
     # Define the start-time
     if starttime:
+        # Be nice and allow a datetime object.
+        if isinstance(starttime, dt.date) or isinstance(starttime,
+                                                        dt.datetime):
+            starttime = UTCDateTime(starttime)
         day = starttime.date
     else:
         day = tr.stats.starttime.date
 
     if debug >= 2:
-        print('Working on: '+tr.stats.station+'.'+tr.stats.channel)
+        print('Working on: ' + tr.stats.station + '.' + tr.stats.channel)
     if debug >= 5:
         tr.plot()
     # Do a brute force quality check
@@ -366,37 +405,43 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                " data set-up and manually sort it: " + tr.stats.station + "." +
                tr.stats.channel)
         raise ValueError(msg)
-    tr = tr.detrend('simple')    # Detrend data before filtering
+    tr = tr.detrend('simple')
+    # Detrend data before filtering
     if debug > 0:
-        print('I have '+str(len(tr.data))+' data points for ' +
-              tr.stats.station+'.'+tr.stats.channel+' before processing')
+        print('I have ' + str(len(tr.data)) + ' data points for ' +
+              tr.stats.station + '.' + tr.stats.channel +
+              ' before processing')
 
     # Sanity check to ensure files are daylong
-    if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0\
-       and full_day:
+    if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         if debug >= 2:
-            print('Data for '+tr.stats.station+'.'+tr.stats.channel +
+            print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
                   ' are not of daylong length, will zero pad')
+        if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
+           and not ignore_length:
+            msg = ('Data for %s.%s is %i hours long, which is less than 0.8 '
+                   'of the desired length, will not pad' %
+                   (tr.stats.station, tr.stats.channel,
+                    (tr.stats.endtime - tr.stats.starttime) / 3600))
+            raise NotImplementedError(msg)
         # Use obspy's trim function with zero padding
-        tr = tr.trim(starttime, starttime + 86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
                      nearest_sample=True)
         # If there is one sample too many after this remove the first one
         # by convention
-        if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
+        if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
-                raise ValueError('Data are not daylong for '+tr.stats.station +
-                                 '.'+tr.stats.channel)
+        if not tr.stats.sampling_rate * length == tr.stats.npts:
+                raise ValueError('Data are not daylong for ' +
+                                 tr.stats.station + '.' + tr.stats.channel)
 
-        print('I now have '+str(len(tr.data)) +
-              ' data points after enforcing day length')
-
+        print('I now have %i data points after enforcing length'
+              % len(tr.data))
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         if debug >= 2:
             print('Resampling')
         tr.resample(samp_rate)
-
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
@@ -416,31 +461,30 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                            filt_order, True)
     else:
         warnings.warn('No filters applied')
-
     # Account for two letter channel names in s-files and therefore templates
-    if seisan:
-        tr.stats.channel = tr.stats.channel[0]+tr.stats.channel[-1]
+    if seisan_chan_names:
+        tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
 
     # Sanity check the time header
-    if tr.stats.starttime.day != day and full_day:
+    if tr.stats.starttime.day != day and clip:
         warnings.warn("Time headers do not match expected date: " +
                       str(tr.stats.starttime))
 
     # Sanity check to ensure files are daylong
-    if float(tr.stats.npts / tr.stats.sampling_rate) != 86400.0 and full_day:
+    if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         if debug >= 2:
-            print('Data for '+tr.stats.station+'.'+tr.stats.channel +
+            print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
                   ' is not of daylong length, will zero pad')
         # Use obspy's trim function with zero padding
-        tr = tr.trim(starttime, starttime+86400, pad=True, fill_value=0,
+        tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
                      nearest_sample=True)
         # If there is one sample too many after this remove the last one
         # by convention
-        if len(tr.data) == (86400 * tr.stats.sampling_rate) + 1:
+        if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate * 86400 == tr.stats.npts:
-                raise ValueError('Data are not daylong for '+tr.stats.station +
-                                 '.'+tr.stats.channel)
+        if not tr.stats.sampling_rate * length == tr.stats.npts:
+                raise ValueError('Data are not daylong for ' +
+                                 tr.stats.station + '.' + tr.stats.channel)
     # Final visual check for debug
     if debug > 4:
         tr.plot()

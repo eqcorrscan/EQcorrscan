@@ -85,9 +85,17 @@ class TestTutorialScripts(unittest.TestCase):
                 # The template
                 tr = template.select(station=stachan[0], channel=stachan[1])[0]
                 delay = tr.stats.starttime - \
-                        template.sort(['starttime'])[0].stats.starttime
+                    template.sort(['starttime'])[0].stats.starttime
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
+                # Check that ccs increases
+                # for comment in event.comments:
+                #     if comment.text.split('=')[0] == 'detect_val':
+                #         post_lag_ccs = float(comment.text.split('=')[-1])
+                # for comment in detection.event.comments:
+                #     if comment.text.split('=')[0] == 'detect_val':
+                #         pre_lag_ccs = float(comment.text.split('=')[-1])
+                # self.assertGreaterEqual(post_lag_ccs, pre_lag_ccs)
 
     def test_subspace(self):
         """Test the subspace tutorial."""

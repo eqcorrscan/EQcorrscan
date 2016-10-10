@@ -1,17 +1,11 @@
 """A setuptools based setup module for EQcorrscan package.
 
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+:copyright:
+    EQcorrscan developers.
 
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 
 # Always prefer setuptools over distutils
@@ -50,7 +44,7 @@ else:
 
 try:
     import cv2  # NOQA
-except:
+except ImportError:
     print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
@@ -130,6 +124,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.4',
     ],
 
     # What does your project relate to?
@@ -151,7 +146,7 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov'],
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'],
 
     # Build our extension for subspace detection
     cmdclass=cmd_class,
