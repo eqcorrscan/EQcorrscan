@@ -97,7 +97,7 @@ script:
 after_success:
   # Check how much code is actually tested and send this report to coveralls
   - coverage combine
-  - codecov
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
     email: false
