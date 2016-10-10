@@ -37,9 +37,10 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
                                          samp_rate=50.0, filt_order=4,
                                          length=3.0, prepick=0.15,
                                          swin='all', process_len=3600)
+    # In this section we generate a series of chunks of data.
     start_time = UTCDateTime(2004, 9, 28, 17)
     end_time = UTCDateTime(2004, 9, 28, 20)
-    process_len = 1800
+    process_len = 3600
     chunks = []
     chunk_start = start_time
     while chunk_start < end_time:

@@ -526,9 +526,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
-                 debug=0, plot_format='png',
-                 output_cat=False, extract_detections=False,
-                 arg_check=True):
+                 debug=0, plot_format='png', output_cat=False,
+                 extract_detections=False, arg_check=True):
     """
     Main matched-filter detection function.
 
@@ -728,11 +727,19 @@ def match_filter(template_names, template_list, st, threshold,
     # Note: this works
     if debug >= 2:
         print('Ensuring all template channels have matches in long data')
-    template_stachan = []
+    template_stachan = {}
     for template in templates:
+        stachans_in_template = []
         for tr in template:
-            template_stachan += [(tr.stats.station, tr.stats.channel)]
-    template_stachan = list(set(template_stachan))
+            stachans_in_template.append((tr.stats.station, tr.stats.channel))
+        stachans_in_template = dict(Counter(stachans_in_template))
+        for stachan in stachans_in_template.keys():
+            if stachan not in template_stachan.keys():
+                template_stachan.update({stachan:
+                                         stachans_in_template[stachan]})
+            elif stachans_in_template[stachan] > template_stachan[stachan]:
+                template_stachan.update({stachan:
+                                         stachans_in_template[stachan]})
     # Copy this here to keep it safe
     for stachan in template_stachan:
         if not stream.select(station=stachan[0], channel=stachan[1]):
@@ -763,8 +770,12 @@ def match_filter(template_names, template_list, st, threshold,
             templates.remove(template)
             template_names.remove(template_name)
             continue
-        for stachan in template_stachan:
-            if not template.select(station=stachan[0], channel=stachan[1]):
+        for stachan in template_stachan.keys():
+            number_of_channels = len(template.select(station=stachan[0],
+                                                     channel=stachan[1]))
+            if number_of_channels < template_stachan[stachan]:
+                missed_channels = template_stachan[stachan] -\
+                                  number_of_channels
                 nulltrace = Trace()
                 nulltrace.stats.station = stachan[0]
                 nulltrace.stats.channel = stachan[1]
@@ -772,7 +783,8 @@ def match_filter(template_names, template_list, st, threshold,
                 nulltrace.stats.starttime = template[0].stats.starttime
                 nulltrace.data = np.array([np.NaN] * len(template[0].data),
                                           dtype=np.float32)
-                template += nulltrace
+                for dummy in range(missed_channels):
+                    template += nulltrace
     if debug >= 2:
         print('Starting the correlation run for this day')
     [cccsums, no_chans, chans] = _channel_loop(templates=templates,

@@ -198,8 +198,8 @@ class TestCoreMethods(unittest.TestCase):
     def test_short_match_filter(self):
         """Test using short streams of data."""
         client = Client('NCEDC')
-        t1 = UTCDateTime(2004, 9, 28)
-        t2 = t1 + 86400
+        t1 = UTCDateTime(2004, 9, 28, 17)
+        t2 = t1 + 3600
         catalog = client.get_events(starttime=t1, endtime=t2,
                                     minmagnitude=4,
                                     minlatitude=35.7, maxlatitude=36.1,
@@ -214,10 +214,12 @@ class TestCoreMethods(unittest.TestCase):
                                              samp_rate=50.0, filt_order=4,
                                              length=3.0, prepick=0.15,
                                              swin='all', process_len=3600)
+        for template in templates:
+            template.sort()
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
                       tr.stats.channel[0] + 'H' + tr.stats.channel[1],
-                      t1 + (17 * 3600), t1 + (18 * 3600))
+                      t1, t1 + 3600)
                      for tr in templates[0]]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
@@ -232,9 +234,9 @@ class TestCoreMethods(unittest.TestCase):
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
                                   cores=4)
-        if not len(detections) == 5:
+        if not len(detections) == 4:
             print(detections)
-        self.assertEqual(len(detections), 5)
+        self.assertEqual(len(detections), 4)
 
 
 def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
