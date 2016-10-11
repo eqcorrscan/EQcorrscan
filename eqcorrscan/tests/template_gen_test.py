@@ -13,6 +13,8 @@ import obspy
 import numpy as np
 import warnings
 import shutil
+import inspect
+import copy
 
 from obspy import read, UTCDateTime, read_events, Stream
 from obspy.clients.fdsn.header import FDSNException
@@ -22,6 +24,7 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
 from eqcorrscan.core.template_gen import from_meta_file, from_client
 from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
+from eqcorrscan.core.template_gen import template_gen, extract_from_stack
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -39,27 +42,17 @@ class TestTemplateGeneration(unittest.TestCase):
             test_files = os.path.join(os.path.abspath(os.path.
                                                       dirname(__file__)),
                                       'test_data', 'SAC', event, '*')
-            sac_files = glob.glob(test_files)
-
-            # We currently do not support SAC template generation below version
-            # 1.0.0 as before this, SACIO did not fill the reference time,
-            # which is needed for defining pick times.  This is usually the
-            # trace start time, but isn't always...
-            if int(obspy.__version__.split('.')[0]) >= 1:
+            # Test with various input types
+            filelist = glob.glob(test_files)
+            streamlist = [read(f) for f in glob.glob(test_files)]
+            stream = read(test_files)
+            for sac_files in [filelist, streamlist, stream]:
                 template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
                                     samp_rate=samp_rate, filt_order=4,
-                                    length=length,
-                                    swin='all', prepick=0.1, debug=0,
-                                    plot=False)
+                                    length=length, swin='all', prepick=0.1,
+                                    debug=0, plot=False)
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
-            else:
-                with self.assertRaises(NotImplementedError):
-                    template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
-                                        samp_rate=samp_rate, filt_order=4,
-                                        length=length,
-                                        swin='all', prepick=0.1, debug=0,
-                                        plot=False)
 
     def test_tutorial_template_gen(self):
         """Test template generation from tutorial, uses from_client method.
@@ -239,6 +232,84 @@ class TestTemplateGeneration(unittest.TestCase):
                                    length=2, prepick=0.1, swin='S')
         self.assertEqual(len(templates), 1)
 
+
+class TestEdgeGen(unittest.TestCase):
+    def setUp(self):
+        self.testing_path = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe())))
+        self.st = read(os.path.join(self.testing_path, 'test_data',
+                                    'WAV', 'TEST_',
+                                    '2013-09-15-0930-28.DFDPC_027_00'))
+        event = read_event(os.path.join(self.testing_path, 'test_data',
+                                        'REA', 'TEST_',
+                                        '15-0931-08L.S201309'))
+        self.picks = event.picks
+
+    def test_undefined_phase_type(self):
+        with self.assertRaises(IOError):
+            template_gen(picks=self.picks, st=self.st.copy(), length=2,
+                         swin='bob')
+
+    def test_warn_zeros(self):
+        st = self.st.copy()
+        template = template_gen(self.picks, st.copy(), 10)
+        self.assertTrue('LABE' in [tr.stats.station for tr in template])
+        st.select(station='LABE', channel='SHN')[0].data = np.zeros(10000)
+        template = template_gen(self.picks, st, 10)
+        self.assertFalse('LABE' in [tr.stats.station for tr in template])
+
+    def test_missing_data(self):
+        picks = copy.deepcopy(self.picks)
+        picks.append(picks[-1])
+        picks[-1].waveform_id.station_code = 'DUMMY'
+        template = template_gen(picks, self.st.copy(), 10)
+        self.assertFalse('DUMMY' in [tr.stats.station for tr in template])
+
+    def test_no_matched_picks(self):
+        picks = [copy.deepcopy(self.picks[0])]
+        picks[0].waveform_id.station_code = 'DUMMY'
+        template = template_gen(picks, self.st.copy(), 10)
+        self.assertFalse(template)
+
+    def test_debug_levels(self):
+        template = template_gen(self.picks, self.st.copy(), 10, debug=3)
+        self.assertEqual(len(template), 9)
+
+    def test_extract_from_stack(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45)
+        self.assertEqual(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
+
+    def test_extract_from_stack_and_process(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45,
+                                       pre_processed=False, samp_rate=20,
+                                       lowcut=2, highcut=8)
+        self.assertEqual(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
+
+    def test_extract_from_stack_including_z(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45,
+                                       Z_include=True)
+        self.assertLess(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
 
 if __name__ == '__main__':
     unittest.main()

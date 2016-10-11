@@ -1210,7 +1210,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
-    >>> template = template_gen._template_gen(event.picks, st, 2)
+    >>> template = template_gen.template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
     ...                      picks=event.picks) # doctest: +SKIP
 
@@ -1231,7 +1231,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
-        template = template_gen._template_gen(event.picks, st, 2)
+        template = template_gen.template_gen(event.picks, st, 2)
         pretty_template_plot(template, background=st,
                              picks=event.picks)
     """

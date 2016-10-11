@@ -1,5 +1,14 @@
 ## Develop
+* Increase test coverage (edge-cases) in template_gen;
+* Fix bug in template_gen.extract_from_stack for duplicate channels in
+template;
+* Increase coverage somewhat in bright_lights, remove non-parallel
+option (previously only used for debugging in development)
+
+## 0.1.5
 * Migrate coverage to codecov;
+* Fix bug in match_filter introduced in 0.1.4 for templates with 
+duplicate channels.
 
 ## 0.1.4
 * Bug-fix in plot_repicked removed where data were not normalized

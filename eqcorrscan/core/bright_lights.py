@@ -38,7 +38,7 @@ from obspy.core.event import EventDescription, CreationInfo, Comment
 
 from eqcorrscan.core.match_filter import DETECTION, normxcorr2
 from eqcorrscan.utils import findpeaks
-from eqcorrscan.core.template_gen import _template_gen
+from eqcorrscan.core.template_gen import template_gen
 
 
 def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
@@ -93,8 +93,6 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
                       '.time.csv'))
         if glob.glob(path + '*.' + phase + '.' + station + '*.csv'):
             stations_out += [station]
-    if not stations_out:
-        raise IOError('No slowness files found')
     # Read the files
     allnodes = []
     for gridfile in gridfiles:
@@ -229,8 +227,8 @@ def _rm_similarlags(stations, nodes, lags, threshold):
         to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
         longitude and depth.
     """
-    netdif = abs((lags.T -
-                  lags.T[0]).sum(axis=1).reshape(1, len(nodes))) > threshold
+    netdif = abs((lags.T - lags.T[0]).sum(axis=1).reshape(1, len(nodes))) \
+        > threshold
     for i in range(len(nodes)):
         _netdif = abs((lags.T -
                        lags.T[i]).sum(axis=1).reshape(1, len(nodes)))\
@@ -531,7 +529,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                template_length, template_saveloc, coherence_thresh,
                coherence_stations=['all'], coherence_clip=False,
                gap=2.0, clip_level=100, instance=0, pre_pick=0.2,
-               plotsave=True, cores=1, debug=0):
+               plotvar=False, plotsave=True, cores=1, debug=0,
+               mem_issue=False):
     """
     Calculate the brightness function for a single day.
 
@@ -596,6 +595,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         Optional, used for tracking when using a distributed computing system.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off
     :type plotsave: bool
     :param plotsave:
         Save or show plots, if `False` will try and show the plots on screen -
@@ -606,6 +607,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :param cores: Number of cores to use, defaults to 1.
     :type debug: int
     :param debug: Debug level from 0-5, higher is more output.
+    :type mem_issue: bool
+    :param mem_issue:
+        Set to True to write temporary variables to disk rather than store in
+        memory, slow.
 
     :return: list of templates as :class:`obspy.core.stream.Stream` objects
     :rtype: list
@@ -642,50 +647,31 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                             'reduce data volume')
     detections = []
     detect_lags = []
-    parallel = True
-    plotvar = False
-    mem_issue = False
     # Loop through each node in the input
     # Linear run
     print('Computing the energy stacks')
-    if not parallel:
-        for i in range(0, len(nodes)):
-            print(i)
-            if not mem_issue:
-                j, a = _node_loop(stations, lags[:, i], stream, plot=True)
-                if 'energy' not in locals():
-                    energy = a
-                else:
-                    energy = np.concatenate((energy, a), axis=0)
-                print('energy: ' + str(np.shape(energy)))
-            else:
-                j, filename = _node_loop(stations, lags[:, i], stream, i,
-                                         mem_issue)
-        energy = np.array(energy)
-        print(np.shape(energy))
+    # Parallel run
+    num_cores = cores
+    if num_cores > len(nodes):
+        num_cores = len(nodes)
+    if num_cores > cpu_count():
+        num_cores = cpu_count()
+    pool = Pool(processes=num_cores)
+    results = [pool.apply_async(_node_loop, args=(stations, lags[:, i],
+                                                  stream, i, clip_level,
+                                                  mem_issue, instance))
+               for i in range(len(nodes))]
+    pool.close()
+    if not mem_issue:
+        print('Computing the cumulative network response from memory')
+        energy = [p.get() for p in results]
+        pool.join()
+        energy.sort(key=lambda tup: tup[0])
+        energy = [node[1] for node in energy]
+        energy = np.concatenate(energy, axis=0)
+        print(energy.shape)
     else:
-        # Parallel run
-        num_cores = cores
-        if num_cores > len(nodes):
-            num_cores = len(nodes)
-        if num_cores > cpu_count():
-            num_cores = cpu_count()
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(_node_loop, args=(stations, lags[:, i],
-                                                      stream, i, clip_level,
-                                                      mem_issue, instance))
-                   for i in range(len(nodes))]
-        pool.close()
-        if not mem_issue:
-            print('Computing the cumulative network response from memory')
-            energy = [p.get() for p in results]
-            pool.join()
-            energy.sort(key=lambda tup: tup[0])
-            energy = [node[1] for node in energy]
-            energy = np.concatenate(energy, axis=0)
-            print(energy.shape)
-        else:
-            pool.join()
+        pool.join()
     # Now compute the cumulative network response and then detect possible
     # events
     if not mem_issue:
@@ -727,21 +713,16 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     if plotvar:
         cum_net_trace = deepcopy(stream[0])
         cum_net_trace.data = cum_net_resp
-        cum_net_trace.stats.station = 'NR'
-        cum_net_trace.stats.channel = ''
-        cum_net_trace.stats.network = 'Z'
-        cum_net_trace.stats.location = ''
-        cum_net_trace.stats.starttime = stream[0].stats.starttime
+        cum_net_trace.stats.update({'station': 'NR', 'channel': '',
+                                    'network': 'Z', 'location': '',
+                                    'starttime': stream[0].stats.starttime})
         cum_net_trace = Stream(cum_net_trace)
         cum_net_trace += stream.select(channel='*N')
         cum_net_trace += stream.select(channel='*1')
         cum_net_trace.sort(['network', 'station', 'channel'])
-        # np.save('cum_net_resp.npy',cum_net_resp)
-        #     cum_net_trace.plot(size=(800,600), equal_scale=False,\
-        #                        outfile='NR_timeseries.eps')
 
     # Find detection within this network response
-    print('Finding detections in the cumulatve network response')
+    print('Finding detections in the cumulative network response')
     detections = _find_detections(cum_net_resp, peak_nodes, threshold,
                                   thresh_type, stream[0].stats.sampling_rate,
                                   realstations, gap)
@@ -800,7 +781,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                                 evalutation_mode='automatic'))
             if debug > 0:
                 print('Generating template for detection: ' + str(j))
-            template = (_template_gen(event.picks, copy_of_stream,
+            template = (template_gen(event.picks, copy_of_stream,
                         template_length, 'all'))
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
