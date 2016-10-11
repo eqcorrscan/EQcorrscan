@@ -1,4 +1,6 @@
 [run]
+branch = True
+source = eqcorrscan
 omit =
   eqcorrscan/__init__.py
   eqcorrscan/*/__init__.py
@@ -7,3 +9,13 @@ omit =
   eqcorrscan/utils/gui/*
   eqcorrscan/utils/timer.py
   eqcorrscan/utils/plotting.py
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self\.debug
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+ignore_errors = True
