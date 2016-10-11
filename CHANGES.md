@@ -1,3 +1,10 @@
+## Develop
+* Increase test coverage (edge-cases) in template_gen;
+* Fix bug in template_gen.extract_from_stack for duplicate channels in
+template;
+* Increase coverage somewhat in bright_lights, remove non-parallel
+option (previously only used for debugging in development)
+
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
 through multiple templates did not correctly match image and template 

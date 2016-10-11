@@ -7,6 +7,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import numpy as np
+
+from obspy import Trace
+
+from eqcorrscan.core.bright_lights import brightness
 
 
 class BrightnessTestMethods(unittest.TestCase):
@@ -33,6 +38,12 @@ class BrightnessTestMethods(unittest.TestCase):
         # Test reading P from P
         stations, nodes, lags = _read_tt(path=testing_path, stations=['COSA'],
                                          phase='P', phaseout='P')
+        self.assertEqual(stations[0], 'COSA')
+        self.assertEqual(len(nodes), len(lags[0]))
+        # Test lag_switch
+        stations, nodes, lags = _read_tt(path=testing_path, stations=['COSA'],
+                                         phase='P', phaseout='P',
+                                         lags_switch=False)
         self.assertEqual(stations[0], 'COSA')
         self.assertEqual(len(nodes), len(lags[0]))
 
@@ -188,6 +199,20 @@ class BrightnessTestMethods(unittest.TestCase):
                                                     for tr in st],
                                       length=10)
         self.assertTrue(len(detections) > 0)
+        detections = _find_detections(cum_net_resp=cum_net_resp,
+                                      nodes=all_nodes, threshold=5,
+                                      thresh_type='abs', samp_rate=1,
+                                      realstations=[tr.stats.station
+                                                    for tr in st],
+                                      length=10)
+        self.assertTrue(len(detections) > 0)
+        detections = _find_detections(cum_net_resp=cum_net_resp,
+                                      nodes=all_nodes, threshold=5,
+                                      thresh_type='RMS', samp_rate=1,
+                                      realstations=[tr.stats.station
+                                                    for tr in st],
+                                      length=10)
+        self.assertTrue(len(detections) > 0)
 
     def test_coherence(self):
         from eqcorrscan.core.bright_lights import coherence
@@ -206,8 +231,10 @@ class BrightnessTestMethods(unittest.TestCase):
                                                 for tr in st[0:-5]])
         self.assertTrue(type(coh), float)
 
-    def test_brightness(self):
-        from eqcorrscan.core.bright_lights import brightness, _read_tt
+
+class TestBrightnessMain(unittest.TestCase):
+    def setUp(self):
+        from eqcorrscan.core.bright_lights import _read_tt
         import os
         from obspy import Stream, Trace
         import numpy as np
@@ -215,24 +242,84 @@ class BrightnessTestMethods(unittest.TestCase):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data') + os.sep
         # Test reading S from S
-        stations, nodes, lags = _read_tt(path=testing_path,
-                                         stations=['COSA', 'LABE'],
-                                         phase='S', phaseout='S')
-        st = Stream(Trace())
-        st[0].stats.station = stations[0]
-        st[0].data = np.random.randn(86400) * 3000
-        st[0].data = st[0].data.astype(np.int16)
-        st += Trace(np.random.randn(86400) * 3000)
-        st[1].stats.station = stations[1]
-        st[1].stats.channel = 'HHZ'
-        st[0].stats.channel = 'HHZ'
-        detections, nodes_out = brightness(stations=stations, nodes=nodes,
-                                           lags=lags, stream=st,
+        self.stations, self.nodes, self.lags = _read_tt(
+            path=testing_path, stations=['COSA', 'LABE'],  phase='S',
+            phaseout='S')
+        self.st = Stream(Trace())
+        self.st[0].stats.station = self.stations[0]
+        self.st[0].data = np.random.randn(86400) * 3000
+        self.st[0].data = self.st[0].data.astype(np.int16)
+        self.st += Trace(np.random.randn(86400) * 3000)
+        self.st[1].stats.station = self.stations[1]
+        self.st[1].stats.channel = 'HHZ'
+        self.st[0].stats.channel = 'HHZ'
+
+    def test_brightness(self):
+        st = self.st.copy()
+        detections, nodes_out = brightness(stations=self.stations,
+                                           nodes=self.nodes,
+                                           lags=self.lags, stream=st,
                                            threshold=1.885,
                                            thresh_type='MAD',
                                            template_length=1,
                                            template_saveloc='.',
-                                           coherence_thresh=(10, 1))
+                                           coherence_thresh=(10, 1),
+                                           cores=1)
+        self.assertEqual(len(detections), 0)
+        self.assertEqual(len(detections), len(nodes_out))
+
+    def test_big_data_range(self):
+        st = self.st.copy()
+        for tr in st:
+            tr.data *= 40000
+        detections, nodes_out = brightness(stations=self.stations,
+                                           nodes=self.nodes,
+                                           lags=self.lags, stream=st,
+                                           threshold=1.885,
+                                           thresh_type='MAD',
+                                           template_length=1,
+                                           template_saveloc='.',
+                                           coherence_thresh=(10, 1),
+                                           cores=1)
+        self.assertEqual(len(detections), 0)
+        self.assertEqual(len(detections), len(nodes_out))
+
+    def check_fail_too_many_traces(self):
+        st = self.st.copy()
+        for i in range(130):
+            st += Trace(np.zeros(1))
+
+        with self.assertRaises(OverflowError):
+            brightness(stations=self.stations, nodes=self.nodes,
+                       lags=self.lags, stream=st, threshold=1.885,
+                       thresh_type='MAD', template_length=1,
+                       template_saveloc='.', coherence_thresh=(10, 1))
+
+    def test_mem_issue(self):
+        st = self.st.copy()
+        detections, nodes_out = brightness(stations=self.stations,
+                                           nodes=self.nodes,
+                                           lags=self.lags, stream=st,
+                                           threshold=1.885,
+                                           thresh_type='MAD',
+                                           template_length=1,
+                                           template_saveloc='.',
+                                           coherence_thresh=(10, 1),
+                                           cores=1)
+        self.assertEqual(len(detections), 0)
+        self.assertEqual(len(detections), len(nodes_out))
+
+    def test_mem_issue_parallel(self):
+        st = self.st.copy()
+        detections, nodes_out = brightness(stations=self.stations,
+                                           nodes=self.nodes,
+                                           lags=self.lags, stream=st,
+                                           threshold=1.885,
+                                           thresh_type='MAD',
+                                           template_length=1,
+                                           template_saveloc='.',
+                                           coherence_thresh=(10, 1),
+                                           cores=2)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
 
