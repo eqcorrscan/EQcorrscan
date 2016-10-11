@@ -127,12 +127,6 @@ class TestCoreMethods(unittest.TestCase):
                 kfalse, ktrue = test_match_filter(debug=debug)
                 self.assertTrue(kfalse / ktrue < 0.25)
 
-    def test_detection_extraction(self):
-        # Test outputting the streams works
-        kfalse, ktrue, detection_streams = \
-            test_match_filter(extract_detections=True)
-        self.assertEqual(len(detection_streams), ktrue + kfalse)
-
     def test_threshold_methods(self):
         # Test other threshold methods
         for threshold_type, threshold in [('absolute', 2),
@@ -195,8 +189,10 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
-    def test_short_match_filter(self):
-        """Test using short streams of data."""
+
+class TestNCEDCCases(unittest.TestCase):
+    def setUp(self):
+        print('\t\t\t Downloading data')
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28, 17)
         t2 = t1 + 3600
@@ -208,35 +204,38 @@ class TestCoreMethods(unittest.TestCase):
                                     includearrivals=True)
         catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
                                              top_n_picks=5)
-        templates = template_gen.from_client(catalog=catalog,
-                                             client_id='NCEDC',
-                                             lowcut=2.0, highcut=9.0,
-                                             samp_rate=50.0, filt_order=4,
-                                             length=3.0, prepick=0.15,
-                                             swin='all', process_len=3600)
-        for template in templates:
+        self.templates = template_gen.from_client(catalog=catalog,
+                                                  client_id='NCEDC',
+                                                  lowcut=2.0, highcut=9.0,
+                                                  samp_rate=50.0, filt_order=4,
+                                                  length=3.0, prepick=0.15,
+                                                  swin='all', process_len=3600)
+        for template in self.templates:
             template.sort()
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
                       tr.stats.channel[0] + 'H' + tr.stats.channel[1],
                       t1, t1 + 3600)
-                     for tr in templates[0]]
+                     for tr in self.templates[0]]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
-        st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
-                                      filt_order=4, samp_rate=50.0,
-                                      debug=0, num_cores=4)
-        template_names = [str(template[0].stats.starttime)
-                          for template in templates]
-        detections = match_filter(template_names=template_names,
-                                  template_list=templates, st=st,
-                                  threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
-                                  cores=4)
-        if not len(detections) == 4:
-            print(detections)
+        self.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                           filt_order=4, samp_rate=50.0,
+                                           debug=0, num_cores=4)
+        self.template_names = [str(template[0].stats.starttime)
+                               for template in self.templates]
+
+    def test_detection_extraction(self):
+        # Test outputting the streams works
+        detections, detection_streams = \
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=self.st,
+                         threshold=8.0, threshold_type='MAD',
+                         trig_int=6.0, plotvar=False, plotdir='.',
+                         cores=4, extract_detections=True)
         self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detection_streams), len(detections))
 
 
 def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
