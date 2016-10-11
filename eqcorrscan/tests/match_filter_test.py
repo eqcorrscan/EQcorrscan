@@ -113,10 +113,11 @@ class TestCoreMethods(unittest.TestCase):
         i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
         self.assertNotEqual(ccc.max(), 1.0)
 
+
+class TestSynthData(unittest.TestCase):
     def test_debug_range(self):
         """Test range of debug outputs"""
-        # debug == 3 fails on travis for some reason:
-        # doesn't output any detections, fine on appveyor and local machine
+        # debug == 3 fails on travis due to plotting restrictions.
         for debug in range(0, 3):
             print('Testing for debug level=%s' % debug)
             kfalse, ktrue = test_match_filter(debug=debug)
@@ -143,10 +144,9 @@ class TestCoreMethods(unittest.TestCase):
         # Test case where there are non-matching streams in the data
         test_match_filter(template_excess=True)
 
-    def test_duplicate_channels_in_template(self):
-        """
-        Test using a template with duplicate channels.
-        """
+
+class TestGeoNetCase(unittest.TestCase):
+    def setUp(self):
         client = Client('GEONET')
         t1 = UTCDateTime(2016, 9, 4)
         t2 = t1 + 86400
@@ -161,28 +161,33 @@ class TestCoreMethods(unittest.TestCase):
             extra_pick.time = event.picks[0].time + 10
             extra_pick.waveform_id = event.picks[0].waveform_id
             event.picks.append(extra_pick)
-        templates = template_gen.from_client(catalog=catalog,
-                                             client_id='GEONET',
-                                             lowcut=2.0, highcut=9.0,
-                                             samp_rate=50.0, filt_order=4,
-                                             length=3.0, prepick=0.15,
-                                             swin='all', process_len=3600)
+        self.templates = template_gen.from_client(catalog=catalog,
+                                                  client_id='GEONET',
+                                                  lowcut=2.0, highcut=9.0,
+                                                  samp_rate=50.0, filt_order=4,
+                                                  length=3.0, prepick=0.15,
+                                                  swin='all', process_len=3600)
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
                       tr.stats.channel[0] + 'H' + tr.stats.channel[1],
                       t1 + (4 * 3600), t1 + (5 * 3600))
-                     for tr in templates[0]]
+                     for tr in self.templates[0]]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
-        st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
-                                      filt_order=4, samp_rate=50.0,
-                                      debug=0, num_cores=1)
+        self.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                           filt_order=4, samp_rate=50.0,
+                                           debug=0, num_cores=1)
         st.trim(t1 + (4 * 3600), t1 + (5 * 3600))
-        template_names = [str(template[0].stats.starttime)
-                          for template in templates]
-        detections = match_filter(template_names=template_names,
-                                  template_list=templates, st=st,
+        self.template_names = [str(template[0].stats.starttime)
+                               for template in self.templates]
+
+    def test_duplicate_channels_in_template(self):
+        """
+        Test using a template with duplicate channels.
+        """
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
                                   cores=4)
@@ -238,7 +243,7 @@ class TestNCEDCCases(unittest.TestCase):
         self.assertEqual(len(detection_streams), len(detections))
 
 
-def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
+def test_match_filter(debug=0, plotvar=False,
                       extract_detections=False, threshold_type='MAD',
                       threshold=10, template_excess=False,
                       stream_excess=False):
@@ -253,24 +258,20 @@ def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
     """
     from eqcorrscan.utils import pre_processing
     from eqcorrscan.utils import plotting
-    from eqcorrscan.utils.synth_seis import generate_synth_data
     from obspy import UTCDateTime
     import string
-    # Generate a random dataset
-    templates, data, seeds = generate_synth_data(nsta=5, ntemplates=2,
-                                                 nseeds=50,
-                                                 samp_rate=samp_rate,
-                                                 t_length=6.0, max_amp=5.0,
-                                                 max_lag=12.0,
-                                                 debug=0)
-    # Notes to the user: If you use more templates you should ensure they
-    # are more different, e.g. set the data to have larger moveouts,
-    # otherwise similar templates will detect events seeded by another
-    # template.
-    # Test the pre_processing functions
-    data = pre_processing.dayproc(st=data, lowcut=1.0, highcut=4.0,
-                                  filt_order=3, samp_rate=samp_rate,
-                                  debug=0, starttime=UTCDateTime(0))
+    import inspect
+    # Read in the synthetic dataset
+    templates = []
+    testing_path = os.path.join(os.path.dirname(os.path.abspath(
+        inspect.getfile(inspect.currentframe()))), 'test_data',
+        'synthetic_data')
+    templates.append(read(os.path.join(testing_path, 'synth_template_0.ms')))
+    templates.append(read(os.path.join(testing_path, 'synth_template_1.ms')))
+    data = read(os.path.join(testing_path, 'synth_data.ms'))
+    seeds = np.load(os.path.join(testing_path, 'seeds.npz'))
+    seeds = [{'SNR': seeds['SNR_0'], 'time': seeds['time_0']},
+             {'SNR': seeds['SNR_1'], 'time': seeds['time_1']}]
     if stream_excess:
         i = 0
         for template in templates:
@@ -284,7 +285,7 @@ def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
     # Filter the data and the templates
     for template in templates:
         pre_processing.shortproc(st=template, lowcut=1.0, highcut=4.0,
-                                 filt_order=3, samp_rate=samp_rate)
+                                 filt_order=3, samp_rate=10.0)
     template_names = list(string.ascii_lowercase)[0:len(templates)]
     detections =\
         match_filter(template_names=template_names,
@@ -304,7 +305,7 @@ def test_match_filter(samp_rate=10.0, debug=0, plotvar=False,
         i = template_names.index(detection.template_name)
         t_seeds = seeds[i]
         dtime_samples = int((detection.detect_time - UTCDateTime(0)) *
-                            samp_rate)
+                            10.0)
         if dtime_samples in t_seeds['time']:
             j = list(t_seeds['time']).index(dtime_samples)
             print('Detection at SNR of: ' + str(t_seeds['SNR'][j]))
