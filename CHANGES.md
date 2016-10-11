@@ -1,3 +1,6 @@
+## Develop
+* Migrate coverage to codecov;
+
 ## 0.1.4
 * Bug-fix in plot_repicked removed where data were not normalized
 properly;
