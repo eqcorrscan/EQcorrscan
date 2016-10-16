@@ -256,7 +256,10 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     :type max_sep: float
     :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
-    :param min_link: Minimum links for an event to be paired
+    :param min_link:
+        Minimum links for an event to be paired, e.g. minimum number of picks
+        from the same station and channel (and phase) that are shared between
+        two events for them to be paired.
     :type debug: int
     :param debug: Debug output level.
 
