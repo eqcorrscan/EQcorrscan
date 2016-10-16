@@ -242,11 +242,38 @@ class TestNCEDCCases(unittest.TestCase):
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
 
+    def test_same_detections_individual_and_parallel(self):
+        """
+        Check that the same detections are made regardless of whether templates
+        are run together or separately.
+        """
+        individual_detections = []
+        for template, template_name in zip(self.templates, self.template_names):
+            individual_detections += match_filter(
+                template_names=[template_name], template_list=[template],
+                st=self.st.copy(), threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plotvar=False, plotdir='.', cores=1)
+        individual_dict = []
+        for detection in individual_detections:
+            individual_dict.append({'template_name': detection.template_name,
+                                    'time': detection.detect_time,
+                                    'cccsum': detection.detect_val})
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=4)
+        self.assertEqual(len(individual_detections), len(detections))
+        for detection in detections:
+            detection_dict = {'template_name': detection.template_name,
+                              'time': detection.detect_time,
+                              'cccsum': detection.detect_val}
+            self.assertTrue(detection_dict in individual_dict)
 
-def test_match_filter(debug=0, plotvar=False,
-                      extract_detections=False, threshold_type='MAD',
-                      threshold=10, template_excess=False,
-                      stream_excess=False):
+
+def test_match_filter(debug=0, plotvar=False, extract_detections=False,
+                      threshold_type='MAD', threshold=10,
+                      template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
