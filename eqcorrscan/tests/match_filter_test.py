@@ -10,6 +10,9 @@ import numpy as np
 import unittest
 import os
 import warnings
+import copy
+import matplotlib
+matplotlib.use('Agg')
 
 from obspy import read, Stream, Trace, UTCDateTime
 from obspy.clients.fdsn import Client
@@ -18,7 +21,7 @@ from obspy.core.event import Pick
 from eqcorrscan.core import template_gen
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.core.match_filter import match_filter, normxcorr2
-from eqcorrscan.core.match_filter import _template_loop
+from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 
 
@@ -118,15 +121,25 @@ class TestSynthData(unittest.TestCase):
     def test_debug_range(self):
         """Test range of debug outputs"""
         # debug == 3 fails on travis due to plotting restrictions.
-        for debug in range(0, 3):
+        for debug in range(0, 5):
             print('Testing for debug level=%s' % debug)
-            kfalse, ktrue = test_match_filter(debug=debug)
+            try:
+                kfalse, ktrue = test_match_filter(debug=debug)
+            except RuntimeError:
+                print('Error plotting, missing test')
+                continue
             if ktrue > 0:
                 self.assertTrue(kfalse / ktrue < 0.25)
             else:
                 # Randomised data occasionally yields 0 detections
                 kfalse, ktrue = test_match_filter(debug=debug)
                 self.assertTrue(kfalse / ktrue < 0.25)
+        if os.path.isfile('cccsum_0.npy'):
+            os.remove('cccsum_0.npy')
+        if os.path.isfile('cccsum_1.npy'):
+            os.remove('cccsum_1.npy')
+        if os.path.isfile('peaks_1970-01-01.pdf'):
+            os.remove('peaks_1970-01-01.pdf')
 
     def test_threshold_methods(self):
         # Test other threshold methods
@@ -146,7 +159,8 @@ class TestSynthData(unittest.TestCase):
 
 
 class TestGeoNetCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         client = Client('GEONET')
         t1 = UTCDateTime(2016, 9, 4)
         t2 = t1 + 86400
@@ -161,42 +175,94 @@ class TestGeoNetCase(unittest.TestCase):
             extra_pick.time = event.picks[0].time + 10
             extra_pick.waveform_id = event.picks[0].waveform_id
             event.picks.append(extra_pick)
-        self.templates = template_gen.from_client(catalog=catalog,
-                                                  client_id='GEONET',
-                                                  lowcut=2.0, highcut=9.0,
-                                                  samp_rate=50.0, filt_order=4,
-                                                  length=3.0, prepick=0.15,
-                                                  swin='all', process_len=3600)
+        cls.templates = template_gen.from_client(catalog=catalog,
+                                                 client_id='GEONET',
+                                                 lowcut=2.0, highcut=9.0,
+                                                 samp_rate=50.0, filt_order=4,
+                                                 length=3.0, prepick=0.15,
+                                                 swin='all', process_len=3600)
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
                       tr.stats.channel[0] + 'H' + tr.stats.channel[1],
                       t1 + (4 * 3600), t1 + (5 * 3600))
-                     for tr in self.templates[0]]
+                     for tr in cls.templates[0]]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
-        self.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
-                                           filt_order=4, samp_rate=50.0,
-                                           debug=0, num_cores=1)
-        st.trim(t1 + (4 * 3600), t1 + (5 * 3600))
-        self.template_names = [str(template[0].stats.starttime)
-                               for template in self.templates]
+        cls.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                          filt_order=4, samp_rate=50.0,
+                                          debug=0, num_cores=1)
+        cls.st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
+        cls.template_names = [str(template[0].stats.starttime)
+                              for template in cls.templates]
 
     def test_duplicate_channels_in_template(self):
         """
         Test using a template with duplicate channels.
         """
+        templates = copy.deepcopy(self.templates)
+        # Do this to test an extra condition in match_filter
+        templates[0].remove(templates[0].select(station='CNGZ')[0])
         detections = match_filter(template_names=self.template_names,
-                                  template_list=self.templates, st=self.st,
+                                  template_list=templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
                                   cores=4)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
+    def test_duplicate_cont_data(self):
+        """ Check that error is raised if duplicate channels are present in
+        the continuous data."""
+        tr = self.st[0].copy()
+        tr.data = np.random.randn(100)
+        st = self.st.copy() + tr
+        with self.assertRaises(MatchFilterError):
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=st, threshold=8.0,
+                         threshold_type='MAD', trig_int=6.0, plotvar=False,
+                         plotdir='.', cores=4)
+
+    def test_missing_cont_channel(self):
+        """ Remove one channel from continuous data and check that everything
+        still works. """
+        st = self.st.copy()
+        st.remove(st[-1])
+        detections, det_cat = match_filter(
+            template_names=self.template_names, template_list=self.templates,
+            st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            plotvar=False, plotdir='.', cores=4, output_cat=True)
+        self.assertEqual(len(detections), 1)
+        self.assertEqual(detections[0].no_chans, 5)
+        self.assertEqual(len(detections), len(det_cat))
+
+    def test_no_matching_data(self):
+        """ No matching data between continuous and templates."""
+        st = self.st.copy()
+        for tr, staname in zip(st, ['a', 'b', 'c', 'd', 'e']):
+            tr.stats.station = staname
+        with self.assertRaises(IndexError):
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+
+    def test_plot(self):
+        try:
+            detections = match_filter(template_names=self.template_names,
+                                      template_list=self.templates, st=self.st,
+                                      threshold=8.0, threshold_type='MAD',
+                                      trig_int=6.0, plotvar=True, plotdir='.',
+                                      cores=4)
+            self.assertEqual(len(detections), 1)
+            self.assertEqual(detections[0].no_chans, 6)
+        except RuntimeError:
+            print('Could not test plotting')
+
 
 class TestNCEDCCases(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28, 17)
@@ -213,18 +279,18 @@ class TestNCEDCCases(unittest.TestCase):
                                     includearrivals=True)
         catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
                                              top_n_picks=5)
-        self.templates = template_gen.from_client(catalog=catalog,
-                                                  client_id='NCEDC',
-                                                  lowcut=2.0, highcut=9.0,
-                                                  samp_rate=50.0, filt_order=4,
-                                                  length=3.0, prepick=0.15,
-                                                  swin='all',
-                                                  process_len=process_len)
-        for template in self.templates:
+        cls.templates = template_gen.from_client(catalog=catalog,
+                                                 client_id='NCEDC',
+                                                 lowcut=2.0, highcut=9.0,
+                                                 samp_rate=50.0, filt_order=4,
+                                                 length=3.0, prepick=0.15,
+                                                 swin='all',
+                                                 process_len=process_len)
+        for template in cls.templates:
             template.sort()
         # Download and process the day-long data
         template_stachans = []
-        for template in self.templates:
+        for template in cls.templates:
             for tr in template:
                 template_stachans.append((tr.stats.network,
                                           tr.stats.station,
@@ -237,11 +303,11 @@ class TestNCEDCCases(unittest.TestCase):
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
-        self.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
-                                           filt_order=4, samp_rate=50.0,
-                                           debug=0, num_cores=4)
-        self.template_names = [str(template[0].stats.starttime)
-                               for template in self.templates]
+        cls.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
+                                          filt_order=4, samp_rate=50.0,
+                                          debug=0, num_cores=4)
+        cls.template_names = [str(template[0].stats.starttime)
+                              for template in cls.templates]
 
     def test_detection_extraction(self):
         # Test outputting the streams works
@@ -253,6 +319,17 @@ class TestNCEDCCases(unittest.TestCase):
                          cores=4, extract_detections=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
+
+    def test_catalog_extraction(self):
+        detections, det_cat, detection_streams = \
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=self.st,
+                         threshold=8.0, threshold_type='MAD',
+                         trig_int=6.0, plotvar=False, plotdir='.',
+                         cores=4, extract_detections=True, output_cat=True)
+        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detection_streams), len(detections))
+        self.assertEqual(len(detection_streams), len(det_cat))
 
     def test_same_detections_individual_and_parallel(self):
         """
@@ -282,6 +359,66 @@ class TestNCEDCCases(unittest.TestCase):
                               'time': detection.detect_time,
                               'cccsum': detection.detect_val}
             self.assertTrue(detection_dict in individual_dict)
+
+    def test_incorrect_arguments(self):
+        with self.assertRaises(MatchFilterError):
+            # template_names is not a list
+            match_filter(template_names=self.template_names[0],
+                         template_list=self.templates, st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+        with self.assertRaises(MatchFilterError):
+            # templates is not a list
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates[0], st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+        with self.assertRaises(MatchFilterError):
+            # template and template_names length are not equal
+            match_filter(template_names=self.template_names,
+                         template_list=[self.templates[0]], st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+        with self.assertRaises(MatchFilterError):
+            # templates is not a list of streams
+            match_filter(template_names=self.template_names,
+                         template_list=['abc'], st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+        with self.assertRaises(MatchFilterError):
+            # st is not a Stream
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=np.random.randn(10),
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+        with self.assertRaises(MatchFilterError):
+            # threshold_type is wrong
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=self.st,
+                         threshold=8.0, threshold_type='albert', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+
+    def test_masked_template(self):
+        templates = [self.templates[0].copy()]
+        tr = templates[0][0].copy()
+        tr.stats.starttime += 3600
+        templates[0] += tr
+        templates[0].merge()
+        with self.assertRaises(MatchFilterError):
+            match_filter(template_names=[self.template_names[0]],
+                         template_list=templates, st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
+
+    def test_non_equal_template_lengths(self):
+        templates = [self.templates[0].copy()]
+        templates[0][0].data = np.concatenate([templates[0][0].data,
+                                               np.random.randn(10)])
+        with self.assertRaises(MatchFilterError):
+            match_filter(template_names=[self.template_names[0]],
+                         template_list=templates, st=self.st,
+                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                         plotvar=False, plotdir='.', cores=4)
 
 
 def test_match_filter(debug=0, plotvar=False, extract_detections=False,

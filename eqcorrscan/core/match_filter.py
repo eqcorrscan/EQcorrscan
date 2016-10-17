@@ -659,6 +659,8 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError('template_names must be of type: list')
         if not type(template_list) == list:
             raise MatchFilterError('templates must be of type: list')
+        if not len(template_list) == len(template_names):
+            raise MatchFilterError('Not the same number of templates as names')
         for template in template_list:
             if not type(template) == Stream:
                 msg = 'template in template_list must be of type: ' +\
@@ -675,6 +677,7 @@ def match_filter(template_names, template_list, st, threshold,
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
+    _template_names = copy.deepcopy(template_names)
     # Debug option to confirm that the channel names match those in the
     # templates
     if debug >= 2:
@@ -714,7 +717,7 @@ def match_filter(template_names, template_list, st, threshold,
     for i, temp in enumerate(template_list):
         if len(set([tr.stats.npts for tr in temp])) > 1:
             msg = ('Template %s contains traces of differing length, this is '
-                   'not currently supported' % template_names[i])
+                   'not currently supported' % _template_names[i])
             raise MatchFilterError(msg)
     outtic = time.clock()
     if debug >= 2:
@@ -770,13 +773,13 @@ def match_filter(template_names, template_list, st, threshold,
                    % (key[0], key[1], key[2], key[3]))
             raise MatchFilterError(msg)
     # Pad out templates to have all channels
-    for template, template_name in zip(templates, template_names):
+    for template, template_name in zip(templates, _template_names):
         if len(template) == 0:
             msg = ('No channels matching in continuous data for ' +
                    'template' + template_name)
             warnings.warn(msg)
             templates.remove(template)
-            template_names.remove(template_name)
+            _template_names.remove(template_name)
             continue
         for stachan in template_stachan.keys():
             number_of_channels = len(template.select(network=stachan[0],
@@ -787,14 +790,11 @@ def match_filter(template_names, template_list, st, threshold,
                 missed_channels = template_stachan[stachan] -\
                                   number_of_channels
                 nulltrace = Trace()
-                nulltrace.stats.update({'network': stachan[0],
-                                        'station': stachan[1],
-                                        'location': stachan[2],
-                                        'channel': stachan[3],
-                                        'sampling_rate':
-                                            template[0].stats.sampling_rate,
-                                        'starttime':
-                                            template[0].stats.starttime})
+                nulltrace.stats.update(
+                    {'network': stachan[0], 'station': stachan[1],
+                     'location': stachan[2], 'channel': stachan[3],
+                     'sampling_rate': template[0].stats.sampling_rate,
+                     'starttime': template[0].stats.starttime})
                 nulltrace.data = np.array([np.NaN] * len(template[0].data),
                                           dtype=np.float32)
                 for dummy in range(missed_channels):
@@ -846,13 +846,21 @@ def match_filter(template_names, template_list, st, threshold,
         # maintains timing
         if plotvar:
             _match_filter_plot(stream=stream, cccsum=cccsum,
-                               template_names=template_names,
+                               template_names=_template_names,
                                rawthresh=rawthresh, plotdir=plotdir,
-                               plot_format=plot_format, i=i, debug=debug)
+                               plot_format=plot_format, i=i)
+        if debug >= 4:
+            print(' '.join(['Saved the cccsum to:', _template_names[i],
+                            stream[0].stats.starttime.datetime.
+                           strftime('%Y%j')]))
+            np.save(_template_names[i] +
+                    stream[0].stats.starttime.datetime.strftime('%Y%j'),
+                    cccsum)
         tic = time.clock()
         if debug >= 4:
             np.save('cccsum_' + str(i) + '.npy', cccsum)
         if debug >= 3 and max(cccsum) > rawthresh:
+            # This will make aplot of the detections
             peaks = findpeaks.find_peaks2_short(cccsum, rawthresh,
                                                 trig_int * stream[0].stats.
                                                 sampling_rate, debug,
@@ -875,7 +883,7 @@ def match_filter(template_names, template_list, st, threshold,
                 # Detect time must be valid QuakeML uri within resource_id.
                 # This will write a formatted string which is still
                 # readable by UTCDateTime
-                rid = ResourceIdentifier(id=template_names[i] + '_' +
+                rid = ResourceIdentifier(id=_template_names[i] + '_' +
                                          str(detecttime.
                                              strftime('%Y%m%dT%H%M%S.%f')),
                                          prefix='smi:local')
@@ -902,7 +910,7 @@ def match_filter(template_names, template_list, st, threshold,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)
                         ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                detections.append(DETECTION(template_names[i],
+                detections.append(DETECTION(_template_names[i],
                                             detecttime,
                                             no_chans[i], peak[0], rawthresh,
                                             'corr', chans[i], event=ev))
@@ -922,7 +930,7 @@ def match_filter(template_names, template_list, st, threshold,
 
 
 def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
-                       plot_format, i, debug):
+                       plot_format, i):
     """
     Plotting function to match_filter.
 
@@ -956,21 +964,12 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
     cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
     cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-    plotting.triple_plot(cccsum_plot, cccsum_hist,
-                         stream_plot, rawthresh, True,
-                         plotdir + '/cccsum_plot_' +
-                         template_names[i] + '_' +
-                         stream[0].stats.starttime.
-                         datetime.strftime('%Y-%m-%d') +
-                         '.' + plot_format)
-    if debug >= 4:
-        print(' '.join(['Saved the cccsum to:', template_names[i],
-                        stream[0].stats.starttime.datetime.
-                       strftime('%Y%j')]))
-        np.save(template_names[i] +
-                stream[0].stats.starttime.datetime.strftime('%Y%j'),
-                cccsum)
-
+    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
+                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
+                 '.' + plot_format)
+    plotting.triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
+                         trace=stream_plot, threshold=rawthresh, save=True,
+                         savefile=plot_name)
 
 if __name__ == "__main__":
     import doctest
