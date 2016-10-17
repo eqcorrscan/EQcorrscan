@@ -242,7 +242,7 @@ def write_event(catalog):
     return
 
 
-def write_catalog(event_list, max_sep=8, min_link=8):
+def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     """
     Generate a dt.ct for hypoDD for a series of events.
 
@@ -257,6 +257,8 @@ def write_catalog(event_list, max_sep=8, min_link=8):
     :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
+    :type debug: int
+    :param debug: Debug output level.
 
     :returns: list of stations that have been used in this catalog
 
@@ -294,6 +296,10 @@ def write_catalog(event_list, max_sep=8, min_link=8):
             str(master_event_id).rjust(4)
         fphase.write(header + '\n')
         for pick in master_event.picks:
+            if not hasattr(pick, 'phase_hint') or len(pick.phase_hint) == 0:
+                warnings.warn('No phase-hint for pick:')
+                print(pick)
+                continue
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
                           for arrival in master_event.origins[0].arrivals
@@ -328,12 +334,16 @@ def write_catalog(event_list, max_sep=8, min_link=8):
                 continue
             links = 0  # Count the number of linkages
             for pick in master_event.picks:
+                if not hasattr(pick, 'phase_hint') or\
+                                len(pick.phase_hint) == 0:
+                    continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Added by Carolin
                 slave_matches = [p for p in slave_event.picks
-                                 if p.phase_hint == pick.phase_hint and
+                                 if hasattr(p, 'phase_hint') and
+                                 p.phase_hint == pick.phase_hint and
                                  p.waveform_id.station_code.upper() ==
                                  pick.waveform_id.station_code.upper()]
                 # Loop through the matches
@@ -430,12 +440,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         desire this functionality, you should apply the taper before calling
         this.  Note the :func:`obspy.Trace.taper` functions.
     """
-    import obspy
-    if int(obspy.__version__.split('.')[0]) > 0:
-        from obspy.signal.cross_correlation import xcorr_pick_correction
-    else:
-        from obspy.signal.cross_correlation import xcorrPickCorrection \
-            as xcorr_pick_correction
+    from obspy.signal.cross_correlation import xcorr_pick_correction
     warnings.filterwarnings(action="ignore",
                             message="Maximum of cross correlation " +
                                     "lower than 0.8: *")
@@ -504,13 +509,21 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             links = 0
             phases = 0
             for pick in master_picks:
+                if not hasattr(pick, 'phase_hint') or \
+                                len(pick.phase_hint) == 0:
+                    warnings.warn('No phase-hint for pick:')
+                    print(pick)
+                    continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
+                    warnings.warn('Will only use P or S phase picks')
+                    print(pick)
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Find station, phase pairs
                 # Added by Carolin
                 slave_matches = [p for p in slave_picks
-                                 if p.phase_hint == pick.phase_hint and
+                                 if hasattr(p, 'phase_hint') and
+                                 p.phase_hint == pick.phase_hint and
                                  p.waveform_id.station_code ==
                                  pick.waveform_id.station_code]
 
@@ -550,16 +563,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     # Correct the picks
                     try:
                         correction, cc =\
-                            xcorr_pick_correction(pick.time, mastertr,
-                                                  slave_pick.time,
-                                                  slavetr, pre_pick,
-                                                  extract_len - pre_pick,
-                                                  shift_len, filter="bandpass",
-                                                  filter_options={'freqmin':
-                                                                  lowcut,
-                                                                  'freqmax':
-                                                                  highcut},
-                                                  plot=plotvar)
+                            xcorr_pick_correction(
+                                pick.time, mastertr, slave_pick.time,
+                                slavetr, pre_pick, extract_len - pre_pick,
+                                shift_len, filter="bandpass",
+                                filter_options={'freqmin': lowcut,
+                                                'freqmax': highcut},
+                                plot=plotvar)
                         # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
