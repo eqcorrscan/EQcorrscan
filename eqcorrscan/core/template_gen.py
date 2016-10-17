@@ -820,14 +820,8 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
 
     .. figure:: ../../plots/template_gen.from_client.png
     """
-    # This import section copes with namespace changes between obspy versions
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-        from obspy.clients.fdsn.header import FDSNException
-    else:
-        from obspy.fdsn import Client
-        from obspy.fdsn.header import FDSNException
+    from obspy.clients.fdsn import Client
+    from obspy.clients.fdsn.header import FDSNException
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
     import warnings
@@ -838,6 +832,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     sub_catalogs = _group_events(catalog=catalog, process_len=process_len,
                                  data_pad=data_pad)
     for sub_catalog in sub_catalogs:
+        st = Stream()
         all_waveform_info = []
         for event in sub_catalog:
             for pick in event.picks:
@@ -862,29 +857,21 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             # Check that endtime is after the last event
             if not endtime > sub_catalog[-1].origins[0].time + data_pad:
                 raise IOError('Events do not fit in processing window')
-            # Here we download a full day of data.  We do this so that minor
-            # differences in processing during processing due to the effect
-            # of resampling do not impinge on our cross-correlations.
+            # Here we download more data than is needed.  We do this so that
+            # minor differences in processing during processing due to the
+            # effect of resampling do not impinge on our cross-correlations.
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
                 print('pick-time: ' + str(pick.time))
                 print('pick phase: ' + pick.phase_hint)
             print('.'.join([net, sta, loc, chan]))
-            if 'st' not in locals():
-                try:
-                    st = client.get_waveforms(net, sta, loc, chan,
-                                              starttime, endtime)
-                except FDSNException:
-                    warnings.warn('Found no data for this station')
-                    dropped_pick_stations += 1
-            else:
-                try:
-                    st += client.get_waveforms(net, sta, loc, chan,
-                                               starttime, endtime)
-                except FDSNException:
-                    warnings.warn('Found no data for this station')
-                    dropped_pick_stations += 1
+            try:
+                st += client.get_waveforms(net, sta, loc, chan,
+                                           starttime, endtime)
+            except FDSNException:
+                warnings.warn('Found no data for this station')
+                dropped_pick_stations += 1
         if debug > 0:
             st.plot()
         if not st and dropped_pick_stations == len(event.picks):

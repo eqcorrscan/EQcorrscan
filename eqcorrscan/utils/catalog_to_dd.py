@@ -215,10 +215,15 @@ def write_event(catalog):
     f = open('event.dat', 'w')
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
-        Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors.Time_Residual_RMS:
+        try:
+            Mag_1 = event.magnitudes[0].mag
+        except IndexError:
+            Mag_1 = 0.0
+        try:
             t_RMS = event.origins[0].time_errors.Time_Residual_RMS
-        else:
+        except IndexError:
+            raise IOError('No origin')
+        except AttributeError:
             print('No time residual in header')
             t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +

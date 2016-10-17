@@ -201,6 +201,10 @@ class TestNCEDCCases(unittest.TestCase):
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28, 17)
         t2 = t1 + 3600
+        process_len = 3600
+        # t1 = UTCDateTime(2004, 9, 28)
+        # t2 = t1 + 80000
+        # process_len = 80000
         catalog = client.get_events(starttime=t1, endtime=t2,
                                     minmagnitude=4,
                                     minlatitude=35.7, maxlatitude=36.1,
@@ -214,14 +218,22 @@ class TestNCEDCCases(unittest.TestCase):
                                                   lowcut=2.0, highcut=9.0,
                                                   samp_rate=50.0, filt_order=4,
                                                   length=3.0, prepick=0.15,
-                                                  swin='all', process_len=3600)
+                                                  swin='all',
+                                                  process_len=process_len)
         for template in self.templates:
             template.sort()
         # Download and process the day-long data
-        bulk_info = [(tr.stats.network, tr.stats.station, '*',
-                      tr.stats.channel[0] + 'H' + tr.stats.channel[1],
-                      t1, t1 + 3600)
-                     for tr in self.templates[0]]
+        template_stachans = []
+        for template in self.templates:
+            for tr in template:
+                template_stachans.append((tr.stats.network,
+                                          tr.stats.station,
+                                          tr.stats.channel))
+        template_stachans = list(set(template_stachans))
+        bulk_info = [(stachan[0], stachan[1], '*',
+                      stachan[2][0] + 'H' + stachan[2][1],
+                      t1, t1 + process_len)
+                     for stachan in template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
@@ -248,7 +260,8 @@ class TestNCEDCCases(unittest.TestCase):
         are run together or separately.
         """
         individual_detections = []
-        for template, template_name in zip(self.templates, self.template_names):
+        for template, template_name in zip(self.templates,
+                                           self.template_names):
             individual_detections += match_filter(
                 template_names=[template_name], template_list=[template],
                 st=self.st.copy(), threshold=8.0, threshold_type='MAD',
