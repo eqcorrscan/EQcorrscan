@@ -1,12 +1,14 @@
 # config for codecov, see https://codecov.io/gh/obspy/obspy/settings/yaml
 
 coverage:
+  range: 50...100
   status:
 
     # set commit status if relative change of whole project coverage
     # exceeds threshold
     project:
       default:
+        enabled: yes
         target: auto
         threshold: 1.5
         set_pending: yes
@@ -17,6 +19,7 @@ coverage:
     # set commit status, if coverage of diff is below target threshold
     patch:
       default:
+        enabled: yes
         target: 90
         set_pending: yes
         base: auto
