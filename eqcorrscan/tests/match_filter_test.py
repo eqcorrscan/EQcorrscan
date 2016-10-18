@@ -253,7 +253,8 @@ class TestGeoNetCase(unittest.TestCase):
     # def test_plot(self):
     #     try:
     #         detections = match_filter(template_names=self.template_names,
-    #                                   template_list=self.templates, st=self.st,
+    #                                   template_list=self.templates,
+    #                                   st=self.st,
     #                                   threshold=8.0, threshold_type='MAD',
     #                                   trig_int=6.0, plotvar=True, plotdir='.',
     #                                   cores=1)
