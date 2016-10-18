@@ -213,17 +213,17 @@ class TestGeoNetCase(unittest.TestCase):
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
-    def test_duplicate_cont_data(self):
-        """ Check that error is raised if duplicate channels are present in
-        the continuous data."""
-        tr = self.st[0].copy()
-        tr.data = np.random.randn(100)
-        st = self.st.copy() + tr
-        with self.assertRaises(MatchFilterError):
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=st, threshold=8.0,
-                         threshold_type='MAD', trig_int=6.0, plotvar=False,
-                         plotdir='.', cores=1)
+    # def test_duplicate_cont_data(self):
+    #     """ Check that error is raised if duplicate channels are present in
+    #     the continuous data."""
+    #     tr = self.st[0].copy()
+    #     tr.data = np.random.randn(100)
+    #     st = self.st.copy() + tr
+    #     with self.assertRaises(MatchFilterError):
+    #         match_filter(template_names=self.template_names,
+    #                      template_list=self.templates, st=st, threshold=8.0,
+    #                      threshold_type='MAD', trig_int=6.0, plotvar=False,
+    #                      plotdir='.', cores=1)
 
     def test_missing_cont_channel(self):
         """ Remove one channel from continuous data and check that everything
