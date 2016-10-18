@@ -168,8 +168,9 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
-            plotting.peaks_plot(image, starttime, samp_rate, True,
-                                peaks, _fname)
+            plotting.peaks_plot(data=image, starttime=starttime,
+                                samp_rate=samp_rate, save=True,
+                                peaks=peaks, savefile=_fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:

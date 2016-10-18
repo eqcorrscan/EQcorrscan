@@ -11,8 +11,6 @@ import unittest
 import os
 import warnings
 import copy
-import matplotlib
-matplotlib.use('Agg')
 
 from obspy import read, Stream, Trace, UTCDateTime
 from obspy.clients.fdsn import Client
