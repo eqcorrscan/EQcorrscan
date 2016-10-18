@@ -256,7 +256,8 @@ class TestGeoNetCase(unittest.TestCase):
     #                                   template_list=self.templates,
     #                                   st=self.st,
     #                                   threshold=8.0, threshold_type='MAD',
-    #                                   trig_int=6.0, plotvar=True, plotdir='.',
+    #                                   trig_int=6.0, plotvar=True,
+    #                                   plotdir='.',
     #                                   cores=1)
     #         self.assertEqual(len(detections), 1)
     #         self.assertEqual(detections[0].no_chans, 6)
