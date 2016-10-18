@@ -119,7 +119,7 @@ class TestSynthData(unittest.TestCase):
     def test_debug_range(self):
         """Test range of debug outputs"""
         # debug == 3 fails on travis due to plotting restrictions.
-        for debug in range(0, 5):
+        for debug in range(0, 3):
             print('Testing for debug level=%s' % debug)
             try:
                 kfalse, ktrue = test_match_filter(debug=debug)
@@ -213,17 +213,17 @@ class TestGeoNetCase(unittest.TestCase):
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
-    # def test_duplicate_cont_data(self):
-    #     """ Check that error is raised if duplicate channels are present in
-    #     the continuous data."""
-    #     tr = self.st[0].copy()
-    #     tr.data = np.random.randn(100)
-    #     st = self.st.copy() + tr
-    #     with self.assertRaises(MatchFilterError):
-    #         match_filter(template_names=self.template_names,
-    #                      template_list=self.templates, st=st, threshold=8.0,
-    #                      threshold_type='MAD', trig_int=6.0, plotvar=False,
-    #                      plotdir='.', cores=1)
+    def test_duplicate_cont_data(self):
+        """ Check that error is raised if duplicate channels are present in
+        the continuous data."""
+        tr = self.st[0].copy()
+        tr.data = np.random.randn(100)
+        st = self.st.copy() + tr
+        with self.assertRaises(MatchFilterError):
+            match_filter(template_names=self.template_names,
+                         template_list=self.templates, st=st, threshold=8.0,
+                         threshold_type='MAD', trig_int=6.0, plotvar=False,
+                         plotdir='.', cores=1)
 
     def test_missing_cont_channel(self):
         """ Remove one channel from continuous data and check that everything
