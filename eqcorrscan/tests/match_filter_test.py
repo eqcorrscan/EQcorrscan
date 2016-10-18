@@ -185,8 +185,12 @@ class TestGeoNetCase(unittest.TestCase):
                       t1 + (4 * 3600), t1 + (5 * 3600))
                      for tr in cls.templates[0]]
         # Just downloading an hour of data
+        print('Downloading data')
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
+        st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
+        # This is slow?
+        print('Processing continuous data')
         cls.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
                                           filt_order=4, samp_rate=50.0,
                                           debug=0, num_cores=1)
@@ -205,7 +209,7 @@ class TestGeoNetCase(unittest.TestCase):
                                   template_list=templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
-                                  cores=4)
+                                  cores=1)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
 
@@ -219,7 +223,7 @@ class TestGeoNetCase(unittest.TestCase):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,
-                         plotdir='.', cores=4)
+                         plotdir='.', cores=1)
 
     def test_missing_cont_channel(self):
         """ Remove one channel from continuous data and check that everything
@@ -229,7 +233,7 @@ class TestGeoNetCase(unittest.TestCase):
         detections, det_cat = match_filter(
             template_names=self.template_names, template_list=self.templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=False, plotdir='.', cores=4, output_cat=True)
+            plotvar=False, plotdir='.', cores=1, output_cat=True)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 5)
         self.assertEqual(len(detections), len(det_cat))
@@ -243,7 +247,7 @@ class TestGeoNetCase(unittest.TestCase):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
 
     def test_plot(self):
         try:
@@ -251,7 +255,7 @@ class TestGeoNetCase(unittest.TestCase):
                                       template_list=self.templates, st=self.st,
                                       threshold=8.0, threshold_type='MAD',
                                       trig_int=6.0, plotvar=True, plotdir='.',
-                                      cores=4)
+                                      cores=1)
             self.assertEqual(len(detections), 1)
             self.assertEqual(detections[0].no_chans, 6)
         except RuntimeError:
@@ -303,7 +307,7 @@ class TestNCEDCCases(unittest.TestCase):
         st.merge(fill_value='interpolate')
         cls.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
                                           filt_order=4, samp_rate=50.0,
-                                          debug=0, num_cores=4)
+                                          debug=0, num_cores=1)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
 
@@ -314,7 +318,7 @@ class TestNCEDCCases(unittest.TestCase):
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD',
                          trig_int=6.0, plotvar=False, plotdir='.',
-                         cores=4, extract_detections=True)
+                         cores=1, extract_detections=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
 
@@ -324,7 +328,7 @@ class TestNCEDCCases(unittest.TestCase):
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD',
                          trig_int=6.0, plotvar=False, plotdir='.',
-                         cores=4, extract_detections=True, output_cat=True)
+                         cores=1, extract_detections=True, output_cat=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
         self.assertEqual(len(detection_streams), len(det_cat))
@@ -350,7 +354,7 @@ class TestNCEDCCases(unittest.TestCase):
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
                                   trig_int=6.0, plotvar=False, plotdir='.',
-                                  cores=4)
+                                  cores=1)
         self.assertEqual(len(individual_detections), len(detections))
         for detection in detections:
             detection_dict = {'template_name': detection.template_name,
@@ -364,37 +368,37 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=self.template_names[0],
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # templates is not a list
             match_filter(template_names=self.template_names,
                          template_list=self.templates[0], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # template and template_names length are not equal
             match_filter(template_names=self.template_names,
                          template_list=[self.templates[0]], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # templates is not a list of streams
             match_filter(template_names=self.template_names,
                          template_list=['abc'], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # st is not a Stream
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=np.random.randn(10),
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # threshold_type is wrong
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='albert', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
 
     def test_masked_template(self):
         templates = [self.templates[0].copy()]
@@ -406,7 +410,7 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
 
     def test_non_equal_template_lengths(self):
         templates = [self.templates[0].copy()]
@@ -416,7 +420,7 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=4)
+                         plotvar=False, plotdir='.', cores=1)
 
 
 def test_match_filter(debug=0, plotvar=False, extract_detections=False,
@@ -432,7 +436,6 @@ def test_match_filter(debug=0, plotvar=False, extract_detections=False,
     :param debug: Debug level, higher the number the more output.
     """
     from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import plotting
     from obspy import UTCDateTime
     import string
     import inspect
@@ -506,7 +509,7 @@ def test_match_filter(debug=0, plotvar=False, extract_detections=False,
             times = [d.detect_time.datetime for d in detections
                      if d.template_name == template_names[i]]
             print(times)
-            plotting.detection_multiplot(data, template, times)
+            # plotting.detection_multiplot(data, template, times)
     # Set an 'acceptable' ratio of positive to false detections
     print(str(ktrue) + ' true detections and ' + str(kfalse) +
           ' false detections')
