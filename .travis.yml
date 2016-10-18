@@ -81,7 +81,7 @@ after_success:
   - mv .coverage ../.coverage.empty
   - cd ..
   - coverage combine
-  - bash <(curl -s https://codecov.io/bash)
+  - codecov
 
 notifications:
     email: false
