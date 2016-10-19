@@ -68,7 +68,7 @@ class TestTemplateGrid(unittest.TestCase):
         cls.stations = ['ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
                         'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
                         'MALC']
-        cls.nodes = zip(lats, lons, depths)
+        cls.nodes = list(zip(lats, lons, depths))
         cls.travel_times = np.abs(
             np.random.random([len(cls.stations), 20])) * 100
 
