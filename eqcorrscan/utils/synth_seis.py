@@ -335,9 +335,6 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     for tr in data:
         noise = np.random.randn(86400 * int(samp_rate))
         tr.data += noise / max(noise)
-        if debug > 2:
-            tr.plot()
-
     return templates, data, seeds
 
 
