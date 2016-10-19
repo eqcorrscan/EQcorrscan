@@ -1,5 +1,18 @@
-## Develop
+## 0.1.6
+* Fix bug introduced in version 0.1.5 for match_filter where looping
+through multiple templates did not correctly match image and template 
+data: 0.1.5 fix did not work;
+* Bug-fix in catalog_to_dd for events without magnitudes;
+* Amend match-filter to not edit the list of template names in place.
+Previously, if a template was not used (due to no matching continuous 
+data) then the name of the template was removed: this now copies the 
+list of template_names internally and does not change the external list.
+
+## 0.1.5
 * Migrate coverage to codecov;
+* Fix bug introduced in version 0.1.5 for match_filter where looping
+through multiple templates did not correctly match image and template 
+data.
 
 ## 0.1.4
 * Bug-fix in plot_repicked removed where data were not normalized
