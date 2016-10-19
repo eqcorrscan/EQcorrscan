@@ -16,15 +16,16 @@ from eqcorrscan.core.match_filter import normxcorr2
 
 
 class TestMethods(unittest.TestCase):
-    def setUp(self):
-        self.testing_path = os.path.join(os.path.abspath(
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.join(os.path.abspath(
             os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
-        self.template = from_sfile(
-            sfile=os.path.join(self.testing_path, '21-1412-02L.S201309'),
+        cls.template = from_sfile(
+            sfile=os.path.join(cls.testing_path, '21-1412-02L.S201309'),
             lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
             swin='all', prepick=0.05)
-        self.detection = from_sfile(
-            sfile=os.path.join(self.testing_path, '21-1759-04L.S201309'),
+        cls.detection = from_sfile(
+            sfile=os.path.join(cls.testing_path, '21-1759-04L.S201309'),
             lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
             swin='all', prepick=0.55)
 

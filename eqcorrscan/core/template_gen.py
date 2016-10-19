@@ -232,7 +232,6 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                               prepick=0.2, length=6)
         template.plot(equal_scale=False, size=(800, 600))
     """
-    # Read in the header of the sfile
     wavefiles = sfile_util.readwavename(sfile)
     pathparts = sfile.split(os.sep)[0:-1]
     new_path_parts = []
@@ -245,11 +244,10 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         main_wav_parts.append(part)
         if part == 'WAV':
             break
-    if main_wav_parts[0] == 'C:':
-        # This for windows, but only works for C drive...
-        # TODO: This sucks.
-        main_wav_parts[1] = os.path.join(main_wav_parts[0], main_wav_parts[1])
-        new_path_parts[1] = os.path.join(new_path_parts[0], new_path_parts[1])
+    if main_wav_parts[0][-1] == ':':
+        # Replace
+        main_wav_parts[1] = main_wav_parts[0] + os.sep + main_wav_parts[1]
+        new_path_parts[1] = new_path_parts[0] + os.sep + new_path_parts[1]
         main_wav_parts.remove(main_wav_parts[0])
         new_path_parts.remove(new_path_parts[0])
     mainwav = os.path.join(*main_wav_parts) + os.path.sep
