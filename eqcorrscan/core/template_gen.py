@@ -244,7 +244,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         main_wav_parts.append(part)
         if part == 'WAV':
             break
-    if main_wav_parts[0][-1] == ':':
+    if len(main_wav_parts[0]) == 2 and main_wav_parts[0][-1] == ':':
         # Replace
         main_wav_parts[1] = main_wav_parts[0] + os.sep + main_wav_parts[1]
         new_path_parts[1] = new_path_parts[0] + os.sep + new_path_parts[1]
