@@ -799,7 +799,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
             lon = ''
     else:
         lon = ''
-    if event.origins[0].depth in not None:
+    if event.origins[0].depth is not None:
         if event.origins[0].depth not in [float('NaN'), 999]:
             depth = '{0:.1f}'.format(event.origins[0].depth / 1000)
         else:
