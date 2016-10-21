@@ -272,7 +272,7 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
         # results will be a list of (i, event class)
         results = [pool.apply_async(_channel_loop, args=(
             detection_streams[i], template, min_cc, detections[i].id,
-            interpolate, i, detections[i].detect_val,detections[i].no_chans))
+            interpolate, i, detections[i].detect_val, detections[i].no_chans))
                    for i in range(len(detection_streams))]
         pool.close()
         events_list = [p.get() for p in results]

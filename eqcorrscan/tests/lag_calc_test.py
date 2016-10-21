@@ -55,6 +55,7 @@ class TestMethods(unittest.TestCase):
         cls.delays = [('test_template', [(tr.stats.station, tr.stats.channel,
                                           tr.stats.starttime - tstart)
                                          for tr in cls.template])]
+        warnings.simplefilter("always")
 
     def test_channel_loop(self):
         """Test the main lag_calc function"""
