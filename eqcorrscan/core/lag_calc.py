@@ -206,16 +206,14 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                     continue
             else:
                 phase = None
-            _waveform_id = WaveformStreamID(network_code=temp_net,
-                                            station_code=temp_sta,
-                                            channel_code=temp_chan)
-            event.picks.append(Pick(waveform_id=_waveform_id,
-                                    time=picktime,
-                                    method_id=ResourceIdentifier('EQcorrscan'),
-                                    phase_hint=phase,
-                                    creation_info='eqcorrscan.core.lag_calc',
-                                    comments=[Comment(text='cc_max=%s'
-                                                      % cc_max)]))
+            _waveform_id = WaveformStreamID(
+                network_code=temp_net, station_code=temp_sta,
+                channel_code=temp_chan)
+            event.picks.append(Pick(
+                waveform_id=_waveform_id, time=picktime,
+                method_id=ResourceIdentifier('EQcorrscan'), phase_hint=phase,
+                creation_info='eqcorrscan.core.lag_calc',
+                comments=[Comment(text='cc_max=%s' % cc_max)]))
             event.resource_id = detection_id
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
@@ -272,14 +270,9 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
         log.debug('Made pool of %i workers' % num_cores)
         # Parallelize generation of events for each detection:
         # results will be a list of (i, event class)
-        results = [pool.apply_async(_channel_loop, args=(detection_streams[i],
-                                                         template, min_cc,
-                                                         detections[i].id,
-                                                         interpolate, i,
-                                                         detections[i].
-                                                         detect_val,
-                                                         detections[i].
-                                                         no_chans))
+        results = [pool.apply_async(_channel_loop, args=(
+            detection_streams[i], template, min_cc, detections[i].id,
+            interpolate, i, detections[i].detect_val,detections[i].no_chans))
                    for i in range(len(detection_streams))]
         pool.close()
         events_list = [p.get() for p in results]
@@ -288,11 +281,10 @@ def _day_loop(detection_streams, template, min_cc, detections, interpolate,
     else:
         events_list = []
         for i in range(len(detection_streams)):
-            events_list.append(_channel_loop(detection_streams[i],
-                                             template, min_cc,
-                                             detections[i].id, interpolate, i,
-                                             detections[i].detect_val,
-                                             detections[i].no_chans))
+            events_list.append(_channel_loop(
+                detection_streams[i], template, min_cc, detections[i].id,
+                interpolate, i, detections[i].detect_val,
+                detections[i].no_chans))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
@@ -312,7 +304,9 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     :type zipped_templates: zip
     :param zipped_templates: Zipped list of (template_name, template)
     :type delays: list
-    :param delays: List of lists of the delays for each template
+    :param delays:
+        List of lists of the delays for each template in the form:
+        [(template_name, [(station, channel, delay)])]
     :type shift_len: float
     :param shift_len: Shift length in seconds allowed for picking.
     :type plot: bool
@@ -351,8 +345,11 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 # If there is no template-data match then skip the rest
                 # of the trace loop.
             # Grab the delays for the desired template: [(sta, chan, delay)]
-            delay = [delay for delay in delays if delay[0] == detection.
-                     template_name][0][1]
+            delay = []
+            for d in delays:
+                if d[0] == detection.template_name:
+                    delay.append(d)
+            delay = delay[0][1]
             # Now grab the delay for the desired trace for this template
             delay = [d for d in delay if d[0] == tr.stats.station and
                      d[1] == tr.stats.channel][0][2]
