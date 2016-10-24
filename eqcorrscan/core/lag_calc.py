@@ -321,21 +321,21 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
         # Stream to be saved for new detection
         detect_stream = []
         max_delay = 0
+        template_st = [t for t in zipped_templates
+                       if str(t[0]) == str(detection.template_name)]
+        if len(template_st) > 0:
+            template_st = template_st[0]
+        else:
+            warnings.warn('No template with name: %s' %
+                          detection.template_name)
+            for t in zipped_templates:
+                print(t)
+            continue
         for tr in detect_data:
             tr_copy = tr.copy()
             # Right now, copying each trace hundreds of times...
-            template = [t for t in zipped_templates
-                        if str(t[0]) == str(detection.template_name)]
-            if len(template) > 0:
-                template = template[0]
-            else:
-                warnings.warn('No template with name: %s' %
-                              detection.template_name)
-                for t in zipped_templates:
-                    print(t)
-                continue
-            template = template[1].select(station=tr.stats.station,
-                                          channel=tr.stats.channel)
+            template = template_st[1].select(station=tr.stats.station,
+                                             channel=tr.stats.channel)
             if template:
                 # Save template trace length in seconds
                 template_len = len(template[0]) / \
