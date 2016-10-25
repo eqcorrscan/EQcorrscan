@@ -31,7 +31,7 @@ the two formats.
 ...             if arrival.pick_id == pick.resource_id]
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -597,7 +597,6 @@ def blanksfile(wavefile, evtype, userID, outdir, overwrite=False,
     """
 
     from obspy import read as obsread
-    import sys
     import os
     import datetime
 
@@ -786,23 +785,23 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         raise IOError(outdir + os.sep + sfilename +
                       ' already exists, will not overwrite')
     # Write the header info.
-    if event.origins[0].latitude:
+    if event.origins[0].latitude is not None:
         if event.origins[0].latitude not in [float('NaN'), 999]:
             lat = '{0:.3f}'.format(event.origins[0].latitude)
         else:
             lat = ''
     else:
         lat = ''
-    if event.origins[0].longitude:
+    if event.origins[0].longitude is not None:
         if event.origins[0].longitude not in [float('NaN'), 999]:
             lon = '{0:.3f}'.format(event.origins[0].longitude)
         else:
             lon = ''
     else:
         lon = ''
-    if event.origins[0].depth:
+    if event.origins[0].depth is not None:
         if event.origins[0].depth not in [float('NaN'), 999]:
-            depth = '{0:.1f}'.format(event.origins[0].depth/1000)
+            depth = '{0:.1f}'.format(event.origins[0].depth / 1000)
         else:
             depth = ''
     else:
@@ -888,7 +887,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
                 str(datetime.datetime.now().day).zfill(2) + ' ' +
                 str(datetime.datetime.now().hour).zfill(2) + ':' +
                 str(datetime.datetime.now().minute).zfill(2) + ' OP:' +
-                userID.ljust(4) + ' STATUS:'+'ID:'.rjust(18) +
+                userID.ljust(4) + ' STATUS:' + 'ID:'.rjust(18) +
                 str(evtime.year) +
                 str(evtime.month).zfill(2) +
                 str(evtime.day).zfill(2) +
@@ -898,7 +897,7 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
                 'I'.rjust(6) + '\n')
     # Write line 3 of s-file
     for wavefile in wavefiles:
-        sfile.write(' ' + wavefile + '6'.rjust(79-len(wavefile)) + '\n')
+        sfile.write(' ' + wavefile + '6'.rjust(79 - len(wavefile)) + '\n')
     # Write final line of s-file
     sfile.write(' STAT SP IPHASW D HRMM SECON CODA AMPLIT PERI AZIMU' +
                 ' VELO AIN AR TRES W  DIS CAZ7\n')
@@ -1067,7 +1066,6 @@ def nordpick(event):
                 CAZ = ' '
         else:
             CAZ = ' '
-            round_len = False
             distance = ' '
             timeres = ' '
             azimuthres = ' '

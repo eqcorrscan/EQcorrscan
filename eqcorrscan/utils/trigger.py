@@ -3,7 +3,7 @@ Functions to enable simple energy-base triggering in a network setting where \
 different stations have different noise parameters.
 
 :copyright:
-    Konstantinos Michailos, Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -13,12 +13,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
+import getpass
+import ast
+import warnings
+import numpy as np
+from pprint import pprint
+
+from multiprocessing import Pool, cpu_count
 from obspy.core.util import AttribDict
+from obspy import UTCDateTime
+from obspy.signal.trigger import trigger_onset, plot_trigger, recursive_sta_lta
+
+import eqcorrscan
+from eqcorrscan.utils.despike import median_filter
+
 
 class TriggerParameters(AttribDict):
-    """Base class for trigger parameters.
-
-    ..rubric:: Example
+    """
+    Base class for trigger parameters.
 
     >>> from eqcorrscan.utils.trigger import TriggerParameters
     >>> defaults = TriggerParameters()
@@ -87,9 +100,6 @@ class TriggerParameters(AttribDict):
         :type append: bool
         :param append: Append to already existing file or over-write.
         """
-        from obspy import UTCDateTime
-        import eqcorrscan
-        import getpass
         header = ' '.join(['# User:', getpass.getuser(),
                            '\n# Creation date:', str(UTCDateTime()),
                            '\n# EQcorrscan version:',
@@ -113,15 +123,14 @@ def read_trigger_parameters(filename):
     :type filename: str
     :param filename: Parameter file
 
-    :returns: List of parameters
+    :returns: List of :class:`eqcorrscan.utils.trigger.TriggerParameters`
     :rtype: list
 
     .. rubric:: Example
 
     >>> from eqcorrscan.utils.trigger import read_trigger_parameters
-    >>> parameters = read_trigger_parameters('parameter_file.par') # doctest: +SKIP
+    >>> parameters = read_trigger_parameters('parameters') # doctest: +SKIP
     """
-    import ast
     parameters = []
     f = open(filename, 'r')
     print('Reading parameters with the following header:')
@@ -153,14 +162,9 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
     :return: trigger
     :rtype: list
     """
-    from eqcorrscan.utils.despike import median_filter
-    from obspy.signal.trigger import trigger_onset, plot_trigger
-    from obspy.signal.trigger import recursive_sta_lta
-    import warnings
-
     for par in parameters:
         if par['station'] == tr.stats.station and \
-                        par['channel'] == tr.stats.channel:
+           par['channel'] == tr.stats.channel:
             parameter = par
             break
     else:
@@ -198,9 +202,9 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
         cft_peak = tr.data[on:off].max()
         cft_std = tr.data[on:off].std()
         on = tr.stats.starttime + \
-             float(on) / tr.stats.sampling_rate
+            float(on) / tr.stats.sampling_rate
         off = tr.stats.starttime + \
-                float(off) / tr.stats.sampling_rate
+            float(off) / tr.stats.sampling_rate
         triggers.append((on.timestamp, off.timestamp,
                          tr.id, cft_peak,
                          cft_std))
@@ -220,8 +224,8 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     :type parameters: list
     :param parameters: List of parameter class
     :type thr_coincidence_sum: int
-    :param thr_coincidence_sum: Minimum number of stations required to raise a \
-        network trigger.
+    :param thr_coincidence_sum:
+        Minimum number of stations required to raise a network trigger.
     :type moveout: float
     :param moveout: Window to find triggers within in the network detection \
         stage.
@@ -258,11 +262,6 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     Looking for coincidence triggers ...
     Found 1 Coincidence triggers
     """
-    from obspy import UTCDateTime
-    import numpy as np
-    from pprint import pprint
-    from multiprocessing import Pool, cpu_count
-
     triggers = []
     trace_ids = [tr.id for tr in st]
     trace_ids = dict.fromkeys(trace_ids, 1)

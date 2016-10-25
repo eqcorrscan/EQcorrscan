@@ -26,7 +26,7 @@ FDSN (see |obspy_fdsn| for a list of possible clients):
     templates = from_client(catalog=catalog, client_id='NCEDC',
                             lowcut=2.0, highcut=9.0, samp_rate=20.0,
                             filt_order=4, length=3.0, prepick=0.15,
-                            swin='all')
+                            swin='all', process_len=200)
 
 This will download data for a single event (given by eventid) from the NCEDC
 database, then use that information to download relevant waveform data.  These
@@ -49,6 +49,23 @@ worth using a subset of picks.  The advanced example below shows one way to do
 this.  In practice, five picks (and therefore traces in a template) is often
 sufficient for matched-filter detections.  However, you should test this on your
 own data.
+
+Some other things that you might want to consider when generating templates
+include:
+
+* Template-length, you probably only want to include the real earthquake signal in your template,
+  so really long templates are probably not the best idea.
+* On the same note, don't include much (if any) data before the P-phase, unless you have
+  good reason to - assuming your noise is random, including noise will reduce the
+  correlations.
+* Consider your frequency band - look for peak power in the chosen waveform
+  **relative to the noise**.
+* Coda waves often describe scatterers - scattered waves are very interesting,
+  but may reduce the generality of your templates.  If this is what you want, include
+  coda, if you want a more general template, I would suggest not including coda.
+  For examples of this you could try generating a lot of templates from a sequence
+  and computing the SVD of the templates to see where the most coherent energy is
+  (in the first basis vector), or just computing the stack of the waveforms.
 
 Storing templates
 -----------------
@@ -99,9 +116,14 @@ which phase is which when we have to run our cross-correlation re-picker
 (yet to be completed), which means that we, by convention, assign P-picks
 to the vertical channel and S-picks to both horizontal channels.
 
+This will also show template waveforms for both the automatic and the manual
+picks - you can change this by removing either automatic or manual picks
+y setting the *evaluation_mode* flag in :func:`eqcorrscan.utils.catalog_utils.filter_picks`.
+
 **Note:** To run this script and for all map plotting you will need to install
 matplotlib-toolkits basemap package.  Install instructions and a link to the
-download are |basemap_link|.
+download are |basemap_link|. We recommend that you install the package using
+your system package manager if it is available.
 
 .. |basemap_link| raw:: html
 

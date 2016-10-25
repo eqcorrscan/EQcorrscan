@@ -3,7 +3,7 @@ relative moments for near-repeating earthquakes using singular-value \
 decomposition techniques.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -13,21 +13,44 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
 import warnings
+import os
+import glob
+import matplotlib.pyplot as plt
+import datetime as dt
+import itertools
+import sys
+import shutil
+import copy
+import random
+import pickle
+
+from scipy.signal import iirfilter
+from collections import Counter
+from obspy.signal.invsim import simulate_seismometer as seis_sim
+from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
+from obspy import UTCDateTime, read
+from obspy.core.event import Amplitude, Pick, WaveformStreamID
+
+from eqcorrscan.utils import sfile_util
 
 
 def dist_calc(loc1, loc2):
     """
     Function to calculate the distance in km between two points.
-    Uses the flat Earth approximation.
+
+    Uses the flat Earth approximation. Better things are available for this,
+    like `gdal <http://www.gdal.org/>`_.
 
     :type loc1: tuple
     :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
     :type loc2: tuple
     :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
 
-    :returns: float, Distance between points.
+    :returns: Distance between points in km.
+    :rtype: float
     """
     R = 6371.009  # Radius of the Earth in km
     dlat = np.radians(abs(loc1[0] - loc2[0]))
@@ -44,17 +67,17 @@ def calc_max_curv(magnitudes, plotvar=False):
     Calculate the magnitude of completeness using the maximum curvature method.
 
     :type magnitudes: list
-    :param magnitudes: List of magnitudes from which to compute the maximum \
-        curvature which will give an estimate of the magnitude of completeness \
-        given the assumption of a power-law scaling.
+    :param magnitudes:
+        List of magnitudes from which to compute the maximum curvature which
+        will give an estimate of the magnitude of completeness given the
+        assumption of a power-law scaling.
     :type plotvar: bool
     :param plotvar: Turn plotting on and off
 
     :rtype: float
     :return: Magnitude at maximum curvature
 
-    .. Note:: Should be used as a guide, often under-estimates Mc.  Personally\
-        not fond of this method.
+    .. Note:: Should be used as a guide, often under-estimates Mc.
 
     .. rubric:: Example
 
@@ -67,11 +90,8 @@ def calc_max_curv(magnitudes, plotvar=False):
     >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> calc_max_curv(magnitudes, plotvar=False)
-    3.6000000000000001
+    3.1000000000000001
     """
-    from collections import Counter
-    import matplotlib.pyplot as plt
-
     counts = Counter(magnitudes)
     df = np.zeros(len(counts))
     mag_steps = np.zeros(len(counts))
@@ -79,21 +99,25 @@ def calc_max_curv(magnitudes, plotvar=False):
     grad_points = grad.copy()
     for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
         mag_steps[i] = magnitude
-        df[i] = counts[magnitude]
+        if i > 0:
+            df[i] = counts[magnitude] + df[i - 1]
+        else:
+            df[i] = counts[magnitude]
     for i, val in enumerate(df):
         if i > 0:
-            grad[i-1] = (val - df[i-1]) / (mag_steps[i] - mag_steps[i-1])
-            grad_points[i-1] = mag_steps[i] - ((mag_steps[i] -
-                                                mag_steps[i-1]) / 2.0)
+            grad[i - 1] = (val - df[i - 1]) / (mag_steps[i] - mag_steps[i - 1])
+            grad_points[i - 1] = mag_steps[i] - ((mag_steps[i] -
+                                                  mag_steps[i - 1]) / 2.0)
     # Need to find the second order derivative
     curvature = np.zeros(len(grad) - 1)
     curvature_points = curvature.copy()
     for i, _grad in enumerate(grad):
         if i > 0:
-            curvature[i-1] = (_grad - grad[i-1]) / (grad_points[i] -
-                                                       grad_points[i-1])
-            curvature_points[i-1] = grad_points[i] - ((grad_points[i] -
-                                                       grad_points[i-1]) / 2.0)
+            curvature[i - 1] = (_grad - grad[i - 1]) / (grad_points[i] -
+                                                        grad_points[i - 1])
+            curvature_points[i - 1] = grad_points[i] - ((grad_points[i] -
+                                                         grad_points[i - 1]) /
+                                                        2.0)
     if plotvar:
         plt.scatter(mag_steps, df, c='k', label='Magnitude function')
         plt.plot(mag_steps, df, c='k')
@@ -118,7 +142,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :type magnitudes: list
     :param magnitudes: Magnitudes to compute the b-value for.
     :type completeness: list
-    :param completeness: list of completeness values to comptue b-values for.
+    :param completeness: list of completeness values to compute b-values for.
     :type max_mag: float
     :param max_mag: Maximum magnitude to attempt to fit in magnitudes.
     :type plotvar: bool
@@ -143,10 +167,6 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> round(b_values[4][1])
     1.0
     """
-    from collections import Counter
-    import matplotlib.pyplot as plt
-    from eqcorrscan.utils.plotting import freq_mag
-
     b_values = []
     # Calculate the cdf for all magnitudes
     counts = Counter(magnitudes)
@@ -155,7 +175,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
         mag_steps[i] = magnitude
         if i > 0:
-            cdf[i] = cdf[i-1] + counts[magnitude]
+            cdf[i] = cdf[i - 1] + counts[magnitude]
         else:
             cdf[i] = counts[magnitude]
 
@@ -182,11 +202,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
                            for M in complete_mags]
         r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
                            for i in range(len(complete_freq))]) * 100) /
-                    np.sum(complete_freq))
+                   np.sum(complete_freq))
         b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
-        # if plotvar:
-        #     freq_mag(magnitudes=magnitudes, completeness=m_c, max_mag=max_mag)
-        #     print('Residual %s' % r)
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
@@ -208,13 +225,14 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
 def _sim_WA(trace, PAZ, seedresp, water_level):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.
+
     Returns a de-meaned, de-trended, Wood Anderson simulated trace in
     it's place.
 
     Works in-place on data and will destroy your original data, copy the \
     trace before giving it to this function!
 
-    :type trace: obspy.Trace
+    :type trace: obspy.core.trace.Trace
     :param trace: A standard obspy trace, generally should be given without
                     pre-filtering, if given with pre-filtering for use with
                     amplitude determiniation for magnitudes you will need to
@@ -228,12 +246,12 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
     :type water_level: int
     :param water_level: Water level for the simulation.
 
-    :returns: obspy.Trace
+    :returns: Trace of Wood-Anderson simulated data
+    :rtype: :class:`obspy.core.trace.Trace`
     """
     # Note Wood anderson sensitivity is 2080 as per Uhrhammer & Collins 1990
     PAZ_WA = {'poles': [-6.283 + 4.7124j, -6.283 - 4.7124j],
               'zeros': [0 + 0j], 'gain': 1.0, 'sensitivity': 2080}
-    from obspy.signal.invsim import simulate_seismometer as seis_sim
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
@@ -259,7 +277,7 @@ def _max_p2t(data, delta):
     Originally designed to be used to calculate magnitudes (by \
     taking half of the peak-to-trough amplitude as the peak amplitude).
 
-    :type data: ndarray
+    :type data: numpy.ndarray
     :param data: waveform trace to find the peak-to-trough in.
     :type delta: float
     :param delta: Sampling interval in seconds
@@ -267,83 +285,86 @@ def _max_p2t(data, delta):
     :returns: tuple of (amplitude, period, time) with amplitude in the same \
         scale as given in the input data, and period in seconds, and time in \
         seconds from the start of the data window.
+    :rtype: tuple
     """
-    import matplotlib.pyplot as plt
     debug_plot = False
     turning_points = []  # A list of tuples of (amplitude, sample)
     for i in range(1, len(data) - 1):
-        if (data[i] < data[i-1] and data[i] < data[i+1]) or\
-           (data[i] > data[i-1] and data[i] > data[i+1]):
+        if (data[i] < data[i - 1] and data[i] < data[i + 1]) or\
+           (data[i] > data[i - 1] and data[i] > data[i + 1]):
             turning_points.append((data[i], i))
     if len(turning_points) >= 1:
-        amplitudes = np.empty([len(turning_points)-1],)
-        half_periods = np.empty([len(turning_points)-1],)
+        amplitudes = np.empty([len(turning_points) - 1],)
+        half_periods = np.empty([len(turning_points) - 1],)
     else:
         plt.plot(data)
         plt.show()
-        print('Turning points has length: '+str(len(turning_points)) +
-              ' data have length: '+str(len(data)))
-        return (0.0, 0.0, 0.0)
+        print('Turning points has length: ' + str(len(turning_points)) +
+              ' data have length: ' + str(len(data)))
+        return 0.0, 0.0, 0.0
     for i in range(1, len(turning_points)):
-        half_periods[i-1] = (delta * (turning_points[i][1] -
-                                      turning_points[i-1][1]))
-        amplitudes[i-1] = np.abs(turning_points[i][0]-turning_points[i-1][0])
+        half_periods[i - 1] = (delta * (turning_points[i][1] -
+                                        turning_points[i - 1][1]))
+        amplitudes[i - 1] = np.abs(turning_points[i][0] -
+                                   turning_points[i - 1][0])
     amplitude = np.max(amplitudes)
     period = 2 * half_periods[np.argmax(amplitudes)]
     if debug_plot:
         plt.plot(data, 'k')
         plt.plot([turning_points[np.argmax(amplitudes)][1],
-                  turning_points[np.argmax(amplitudes)-1][1]],
+                  turning_points[np.argmax(amplitudes) - 1][1]],
                  [turning_points[np.argmax(amplitudes)][0],
-                  turning_points[np.argmax(amplitudes)-1][0]], 'r')
+                  turning_points[np.argmax(amplitudes) - 1][0]], 'r')
         plt.show()
-    return (amplitude, period, delta*turning_points[np.argmax(amplitudes)][1])
+    return amplitude, period, delta * turning_points[np.argmax(amplitudes)][1]
 
 
-def _GSE2_PAZ_read(GSEfile):
+def _GSE2_PAZ_read(gsefile):
     """
-    Read the instrument response information from a GSE Poles and \
-    Zeros file.
+    Read the instrument response information from a GSE Poles and Zeros file.
+
     Formatted for files generated by the SEISAN program RESP.
 
-    Format must be CAL2, not coded for any other format at the moment, \
+    Format must be CAL2, not coded for any other format at the moment,
     contact the authors to add others in.
 
-    :type GSEfile: string
-    :param GSEfile: Path to GSE file
+    :type gsefile: string
+    :param gsefile: Path to GSE file
 
-    :returns: Dict of poles, zeros, gain and sensitivity
+    :returns: Dictionary of poles, zeros, gain and sensitivity
+    :rtype: dict
     """
-    import datetime as dt
-    f = open(GSEfile)
-    # First line should start with CAL2
-    header = f.readline()
-    if not header[0:4] == 'CAL2':
-        raise IOError('Unknown format for GSE file, only coded for CAL2')
-    station = header.split()[1]
-    channel = header.split()[2]
-    sensor = header.split()[3]
-    date = dt.datetime.strptime(header.split()[7], '%Y/%m/%d')
-    header = f.readline()
-    if not header[0:4] == 'PAZ2':
-        raise IOError('Unknown format for GSE file, only coded for PAZ2')
-    gain = float(header.split()[3])  # Measured in nm/counts
-    kpoles = int(header.split()[4])
-    kzeros = int(header.split()[5])
-    poles = []
-    for i in range(kpoles):
-        pole = f.readline()
-        poles.append(complex(float(pole.split()[0]), float(pole.split()[1])))
-    zeros = []
-    for i in range(kzeros):
-        zero = f.readline()
-        zeros.append(complex(float(zero.split()[0]), float(zero.split()[1])))
-    # Have Poles and Zeros, but need Gain and Sensitivity
-    # Gain should be in the DIG2 line:
-    for line in f:
-        if line[0:4] == 'DIG2':
-            sensitivity = float(line.split()[2])  # measured in counts/muVolt
-    f.close()
+    with open(gsefile, 'r') as f:
+        # First line should start with CAL2
+        header = f.readline()
+        if not header[0:4] == 'CAL2':
+            raise IOError('Unknown format for GSE file, only coded for CAL2')
+        station = header.split()[1]
+        channel = header.split()[2]
+        sensor = header.split()[3]
+        date = dt.datetime.strptime(header.split()[7], '%Y/%m/%d')
+        header = f.readline()
+        if not header[0:4] == 'PAZ2':
+            raise IOError('Unknown format for GSE file, only coded for PAZ2')
+        gain = float(header.split()[3])  # Measured in nm/counts
+        kpoles = int(header.split()[4])
+        kzeros = int(header.split()[5])
+        poles = []
+        for i in range(kpoles):
+            pole = f.readline()
+            poles.append(complex(float(pole.split()[0]),
+                                 float(pole.split()[1])))
+        zeros = []
+        for i in range(kzeros):
+            zero = f.readline()
+            zeros.append(complex(float(zero.split()[0]),
+                                 float(zero.split()[1])))
+        # Have Poles and Zeros, but need Gain and Sensitivity
+        # Gain should be in the DIG2 line:
+        for line in f:
+            if line[0:4] == 'DIG2':
+                sensitivity = float(line.split()[2])
+                # measured in counts/muVolt
     PAZ = {'poles': poles, 'zeros': zeros, 'gain': gain,
            'sensitivity': sensitivity}
     return PAZ, date, station, channel, sensor
@@ -352,9 +373,9 @@ def _GSE2_PAZ_read(GSEfile):
 def _find_resp(station, channel, network, time, delta, directory):
     """
     Helper function to find the response information.
-    Works for a given station and \
-    channel at a given time and return a dictionary of poles and zeros, gain \
-    and sensitivity.
+
+    Works for a given station and channel at a given time and return a
+    dictionary of poles and zeros, gain and sensitivity.
 
     :type station: str
     :param station: Station name (as in the response files)
@@ -369,12 +390,9 @@ def _find_resp(station, channel, network, time, delta, directory):
     :type directory: str
     :param directory: Directory to scan for response information
 
-    :returns: dict, response information
+    :returns: dictionary of response information
+    :rtype: dict
     """
-    import glob
-    from obspy.signal.invsim import evalresp
-    from obspy import UTCDateTime
-    import os
     possible_respfiles = glob.glob(directory + os.path.sep + 'RESP.' +
                                    network + '.' + station +
                                    '.*.' + channel)  # GeoNet RESP naming
@@ -390,8 +408,8 @@ def _find_resp(station, channel, network, time, delta, directory):
     channel = str(channel)
     possible_respfiles += glob.glob(directory + os.path.sep +
                                     station.ljust(5, str('_')) +
-                                    channel[0:len(channel)-1].ljust(3,
-                                                                    str('_')) +
+                                    channel[0:len(channel) - 1].
+                                    ljust(3, str('_')) +
                                     channel[-1] + '.*_GSE')
     PAZ = []
     seedresp = []
@@ -440,8 +458,6 @@ def _pairwise(iterable):
     """
     Wrapper on itertools for SVD_magnitude.
     """
-    import itertools
-    import sys
     a, b = itertools.tee(iterable)
     next(b, None)
     if sys.version_info.major == 2:
@@ -450,57 +466,54 @@ def _pairwise(iterable):
         return zip(a, b)
 
 
-def Amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
-                   winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
-    """Depreciated, please use amp_pick_sfile"""
-    warnings.warn('Depreciation warning: Amp_pick_sfile is depreciated, ' +
-                  'use amp_pick_sfile')
-    event = amp_pick_sfile(sfile, datapath, respdir, chans, var_wintype,
-                           winlen, pre_pick, pre_filt, lowcut,
-                           highcut, corners)
-    return event
-
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
+                   highcut=20.0, corners=4, min_snr=1.0, plot=False,
+                   remove_old=False):
     """
     Pick amplitudes for local magnitude for a single event.
-    Looks for maximum peak-to-trough amplitude for a channel in a stream, and \
-    picks this amplitude and period.  There are a few things it does \
-    internally to stabilise the result
-        1. Applies a given filter to the data - very necessary for small \
+
+    Looks for maximum peak-to-trough amplitude for a channel in a stream, and
+    picks this amplitude and period.  There are a few things it does
+    internally to stabilise the result:
+
+        1. Applies a given filter to the data - very necessary for small
         magnitude earthquakes;
-        2. Keeps track of the poles and zeros of this filter and removes then \
+
+        2. Keeps track of the poles and zeros of this filter and removes them
         from the picked amplitude;
-        3. Picks the peak-to-trough amplitude, but records half of this: the \
-        specification for the local magnitude is to use a peak amplitude on \
-        a horizontal, however, with modern digital seismometers, the peak \
-        amplitude often has an additional, DC-shift applied to it, to \
-        stabilise this, and to remove possible issues with de-meaning data \
-        recorded during the wave-train of an event (e.g. the mean may not be \
-        the same as it would be for longer durations), we use half the \
+
+        3. Picks the peak-to-trough amplitude, but records half of this: the
+        specification for the local magnitude is to use a peak amplitude on
+        a horizontal, however, with modern digital seismometers, the peak
+        amplitude often has an additional, DC-shift applied to it, to
+        stabilise this, and to remove possible issues with de-meaning data
+        recorded during the wave-train of an event (e.g. the mean may not be
+        the same as it would be for longer durations), we use half the
         peak-to-trough amplitude;
-        4. Despite the original definition of local magnitude requiring the \
-        use of a horizontal channel, more recent work has shown that the \
-        vertical channels give more consistent magnitude estimations between \
-        stations, due to a reduction in site-amplification effects, we \
-        therefore use the vertical channels by default, but allow the user \
+
+        4. Despite the original definition of local magnitude requiring the
+        use of a horizontal channel, more recent work has shown that the
+        vertical channels give more consistent magnitude estimations between
+        stations, due to a reduction in site-amplification effects, we
+        therefore use the vertical channels by default, but allow the user
         to chose which channels they deem appropriate;
-        5. We do not specify that the maximum amplitude should be the \
-        S-phase: The original definition holds that the maximum body-wave \
-        amplitude should be used - while this is often the S-phase, we do not \
-        discrimiate against the P-phase.  We do note that, unless the user \
-        takes care when assigning winlen and filters, they may end up with \
+
+        5. We do not specify that the maximum amplitude should be the
+        S-phase: The original definition holds that the maximum body-wave
+        amplitude should be used - while this is often the S-phase, we do not
+        discriminate against the P-phase.  We do note that, unless the user
+        takes care when assigning winlen and filters, they may end up with
         amplitude picks for surface waves;
-        6. We use a variable window-length by default that takes into account \
-        P-S times if available, this is in an effort to include only the \
-        body waves.  When P-S times are not available we hard-wire a P-S \
+
+        6. We use a variable window-length by default that takes into account
+        P-S times if available, this is in an effort to include only the
+        body waves.  When P-S times are not available we hard-wire a P-S
         at 0.34 x hypocentral distance.
 
-    :type event: obspy.core.event.Event
+    :type event: obspy.core.event.event.Event
     :param event: Event to pick
-    :type st: obspy.core.Stream
+    :type st: obspy.core.stream.Stream
     :param st: Stream associated with event
     :type respdir: str
     :param respdir: Path to the response information directory
@@ -529,17 +542,27 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
+        below on signal-to-noise ratio calculation.
+    :type plot: bool
+    :param plot: Turn plotting on or off.
+    :type remove_old: bool
+    :param remove_old:
+        If True, will remove old amplitude picks from event and overwrite
+        with new picks. Defaults to False.
 
-    :returns: obspy.core.event
+    :returns: Picked event
+    :rtype: :class:`obspy.core.event.Event`
+
+    .. Note:: Signal-to-noise ratio is calculated using the filtered data by \
+        dividing the maximum amplitude in the signal window (pick window) \
+        by the normalized noise amplitude (taken from the whole window \
+        supplied).
     """
     # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
     # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
     ps_multiplier = 0.34
-    from obspy import read
-    from scipy.signal import iirfilter
-    from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
-    import warnings
-    from obspy.core.event import Amplitude, Pick, WaveformStreamID
     # Convert these picks into a lists
     stations = []  # List of stations
     channels = []  # List of channels
@@ -547,6 +570,12 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     picktypes = []  # List of pick types
     distances = []  # List of hypocentral distances
     picks_out = []
+    if remove_old and event.amplitudes:
+        for amp in event.amplitudes:
+            # Find the pick and remove it too
+            pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
+            event.picks.remove(pick)
+            event.amplitudes.remove(amp)
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
             picks_out.append(pick)  # Need to be able to remove this if there
@@ -564,105 +593,34 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     del(arrival)
     for sta in uniq_stas:
         for chan in chans:
-            print('Working on '+sta+' '+chan)
-            tr = st.select(station=sta, channel='*'+chan)
+            print('Working on ' + sta + ' ' + chan)
+            tr = st.select(station=sta, channel='*' + chan)
             if not tr:
                 # Remove picks from file
                 # picks_out=[picks_out[i] for i in range(len(picks))\
                 # if picks_out[i].station+picks_out[i].channel != \
                 # sta+chan]
-                warnings.warn('There is no station and channel match in the ' +
+                warnings.warn('There is no station and channel match in the '
                               'wavefile!')
-                break
+                continue
             else:
                 tr = tr[0]
             # Apply the pre-filter
             if pre_filt:
                 try:
-                    tr.detrend('simple')
+                    tr.split().detrend('simple').merge(fill_value=0)
                 except:
+                    print('Some issue splitting this one')
                     dummy = tr.split()
                     dummy.detrend('simple')
-                    tr = dummy.merge()[0]
-                tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
-                          corners=corners)
-            sta_picks = [i for i in range(len(stations))
-                         if stations[i] == sta]
-            pick_id = event.picks[sta_picks[0]].resource_id
-            arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick_id][0]
-            hypo_dist = arrival.distance
-            CAZ = arrival.azimuth
-            if var_wintype:
-                if 'S' in [picktypes[i] for i in sta_picks] and\
-                   'P' in [picktypes[i] for i in sta_picks]:
-                    # If there is an S-pick we can use this :D
-                    S_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    try:
-                        tr.trim(starttime=S_pick-pre_pick,
-                                endtime=S_pick+(S_pick-P_pick)*winlen)
-                    except ValueError:
-                        break
-                elif 'S' in [picktypes[i] for i in sta_picks]:
-                    S_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_modelled = S_pick - hypo_dist * ps_multiplier
-                    try:
-                        tr.trim(starttime=S_pick-pre_pick,
-                                endtime=S_pick + (S_pick - P_modelled) *
-                                winlen)
-                    except ValueError:
-                        break
-                else:
-                    # In this case we only have a P pick
-                    P_pick = [picktimes[i] for i in sta_picks
-                              if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    S_modelled = P_pick + hypo_dist * ps_multiplier
-                    try:
-                        tr.trim(starttime=S_modelled - pre_pick,
-                                endtime=S_modelled + (S_modelled - P_pick) *
-                                winlen)
-                    except ValueError:
-                        break
-                # Work out the window length based on p-s time or distance
-            elif 'S' in [picktypes[i] for i in sta_picks]:
-                # If the window is fixed we still need to find the start time,
-                # which can be based either on the S-pick (this elif), or
-                # on the hypocentral distance and the P-pick
-
-                # Take the minimum S-pick time if more than one S-pick is
-                # available
-                S_pick = [picktimes[i] for i in sta_picks
-                          if picktypes[i] == 'S']
-                S_pick = min(S_pick)
+                    tr = dummy.merge(fill_value=0)
                 try:
-                    tr.trim(starttime=S_pick - pre_pick,
-                            endtime=S_pick + winlen)
-                except ValueError:
-                    break
-            else:
-                # In this case, there is no S-pick and the window length is
-                # fixed we need to calculate an expected S_pick based on the
-                # hypocentral distance, this will be quite hand-wavey as we
-                # are not using any kind of velocity model.
-                P_pick = [picktimes[i] for i in sta_picks
-                          if picktypes[i] == 'P']
-                P_pick = min(P_pick)
-                hypo_dist = [distances[i] for i in sta_picks
-                             if picktypes[i] == 'P'][0]
-                S_modelled = P_pick + hypo_dist * ps_multiplier
-                try:
-                    tr.trim(starttime=S_modelled - pre_pick,
-                            endtime=S_modelled + winlen)
-                except ValueError:
-                    break
+                    tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
+                              corners=corners)
+                except NotImplementedError:
+                    print('For some reason trace is not continuous:')
+                    print(tr)
+                    continue
             # Find the response information
             resp_info = _find_resp(tr.stats.station, tr.stats.channel,
                                    tr.stats.network, tr.stats.starttime,
@@ -680,23 +638,114 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             elif seedresp and len(tr.data) > 10:
                 tr = _sim_WA(tr, None, seedresp, 10)
             elif len(tr.data) > 10:
-                warnings.warn('No PAZ for '+tr.stats.station+' ' +
-                              tr.stats.channel+' at time: ' +
+                warnings.warn('No PAZ for ' + tr.stats.station + ' ' +
+                              tr.stats.channel + ' at time: ' +
                               str(tr.stats.starttime))
                 continue
+            noise = tr.copy()  # Copy the data to use for noise calculation
+            sta_picks = [i for i in range(len(stations))
+                         if stations[i] == sta]
+            pick_id = event.picks[sta_picks[0]].resource_id
+            arrival = [arrival for arrival in event.origins[0].arrivals
+                       if arrival.pick_id == pick_id][0]
+            hypo_dist = arrival.distance
+            if var_wintype and hypo_dist:
+                if 'S' in [picktypes[i] for i in sta_picks] and\
+                   'P' in [picktypes[i] for i in sta_picks]:
+                    # If there is an S-pick we can use this :D
+                    S_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'S']
+                    S_pick = min(S_pick)
+                    P_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'P']
+                    P_pick = min(P_pick)
+                    try:
+                        tr.trim(starttime=S_pick - pre_pick,
+                                endtime=S_pick + (S_pick - P_pick) * winlen)
+                    except ValueError:
+                        continue
+                elif 'S' in [picktypes[i] for i in sta_picks]:
+                    S_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'S']
+                    S_pick = min(S_pick)
+                    P_modelled = S_pick - hypo_dist * ps_multiplier
+                    try:
+                        tr.trim(starttime=S_pick - pre_pick,
+                                endtime=S_pick + (S_pick - P_modelled) *
+                                winlen)
+                    except ValueError:
+                        continue
+                else:
+                    # In this case we only have a P pick
+                    P_pick = [picktimes[i] for i in sta_picks
+                              if picktypes[i] == 'P']
+                    P_pick = min(P_pick)
+                    S_modelled = P_pick + hypo_dist * ps_multiplier
+                    try:
+                        tr.trim(starttime=S_modelled - pre_pick,
+                                endtime=S_modelled + (S_modelled - P_pick) *
+                                winlen)
+                    except ValueError:
+                        continue
+                # Work out the window length based on p-s time or distance
+            elif 'S' in [picktypes[i] for i in sta_picks]:
+                # If the window is fixed we still need to find the start time,
+                # which can be based either on the S-pick (this elif), or
+                # on the hypocentral distance and the P-pick
+
+                # Take the minimum S-pick time if more than one S-pick is
+                # available
+                S_pick = [picktimes[i] for i in sta_picks
+                          if picktypes[i] == 'S']
+                S_pick = min(S_pick)
+                try:
+                    tr.trim(starttime=S_pick - pre_pick,
+                            endtime=S_pick + winlen)
+                except ValueError:
+                    continue
+            else:
+                # In this case, there is no S-pick and the window length is
+                # fixed we need to calculate an expected S_pick based on the
+                # hypocentral distance, this will be quite hand-wavey as we
+                # are not using any kind of velocity model.
+                P_pick = [picktimes[i] for i in sta_picks
+                          if picktypes[i] == 'P']
+                P_pick = min(P_pick)
+                hypo_dist = [distances[i] for i in sta_picks
+                             if picktypes[i] == 'P'][0]
+                S_modelled = P_pick + hypo_dist * ps_multiplier
+                try:
+                    tr.trim(starttime=S_modelled - pre_pick,
+                            endtime=S_modelled + winlen)
+                except ValueError:
+                    continue
             if len(tr.data) <= 10:
                 # Should remove the P and S picks if len(tr.data)==0
-                warnings.warn('No data found for: '+tr.stats.station)
+                warnings.warn('No data found for: ' + tr.stats.station)
                 # print 'No data in miniseed file for '+tr.stats.station+\
                 # ' removing picks'
                 # picks_out=[picks_out[i] for i in range(len(picks_out))\
                 # if i not in sta_picks]
-                break
+                continue
             # Get the amplitude
             amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            # Calculate the normalized noise amplitude
+            noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
             if amplitude == 0.0:
-                break
+                continue
+            if amplitude / noise_amplitude < min_snr:
+                print('Signal to noise ratio of %s is below threshold.' %
+                      (amplitude / noise_amplitude))
+                continue
+            if plot:
+                plt.plot(np.arange(len(tr.data)), tr.data, 'k')
+                plt.scatter(tr.stats.sampling_rate * delay, amplitude / 2)
+                plt.scatter(tr.stats.sampling_rate * (delay + period),
+                            -amplitude / 2)
+                plt.show()
             print('Amplitude picked: ' + str(amplitude))
+            print('Signal-to-noise ratio is: %s' %
+                  (amplitude / noise_amplitude))
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
             if pre_filt:
@@ -713,7 +762,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 filt_paz = {'poles': list(p),
                             'zeros': list(z),
                             'gain': k,
-                            'sensitivity':  1.0}
+                            'sensitivity': 1.0}
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(filt_paz,
                                                                  1 / period) *
                               filt_paz['sensitivity'])
@@ -739,8 +788,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                                     time=tr.stats.starttime + delay,
                                     evaluation_mode='automatic'))
             event.amplitudes.append(Amplitude(generic_amplitude=amplitude /
-                                                                10**9,
-                                              period=period,
+                                              1e9, period=period,
                                               pick_id=event.
                                               picks[pick_ind].resource_id,
                                               waveform_id=event.
@@ -754,7 +802,8 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
 
 def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4):
+                   highcut=20.0, corners=4, min_snr=1.0, plot=False,
+                   remove_old=False):
     """
     Function to pick amplitudes for local magnitudes from NORDIC s-files.
 
@@ -765,6 +814,9 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
 
     Output will be put into a mag_calc.out file which will be in full S-file \
     format and can be copied to a REA database.
+
+    See docs for :func:`eqcorrscan.utils.mag_calc.amp_pick_event` for methods
+    used here for stabilisation.
 
     :type sfile: str
     :param sfile: Path to NORDIC format s-file
@@ -798,36 +850,59 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
+        in amp_pick_event on signal-to-noise ratio calculation.
+    :type plot: bool
+    :param plot: Turn plotting on or off.
+    :type remove_old: bool
+    :param remove_old:
+        If True, will remove old amplitude picks from event and overwrite with
+        new picks. Defaults to False.
 
-    :returns: obspy.core.event
+    :returns: Picked event
+    :rtype: :class:`obspy.core.event.event.Event`
     """
-    from eqcorrscan.utils import sfile_util
-    from obspy import read
-    import shutil
     # First we need to work out what stations have what picks
     event = sfile_util.readpicks(sfile)
     # Read in waveforms
-    stream = read(datapath+'/'+sfile_util.readwavename(sfile)[0])
+    try:
+        stream = read(os.path.join(datapath,
+                                   sfile_util.readwavename(sfile)[0]))
+    except IOError:
+        stream = read(os.path.join(datapath,
+                                   str(event.origins[0].time.year),
+                                   str(event.origins[0].time.month).zfill(2),
+                                   sfile_util.readwavename(sfile)[0]))
     if len(sfile_util.readwavename(sfile)) > 1:
         for wavfile in sfile_util.readwavename(sfile):
-            stream += read(datapath+'/'+wavfile)
+            try:
+                stream += read(os.path.join(datapath, wavfile))
+            except IOError:
+                stream += read(os.path.join(datapath,
+                                            str(event.origins[0].time.year),
+                                            str(event.origins[0].time.month).
+                                            zfill(2),
+                                            wavfile))
     stream.merge()  # merge the data, just in case!
     event_picked = amp_pick_event(event=event, st=stream, respdir=respdir,
                                   chans=chans, var_wintype=var_wintype,
                                   winlen=winlen, pre_pick=pre_pick,
                                   pre_filt=pre_filt, lowcut=lowcut,
-                                  highcut=highcut, corners=corners)
-    new_sfile = sfile_util.eventtosfile(event=event, userID=str('EQCO'),
+                                  highcut=highcut, corners=corners,
+                                  min_snr=min_snr, plot=plot,
+                                  remove_old=remove_old)
+    new_sfile = sfile_util.eventtosfile(event=event_picked, userID=str('EQCO'),
                                         evtype=str('L'), outdir=str('.'),
                                         wavefiles=sfile_util.
                                         readwavename(sfile))
     shutil.move(new_sfile, 'mag_calc.out')
-    return event
+    return event_picked
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     """
-    Calculate relative moments using singular-value decomposition.
+    Calculate relative moments/amplitudes using singular-value decomposition.
 
     Convert basis vectors calculated by singular value \
     decomposition (see the SVD functions in clustering) into relative \
@@ -838,13 +913,16 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     <http://www.bssaonline.org/content/100/5A/1952.short>`_
 
     :type U: list
-    :param U: List of the numpy array input basis vectors from the SVD, \
+    :param U:
+        List of the :class:`numpy.ndarray` input basis vectors from the SVD,
         one array for each channel used.
     :type s: list
-    :param s: List of the numpy arrays of singular values, one array for \
+    :param s:
+        List of the :class:`numpy.ndarray` of singular values, one array for
         each channel.
     :type V: list
-    :param V: List of numpy arrays of output basis vectors from SVD, one \
+    :param V:
+        List of :class:`numpy.ndarray` of output basis vectors from SVD, one
         array per channel.
     :type stachans: list
     :param stachans: List of station.channel input
@@ -859,13 +937,13 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     :param n_SVs: Number of singular values to use, defaults to 4.
 
     :returns: M, array of relative moments
-    :rtype: numpy.ndarray
+    :rtype: :class:`numpy.ndarray`
     :returns: events_out, list of events that relate to M (in order), \
         does not include the magnitude information in the events, see note.
-    :rtype: obspy.core.event.Event
+    :rtype: :class:`obspy.core.event.event.Event`
 
-    .. note:: M is an array of relative moments, these cannot be directly \
-        compared to true moments without calibration.
+    .. note:: M is an array of relative moments (or amplitudes), these cannot
+        be directly compared to true moments without calibration.
 
     .. rubric:: Example
 
@@ -883,7 +961,8 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     >>> for i, stream in enumerate(stream_list):
     ...     st_list = []
     ...     for tr in stream:
-    ...         if (tr.stats.station, tr.stats.channel) not in [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
+    ...         if (tr.stats.station, tr.stats.channel) not in
+    ...           [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
     ...             stream.remove(tr)
     ...             continue
     ...         tr.detrend('simple')
@@ -892,30 +971,30 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     ...         st_list.append(i)
     ...     event_list.append(st_list) # doctest: +SKIP
     >>> event_list = np.asarray(event_list).T.tolist()
-    >>> SVectors, SValues, Uvectors, stachans = SVD(stream_list=stream_list) # doctest: +SKIP
+    >>> SVec, SVal, U, stachans = SVD(stream_list=stream_list) # doctest: +SKIP
     ['GCSZ.EHZ', 'WV04.SHZ', 'WHAT2.SH1']
-    >>> M, events_out = SVD_moments(U=Uvectors, s=SValues, V=SVectors,
-    ...                             stachans=stachans, event_list=event_list) # doctest: +SKIP
+    >>> M, events_out = SVD_moments(U=U, s=SVal, V=SVec, stachans=stachans,
+    ...                             event_list=event_list) # doctest: +SKIP
 
     """
-    import copy
-    import random
-    import pickle
-
     # Define maximum number of events, will be the width of K
-    K_width = max([max(ev_list) for ev_list in event_list])+1
+    K_width = max([max(ev_list) for ev_list in event_list]) + 1
     # Sometimes the randomisation generates a singular matrix - rather than
     # attempting to regulerize this matrix I propose undertaking the
     # randomisation step a further time
+    if len(stachans) == 1:
+        print('Only provided data from one station-channel - '
+              'will not try to invert')
+        return U[0][:, 0], event_list[0]
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
-        # Copy the relevant vectors so as not to detroy them
+        # Copy the relevant vectors so as not to destroy them
         U_working = copy.deepcopy(U[i])
         V_working = copy.deepcopy(V[i])
         s_working = copy.deepcopy(s[i])
         ev_list = event_list[i]
         if len(ev_list) > len(V_working):
-            print('V is : '+str(len(V_working)))
+            print('V is : ' + str(len(V_working)))
             f_dump = open('mag_calc_V_working.pkl', 'wb')
             pickle.dump(V_working, f_dump)
             f_dump.close()
@@ -971,7 +1050,6 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
                 else:
                     result = 0
                 row.append(result)
-            print(row)
             # Add each row to the K matrix
             k.append(row)
         # k is now a square matrix, we need to flesh it out to be K_width
@@ -1010,7 +1088,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     ############
 
     # Solve using the weighted least squares equation, K.T is K transpose
-    Kinv = np.array(np.linalg.inv(K.T*W*K) * K.T * W)
+    Kinv = np.array(np.linalg.inv(K.T * W * K) * K.T * W)
 
     # M are the relative moments of the events
     M = Kinv[:, -1]
@@ -1036,40 +1114,38 @@ def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
     :type wavepath: str
     :param wavepath: Path to the seisan WAV directory (not including yyyy/mm)
     """
-    import datetime as dt
-    import glob
-    import shutil
-
     kdays = ((enddate + dt.timedelta(1)) - startdate).days
     for i in range(kdays):
         day = startdate + dt.timedelta(i)
         print('Working on ' + str(day))
-        sfiles = glob.glob(indir + '/' + str(day.year) + '/' +
-                           str(day.month).zfill(2) + '/' +
-                           str(day.day).zfill(2) + '-*L.S' + str(day.year) +
-                           str(day.month).zfill(2))
-        datetimes = [dt.datetime.strptime(sfiles[i].split('/')[-1],
+        sfiles = glob.glob(os.path.join(indir, str(day.year),
+                                        str(day.month).zfill(2),
+                                        str(day.day).zfill(2) + '-*L.S' +
+                                        str(day.year) +
+                                        str(day.month).zfill(2)))
+        datetimes = [dt.datetime.strptime(os.path.split(sfiles[i])[-1],
                                           '%d-%H%M-%SL.S%Y%m')
                      for i in range(len(sfiles))]
         sfiles = [sfiles[i] for i in range(len(sfiles))
-                  if datetimes[i] > startdate and
-                  datetimes[i] < enddate]
+                  if startdate < datetimes[i] < enddate]
         if not wavepath:
-            wavedir = "/".join(indir.split('/')[:-2])+'/WAV/' +\
-                indir.split('/')[-1]+'/'+str(day.year)+'/' +\
-                str(day.month).zfill(2)
+            wavedir = os.path.join(os.path.split(indir), 'WAV',
+                                   os.path.split(indir)[-1],
+                                   str(day.year), str(day.month).zfill(2))
         else:
-        	wavedir = wavepath+'/'+str(day.year)+'/' +\
-                    str(day.month).zfill(2)
+            wavedir = os.path.join(wavepath, str(day.year),
+                                   str(day.month).zfill(2))
         sfiles.sort()
         for sfile in sfiles:
             # Make the picks!
-            print('				Working on Sfile: '+sfile)
-            event = Amp_pick_sfile(sfile, wavedir, calpath)
+            print('\tWorking on Sfile: ' + sfile)
+            event = amp_pick_sfile(sfile, wavedir, calpath)
             del event
             # Copy the mag_calc.out file to the correct place
-            shutil.copyfile('mag_calc.out', outdir+'/'+str(day.year)+'/' +
-                            str(day.month).zfill(2)+'/'+sfile.split('/')[-1])
+            shutil.copyfile('mag_calc.out',
+                            os.path.join(outdir, str(day.year),
+                                         str(day.month).zfill(2),
+                                         os.path.split(sfile)[-1]))
 
 if __name__ == "__main__":
     import doctest

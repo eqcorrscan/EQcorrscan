@@ -78,8 +78,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'EQcorrscan'
-copyright = u'2015, 2016: Calum John Chamberlain & Chet Hopp'
-author = u'Calum John Chamberlain & Chet Hopp'
+copyright = u'2015, 2016: EQcorrscan developers'
+author = u'EQcorrscan developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

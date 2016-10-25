@@ -1,10 +1,11 @@
-r"""Functions to pick earthquakes detected by EQcorrscan.
+"""
+Functions to pick earthquakes detected by EQcorrscan.
+
 Designed primarily locate stacks of detections to give family locations.
-Extensions may later be written, not tested for accuracy, nor considered
-good functions.
+Extensions may later be written, not tested for accuracy, just simple wrappers.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -15,93 +16,108 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
+import matplotlib.pyplot as plt
 
-def synth_compare(stream, stream_list, cores=4, debug=0):
-    """
-    Find best matching template or earthquake for a given stream.
-    Compare a specific stream to a list of synthetic templates, or \
-    earthquakes of known source and find the best matching event.
+from obspy import UTCDateTime
+from obspy.signal.cross_correlation import xcorr
+from obspy.signal.filter import envelope
+from obspy.core.event import Event, Pick, WaveformStreamID
+from obspy.core.event import CreationInfo, Comment, Origin
+from obspy.signal.trigger import classic_sta_lta, trigger_onset
+from obspy.signal.trigger import plot_trigger
 
-    This can be used to assign the event to a family, which has a known \
-    location.
+import eqcorrscan.utils.plotting as plotting
 
-    :type stream: :class: obspy.Stream
-    :param stream: Stream to be compared to streams with known locations.
-    :type stream_list: list
-    :param stream_list: List of streams with known locations
-    :type cores: int
-    :param cores: Number of cores to parallel over
-    :type debug: int
-    :param debug: Debug level, high is more debug
-
-    :returns: int, float: index of best match and cross-correlation sum
-    :rtype: tuple
-    """
-    from eqcorrscan.core.match_filter import _channel_loop
-    import numpy as np
-    import copy
-    from obspy import Trace
-
-    stream_copy = stream.copy()
-    templates = copy.deepcopy(stream_list)
-    # Need to fill the stream_list - template - channels
-    template_stachan = []
-    for template in templates:
-        for tr in template:
-            template_stachan += [(tr.stats.station, tr.stats.channel)]
-    template_stachan = list(set(template_stachan))
-
-    for stachan in template_stachan:
-        if not stream_copy.select(station=stachan[0], channel=stachan[1]):
-            # Remove template traces rather than adding NaN data
-            for template in templates:
-                if template.select(station=stachan[0], channel=stachan[1]):
-                    for tr in template.select(station=stachan[0],
-                                              channel=stachan[1]):
-                        template.remove(tr)
-    # Remove un-needed channels
-    for tr in stream_copy:
-        if not (tr.stats.station, tr.stats.channel) in template_stachan:
-            stream_copy.remove(tr)
-    # Also pad out templates to have all channels
-    for template in templates:
-        for stachan in template_stachan:
-            if not template.select(station=stachan[0], channel=stachan[1]):
-                nulltrace = Trace()
-                nulltrace.stats.station = stachan[0]
-                nulltrace.stats.channel = stachan[1]
-                nulltrace.stats.sampling_rate = template[0].stats.sampling_rate
-                nulltrace.stats.starttime = template[0].stats.starttime
-                nulltrace.data = np.array([np.NaN] * len(template[0].data),
-                                          dtype=np.float32)
-                template += nulltrace
-    # Hand off  cross-correaltion to _channel_loop, which runs in parallel
-    [cccsums, no_chans] = _channel_loop(templates, stream_copy, cores, debug)
-    cccsums = [np.max(cccsum) for cccsum in cccsums]
-    # Find the maximum cccsum and index thereof
-    index = np.argmax(cccsums)
-    cccsum = cccsums[index]
-    return index, cccsum
+# def synth_compare(stream, stream_list, cores=4, debug=0):
+#     """
+#     Find best matching template or earthquake for a given stream.
+#     Compare a specific stream to a list of synthetic templates, or \
+#     earthquakes of known source and find the best matching event.
+#
+#     This can be used to assign the event to a family, which has a known \
+#     location.
+#
+#     :type stream: :class: obspy.Stream
+#     :param stream: Stream to be compared to streams with known locations.
+#     :type stream_list: list
+#     :param stream_list: List of streams with known locations
+#     :type cores: int
+#     :param cores: Number of cores to parallel over
+#     :type debug: int
+#     :param debug: Debug level, high is more debug
+#
+#     :returns: int, float: index of best match and cross-correlation sum
+#     :rtype: tuple
+#     """
+#     from eqcorrscan.core.match_filter import _channel_loop
+#     import numpy as np
+#     import copy
+#     from obspy import Trace
+#
+#     stream_copy = stream.copy()
+#     templates = copy.deepcopy(stream_list)
+#     # Need to fill the stream_list - template - channels
+#     template_stachan = []
+#     for template in templates:
+#         for tr in template:
+#             template_stachan += [(tr.stats.station, tr.stats.channel)]
+#     template_stachan = list(set(template_stachan))
+#
+#     for stachan in template_stachan:
+#         if not stream_copy.select(station=stachan[0], channel=stachan[1]):
+#             # Remove template traces rather than adding NaN data
+#             for template in templates:
+#                 if template.select(station=stachan[0], channel=stachan[1]):
+#                     for tr in template.select(station=stachan[0],
+#                                               channel=stachan[1]):
+#                         template.remove(tr)
+#     # Remove un-needed channels
+#     for tr in stream_copy:
+#         if not (tr.stats.station, tr.stats.channel) in template_stachan:
+#             stream_copy.remove(tr)
+#     # Also pad out templates to have all channels
+#     for template in templates:
+#         for stachan in template_stachan:
+#             if not template.select(station=stachan[0], channel=stachan[1]):
+#                 nulltrace = Trace()
+#                 nulltrace.stats.station = stachan[0]
+#                 nulltrace.stats.channel = stachan[1]
+#                 nulltrace.stats.sampling_rate = \
+#                   template[0].stats.sampling_rate
+#                 nulltrace.stats.starttime = template[0].stats.starttime
+#                 nulltrace.data = np.array([np.NaN] * len(template[0].data),
+#                                           dtype=np.float32)
+#                 template += nulltrace
+#     # Hand off  cross-correaltion to _channel_loop, which runs in parallel
+#     [cccsums, no_chans] = _channel_loop(templates, stream_copy, cores, debug)
+#     cccsums = [np.max(cccsum) for cccsum in cccsums]
+#     # Find the maximum cccsum and index thereof
+#     index = np.argmax(cccsums)
+#     cccsum = cccsums[index]
+#     return index, cccsum
 
 
 def cross_net(stream, env=False, debug=0, master=False):
     """
     Generate picks using a simple envelope cross-correlation.
-    Picks are made for each channel based on optimal moveout \
-    defined by maximum cross-correlation with master trace.  Master trace \
-    will be the first trace in the stream.
 
-    :type stream: :class: obspy.Stream
+    Picks are made for each channel based on optimal moveout defined by
+    maximum cross-correlation with master trace.  Master trace will be the
+    first trace in the stream if not set.  Requires good inter-station
+    coherance.
+
+    :type stream: obspy.core.stream.Stream
     :param stream: Stream to pick
     :type env: bool
     :param env: To compute cross-correlations on the envelope or not.
     :type debug: int
     :param debug: Debug level from 0-5
-    :type master: obspy.Trace
-    :param master: Trace to use as master, if False, will use the first trace \
-            in stream.
+    :type master: obspy.core.trace.Trace
+    :param master:
+        Trace to use as master, if False, will use the first trace in stream.
 
-    :returns: obspy.core.event.Event
+    :returns: :class:`obspy.core.event.event.Event`
 
     .. rubric:: Example
 
@@ -109,17 +125,14 @@ def cross_net(stream, env=False, debug=0, master=False):
     >>> from eqcorrscan.utils.picker import cross_net
     >>> st = read()
     >>> event = cross_net(st, env=True)
-    >>> event.creation_info.author
-    'EQcorrscan'
-    """
-    from obspy.signal.cross_correlation import xcorr
-    from obspy.signal.filter import envelope
-    from obspy import UTCDateTime
-    from obspy.core.event import Event, Pick, WaveformStreamID
-    from obspy.core.event import CreationInfo, Comment, Origin
-    import matplotlib.pyplot as plt
-    import numpy as np
+    >>> print(event.creation_info.author)
+    EQcorrscan
 
+    .. warning::
+        This routine is not designed for accurate picking, rather it can be
+        used for a first-pass at picks to obtain simple locations. Based on
+        the waveform-envelope cross-correlation method.
+    """
     event = Event()
     event.origins.append(Origin())
     event.creation_info = CreationInfo(author='EQcorrscan',
@@ -181,7 +194,8 @@ def cross_net(stream, env=False, debug=0, master=False):
         wav_id = WaveformStreamID(station_code=tr.stats.station,
                                   channel_code=tr.stats.channel,
                                   network_code=tr.stats.network)
-        event.picks.append(Pick(time=tr.stats.starttime + (index / tr.stats.sampling_rate),
+        event.picks.append(Pick(time=tr.stats.starttime +
+                                (index / tr.stats.sampling_rate),
                                 waveform_id=wav_id,
                                 phase_hint='S',
                                 onset='emergent'))
@@ -199,14 +213,15 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 freqmax=False, debug=0, show=False):
     """
     Basic sta/lta picker, suggest using alternative in obspy.
-    Simple sta-lta (short-term average/long-term average) picker, using \
-    obspy's stalta routine to generate the characteristic function.
 
-    Currently very basic quick wrapper, there are many other (better) options \
-    in obspy, found \
-    `here <http://docs.obspy.org/packages/autogen/obspy.signal.trigger.html>`_.
+    Simple sta/lta (short-term average/long-term average) picker, using
+    obspy's :func:`obspy.signal.trigger.classic_sta_lta` routine to generate
+    the characteristic function.
 
-    :type stream: obspy.Stream
+    Currently very basic quick wrapper, there are many other (better) options
+    in obspy in the :mod:`obspy.signal.trigger` module.
+
+    :type stream: obspy.core.stream.Stream
     :param stream: The stream to pick on, can be any number of channels.
     :type stalen: float
     :param stalen: Length of the short-term average window in seconds.
@@ -226,7 +241,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :type show: bool
     :param show: Show picks on waveform.
 
-    :returns: obspy.core.event.Event
+    :returns: :class:`obspy.core.event.event.Event`
 
     .. rubric:: Example
 
@@ -235,16 +250,13 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     >>> st = read()
     >>> event = stalta_pick(st, stalen=0.2, ltalen=4, trig_on=10,
     ...             trig_off=1, freqmin=3.0, freqmax=20.0)
-    >>> event.creation_info.author
-    'EQcorrscan'
-    """
-    from obspy.signal.trigger import classic_sta_lta, trigger_onset
-    from obspy.signal.trigger import plot_trigger
-    from obspy import UTCDateTime
-    from obspy.core.event import Event, Pick, WaveformStreamID
-    from obspy.core.event import CreationInfo, Comment, Origin
-    import eqcorrscan.utils.plotting as plotting
+    >>> print(event.creation_info.author)
+    EQcorrscan
 
+    .. warning::
+        This function is not designed for accurate picking, rather it can give
+        a first idea of whether picks may be possible.  Proceed with caution.
+    """
     event = Event()
     event.origins.append(Origin())
     event.creation_info = CreationInfo(author='EQcorrscan',
@@ -281,13 +293,16 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
             picks.append(pick)
     # QC picks
     del pick
-    pick_stations = list(set([pick.waveform_id.station_code for pick in picks]))
+    pick_stations = list(set([pick.waveform_id.station_code
+                              for pick in picks]))
     for pick_station in pick_stations:
         station_picks = [pick for pick in picks if
                          pick.waveform_id.station_code == pick_station]
         # If P-pick is after S-picks, remove it.
-        p_time = [pick.time for pick in station_picks if pick.phase_hint == 'P']
-        s_time = [pick.time for pick in station_picks if pick.phase_hint == 'S']
+        p_time = [pick.time for pick in station_picks
+                  if pick.phase_hint == 'P']
+        s_time = [pick.time for pick in station_picks
+                  if pick.phase_hint == 'S']
         if p_time > s_time:
             p_pick = [pick for pick in station_picks if pick.phase_hint == 'P']
             for pick in p_pick:

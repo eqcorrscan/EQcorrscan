@@ -12,6 +12,7 @@ def run_tutorial(plot=False):
     from eqcorrscan.utils import plotting
     from eqcorrscan.core import match_filter
     import glob
+    from multiprocessing import cpu_count
 
     # This import section copes with namespace changes between obspy versions
     import obspy
@@ -86,7 +87,10 @@ def run_tutorial(plot=False):
         # increase in speed as only detections for each template are computed in
         # parallel.  It may also slow your processing by using more memory than
         # needed, to the extent that swap may be filled.
-        ncores = 4
+        if cpu_count() < 4:
+            ncores = cpu_count()
+        else:
+            ncores = 4
 
         # Pre-process the data to set frequency band and sampling rate
         # Note that this is, and MUST BE the same as the parameters used for the
@@ -106,8 +110,7 @@ def run_tutorial(plot=False):
                                                 threshold_type='MAD',
                                                 trig_int=6.0, plotvar=plot,
                                                 plotdir='.', cores=ncores,
-                                                tempdir=False, debug=1,
-                                                plot_format='jpg')
+                                                debug=1, plot_format='jpg')
 
     # Now lets try and work out how many unique events we have just to compare
     # with the GeoNet catalog of 20 events on this day in this sequence

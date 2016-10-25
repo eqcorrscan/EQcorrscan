@@ -19,19 +19,33 @@ Earthquake picks and locations are taken from the catalogued s-files - these
 must be pre-located before entering this routine as origin times and hypocentre
 locations are needed for event.dat files.
 
-.. todo: Change from forced seisan usage, to using obspy events.  This happens \
-    internally already, but the insides should be extracted and thin wrappers \
+.. todo:
+    Change from forced seisan usage, to using obspy events.  This happens
+    internally already, but the insides should be extracted and thin wrappers
     written for seisan.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from eqcorrscan.utils import sfile_util
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
+import glob
+import warnings
+import matplotlib.pyplot as plt
+
+from obspy.core.event import Catalog
+from obspy import read
+
+from eqcorrscan.utils import sfile_util
+from eqcorrscan.utils.mag_calc import dist_calc
 
 
 def _cc_round(num, dp):
@@ -46,8 +60,8 @@ def _cc_round(num, dp):
 
     :returns: str
 
-    >>> _cc_round(0.25364, 2)
-    '0.25'
+    >>> print(_cc_round(0.25364, 2))
+    0.25
     """
     num = round(num, dp)
     num = '{0:.{1}f}'.format(num, dp)
@@ -66,14 +80,20 @@ def _av_weight(W1, W2):
 
     :returns: str
 
-    >>> _av_weight(1, 4)
-    '0.3750'
-    >>> _av_weight(0, 0)
-    '1.0000'
+    .. rubric:: Example
+    >>> print(_av_weight(1, 4))
+    0.3750
+    >>> print(_av_weight(0, 0))
+    1.0000
+    >>> print(_av_weight(' ', ' '))
+    1.0000
+    >>> print(_av_weight(-9, 0))
+    0.5000
+    >>> print(_av_weight(1, -9))
+    0.3750
     """
     import warnings
 
-    # print('Weight 1: ' + str(W1) + ', weight 2: ' + str(W2))
     if str(W1) in [' ', '']:
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
@@ -106,17 +126,20 @@ def _av_weight(W1, W2):
 def readSTATION0(path, stations):
     """
     Read a Seisan STATION0.HYP file on the path given.
-    Outputs writtenin station.dat file.
+
+    Outputs the information, and writes to station.dat file.
 
     :type path: str
     :param path: Path to the STATION0.HYP file
-    :type station: list
-    :param station: Stations to look for
+    :type stations: list
+    :param stations: Stations to look for
 
     :returns: List of tuples of station, lat, long, elevation
+    :rtype: list
 
     >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2'])
-    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, 170.36038333333335, 95.0)]
+    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, \
+170.36038333333335, 95.0)]
     """
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
@@ -168,7 +191,6 @@ def sfiles_to_event(sfile_list):
 
     :returns: List of tuples of event ID (int) and Sfile name
     """
-    from obspy.core.event import Catalog
     event_list = []
     sort_list = [(sfile_util.readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
@@ -187,56 +209,65 @@ def write_event(catalog):
     """
     Write obspy.core.event.Catalog to a hypoDD format event.dat file.
 
-    :type catalog: osbpy.core.event.Catalog
-    :param catalog: A catalog of obspy events
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: A catalog of obspy events.
     """
     f = open('event.dat', 'w')
     for i, event in enumerate(catalog):
         evinfo = event.origins[0]
-        Mag_1 = event.magnitudes[0].mag or ' '
-        if event.origins[0].time_errors:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS or ' '
-        else:
-            t_RMS = ' '
+        try:
+            Mag_1 = event.magnitudes[0].mag
+        except IndexError:
+            Mag_1 = 0.0
+        try:
+            t_RMS = event.origins[0].time_errors.Time_Residual_RMS
+        except IndexError:
+            raise IOError('No origin')
+        except AttributeError:
+            print('No time residual in header')
+            t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2) + '  ' +
                 str(evinfo.time.hour).rjust(2) +
                 str(evinfo.time.minute).zfill(2) +
                 str(evinfo.time.second).zfill(2) +
                 str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
-                str(evinfo.latitude).ljust(8, '0') + '   ' +
-                str(evinfo.longitude).ljust(8, '0') + '  ' +
-                str(evinfo.depth / 1000).rjust(7).ljust(9, '0') + '   ' +
+                str(evinfo.latitude).ljust(8, str('0')) + '   ' +
+                str(evinfo.longitude).ljust(8, str('0')) + '  ' +
+                str(evinfo.depth / 1000).rjust(7).ljust(9, str('0')) + '   ' +
                 str(Mag_1) + '    0.00    0.00   ' +
-                str(t_RMS).ljust(4, '0') +
+                str(t_RMS).ljust(4, str('0')) +
                 str(i).rjust(11) + '\n')
     f.close()
     return
 
 
-def write_catalog(event_list, max_sep=8, min_link=8):
+def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     """
     Generate a dt.ct for hypoDD for a series of events.
-    Takes input event list from write_event as a list of tuples of event
-    id and sfile.  It will read
-    the pick information from the seisan formated s-file using the sfile_util
-    utilities.
+
+    Takes input event list from
+    :func:`eqcorrscan.utils.catalog_to_dd.write_event` as a list of tuples of
+    event id and sfile.  It will read the pick information from the seisan
+    formated s-file using the sfile_util utilities.
 
     :type event_list: list
     :param event_list: List of tuples of event_id (int) and sfile (String)
     :type max_sep: float
-    :param max_sep: Maximum seperation between event pairs in km
+    :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
+    :type debug: int
+    :param debug: Debug output level.
 
-    :returns: list stations
+    :returns: list of stations that have been used in this catalog
 
-    .. note:: Currently we have not implemented a method for taking \
-        unassociated event objects and wavefiles.  As such if you have events \
-        with associated wavefiles you are advised to generate Sfiles for each \
-        event using the sfile_util module prior to this step.
+    .. note::
+        We have not yet implemented a method for taking unassociated event
+        objects and wavefiles.  As such if you have events with associated
+        wavefiles you are advised to generate Sfiles for each event using
+        the :mod:`eqcorrscan.utils.sfile_util` module prior to this step.
     """
-    from eqcorrscan.utils.mag_calc import dist_calc
     # Cope with possibly being passed a zip in python 3.x
     event_list = list(event_list)
     f = open('dt.ct', 'w')
@@ -265,6 +296,10 @@ def write_catalog(event_list, max_sep=8, min_link=8):
             str(master_event_id).rjust(4)
         fphase.write(header + '\n')
         for pick in master_event.picks:
+            if not hasattr(pick, 'phase_hint') or len(pick.phase_hint) == 0:
+                warnings.warn('No phase-hint for pick:')
+                print(pick)
+                continue
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
                           for arrival in master_event.origins[0].arrivals
@@ -299,12 +334,16 @@ def write_catalog(event_list, max_sep=8, min_link=8):
                 continue
             links = 0  # Count the number of linkages
             for pick in master_event.picks:
+                if not hasattr(pick, 'phase_hint') or\
+                                len(pick.phase_hint) == 0:
+                    continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Added by Carolin
                 slave_matches = [p for p in slave_event.picks
-                                 if p.phase_hint == pick.phase_hint and
+                                 if hasattr(p, 'phase_hint') and
+                                 p.phase_hint == pick.phase_hint and
                                  p.waveform_id.station_code.upper() ==
                                  pick.waveform_id.station_code.upper()]
                 # Loop through the matches
@@ -372,9 +411,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :type lowcut: float
     :param lowcut: Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: Highcut in Hz - deafult=10.0
+    :param highcut: Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: Maximum seperation between event pairs in km
+    :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
     :type cc_thresh: float
@@ -386,27 +425,22 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
 
     .. warning:: This is not a fast routine!
 
-    .. warning:: In contrast to seisan's \
-        corr routine, but in accordance with the hypoDD manual, this outputs \
-        corrected differential time.
+    .. warning::
+        In contrast to seisan's corr routine, but in accordance with the
+        hypoDD manual, this outputs corrected differential time.
 
-    .. note:: Currently we have not implemented a method for taking \
+    .. note::
+        Currently we have not implemented a method for taking
         unassociated event objects and wavefiles.  As such if you have events \
         with associated wavefiles you are advised to generate Sfiles for each \
         event using the sfile_util module prior to this step.
-    """
-    import obspy
-    if int(obspy.__version__.split('.')[0]) > 0:
-        from obspy.signal.cross_correlation import xcorr_pick_correction
-    else:
-        from obspy.signal.cross_correlation import xcorrPickCorrection \
-            as xcorr_pick_correction
-    import matplotlib.pyplot as plt
-    from obspy import read
-    from eqcorrscan.utils.mag_calc import dist_calc
-    import glob
-    import warnings
 
+    .. note::
+        There is no provision to taper waveforms within these functions, if you
+        desire this functionality, you should apply the taper before calling
+        this.  Note the :func:`obspy.Trace.taper` functions.
+    """
+    from obspy.signal.cross_correlation import xcorr_pick_correction
     warnings.filterwarnings(action="ignore",
                             message="Maximum of cross correlation " +
                                     "lower than 0.8: *")
@@ -444,10 +478,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             slave_event_id = event_list[j][0]
             slave_wavefiles = sfile_util.readwavename(slave_sfile)
             try:
-                # slavestream=read(wavbase+'/*/*/'+slave_wavefiles[0])
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
-                # print(slavestream)
                 raise IOError('No wavefile found: ' + slave_wavefiles[0] +
                               ' ' + slave_sfile)
             if len(slave_wavefiles) > 1:
@@ -477,13 +509,21 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             links = 0
             phases = 0
             for pick in master_picks:
+                if not hasattr(pick, 'phase_hint') or \
+                                len(pick.phase_hint) == 0:
+                    warnings.warn('No phase-hint for pick:')
+                    print(pick)
+                    continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
+                    warnings.warn('Will only use P or S phase picks')
+                    print(pick)
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Find station, phase pairs
                 # Added by Carolin
                 slave_matches = [p for p in slave_picks
-                                 if p.phase_hint == pick.phase_hint and
+                                 if hasattr(p, 'phase_hint') and
+                                 p.phase_hint == pick.phase_hint and
                                  p.waveform_id.station_code ==
                                  pick.waveform_id.station_code]
 
@@ -523,16 +563,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     # Correct the picks
                     try:
                         correction, cc =\
-                            xcorr_pick_correction(pick.time, mastertr,
-                                                  slave_pick.time,
-                                                  slavetr, pre_pick,
-                                                  extract_len - pre_pick,
-                                                  shift_len, filter="bandpass",
-                                                  filter_options={'freqmin':
-                                                                  lowcut,
-                                                                  'freqmax':
-                                                                  highcut},
-                                                  plot=plotvar)
+                            xcorr_pick_correction(
+                                pick.time, mastertr, slave_pick.time,
+                                slavetr, pre_pick, extract_len - pre_pick,
+                                shift_len, filter="bandpass",
+                                filter_options={'freqmin': lowcut,
+                                                'freqmax': highcut},
+                                plot=plotvar)
                         # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
@@ -561,12 +598,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 ' ' + pick.phase_hint + '\n'
                             if debug > 3:
                                 print(event_text)
-                            # links+=1
                         else:
                             print('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
                     except:
-                        # Should warn here
                         msg = "Couldn't compute correlation correction"
                         warnings.warn(msg)
                         continue
@@ -589,7 +624,8 @@ def read_phase(ph_file):
     :type ph_file: str
     :param ph_file: Phase file to read event info from.
 
-    :returns: obspy.core.event.catlog
+    :returns: Catalog of events from file.
+    :rtype: :class:`obspy.core.event.Catalog`
 
     >>> from obspy.core.event.catalog import Catalog
     >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
@@ -634,16 +670,12 @@ def _phase_to_event(event_text):
     # YR, MO, DY, HR, MN, SC, LAT, LON, DEP, MAG, EH, EZ, RMS, ID
     header = event_text['header'].split()
     ph_event.origins.append(Origin())
-    ph_event.origins[0].time = UTCDateTime(year=int(header[1]),
-                                           month=int(header[2]),
-                                           day=int(header[3]),
-                                           hour=int(header[4]),
-                                           minute=int(header[5]),
-                                           second=int(header[6].split('.')[0]),
-                                           microsecond=int(float(('0.' +
-                                                                  header[6].
-                                                                  split('.')[1])) *
-                                                           1000000))
+    ph_event.origins[0].time =\
+        UTCDateTime(year=int(header[1]), month=int(header[2]),
+                    day=int(header[3]), hour=int(header[4]),
+                    minute=int(header[5]), second=int(header[6].split('.')[0]),
+                    microsecond=int(float(('0.' + header[6].split('.')[1])) *
+                                    1000000))
     ph_event.origins[0].latitude = float(header[7])
     ph_event.origins[0].longitude = float(header[8])
     ph_event.origins[0].depth = float(header[9]) * 1000

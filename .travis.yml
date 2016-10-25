@@ -6,19 +6,18 @@ matrix:
       env: PYTHON_VERSION=2.7
     - os: linux
       env: PYTHON_VERSION=3.5
+    - os: linux
+      env: PYTHON_VERSION=3.4
+    #    - os: linux
+    #      env: PYTHON_VERSION=3.3
+    # There isn't and openCV3 for python 3.3 on Conda
 
-#     Conda install on OSX is an issue - gives 0.238 xcorr when should give 1...
-#    - os: osx
-#      env: PYTHON_VERSION=2.7
-#    - os: osx
-#      env: PYTHON_VERSION=3.5
+    - os: osx
+      env: PYTHON_VERSION=2.7
+    - os: osx
+      env: PYTHON_VERSION=3.5
 
 sudo: false
-
-# Test with multiple obspy versions, allow some backwards compatability
-env:
-  global:
-    - OBSPY_VERSION=1.0.1
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -41,6 +40,7 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels menpo
+  - conda config --add channels obspy
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
@@ -53,47 +53,41 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - |
-      if [[ "$OS" == "MacOSX" ]]; then
-          conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib basemap pyproj flake8 future lxml decorator sqlalchemy mock nose gdal docopt coverage requests
-      else
-          conda create -q -n test-environment --file $env_file
-      fi
+  - conda create -q -n test-environment python=$PYTHON_VERSION numpy scipy matplotlib obspy flake8 mock coverage opencv3
   - source activate test-environment
   - conda install $PYFLAKES
   - conda install pyproj
-  - |
-      if [[ "${py:0:1}" == "3" ]] && [[ "$OS" == "MacOSX" ]]; then
-        conda install -c menpo opencv3=3.1.0
-      elif [[ "$OS" == "MacOSX" ]]; then
-        conda install opencv
-      fi
+  - conda install h5py
   - pip install coveralls
   - pip install geographiclib
   - pip install https://github.com/megies/PyImgur/archive/py3.zip
   - pip install pep8-naming
-  - pip install pytest
-  - pip install pytest-cov
-  - pip install obspy==$OBSPY_VERSION
-  # - pip install obspy==$OBSPY_VERSION
+  - pip install pytest pytest-cov pytest-pep8
+  - pip install codecov
+  - pip install Cython
   - pip freeze
   - conda list
   # done installing dependencies
   - git version
-  - pip install .
+  - python setup.py install
+
 script:
-  python setup.py test
+#  - travis_wait 50 python setup.py test
+  - python setup.py test
 
 after_success:
-  # Check how much code is actually tested and send this report to coveralls
+  # Check how much code is actually tested and send this report to codecov
+  - ls -a
+  - mv .coverage ../.coverage.empty
+  - cd ..
   - coverage combine
-  - coveralls
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
     email: false
     webhooks:
       urls:
-        - https://webhooks.gitter.im/e/10122f10ed5043c58ae7
+        - https://webhooks.gitter.im/e/b964418fdb22a8840c58
       on_success: change  # options: [always|never|change] default: always
       on_failure: always  # options: [always|never|change] default: always
       on_start: never     # options: [always|never|change] default: always

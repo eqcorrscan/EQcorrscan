@@ -14,12 +14,8 @@ def mktemplates(network_code='GEONET',
 
     # This import section copes with namespace changes between obspy versions
     import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-        from obspy import read_events
-    else:
-        from obspy.fdsn import Client
-        from obspy import readEvents as read_events
+    from obspy.clients.fdsn import Client
+    from obspy import read_events
     from obspy.core.event import Catalog
 
     # We want to download some QuakeML files from the New Zealand GeoNet
@@ -50,6 +46,12 @@ def mktemplates(network_code='GEONET',
     # five most used stations - note that this is done to reduce computational
     # costs.
     catalog = filter_picks(catalog, top_n_picks=5)
+    # We only want the P picks in this example, but you can use others or all
+    #  picks if you want.
+    for event in catalog:
+        for pick in event.picks:
+            if pick.phase_hint == 'S':
+                event.picks.remove(pick)
 
     # Now we can generate the templates
     templates = template_gen.from_client(catalog=catalog,
@@ -60,7 +62,7 @@ def mktemplates(network_code='GEONET',
                                          swin='all', process_len=3600,
                                          debug=0, plot=plot)
 
-    # We now have a series of templates! Using Obspys Stream.write() method we
+    # We now have a series of templates! Using Obspy's Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the
     # following tutorials.
     for i, template in enumerate(templates):

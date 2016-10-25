@@ -6,14 +6,19 @@ match_filter
 
     .. comment to end block
 
-    Classes & Functions
-    -------------------
+    Classes
+    -------
+    .. toctree::
+        :maxdepth: 1
+
+        core.match_filter.DETECTION
+
+    Functions
+    ---------
     .. autosummary::
        :toctree: autogen
        :nosignatures:
 
-       DETECTION
-       detections_to_catalog
        extract_from_stream
        get_catalog
        match_filter

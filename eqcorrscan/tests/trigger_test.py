@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import unittest
 
+
 class TestTriggerMethods(unittest.TestCase):
     def test_parameter_read_write(self):
         """Test parameter writing and reading."""
