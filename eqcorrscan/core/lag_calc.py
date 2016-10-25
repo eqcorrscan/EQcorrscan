@@ -186,10 +186,10 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             cccsum += cc_max
             # Perhaps weight each pick by the cc val or cc val^2?
             # weight = np.amax(ccc) ** 2
-            if temp_chan[-1:] == 'Z':
+            if temp_chan[-1] == 'Z':
                 phase = 'P'
             # Only take the S-pick with the best correlation
-            elif temp_chan[-1:] in ['E', 'N']:
+            elif temp_chan[-1] in ['E', 'N']:
                 phase = 'S'
                 if temp_sta not in s_stachans and np.amax(ccc) > min_cc:
                     s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
@@ -385,19 +385,16 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                        % (key[0], key[1]))
                 raise LagCalcError(msg)
         if plot:
-            background = detect_data.copy().trim(starttime=detection.
-                                                 detect_time - (shift_len + 5),
-                                                 endtime=detection.
-                                                 detect_time + shift_len +
-                                                 max_delay + 7)
+            background = detect_data.copy().trim(
+                starttime=detection.detect_time - (shift_len + 5),
+                endtime=detection.detect_time + shift_len + max_delay + 7)
             for tr in background:
                 if len(tr.data) == 0:
                     background.remove(tr)
-            detection_multiplot(stream=background,
-                                template=Stream(detect_stream),
-                                times=[detection.detect_time -
-                                       shift_len],
-                                title='Detection Extracted')
+            detection_multiplot(
+                stream=background, template=Stream(detect_stream),
+                times=[detection.detect_time - shift_len],
+                title='Detection Extracted')
         if not len(detect_stream) == 0:
             # Create tuple of (template name, data stream)
             detect_streams.append((detection.template_name,

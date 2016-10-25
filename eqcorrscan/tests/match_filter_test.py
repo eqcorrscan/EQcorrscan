@@ -24,8 +24,12 @@ from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 
 
 class TestCoreMethods(unittest.TestCase):
+    """
+    Tests for internal _template_loop and normxcorr2 functions.
+    """
     def test_perfect_normxcorr2(self):
-        """Simple test of normxcorr2 to ensure data are detected
+        """
+        Simple test of normxcorr2 to ensure data are detected
         """
         template = np.random.randn(100).astype(np.float32)
         image = np.zeros(1000).astype(np.float32)
@@ -35,7 +39,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(ccc.max(), 1.0)
 
     def test_fail_normxcorr2(self):
-        """Ensure if template is nan then return is nan
+        """
+        Ensure if template is nan then return is nan
         """
         template = np.array([np.nan] * 100)
         image = np.zeros(1000)
@@ -45,7 +50,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue(np.all(ccc == 0.0))
 
     def test_normal_normxcorr2(self):
-        """Check that if match is not perfect correlation max isn't unity
+        """
+        Check that if match is not perfect correlation max isn't unity
         """
         template = np.random.randn(100) * 10.0
         image = np.zeros(1000)
@@ -56,7 +62,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertNotEqual(ccc.max(), 1.0)
 
     def test_set_normxcorr2(self):
-        """Check that correlations output are the same irrespective of version.
+        """
+        Check that correlations output are the same irrespective of version.
         """
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
@@ -75,7 +82,8 @@ class TestCoreMethods(unittest.TestCase):
                           'but it has the same shape')
 
     def test_perfect_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.random.randn(100).astype(np.float32)))
         template[0].stats.station = 'test'
@@ -88,7 +96,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(ccc.astype(np.float16).max(), 1.0)
 
     def test_false_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.array([np.nan] * 100)))
         template[0].stats.station = 'test'
@@ -101,7 +110,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue(np.all(ccc == 0))
 
     def test_normal_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.random.randn(100) * 10.0))
         template[0].stats.station = 'test'

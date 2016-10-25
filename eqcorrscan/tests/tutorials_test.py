@@ -5,27 +5,28 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import unittest
+import os
+import glob
+
+from obspy import read
+
+from eqcorrscan.tutorials.template_creation import mktemplates
+from eqcorrscan.tutorials import match_filter, lag_calc, subspace
+from eqcorrscan.core.match_filter import read_detections
 
 
 class TestTutorialScripts(unittest.TestCase):
     def test_match_filter(self):
         """Test the match_filter tutorial, generates templates too."""
-        from eqcorrscan.tutorials.template_creation import mktemplates
-        from eqcorrscan.tutorials.match_filter import run_tutorial
-        from eqcorrscan.core.match_filter import read_detections
-        import os
-        import glob
-        from obspy import read
-
         # Run mktemplates first to set-up for match_filter
         mktemplates(plot=False)
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
             self.assertTrue(len(template) > 1)
-        del(template)
         # Run the matched-filter
-        tutorial_detections = run_tutorial(plot=False)
+        tutorial_detections = match_filter.run_tutorial(plot=False)
         # It should make 20 detections in total...
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
@@ -60,12 +61,10 @@ class TestTutorialScripts(unittest.TestCase):
 
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
-        from eqcorrscan.tutorials.lag_calc import run_tutorial
-
         shift_len = 0.2
         min_mag = 4
         detections, picked_catalog, templates, template_names = \
-            run_tutorial(min_magnitude=min_mag, shift_len=shift_len)
+            lag_calc.run_tutorial(min_magnitude=min_mag, shift_len=shift_len)
 
         self.assertEqual(len(picked_catalog), len(detections))
         self.assertEqual(len(detections), 8)
@@ -89,9 +88,7 @@ class TestTutorialScripts(unittest.TestCase):
 
     def test_subspace(self):
         """Test the subspace tutorial."""
-        from eqcorrscan.tutorials.subspace import run_tutorial
-
-        detections = run_tutorial(plot=False)
+        detections = subspace.run_tutorial(plot=False)
         self.assertEqual(len(detections), 2)
 
 if __name__ == '__main__':
