@@ -23,8 +23,8 @@ from eqcorrscan.utils.synth_seis import generate_synth_data
 class BrightnessTestMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data') + os.sep
+        cls.testing_path = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data') + os.sep
 
     def test_read_tt(self):
         # Test reading S from S
