@@ -612,6 +612,23 @@ def match_filter(template_names, template_list, st, threshold,
         changed the plotting behaviour.
 
     .. note::
+        **Data overlap:**
+
+        Internally this routine shifts and trims the data according to the
+        offsets in the template (e.g. if trace 2 starts 2 seconds after trace 1
+        in the template then the continuous data will be shifted by 2 seconds
+        to align peak correlations prior to summing).  Because of this,
+        detections at the start and end of continuous data streams
+        **may be missed**.  The maximum time-period that might be missing
+        detections is the maximum offset in the template.
+
+        To work around this, if you are conducting matched-filter detections
+        through long-duration continuous data, we suggest using some overlap
+        (a few seconds, on the order of the maximum offset in the templates)
+        in the continous data.  You will then need to post-process the
+        detections (which should be done anyway to remove duplicates).
+
+    .. note::
         **Thresholding:**
 
         **MAD** threshold is calculated as the:

@@ -157,64 +157,64 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        image = detection.select(station=temp_sta,
-                                 channel=temp_chan)
-        if image:
-            if interpolate:
-                try:
-                    ccc = normxcorr2(tr.data, image[0].data)
-                    shift, cc_max = _xcorr_interp(ccc=ccc,
-                                                  dt=image[0].stats.delta)
-                except IndexError:
-                    log.error('Could not interpolate ccc, not smooth')
-                    ccc = normxcorr2(tr.data, image[0].data)
-                    cc_max = np.amax(ccc)
-                    shift = np.argmax(ccc) * image[0].stats.delta
-                # Convert the maximum cross-correlation time to an actual time
-                picktime = image[0].stats.starttime + shift
-            else:
-                # Convert the maximum cross-correlation time to an actual time
+        image = detection.select(station=temp_sta, channel=temp_chan)
+        if len(image) == 0:
+            continue
+        if interpolate:
+            try:
+                ccc = normxcorr2(tr.data, image[0].data)
+                shift, cc_max = _xcorr_interp(ccc=ccc,
+                                              dt=image[0].stats.delta)
+            except IndexError:
+                log.error('Could not interpolate ccc, not smooth')
                 ccc = normxcorr2(tr.data, image[0].data)
                 cc_max = np.amax(ccc)
-                picktime = image[0].stats.starttime + (np.argmax(ccc) *
-                                                       image[0].stats.delta)
-            log.debug('********DEBUG: Maximum cross-corr=%s' % cc_max)
-            checksum += cc_max
-            used_chans += 1
-            if cc_max < min_cc:
-                continue
-            cccsum += cc_max
-            # Perhaps weight each pick by the cc val or cc val^2?
-            # weight = np.amax(ccc) ** 2
-            if temp_chan[-1] == 'Z':
-                phase = 'P'
-            # Only take the S-pick with the best correlation
-            elif temp_chan[-1] in ['E', 'N']:
-                phase = 'S'
-                if temp_sta not in s_stachans and np.amax(ccc) > min_cc:
-                    s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
-                                             picktime))
-                elif temp_sta in s_stachans and np.amax(ccc) > min_cc:
-                    if np.amax(ccc) > s_stachans[temp_sta][1]:
-                        picktime = picktime
-                    else:
-                        picktime = s_stachans[temp_sta][2]
-                        temp_chan = s_stachans[temp_sta][0]
-                elif np.amax(ccc) < min_cc and temp_sta not in used_s_sta:
-                    used_s_sta.append(temp_sta)
+                shift = np.argmax(ccc) * image[0].stats.delta
+            # Convert the maximum cross-correlation time to an actual time
+            picktime = image[0].stats.starttime + shift
+        else:
+            # Convert the maximum cross-correlation time to an actual time
+            ccc = normxcorr2(tr.data, image[0].data)
+            cc_max = np.amax(ccc)
+            picktime = image[0].stats.starttime + (np.argmax(ccc) *
+                                                   image[0].stats.delta)
+        log.debug('********DEBUG: Maximum cross-corr=%s' % cc_max)
+        checksum += cc_max
+        used_chans += 1
+        if cc_max < min_cc:
+            continue
+        cccsum += cc_max
+        # Perhaps weight each pick by the cc val or cc val^2?
+        # weight = np.amax(ccc) ** 2
+        if temp_chan[-1] == 'Z':
+            phase = 'P'
+        # Only take the S-pick with the best correlation
+        elif temp_chan[-1] in ['E', 'N']:
+            phase = 'S'
+            if temp_sta not in s_stachans and np.amax(ccc) > min_cc:
+                s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
+                                         picktime))
+            elif temp_sta in s_stachans and np.amax(ccc) > min_cc:
+                if np.amax(ccc) > s_stachans[temp_sta][1]:
+                    picktime = picktime
                 else:
-                    continue
+                    picktime = s_stachans[temp_sta][2]
+                    temp_chan = s_stachans[temp_sta][0]
+            elif np.amax(ccc) < min_cc and temp_sta not in used_s_sta:
+                used_s_sta.append(temp_sta)
             else:
-                phase = None
-            _waveform_id = WaveformStreamID(
-                network_code=temp_net, station_code=temp_sta,
-                channel_code=temp_chan)
-            event.picks.append(Pick(
-                waveform_id=_waveform_id, time=picktime,
-                method_id=ResourceIdentifier('EQcorrscan'), phase_hint=phase,
-                creation_info='eqcorrscan.core.lag_calc',
-                comments=[Comment(text='cc_max=%s' % cc_max)]))
-            event.resource_id = detection_id
+                continue
+        else:
+            phase = None
+        _waveform_id = WaveformStreamID(
+            network_code=temp_net, station_code=temp_sta,
+            channel_code=temp_chan)
+        event.picks.append(Pick(
+            waveform_id=_waveform_id, time=picktime,
+            method_id=ResourceIdentifier('EQcorrscan'), phase_hint=phase,
+            creation_info='eqcorrscan.core.lag_calc',
+            comments=[Comment(text='cc_max=%s' % cc_max)]))
+        event.resource_id = detection_id
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
     if used_chans == detect_chans:
@@ -223,7 +223,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                    'report this error' % (pre_lag_ccsum, checksum))
             raise LagCalcError(msg)
     else:
-        warnings.warn('Cannot check is cccsum is better, used %i channels '
+        warnings.warn('Cannot check if cccsum is better, used %i channels '
                       'for detection, but %i are used here'
                       % (detect_chans, used_chans))
     return i, event
@@ -458,15 +458,22 @@ def lag_calc(detections, detect_data, template_names, templates,
         externally.
     :rtype: obspy.core.event.Catalog
 
-    .. note:: Picks output in catalog are generated relative to the template \
-        start-time.  For example, if you generated your template with a \
-        pre_pick time of 0.2 seconds, you should expect picks generated by \
-        lag_calc to occur 0.2 seconds before the true phase-pick.  This \
-        is because we do not currently store template meta-data alongside the \
+    .. note::
+        Picks output in catalog are generated relative to the template
+        start-time.  For example, if you generated your template with a
+        pre_pick time of 0.2 seconds, you should expect picks generated by
+        lag_calc to occur 0.2 seconds before the true phase-pick.  This
+        is because we do not currently store template meta-data alongside the
         templates.
 
-    .. warning:: Because of the above note, origin times will be consistently \
+    .. warning::
+        Because of the above note, origin times will be consistently
         shifted by the static pre_pick applied to the templates.
+
+    .. warning::
+        This routine requires only one template per channel (e.g. you should
+        not use templates with a P and S template on a single channel).  If
+        this does occur an error will be raised.
 
     .. note::
         Individual channel cross-correlations are stored as a

@@ -76,33 +76,40 @@ class TestMethods(unittest.TestCase):
         for picked_stachan in picked_stachans:
             self.assertTrue(picked_stachan in matched_traces)
 
-    def channel_loop_with_spicks(self):
+    def test_channel_loop_with_spicks(self):
+        """Test using s-picks"""
         with warnings.catch_warnings(record=True) as w:
             i, event = _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False)
-            self.assertEqual(len(w), 0)
-            self.assertTrue('Cannot check cccsum' in str(w[0]))
+            self.assertEqual(len(w), 1)
+            self.assertTrue(str('Cannot check if cccsum') in str(w[0].message))
         matched_traces = []
         detection_stachans = [(tr.stats.station, tr.stats.channel)
-                              for tr in self.detection]
+                              for tr in self.detection_spicks]
         picked_stachans = [(pick.waveform_id.station_code,
                             pick.waveform_id.channel_code)
                            for pick in event.picks]
-        for master_tr in self.template:
+        for master_tr in self.template_spicks:
             stachan = (master_tr.stats.station, master_tr.stats.channel)
             if stachan in detection_stachans:
                 matched_traces.append(stachan)
-
         for picked_stachan in picked_stachans:
             self.assertTrue(picked_stachan in matched_traces)
 
-    def check_error_raised_if_cccsum_decreases(self):
+    def test_error_raised_if_cccsum_decreases(self):
+        """Check that we error if the cccsum is lowered."""
+        # Ensure that the result is the same regardless of threshold.
+        with self.assertRaises(LagCalcError):
+            _channel_loop(
+                detection=self.detection_spicks, template=self.template_spicks,
+                min_cc=0.0, i=0, detection_id='Tester_01', interpolate=False,
+                pre_lag_ccsum=2.5, detect_chans=6)
         with self.assertRaises(LagCalcError):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=2.0)
+                pre_lag_ccsum=2.5, detect_chans=6)
 
     def test_interpolate(self):
         """Test channel loop with interpolation."""
