@@ -178,178 +178,6 @@ class TestCatalogMethods(unittest.TestCase):
                                      float(output_event_info[-2]))
         os.remove('event.dat')
 
-    def test_write_catalog(self):
-        """
-        Simple testing function for the write_catalogue function in \
-        catalog_to_dd.
-        """
-        # Set forced variables
-        maximum_seperation = 1  # Maximum inter-event seperation in km
-        minimum_links = 8  # Minimum inter-event links to generate a pair
-        # We have to make an event list first
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_')
-        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
-        event_ids = list(range(len(sfile_list)))
-        event_list = zip(event_ids, sfile_list)
-        # In python 3.x this gives an error as zip is now an object...
-        event_list = list(event_list)  # Do this for compatability
-        write_catalog(event_list=event_list, max_sep=maximum_seperation,
-                      min_link=minimum_links)
-        self.assertTrue(os.path.isfile('dt.ct'))
-        # Check dt.ct file, should contain only a few linked events
-        dt_file_out = open('dt.ct', 'r')
-        event_pairs = []
-        event_links = []
-        event_pair = ''
-        for i, line in enumerate(dt_file_out):
-            if line[0] == '#':
-                if i != 0:
-                    # Check the number of links
-                    self.assertTrue(len(event_links) >= minimum_links)
-                    # Check the distance between events
-                    event_1_name = [event[1] for event in event_list
-                                    if event[0] ==
-                                    int(event_pair.split()[1])][0]
-                    event_2_name = [event[1] for event in event_list
-                                    if event[0] ==
-                                    int(event_pair.split()[2])][0]
-                    event_1 = sfile_util.readheader(event_1_name)
-                    event_2 = sfile_util.readheader(event_2_name)
-                    event_1_location = (event_1.origins[0].latitude,
-                                        event_1.origins[0].longitude,
-                                        event_1.origins[0].depth / 1000)
-                    event_2_location = (event_2.origins[0].latitude,
-                                        event_2.origins[0].longitude,
-                                        event_2.origins[0].depth / 1000)
-                    hypocentral_seperation = dist_calc(event_1_location,
-                                                       event_2_location)
-                    self.assertTrue(hypocentral_seperation <
-                                    maximum_seperation)
-                    # Check that the differential times are accurate
-                    event_1_picks = sfile_util.readpicks(event_1_name).picks
-                    event_2_picks = sfile_util.readpicks(event_2_name).picks
-                    for pick_pair in event_links:
-                        station = pick_pair.split()[0]
-                        event_1_travel_time_output = pick_pair.split()[1]
-                        event_2_travel_time_output = pick_pair.split()[2]
-                        # weight = pick_pair.split()[3]
-                        phase = pick_pair.split()[4]
-                        # Extract the relevant pick information from the
-                        # two sfiles
-                        for pick in event_1_picks:
-                            if pick.waveform_id.station_code == station:
-                                if pick.phase_hint[0].upper() == phase:
-                                    event_1_pick = pick
-                        for pick in event_2_picks:
-                            if pick.waveform_id.station_code == station:
-                                if pick.phase_hint[0].upper() == phase:
-                                    event_2_pick = pick
-                        # Calculate the travel-time
-                        event_1_travel_time_input = event_1_pick.time -\
-                            event_1.origins[0].time
-                        event_2_travel_time_input = event_2_pick.time -\
-                            event_2.origins[0].time
-                        self.assertEqual(event_1_travel_time_input,
-                                         float(event_1_travel_time_output))
-                        self.assertEqual(event_2_travel_time_input,
-                                         float(event_2_travel_time_output))
-                event_pair = line
-                event_pairs.append(line)
-                event_links = []
-            else:
-                event_links.append(line)
-        self.assertTrue(os.path.isfile('phase.dat'))
-        dt_file_out.close()
-        os.remove('phase.dat')
-        os.remove('dt.ct')
-        if os.path.isfile('dt.ct2'):
-            os.remove('dt.ct2')
-
-    def test_write_correlations(self):
-        """
-        Test that the write_correlations function works as it should.
-        Hard to test accurately...
-        """
-        max_shift_len = 0.2
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_')
-        wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'WAV', 'TEST_')
-        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
-        event_ids = list(range(len(sfile_list)))
-        event_list = list(zip(event_ids, sfile_list))
-        with Timer() as t:
-            write_correlations(event_list, wavbase, extract_len=2,
-                               pre_pick=0.5, shift_len=max_shift_len,
-                               lowcut=2.0, highcut=10.0, max_sep=1, min_link=8,
-                               cc_thresh=0.0, plotvar=False)
-        msg = 'Running ' + str(len(list(event_list))) + \
-              ' events took %s s' % t.secs
-        print(msg)
-        self.assertTrue(os.path.isfile('dt.cc'))
-        # Generate a complementary dt.ct file and check against that
-        write_catalog(event_list=event_list, max_sep=1, min_link=8)
-        cc = open('dt.cc', 'r')
-        cc_pairs = []
-        observations = []
-        pair = cc.readline().split()[1:3]
-        for line in cc:
-            if line[0] == '#':
-                # Append old observations to the previous pair and put in pairs
-                cc_pairs.append({'pair': pair, 'observations': observations})
-                pair = line.split()[1:3]
-                observations = []
-            else:
-                obs = line.split()
-                observations.append({'station': obs[0],
-                                     'diff_time': float(obs[1]),
-                                     'weight': float(obs[2]),
-                                     'phase': obs[3]})
-        cc.close()
-        ct = open('dt.ct', 'r')
-        ct_pairs = []
-        observations = []
-        pair = ct.readline().split()[1:3]
-        for line in ct:
-            if line[0] == '#':
-                # Append old observations to the previous pair and put in pairs
-                ct_pairs.append({'pair': pair,
-                                 'observations': observations})
-                pair = line.split()[1:3]
-                observations = []
-            else:
-                obs = line.split()
-                # for sub in line.split('-'):
-                #     for item in sub.split():
-                #         obs.append(item)
-                observations.append({'station': obs[0],
-                                     'diff_time': float(obs[1]) -
-                                     float(obs[2]),
-                                     'weight': float(obs[3]),
-                                     'phase': obs[4]})
-        ct.close()
-        # Everything is in memory, now we need to find matching pairs
-        for cc_pair in cc_pairs:
-            for ct_pair in ct_pairs:
-                if cc_pair['pair'] == ct_pair['pair']:
-                    for cc_obs in cc_pair['observations']:
-                        for ct_obs in ct_pair['observations']:
-                            if cc_obs['station'] == ct_obs['station'] and\
-                               cc_obs['phase'] == ct_obs['phase']:
-                                corr_correction = abs(ct_obs['diff_time'] -
-                                                      cc_obs['diff_time'])
-                                self.assertTrue(corr_correction <
-                                                max_shift_len)
-
-        os.remove('dt.cc')
-        os.remove('dt.ct')
-        os.remove('phase.dat')
-        if os.path.isfile('dt.cc2'):
-            os.remove('dt.cc2')
-        if os.path.isfile('dt.ct2'):
-            os.remove('dt.ct2')
-
     def test_read_phase(self):
         """Function to test the phase reading function"""
         test_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -401,6 +229,176 @@ class TestCatalogMethods(unittest.TestCase):
         if os.path.isfile('dt.ct2'):
             os.remove('dt.ct2')
 
+
+class FullTestCases(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
+        cls.wavbase = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
+        cls.sfile_list = glob.glob(os.path.join(cls.testing_path,
+                                                '*L.S??????'))
+        cls.maximum_separation = 1  # Maximum inter-event separation in km
+        cls.minimum_links = 8  # Minimum inter-event links to generate a pair
+        # We have to make an event list first
+        cls.event_ids = list(range(len(cls.sfile_list)))
+        cls.event_list = zip(cls.event_ids, cls.sfile_list)
+        # In python 3.x this gives an error as zip is now an object...
+        cls.event_list = list(cls.event_list)  # Do this for comparability
+        write_catalog(event_list=cls.event_list,
+                      max_sep=cls.maximum_separation,
+                      min_link=cls.minimum_links)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove('phase.dat')
+        os.remove('dt.ct')
+        if os.path.isfile('dt.ct2'):
+            os.remove('dt.ct2')
+        os.remove('dt.cc')
+        if os.path.isfile('dt.cc2'):
+            os.remove('dt.cc2')
+
+    def test_write_catalog(self):
+        """
+        Simple testing function for the write_catalogue function in \
+        catalog_to_dd.
+        """
+        self.assertTrue(os.path.isfile('dt.ct'))
+        # Check dt.ct file, should contain only a few linked events
+        dt_file_out = open('dt.ct', 'r')
+        event_pairs = []
+        event_links = []
+        event_pair = ''
+        for i, line in enumerate(dt_file_out):
+            if line[0] == '#':
+                if i != 0:
+                    # Check the number of links
+                    self.assertTrue(len(event_links) >= self.minimum_links)
+                    # Check the distance between events
+                    event_1_name = [event[1] for event in self.event_list
+                                    if event[0] ==
+                                    int(event_pair.split()[1])][0]
+                    event_2_name = [event[1] for event in self.event_list
+                                    if event[0] ==
+                                    int(event_pair.split()[2])][0]
+                    event_1 = sfile_util.readheader(event_1_name)
+                    event_2 = sfile_util.readheader(event_2_name)
+                    event_1_location = (event_1.origins[0].latitude,
+                                        event_1.origins[0].longitude,
+                                        event_1.origins[0].depth / 1000)
+                    event_2_location = (event_2.origins[0].latitude,
+                                        event_2.origins[0].longitude,
+                                        event_2.origins[0].depth / 1000)
+                    hypocentral_seperation = dist_calc(event_1_location,
+                                                       event_2_location)
+                    self.assertTrue(hypocentral_seperation <
+                                    self.maximum_separation)
+                    # Check that the differential times are accurate
+                    event_1_picks = sfile_util.readpicks(event_1_name).picks
+                    event_2_picks = sfile_util.readpicks(event_2_name).picks
+                    for pick_pair in event_links:
+                        station = pick_pair.split()[0]
+                        event_1_travel_time_output = pick_pair.split()[1]
+                        event_2_travel_time_output = pick_pair.split()[2]
+                        # weight = pick_pair.split()[3]
+                        phase = pick_pair.split()[4]
+                        # Extract the relevant pick information from the
+                        # two sfiles
+                        for pick in event_1_picks:
+                            if pick.waveform_id.station_code == station:
+                                if pick.phase_hint[0].upper() == phase:
+                                    event_1_pick = pick
+                        for pick in event_2_picks:
+                            if pick.waveform_id.station_code == station:
+                                if pick.phase_hint[0].upper() == phase:
+                                    event_2_pick = pick
+                        # Calculate the travel-time
+                        event_1_travel_time_input = event_1_pick.time -\
+                            event_1.origins[0].time
+                        event_2_travel_time_input = event_2_pick.time -\
+                            event_2.origins[0].time
+                        self.assertEqual(event_1_travel_time_input,
+                                         float(event_1_travel_time_output))
+                        self.assertEqual(event_2_travel_time_input,
+                                         float(event_2_travel_time_output))
+                event_pair = line
+                event_pairs.append(line)
+                event_links = []
+            else:
+                event_links.append(line)
+        self.assertTrue(os.path.isfile('phase.dat'))
+        dt_file_out.close()
+
+    def test_write_correlations(self):
+        """
+        Test that the write_correlations function works as it should.
+        Hard to test accurately...
+        """
+        max_shift_len = 0.2
+        with Timer() as t:
+            write_correlations(self.event_list, self.wavbase, extract_len=2,
+                               pre_pick=0.5, shift_len=max_shift_len,
+                               lowcut=2.0, highcut=10.0,
+                               max_sep=self.maximum_separation,
+                               min_link=self.minimum_links,
+                               cc_thresh=0.0, plotvar=False)
+        msg = 'Running ' + str(len(list(self.event_list))) + \
+              ' events took %s s' % t.secs
+        print(msg)
+        self.assertTrue(os.path.isfile('dt.cc'))
+        cc = open('dt.cc', 'r')
+        cc_pairs = []
+        observations = []
+        pair = cc.readline().split()[1:3]
+        for line in cc:
+            if line[0] == '#':
+                # Append old observations to the previous pair and put in pairs
+                cc_pairs.append({'pair': pair, 'observations': observations})
+                pair = line.split()[1:3]
+                observations = []
+            else:
+                obs = line.split()
+                observations.append({'station': obs[0],
+                                     'diff_time': float(obs[1]),
+                                     'weight': float(obs[2]),
+                                     'phase': obs[3]})
+        cc.close()
+        ct = open('dt.ct', 'r')
+        ct_pairs = []
+        observations = []
+        pair = ct.readline().split()[1:3]
+        for line in ct:
+            if line[0] == '#':
+                # Append old observations to the previous pair and put in pairs
+                ct_pairs.append({'pair': pair,
+                                 'observations': observations})
+                pair = line.split()[1:3]
+                observations = []
+            else:
+                obs = line.split()
+                # for sub in line.split('-'):
+                #     for item in sub.split():
+                #         obs.append(item)
+                observations.append({'station': obs[0],
+                                     'diff_time': float(obs[1]) -
+                                     float(obs[2]),
+                                     'weight': float(obs[3]),
+                                     'phase': obs[4]})
+        ct.close()
+        # Everything is in memory, now we need to find matching pairs
+        for cc_pair in cc_pairs:
+            for ct_pair in ct_pairs:
+                if cc_pair['pair'] == ct_pair['pair']:
+                    for cc_obs in cc_pair['observations']:
+                        for ct_obs in ct_pair['observations']:
+                            if cc_obs['station'] == ct_obs['station'] and\
+                               cc_obs['phase'] == ct_obs['phase']:
+                                corr_correction = abs(ct_obs['diff_time'] -
+                                                      cc_obs['diff_time'])
+                                self.assertTrue(corr_correction <
+                                                max_shift_len)
 
 if __name__ == '__main__':
     unittest.main()
