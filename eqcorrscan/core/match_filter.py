@@ -364,7 +364,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
               channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
-        if debug >= 3:
+        if debug >= 4:
             np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
             np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
             np.save('inf_cccmean_image_%02d.npy' % i, image)
@@ -825,7 +825,7 @@ def match_filter(template_names, template_list, st, threshold,
                                    'lengths, report this error.')
     if debug >= 2:
         print('Starting the correlation run for this day')
-    if debug >= 4:
+    if debug >= 3:
         for template in templates:
             print(template)
         print(stream)

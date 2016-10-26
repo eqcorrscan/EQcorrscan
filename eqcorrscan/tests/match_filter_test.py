@@ -12,13 +12,16 @@ import os
 import warnings
 import copy
 
-from obspy import read, Stream, Trace, UTCDateTime
+from obspy import read, Stream, Trace, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick
+from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core import template_gen
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.core.match_filter import match_filter, normxcorr2
+from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
+from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 
@@ -124,12 +127,17 @@ class TestCoreMethods(unittest.TestCase):
         i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
         self.assertNotEqual(ccc.max(), 1.0)
 
+    def test_failed_normxcorr(self):
+        """Send it the wrong type."""
+        ccc = normxcorr2(template=[0, 1, 2, 3, 4], image='bob')
+        self.assertEqual(ccc, 'NaN')
+
 
 class TestSynthData(unittest.TestCase):
     def test_debug_range(self):
         """Test range of debug outputs"""
         # debug == 3 fails on travis due to plotting restrictions.
-        for debug in range(0, 3):
+        for debug in range(0, 4):
             print('Testing for debug level=%s' % debug)
             try:
                 kfalse, ktrue = test_match_filter(debug=debug)
@@ -374,6 +382,71 @@ class TestNCEDCCases(unittest.TestCase):
                               'time': detection.detect_time,
                               'cccsum': detection.detect_val}
             self.assertTrue(detection_dict in individual_dict)
+
+    def test_read_write_detections(self):
+        """Check that we can read and write detections accurately."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        detection_dict = []
+        for detection in detections:
+            detection_dict.append(
+                {'template_name': detection.template_name,
+                 'time': detection.detect_time,
+                 'cccsum': float(str(detection.detect_val)),
+                 'no_chans': detection.no_chans,
+                 'chans': detection.chans,
+                 'threshold': float(str(detection.threshold)),
+                 'typeofdet': detection.typeofdet})
+            detection.write(fname='dets_out.txt')
+        detections_back = read_detections('dets_out.txt')
+        print(detection_dict)
+        self.assertEqual(len(detections), len(detections_back))
+        for detection in detections_back:
+            d = {'template_name': detection.template_name,
+                 'time': detection.detect_time,
+                 'cccsum': detection.detect_val,
+                 'no_chans': detection.no_chans,
+                 'chans': detection.chans,
+                 'threshold': detection.threshold,
+                 'typeofdet': detection.typeofdet}
+            print(d)
+            self.assertTrue(d in detection_dict)
+        os.remove('dets_out.txt')
+
+    def test_get_catalog(self):
+        """Check that catalog objects are created properly."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        cat = get_catalog(detections)
+        self.assertEqual(len(cat), len(detections))
+        for det in detections:
+            self.assertTrue(det.event in cat)
+        # Check the short-cut for writing the catalog
+        with NamedTemporaryFile() as tf:
+            write_catalog(detections, fname=tf.name)
+            cat_back = read_events(tf.name)
+            self.assertEqual(len(cat), len(cat_back))
+
+    def test_extraction(self):
+        """Check the extraction function."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        streams = extract_from_stream(stream=self.st.copy(),
+                                      detections=detections)
+        self.assertEqual(len(streams), len(detections))
+        # Test when a channel is missing in the stream
+        streams = extract_from_stream(stream=self.st.copy()[0:-2],
+                                      detections=detections)
+        self.assertEqual(len(streams), len(detections))
 
     def test_incorrect_arguments(self):
         with self.assertRaises(MatchFilterError):
