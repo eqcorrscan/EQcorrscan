@@ -420,6 +420,10 @@ class Detector(object):
 
         :returns: Figure
         :rtype: matplotlib.pyplot.Figure
+
+        .. Note::
+            See :func:`eqcorrscan.utils.plotting.subspace_detector_plot`
+            for example.
         """
         return subspace_detector_plot(detector=self, stachans=stachans,
                                       size=size, show=show)

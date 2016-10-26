@@ -533,17 +533,16 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     Data will be aligned by their pick-time given in the appropriate picks.
     Requires an individual stream for each event you want to plot,
-    events are stored in the
-    :class:`obspy.core.event.Catalog` object, and there must be picks present
-    for the streams you wish to plot.  Events will be aligned if
-    `realign=True`, in this case the traces will be aligned using the window
-    defined by `cut`.
+    events are stored in the :class:`obspy.core.event.Catalog` object, and
+    there must be picks present for the streams you wish to plot.  Events will
+    be aligned if `realign=True`, in this case the traces will be aligned
+    using the window defined by `cut`.
 
     :type streams: list
     :param streams:
         List of the :class:`obspy.core.stream.Stream` objects to use, can
         contain more traces than you plan on plotting (e.g. from more channels)
-         - must be in the same order as events in catalog.
+        - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog of events, one for each stream.
     :type station: str
@@ -959,7 +958,8 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
 
 
 def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
-    r"""Plot inter-event times against magnitude.
+    """
+    Plot inter-event times against magnitude.
 
     :type times: list
     :param times: list of the detection times, must be sorted the same as mags
@@ -1002,7 +1002,7 @@ def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
         interev_mag(times, magnitudes)
     """
     _check_save_args(save, savefile)
-    l = [(times[i], mags[i]) for i in xrange(len(times))]
+    l = [(times[i], mags[i]) for i in range(len(times))]
     l.sort(key=lambda tup: tup[0])
     times = [x[0] for x in l]
     mags = [x[1] for x in l]
@@ -1725,7 +1725,7 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
         from eqcorrscan.utils.synth_seis import seis_sim
         import os
         real = read()
-        synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+        synth = Stream(Trace(seis_sim(sp=100, flength=200)))
         synth[0].stats.station = 'RJOB'
         synth[0].stats.channel = 'EHZ'
         synth[0].stats.sampling_rate = 100
@@ -2091,11 +2091,12 @@ def subspace_detector_plot(detector, stachans, size, show):
     .. plot::
 
         from eqcorrscan.core import subspace
+        from eqcorrscan.utils.plotting import subspace_detector_plot
         import os
+        print('running subspace plot')
         detector = subspace.Detector()
-        detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                   '..', 'tests', 'test_data', 'subspace',
-                                   'stat_test_detector.h5'))
+        detector.read(os.path.join('..', '..', '..', 'tests', 'test_data',
+                                   'subspace', 'stat_test_detector.h5'))
         subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
                                show=True)
     """
@@ -2105,6 +2106,8 @@ def subspace_detector_plot(detector, stachans, size, show):
         stachans = [('multi', ' ')]
     if np.isinf(detector.dimension):
         nrows = detector.data[0].shape[1]
+    else:
+        nrows = detector.dimension
     fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
                              sharex=True, sharey=True, figsize=size)
     x = np.arange(len(detector.v[0]), dtype=np.float32)
