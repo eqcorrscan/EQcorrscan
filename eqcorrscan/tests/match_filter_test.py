@@ -157,22 +157,22 @@ class TestSynthData(unittest.TestCase):
         if os.path.isfile('peaks_1970-01-01.pdf'):
             os.remove('peaks_1970-01-01.pdf')
 
-    def test_debug_level_three(self):
-        debug = 3
-        print('Testing for debug level=%s' % debug)
-        kfalse, ktrue = test_match_filter(debug=debug)
-        if ktrue > 0:
-            self.assertTrue(kfalse / ktrue < 0.25)
-        else:
-            # Randomised data occasionally yields 0 detections
-            kfalse, ktrue = test_match_filter(debug=debug)
-            self.assertTrue(kfalse / ktrue < 0.25)
-        if os.path.isfile('cccsum_0.npy'):
-            os.remove('cccsum_0.npy')
-        if os.path.isfile('cccsum_1.npy'):
-            os.remove('cccsum_1.npy')
-        if os.path.isfile('peaks_1970-01-01.pdf'):
-            os.remove('peaks_1970-01-01.pdf')
+    # def test_debug_level_three(self):
+    #     debug = 3
+    #     print('Testing for debug level=%s' % debug)
+    #     kfalse, ktrue = test_match_filter(debug=debug)
+    #     if ktrue > 0:
+    #         self.assertTrue(kfalse / ktrue < 0.25)
+    #     else:
+    #         # Randomised data occasionally yields 0 detections
+    #         kfalse, ktrue = test_match_filter(debug=debug)
+    #         self.assertTrue(kfalse / ktrue < 0.25)
+    #     if os.path.isfile('cccsum_0.npy'):
+    #         os.remove('cccsum_0.npy')
+    #     if os.path.isfile('cccsum_1.npy'):
+    #         os.remove('cccsum_1.npy')
+    #     if os.path.isfile('peaks_1970-01-01.pdf'):
+    #         os.remove('peaks_1970-01-01.pdf')
 
     def test_threshold_methods(self):
         # Test other threshold methods
