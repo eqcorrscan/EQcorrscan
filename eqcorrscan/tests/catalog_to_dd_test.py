@@ -238,7 +238,7 @@ class FullTestCases(unittest.TestCase):
         cls.wavbase = os.path.join(os.path.abspath(
             os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
         cls.sfile_list = glob.glob(os.path.join(cls.testing_path,
-                                                '*L.S??????'))
+                                                '*L.S??????'))[0:15]
         cls.maximum_separation = 1  # Maximum inter-event separation in km
         cls.minimum_links = 8  # Minimum inter-event links to generate a pair
         # We have to make an event list first
