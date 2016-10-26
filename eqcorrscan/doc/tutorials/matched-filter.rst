@@ -29,7 +29,7 @@ can be as simple as:
                                             template_list=templates, st=st,
                                             threshold=8, threshold_type='MAD',
                                             trig_int=6, plotvar=False, 
-                                            cores=4, trig_int=6)
+                                            cores=4)
 
 This will create a list of detections, which are of class detection.  You can
 write out the detections to a csv (colon separated) using the detection.write

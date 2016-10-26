@@ -15,7 +15,7 @@ class TestParameterSetup(unittest.TestCase):
         from obspy import UTCDateTime
         import os
         par = parameters.EQcorrscanParameters(['bob'], 2, 8, 3, 20, 0,
-                                              UTCDateTime()-86400,
+                                              UTCDateTime() - 86400,
                                               UTCDateTime(), '.',
                                               'seishub', 4, False, '.',
                                               '.jpg', False, 8.0, 'MAD', 6.0)

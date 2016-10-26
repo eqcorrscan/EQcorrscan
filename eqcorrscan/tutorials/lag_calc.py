@@ -1,7 +1,7 @@
 """Tutorial to illustrate the lag_calc usage."""
 
 
-def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
+def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     import obspy
     if int(obspy.__version__.split('.')[0]) >= 1:
         from obspy.clients.fdsn import Client
@@ -26,15 +26,21 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
     # costs.
     catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
                                          top_n_picks=5)
+    # There is a duplicate pick in event 3 in the catalog - this has the effect
+    # of reducing our detections - check it yourself.
+    for pick in catalog[3].picks:
+        if pick.waveform_id.station_code == 'PHOB' and pick.onset == 'emergent':
+            catalog[3].picks.remove(pick)
     print('Generating templates')
     templates = template_gen.from_client(catalog=catalog, client_id='NCEDC',
                                          lowcut=2.0, highcut=9.0,
                                          samp_rate=50.0, filt_order=4,
                                          length=3.0, prepick=0.15,
                                          swin='all', process_len=3600)
+    # In this section we generate a series of chunks of data.
     start_time = UTCDateTime(2004, 9, 28, 17)
     end_time = UTCDateTime(2004, 9, 28, 20)
-    process_len = 1800
+    process_len = 3600
     chunks = []
     chunk_start = start_time
     while chunk_start < end_time:
@@ -86,8 +92,9 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4):
                                             detect_data=st,
                                             template_names=template_names,
                                             templates=templates,
-                                            shift_len=shift_len, min_cc=0.5,
-                                            interpolate=True, plot=False)
+                                            shift_len=shift_len, min_cc=min_cc,
+                                            interpolate=False, plot=False,
+                                            parallel=True, debug=3)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
 

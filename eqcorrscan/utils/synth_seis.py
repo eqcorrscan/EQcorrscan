@@ -4,7 +4,7 @@ to be used as general matched-filter templates and see how well a simple \
 model would fit with real data.  Mostly used in EQcorrscan for testing.
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -14,23 +14,31 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
+import warnings
+
+from obspy import Stream, Trace, UTCDateTime
+
+from eqcorrscan.utils import clustering
 
 
-def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
+def seis_sim(sp, amp_ratio=1.5, flength=False, phaseout='all'):
     """
-    Generate a simulated seismogram from a given S-P time. \
-    Will generate spikes separated by a given S-P time, which are then \
-    convolved with a decaying sine function.  The P-phase is simulated by a \
-    positive spike of value 1, the S-arrival is simulated by a decaying \
-    boxcar of maximum amplitude 1.5.  These ampitude ratios can be altered by \
+    Generate a simulated seismogram from a given S-P time.
+
+    Will generate spikes separated by a given S-P time, which are then
+    convolved with a decaying sine function.  The P-phase is simulated by a
+    positive spike of value 1, the S-arrival is simulated by a decaying
+    boxcar of maximum amplitude 1.5.  These amplitude ratios can be altered by
     changing the amp_ratio, which is the ratio S amplitude:P amplitude.
 
-    .. note:: In testing this can achieve 0.3 or greater cross-correlations \
-        with data.
+    .. note::
+        In testing this can achieve 0.3 or greater cross-correlations with
+        data.
 
-    :type SP: int
-    :param SP: S-P time in samples
+    :type sp: int
+    :param sp: S-P time in samples
     :type amp_ratio: float
     :param amp_ratio: S:P amplitude ratio
     :type flength: int
@@ -40,23 +48,23 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         around, defaults to 'all'. Can only be used with 'P' or 'S' options \
         if flength is set.
 
-    :returns: np.ndarray
+    :returns: Simulated data.
+    :rtype: :class:`numpy.ndarray`
     """
-
-    if flength and 2.5 * SP < flength and 100 < flength:
+    if flength and 2.5 * sp < flength and 100 < flength:
         additional_length = flength
-    elif 2.5 * SP < 100.0:
+    elif 2.5 * sp < 100.0:
         additional_length = 100
     else:
-        additional_length = 2.5 * SP
-    synth = np.zeros(int(SP + 10 + additional_length))
+        additional_length = 2.5 * sp
+    synth = np.zeros(int(sp + 10 + additional_length))
     # Make the array begin 10 samples before the P
     # and at least 2.5 times the S-P samples after the S arrival
     synth[10] = 1.0  # P-spike fixed at 10 samples from start of window
     # The length of the decaying S-phase should depend on the SP time,\
     # Some basic estimations suggest this should be atleast 10 samples\
     # and that the coda should be about 1/10 of the SP time
-    S_length = 10 + int(SP // 3)
+    S_length = 10 + int(sp // 3)
     S_spikes = np.arange(amp_ratio, 0, -(amp_ratio / S_length))
     # What we actually want, or what appears better is to have a series of\
     # individual spikes, of alternating polarity...
@@ -66,7 +74,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         if i in np.arange(2, len(S_spikes), 4):
             S_spikes[i] *= -1
     # Put these spikes into the synthetic
-    synth[10 + SP:10 + SP + len(S_spikes)] = S_spikes
+    synth[10 + sp:10 + sp + len(S_spikes)] = S_spikes
     # Generate a rough damped sine wave to convolve with the model spikes
     sine_x = np.arange(0, 10.0, 0.5)
     damped_sine = np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
@@ -80,7 +88,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         if phaseout in ['all', 'P']:
             synth = synth[0:flength]
         elif phaseout == 'S':
-            synth = synth[SP:]
+            synth = synth[sp:]
             if len(synth) < flength:
                 # If this is too short, pad
                 synth = np.append(synth, np.zeros(flength - len(synth)))
@@ -89,7 +97,7 @@ def seis_sim(SP, amp_ratio=1.5, flength=False, phaseout='all'):
         return synth
 
 
-def SVD_sim(SP, lowcut, highcut, samp_rate,
+def SVD_sim(sp, lowcut, highcut, samp_rate,
             amp_range=np.arange(-10, 10, 0.01)):
     """
     Generate basis vectors of a set of simulated seismograms.
@@ -97,8 +105,8 @@ def SVD_sim(SP, lowcut, highcut, samp_rate,
     Inputs should have a range of S-P amplitude ratios, in theory to simulate \
     a range of focal mechanisms.
 
-    :type SP: int
-    :param SP: S-P time in seconds - will be converted to samples according \
+    :type sp: int
+    :param sp: S-P time in seconds - will be converted to samples according \
         to samp_rate.
     :type lowcut: float
     :param lowcut: Low-cut for bandpass filter in Hz
@@ -106,25 +114,24 @@ def SVD_sim(SP, lowcut, highcut, samp_rate,
     :param highcut: High-cut for bandpass filter in Hz
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz
-    :type amp_range: np.ndarray
+    :type amp_range: numpy.ndarray
     :param amp_range: Amplitude ratio range to generate synthetics for.
 
-    :returns: nd.ndarray, set of output basis vectors
+    :returns: set of output basis vectors
+    :rtype: :class:`numpy.ndarray`
     """
-    from obspy import Stream, Trace
     # Convert SP to samples
-    SP = int(SP * samp_rate)
+    sp = int(sp * samp_rate)
     # Scan through a range of amplitude ratios
-    synthetics = [Stream(Trace(seis_sim(SP, a))) for a in amp_range]
+    synthetics = [Stream(Trace(seis_sim(sp, a))) for a in amp_range]
     for st in synthetics:
         for tr in st:
             tr.stats.station = 'SYNTH'
             tr.stats.channel = 'SH1'
             tr.stats.sampling_rate = samp_rate
             tr.filter('bandpass', freqmin=lowcut, freqmax=highcut)
-    # We have a list of obspy Trace objects, we can pass this to EQcorrscan's\
-            # SVD functions
-    from utils import clustering
+    # We have a list of obspy Trace objects, we can pass this to EQcorrscan's
+    # SVD functions
     V, s, U, stachans = clustering.SVD(synthetics)
     return V, s, U, stachans
 
@@ -134,14 +141,13 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
     """
     Generate a group of synthetic seismograms for a grid of sources.
 
-    Used to simulate phase \
-    arrivals from a grid of known sources in a three-dimensional model.  Lags \
-    must be known and supplied, these can be generated from the bright_lights \
-    function: read_tt, and resampled to fit the desired grid dimensions and \
-    spacing using other functions therein.  These synthetic seismograms are \
-    very simple models of seismograms using the seis_sim function herein. \
-    These approximate body-wave P and S first arrivals as spikes convolved \
-    with damped sine waves.
+    Used to simulate phase arrivals from a grid of known sources in a
+    three-dimensional model.  Lags must be known and supplied, these can be
+    generated from the bright_lights function: read_tt, and resampled to fit
+    the desired grid dimensions and spacing using other functions therein.
+    These synthetic seismograms are very simple models of seismograms using
+    the seis_sim function herein. These approximate body-wave P and S first
+    arrivals as spikes convolved with damped sine waves.
 
     :type stations: list
     :param stations: List of the station names
@@ -166,12 +172,10 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
         will return two channels for each stations, one SYN_Z with the \
         synthetic P-phase, and one SYN_H with the synthetic S-phase.
 
-    :returns: List of :class: obspy.core.stream.Stream
+    :returns: List of :class:`obspy.core.stream.Stream`
     """
-    import warnings
     if phase not in ['S', 'P']:
         raise IOError('Phase is neither P nor S')
-    from obspy import Stream, Trace
     # Initialize empty list for templates
     templates = []
     # Loop through the nodes, for every node generate a template!
@@ -204,24 +208,24 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
             # Check that the template length is long enough to include the SP
             if flength and SP_time * samp_rate < flength - 11 \
                and phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
                 warnings.warn('Cannot make a bulk synthetic with this fixed ' +
                               'length for station ' + station)
             elif phaseout == 'all':
-                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif phaseout in ['P', 'S']:
-                tr.data = seis_sim(SP=int(SP_time * samp_rate), amp_ratio=1.5,
+                tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif phaseout == 'both':
                 for _phaseout in ['P', 'S']:
                     _tr = tr.copy()
-                    _tr.data = seis_sim(SP=int(SP_time * samp_rate),
+                    _tr.data = seis_sim(sp=int(SP_time * samp_rate),
                                         amp_ratio=1.5, flength=flength,
                                         phaseout=_phaseout)
                     if _phaseout == 'P':
@@ -236,10 +240,11 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
     return templates
 
 
-def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
-                        t_length=3.0, max_amp=10.0, max_lag=20, debug=0):
+def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
+                        max_amp, max_lag, debug=0):
     """
     Generate a synthetic dataset to be used for testing.
+
     This will generate both templates and data to scan through.
     Templates will be generated using the utils.synth_seis functions.
     The day of data will be random noise, with random signal-to-noise
@@ -260,19 +265,18 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
     :param t_length: Length of templates in seconds.
     :type max_amp: float
     :param max_amp: Maximum signal-to-noise ratio of seeds.
-    :type max_lag: Maximum lag time in seconds (randomised).
-    :param max_lag: float
+    :param max_lag: Maximum lag time in seconds (randomised).
+    :type max_lag: float
     :type debug: int
     :param debug: Debug level, bigger the number, the more plotting/output.
 
-    :returns: Templates: List of obspy.Stream, Data: obspy.Stream of \
-        seeded noisy data, Seeds: dictionary of seed SNR and time with \
-        time in samples.
+    :returns: Templates: List of :class:`obspy.core.stream.Stream`
+    :rtype: list
+    :returns: Data: :class:`obspy.core.stream.Stream` of seeded noisy data
+    :rtype: :class:`obspy.core.stream.Stream`
+    :returns: Seeds: dictionary of seed SNR and time with time in samples.
+    :rtype: dict
     """
-    from eqcorrscan.utils import synth_seis
-    import numpy as np
-    from obspy import UTCDateTime
-
     # Generate random arrival times
     t_times = np.abs(np.random.random([nsta, ntemplates])) * max_lag
     # Generate random node locations - these do not matter as they are only
@@ -289,11 +293,10 @@ def generate_synth_data(nsta=5, ntemplates=3, nseeds=100, samp_rate=20.0,
         print(nodes)
         print(t_times)
         print(stations[0:nsta])
-    templates = synth_seis.template_grid(stations=stations[0:nsta],
-                                         nodes=nodes,
-                                         travel_times=t_times, phase='S',
-                                         samp_rate=samp_rate,
-                                         flength=int(t_length * samp_rate))
+    templates = template_grid(stations=stations[0:nsta], nodes=nodes,
+                              travel_times=t_times, phase='S',
+                              samp_rate=samp_rate,
+                              flength=int(t_length * samp_rate))
     if debug > 2:
         for template in templates:
             print(template)

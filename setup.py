@@ -1,17 +1,11 @@
 """A setuptools based setup module for EQcorrscan package.
 
-    EQcorrscan is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+:copyright:
+    EQcorrscan developers.
 
-    EQcorrscan is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with EQcorrscan.  If not, see <http://www.gnu.org/licenses/>.
+:license:
+    GNU Lesser General Public License, Version 3
+    (https://www.gnu.org/copyleft/lesser.html)
 """
 
 # Always prefer setuptools over distutils
@@ -25,6 +19,8 @@ from codecs import open
 from os import path
 import warnings
 import glob
+from distutils.extension import Extension
+import numpy as np
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -36,10 +32,19 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+if not READ_THE_DOCS:
+    from Cython.Distutils import build_ext
+    ext = [Extension("eqcorrscan.core.subspace_statistic",
+                     ["eqcorrscan/core/subspace_statistic.pyx"],
+                     include_dirs=[np.get_include()])]
+    cmd_class = {'build_ext': build_ext}
+else:
+    ext = []
+    cmd_class = {}
 
 try:
     import cv2  # NOQA
-except:
+except ImportError:
     print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
@@ -62,7 +67,7 @@ if sys.version_info.major == 2:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'scipy>=0.14', 'multiprocessing',
-                            'LatLon']
+                            'LatLon', 'h5py', 'cython']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
@@ -72,7 +77,7 @@ else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.14', 'LatLon']
+                            'scipy>=0.14', 'LatLon', 'h5py', 'cython']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
@@ -119,6 +124,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.4',
     ],
 
     # What does your project relate to?
@@ -140,14 +146,9 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-flake8', 'pytest-cov'],
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    # extras_require={
-    #     'dev': ['check-manifest'],
-    #     'test': ['coverage'],
-    # },
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'],
 
+    # Build our extension for subspace detection
+    cmdclass=cmd_class,
+    ext_modules=ext
 )

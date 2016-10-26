@@ -1,13 +1,14 @@
 """
 Helper functions for common handling tasks for catalog objects.
 
-.. note:: These functions are tools to aid simplification of general scripts, \
-    they do not cover all use cases, however if you have a use case you want \
-    to see here, then let the authors know, or implement it yourself and \
-    contribute it back to the project.
+.. note:: These functions are tools to aid simplification of general scripts,
+    they do not cover all use cases, however if you have a use case you want
+    to see here, then let the authors know, or implement it yourself and
+    contribute it back to the project, or, if its really good, give it to the
+    obspy guys!
 
 :copyright:
-    Calum Chamberlain, Chet Hopp.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -16,10 +17,16 @@ Helper functions for common handling tasks for catalog objects.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
+
+import warnings
+
+from collections import Counter
+from obspy.core.event import Catalog
 
 
 def filter_picks(catalog, stations=None, channels=None, networks=None,
-                 locations=None, top_n_picks=None):
+                 locations=None, top_n_picks=None, evaluation_mode='all'):
     """
     Filter events in the catalog based on a number of parameters.
 
@@ -35,17 +42,24 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     :type locations: list
     :param top_n_picks: Filter only the top N most used station-channel pairs.
     :type top_n_picks: int
+    :param evaluation_mode:
+        To select only manual or automatic picks, or use all (default).
+    :type evaluation_mode: str
 
-    :return: Filtered Catalog - if events are left with no picks, they are \
-        removed from the catalog.
+
+    :return:
+        Filtered Catalog - if events are left with no picks, they are removed
+        from the catalog.
     :rtype: obspy.core.event.Catalog
 
-    .. note:: Will filter first by station, then by channel, then by network, \
-        if using top_n_picks, this will be done last, after the other filters \
+    .. note::
+        Will filter first by station, then by channel, then by network, if
+        using top_n_picks, this will be done last, after the other filters
         have been applied.
 
-    .. note:: Doesn't work in place on the catalog, your input catalog will be \
-        safe unless you overwrite it.
+    .. note::
+        Doesn't work in place on the catalog, your input catalog will be safe
+        unless you overwrite it.
 
     .. note:: Doesn't expand wildcard characters.
 
@@ -76,9 +90,6 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     >>> print(sorted(list(set(stations))))
     ['BAP', 'BMS', 'PAG', 'PAN', 'PBI', 'PKY', 'WOF', 'YEG']
     """
-    from collections import Counter
-    from obspy.core.event import Catalog
-
     # Don't work in place on the catalog
     filtered_catalog = catalog.copy()
 
@@ -106,6 +117,17 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
                 continue
             event.picks = [pick for pick in event.picks
                            if pick.waveform_id.location_code in locations]
+    if evaluation_mode == 'manual':
+        for event in filtered_catalog:
+            event.picks = [pick for pick in event.picks
+                           if pick.evaluation_mode == 'manual']
+    elif evaluation_mode == 'automatic':
+        for event in filtered_catalog:
+            event.picks = [pick for pick in event.picks
+                           if pick.evaluation_mode == 'automatic']
+    elif evaluation_mode != 'all':
+        warnings.warn('Unrecognised evaluation_mode: %s, using all picks' %
+                      evaluation_mode)
     if top_n_picks:
         all_picks = []
         for event in filtered_catalog:

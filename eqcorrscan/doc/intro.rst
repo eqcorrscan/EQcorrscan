@@ -2,14 +2,14 @@ Introduction to the EQcorrscan package
 ======================================
 
 This document is designed to give you an overview of the capabilities and
-implementation of the EQcorrscan python module.
+implementation of the EQcorrscan Python module.
 
 Why EQcorrscan?
 ---------------
-EQcorrscan is designed to compute matched-filter detections of earthquakes,
-or any seismic signal (explosions work *really* well) by comparing templates
-with continuous data.  The main benefit of EQcorrscan is the level of
-parallel processing that can be achieved.  By exploiting the fact that each template
+EQcorrscan is designed to compute detections of earthquakes, or any seismic signal
+(explosions work *really* well) by comparing templates with continuous data.
+The main benefit of EQcorrscan's matched-filter routine is the level of parallel
+processing that can be achieved.  By exploiting the fact that each template
 does not rely on any other template, detections from a single template through
 a day of seismic data can be computed in parallel.  By computing these in parallel
 rather than a single template through multiple days we reduce IO load.  At a low
@@ -23,16 +23,16 @@ development of software for the detection and analysis of repeating and
 near-repeating earthquakes.  This repository will continue to grow and develop
 and any and all help/criticism will be appreciated.
 
-We have a long way to go with this project - if you want to get involved the
-best place to start, and the most valuable thing for your understanding, and
-for the health of this repository would be to contribute tests and
-documentation.  Ideally we would like to have one test for every function!
+There are a lot of things that could be added to this project - if you want to
+get involved the best place to start, and the most valuable thing for your
+understanding, and for the health of this package would be to contribute tests and
+documentation.
 
 Installation
 ------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
-for this the virtualenvwrapper package is handy.
+for this the |virtualenvwrapper| package is handy.
 
 Within a virtual environment, a fresh install should be as simple as:
 
@@ -59,6 +59,10 @@ or
 You can also install from source; for Python 3 this is a must as you will have
 to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
 |cv3_ubuntu|.
+
+.. |virtualenvwrapper| raw:: html
+
+    <a href="https://virtualenvwrapper.readthedocs.io/en/latest/" target="blank">virtualenvwrapper</a>
 
 .. |pyimagesearch| raw:: html
 
@@ -93,7 +97,7 @@ required to give.
 Supported environments
 ----------------------
 
-We support Linux, OSX and Windows environments running Python 2.7 and 3.5.
+We support Linux, OSX and Windows environments running Python 2.7, 3.4 and 3.5.
 We don't run our tests on other versions of Python so you might have some issues
 with other Python 3.x series, if you do, let us know.
 
@@ -140,3 +144,41 @@ handle parallelisation at lower-levels.  You can also do some 'brute-force'
 parallelisation on a day level when computing detections over multiple days.
 I tend to run one day per node of a cluster computer, with each day running
 templates in parallel.
+
+Running tests
+-------------
+
+One of the main goals of EQcorrscan is to improve reliability and reproducibility
+of earthquake detection.  To this end, EQcorrscan has a moderate test-base (you
+can check how much of our codebase if tested by looked at the badges in the
+|github| repository).  You can also run these tests yourself locally to ensure
+that everything runs as you would expect in your environment.  Although every
+effort has been made to ensure these tests run smoothly on all supported environments
+(using the ci bots), if you do find any issues, please let us know on the
+|github| page.
+
+.. |github| raw:: html
+
+    <a href="https://github.com/eqcorrscan/EQcorrscan" target="_blank">github</a>
+
+To run the tests you will need to have pytest installed along with a couple of
+extras (pytest-pep8 and pytest-cov).  These can be installed by pip:
+
+.. code-block:: bash
+
+    pip install pytest pytest-pep8 pytest-cov
+
+You will also need to have a clone of the github repository:
+
+.. code-block:: bash
+
+    git clone https://github.com/eqcorrscan/EQcorrscan.git
+
+You can then run the tests from within the repository directory:
+
+.. code-block:: bash
+
+    python setup.py test
+
+Tests will take about half an hour to run (as of v.0.1.4) and will provide
+a coverage report at the end and notify you of any failures.

@@ -33,8 +33,6 @@ class TestTutorialScripts(unittest.TestCase):
                              'expected_tutorial_detections.txt')
         expected_detections = read_detections(fname)
 
-        # Annoyingly something doesn't match, event when writing out detections
-        # then reading them back in and comparing them to themselves in memory.
         expected_times = [detection.detect_time for detection
                           in expected_detections]
         for expected_time in expected_times:
@@ -85,10 +83,16 @@ class TestTutorialScripts(unittest.TestCase):
                 # The template
                 tr = template.select(station=stachan[0], channel=stachan[1])[0]
                 delay = tr.stats.starttime - \
-                        template.sort(['starttime'])[0].stats.starttime
+                    template.sort(['starttime'])[0].stats.starttime
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
+    def test_subspace(self):
+        """Test the subspace tutorial."""
+        from eqcorrscan.tutorials.subspace import run_tutorial
+
+        detections = run_tutorial(plot=False)
+        self.assertEqual(len(detections), 2)
 
 if __name__ == '__main__':
     """
