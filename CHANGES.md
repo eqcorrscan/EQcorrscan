@@ -9,6 +9,7 @@ option (previously only used for debugging in development);
 * Increase test coverage for match_filter including testing io of 
 detections;
 * Increase subspace test coverage for edge cases;
+* Speed-up catalog_to_dd_tests;
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

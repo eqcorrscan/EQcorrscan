@@ -375,8 +375,6 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
         print('shape of ccc: ' + str(np.shape(ccc)))
         print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
         print('ccc type is: ' + str(type(ccc)))
-    if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(ccc)))
         print("Parallel worker " + str(i) + " complete")
     return i, ccc
 
