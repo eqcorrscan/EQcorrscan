@@ -15,6 +15,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
 import warnings
 import time
@@ -22,13 +23,16 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
+
+import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
+
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
-import matplotlib.pyplot as plt
+from eqcorrscan.utils.plotting import subspace_detector_plot
 
 
 class Detector(object):
@@ -193,7 +197,7 @@ class Detector(object):
                               plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
         v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
-        if not multi:
+        if not multiplex:
             stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
         self.stachans = stachans
         # self.delays = delays
@@ -417,41 +421,8 @@ class Detector(object):
         :returns: Figure
         :rtype: matplotlib.pyplot.Figure
         """
-        if stachans == 'all' and not self.multiplex:
-            stachans = self.stachans
-        elif self.multiplex:
-            stachans = [('multi', ' ')]
-        if np.isinf(self.dimension):
-            nrows = self.data[0].shape[1]
-        fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
-                                 sharex=True, sharey=True, figsize=size)
-        x = np.arange(len(self.v[0]), dtype=np.float32)
-        if self.multiplex:
-            x /= len(self.stachans) * self.sampling_rate
-        else:
-            x /= self.sampling_rate
-        for column, stachan in enumerate(stachans):
-            channel = self.v[column]
-            for row, vector in enumerate(channel.T[0:nrows]):
-                if len(stachans) == 1:
-                    if nrows == 1:
-                        axis = axes
-                    else:
-                        axis = axes[row]
-                else:
-                    axis = axes[row, column]
-                if row == 0:
-                    axis.set_title('.'.join(stachan))
-                axis.plot(x, vector, 'k', linewidth=1.1)
-                if column == 0:
-                    axis.set_ylabel('Basis %s' % (row + 1))
-                if row == nrows - 1:
-                    axis.set_xlabel('Time (s)')
-        plt.subplots_adjust(hspace=0.05)
-        plt.subplots_adjust(wspace=0.05)
-        if show:
-            plt.show()
-        return fig
+        return subspace_detector_plot(detector=self, stachans=stachans,
+                                      size=size, show=show)
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,

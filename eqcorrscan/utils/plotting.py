@@ -2053,6 +2053,89 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
         return ax1, ax2
 
 
+def subspace_detector_plot(detector, stachans, size, show):
+    """
+    Plotting for the subspace detector class.
+
+    Plot the output basis vectors for the detector at the given dimension.
+
+    Corresponds to the first n horizontal vectors of the V matrix.
+
+    :type detector: :class:`eqcorrscan.core.subspace.Detector`
+    :type stachans: list
+    :param stachans: list of tuples of station, channel pairs to plot.
+    :type stachans: list
+    :param stachans: List of tuples of (station, channel) to use.  Can set\
+        to 'all' to use all the station-channel pairs available. If \
+        detector is multiplexed, will just plot that.
+    :type size: tuple
+    :param size: Figure size.
+    :type show: bool
+    :param show: Whether or not to show the figure.
+
+    :returns: Figure
+    :rtype: matplotlib.pyplot.Figure
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core import subspace
+    >>> import os
+    >>> detector = subspace.Detector()
+    >>> detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+    ...                            '..', 'tests', 'test_data', 'subspace',
+    ...                            'stat_test_detector.h5'))
+    Detector: Tester
+    >>> subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
+    ...                        show=True) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.core import subspace
+        import os
+        detector = subspace.Detector()
+        detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                   '..', 'tests', 'test_data', 'subspace',
+                                   'stat_test_detector.h5'))
+        subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
+                               show=True)
+    """
+    if stachans == 'all' and not detector.multiplex:
+        stachans = detector.stachans
+    elif detector.multiplex:
+        stachans = [('multi', ' ')]
+    if np.isinf(detector.dimension):
+        nrows = detector.data[0].shape[1]
+    fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
+                             sharex=True, sharey=True, figsize=size)
+    x = np.arange(len(detector.v[0]), dtype=np.float32)
+    if detector.multiplex:
+        x /= len(detector.stachans) * detector.sampling_rate
+    else:
+        x /= detector.sampling_rate
+    for column, stachan in enumerate(stachans):
+        channel = detector.v[column]
+        for row, vector in enumerate(channel.T[0:nrows]):
+            if len(stachans) == 1:
+                if nrows == 1:
+                    axis = axes
+                else:
+                    axis = axes[row]
+            else:
+                axis = axes[row, column]
+            if row == 0:
+                axis.set_title('.'.join(stachan))
+            axis.plot(x, vector, 'k', linewidth=1.1)
+            if column == 0:
+                axis.set_ylabel('Basis %s' % (row + 1))
+            if row == nrows - 1:
+                axis.set_xlabel('Time (s)')
+    plt.subplots_adjust(hspace=0.05)
+    plt.subplots_adjust(wspace=0.05)
+    if show:
+        plt.show()
+    return fig
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
