@@ -447,9 +447,10 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         with Timer() as t:
             # Send off to sister function
             pool = Pool(processes=num_cores)
-            results = [pool.apply_async(_template_loop,
-                                        args=(templates[i], tr.data,
-                                              stream_ind, debug, i))
+            results = [pool.apply_async(_template_loop, (templates[i], ),
+                                        {'chan': tr.data,
+                                         'stream_ind': stream_ind,
+                                         'debug': debug, 'i': i})
                        for i in range(len(templates))]
             pool.close()
         if debug >= 1:

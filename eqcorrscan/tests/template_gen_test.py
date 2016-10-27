@@ -25,6 +25,7 @@ from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
 from eqcorrscan.core.template_gen import from_meta_file, from_client
 from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
 from eqcorrscan.core.template_gen import template_gen, extract_from_stack
+from eqcorrscan.core.template_gen import from_sfile, TemplateGenError
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -232,18 +233,37 @@ class TestTemplateGeneration(unittest.TestCase):
                                    length=2, prepick=0.1, swin='S')
         self.assertEqual(len(templates), 1)
 
+    def test_from_sfile(self):
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '15-0931-08L.S201309')
+        event = read_event(sfile=testing_path)
+        template = from_sfile(sfile=testing_path, lowcut=2, highcut=8,
+                              samp_rate=20, filt_order=4, length=10, swin='all',
+                              prepick=0.2, debug=3)
+        self.assertEqual(len(template), len(event.picks))
+
+    def test_upsample_error(self):
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '15-0931-08L.S201309')
+        with self.assertRaises(TemplateGenError):
+            from_sfile(sfile=testing_path, lowcut=2, highcut=8, samp_rate=200,
+                       filt_order=4, length=10, swin='all', prepick=0.2)
+
 
 class TestEdgeGen(unittest.TestCase):
-    def setUp(self):
-        self.testing_path = os.path.dirname(os.path.abspath(inspect.getfile(
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.dirname(os.path.abspath(inspect.getfile(
             inspect.currentframe())))
-        self.st = read(os.path.join(self.testing_path, 'test_data',
-                                    'WAV', 'TEST_',
-                                    '2013-09-15-0930-28.DFDPC_027_00'))
-        event = read_event(os.path.join(self.testing_path, 'test_data',
+        cls.st = read(os.path.join(cls.testing_path, 'test_data',
+                                   'WAV', 'TEST_',
+                                   '2013-09-15-0930-28.DFDPC_027_00'))
+        event = read_event(os.path.join(cls.testing_path, 'test_data',
                                         'REA', 'TEST_',
                                         '15-0931-08L.S201309'))
-        self.picks = event.picks
+        cls.picks = event.picks
 
     def test_undefined_phase_type(self):
         with self.assertRaises(IOError):
@@ -273,7 +293,7 @@ class TestEdgeGen(unittest.TestCase):
 
     def test_debug_levels(self):
         template = template_gen(self.picks, self.st.copy(), 10, debug=3)
-        self.assertEqual(len(template), 9)
+        self.assertEqual(len(template), len(self.picks))
 
     def test_extract_from_stack(self):
         length = 3

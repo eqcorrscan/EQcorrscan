@@ -18,6 +18,12 @@ repeating events.
     with picks will be used.
 
 .. note::
+    If swin=all, then all picks will be used, not just phase-picks (e.g. it
+    will use amplitude picks).  If you do not want this then we suggest that
+    you remove any picks you do not want to use in your templates before using
+    the event.
+
+.. note::
     All functions use obspy filters, which are implemented such that
     if both highcut and lowcut are set a bandpass filter will be used,
     but of highcut is not set (None) then a highpass filter will be used and
@@ -1046,6 +1052,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for tr in st:
+        used_tr = False
         for pick in picks_copy:
             starttime = None
             if swin == 'all':
@@ -1093,9 +1100,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                     print('Cut starttime = ' + str(tr_cut.stats.starttime))
                     print('Cut endtime = ' + str(tr_cut.stats.endtime))
                 st1 += tr_cut
-            elif debug > 0:
-                print('No pick for ' + tr.stats.station + '.' +
-                      tr.stats.channel)
+                used_tr = True
+        if debug > 0 and not used_tr:
+            print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
     if plot:
         background = stplot.trim(st1.sort(['starttime'])[0].stats.starttime -
                                  10,
