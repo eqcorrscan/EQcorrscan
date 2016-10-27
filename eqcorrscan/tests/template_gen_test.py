@@ -9,7 +9,6 @@ from __future__ import unicode_literals
 import unittest
 import glob
 import os
-import obspy
 import numpy as np
 import warnings
 import shutil

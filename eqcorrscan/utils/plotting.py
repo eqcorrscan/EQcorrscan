@@ -16,12 +16,14 @@ from __future__ import unicode_literals
 import numpy as np
 import warnings
 import datetime as dt
+import copy
+import os
 
 import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
-from obspy import UTCDateTime, Stream, Catalog
+from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
 from eqcorrscan.core.match_filter import DETECTION, normxcorr2
@@ -2137,6 +2139,42 @@ def subspace_detector_plot(detector, stachans, size, show):
     if show:
         plt.show()
     return fig
+
+
+def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
+                       plot_format, i):
+    """
+    Plotting function for match_filter.
+
+    :param stream: Stream to plot
+    :param cccsum: Cross-correlation sum to plot
+    :param template_names: Template names used
+    :param rawthresh: Threshold level
+    :param plotdir: Location to save plots
+    :param plot_format: Output plot type (e.g. png, svg, eps, pdf...)
+    :param i: Template index name to plot.
+    """
+    plt.ioff()
+    stream_plot = copy.deepcopy(stream[0])
+    # Downsample for plotting
+    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
+    cccsum_plot = Trace(cccsum)
+    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
+    # Resample here to maintain shape better
+    cccsum_hist = cccsum_plot.copy()
+    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
+                                           sampling_rate / 10)).data
+    cccsum_plot = chunk_data(cccsum_plot, 10, 'Maxabs').data
+    # Enforce same length
+    stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
+    cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
+    cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
+    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
+                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
+                 '.' + plot_format)
+    triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
+                trace=stream_plot, threshold=rawthresh, save=True,
+                savefile=plot_name)
 
 
 if __name__ == "__main__":
