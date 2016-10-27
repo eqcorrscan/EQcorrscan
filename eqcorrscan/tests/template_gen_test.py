@@ -238,8 +238,8 @@ class TestTemplateGeneration(unittest.TestCase):
                                     '15-0931-08L.S201309')
         event = read_event(sfile=testing_path)
         template = from_sfile(sfile=testing_path, lowcut=2, highcut=8,
-                              samp_rate=20, filt_order=4, length=10, swin='all',
-                              prepick=0.2, debug=3)
+                              samp_rate=20, filt_order=4, length=10,
+                              swin='all', prepick=0.2, debug=3)
         self.assertEqual(len(template), len(event.picks))
 
     def test_upsample_error(self):

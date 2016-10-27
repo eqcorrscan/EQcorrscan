@@ -703,8 +703,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         print(node_splits)
         indices = []
         for i in range(num_cores):
-            indices.append(range(node_splits * i, node_splits * (i + 1)))
-        indices[-1] += range(node_splits * (i + 1), len(nodes))
+            indices.append(list(np.arange(node_splits * i,
+                                          node_splits * (i + 1))))
+        indices[-1] += list(np.arange(node_splits * (i + 1), len(nodes)))
         # results = [_cum_net_resp(node_lis=indices[i], instance=instance)
         #            for i in range(num_cores)]
         pool = Pool(processes=num_cores)
