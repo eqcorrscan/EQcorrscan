@@ -10,6 +10,8 @@ option (previously only used for debugging in development);
 detections;
 * Increase subspace test coverage for edge cases;
 * Speed-up catalog_to_dd_tests;
+* Lag-calc will pick S-picks on channels ending E, N, 1 and 2, change
+from only picking on E and N before; warning added to docs.
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

@@ -36,7 +36,7 @@ class TestMethods(unittest.TestCase):
             lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
             swin='all', prepick=0.05)
         cls.detection_spicks = from_sfile(
-            sfile=os.path.join(cls.testing_path, '18-2350-07L.S201309'),
+            sfile=os.path.join(cls.testing_path, '18-2350-08L.S201309'),
             lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
             swin='all', prepick=0.55)
         detection_event = read_event(os.path.join(cls.testing_path,
@@ -77,20 +77,27 @@ class TestMethods(unittest.TestCase):
             self.assertTrue(picked_stachan in matched_traces)
 
     def test_channel_loop_with_spicks(self):
-        """Test using s-picks"""
+        """Test using s-picks."""
+        det_spicks = self.detection_spicks.copy()
+        det_spicks += det_spicks.select(station='GCSZ', channel='EZ')[0].copy()
+        det_spicks[-1].stats.channel = 'HA'
+        temp_spicks = self.template_spicks.copy()
+        temp_spicks += temp_spicks.select(station='GCSZ',
+                                          channel='EZ')[0].copy()
+        temp_spicks[-1].stats.channel = 'HA'
         with warnings.catch_warnings(record=True) as w:
             i, event = _channel_loop(
-                detection=self.detection_spicks, template=self.template_spicks,
-                min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False)
+                detection=det_spicks, template=temp_spicks, min_cc=0.2, i=0,
+                detection_id='Tester_01', interpolate=False)
             self.assertEqual(len(w), 1)
             self.assertTrue(str('Cannot check if cccsum') in str(w[0].message))
         matched_traces = []
         detection_stachans = [(tr.stats.station, tr.stats.channel)
-                              for tr in self.detection_spicks]
+                              for tr in det_spicks]
         picked_stachans = [(pick.waveform_id.station_code,
                             pick.waveform_id.channel_code)
                            for pick in event.picks]
-        for master_tr in self.template_spicks:
+        for master_tr in temp_spicks:
             stachan = (master_tr.stats.station, master_tr.stats.channel)
             if stachan in detection_stachans:
                 matched_traces.append(stachan)
@@ -104,12 +111,12 @@ class TestMethods(unittest.TestCase):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.0, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=2.5, detect_chans=6)
+                pre_lag_ccsum=8, detect_chans=13)
         with self.assertRaises(LagCalcError):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=2.5, detect_chans=6)
+                pre_lag_ccsum=8, detect_chans=13)
 
     def test_interpolate(self):
         """Test channel loop with interpolation."""
@@ -156,20 +163,30 @@ class TestMethods(unittest.TestCase):
         with self.assertRaises(IndexError):
             _xcorr_interp(ccc, 0.01)
 
-    def test_day_loop(self):
+    def test_day_loop_serial(self):
+        """Test various implementations of parallel and non-parallel."""
         catalog = _day_loop(
             detection_streams=[self.detection, self.detection_spicks],
             template=self.template, min_cc=0.4, detections=self.detections,
-            interpolate=False, cores=False, parallel=True)
-        self.assertEqual(len(catalog), 2)
-        catalog = _day_loop(
-            detection_streams=[self.detection, self.detection_spicks],
-            template=self.template, min_cc=0.4, detections=self.detections,
+            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
             interpolate=False, cores=False, parallel=False)
         self.assertEqual(len(catalog), 2)
+
+    def test_day_loop_parallel(self):
+        """Test various implementations of parallel and non-parallel."""
         catalog = _day_loop(
             detection_streams=[self.detection, self.detection_spicks],
             template=self.template, min_cc=0.4, detections=self.detections,
+            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
+            interpolate=False, cores=False, parallel=True)
+        self.assertEqual(len(catalog), 2)
+
+    def test_day_loop_parallel_excess_cores(self):
+        """Test various implementations of parallel and non-parallel."""
+        catalog = _day_loop(
+            detection_streams=[self.detection, self.detection_spicks],
+            template=self.template, min_cc=0.4, detections=self.detections,
+            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
             interpolate=False, cores=10, parallel=True)
         self.assertEqual(len(catalog), 2)
 
@@ -204,6 +221,8 @@ class ShortTests(unittest.TestCase):
             raise LagCalcError('Generic error')
         err = LagCalcError('Generic error')
         self.assertEqual('Generic error', err.value)
+        self.assertEqual('Generic error', err.__repr__())
+        self.assertEqual('LagCalcError: Generic error', err.__str__())
 
     def test_bad_interp(self):
         ccc = np.array([-0.21483282, -0.59443731, 0.1898917, -0.67516038,
