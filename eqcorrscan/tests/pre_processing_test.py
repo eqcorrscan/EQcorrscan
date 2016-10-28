@@ -25,7 +25,7 @@ class TestPreProcessing(unittest.TestCase):
         cls.st = read(testing_path)
         cls.day_start = cls.st[0].stats.starttime.date
         cls.short_stream = cls.st.copy().trim(cls.st[0].stats.starttime,
-                                           cls.st[0].stats.starttime + 3600)
+                                              cls.st[0].stats.starttime + 3600)
         cls.instart = cls.short_stream[0].stats.starttime
         cls.inend = cls.short_stream[0].stats.endtime
         cls.nchans = len(cls.short_stream)
@@ -157,7 +157,8 @@ class TestPreProcessing(unittest.TestCase):
             samp_rate=1, starttime=self.day_start, debug=0, parallel=True,
             num_cores=2)
         self.assertTrue(isinstance(processed, Trace))
-        self.assertEqual(UTCDateTime(self.day_start), processed.stats.starttime)
+        self.assertEqual(UTCDateTime(self.day_start),
+                         processed.stats.starttime)
         self.assertEqual(processed.stats.npts, 86400)
 
     def test_dayproc_nyquist_error(self):

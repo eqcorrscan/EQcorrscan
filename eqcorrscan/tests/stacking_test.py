@@ -19,17 +19,17 @@ from eqcorrscan.utils.stacking import linstack, PWS_stack, align_traces
 class TestStackingMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        synth = Stream(Trace())
-        synth[0].data = np.zeros(200)
-        synth[0].data[100] = 1.0
+        cls.synth = Stream(Trace())
+        cls.synth[0].data = np.zeros(200)
+        cls.synth[0].data[100] = 1.0
         sine_x = np.arange(0, 10.0, 0.5)
         damped_sine = np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
-        synth[0].data = np.convolve(synth[0].data, damped_sine)
+        cls.synth[0].data = np.convolve(cls.synth[0].data, damped_sine)
         # Normalize:
-        synth[0].data = synth[0].data / synth[0].data.max()
-        cls.maximum_synth = synth[0].data.max()
-        cls.RMS_max = np.sqrt(np.mean(np.square(synth[0].data)))
-        cls.streams = [synth.copy() for i in range(10)]
+        cls.synth[0].data = cls.synth[0].data / cls.synth[0].data.max()
+        cls.maximum_synth = cls.synth[0].data.max()
+        cls.RMS_max = np.sqrt(np.mean(np.square(cls.synth[0].data)))
+        cls.streams = [cls.synth.copy() for i in range(10)]
 
     def test_linstack(self):
         """Test the utils.stacking.linstack function."""
@@ -52,7 +52,7 @@ class TestStackingMethods(unittest.TestCase):
     def test_align_traces(self):
         """Test the utils.stacking.align_traces function."""
         # Generate synth data
-        traces = [st.copy() for st in self.streams]
+        traces = [st[0].copy() for st in self.streams]
 
         shifts, ccs = align_traces(traces, shift_len=2, master=False)
         for shift in shifts:

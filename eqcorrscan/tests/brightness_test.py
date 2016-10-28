@@ -130,7 +130,8 @@ class BrightnessTestMethods(unittest.TestCase):
         st[0].data = st[0].data.astype(np.int16)
         st += Trace(np.random.randn(86400) * 3000)
         st[1].stats.station = stations[1]
-        os.makedirs('tmp0')
+        if not os.path.isdir('tmp0'):
+            os.makedirs('tmp0')
         index, energy_file = _node_loop(stations=stations, lags=lags[:, 0],
                                         stream=st, clip_level=4,
                                         mem_issue=True)

@@ -565,6 +565,8 @@ def test_match_filter(debug=0, plotvar=False, extract_detections=False,
         data = data[0:-1]
     # Filter the data and the templates
     for template in templates:
+        for tr in template:
+            tr.data += 1  # Make the synthetic data not be all zeros
         pre_processing.shortproc(st=template, lowcut=1.0, highcut=4.0,
                                  filt_order=3, samp_rate=10.0)
     template_names = list(string.ascii_lowercase)[0:len(templates)]

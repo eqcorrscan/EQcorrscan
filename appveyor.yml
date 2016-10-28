@@ -45,6 +45,7 @@ install:
   - "pip install pytest"
   - "pip install pytest-pep8"
   - "pip install pytest-cov"
+  - "pip install pytest-xdist"
   - "pip install codecov"
   # list package versions
   - "conda list"
