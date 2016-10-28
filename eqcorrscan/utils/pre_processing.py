@@ -47,7 +47,7 @@ def _check_daylong(tr):
     >>> _check_daylong(st[0])
     True
     """
-    if len(tr.data) - len(np.nonzero(tr.data)) < 0.5 * len(tr.data):
+    if len(np.nonzero(tr.data)[0]) < 0.5 * len(tr.data):
         qual = False
     else:
         qual = True
@@ -146,13 +146,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
-    if starttime and endtime:
+    if starttime is not None and endtime is not None:
         for tr in st:
-            tr.trim(starttime, endtime)
-            print(len(tr))
-            if len(tr.data) == ((endtime - starttime) *
-                                tr.stats.sampling_rate) + 1:
-                tr.data = tr.data[1:len(tr.data)]
+            tr.trim(starttime=starttime, endtime=endtime)
     elif starttime:
         for tr in st:
             tr.trim(starttime=starttime)
@@ -433,7 +429,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             tr.data = tr.data[1:len(tr.data)]
         if not tr.stats.sampling_rate * length == tr.stats.npts:
                 raise ValueError('Data are not daylong for ' +
-                                 tr.stats.station + '.' + tr.stats.channel)
+                                 tr.stats.station + '.' + tr.stats.channel +
+                                 ': ' + str(tr.stats.npts) + ' data points.')
 
         print('I now have %i data points after enforcing length'
               % len(tr.data))

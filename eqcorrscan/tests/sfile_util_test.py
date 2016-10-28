@@ -5,11 +5,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
+import unittest
+
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
 from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor, nordpick
 from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
 from eqcorrscan.utils.sfile_util import read_event, read_select, blanksfile
-import unittest
 
 
 class TestSfileMethods(unittest.TestCase):
