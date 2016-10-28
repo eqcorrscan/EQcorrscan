@@ -9,6 +9,7 @@ omit =
   eqcorrscan/utils/gui/*
   eqcorrscan/utils/timer.py
   eqcorrscan/utils/plotting.py
+  eqcorrscan/utils/sfile_util.py
 [report]
 exclude_lines =
     pragma: no cover
