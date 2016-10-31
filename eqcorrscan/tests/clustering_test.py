@@ -186,7 +186,8 @@ class ClusteringTestMethods(unittest.TestCase):
         import glob
         import os
         from eqcorrscan.utils.clustering import SVD, SVD_2_stream
-        samp_rate=100
+
+        samp_rate = 100
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'similar_events')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
@@ -211,7 +212,8 @@ class ClusteringTestMethods(unittest.TestCase):
         import glob
         import os
         from eqcorrscan.utils.clustering import corr_cluster
-        samp_rate=100
+
+        samp_rate = 100
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'similar_events')
         stream_files = glob.glob(os.path.join(testing_path, '*'))

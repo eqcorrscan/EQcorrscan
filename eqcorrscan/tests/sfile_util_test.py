@@ -338,7 +338,8 @@ class TestSfileMethods(unittest.TestCase):
         import os
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'Sfile_extra_header')
-        not_extra_header = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        not_extra_header = os.path.join(os.path.abspath(os.path.
+                                                        dirname(__file__)),
                                         'test_data', 'REA', 'TEST_',
                                         '01-0411-15L.S201309')
         test_event = readpicks(testing_path)
@@ -448,7 +449,6 @@ class TestSfileMethods(unittest.TestCase):
         pick_string = nordpick(event)
         for pick in pick_string:
             self.assertEqual(len(pick), 80)
-
 
 
 def full_test_event():

@@ -27,3 +27,5 @@ lag_calc
 
       _channel_loop
       _day_loop
+      _prepare_data
+      _xcorr_interp

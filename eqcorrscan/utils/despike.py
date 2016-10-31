@@ -1,10 +1,12 @@
 """
 Functions for despiking seismic data.
 
+.. warning:: Despike functions are in beta, they do not work that well.
+
 .. todo:: Deconvolve spike to remove it, find peaks in the f-domain.
 
 :copyright:
-    Calum Chamberlain.
+    EQcorrscan developers.
 
 :license:
     GNU Lesser General Public License, Version 3
@@ -14,35 +16,42 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import numpy as np
+import matplotlib.pyplot as plt
+
+from multiprocessing import Pool, cpu_count
+
+from eqcorrscan.utils.timer import Timer
 
 
 def median_filter(tr, multiplier=10, windowlength=0.5,
                   interp_len=0.05, debug=0):
     """
-    Filter out spikes in data according to the median absolute deviation of \
-    the data.
+    Filter out spikes in data above a multiple of MAD of the data.
 
     Currently only has the ability to replaces spikes with linear
     interpolation.  In the future we would aim to fill the gap with something
     more appropriate.  Works in-place on data.
 
-    :type tr: obspy.Trace
+    :type tr: obspy.core.trace.Trace
     :param tr: trace to despike
     :type multiplier: float
-    :param multiplier: median absolute deviation multiplier to find spikes \
-        above.
+    :param multiplier:
+        median absolute deviation multiplier to find spikes above.
     :type windowlength: float
     :param windowlength: Length of window to look for spikes in in seconds.
     :type interp_len: float
     :param interp_len: Length in seconds to interpolate around spikes.
+    :type debug: int
+    :param debug: Debug output level between 0 and 5, higher is more output.
 
-    :returns: obspy.trace
+    :returns: :class:`obspy.core.trace.Trace`
+
+    .. warning::
+        Not particularly effective, and may remove earthquake signals, use with
+        caution.
     """
-    import matplotlib.pyplot as plt
-    from multiprocessing import Pool, cpu_count
-    from eqcorrscan.utils.timer import Timer
-
     num_cores = cpu_count()
     if debug >= 1:
         data_in = tr.copy()
@@ -84,16 +93,17 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
 
 def _median_window(window, window_start, multiplier, starttime, sampling_rate,
                    debug=0):
-    """Internal function to aid parallel processing
+    """
+    Internal function to aid parallel processing
 
-    :type window: np.ndarry
+    :type window: numpy.ndarry
     :param window: Data to look for peaks in.
     :type window_start: int
     :param window_start: Index of window start point in larger array, used \
         for peak indexing.
     :type multiplier: float
     :param multiplier: Multiple of MAD to use as threshold
-    :type starttime: obspy.UTCDateTime
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime of window, used in debug plotting.
     :type sampling_rate: float
     :param sampling_rate in Hz, used for debug plotting
@@ -101,6 +111,7 @@ def _median_window(window, window_start, multiplier, starttime, sampling_rate,
     :param debug: debug level, if want plots, >= 4.
 
     :returns: peaks
+    :rtype: list
     """
     from eqcorrscan.utils.findpeaks import find_peaks2_short
     from eqcorrscan.utils.plotting import peaks_plot
@@ -124,7 +135,8 @@ def _median_window(window, window_start, multiplier, starttime, sampling_rate,
 
 
 def _interp_gap(data, peak_loc, interp_len):
-    """Internal function for filling gap with linear interpolation
+    """
+    Internal function for filling gap with linear interpolation
 
     :type data: numpy.ndarray
     :param data: data to remove peak in
@@ -133,7 +145,8 @@ def _interp_gap(data, peak_loc, interp_len):
     :type interp_len: int
     :param interp_len: window to interpolate
 
-    :returns: obspy.tr works in-place
+    :returns: Trace works in-place
+    :rtype: :class:`obspy.core.trace.Trace`
     """
     start_loc = peak_loc - int(0.5 * interp_len)
     end_loc = peak_loc + int(0.5 * interp_len)
@@ -151,9 +164,9 @@ def template_remove(tr, template, cc_thresh, windowlength,
     """
     Looks for instances of template in the trace and removes the matches.
 
-    :type tr: obspy.core.Trace
+    :type tr: obspy.core.trace.Trace
     :param tr: Trace to remove spikes from.
-    :type template: osbpy.core.Trace
+    :type template: osbpy.core.trace.Trace
     :param template: Spike template to look for in data.
     :type cc_thresh: float
     :param cc_thresh: Cross-correlation threshold (-1 - 1).
@@ -165,6 +178,7 @@ def template_remove(tr, template, cc_thresh, windowlength,
     :param debug: Debug level.
 
     :returns: tr, works in place.
+    :rtype: :class:`obspy.core.trace.Trace`
     """
     from eqcorrscan.core.match_filter import normxcorr2
     from eqcorrscan.utils.findpeaks import find_peaks2_short

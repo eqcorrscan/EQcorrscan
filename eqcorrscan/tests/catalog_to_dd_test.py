@@ -132,7 +132,8 @@ class TestCatalogMethods(unittest.TestCase):
         os.remove('station.dat')
 
     def test_write_event(self):
-        """Simple test function to test the writing of events.
+        """
+        Simple test function to test the writing of events.
         """
         from eqcorrscan.utils.catalog_to_dd import sfiles_to_event
         from eqcorrscan.utils import sfile_util
@@ -145,35 +146,34 @@ class TestCatalogMethods(unittest.TestCase):
         event_list = sfiles_to_event(sfile_list)
         # Check that we have written a file
         self.assertTrue(os.path.isfile('event.dat'))
-        f = open('event.dat', 'r')
-        for line, event in zip(f, event_list):
-            header = sfile_util.readheader(event[1])
-            event_id_input = event[0]
-            output_event_info = line.strip().split()
-            # Check that the event id's match
-            self.assertEqual(event_id_input, int(output_event_info[-1]))
-            time_string = str(header.origins[0].time.year) +\
-                str(header.origins[0].time.month).zfill(2) +\
-                str(header.origins[0].time.day).zfill(2)+'  ' +\
-                str(header.origins[0].time.hour).rjust(2) +\
-                str(header.origins[0].time.minute).zfill(2) +\
-                str(header.origins[0].time.second).zfill(2) +\
-                str(header.origins[0].time.microsecond)[0:2].zfill(2)
-            self.assertEqual(output_event_info[0:2], time_string.split())
-            self.assertEqual(header.origins[0].latitude,
-                             float(output_event_info[2]))
-            self.assertEqual(header.origins[0].longitude,
-                             float(output_event_info[3]))
-            self.assertEqual(header.origins[0].depth / 1000,
-                             float(output_event_info[4]))
-            if header.magnitudes[0]:
-                self.assertEqual(header.magnitudes[0].mag,
-                                 float(output_event_info[5]))
-            if header.origins[0].time_errors.Time_Residual_RMS:
-                self.assertEqual(header.origins[0].time_errors.
-                                 Time_Residual_RMS,
-                                 float(output_event_info[-2]))
-        f.close()
+        with open('event.dat', 'r') as f:
+            for line, event in zip(f, event_list):
+                header = sfile_util.readheader(event[1])
+                event_id_input = event[0]
+                output_event_info = line.strip().split()
+                # Check that the event id's match
+                self.assertEqual(event_id_input, int(output_event_info[-1]))
+                time_string = str(header.origins[0].time.year) +\
+                    str(header.origins[0].time.month).zfill(2) +\
+                    str(header.origins[0].time.day).zfill(2) + '  ' +\
+                    str(header.origins[0].time.hour).rjust(2) +\
+                    str(header.origins[0].time.minute).zfill(2) +\
+                    str(header.origins[0].time.second).zfill(2) +\
+                    str(header.origins[0].time.microsecond)[0:2].zfill(2)
+                self.assertEqual(output_event_info[0:2], time_string.split())
+                self.assertEqual(header.origins[0].latitude,
+                                 float(output_event_info[2]))
+                self.assertEqual(header.origins[0].longitude,
+                                 float(output_event_info[3]))
+                self.assertEqual(header.origins[0].depth / 1000,
+                                 float(output_event_info[4]))
+                if header.magnitudes[0]:
+                    self.assertEqual(header.magnitudes[0].mag,
+                                     float(output_event_info[5]))
+                if header.origins[0].time_errors.Time_Residual_RMS:
+                    self.assertEqual(header.origins[0].time_errors.
+                                     Time_Residual_RMS,
+                                     float(output_event_info[-2]))
         os.remove('event.dat')
 
     def test_write_catalog(self):
@@ -204,6 +204,8 @@ class TestCatalogMethods(unittest.TestCase):
         # Check dt.ct file, should contain only a few linked events
         dt_file_out = open('dt.ct', 'r')
         event_pairs = []
+        event_links = []
+        event_pair = ''
         for i, line in enumerate(dt_file_out):
             if line[0] == '#':
                 if i != 0:
@@ -235,7 +237,7 @@ class TestCatalogMethods(unittest.TestCase):
                         station = pick_pair.split()[0]
                         event_1_travel_time_output = pick_pair.split()[1]
                         event_2_travel_time_output = pick_pair.split()[2]
-                        weight = pick_pair.split()[3]
+                        # weight = pick_pair.split()[3]
                         phase = pick_pair.split()[4]
                         # Extract the relevant pick information from the
                         # two sfiles
@@ -336,7 +338,8 @@ class TestCatalogMethods(unittest.TestCase):
                 #     for item in sub.split():
                 #         obs.append(item)
                 observations.append({'station': obs[0],
-                                     'diff_time': float(obs[1]) - float(obs[2]),
+                                     'diff_time': float(obs[1]) -
+                                     float(obs[2]),
                                      'weight': float(obs[3]),
                                      'phase': obs[4]})
         ct.close()

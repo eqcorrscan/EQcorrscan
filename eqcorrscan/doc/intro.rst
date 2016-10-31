@@ -2,14 +2,14 @@ Introduction to the EQcorrscan package
 ======================================
 
 This document is designed to give you an overview of the capabilities and
-implementation of the EQcorrscan python module.
+implementation of the EQcorrscan Python module.
 
 Why EQcorrscan?
 ---------------
-EQcorrscan is designed to compute matched-filter detections of earthquakes,
-or any seismic signal (explosions work *really* well) by comparing templates
-with continuous data.  The main benefit of EQcorrscan is the level of
-parallel processing that can be achieved.  By exploiting the fact that each template
+EQcorrscan is designed to compute detections of earthquakes, or any seismic signal
+(explosions work *really* well) by comparing templates with continuous data.
+The main benefit of EQcorrscan's matched-filter routine is the level of parallel
+processing that can be achieved.  By exploiting the fact that each template
 does not rely on any other template, detections from a single template through
 a day of seismic data can be computed in parallel.  By computing these in parallel
 rather than a single template through multiple days we reduce IO load.  At a low
@@ -23,16 +23,16 @@ development of software for the detection and analysis of repeating and
 near-repeating earthquakes.  This repository will continue to grow and develop
 and any and all help/criticism will be appreciated.
 
-We have a long way to go with this project - if you want to get involved the
-best place to start, and the most valuable thing for your understanding, and
-for the health of this repository would be to contribute tests and
-documentation.  Ideally we would like to have one test for every function!
+There are a lot of things that could be added to this project - if you want to
+get involved the best place to start, and the most valuable thing for your
+understanding, and for the health of this package would be to contribute tests and
+documentation.
 
 Installation
 ------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
-for this the virtualenvwrapper package is handy.
+for this the |virtualenvwrapper| package is handy.
 
 Within a virtual environment, a fresh install should be as simple as:
 
@@ -59,6 +59,10 @@ or
 You can also install from source; for Python 3 this is a must as you will have
 to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
 |cv3_ubuntu|.
+
+.. |virtualenvwrapper| raw:: html
+
+    <a href="https://virtualenvwrapper.readthedocs.io/en/latest/" target="blank">virtualenvwrapper</a>
 
 .. |pyimagesearch| raw:: html
 
@@ -93,7 +97,7 @@ required to give.
 Supported environments
 ----------------------
 
-We support Linux, OSX and Windows environments running Python 2.7 and 3.5.
+We support Linux, OSX and Windows environments running Python 2.7, 3.4 and 3.5.
 We don't run our tests on other versions of Python so you might have some issues
 with other Python 3.x series, if you do, let us know.
 
