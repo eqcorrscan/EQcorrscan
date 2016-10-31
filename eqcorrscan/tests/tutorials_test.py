@@ -1,5 +1,6 @@
 """
-Functions for testing the utils.stacking functions
+Functions for testing the tutorials - written as a somewhat monolithic test
+because we need certain behaviour.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -18,19 +19,25 @@ from eqcorrscan.core.match_filter import read_detections
 
 
 class TestTutorialScripts(unittest.TestCase):
-    def test_match_filter(self):
-        """Test the match_filter tutorial, generates templates too."""
-        # Run mktemplates first to set-up for match_filter
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+
+    def test_templates_and_match(self):
+        """Call the template creation then the matched-filter tests."""
         mktemplates(plot=False)
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
+            expected_template = read(
+                os.path.join(self.testing_path,
+                             'tutorial_template_' + str(template_no) + '.ms'))
             self.assertTrue(len(template) > 1)
+            self.assertEqual(template, expected_template)
         # Run the matched-filter
         tutorial_detections = match_filter.run_tutorial(plot=False)
         # It should make 20 detections in total...
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
-        fname = os.path.join(testing_path,
+        fname = os.path.join(self.testing_path,
                              'expected_tutorial_detections.txt')
         expected_detections = read_detections(fname)
 
@@ -54,10 +61,10 @@ class TestTutorialScripts(unittest.TestCase):
                               msg='Expected detection at %s was not made'
                               % detection.detect_time)
         self.assertEqual(len(tutorial_detections), 22)
-        # Cleanup the templates
-        templates = glob.glob('tutorial_template_?.ms')
-        for template in templates:
-            os.remove(template)
+        for template_no in range(4):
+            if os.path.isfile('tutorial_template_' +
+                              str(template_no) + '.ms'):
+                os.remove('tutorial_template_' + str(template_no) + '.ms')
 
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""

@@ -90,7 +90,7 @@ class TestPreProcessing(unittest.TestCase):
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
             self.assertEqual(self.instart + 2, tr.stats.starttime)
-            self.assertEqual(self.inend - 2, tr.stats.endtime)
+            self.assertEqual(self.inend - 3, tr.stats.endtime)
 
     def test_trace_as_argument(self):
         """

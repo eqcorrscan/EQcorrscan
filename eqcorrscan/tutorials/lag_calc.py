@@ -1,17 +1,15 @@
 """Tutorial to illustrate the lag_calc usage."""
 
+from obspy.clients.fdsn import Client
+from obspy.core.event import Catalog
+from obspy import UTCDateTime
+
+from eqcorrscan.core import template_gen, match_filter, lag_calc
+from eqcorrscan.utils import pre_processing, catalog_utils
+
 
 def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-    else:
-        from obspy.fdsn import Client
-    from obspy.core.event import Catalog
-    from obspy import UTCDateTime
-    from eqcorrscan.core import template_gen, match_filter, lag_calc
-    from eqcorrscan.utils import pre_processing, catalog_utils
-
+    """Functional, tested example script for running the lag-calc tutorial."""
     client = Client('NCEDC')
     t1 = UTCDateTime(2004, 9, 28)
     t2 = t1 + 86400
@@ -29,7 +27,8 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     # There is a duplicate pick in event 3 in the catalog - this has the effect
     # of reducing our detections - check it yourself.
     for pick in catalog[3].picks:
-        if pick.waveform_id.station_code == 'PHOB' and pick.onset == 'emergent':
+        if pick.waveform_id.station_code == 'PHOB' and \
+                        pick.onset == 'emergent':
             catalog[3].picks.remove(pick)
     print('Generating templates')
     templates = template_gen.from_client(catalog=catalog, client_id='NCEDC',

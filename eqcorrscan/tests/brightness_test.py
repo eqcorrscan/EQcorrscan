@@ -134,12 +134,12 @@ class BrightnessTestMethods(unittest.TestCase):
             os.makedirs('tmp0')
         index, energy_file = _node_loop(stations=stations, lags=lags[:, 0],
                                         stream=st, clip_level=4,
-                                        mem_issue=True)
+                                        mem_issue=True, instance=0)
         self.assertEqual(index, 0)
         self.assertTrue(type(energy_file) == str)
         _node_loop(stations=stations, lags=lags[:, 1], stream=st, clip_level=4,
-                   mem_issue=True, i=1)
-        cum_net_resp, indeces = _cum_net_resp(node_lis=[0, 1])
+                   mem_issue=True, i=1, instance=0)
+        cum_net_resp, indeces = _cum_net_resp(node_lis=[0, 1], instance=0)
         self.assertEqual(len(cum_net_resp), 86400)
         self.assertEqual(len(indeces), 86400)
         shutil.rmtree('tmp0')
@@ -155,10 +155,10 @@ class BrightnessTestMethods(unittest.TestCase):
         st += Trace(np.random.randn(86400) * 3000)
         st[1].stats.station = stations[1]
         # Need to make a tmp0 folder
-        os.makedirs('tmp0')
+        os.makedirs('tmp1')
         _node_loop(stations=stations, lags=lags[:, 1], stream=st, clip_level=4,
-                   mem_issue=True)
-        cum_net_resp, indeces = _cum_net_resp(node_lis=[0])
+                   mem_issue=True, instance=1)
+        cum_net_resp, indeces = _cum_net_resp(node_lis=[0], instance=1)
         all_nodes = [nodes[1] for i in range(len(cum_net_resp))]
         detections = _find_detections(cum_net_resp=cum_net_resp,
                                       nodes=all_nodes, threshold=10,
@@ -188,7 +188,7 @@ class BrightnessTestMethods(unittest.TestCase):
                                                     for tr in st],
                                       length=10)
         self.assertTrue(len(detections) > 0)
-        shutil.rmtree('tmp0')
+        shutil.rmtree('tmp1')
 
     def test_coherence(self):
         testing_path = os.path.join(self.testing_path + 'WAV', 'TEST_',
@@ -273,10 +273,10 @@ class TestBrightnessMain(unittest.TestCase):
                                            template_length=1,
                                            template_saveloc='.',
                                            coherence_thresh=(10, 1),
-                                           cores=1, mem_issue=True)
+                                           cores=1, mem_issue=True, instance=2)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
-        shutil.rmtree('tmp0')
+        shutil.rmtree('tmp2')
 
     def test_mem_issue_parallel(self):
         st = self.st.copy()
@@ -288,10 +288,10 @@ class TestBrightnessMain(unittest.TestCase):
                                            template_length=1,
                                            template_saveloc='.',
                                            coherence_thresh=(10, 1),
-                                           cores=3, mem_issue=True)
+                                           cores=3, mem_issue=True, instance=3)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
-        shutil.rmtree('tmp0')
+        shutil.rmtree('tmp3')
 
 
 if __name__ == '__main__':
