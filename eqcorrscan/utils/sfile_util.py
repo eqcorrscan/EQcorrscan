@@ -785,21 +785,21 @@ def eventtosfile(event, userID, evtype, outdir, wavefiles, explosion=False,
         raise IOError(outdir + os.sep + sfilename +
                       ' already exists, will not overwrite')
     # Write the header info.
-    if event.origins[0].latitude:
+    if event.origins[0].latitude is not None:
         if event.origins[0].latitude not in [float('NaN'), 999]:
             lat = '{0:.3f}'.format(event.origins[0].latitude)
         else:
             lat = ''
     else:
         lat = ''
-    if event.origins[0].longitude:
+    if event.origins[0].longitude is not None:
         if event.origins[0].longitude not in [float('NaN'), 999]:
             lon = '{0:.3f}'.format(event.origins[0].longitude)
         else:
             lon = ''
     else:
         lon = ''
-    if event.origins[0].depth:
+    if event.origins[0].depth is not None:
         if event.origins[0].depth not in [float('NaN'), 999]:
             depth = '{0:.1f}'.format(event.origins[0].depth / 1000)
         else:

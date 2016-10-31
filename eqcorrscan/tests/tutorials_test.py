@@ -33,8 +33,6 @@ class TestTutorialScripts(unittest.TestCase):
                              'expected_tutorial_detections.txt')
         expected_detections = read_detections(fname)
 
-        # Annoyingly something doesn't match, event when writing out detections
-        # then reading them back in and comparing them to themselves in memory.
         expected_times = [detection.detect_time for detection
                           in expected_detections]
         for expected_time in expected_times:
@@ -88,14 +86,6 @@ class TestTutorialScripts(unittest.TestCase):
                     template.sort(['starttime'])[0].stats.starttime
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
-                # Check that ccs increases
-                # for comment in event.comments:
-                #     if comment.text.split('=')[0] == 'detect_val':
-                #         post_lag_ccs = float(comment.text.split('=')[-1])
-                # for comment in detection.event.comments:
-                #     if comment.text.split('=')[0] == 'detect_val':
-                #         pre_lag_ccs = float(comment.text.split('=')[-1])
-                # self.assertGreaterEqual(post_lag_ccs, pre_lag_ccs)
 
     def test_subspace(self):
         """Test the subspace tutorial."""

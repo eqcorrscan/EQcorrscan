@@ -4,7 +4,7 @@
 [![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
-[![Coverage Status](https://coveralls.io/repos/github/eqcorrscan/EQcorrscan/badge.svg?branch=master)](https://coveralls.io/github/eqcorrscan/EQcorrscan?branch=master)
+[![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.59976.svg)](http://dx.doi.org/10.5281/zenodo.59976)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
