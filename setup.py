@@ -134,7 +134,7 @@ setup(
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['docs', 'tests', 'test_data',
                                     'grid', 'detections', 'templates',
-                                    'stack_templates', 'par']),
+                                    'stack_templates', 'par', '.git']),
 
     scripts=scriptfiles,
 

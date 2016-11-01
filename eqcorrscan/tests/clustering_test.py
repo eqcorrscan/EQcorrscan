@@ -238,7 +238,27 @@ class ClusteringTestMethods(unittest.TestCase):
 
     def test_corr_cluster(self):
         """Test the corr_cluster function."""
-        samp_rate = 100
+        samp_rate = 40
+        testing_path = os.path.join(self.testing_path, 'similar_events')
+        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for stream in stream_list:
+            for tr in stream:
+                if not (tr.stats.station == 'GCSZ' and
+                        tr.stats.channel == 'EHZ'):
+                    stream.remove(tr)
+                    continue
+                tr.detrend('simple')
+                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
+                tr.resample(sampling_rate=samp_rate)
+                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
+        trace_list = [stream[0] for stream in stream_list]
+        output = corr_cluster(trace_list=trace_list, thresh=0.7)
+        self.assertFalse(output.all())
+
+    def test_corr_unclustered(self):
+        """Test the corr_cluster function."""
+        samp_rate = 40
         testing_path = os.path.join(self.testing_path, 'similar_events')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
@@ -249,12 +269,15 @@ class ClusteringTestMethods(unittest.TestCase):
                     stream.remove(tr)
                     continue
                 tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
+                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
                 tr.resample(sampling_rate=samp_rate)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         trace_list = [stream[0] for stream in stream_list]
-        output = corr_cluster(trace_list=trace_list, thresh=0.7)
-        self.assertFalse(output.all())
+        with warnings.catch_warnings(record=True) as w:
+            corr_cluster(trace_list=trace_list, thresh=0.7)
+            self.assertEqual(len(w), 1)
+            self.assertTrue('Nothing made it past the first 0.6 threshold'
+                            in str(w[0].message))
 
     def test_dist_mat_km(self):
         """Test spacial clustering."""
