@@ -12,7 +12,10 @@ detections;
 * Speed-up catalog_to_dd_tests;
 * Lag-calc will pick S-picks on channels ending E, N, 1 and 2, change
 from only picking on E and N before; warning added to docs;
-* Add full tests for pre-processing
+* Add full tests for pre-processing;
+* Run tests in parallel on ci, speed-up tests dramatically; 
+* Rename singular-value decomposition functions (with depreciation 
+warnings);
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

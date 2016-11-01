@@ -55,23 +55,20 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     cccoh = 0.0
     kchan = 0
-    if allow_shift:
-        for tr in st1:
-            tr2 = st2.select(station=tr.stats.station,
-                             channel=tr.stats.channel)
-            if tr2:
-                index, corval = xcorr(tr, tr2[0], shift_len)
-                cccoh += corval
-                kchan += 1
-    else:
-        for tr in st1:
-            tr1 = tr.data
-            # Assume you only have one waveform for each channel
-            tr2 = st2.select(station=tr.stats.station,
-                             channel=tr.stats.channel)
-            if tr2:
-                cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
-                kchan += 1
+    for tr in st1:
+        tr2 = st2.select(station=tr.stats.station,
+                         channel=tr.stats.channel)
+        if tr2 and tr.stats.sampling_rate != tr2[0].stats.sampling_rate:
+            warnings.warn('Sampling rates do not match, not using: %s.%s'
+                          % (tr.stats.station, tr.stats.channel))
+        if tr2 and allow_shift:
+            index, corval = xcorr(tr, tr2[0],
+                                  int(shift_len * tr.stats.sampling_rate))
+            cccoh += corval
+            kchan += 1
+        elif tr2:
+            cccoh += normxcorr2(tr.data, tr2[0].data)[0][0]
+            kchan += 1
     if kchan:
         cccoh /= kchan
         return cccoh, i
@@ -408,6 +405,14 @@ def svd(stream_list, full=False):
 
 def empirical_SVD(stream_list, linear=True):
     """
+    Depreciated. Use empirical_svd.
+    """
+    warnings.warn('Depreciated, use empirical_svd instead.')
+    return empirical_svd(stream_list=stream_list, linear=linear)
+
+
+def empirical_svd(stream_list, linear=True):
+    """
     Empirical subspace detector generation function.
 
     Takes a list of \
@@ -463,14 +468,23 @@ def empirical_SVD(stream_list, linear=True):
 
 def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
+    Depreciated. Use svd_to_stream
+    """
+    warnings.warn('Depreciated, use svd_to_stream instead.')
+    return svd_to_stream(svectors=SVectors, stachans=stachans, k=k,
+                         sampling_rate=sampling_rate)
+
+
+def svd_to_stream(svectors, stachans, k, sampling_rate):
+    """
     Convert the singular vectors output by SVD to streams.
 
     One stream will be generated for each singular vector level,
     for all channels.  Useful for plotting, and aiding seismologists thinking
     of waveforms!
 
-    :type SVectors: list
-    :param SVectors: List of :class:`numpy.ndarray` Singular vectors
+    :type svectors: list
+    :param svectors: List of :class:`numpy.ndarray` Singular vectors
     :type stachans: list
     :param stachans: List of station.channel Strings
     :type k: int
@@ -479,25 +493,25 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     :param sampling_rate: Sampling rate in Hz
 
     :returns:
-        SVstreams, List of :class:`obspy.core.stream.Stream`, with
-        SVStreams[0] being composed of the highest rank singular vectors.
+        svstreams, List of :class:`obspy.core.stream.Stream`, with
+        svStreams[0] being composed of the highest rank singular vectors.
     """
     from obspy import Stream, Trace
-    SVstreams = []
+    svstreams = []
     for i in range(k):
-        SVstream = []
+        svstream = []
         for j, stachan in enumerate(stachans):
-            if len(SVectors[j]) <= k:
+            if len(svectors[j]) <= k:
                 warnings.warn('Too few traces at %s for a %02d dimensional '
                               'subspace. Detector streams will not include '
                               'this channel.' % (stachan, k))
             else:
-                SVstream.append(Trace(SVectors[j][i],
+                svstream.append(Trace(svectors[j][i],
                                       header={'station': stachan.split('.')[0],
                                               'channel': stachan.split('.')[1],
                                               'sampling_rate': sampling_rate}))
-        SVstreams.append(Stream(SVstream))
-    return SVstreams
+        svstreams.append(Stream(svstream))
+    return svstreams
 
 
 def corr_cluster(trace_list, thresh=0.9):
