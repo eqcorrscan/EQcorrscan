@@ -761,9 +761,9 @@ def extract_detections(detections, templates, archive, arc_type,
                                               '.ms'),
                                  format='MSEED')
                 print('Written file: %s' %
-                      os.path.join(outdir, detection.template_name,
-                                   detection.detect_time.
-                                   strftime('%Y-%m-%d_%H-%M-%S') + '.ms'))
+                      '/'.join([outdir, detection.template_name,
+                                detection.detect_time.
+                                strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
