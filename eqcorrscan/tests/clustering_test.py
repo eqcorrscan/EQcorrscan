@@ -228,7 +228,7 @@ class ClusteringTestMethods(unittest.TestCase):
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
         svstreams = svd_to_stream(svectors=SVectors, stachans=stachans, k=4,
-                                 sampling_rate=samp_rate)
+                                  sampling_rate=samp_rate)
         self.assertEqual(len(svstreams), 4)
         with warnings.catch_warnings(record=True) as w:
             SVD_2_stream(SVectors=SVectors, stachans=stachans, k=4,
