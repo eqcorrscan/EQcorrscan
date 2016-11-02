@@ -12,11 +12,12 @@ import numpy as np
 import os
 import glob
 
-from obspy import UTCDateTime
+from obspy import UTCDateTime, read_events
 
 from eqcorrscan.utils.catalog_to_dd import _cc_round, _av_weight, readSTATION0
 from eqcorrscan.utils.catalog_to_dd import sfiles_to_event, write_catalog
 from eqcorrscan.utils.catalog_to_dd import write_correlations, read_phase
+from eqcorrscan.utils.catalog_to_dd import write_event
 from eqcorrscan.utils import sfile_util
 from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils.timer import Timer
@@ -137,6 +138,30 @@ class TestCatalogMethods(unittest.TestCase):
                                            4))
         output_check_file.close()
         os.remove('station.dat')
+
+    def test_failed_write_event(self):
+        """
+        Check that we fail elegantly without an origin.
+        """
+        cat = read_events()
+        for event in cat:
+            event.origins = []
+        with self.assertRaises(IOError):
+            write_event(catalog=cat)
+
+    def test_no_time_residual(self):
+        cat = read_events()
+        write_event(catalog=cat)
+        self.assertTrue(os.path.isfile('event.dat'))
+        os.remove('event.dat')
+
+    def test_no_magnitudes(self):
+        cat = read_events()
+        for event in cat:
+            event.magnitudes = []
+        write_event(catalog=cat)
+        self.assertTrue(os.path.isfile('event.dat'))
+        os.remove('event.dat')
 
     def test_write_event(self):
         """

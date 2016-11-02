@@ -151,8 +151,6 @@ def cross_net(stream, env=False, debug=0, master=False):
         for tr in st:
             tr.resample(samp_rate)
             tr.data = envelope(tr.data)
-    if debug > 2:
-        st.plot(equal_scale=False, size=(800, 600))
     if not master:
         master = st[0]
     else:
@@ -167,29 +165,6 @@ def cross_net(stream, env=False, debug=0, master=False):
         shift_len = int(0.3 * len(tr))
         if debug > 2:
             print('Shift length is set to ' + str(shift_len) + ' samples')
-        if debug > 3:
-            index, cc, cc_vec = xcorr(master, tr, shift_len, full_xcorr=True)
-            cc_vec = np.nan_to_num(cc_vec)
-            if debug > 4:
-                print(cc_vec)
-            fig = plt.figure()
-            ax1 = fig.add_subplot(211)
-            x = np.linspace(0, len(master) / samp_rate,
-                            len(master))
-            ax1.plot(x, master.data / float(master.data.max()), 'k',
-                     label='Master')
-            ax1.plot(x + (index / samp_rate), tr.data / float(tr.data.max()),
-                     'r', label='Slave shifted')
-            ax1.legend(loc="lower right", prop={'size': "small"})
-            ax1.set_xlabel("time [s]")
-            ax1.set_ylabel("norm. amplitude")
-            ax2 = fig.add_subplot(212)
-            print(len(cc_vec))
-            x = np.linspace(0, len(cc_vec) / samp_rate, len(cc_vec))
-            ax2.plot(x, cc_vec, label='xcorr')
-            # ax2.set_ylim(-1, 1)
-            # ax2.set_xlim(0, len(master))
-            plt.show()
         index, cc = xcorr(master, tr, shift_len)
         wav_id = WaveformStreamID(station_code=tr.stats.station,
                                   channel_code=tr.stats.channel,
@@ -292,7 +267,6 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                 print(pick)
             picks.append(pick)
     # QC picks
-    del pick
     pick_stations = list(set([pick.waveform_id.station_code
                               for pick in picks]))
     for pick_station in pick_stations:
@@ -312,9 +286,10 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
         plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',
                                       size=(8, 9))
     event.picks = picks
-    event.origins[0].time = min([pick.time for pick in event.picks]) - 1
-    event.origins[0].latitude = float('nan')
-    event.origins[0].longitude = float('nan')
+    if len(event.picks) > 0:
+        event.origins[0].time = min([pick.time for pick in event.picks]) - 1
+        event.origins[0].latitude = float('nan')
+        event.origins[0].longitude = float('nan')
     # Set arbitrary origin time
     return event
 

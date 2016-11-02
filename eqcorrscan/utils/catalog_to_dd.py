@@ -137,9 +137,10 @@ def readSTATION0(path, stations):
     :returns: List of tuples of station, lat, long, elevation
     :rtype: list
 
-    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2'])
+    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2', 'BOB'])
     [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, \
-170.36038333333335, 95.0)]
+170.36038333333335, 95.0), ('BOB', 41.408166666666666, \
+-174.87116666666665, 101.0)]
     """
     stalist = []
     f = open(path + '/STATION0.HYP', 'r')
@@ -157,7 +158,7 @@ def readSTATION0(path, stations):
                 lat = (int(lat[0:2]) + float(lat[2:4] + '.' + lat[4:-1]) /
                        60) * NS
             lon = line[14:23]
-            if lon[-1] == 'S':
+            if lon[-1] == 'W':
                 EW = -1
             else:
                 EW = 1
@@ -214,15 +215,17 @@ def write_event(catalog):
     """
     f = open('event.dat', 'w')
     for i, event in enumerate(catalog):
-        evinfo = event.origins[0]
+        try:
+            evinfo = event.origins[0]
+        except IndexError:
+            raise IOError('No origin')
         try:
             Mag_1 = event.magnitudes[0].mag
         except IndexError:
             Mag_1 = 0.0
         try:
             t_RMS = event.origins[0].time_errors.Time_Residual_RMS
-        except IndexError:
-            raise IOError('No origin')
+
         except AttributeError:
             print('No time residual in header')
             t_RMS = 0.0
