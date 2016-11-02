@@ -58,8 +58,8 @@ test_script:
   - "%CMD_IN_ENV% py.test"
 
 after_test:
-  - "%CMD_IN_ENV% coverage combine"
+  - "coverage combine"
   - "powershell copy-item .coverage ..\\.coverage.empty"
-  - "%CMD_IN_ENV% cd .."
-  - "%CMD_IN_ENV% coverage combine"
-  - "%CMD_IN_ENV% codecov"
+  - "cd .."
+  - "coverage combine"
+  - "codecov"
