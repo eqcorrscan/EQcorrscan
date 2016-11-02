@@ -593,7 +593,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
     >>> from eqcorrscan.utils.plotting import multi_event_singlechan
     >>> import glob
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*.S??????')
     >>> catalog = Catalog()
     >>> streams = []
     >>> for sfile in sfiles:

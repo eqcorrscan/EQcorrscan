@@ -16,6 +16,8 @@ from only picking on E and N before; warning added to docs;
 * Run tests in parallel on ci, speed-up tests dramatically; 
 * Rename singular-value decomposition functions (with depreciation 
 warnings);
+* Rename SVD_moments to lower-case and add depreciation warning;
+* Increase test coverage in utils.mag_calc;
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

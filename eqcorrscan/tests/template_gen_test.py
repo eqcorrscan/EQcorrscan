@@ -196,7 +196,7 @@ class TestTemplateGeneration(unittest.TestCase):
 
     def test_catalog_grouping(self):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_', '*')
+                                    'test_data', 'REA', 'TEST_', '*.S??????')
         catalog = Catalog()
         sfiles = glob.glob(testing_path)
         for sfile in sfiles:

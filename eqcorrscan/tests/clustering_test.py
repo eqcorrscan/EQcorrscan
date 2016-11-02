@@ -140,7 +140,7 @@ class ClusteringTestMethods(unittest.TestCase):
     def test_delay_grouping(self):
         """Test grouping by delays"""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
         groups = group_delays(stream_list=stream_list)
         self.assertEqual(len(groups), 1)  # All have same lag-times

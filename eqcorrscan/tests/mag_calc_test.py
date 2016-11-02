@@ -5,7 +5,27 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import unittest
+import numpy as np
+import os
+import datetime as dt
+import glob
+import warnings
+import shutil
+
+from obspy.core.util import NamedTemporaryFile
+from obspy import UTCDateTime, read
+from obspy.clients.fdsn import Client
+from obspy.clients.iris import Client as OldIris_Client
+from obspy.core.event import Event
+
+from eqcorrscan.utils.mag_calc import dist_calc, _sim_WA, _max_p2t
+from eqcorrscan.utils.mag_calc import _GSE2_PAZ_read, _find_resp, _pairwise
+from eqcorrscan.utils.mag_calc import amp_pick_sfile, svd_moments
+from eqcorrscan.utils.mag_calc import amp_pick_event, pick_db
+from eqcorrscan.utils.clustering import svd
+from eqcorrscan.utils.sfile_util import read_event, readwavename
 
 
 class TestMagCalcMethods(unittest.TestCase):
@@ -14,7 +34,6 @@ class TestMagCalcMethods(unittest.TestCase):
         """
         Test the distance calculation that comes with mag_calc.
         """
-        from eqcorrscan.utils.mag_calc import dist_calc
         self.assertEqual(dist_calc((0, 0, 0), (0, 0, 10)), 10)
         self.assertEqual(round(dist_calc((0, 0, 0), (0, 1, 0))), 111)
         self.assertEqual(round(dist_calc((0, 0, 0), (1, 0, 0))), 111)
@@ -27,12 +46,6 @@ class TestMagCalcMethods(unittest.TestCase):
 
     def test_sim_WA(self):
         """Test feeding both PAZ and seedresp."""
-        from eqcorrscan.utils.mag_calc import _sim_WA
-        from obspy.core.util import NamedTemporaryFile
-        from obspy import UTCDateTime
-        from obspy.clients.fdsn import Client
-        from obspy.clients.iris import Client as OldIris_Client
-
         t1 = UTCDateTime("2010-09-3T16:30:00.000")
         t2 = UTCDateTime("2010-09-3T17:00:00.000")
         fdsn_client = Client('IRIS')
@@ -75,8 +88,6 @@ class TestMagCalcMethods(unittest.TestCase):
 
     def test_max_p2t(self):
         """Test the minding of maximum peak-to-trough."""
-        import numpy as np
-        from eqcorrscan.utils.mag_calc import _max_p2t
         data = np.random.randn(1000)
         data[500] = 20
         delta = 0.01
@@ -87,9 +98,6 @@ class TestMagCalcMethods(unittest.TestCase):
 
     def test_GSE_read(self):
         """Test reading GSE PAZ."""
-        import os
-        from eqcorrscan.utils.mag_calc import _GSE2_PAZ_read
-        import datetime as dt
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         GSEfile = os.path.join(testing_path, 'POCR2SH_1.2008-01-01-0000_GSE')
@@ -103,12 +111,32 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertTrue('poles' in PAZ)
         self.assertTrue('sensitivity' in PAZ)
         self.assertTrue('zeros' in PAZ)
+        # Check that we only cope with CAL2 files
+        with NamedTemporaryFile() as tf:
+            f = open(GSEfile, 'r')
+            corrf = open(tf.name, 'w')
+            corrf.write(f.readline().replace('CAL2', 'BOB2'))
+            for line in f:
+                corrf.write(line)
+            corrf.close()
+            f.close()
+            with self.assertRaises(IOError):
+                _GSE2_PAZ_read(gsefile=tf.name)
+        # Check that we only cope with PAZ2 files
+        with NamedTemporaryFile() as tf:
+            f = open(GSEfile, 'r')
+            corrf = open(tf.name, 'w')
+            corrf.write(f.readline())
+            corrf.write(f.readline().replace('PAZ2', 'BOB2'))
+            for line in f:
+                corrf.write(line)
+            corrf.close()
+            f.close()
+            with self.assertRaises(IOError):
+                _GSE2_PAZ_read(gsefile=tf.name)
 
     def test_find_resp(self):
         """Test the ability to find response info"""
-        from eqcorrscan.utils.mag_calc import _find_resp
-        import datetime as dt
-        import os
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         station = 'POCR2'
@@ -148,7 +176,6 @@ class TestMagCalcMethods(unittest.TestCase):
 
     def test_pairwise(self):
         """Test the itertools wrapper"""
-        from eqcorrscan.utils.mag_calc import _pairwise
         pairs = _pairwise(range(20))
         for i, pair in enumerate(pairs):
             self.assertEqual(pair[0] + 1, pair[1])
@@ -156,9 +183,6 @@ class TestMagCalcMethods(unittest.TestCase):
 
     def test_amp_pick_sfile(self):
         """Test the amplitude picker wrapper."""
-        from eqcorrscan.utils.mag_calc import amp_pick_sfile
-        from obspy.core.event import Event
-        import os
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         sfile = os.path.join(testing_path, 'REA', 'TEST_',
@@ -174,17 +198,11 @@ class TestMagCalcMethods(unittest.TestCase):
         os.remove('mag_calc.out')
 
     def test_SVD_mag(self):
-        """Test the SVD magnitude calcualtor."""
-        from eqcorrscan.utils.mag_calc import SVD_moments
-        from obspy import read
-        import glob
-        import os
-        from eqcorrscan.utils.clustering import SVD
-        import numpy as np
+        """Test the SVD magnitude calculator."""
         # Do the set-up
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'similar_events')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
         event_list = []
         for i, stream in enumerate(stream_list):
@@ -200,11 +218,127 @@ class TestMagCalcMethods(unittest.TestCase):
                 st_list.append(i)
             event_list.append(st_list)
         event_list = np.asarray(event_list).T.tolist()
-        SVectors, SValues, Uvectors, stachans = SVD(stream_list=stream_list)
-        M, events_out = SVD_moments(U=Uvectors, s=SValues, V=SVectors,
+        SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
+        M, events_out = svd_moments(u=Uvectors, s=SValues, v=SVectors,
                                     stachans=stachans, event_list=event_list)
         self.assertEqual(len(M), len(stream_list))
         self.assertEqual(len(events_out), len(stream_list))
+
+    def test_pick_db(self):
+        """Test that the loop for picking a database works."""
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        if not os.path.isdir(os.path.join(testing_path, 'REA', 'PICK_')):
+            os.makedirs(os.path.join(testing_path, 'REA', 'PICK_', '2013',
+                                     '09'))
+        else:
+            shutil.rmtree(os.path.join(testing_path, 'REA', 'PICK_'))
+            os.makedirs(os.path.join(testing_path, 'REA', 'PICK_',
+                                     '2013', '09'))
+        pick_db(indir=os.path.join(testing_path, 'REA', 'TEST_'),
+                outdir=os.path.join(testing_path, 'REA', 'PICK_'),
+                calpath=testing_path,
+                startdate=UTCDateTime(2013, 9, 1).datetime,
+                enddate=UTCDateTime(2013, 10, 1).datetime,
+                wavepath=os.path.join(testing_path, 'WAV', 'TEST_'))
+        self.assertEqual(len(glob.glob(os.path.join(testing_path, 'REA',
+                                                    'PICK_', '2013', '09',
+                                                    '*'))),
+                         5)
+        shutil.rmtree(os.path.join(testing_path, 'REA', 'PICK_'))
+
+
+class TestAmpPickEvent(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        sfile = os.path.join(cls.testing_path, 'REA', 'TEST_',
+                             '01-0411-15L.S201309')
+        cls.event = read_event(sfile)
+        cls.wavfiles = readwavename(sfile)
+        cls.datapath = os.path.join(cls.testing_path, 'WAV', 'TEST_')
+        cls.st = read(os.path.join(cls.datapath, cls.wavfiles[0]))
+        cls.respdir = cls.testing_path
+
+    def test_amp_pick_event(self):
+        """Test the main amplitude picker."""
+        picked_event = amp_pick_event(event=self.event.copy(),
+                                      st=self.st.copy(),
+                                      respdir=self.respdir)
+        self.assertEqual(len(picked_event.picks), len(self.event.picks) + 1)
+
+    def test_amp_pick_remove_old_picks(self):
+        picked_event = amp_pick_event(event=self.event.copy(),
+                                      st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_missing_channel(self):
+        with warnings.catch_warnings(record=True) as w:
+            picked_event = amp_pick_event(event=self.event.copy(),
+                                          st=self.st.copy()[0:-4],
+                                          respdir=self.respdir,
+                                          remove_old=True)
+            missed = False
+            for m in w:
+                if 'no station and channel match' in str(m.message):
+                    self.assertTrue('no station and channel match' in
+                                    str(m.message))
+                    missed = True
+            self.assertTrue(missed)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_not_varwin(self):
+        picked_event = amp_pick_event(event=self.event.copy(),
+                                      st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=False)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_not_varwin_no_S(self):
+        event = self.event.copy()
+        for pick in event.picks:
+            if pick.phase_hint.upper() == 'S':
+                event.picks.remove(pick)
+        picked_event = amp_pick_event(event=event, st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=False)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_varwin_no_S(self):
+        event = self.event.copy()
+        for pick in event.picks:
+            if pick.phase_hint.upper() == 'S':
+                event.picks.remove(pick)
+        picked_event = amp_pick_event(event=event, st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=True)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_varwin_no_P(self):
+        event = self.event.copy()
+        for pick in event.picks:
+            if pick.phase_hint.upper() == 'P':
+                event.picks.remove(pick)
+        picked_event = amp_pick_event(event=event, st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=True)
+        self.assertEqual(len(picked_event.amplitudes), 1)
+
+    def test_amp_pick_high_min_snr(self):
+        picked_event = amp_pick_event(event=self.event.copy(),
+                                      st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=False, min_snr=15)
+        self.assertEqual(len(picked_event.amplitudes), 0)
+
+    def test_amp_pick_no_prefilt(self):
+        picked_event = amp_pick_event(event=self.event.copy(),
+                                      st=self.st.copy(),
+                                      respdir=self.respdir, remove_old=True,
+                                      var_wintype=False, pre_filt=False)
+        self.assertEqual(len(picked_event.amplitudes), 1)
 
 if __name__ == '__main__':
     unittest.main()

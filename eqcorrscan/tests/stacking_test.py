@@ -75,7 +75,7 @@ class TestAlignRealData(unittest.TestCase):
     def setUpClass(cls):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'WAV', 'TEST_')
-        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*DFDPC*')))
         cls.trace_list = []
         for wavfile in wavefiles:
             st = read(wavfile)

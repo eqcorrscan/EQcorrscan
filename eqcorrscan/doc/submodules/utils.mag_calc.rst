@@ -18,7 +18,7 @@ mag_calc
        calc_max_curv
        dist_calc
        pick_db
-       SVD_moments
+       svd_moments
 
     .. comment to end block
 
