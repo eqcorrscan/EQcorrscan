@@ -95,7 +95,7 @@ class ClusteringTestMethods(unittest.TestCase):
     def test_distance_matrix(self):
         """Test that we can create a useful distance matrix."""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))[0:10]
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
         stream_list = [read(stream_file) for stream_file in stream_files]
         dist_mat = distance_matrix(stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
@@ -104,7 +104,7 @@ class ClusteringTestMethods(unittest.TestCase):
     def test_unclustered(self):
         """Test clustering on unclustered data..."""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))[0:10]
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
         stream_list = [(read(stream_file), i)
                        for i, stream_file in enumerate(stream_files)]
         groups = cluster(template_list=stream_list, show=False,
