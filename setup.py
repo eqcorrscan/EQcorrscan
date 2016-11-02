@@ -134,7 +134,7 @@ setup(
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['docs', 'tests', 'test_data',
                                     'grid', 'detections', 'templates',
-                                    'stack_templates', 'par']),
+                                    'stack_templates', 'par', '.git']),
 
     scripts=scriptfiles,
 
@@ -146,7 +146,7 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'],
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8', 'pytest-xdist'],
 
     # Build our extension for subspace detection
     cmdclass=cmd_class,

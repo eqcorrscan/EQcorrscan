@@ -47,7 +47,7 @@ def _check_daylong(tr):
     >>> _check_daylong(st[0])
     True
     """
-    if len(tr.data) - len(np.nonzero(tr.data)) < 0.5 * len(tr.data):
+    if len(np.nonzero(tr.data)[0]) < 0.5 * len(tr.data):
         qual = False
     else:
         qual = True
@@ -146,7 +146,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
-    if starttime and endtime:
+    if starttime is not None and endtime is not None:
         for tr in st:
             tr.trim(starttime, endtime)
             print(len(tr))

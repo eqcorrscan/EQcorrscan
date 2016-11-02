@@ -3,21 +3,18 @@ Simple tutorial detailing how to generate a series of templates from catalog\
 data available online.
 """
 
+from obspy.clients.fdsn import Client
+from obspy import read_events
+from obspy.core.event import Catalog
+
+from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.core import template_gen
+
 
 def mktemplates(network_code='GEONET',
                 publicIDs=['2016p008122', '2016p008353', '2016p008155',
                            '2016p008194'], plot=True):
     """Functional wrapper to make templates"""
-
-    from eqcorrscan.utils.catalog_utils import filter_picks
-    from eqcorrscan.core import template_gen
-
-    # This import section copes with namespace changes between obspy versions
-    import obspy
-    from obspy.clients.fdsn import Client
-    from obspy import read_events
-    from obspy.core.event import Catalog
-
     # We want to download some QuakeML files from the New Zealand GeoNet
     # network, GeoNet currently doesn't support FDSN event queries, so we
     # have to work around to download quakeml from their quakeml.geonet site.

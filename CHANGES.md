@@ -1,3 +1,24 @@
+## Develop
+* Increase test coverage (edge-cases) in template_gen;
+* Fix bug in template_gen.extract_from_stack for duplicate channels in
+template;
+* Increase coverage somewhat in bright_lights, remove non-parallel
+option (previously only used for debugging in development);
+* Increase test coverage in lag_calc;
+* Speed-up tests for brightness;
+* Increase test coverage for match_filter including testing io of 
+detections;
+* Increase subspace test coverage for edge cases;
+* Speed-up catalog_to_dd_tests;
+* Lag-calc will pick S-picks on channels ending E, N, 1 and 2, change
+from only picking on E and N before; warning added to docs;
+* Add full tests for pre-processing;
+* Run tests in parallel on ci, speed-up tests dramatically; 
+* Rename singular-value decomposition functions (with depreciation 
+warnings);
+* Rename SVD_moments to lower-case and add depreciation warning;
+* Increase test coverage in utils.mag_calc;
+
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
 through multiple templates did not correctly match image and template 

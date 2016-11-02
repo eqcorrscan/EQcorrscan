@@ -18,6 +18,12 @@ repeating events.
     with picks will be used.
 
 .. note::
+    If swin=all, then all picks will be used, not just phase-picks (e.g. it
+    will use amplitude picks).  If you do not want this then we suggest that
+    you remove any picks you do not want to use in your templates before using
+    the event.
+
+.. note::
     All functions use obspy filters, which are implemented such that
     if both highcut and lowcut are set a bandpass filter will be used,
     but of highcut is not set (None) then a highpass filter will be used and
@@ -38,8 +44,30 @@ from __future__ import unicode_literals
 import warnings
 import numpy as np
 import copy
+import os
+import glob
 
-from obspy import Stream
+from obspy import Stream, read, Trace, UTCDateTime, read_events
+
+from eqcorrscan.utils.sac_util import sactoevent
+from eqcorrscan.utils import pre_processing, sfile_util
+
+
+class TemplateGenError(Exception):
+    """
+    Default error for template generation errors.
+    """
+    def __init__(self, value):
+        """
+        Raise error.
+        """
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return 'TemplateGenError: ' + self.value
 
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
@@ -108,20 +136,17 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     >>> print(len(template))
     15
     """
-    from obspy import read, Stream
-    from eqcorrscan.utils.sac_util import sactoevent
-    from eqcorrscan.utils import pre_processing
     # Check whether sac_files is a stream or a list
     if isinstance(sac_files, list):
-        if isinstance(sac_files[0], str) or isinstance(sac_files[0], unicode):
-            sac_files = [read(sac_file)[0] for sac_file in sac_files]
-        if isinstance(sac_files[0], Stream):
+        if isinstance(sac_files[0], Stream) or isinstance(sac_files[0], Trace):
             # This is a list of streams...
-            st = sac_files[0]
+            st = Stream(sac_files[0])
             for sac_file in sac_files[1:]:
                 st += sac_file
-        st = Stream(sac_files)
-    elif isinstance(sac_files, Stream):
+        else:
+            sac_files = [read(sac_file)[0] for sac_file in sac_files]
+            st = Stream(sac_files)
+    else:
         st = sac_files
     # Make an event object...
     event = sactoevent(st, debug=debug)
@@ -213,15 +238,6 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                               prepick=0.2, length=6)
         template.plot(equal_scale=False, size=(800, 600))
     """
-    # Perform some checks first
-    import os
-    if not os.path.isfile(sfile):
-        raise IOError('sfile does not exist')
-
-    from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import sfile_util
-    from obspy import read as obsread
-    # Read in the header of the sfile
     wavefiles = sfile_util.readwavename(sfile)
     pathparts = sfile.split(os.sep)[0:-1]
     new_path_parts = []
@@ -234,45 +250,38 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         main_wav_parts.append(part)
         if part == 'WAV':
             break
-    if main_wav_parts[0] == 'C:':
+    if len(main_wav_parts[0]) == 2 and main_wav_parts[0][-1] == ':':
+        # Replace
         main_wav_parts[1] = main_wav_parts[0] + os.sep + main_wav_parts[1]
         new_path_parts[1] = new_path_parts[0] + os.sep + new_path_parts[1]
         main_wav_parts.remove(main_wav_parts[0])
         new_path_parts.remove(new_path_parts[0])
     mainwav = os.path.join(*main_wav_parts) + os.path.sep
-    # * argument to allow .join() to accept a list
     wavpath = os.path.join(*new_path_parts) + os.path.sep
     # In case of absolute paths (not handled with .split() --> .join())
     if sfile[0] == os.path.sep:
         wavpath = os.path.sep + wavpath
         mainwav = os.path.sep + mainwav
     # Read in waveform file
+    st = Stream()
     for wavefile in wavefiles:
         if debug > 0:
             print(''.join(["I am going to read waveform data from: ", wavpath,
                            wavefile]))
-        if 'st' not in locals():
-            if os.path.isfile(wavpath + wavefile):
-                st = obsread(wavpath + wavefile)
-            elif os.path.isfile(wavefile):
-                st = obsread(wavefile)
-            else:
-                # Read from the main WAV directory
-                st = obsread(mainwav + wavefile)
+        if os.path.isfile(wavpath + wavefile):
+            # Read from a given directory
+            st += read(wavpath + wavefile)
+        elif os.path.isfile(wavefile):
+            # Read from local directory
+            st += read(wavefile)
         else:
-            if os.path.isfile(wavpath + wavefile):
-                st += obsread(wavpath + wavefile)
-            elif os.path.isfile(wavefile):
-                st += obsread(wavefile)
-            else:
-                st += obsread(mainwav + wavefile)
+            # Try to read from main waveform directory
+            st += read(mainwav + wavefile)
     for tr in st:
         if tr.stats.sampling_rate < samp_rate:
-            print('Sampling rate of data is lower than sampling rate asked ' +
-                  'for')
-            print('Not good practice for correlations: I will not do this')
-            raise ValueError("Trace: " + tr.stats.station +
-                             " sampling rate: " + str(tr.stats.sampling_rate))
+            msg = ' '.join(['Will not upsample: Trace:', tr.stats.station,
+                            'sampling rate:', str(tr.stats.sampling_rate)])
+            raise TemplateGenError(msg)
     # Read in pick info
     event = sfile_util.readpicks(sfile)
     # Read the list of Picks for this event
@@ -353,17 +362,6 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
     """
-    # Perform some checks first
-    import os
-    if not os.path.isfile(sfile):
-        raise IOError('sfile does not exist')
-
-    # import some things
-    from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import sfile_util
-    import glob
-    from obspy import read as obsread
-
     # Read in pick info
     event = sfile_util.readpicks(sfile)
     day = event.origins[0].time
@@ -402,11 +400,9 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     wavefiles = sorted(list(set(wavefiles)))
 
     # Read in waveform file
+    st = Stream()
     for wavefile in wavefiles:
-        if 'st' not in locals():
-            st = obsread(wavefile)
-        else:
-            st += obsread(wavefile)
+        st += read(wavefile)
     # Process waveform data
     st.merge(fill_value='interpolate')
     st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
@@ -417,20 +413,6 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                        all_horiz=all_horiz, plot=plot, debug=debug,
                        delayed=delayed)
     return st1
-
-
-def from_quakeml(meta_file, st, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, all_horiz=False, delayed=True,
-                 plot=False, debug=0):
-    """Depreciated wrapper."""
-    warnings.warn('from_quakeml is depreciated, please use from_meta_file')
-    templates = from_meta_file(meta_file=meta_file, st=st, lowcut=lowcut,
-                               highcut=highcut, samp_rate=samp_rate,
-                               filt_order=filt_order, length=length,
-                               prepick=prepick, swin=swin, debug=debug,
-                               plot=plot, all_horiz=all_horiz,
-                               delayed=delayed)
-    return templates
 
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
@@ -503,18 +485,6 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
-    # Perform some checks first
-    import os
-    import warnings
-    if not os.path.isfile(meta_file):
-        raise IOError('QuakeML file does not exist')
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy import read_events
-    else:
-        from obspy import readEvents as read_events
-    from obspy import UTCDateTime
-    from eqcorrscan.utils import pre_processing
     stations = []
     channels = []
     st_stachans = []
@@ -652,13 +622,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         let us know of any failures.
     """
     # This import section copes with namespace changes between obspy versions
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.seishub import Client
-    else:
-        from obspy.seishub import Client
-    from eqcorrscan.utils import pre_processing
-    from obspy import UTCDateTime
+    from obspy.clients.seishub import Client
     client = Client(url, timeout=10)
     temp_list = []
     sub_catalogs = _group_events(catalog=catalog, process_len=process_len,
@@ -796,11 +760,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
 
     .. rubric:: Example
 
-    >>> import obspy
-    >>> if int(obspy.__version__.split('.')[0]) >= 1:
-    ...     from obspy.clients.fdsn import Client
-    ... else:
-    ...     from obspy.fdsn import Client
+    >>> from obspy.clients.fdsn import Client
     >>> from obspy.core.event import Catalog
     >>> from eqcorrscan.core.template_gen import from_client
     >>> client = Client('NCEDC')
@@ -822,9 +782,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     """
     from obspy.clients.fdsn import Client
     from obspy.clients.fdsn.header import FDSNException
-    from eqcorrscan.utils import pre_processing
-    from obspy import UTCDateTime
-    import warnings
 
     client = Client(client_id)
     temp_list = []
@@ -856,10 +813,8 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             endtime = starttime + process_len
             # Check that endtime is after the last event
             if not endtime > sub_catalog[-1].origins[0].time + data_pad:
-                raise IOError('Events do not fit in processing window')
-            # Here we download more data than is needed.  We do this so that
-            # minor differences in processing during processing due to the
-            # effect of resampling do not impinge on our cross-correlations.
+                raise TemplateGenError('Events do not fit in '
+                                       'processing window')
             if debug > 0:
                 print('start-time: ' + str(starttime))
                 print('end-time: ' + str(endtime))
@@ -975,15 +930,6 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
                                     delayed=delayed)
             templates.append(template)
     return templates
-
-
-def _template_gen(picks, st, length, swin='all', prepick=0.05, plot=False,
-                  all_horiz=False, debug=0):
-    warnings.warn('_template_gen is depreciated, please use template_gen')
-    st1 = template_gen(picks=picks, st=st, length=length, swin=swin,
-                       prepick=prepick, all_horiz=all_horiz, plot=plot,
-                       debug=debug)
-    return st1
 
 
 def template_gen(picks, st, length, swin='all', prepick=0.05,
@@ -1106,6 +1052,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for tr in st:
+        used_tr = False
         for pick in picks_copy:
             starttime = None
             if swin == 'all':
@@ -1153,9 +1100,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                     print('Cut starttime = ' + str(tr_cut.stats.starttime))
                     print('Cut endtime = ' + str(tr_cut.stats.endtime))
                 st1 += tr_cut
-            elif debug > 0:
-                print('No pick for ' + tr.stats.station + '.' +
-                      tr.stats.channel)
+                used_tr = True
+        if debug > 0 and not used_tr:
+            print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
     if plot:
         background = stplot.trim(st1.sort(['starttime'])[0].stats.starttime -
                                  10,
@@ -1220,8 +1167,6 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
     """
-    from eqcorrscan.utils import pre_processing
-    import warnings
     new_template = stack.copy()
     # Copy the data before we trim it to keep the stack safe
     # Get the earliest time in the template as this is when the detection is
@@ -1231,16 +1176,18 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     # seconds
     delays = [(tr.stats.station, tr.stats.channel[-1],
                tr.stats.starttime - mintime) for tr in template]
+
+    #  Process the data if necessary
+    if not pre_processed:
+        new_template = pre_processing.shortproc(st=new_template,
+                                                lowcut=lowcut,
+                                                highcut=highcut,
+                                                filt_order=filt_order,
+                                                samp_rate=samp_rate,
+                                                debug=0)
     # Loop through the stack and trim!
+    out = Stream()
     for tr in new_template:
-        # Process the data if necessary
-        if not pre_processed:
-            new_template = pre_processing.shortproc(st=new_template,
-                                                    lowcut=lowcut,
-                                                    highcut=highcut,
-                                                    filt_order=filt_order,
-                                                    samp_rate=samp_rate,
-                                                    debug=0)
         # Find the matching delay
         delay = [d[2] for d in delays if d[0] == tr.stats.station and
                  d[1] == tr.stats.channel[-1]]
@@ -1251,16 +1198,13 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
                             'channel', tr.stats.station, tr.stats.channel])
             warnings.warn(msg)
             new_template.remove(tr)
-        elif len(delay) > 1:
-            msg = ' '.join(['Multiple delays found for stack channel',
-                            tr.stats.station, tr.stats.channel])
-            warnings.warn(msg)
         else:
-            tr.trim(starttime=tr.stats.starttime + delay[0] + pre_pad -
-                    pre_pick,
-                    endtime=tr.stats.starttime + delay[0] + pre_pad + length -
+            for d in delay:
+                out += tr.copy().trim(
+                    starttime=tr.stats.starttime + d + pre_pad - pre_pick,
+                    endtime=tr.stats.starttime + d + pre_pad + length -
                     pre_pick)
-    return new_template
+    return out
 
 
 def _group_events(catalog, process_len, data_pad):

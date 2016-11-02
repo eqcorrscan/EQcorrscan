@@ -12,20 +12,27 @@ import os
 import warnings
 import copy
 
-from obspy import read, Stream, Trace, UTCDateTime
+from obspy import read, Stream, Trace, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick
+from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core import template_gen
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.core.match_filter import match_filter, normxcorr2
+from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
+from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 
 
 class TestCoreMethods(unittest.TestCase):
+    """
+    Tests for internal _template_loop and normxcorr2 functions.
+    """
     def test_perfect_normxcorr2(self):
-        """Simple test of normxcorr2 to ensure data are detected
+        """
+        Simple test of normxcorr2 to ensure data are detected
         """
         template = np.random.randn(100).astype(np.float32)
         image = np.zeros(1000).astype(np.float32)
@@ -35,7 +42,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(ccc.max(), 1.0)
 
     def test_fail_normxcorr2(self):
-        """Ensure if template is nan then return is nan
+        """
+        Ensure if template is nan then return is nan
         """
         template = np.array([np.nan] * 100)
         image = np.zeros(1000)
@@ -45,7 +53,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue(np.all(ccc == 0.0))
 
     def test_normal_normxcorr2(self):
-        """Check that if match is not perfect correlation max isn't unity
+        """
+        Check that if match is not perfect correlation max isn't unity
         """
         template = np.random.randn(100) * 10.0
         image = np.zeros(1000)
@@ -56,7 +65,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertNotEqual(ccc.max(), 1.0)
 
     def test_set_normxcorr2(self):
-        """Check that correlations output are the same irrespective of version.
+        """
+        Check that correlations output are the same irrespective of version.
         """
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
@@ -75,7 +85,8 @@ class TestCoreMethods(unittest.TestCase):
                           'but it has the same shape')
 
     def test_perfect_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.random.randn(100).astype(np.float32)))
         template[0].stats.station = 'test'
@@ -88,7 +99,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertEqual(ccc.astype(np.float16).max(), 1.0)
 
     def test_false_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.array([np.nan] * 100)))
         template[0].stats.station = 'test'
@@ -101,7 +113,8 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue(np.all(ccc == 0))
 
     def test_normal_template_loop(self):
-        """Check that perfect correlations are carried through.
+        """
+        Check that perfect correlations are carried through.
         """
         template = Stream(Trace(np.random.randn(100) * 10.0))
         template[0].stats.station = 'test'
@@ -113,6 +126,11 @@ class TestCoreMethods(unittest.TestCase):
         chan = image
         i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
         self.assertNotEqual(ccc.max(), 1.0)
+
+    def test_failed_normxcorr(self):
+        """Send it the wrong type."""
+        ccc = normxcorr2(template=[0, 1, 2, 3, 4], image='bob')
+        self.assertEqual(ccc, 'NaN')
 
 
 class TestSynthData(unittest.TestCase):
@@ -138,6 +156,23 @@ class TestSynthData(unittest.TestCase):
             os.remove('cccsum_1.npy')
         if os.path.isfile('peaks_1970-01-01.pdf'):
             os.remove('peaks_1970-01-01.pdf')
+
+    # def test_debug_level_three(self):
+    #     debug = 3
+    #     print('Testing for debug level=%s' % debug)
+    #     kfalse, ktrue = test_match_filter(debug=debug)
+    #     if ktrue > 0:
+    #         self.assertTrue(kfalse / ktrue < 0.25)
+    #     else:
+    #         # Randomised data occasionally yields 0 detections
+    #         kfalse, ktrue = test_match_filter(debug=debug)
+    #         self.assertTrue(kfalse / ktrue < 0.25)
+    #     if os.path.isfile('cccsum_0.npy'):
+    #         os.remove('cccsum_0.npy')
+    #     if os.path.isfile('cccsum_1.npy'):
+    #         os.remove('cccsum_1.npy')
+    #     if os.path.isfile('peaks_1970-01-01.pdf'):
+    #         os.remove('peaks_1970-01-01.pdf')
 
     def test_threshold_methods(self):
         # Test other threshold methods
@@ -365,6 +400,71 @@ class TestNCEDCCases(unittest.TestCase):
                               'cccsum': detection.detect_val}
             self.assertTrue(detection_dict in individual_dict)
 
+    def test_read_write_detections(self):
+        """Check that we can read and write detections accurately."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        detection_dict = []
+        for detection in detections:
+            detection_dict.append(
+                {'template_name': detection.template_name,
+                 'time': detection.detect_time,
+                 'cccsum': float(str(detection.detect_val)),
+                 'no_chans': detection.no_chans,
+                 'chans': detection.chans,
+                 'threshold': float(str(detection.threshold)),
+                 'typeofdet': detection.typeofdet})
+            detection.write(fname='dets_out.txt')
+        detections_back = read_detections('dets_out.txt')
+        print(detection_dict)
+        self.assertEqual(len(detections), len(detections_back))
+        for detection in detections_back:
+            d = {'template_name': detection.template_name,
+                 'time': detection.detect_time,
+                 'cccsum': detection.detect_val,
+                 'no_chans': detection.no_chans,
+                 'chans': detection.chans,
+                 'threshold': detection.threshold,
+                 'typeofdet': detection.typeofdet}
+            print(d)
+            self.assertTrue(d in detection_dict)
+        os.remove('dets_out.txt')
+
+    def test_get_catalog(self):
+        """Check that catalog objects are created properly."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        cat = get_catalog(detections)
+        self.assertEqual(len(cat), len(detections))
+        for det in detections:
+            self.assertTrue(det.event in cat)
+        # Check the short-cut for writing the catalog
+        with NamedTemporaryFile() as tf:
+            write_catalog(detections, fname=tf.name)
+            cat_back = read_events(tf.name)
+            self.assertEqual(len(cat), len(cat_back))
+
+    def test_extraction(self):
+        """Check the extraction function."""
+        detections = match_filter(template_names=self.template_names,
+                                  template_list=self.templates, st=self.st,
+                                  threshold=8.0, threshold_type='MAD',
+                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  cores=1)
+        streams = extract_from_stream(stream=self.st.copy(),
+                                      detections=detections)
+        self.assertEqual(len(streams), len(detections))
+        # Test when a channel is missing in the stream
+        streams = extract_from_stream(stream=self.st.copy()[0:-2],
+                                      detections=detections)
+        self.assertEqual(len(streams), len(detections))
+
     def test_incorrect_arguments(self):
         with self.assertRaises(MatchFilterError):
             # template_names is not a list
@@ -465,6 +565,8 @@ def test_match_filter(debug=0, plotvar=False, extract_detections=False,
         data = data[0:-1]
     # Filter the data and the templates
     for template in templates:
+        for tr in template:
+            tr.data += 1  # Make the synthetic data not be all zeros
         pre_processing.shortproc(st=template, lowcut=1.0, highcut=4.0,
                                  filt_order=3, samp_rate=10.0)
     template_names = list(string.ascii_lowercase)[0:len(templates)]
