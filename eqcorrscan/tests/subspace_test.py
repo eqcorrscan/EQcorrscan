@@ -44,6 +44,23 @@ class SimpleSubspaceMethods(unittest.TestCase):
         _detector.read(path)
         self.assertEqual(detector, _detector)
 
+    def test_energy_capture(self):
+        """Check that the energy capture calc works okay"""
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'test_data', 'Test_detector.h5')
+        detector = subspace.read_detector(path)
+        energy = detector.energy_capture()
+        self.assertTrue(0 < energy < 100)
+        self.assertEqual(round(energy), 60)
+
+    def test_partition_fail(self):
+        """Check that partition fails with the expected error."""
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'test_data', 'Test_detector.h5')
+        detector = subspace.read_detector(path)
+        with self.assertRaises(IndexError):
+            detector.partition(dimension=40)
+
     def test_align(self):
         """Check that alignment does as expected."""
         test_stream = Stream(read()[0])

@@ -532,7 +532,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
     #
     # There is an interesting issue found in the tests that sometimes what
     # should be a perfect correlation results in a max of ccc of 0.99999994
-    # Converting to float16 'corrects' this to 1.0 - bad workaround.
+    # Converting to float16 'corrects' this to 1.0 - bit of a hack.
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(ccc[0])))
@@ -540,7 +540,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
               channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
-        if debug >= 3:
+        if debug >= 4:
             np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
             np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
             np.save('inf_cccmean_image_%02d.npy' % i, image)
@@ -551,8 +551,6 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
         print('shape of ccc: ' + str(np.shape(ccc)))
         print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
         print('ccc type is: ' + str(type(ccc)))
-    if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(ccc)))
         print("Parallel worker " + str(i) + " complete")
     return i, ccc
 
@@ -625,9 +623,10 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         with Timer() as t:
             # Send off to sister function
             pool = Pool(processes=num_cores)
-            results = [pool.apply_async(_template_loop,
-                                        args=(templates[i], tr.data,
-                                              stream_ind, debug, i))
+            results = [pool.apply_async(_template_loop, (templates[i], ),
+                                        {'chan': tr.data,
+                                         'stream_ind': stream_ind,
+                                         'debug': debug, 'i': i})
                        for i in range(len(templates))]
             pool.close()
         if debug >= 1:
@@ -788,6 +787,23 @@ def match_filter(template_names, template_list, st, threshold,
         changed the plotting behaviour.
 
     .. note::
+        **Data overlap:**
+
+        Internally this routine shifts and trims the data according to the
+        offsets in the template (e.g. if trace 2 starts 2 seconds after trace 1
+        in the template then the continuous data will be shifted by 2 seconds
+        to align peak correlations prior to summing).  Because of this,
+        detections at the start and end of continuous data streams
+        **may be missed**.  The maximum time-period that might be missing
+        detections is the maximum offset in the template.
+
+        To work around this, if you are conducting matched-filter detections
+        through long-duration continuous data, we suggest using some overlap
+        (a few seconds, on the order of the maximum offset in the templates)
+        in the continous data.  You will then need to post-process the
+        detections (which should be done anyway to remove duplicates).
+
+    .. note::
         **Thresholding:**
 
         **MAD** threshold is calculated as the:
@@ -830,6 +846,7 @@ def match_filter(template_names, template_list, st, threshold,
     """
     import matplotlib
     matplotlib.use('Agg')
+    from eqcorrscan.utils.plotting import _match_filter_plot
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
@@ -984,7 +1001,7 @@ def match_filter(template_names, template_list, st, threshold,
                                    'lengths, report this error.')
     if debug >= 2:
         print('Starting the correlation run for this day')
-    if debug >= 4:
+    if debug >= 3:
         for template in templates:
             print(template)
         print(stream)
@@ -1099,47 +1116,6 @@ def match_filter(template_names, template_list, st, threshold,
     else:
         return detections, det_cat, detection_streams
 
-
-def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
-                       plot_format, i):
-    """
-    Plotting function to match_filter.
-
-    :param stream:
-    :param cccsum:
-    :param template_names:
-    :param rawthresh:
-    :param plotdir:
-    :param plot_format:
-    :param i:
-    :param debug:
-    :return:
-    """
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    from eqcorrscan.utils import plotting
-    stream_plot = copy.deepcopy(stream[0])
-    # Downsample for plotting
-    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
-    cccsum_plot = Trace(cccsum)
-    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
-    # Resample here to maintain shape better
-    cccsum_hist = cccsum_plot.copy()
-    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
-                                           sampling_rate / 10)).data
-    cccsum_plot = plotting.chunk_data(cccsum_plot, 10, 'Maxabs').data
-    # Enforce same length
-    stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
-    cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
-    cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
-                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
-                 '.' + plot_format)
-    plotting.triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
-                         trace=stream_plot, threshold=rawthresh, save=True,
-                         savefile=plot_name)
 
 if __name__ == "__main__":
     import doctest

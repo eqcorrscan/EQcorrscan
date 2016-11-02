@@ -242,6 +242,7 @@ RESET TEST(78)=-1.0
   BWRS4126.37S17354.31E  75
   OHWZ4012.34S17518.91E  59
   BHW 4124.49S17452.27E 101
+  BOB 4124.49N17452.27W 101
 
   5.500     0.00          !velest best velocity model from Bronwyn without upper
   6.000     5.00

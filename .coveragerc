@@ -9,6 +9,7 @@ omit =
   eqcorrscan/utils/gui/*
   eqcorrscan/utils/timer.py
   eqcorrscan/utils/plotting.py
+  eqcorrscan/utils/sfile_util.py
 [report]
 exclude_lines =
     pragma: no cover
@@ -17,5 +18,5 @@ exclude_lines =
     raise AssertionError
     raise NotImplementedError
     if 0:
-    if __name__ == .__main__.:
+    if __name__ == __main__:
 ignore_errors = True

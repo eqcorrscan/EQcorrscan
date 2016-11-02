@@ -45,6 +45,8 @@ install:
   - "pip install pytest"
   - "pip install pytest-pep8"
   - "pip install pytest-cov"
+  - "pip install pytest-xdist"
+  - "pip install codecov"
   # list package versions
   - "conda list"
 
@@ -54,3 +56,10 @@ build: false
 test_script:
   - "%CMD_IN_ENV% python setup.py develop"
   - "%CMD_IN_ENV% py.test"
+
+after_test:
+  - "coverage combine"
+  - "powershell copy-item .coverage ..\\.coverage.empty"
+  - "cd .."
+  - "coverage combine"
+  - "codecov"

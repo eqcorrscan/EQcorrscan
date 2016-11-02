@@ -35,10 +35,26 @@ from multiprocessing import Pool, cpu_count
 from copy import deepcopy
 from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
 from obspy.core.event import EventDescription, CreationInfo, Comment
+from obspy.core.trace import Stats
 
 from eqcorrscan.core.match_filter import DETECTION, normxcorr2
 from eqcorrscan.utils import findpeaks
-from eqcorrscan.core.template_gen import _template_gen
+from eqcorrscan.core.template_gen import template_gen
+
+
+class BrightnessError(Exception):
+    """Standard error for bright_lights."""
+    def __init__(self, value):
+        """
+        Raise error.
+        """
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return 'BrightnessError: ' + self.value
 
 
 def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
@@ -62,8 +78,8 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     :type ps_ratio: float
     :param ps_ratio: p to s ratio for conversion
     :type lags_switch: bool
-    :param lags_switch: Return lags or raw travel-times, if set to true will \
-        return lags.
+    :param lags_switch:
+        Return lags or raw travel-times, if set to true will return lags.
 
     :returns: Stations
     :rtype: list
@@ -79,11 +95,12 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
         to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
         longitude and depth.
 
-    .. note:: This function currently needs comma separated grid files in \
-        NonLinLoc format.  Only certain versions of NonLinLoc write these csv \
-        files, however it should be possible to read the binary files \
-        directly.  If you find you need this capability let us know and we \
-        can try and implement it.
+    .. note::
+        This function currently needs comma separated grid files in
+        NonLinLoc format.  Only certain versions of NonLinLoc write these csv
+        files, however it should be possible to read the binary files directly.
+        If you find you need this capability let us know and we can try and
+        implement it.
     """
     # Locate the slowness file information
     gridfiles = []
@@ -93,8 +110,6 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
                       '.time.csv'))
         if glob.glob(path + '*.' + phase + '.' + station + '*.csv'):
             stations_out += [station]
-    if not stations_out:
-        raise IOError('No slowness files found')
     # Read the files
     allnodes = []
     for gridfile in gridfiles:
@@ -229,8 +244,8 @@ def _rm_similarlags(stations, nodes, lags, threshold):
         to station[1] and lags[1][1] nodes[n][n] is a tuple of latitude,
         longitude and depth.
     """
-    netdif = abs((lags.T -
-                  lags.T[0]).sum(axis=1).reshape(1, len(nodes))) > threshold
+    netdif = abs((lags.T - lags.T[0]).sum(axis=1).reshape(1, len(nodes))) \
+        > threshold
     for i in range(len(nodes)):
         _netdif = abs((lags.T -
                        lags.T[i]).sum(axis=1).reshape(1, len(nodes)))\
@@ -239,14 +254,14 @@ def _rm_similarlags(stations, nodes, lags, threshold):
         sys.stdout.write("\r" + str(float(i) // len(nodes) * 100) + "% \r")
         sys.stdout.flush()
     nodes_out = [nodes[0]]
-    node_indeces = [0]
+    node_indices = [0]
     print("\n")
     print(len(nodes))
     for i in range(1, len(nodes)):
-        if np.all(netdif[i][node_indeces]):
-            node_indeces.append(i)
+        if np.all(netdif[i][node_indices]):
+            node_indices.append(i)
             nodes_out.append(nodes[i])
-    lags_out = lags.T[node_indeces].T
+    lags_out = lags.T[node_indices].T
     print("Removed " + str(len(nodes) - len(nodes_out)) + " duplicate nodes")
     return stations, nodes_out, lags_out
 
@@ -294,10 +309,10 @@ def _node_loop(stations, lags, stream, clip_level,
     :returns: network response
     :rtype: numpy.ndarray
     """
-    if plot:
-        import matplotlib.pyplot as plt
-        fig, axes = plt.subplots(len(stream) + 1, 1, sharex=True)
-        axes = axes.ravel()
+    import matplotlib.pyplot as plt
+    # Set up some overhead for plotting
+    energy_stream = Stream()  # Using a stream as a handy container for
+    # plotting
 
     for l, tr in enumerate(stream):
         j = [k for k in range(len(stations))
@@ -310,21 +325,24 @@ def _node_loop(stations, lags, stream, clip_level,
             warnings.warn('No station match')
             continue
         lag = lags[j[0]]
-        pad = np.zeros(int(round(lag * tr.stats.sampling_rate)))
-        lagged_energy = np.square(np.concatenate((tr.data, pad)))[len(pad):]
+        lagged_energy = np.square(
+            np.concatenate((tr.data,
+                            np.zeros(
+                                int(round(lag * tr.stats.sampling_rate)))))
+        )[int(round(lag * tr.stats.sampling_rate)):]
         # Clip energy
-        lagged_energy = np.clip(lagged_energy, 0,
-                                clip_level * np.mean(lagged_energy))
+        lagged_energy = np.clip(
+            lagged_energy, 0, clip_level * np.mean(lagged_energy))
         if 'energy' not in locals():
             energy = (lagged_energy /
                       _rms(lagged_energy)).reshape(1, len(lagged_energy))
-            # Cope with zeros enountered
+            # Cope with zeros encountered
             energy = np.nan_to_num(energy)
             # This is now an array of floats - we can convert this to int16
             # normalize to have max at max of int16 range
             if not max(energy[0]) == 0.0:
-                scalor = 1 / max(energy[0])
-                energy = (500 * (energy * scalor)).astype(np.int16)
+                energy = (500 * (energy *
+                                 (1 / max(energy[0])))).astype(np.int16)
             else:
                 energy = energy.astype(np.int16)
         else:
@@ -333,43 +351,33 @@ def _node_loop(stations, lags, stream, clip_level,
             norm_energy = np.nan_to_num(norm_energy)
             # Convert to int16
             if not max(norm_energy[0]) == 0.0:
-                scalor = 1 / max(norm_energy[0])
-                norm_energy = (500 * (norm_energy * scalor)).astype(np.int16)
+                norm_energy = (500 * (norm_energy *
+                                      (1 / max(norm_energy[0])))).\
+                    astype(np.int16)
             else:
                 norm_energy = norm_energy.astype(np.int16)
             # Apply lag to data and add it to energy - normalize the data here
             energy = np.concatenate((energy, norm_energy), axis=0)
-        if plot:
-            axes[l].plot(lagged_energy * 200, 'r')
-            axes[l].plot(tr.data, 'k')
-            # energy_tr=Trace(energy[l])
-            energy_tr = Trace(lagged_energy)
-            # energy_tr=Trace(tr.data)
-            energy_tr.stats.station = tr.stats.station
-            energy_tr.stats.sampling_rate = tr.stats.sampling_rate
-            if 'energy_stream' not in locals():
-                energy_stream = Stream(energy_tr)
-            else:
-                energy_stream += energy_tr
+        energy_stream += Trace(
+            data=lagged_energy,
+            header=Stats({'station': tr.stats.station,
+                          'sampling_rate': tr.stats.sampling_rate}))
     energy = np.sum(energy, axis=0).reshape(1, len(lagged_energy))
     energy = energy.astype(np.uint16)
     # Convert any nans to zeros
     energy = np.nan_to_num(energy)
     if plot:
-        energy_tr = Trace(energy[0])
-        energy_tr.stats.station = 'Stack'
-        energy_tr.stats.sampling_rate = tr.stats.sampling_rate
-        energy_tr.stats.network = 'Energy'
-        energy_stream += energy_tr
+        fig, axes = plt.subplots(len(stream) + 1, 1, sharex=True)
+        axes = axes.ravel()
+        for lagged_energy, tr, axis in zip(energy_stream, stream, axes):
+            axis.plot(lagged_energy * 200, 'r')
+            axis.plot(tr.data, 'k')
         axes[-1].plot(energy[0])
         plt.subplots_adjust(hspace=0)
         plt.show()
-        # energy_stream.plot(equal_scale=False, size=(800,600))
     if not mem_issue:
         return i, energy
     else:
-        if not os.path.isdir('tmp' + str(instance)):
-            os.makedirs('tmp' + str(instance))
         np.save('tmp' + str(instance) + '/node_' + str(i), energy)
         return i, str('tmp' + str(instance) + '/node_' + str(i))
 
@@ -385,25 +393,25 @@ def _cum_net_resp(node_lis, instance=0):
 
     :returns: cumulative network response
     :rtype: numpy.ndarray
-    :returns: node indeces for each sample of the cumulative network response.
+    :returns: node indices for each sample of the cumulative network response.
     :rtype: list
     """
     cum_net_resp = np.load('tmp' + str(instance) +
                            '/node_' + str(node_lis[0]) + '.npy')[0]
     os.remove('tmp' + str(instance) + '/node_' + str(node_lis[0]) + '.npy')
-    indeces = np.ones(len(cum_net_resp)) * node_lis[0]
+    indices = np.ones(len(cum_net_resp)) * node_lis[0]
     for i in node_lis[1:]:
         node_energy = np.load('tmp' + str(instance) + '/node_' +
                               str(i) + '.npy')[0]
-        updated_indeces = np.argmax([cum_net_resp, node_energy], axis=0)
+        updated_indices = np.argmax([cum_net_resp, node_energy], axis=0)
         temp = np.array([cum_net_resp, node_energy])
-        cum_net_resp = np.array([temp[updated_indeces[j]][j]
-                                 for j in range(len(updated_indeces))])
+        cum_net_resp = np.array([temp[updated_indices[j]][j]
+                                 for j in range(len(updated_indices))])
         del temp, node_energy
-        updated_indeces[updated_indeces == 1] = i
-        indeces = updated_indeces
+        updated_indices[updated_indices == 1] = i
+        indices = updated_indices
         os.remove('tmp' + str(instance) + '/node_' + str(i) + '.npy')
-    return cum_net_resp, indeces
+    return cum_net_resp, indices
 
 
 def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
@@ -531,7 +539,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                template_length, template_saveloc, coherence_thresh,
                coherence_stations=['all'], coherence_clip=False,
                gap=2.0, clip_level=100, instance=0, pre_pick=0.2,
-               plotsave=True, cores=1, debug=0):
+               plotvar=False, plotsave=True, cores=1, debug=0,
+               mem_issue=False):
     """
     Calculate the brightness function for a single day.
 
@@ -596,6 +605,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         Optional, used for tracking when using a distributed computing system.
     :type pre_pick: float
     :param pre_pick: Seconds before the detection time to include in template
+    :type plotvar: bool
+    :param plotvar: Turn plotting on or off
     :type plotsave: bool
     :param plotsave:
         Save or show plots, if `False` will try and show the plots on screen -
@@ -606,6 +617,10 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     :param cores: Number of cores to use, defaults to 1.
     :type debug: int
     :param debug: Debug level from 0-5, higher is more output.
+    :type mem_issue: bool
+    :param mem_issue:
+        Set to True to write temporary variables to disk rather than store in
+        memory, slow.
 
     :return: list of templates as :class:`obspy.core.stream.Stream` objects
     :rtype: list
@@ -632,116 +647,97 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             # Make sure that the data aren't clipped it they are high gain
             # scale the data
         tr.data = tr.data.astype(np.int16)
-    # The internal _node_loop converts energy to int16 too to converse memory,
+    # The internal _node_loop converts energy to int16 too to conserve memory,
     # to do this it forces the maximum of a single energy trace to be 500 and
     # normalises to this level - this only works for fewer than 65 channels of
     # data
     if len(stream_copy) > 130:
-        raise OverflowError('Too many streams, either re-code and cope with' +
-                            'either more memory usage, or less precision, or' +
-                            'reduce data volume')
-    detections = []
-    detect_lags = []
-    parallel = True
-    plotvar = False
-    mem_issue = False
+        raise BrightnessError(
+            'Too many streams, either re-code and cope with either more memory'
+            ' usage, or less precision, or reduce data volume')
     # Loop through each node in the input
     # Linear run
     print('Computing the energy stacks')
-    if not parallel:
-        for i in range(0, len(nodes)):
-            print(i)
-            if not mem_issue:
-                j, a = _node_loop(stations, lags[:, i], stream, plot=True)
-                if 'energy' not in locals():
-                    energy = a
-                else:
-                    energy = np.concatenate((energy, a), axis=0)
-                print('energy: ' + str(np.shape(energy)))
-            else:
-                j, filename = _node_loop(stations, lags[:, i], stream, i,
-                                         mem_issue)
-        energy = np.array(energy)
-        print(np.shape(energy))
+    # Parallel run
+    num_cores = cores
+    if num_cores > len(nodes):
+        num_cores = len(nodes)
+    if num_cores > cpu_count():
+        num_cores = cpu_count()
+    if mem_issue and not os.path.isdir('tmp' + str(instance)):
+        os.makedirs('tmp' + str(instance))
+    pool = Pool(processes=num_cores)
+    results = [pool.apply_async(_node_loop, (stations,),
+                                {'lags': lags[:, i], 'stream': stream, 'i': i,
+                                 'clip_level': clip_level,
+                                 'mem_issue': mem_issue, 'instance': instance})
+               for i in range(len(nodes))]
+    pool.close()
+    if not mem_issue:
+        print('Computing the cumulative network response from memory')
+        energy = [p.get() for p in results]
+        pool.join()
+        energy.sort(key=lambda tup: tup[0])
+        energy = [node[1] for node in energy]
+        energy = np.concatenate(energy, axis=0)
+        print(energy.shape)
     else:
-        # Parallel run
-        num_cores = cores
-        if num_cores > len(nodes):
-            num_cores = len(nodes)
-        if num_cores > cpu_count():
-            num_cores = cpu_count()
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(_node_loop, args=(stations, lags[:, i],
-                                                      stream, i, clip_level,
-                                                      mem_issue, instance))
-                   for i in range(len(nodes))]
-        pool.close()
-        if not mem_issue:
-            print('Computing the cumulative network response from memory')
-            energy = [p.get() for p in results]
-            pool.join()
-            energy.sort(key=lambda tup: tup[0])
-            energy = [node[1] for node in energy]
-            energy = np.concatenate(energy, axis=0)
-            print(energy.shape)
-        else:
-            pool.join()
+        pool.join()
+        del results
     # Now compute the cumulative network response and then detect possible
     # events
     if not mem_issue:
         print(energy.shape)
-        indeces = np.argmax(energy, axis=0)  # Indeces of maximum energy
-        print(indeces.shape)
-        cum_net_resp = np.array([np.nan] * len(indeces))
-        cum_net_resp[0] = energy[indeces[0]][0]
-        peak_nodes = [nodes[indeces[0]]]
-        for i in range(1, len(indeces)):
-            cum_net_resp[i] = energy[indeces[i]][i]
-            peak_nodes.append(nodes[indeces[i]])
-        del energy, indeces
+        indices = np.argmax(energy, axis=0)  # Indices of maximum energy
+        print(indices.shape)
+        cum_net_resp = np.array([np.nan] * len(indices))
+        cum_net_resp[0] = energy[indices[0]][0]
+        peak_nodes = [nodes[indices[0]]]
+        for i in range(1, len(indices)):
+            cum_net_resp[i] = energy[indices[i]][i]
+            peak_nodes.append(nodes[indices[i]])
+        del energy, indices
     else:
         print('Reading the temp files and computing network response')
         node_splits = int(len(nodes) // num_cores)
-        indeces = [range(node_splits)]
-        for i in range(1, num_cores - 1):
-            indeces.append(range(node_splits * i, node_splits * (i + 1)))
-        indeces.append(range(node_splits * (i + 1), len(nodes)))
+        print(node_splits)
+        indices = []
+        for i in range(num_cores):
+            indices.append(list(np.arange(node_splits * i,
+                                          node_splits * (i + 1))))
+        indices[-1] += list(np.arange(node_splits * (i + 1), len(nodes)))
+        # results = [_cum_net_resp(node_lis=indices[i], instance=instance)
+        #            for i in range(num_cores)]
         pool = Pool(processes=num_cores)
-        results = [pool.apply_async(_cum_net_resp, args=(indeces[i], instance))
+        results = [pool.apply_async(_cum_net_resp, args=(indices[i], instance))
                    for i in range(num_cores)]
         pool.close()
         results = [p.get() for p in results]
         pool.join()
         responses = [result[0] for result in results]
         print(np.shape(responses))
-        node_indeces = [result[1] for result in results]
+        node_indices = [result[1] for result in results]
         cum_net_resp = np.array(responses)
-        indeces = np.argmax(cum_net_resp, axis=0)
-        print(indeces.shape)
+        indices = np.argmax(cum_net_resp, axis=0)
+        print(indices.shape)
         print(cum_net_resp.shape)
-        cum_net_resp = np.array([cum_net_resp[indeces[i]][i]
-                                 for i in range(len(indeces))])
-        peak_nodes = [nodes[node_indeces[indeces[i]][i]]
-                      for i in range(len(indeces))]
-        del indeces, node_indeces
+        cum_net_resp = np.array([cum_net_resp[indices[i]][i]
+                                 for i in range(len(indices))])
+        peak_nodes = [nodes[node_indices[indices[i]][i]]
+                      for i in range(len(indices))]
+        del indices, node_indices
     if plotvar:
-        cum_net_trace = deepcopy(stream[0])
-        cum_net_trace.data = cum_net_resp
-        cum_net_trace.stats.station = 'NR'
-        cum_net_trace.stats.channel = ''
-        cum_net_trace.stats.network = 'Z'
-        cum_net_trace.stats.location = ''
-        cum_net_trace.stats.starttime = stream[0].stats.starttime
-        cum_net_trace = Stream(cum_net_trace)
+        cum_net_trace = Stream(Trace(
+            data=cum_net_resp, header=Stats(
+                {'station': 'NR', 'channel': '', 'network': 'Z',
+                 'location': '', 'starttime': stream[0].stats.starttime,
+                 'sampling_rate': stream[0].stats.sampling_rate})))
         cum_net_trace += stream.select(channel='*N')
         cum_net_trace += stream.select(channel='*1')
         cum_net_trace.sort(['network', 'station', 'channel'])
-        # np.save('cum_net_resp.npy',cum_net_resp)
-        #     cum_net_trace.plot(size=(800,600), equal_scale=False,\
-        #                        outfile='NR_timeseries.eps')
 
     # Find detection within this network response
-    print('Finding detections in the cumulatve network response')
+    print('Finding detections in the cumulative network response')
     detections = _find_detections(cum_net_resp, peak_nodes, threshold,
                                   thresh_type, stream[0].stats.sampling_rate,
                                   realstations, gap)
@@ -752,7 +748,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     if detections:
         print('Converting detections into templates')
         # Generate a catalog of detections
-        detections_cat = Catalog()
+        # detections_cat = Catalog()
         for j, detection in enumerate(detections):
             if debug > 3:
                 print('Converting for detection ' + str(j) + ' of ' +
@@ -800,7 +796,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                                                 evalutation_mode='automatic'))
             if debug > 0:
                 print('Generating template for detection: ' + str(j))
-            template = (_template_gen(event.picks, copy_of_stream,
+            template = (template_gen(event.picks, copy_of_stream,
                         template_length, 'all'))
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
@@ -818,7 +814,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                       str(temp_coher))
                 coherent = True
             elif debug > 0:
-                print('Template was incoherant, coherence level: ' +
+                print('Template was incoherent, coherence level: ' +
                       str(temp_coher))
                 coherent = False
             del copy_of_stream, tr, template
@@ -828,10 +824,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 good_detections.append(detection)
             elif debug > 0:
                 print('No template for you')
+            # detections_cat += event
     if plotvar:
-        all_detections = [(cum_net_trace[-1].stats.starttime +
-                           detection.detect_time).datetime
-                          for detection in detections]
         good_detections = [(cum_net_trace[-1].stats.starttime +
                             detection.detect_time).datetime
                            for detection in good_detections]
