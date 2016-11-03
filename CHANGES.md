@@ -18,6 +18,8 @@ from only picking on E and N before; warning added to docs;
 warnings);
 * Rename SVD_moments to lower-case and add depreciation warning;
 * Increase test coverage in utils.mag_calc;
+* Add warning message when removing channels from continuous data in
+match_filter;
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

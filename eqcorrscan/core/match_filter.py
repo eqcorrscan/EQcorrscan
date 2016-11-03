@@ -781,6 +781,10 @@ def match_filter(template_names, template_list, st, threshold,
         if not (tr.stats.network, tr.stats.station,
                 tr.stats.location, tr.stats.channel) in \
                 template_stachan.keys():
+            print('Removing channel in continuous data for %s.%s.%s.%s:'
+                  'no match in template' %
+                  (tr.stats.network, tr.stats.station, tr.stats.location,
+                   tr.stats.channel))
             stream.remove(tr)
     # Check for duplicate channels
     stachans = [(tr.stats.network, tr.stats.station,
