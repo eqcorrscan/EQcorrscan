@@ -816,26 +816,26 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     """
     _check_save_args(save, savefile)
-    # Sort before plotting
-    template = template.sort()
     # Only take traces that match in both
-    template_stachans = [(tr.stats.station, tr.stats.channel)
-                         for tr in template]
-    stream = Stream([tr for tr in stream
-                     if (tr.stats.station,
-                         tr.stats.channel) in template_stachans])
-    ntraces = min(len(template), len(stream))
+    stream_stachans = [(tr.stats.station, tr.stats.channel[-1])
+                       for tr in stream]
+    # Find only matching traces and sort by starttime with accompanying times
+    traces_times = sorted([(tr, times[i]) for i, tr in enumerate(template)
+                           if (tr.stats.station,
+                               tr.stats.channel[-1]) in stream_stachans], key=lambda x: x[0].stats.starttime)
+    traces, times = zip(*traces_times)
+    template.traces = traces
+    ntraces = len(template)
     fig, axes = plt.subplots(ntraces, 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
-    mintime = min([tr.stats.starttime for tr in template])
     for i, template_tr in enumerate(template):
         if len(template) > 1:
             axis = axes[i]
         else:
             axis = axes
         image = stream.select(station=template_tr.stats.station,
-                              channel='*' + template_tr.stats.channel[-1])
+                              channel='*'+template_tr.stats.channel[-1])
         if not image:
             msg = ' '.join(['No data for', template_tr.stats.station,
                             template_tr.stats.channel])
@@ -852,43 +852,41 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                        for j in range(len(image.data))]
         axis.plot(image_times, image.data / max(image.data),
                   streamcolour, linewidth=1.2)
-        for k, time in enumerate(times):
-            lagged_time = UTCDateTime(time) + (template_tr.stats.starttime -
-                                               mintime)
-            lagged_time = lagged_time.datetime
-            template_times = [lagged_time +
-                              dt.timedelta((j * template_tr.stats.delta) /
-                                           86400)
-                              for j in range(len(template_tr.data))]
-            # Normalize the template according to the data detected in
-            try:
-                normalizer = max(image.data[int((template_times[0] -
-                                                image_times[0]).
-                                                total_seconds() /
-                                                image.stats.delta):
-                                            int((template_times[-1] -
-                                                 image_times[0]).
-                                                total_seconds() /
-                                                image.stats.delta)] /
-                                 max(image.data))
-            except ValueError:
-                # Occurs when there is no data in the image at this time...
-                normalizer = max(image.data)
-            normalizer /= max(template_tr.data)
-            axis.plot(template_times,
-                      template_tr.data * normalizer,
-                      templatecolour, linewidth=1.2)
+        time = times[i]
+        time_dt = time.datetime
+        template_times = [time_dt +
+                          dt.timedelta((j * template_tr.stats.delta) /
+                                       86400)
+                          for j in range(len(template_tr.data))]
+        # Normalize the template according to the data detected in
+        normalizer = max(image.data[int((template_times[0] -
+                                        image_times[0]).
+                                        total_seconds() /
+                                        image.stats.delta):
+                                    int((template_times[-1] -
+                                         image_times[0]).
+                                        total_seconds() /
+                                        image.stats.delta)] /
+                         max(image.data))
+        normalizer /= max(template_tr.data)
+        axis.plot(template_times,
+                  template_tr.data * normalizer,
+                  templatecolour, linewidth=1.2)
         ylab = '.'.join([template_tr.stats.station,
                          template_tr.stats.channel])
         axis.set_ylabel(ylab, rotation=0,
                         horizontalalignment='right')
-        # axis.yaxis.set_ticks([])
+        axis.yaxis.set_ticks([])
     if len(template) > 1:
-        axes[len(axes) - 1].set_xlabel('Time')
+        axes[len(axes) - 1].set_xlabel('Time (s)')
+        axes[len(axes) - 1].xaxis.set_major_locator(mdates.SecondLocator())
+        axes[len(axes) - 1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     else:
         axis.set_xlabel('Time')
+        axis.xaxis.set_major_locator(mdates.SecondLocator())
+        axis.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     plt.subplots_adjust(hspace=0, left=0.175, right=0.95, bottom=0.07)
-    plt.xticks(rotation=10)
+    # plt.xticks(rotation=10)
     if title:
         plt.suptitle(title)
     if not save:
