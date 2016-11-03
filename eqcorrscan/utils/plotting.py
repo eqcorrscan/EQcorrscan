@@ -860,15 +860,19 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                                        86400)
                           for j in range(len(template_tr.data))]
         # Normalize the template according to the data detected in
-        normalizer = max(image.data[int((template_times[0] -
-                                        image_times[0]).
-                                        total_seconds() /
-                                        image.stats.delta):
-                                    int((template_times[-1] -
-                                         image_times[0]).
-                                        total_seconds() /
-                                        image.stats.delta)] /
-                         max(image.data))
+        try:
+            normalizer = max(image.data[int((template_times[0] -
+                                            image_times[0]).
+                                            total_seconds() /
+                                            image.stats.delta):
+                                        int((template_times[-1] -
+                                             image_times[0]).
+                                            total_seconds() /
+                                            image.stats.delta)] /
+                             max(image.data))
+        except ValueError:
+            # Occurs when there is no data in the image at this time...
+            normalizer = max(image.data)
         normalizer /= max(template_tr.data)
         axis.plot(template_times,
                   template_tr.data * normalizer,
