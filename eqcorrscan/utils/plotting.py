@@ -822,7 +822,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     # Find only matching traces and sort by starttime with accompanying times
     traces_times = sorted([(tr, times[i]) for i, tr in enumerate(template)
                            if (tr.stats.station,
-                               tr.stats.channel[-1]) in stream_stachans], key=lambda x: x[0].stats.starttime)
+                               tr.stats.channel[-1]) in stream_stachans],
+                          key=lambda x: x[0].stats.starttime)
     traces, times = zip(*traces_times)
     template.traces = traces
     ntraces = len(template)
@@ -878,9 +879,10 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                         horizontalalignment='right')
         axis.yaxis.set_ticks([])
     if len(template) > 1:
-        axes[len(axes) - 1].set_xlabel('Time (s)')
-        axes[len(axes) - 1].xaxis.set_major_locator(mdates.SecondLocator())
-        axes[len(axes) - 1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        axes[-1].set_xlabel('Time (s)')
+        axes[-1].xaxis.set_major_locator(mdates.SecondLocator())
+        axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     else:
         axis.set_xlabel('Time')
         axis.xaxis.set_major_locator(mdates.SecondLocator())
