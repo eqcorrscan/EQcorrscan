@@ -792,9 +792,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param stream: Stream of data to be plotted as the background.
     :type template: obspy.core.stream.Stream
     :param template: Template to be plotted on top of the base stream.
-    :type times: list
-    :param times: list of times of detections in the order of the channels in
-                template.
+    :type times: list of detection times
     :type streamcolour: str
     :param streamcolour: String of matplotlib colour types for the stream
     :type templatecolour: str
@@ -816,11 +814,15 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     """
     _check_save_args(save, savefile)
-    # Sort before plotting
-    template = template.sort()
-    # Only take traces that match in both
+    # Only take traces that match in both accounting for streams shorter than
+    # templates
     template_stachans = [(tr.stats.station, tr.stats.channel)
                          for tr in template]
+    stream_stachans = [(tr.stats.station, tr.stats.channel)
+                       for tr in stream]
+    template = Stream([tr for tr in template
+                       if (tr.stats.station,
+                           tr.stats.channel) in stream_stachans])
     stream = Stream([tr for tr in stream
                      if (tr.stats.station,
                          tr.stats.channel) in template_stachans])
@@ -829,6 +831,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     if len(template) > 1:
         axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in template])
+    template.sort(keys=['starttime'])
     for i, template_tr in enumerate(template):
         if len(template) > 1:
             axis = axes[i]
@@ -852,7 +855,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                        for j in range(len(image.data))]
         axis.plot(image_times, image.data / max(image.data),
                   streamcolour, linewidth=1.2)
-        for k, time in enumerate(times):
+        for time in times:
             lagged_time = UTCDateTime(time) + (template_tr.stats.starttime -
                                                mintime)
             lagged_time = lagged_time.datetime
