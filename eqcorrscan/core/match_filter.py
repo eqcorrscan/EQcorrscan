@@ -775,6 +775,9 @@ def match_filter(template_names, template_list, st, threshold,
                                               location=stachan[2],
                                               channel=stachan[3]):
                         template.remove(tr)
+                        print('Removing template channel %s.%s.%s.%s due to'
+                              'no matches in continuous data' %
+                              (stachan[0], stachan[1], stachan[2], stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
     for tr in stream:
