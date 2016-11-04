@@ -18,6 +18,33 @@ from only picking on E and N before; warning added to docs;
 warnings);
 * Rename SVD_moments to lower-case and add depreciation warning;
 * Increase test coverage in utils.mag_calc;
+* Add Template, Tribe, Family, Party objects and rename DETECTION to 
+Detection;
+    * Template objects maintain meta-data associated with their creation
+    to stream-line processing of data (e.g. reduce chance of using the
+    wrong filters).
+    * Template events have a detect method which takes unprocessed data
+    and does the correct processing using the Template meta-data, and
+    computes the matched-filter detections.
+    * Tribe objects are containers for multiple Templates.
+    * Tribe objects have a detect method which groups Templates with
+    similar meta-data (processing information) and runs these templates
+    in parallel through the matched-filter routine. Tribe.detect outputs
+    a Party of Family objects.
+    * The Party object is a container for many Family objects.
+    * Family objects are containers for detections from the same
+    Template.
+    * Family and Party objects have a lag_calc method which computes 
+    the cross-correlation pick-refinements.
+    * The upshot of this is that it is possible to, in one line,
+    generate a Tribe of templates, compute their matched-filter 
+    detections, and generate cross-correlation pick refinements, which
+    output Event objects, which can be written to a catalog:
+        Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
+* eqcorrscan.core.template_gen functions now return either Tribe or 
+Template objects.  eqcorrscan.core.template_gen.template_gen still
+returns a Stream object.
+* Removed support for obspy < 1.0.0
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

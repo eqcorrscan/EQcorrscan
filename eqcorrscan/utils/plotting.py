@@ -26,8 +26,8 @@ from collections import Counter
 from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
-from eqcorrscan.core.match_filter import DETECTION, normxcorr2
-from eqcorrscan.utils import stacking, sfile_util
+from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
+from eqcorrscan.utils.sfile_util import readheader
 
 
 def _check_save_args(save, savefile):
@@ -320,7 +320,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type detections: list
-    :param detections: List of :class:`eqcorrscan.core.match_filter.DETECTION`
+    :param detections: List of :class:`eqcorrscan.core.match_filter.Detection`
     :type plot_grouped: bool
     :param plot_grouped: Plot detections for each template individually, or \
         group them all together - set to False (plot template detections \
@@ -339,7 +339,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
 
     .. note::
         Can either take lists of
-        :class:`eqcorrscan.core.match_filter.DETECTION` objects directly, or
+        :class:`eqcorrscan.core.match_filter.Detection` objects directly, or
         two lists of dates and template names - either/or, not both.
 
     .. rubric:: Example
@@ -365,6 +365,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """
+    from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -378,9 +379,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         dates = []
         template_names = []
         for detection in detections:
-            if not type(detection) == DETECTION:
+            if not type(detection) == Detection:
                 msg = 'detection not of type: ' +\
-                    'eqcorrscan.core.match_filter.DETECTION'
+                    'eqcorrscan.core.match_filter.Detection'
                 raise IOError(msg)
             dates.append(detection.detect_time.datetime)
             template_names.append(detection.template_name)
@@ -676,7 +677,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     if realign:
         shift_len = int(0.25 * (cut[1] - cut[0]) *
                         al_traces[0].stats.sampling_rate)
-        shifts = stacking.align_traces(al_traces, shift_len)
+        shifts = align_traces(al_traces, shift_len)
         for i in xrange(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
             _pick.time -= shifts[i]
@@ -723,6 +724,7 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :type title: str
     :param title: Title to plot
     """
+    from eqcorrscan.core.match_filter import normxcorr2
     if stack in ['linstack', 'PWS']:
         fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
                                  figsize=size)
@@ -747,11 +749,11 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
         axes[ind].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
     if stack == 'PWS':
-        linstack = stacking.PWS_stack(traces)
+        stacked = PWS_stack(traces)
     elif stack == 'linstack':
-        linstack = stacking.linstack(traces)
+        stacked = linstack(traces)
     if stack in ['linstack', 'PWS']:
-        tr = linstack[0]
+        tr = stacked[0]
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate
@@ -938,7 +940,7 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
     times = []
     mags = []
     for sfile in sfiles:
-        head = sfile_util.readheader(sfile)
+        head = readheader(sfile)
         if head.preferred_origin():
             origin = head.preferred_origin()
         elif len(head.origins) > 0:
@@ -1200,14 +1202,14 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
-    >>> from eqcorrscan.utils import sfile_util
+    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
     >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
     ...                              'TEST_',
     ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = sfile_util.readpicks(test_file)
+    >>> event = readpicks(test_file)
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
@@ -1221,14 +1223,14 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         from obspy import read
         from eqcorrscan.core import template_gen
         from eqcorrscan.utils.plotting import pretty_template_plot
-        from eqcorrscan.utils import sfile_util
+        from eqcorrscan.utils.sfile_util import readpicks
         import os
         test_file = os.path.realpath('../../..') + \
             '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
         test_wavefile = os.path.realpath('../../..') +\
             '/tests/test_data/WAV/TEST_/' +\
             '2013-09-01-0410-35.DFDPC_024_00'
-        event = sfile_util.readpicks(test_file)
+        event = readpicks(test_file)
         st = read(test_wavefile)
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:

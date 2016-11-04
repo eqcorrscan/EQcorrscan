@@ -6,24 +6,24 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-import unittest
-import os
-import warnings
 import copy
+import os
+import unittest
+import warnings
 
+import numpy as np
 from obspy import read, Stream, Trace, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick
 from obspy.core.util.base import NamedTemporaryFile
 
-from eqcorrscan.core import template_gen
-from eqcorrscan.utils import pre_processing, catalog_utils
-from eqcorrscan.core.match_filter import match_filter, normxcorr2
-from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
-from eqcorrscan.core.match_filter import read_detections, get_catalog
+from eqcorrscan.core import template_gen, match_filter
 from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
+from eqcorrscan.core.match_filter import match_filter, normxcorr2
+from eqcorrscan.core.match_filter import read_detections, get_catalog
+from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+from eqcorrscan.utils import pre_processing, catalog_utils
 
 
 class TestCoreMethods(unittest.TestCase):

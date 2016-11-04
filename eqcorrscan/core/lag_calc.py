@@ -325,7 +325,7 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     :param detect_data: Stream to extract detection streams from.
     :type detections: list
     :param detections:
-        List of :class:`eqcorrscan.core.match_filter.DETECTION` to get
+        List of :class:`eqcorrscan.core.match_filter.Detection` to get
         data for.
     :type zipped_templates: zip
     :param zipped_templates: Zipped list of (template_name, template)
@@ -443,7 +443,7 @@ def lag_calc(detections, detect_data, template_names, templates,
 
     :type detections: list
     :param detections:
-        List of :class:`eqcorrscan.core.match_filter.DETECTION` objects.
+        List of :class:`eqcorrscan.core.match_filter.Detection` objects.
     :type detect_data: obspy.core.stream.Stream
     :param detect_data:
         All the data needed to cut from - can be a gappy Stream.

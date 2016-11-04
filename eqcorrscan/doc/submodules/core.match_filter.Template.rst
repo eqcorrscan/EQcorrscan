@@ -1,9 +1,9 @@
-match_filter.DETECTION
-======================
+match_filter.Template
+=====================
 
 .. currentmodule:: eqcorrscan.core.match_filter
 
-.. autoclass:: DETECTION
+.. autoclass:: Template
 
    .. rubric:: Methods
 

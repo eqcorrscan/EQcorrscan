@@ -11,7 +11,11 @@ match_filter
     .. toctree::
         :maxdepth: 1
 
-        core.match_filter.DETECTION
+        core.match_filter.Detection
+        core.match_filter.Family
+        core.match_filter.Party
+        core.match_filter.Template
+        core.match_filter.Tribe
 
     Functions
     ---------

@@ -31,7 +31,7 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
 
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
-from eqcorrscan.core.match_filter import DETECTION, extract_from_stream
+from eqcorrscan.core.match_filter import Detection, extract_from_stream
 from eqcorrscan.utils.plotting import subspace_detector_plot
 
 
@@ -271,7 +271,7 @@ class Detector(object):
         :type debug: int
         :param debug: Debug output level from 0-5.
 
-        :return: list of :class:`eqcorrscan.core.match_filter.DETECTION`
+        :return: list of :class:`eqcorrscan.core.match_filter.Detection`
         :rtype: list
 
         .. warning::
@@ -462,7 +462,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :param debug: Debug output level from 0-5.
 
     :return: list of detections
-    :rtype: list of eqcorrscan.core.match_filter.DETECTION
+    :rtype: list of eqcorrscan.core.match_filter.Detection
     """
     from eqcorrscan.core import subspace_statistic
     detections = []
@@ -563,7 +563,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                                          station_code=stachan[0],
                                          channel_code=stachan[1])
                 ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-            detections.append(DETECTION(detector.name,
+            detections.append(Detection(detector.name,
                                         detecttime,
                                         len(detector.stachans),
                                         peak[0],
@@ -917,7 +917,7 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
 
     :rtype: list
     :return:
-        List of :class:`eqcorrscan.core.match_filter.DETECTION` detections.
+        List of :class:`eqcorrscan.core.match_filter.Detection` detections.
 
     .. Note::
         This will loop through your detectors using their detect method.
