@@ -20,6 +20,8 @@ warnings);
 * Increase test coverage in utils.mag_calc;
 * Add warning message when removing channels from continuous data in
 match_filter;
+* Fix bug in detection_multiplot which didn't allow streams with
+fewer traces than template;
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
