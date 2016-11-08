@@ -22,6 +22,8 @@ from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
 from eqcorrscan.core.match_filter import match_filter, normxcorr2
 from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
+from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
+from eqcorrscan.core.match_filter import read_party, read_template, read_tribe
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
 
@@ -524,6 +526,116 @@ class TestNCEDCCases(unittest.TestCase):
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
                          plotvar=False, plotdir='.', cores=1)
+
+
+class TestMatchObjects(unittest.TestCase):
+    """Tests for the object (wrappers) in match_filter."""
+    @classmethod
+    def setUpClass(cls):
+        print('\t\t\t Downloading data')
+        client = Client('NCEDC')
+        t1 = UTCDateTime(2004, 9, 28, 17)
+        t2 = t1 + 3600
+        process_len = 3600
+        # t1 = UTCDateTime(2004, 9, 28)
+        # t2 = t1 + 80000
+        # process_len = 80000
+        catalog = client.get_events(starttime=t1, endtime=t2,
+                                    minmagnitude=4,
+                                    minlatitude=35.7, maxlatitude=36.1,
+                                    minlongitude=-120.6,
+                                    maxlongitude=-120.2,
+                                    includearrivals=True)
+        catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
+                                             top_n_picks=5)
+        cls.tribe = Tribe()
+        cls.tribe.construct(
+            method='from_client', catalog=catalog, client_id='NCEDC',
+            lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
+        for template in cls.tribe.templates:
+            template.st.sort()
+        # Download and process the day-long data
+        template_stachans = []
+        for template in cls.tribe.templates:
+            for tr in template.st:
+                template_stachans.append((tr.stats.network,
+                                          tr.stats.station,
+                                          tr.stats.channel))
+        template_stachans = list(set(template_stachans))
+        bulk_info = [(stachan[0], stachan[1], '*',
+                      stachan[2][0] + 'H' + stachan[2][1],
+                      t1, t1 + process_len)
+                     for stachan in template_stachans]
+        # Just downloading an hour of data
+        cls.st = client.get_waveforms_bulk(bulk_info)
+        cls.st.merge(fill_value='interpolate')
+        cls.party = cls.tribe.detect(
+            stream=cls.st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            daylong=False, plotvar=False)
+
+    def test_tribe_internal_methods(self):
+        self.assertEqual(len(self.tribe), 4)
+        self.assertTrue(self.tribe == self.tribe)
+        self.assertFalse(self.tribe != self.tribe)
+
+    def test_copy(self):
+        """Test copy method"""
+        copied = self.tribe.copy()
+        self.assertEqual(len(self.tribe), len(copied))
+        for t, copy_t in zip(self.tribe.templates, copied.templates):
+            self.assertEqual(t, copy_t)
+        self.assertEqual(self.tribe.templates.sort(), copied.templates.sort())
+        self.assertEqual(self.tribe, copied)
+
+    def test_add(self):
+        """Test add method"""
+        added = self.tribe.copy()
+        self.assertEqual(len(added + added[0]), 5)
+        added += added[-1]
+        self.assertEqual(len(added), 6)
+
+    def test_remove(self):
+        """Test remove method"""
+        removal = self.tribe.copy()
+        self.assertEqual(len(removal.remove(removal[0])), 3)
+        for template in self.tribe:
+            self.assertTrue(isinstance(template, Template))
+
+    def test_tribe_io(self):
+        """Test reading and writing of Tribe objects."""
+        try:
+            if os.path.isfile('tribe_test.h5'):
+                os.remove('tribe_test.h5')
+            self.tribe.write(filename='tribe_test.h5')
+            tribe_back = read_tribe('tribe_test.h5')
+            self.assertEqual(self.tribe, tribe_back)
+        finally:
+            os.remove('tribe_test.h5')
+
+    def test_detect(self):
+        """Test the detect method on Tribe objects - run by setUpClass"""
+        self.assertEqual(len(self.party), 4)
+
+    def test_party_io(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party.h5'):
+            os.remove('test_party.h5')
+        try:
+            self.party.write(filename='test_party.h5')
+            party_back = read_party(fname='test_party.h5')
+            self.assertEqual(self.party, party_back)
+        finally:
+            print('fin')
+            # os.remove('test_party.h5')
+
+    # def test_party_methods(self):
+    #     """Test the basic methods on Party objects."""
+
+    def test_party_lag_cal(self):
+        """Test the lag-calc method on Party objects."""
+        catalog = self.party.lag_calc(stream=self.st)
+        self.assertEqual(len(catalog), 4)
 
 
 def test_match_filter(debug=0, plotvar=False, extract_detections=False,

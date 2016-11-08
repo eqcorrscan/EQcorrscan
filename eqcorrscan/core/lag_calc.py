@@ -28,7 +28,6 @@ from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
-from eqcorrscan.core.match_filter import normxcorr2
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -156,6 +155,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         Event object containing network, station, channel and pick information.
     :rtype: :class:`obspy.core.event.Event`
     """
+    from eqcorrscan.core.match_filter import normxcorr2
     event = Event()
     s_stachans = {}
     cccsum = 0
@@ -483,7 +483,7 @@ def lag_calc(detections, detect_data, template_names, templates,
     :param parallel: Turn parallel processing on or off.
     :type debug: int
     :param debug: Debug output level, 0-5 with 5 being the most output.
-    .
+
 
     :returns:
         Catalog of events with picks.  No origin information is included.

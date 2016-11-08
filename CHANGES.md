@@ -41,10 +41,9 @@ Detection;
     detections, and generate cross-correlation pick refinements, which
     output Event objects, which can be written to a catalog:
         Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
-* eqcorrscan.core.template_gen functions now return either Tribe or 
-Template objects.  eqcorrscan.core.template_gen.template_gen still
-returns a Stream object.
 * Removed support for obspy < 1.0.0
+* Update / correct doc-strings in template-gen functions when describing
+processing parameters.
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

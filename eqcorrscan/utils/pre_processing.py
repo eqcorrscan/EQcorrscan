@@ -149,7 +149,6 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     if starttime is not None and endtime is not None:
         for tr in st:
             tr.trim(starttime, endtime)
-            print(len(tr))
             if len(tr.data) == ((endtime - starttime) *
                                 tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]

@@ -38,6 +38,19 @@ Within a virtual environment, a fresh install should be as simple as:
 
 **pip install eqcorrscan**
 
+In version 0.2.0 we added the dependency **pyASDF** which is not yet listed on pypi.
+Documentation for pyASDF is online here: |pyasdf|.  Because this isn't on pypi,
+you need to install this yourself by following the install insturctions on their
+site.  As of 08/11/16 this was:
+
+git clone https://github.com/SeismicData/pyasdf.git
+cd pyasdf
+pip install -v -e .
+
+After installing the dependencies.  It is worth having a look at their docs to check
+this install.  EQcorrscan does not (as of 0.2.0) use the parallel io that pyASDF
+can provide.
+
 Most codes should work without any effort on your part.  However you will need to
 install the openCV-python package yourself.  We recommend installing openCV version
 3, and we recommend installing it from source - it is available via anaconda, but
@@ -59,6 +72,10 @@ or
 You can also install from source; for Python 3 this is a must as you will have
 to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
 |cv3_ubuntu|.
+
+.. |pyasdf| raw:: html
+
+    <a href="http://seismicdata.github.io/pyasdf/index.html" target="_blank">pyASDF</a>
 
 .. |virtualenvwrapper| raw:: html
 

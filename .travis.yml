@@ -60,6 +60,7 @@ install:
   - conda install h5py
   - pip install coveralls
   - pip install geographiclib
+  - pip install https://github.com/SeismicData/pyasdf/archive/master.zip
   - pip install https://github.com/megies/PyImgur/archive/py3.zip
   - pip install pep8-naming
   - pip install pytest pytest-cov pytest-pep8 pytest-xdist
