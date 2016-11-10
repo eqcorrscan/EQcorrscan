@@ -462,7 +462,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :returns: List of templates of :class:`obspy.core.stream.Stream`
     :rtype: list
 
-    .. Note:: 
+    .. Note::
         All picks must be associated with a station and channel, this is
         not the case for NonLinLoc HYP files, will not use any picks that
         do not have this association.
