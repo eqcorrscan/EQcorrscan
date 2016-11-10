@@ -44,6 +44,9 @@ Detection;
 * Removed support for obspy < 1.0.0
 * Update / correct doc-strings in template-gen functions when describing
 processing parameters.
+* Add warning message when removing channels from continuous data in
+match_filter;
+
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

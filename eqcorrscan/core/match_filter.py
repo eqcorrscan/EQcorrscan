@@ -2239,12 +2239,19 @@ def match_filter(template_names, template_list, st, threshold,
                                               location=stachan[2],
                                               channel=stachan[3]):
                         template.remove(tr)
+                        print('Removing template channel %s.%s.%s.%s due to'
+                              'no matches in continuous data' %
+                              (stachan[0], stachan[1], stachan[2], stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
     for tr in stream:
         if not (tr.stats.network, tr.stats.station,
                 tr.stats.location, tr.stats.channel) in \
                 template_stachan.keys():
+            print('Removing channel in continuous data for %s.%s.%s.%s:'
+                  'no match in template' %
+                  (tr.stats.network, tr.stats.station, tr.stats.location,
+                   tr.stats.channel))
             stream.remove(tr)
     # Check for duplicate channels
     stachans = [(tr.stats.network, tr.stats.station,
