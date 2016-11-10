@@ -322,6 +322,8 @@ class Party(object):
                  cores=1, interpolate=False, plot=False, parallel=True,
                  debug=0):
         """
+        Compute picks based on cross-correlation alignment.
+
         :type stream: obspy.core.stream.Stream
         :param stream:
             All the data needed to cut from - can be a gappy Stream.
@@ -380,6 +382,9 @@ class Party(object):
             templates will be grouped by processing parameters and run with
             similarly processed data.  In this case, all templates do not have
             to have the same processing parameters.
+
+        .. Note::
+            Picks are corrected for the template pre-pick time.
         """
         catalog = Catalog()
         template_groups = [[]]
@@ -449,7 +454,7 @@ class Party(object):
             else:
                 processed_streams = [stream.copy()]
             for processed_stream in processed_streams:
-                catalog += lag_calc(
+                temp_cat = lag_calc(
                     detections=det_group, detect_data=processed_stream,
                     template_names=[t.name for t in group],
                     templates=[t.st for t in group],
@@ -458,6 +463,14 @@ class Party(object):
                     vertical_chans=vertical_chans, cores=cores,
                     interpolate=interpolate, plot=plot,
                     parallel=parallel, debug=debug)
+                for event in temp_cat:
+                    det = [d for d in det_group
+                           if d.id == event.resource_id][0]
+                    pre_pick = [t for t in group
+                                if t.name == det.template_name][0].prepick
+                    for pick in event.picks:
+                        pick.time += pre_pick
+                catalog += temp_cat
         return catalog
 
     def get_catalog(self):
@@ -592,6 +605,8 @@ class Family(object):
                  cores=1, interpolate=False, plot=False, parallel=True,
                  debug=0):
         """
+        Compute picks based on cross-correlation alignment.
+
         :type stream: obspy.core.stream.Stream
         :param stream:
             All the data needed to cut from - can be a gappy Stream.
@@ -637,6 +652,22 @@ class Family(object):
             :func:`eqcorrscan.utils.sfile_util.eventtosfile` and located
             externally.
         :rtype: obspy.core.event.Catalog
+
+        .. Note::
+            Note on pre-processing: You can provide a pre-processed stream,
+            which may be beneficial for detections over large time periods
+            (the stream can have gaps, which reduces memory usage).  However,
+            in this case the processing steps are not checked, so you must
+            ensure that all the template in the Party have the same sampling
+            rate and filtering as the stream.
+            If pre-processing has not be done then the data will be processed
+            according to the parameters in the templates, in this case
+            templates will be grouped by processing parameters and run with
+            similarly processed data.  In this case, all templates do not have
+            to have the same processing parameters.
+
+        .. Note::
+            Picks are corrected for the template pre-pick time.
         """
         return Party(families=[self]).lag_calc(
             stream=stream, pre_processed=pre_processed, shift_len=shift_len,
@@ -1050,6 +1081,7 @@ class Tribe(object):
         return self
 
     def copy(self):
+        """Copy the Tribe."""
         return copy.deepcopy(self)
 
     def write(self, filename):
