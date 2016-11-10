@@ -415,9 +415,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                    length, prepick, swin, all_horiz=False, delayed=True,
                    plot=False, debug=0):
     """
-    Generate a multiplexed template from a local quakeML file.
+    Generate a multiplexed template from a local file.
 
-    Function to generate a template from a local quakeml file \
+    Function to generate a template from a local observation file
     and an obspy.Stream object.
 
     :type meta_file: str
@@ -461,6 +461,11 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 
     :returns: List of templates of :class:`obspy.core.stream.Stream`
     :rtype: list
+
+    .. Note:: 
+        All picks must be associated with a station and channel, this is
+        not the case for NonLinLoc HYP files, will not use any picks that
+        do not have this association.
 
     .. warning:: We suggest giving this function a full day of data, to \
         ensure templates are generated with **exactly** the same processing \
