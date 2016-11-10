@@ -52,6 +52,7 @@ install:
   - "git pull origin master"
   - "pip install -v -e ."
   - "cd .."
+  - "rm -r pyasdf"
 #  - "pip install git+ssh://git@github.com/SeismicData/pyasdf.git"
   - "pip install -U future"
   - "pip install pytest"
