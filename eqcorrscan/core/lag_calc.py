@@ -453,8 +453,8 @@ def lag_calc(detections, detect_data, template_names, templates,
         Must be in the same order as templates.
     :type templates: list
     :param templates:
-        List of the templates, templates should be
-        :class:`obspy.core.stream.Stream` objects.
+        List of the templates, templates must be a list of
+         :class:`obspy.core.stream.Stream` objects.
     :type shift_len: float
     :param shift_len:
         Shift length allowed for the pick in seconds, will be plus/minus this

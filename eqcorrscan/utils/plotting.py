@@ -436,24 +436,24 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     timedif = max_date - min_date
     if 10800 <= timedif.total_seconds() <= 25200:
         hours = mdates.MinuteLocator(byminute=[0, 30])
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 10))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 10))
     elif 7200 <= timedif.total_seconds() < 10800:
         hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 5))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     elif timedif.total_seconds() <= 1200:
-        hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 0.5))
+        hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 2))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 0.5))
     elif 25200 < timedif.total_seconds() <= 86400:
-        hours = mdates.HourLocator(byhour=range(0, 24, 3))
-        mins = mdates.HourLocator(byhour=range(0, 24, 1))
+        hours = mdates.HourLocator(byhour=np.arange(0, 24, 3))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 1))
     elif 86400 < timedif.total_seconds() <= 172800:
-        hours = mdates.HourLocator(byhour=range(0, 24, 6))
-        mins = mdates.HourLocator(byhour=range(0, 24, 1))
+        hours = mdates.HourLocator(byhour=np.arange(0, 24, 6))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 1))
     elif timedif.total_seconds() > 172800:
         hours = mdates.AutoDateLocator()
-        mins = mdates.HourLocator(byhour=range(0, 24, 3))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 3))
     else:
-        hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
+        hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     # Minor locator overruns maxticks for ~year-long datasets
     if timedif.total_seconds() < 172800:
         ax1.xaxis.set_minor_locator(mins)

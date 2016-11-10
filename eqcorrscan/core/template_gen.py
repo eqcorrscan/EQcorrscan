@@ -157,7 +157,7 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
                             swin=swin, prepick=prepick, plot=plot,
                             debug=debug, all_horiz=all_horiz, delayed=delayed)
     if return_event:
-        return template, event, st[0].stats.endtime - st[0].stats.starttime
+        return template, event, len(st[0].data) / samp_rate
     return template
 
 
@@ -301,7 +301,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                             prepick=prepick, all_horiz=all_horiz,
                             plot=plot, debug=debug, delayed=delayed)
     if return_event:
-        return template, event, st[0].stats.endtime - st[0].stats.starttime
+        return template, event, len(st[0].data) / samp_rate
     return template
 
 
@@ -410,7 +410,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                             all_horiz=all_horiz, plot=plot, debug=debug,
                             delayed=delayed)
     if return_event:
-        return template, event, st[0].stats.endtime - st[0].stats.starttime
+        return template, event, len(st[0].data) / samp_rate
     return template
 
 
@@ -552,7 +552,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                                 prepick=prepick, plot=plot, debug=debug,
                                 all_horiz=all_horiz, delayed=delayed)
         templates.append(template)
-        process_lengths.append(st[0].stats.endtime - st[0].stats.starttime)
+        process_lengths.append(len(st1[0].data) / samp_rate)
     if return_event:
         return templates, catalog, process_lengths
     return templates
@@ -691,8 +691,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                                     swin=swin, prepick=prepick,
                                     all_horiz=all_horiz, plot=plot,
                                     debug=debug, delayed=delayed)
-            process_lengths.append(st1[0].stats.endtime -
-                                   st1[0].stats.starttime)
+            process_lengths.append(len(st1[0].data) / samp_rate)
             temp_list.append(template)
             del st, st1
     if return_event:
@@ -761,7 +760,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     .. rubric:: Example
 
     >>> from obspy.clients.fdsn import Client
-    >>> from obspy.core.event import Catalog
     >>> from eqcorrscan.core.template_gen import from_client
     >>> client = Client('NCEDC')
     >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
@@ -851,8 +849,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                                     swin=swin, prepick=prepick,
                                     plot=plot, debug=debug,
                                     all_horiz=all_horiz, delayed=delayed)
-            process_lengths.append(st1[0].stats.endtime -
-                                   st1[0].stats.starttime)
+            process_lengths.append(len(st1[0].data) / samp_rate)
             temp_list.append(template)
         del st, st1
     if return_event:
