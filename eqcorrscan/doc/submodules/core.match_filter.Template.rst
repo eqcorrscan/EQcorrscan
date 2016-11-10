@@ -9,7 +9,17 @@ match_filter.Template
 
    .. autosummary::
 
+      construct
+      copy
+      detect
+      read
+      same_processing
       write
 
    .. automethod:: __init__
+   .. automethod:: construct
+   .. automethod:: copy
+   .. automethod:: detect
+   .. automethod:: read
+   .. automethod:: same_processing
    .. automethod:: write
