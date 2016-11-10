@@ -674,12 +674,16 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_party_decluster(self):
         """Test the decluster method on party."""
-        declustered = self.party.copy().decluster(trig_int=40)
-        self.assertEqual(len(declustered), 3)
-        declustered = self.party.copy().decluster(trig_int=15)
-        self.assertEqual(len(declustered), 4)
-        declustered = self.party.copy().decluster(trig_int=3600)
-        self.assertEqual(len(declustered), 1)
+        for trig_int in [40, 15, 3600]:
+            declustered = self.party.copy().decluster(trig_int=trig_int)
+            declustered_dets = [d for family in declustered
+                                for d in family.detections]
+            for det in declustered_dets:
+                time_difs = [abs(det.detect_time - d.detect_time)
+                             for d in declustered_dets]
+                for dif in time_difs:
+                    if dif != 0:
+                        self.assertTrue(dif > trig_int)
 
     def test_party_lag_calc(self):
         """Test the lag-calc method on Party objects."""
