@@ -289,11 +289,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     if debug > 0:
         print("I have found the following picks")
         for pick in picks:
-            if not pick.waveform_id:
-                continue
-            print(' '.join([pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code, pick.phase_hint,
-                            str(pick.time)]))
+            print(pick)
     # Process waveform data
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
@@ -537,9 +533,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                 print(pick)
                 continue
             if debug > 0:
-                print(' '.join([pick.waveform_id.station_code,
-                                pick.waveform_id.channel_code,
-                                pick.phase_hint, str(pick.time)]))
+                print(pick)
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code)
         # Check to see if all picks have a corresponding waveform
@@ -990,6 +984,16 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     for pick in picks_copy:
         if not pick.waveform_id:
             print('Pick not associated with waveform, will not use it.')
+            print(pick)
+            picks_copy.remove(pick)
+            continue
+        if not pick.waveform_id.station_code:
+            print('Pick not associated with a station, will not use it.')
+            print(pick)
+            picks_copy.remove(pick)
+            continue
+        if not pick.waveform_id.channel_code:
+            print('Pick not associated with a station, will not use it.')
             print(pick)
             picks_copy.remove(pick)
             continue
