@@ -182,34 +182,41 @@ class Party(object):
         for fam in self.families:
             all_detections.extend(fam.detections)
         all_detections.sort(key=lambda x: x.detect_time)
-        forwards_declustered_detections = []
+        forwards_declustered_detections = copy.deepcopy(all_detections)
         # Forwards decluster
         for i, master in enumerate(all_detections):
-            cluster = [master]
+            print(master)
             for slave in all_detections[i + 1:]:
-                if slave.detect_time - master.detect_time > trig_int:
-                    break
+                if slave.detect_time - master.detect_time < trig_int:
+                    if slave.detect_val > master.detect_val:
+                        if master in forwards_declustered_detections:
+                            forwards_declustered_detections.remove(master)
+                            # Master is gone, don't compare to others
+                            break
+                    else:
+                        if slave in forwards_declustered_detections:
+                            forwards_declustered_detections.remove(slave)
                 else:
-                    cluster.append(slave)
-            # Take best correlating detection in cluster
-            cluster.sort(key=lambda x: (x.detect_val / x.no_chans))
-            if cluster[0] not in forwards_declustered_detections:
-                forwards_declustered_detections.append(cluster[0])
+                    # Don't continue checking once the gap is large enough
+                    break
         # Reversed decluster
         forwards_declustered_detections.sort(key=lambda x: x.detect_time,
                                              reverse=True)
-        declustered_detections = []
+        declustered_detections = copy.deepcopy(forwards_declustered_detections)
         for i, master in enumerate(forwards_declustered_detections):
-            cluster = [master]
             for slave in forwards_declustered_detections[i + 1:]:
-                if master.detect_time - slave.detect_time > trig_int:
-                    break
+                if master.detect_time - slave.detect_time < trig_int:
+                    if slave.detect_val > master.detect_val:
+                        if master in declustered_detections:
+                            declustered_detections.remove(master)
+                            break
+                    else:
+                        if slave in declustered_detections:
+                            declustered_detections.remove(slave)
                 else:
-                    cluster.append(slave)
-            # Take best correlating detection in cluster
-            cluster.sort(key=lambda x: (x.detect_val / x.no_chans))
-            if cluster[0] not in declustered_detections:
-                declustered_detections.append(cluster[0])
+                    # Don't continue checking once the gap is large enough
+                    break
+                # Take best correlating detection in cluster
         # Convert this list into families
         template_names = [d.template_name for d in declustered_detections]
         new_families = []

@@ -557,7 +557,7 @@ class TestMatchObjects(unittest.TestCase):
         print('Constructing tribe')
         cls.tribe.construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
+            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=process_len)
         # Download and process the day-long data
         template_stachans = []
@@ -578,7 +578,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.unproc_st = st.copy()
         print('Processing data')
         cls.st = pre_processing.shortproc(
-            st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
+            st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             debug=0, num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         print('Reading party')
@@ -719,19 +719,20 @@ class TestMatchObjects(unittest.TestCase):
             template.process_length = 86400
         day_party = daylong_tribe.detect(
             stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=True, plotvar=False)
-        self.assertEqual(len(day_party), 7)
-        day_catalog = day_party.lag_calc(stream=st, pre_processed=False)
-        self.assertEqual(len(day_catalog), 4)
+            daylong=True, plotvar=False, parallel_process=False)
+        self.assertEqual(len(day_party), 6)
+        day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
+                                         parallel=False)
+        self.assertEqual(len(day_catalog), 3)
         pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 7)
+        self.assertEqual(len(pre_picked_cat), 6)
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
         family = self.family.copy()
         self.assertEqual(
             family.__repr__(),
-            'Family of 1 detections from template 2004_09_28t17_15_25')
+            'Family of 1 detections from template 2004_09_28t17_15_26')
 
     def test_family_addition(self):
         """Test adding to the family."""
