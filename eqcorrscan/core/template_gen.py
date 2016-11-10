@@ -289,11 +289,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     if debug > 0:
         print("I have found the following picks")
         for pick in picks:
-            if not pick.waveform_id:
-                continue
-            print(' '.join([pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code, pick.phase_hint,
-                            str(pick.time)]))
+            print(pick)
     # Process waveform data
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
@@ -419,9 +415,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                    length, prepick, swin, all_horiz=False, delayed=True,
                    plot=False, debug=0):
     """
-    Generate a multiplexed template from a local quakeML file.
+    Generate a multiplexed template from a local file.
 
-    Function to generate a template from a local quakeml file \
+    Function to generate a template from a local observation file
     and an obspy.Stream object.
 
     :type meta_file: str
@@ -465,6 +461,11 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 
     :returns: List of templates of :class:`obspy.core.stream.Stream`
     :rtype: list
+
+    .. Note::
+        All picks must be associated with a station and channel, this is
+        not the case for NonLinLoc HYP files, will not use any picks that
+        do not have this association.
 
     .. warning:: We suggest giving this function a full day of data, to \
         ensure templates are generated with **exactly** the same processing \
@@ -537,9 +538,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                 print(pick)
                 continue
             if debug > 0:
-                print(' '.join([pick.waveform_id.station_code,
-                                pick.waveform_id.channel_code,
-                                pick.phase_hint, str(pick.time)]))
+                print(pick)
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code)
         # Check to see if all picks have a corresponding waveform
@@ -990,6 +989,16 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     for pick in picks_copy:
         if not pick.waveform_id:
             print('Pick not associated with waveform, will not use it.')
+            print(pick)
+            picks_copy.remove(pick)
+            continue
+        if not pick.waveform_id.station_code:
+            print('Pick not associated with a station, will not use it.')
+            print(pick)
+            picks_copy.remove(pick)
+            continue
+        if not pick.waveform_id.channel_code:
+            print('Pick not associated with a station, will not use it.')
             print(pick)
             picks_copy.remove(pick)
             continue
