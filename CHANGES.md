@@ -41,6 +41,7 @@ Detection;
     detections, and generate cross-correlation pick refinements, which
     output Event objects, which can be written to a catalog:
         Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
+    * Added 25 tests for these methods.
 * Removed support for obspy < 1.0.0
 * Update / correct doc-strings in template-gen functions when describing
 processing parameters.
@@ -167,7 +168,7 @@ does not convert all things, just origin and pick times;
 * Added from_sac function to template_gen.
 
 ## 0.1.0
-* Implimented tests for synthetic generation and match-filter functions
+* Implemented tests for synthetic generation and match-filter functions
 * Developed new tutorials that download from GeoNet and are much clearer
 * Changed from PICK and EVENTINFO classes to obspy.core.event classes, note
 this will break some previous scripts, however wrappers are included for this,

@@ -297,6 +297,11 @@ class Party(object):
                     cat = Catalog()
                     det_dict = ds.auxiliary_data.\
                         Detection[template.name][det_id].parameters
+                    # Decode anything that needs to be
+                    for key in det_dict.keys():
+                        if isinstance(det_dict[key], bytes):
+                            det_dict.update(
+                                {key: det_dict[key].decode("utf-8")})
                     chans = [tuple(chan.split('.'))
                              for chan in det_dict['chans'].split('_')]
                     d = Detection(
@@ -429,35 +434,11 @@ class Party(object):
                 template_groups.remove(group)
                 detection_groups.remove(det_group)
         # Process the data for each group and time-chunk
-        processed_streams = []
         for group, det_group in zip(template_groups, detection_groups):
             if not pre_processed:
-                kwargs = {
-                    'filt_order': group[0].filt_order,
-                    'highcut': group[0].highcut, 'lowcut': group[0].lowcut,
-                    'samp_rate': group[0].samp_rate, 'debug': debug,
-                    'parallel': parallel, 'num_cores': cores}
-                if group[0].process_length == 86400:
-                    func = dayproc
-                else:
-                    func = shortproc
-                n_chunks = int((stream[0].stats.endtime -
-                                stream[0].stats.starttime + 1) /
-                               group[0].process_length)
-                if n_chunks == 0:
-                    print('Data must be process_length or longer, '
-                          'not computing detections')
-                for i in range(n_chunks):
-                    st = stream.copy().trim(
-                        starttime=stream[0].stats.starttime + (i * 86400),
-                        endtime=stream[0].stats.starttime +
-                        ((i + 1) * 86400))
-                    if not group[0].process_length == 86400:
-                        kwargs.update(
-                            {'endtime':
-                             st[0].stats.starttime + group[0].process_length})
-                    processed_streams.append(func(
-                        st=st, starttime=st[0].stats.starttime, **kwargs))
+                processed_streams = _group_process(
+                    template_group=group, cores=cores, parallel=parallel,
+                    stream=stream, debug=debug)
             else:
                 processed_streams = [stream.copy()]
             for processed_stream in processed_streams:
@@ -1124,6 +1105,11 @@ class Tribe(object):
                                       template_name][0]
                 template_dict = ds.auxiliary_data.\
                     TemplateParameters[template.name].parameters
+                # Decode anything that needs to be
+                for key in template_dict.keys():
+                    if isinstance(template_dict[key], bytes):
+                        template_dict.update(
+                            {key: template_dict[key].decode("utf-8")})
                 template.lowcut = template_dict['lowcut']
                 template.highcut = template_dict['highcut']
                 template.process_length = template_dict['process_length']
@@ -1572,35 +1558,9 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   'num_cores': False, 'ignore_length': ignore_length}
         st = [dayproc(**kwargs)]
     elif not pre_processed and not daylong:
-        # This should look at process_length and process the data
-        # in blocks.
-        kwargs = {'lowcut': master.lowcut, 'highcut': master.highcut,
-                  'filt_order': master.filt_order,
-                  'samp_rate': master.samp_rate, 'debug': debug,
-                  'parallel': parallel_process, 'num_cores': False,
-                  'starttime': None, 'endtime': None}
-        stream_start = min([tr.stats.starttime for tr in stream])
-        stream_end = max([tr.stats.endtime for tr in stream])
-        n_chunks = int((stream_end - stream_start + 1) / master.process_length)
-        if n_chunks == 0:
-            print('Data must be process_length or longer, '
-                  'not computing detections')
-        if stream_start + ((n_chunks + 1) *
-                           master.process_length) < stream_end:
-            warnings.warn('Only processing up to %s, but stream ends at '
-                          '%s' % (stream_start + ((n_chunks + 1) *
-                                                  master.process_length),
-                                  stream_end))
-        st = []
-        for chunk_num in range(n_chunks):
-            kwargs.update(
-                {'starttime': stream_start +
-                 (chunk_num * master.process_length),
-                 'endtime': stream_start +
-                 (chunk_num * master.process_length) +
-                 master.process_length,
-                 'st': stream.copy()})
-            st.append(shortproc(**kwargs))
+        st = _group_process(
+            template_group=templates, parallel=parallel_process, debug=debug,
+            cores=False, stream=stream)
     elif pre_processed:
         warnings.warn('Not performing any processing on the '
                       'continuous data.')
@@ -1624,6 +1584,53 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         party += family
     return party
 
+
+def _group_process(template_group, parallel, debug, cores, stream):
+    """
+    Process data into chunks based on template procesing length.
+
+    Templates in template_group must all have the same processing parameters.
+
+    :type template_group: list
+    :param template_group: List of Templates.
+    :type parallel: bool
+    :param parallel: Wherether to use parallel processing or not
+    :type debug: int
+    :param debug: Debug level from 0-5
+    :type cores: int
+    :param cores: Number of cores to use, can be False to use all available.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param stream: Stream to process, will be left intact.
+
+    :return: list of processed streams.
+    """
+    master = template_group[0]
+    processed_streams = []
+    kwargs = {
+        'filt_order': master.filt_order,
+        'highcut': master.highcut, 'lowcut': master.lowcut,
+        'samp_rate': master.samp_rate, 'debug': debug,
+        'parallel': parallel, 'num_cores': cores}
+    if master.process_length == 86400:
+        func = dayproc
+    else:
+        func = shortproc
+    n_chunks = int((stream[0].stats.endtime -
+                    stream[0].stats.starttime + 1) /
+                   master.process_length)
+    if n_chunks == 0:
+        print('Data must be process_length or longer, '
+              'not computing detections')
+    for i in range(n_chunks):
+        kwargs.update(
+            {'starttime': stream[0].stats.starttime +
+                          (i * master.process_length)})
+        if master.process_length != 86400:
+            kwargs.update(
+                {'endtime': kwargs['starttime'] +
+                            master.process_length})
+        processed_streams.append(func(st=stream.copy(), **kwargs))
+    return processed_streams
 
 def read_tribe(fname):
     """

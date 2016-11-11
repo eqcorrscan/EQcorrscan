@@ -633,6 +633,18 @@ class TestMatchObjects(unittest.TestCase):
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False)
         self.assertEqual(len(party), 4)
+        for fam, check_fam in zip(party, self.party):
+            if not fam == check_fam:
+                print('Families not equal')
+                print(fam)
+                if not fam.detections == check_fam.detections:
+                    print('Detections not equal')
+                    print(fam.detections)
+                    print(check_fam.detections)
+                if not fam.template == check_fam.template:
+                    print('Template are not equal')
+                    print(fam.template)
+                    print(check_fam).template
         self.assertEqual(party, self.party)
 
     def test_party_io(self):
@@ -644,9 +656,7 @@ class TestMatchObjects(unittest.TestCase):
             party_back = read_party(fname='test_party_out.h5')
             self.assertEqual(self.party, party_back)
         finally:
-            print('fin')
             os.remove('test_party_out.h5')
-        # TODO: Generate some edge cases and test them
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
@@ -687,7 +697,11 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_party_lag_calc(self):
         """Test the lag-calc method on Party objects."""
-        # TODO: Need more testing of different streams
+        # Test the chained method
+        chained_cat = self.tribe.detect(
+            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False).lag_calc(
+            stream=self.unproc_st, pre_processed=False)
         catalog = self.party.lag_calc(stream=self.unproc_st,
                                       pre_processed=False)
         self.assertEqual(len(catalog), 3)
@@ -695,6 +709,35 @@ class TestMatchObjects(unittest.TestCase):
         self.assertEqual(self.party, read_party(
             fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                'test_data', 'test_party.h5')))
+        for ev, chained_ev in zip(catalog, chained_cat):
+            for i in range(len(ev.picks)):
+                for key in ev.picks[i].keys():
+                    if key == 'resource_id':
+                        continue
+                    if key == 'comments':
+                        self.assertEqual(
+                            sorted(ev.picks,
+                                   key=lambda p: p.time)[i][key][0].text,
+                            sorted(chained_ev.picks,
+                                   key=lambda p: p.time)[i][key][0].text)
+                        continue
+                    if key == 'waveform_id':
+                        for _k in ['network_code', 'station_code',
+                                   'channel_code']:
+                            self.assertEqual(
+                                sorted(ev.picks,
+                                       key=lambda p: p.time)[i][key][_k],
+                                sorted(chained_ev.picks,
+                                       key=lambda p: p.time)[i][key][_k])
+                        continue
+                    self.assertEqual(
+                        sorted(ev.picks,
+                               key=lambda p: p.time)[i][key],
+                        sorted(chained_ev.picks,
+                               key=lambda p: p.time)[i][key])
+                self.assertEqual(ev.resource_id, chained_ev.resource_id)
+                self.assertEqual(ev.comments[0].text,
+                                 chained_ev.comments[0].text)
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
