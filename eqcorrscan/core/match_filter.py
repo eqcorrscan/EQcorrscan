@@ -1624,13 +1624,14 @@ def _group_process(template_group, parallel, debug, cores, stream):
     for i in range(n_chunks):
         kwargs.update(
             {'starttime': stream[0].stats.starttime +
-                          (i * master.process_length)})
+             (i * master.process_length)})
         if master.process_length != 86400:
             kwargs.update(
                 {'endtime': kwargs['starttime'] +
-                            master.process_length})
+                 master.process_length})
         processed_streams.append(func(st=stream.copy(), **kwargs))
     return processed_streams
+
 
 def read_tribe(fname):
     """

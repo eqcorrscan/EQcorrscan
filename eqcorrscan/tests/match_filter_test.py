@@ -644,8 +644,8 @@ class TestMatchObjects(unittest.TestCase):
                 if not fam.template == check_fam.template:
                     print('Template are not equal')
                     print(fam.template)
-                    print(check_fam).template
-        self.assertEqual(party, self.party)
+                    print(check_fam.template)
+            self.assertEqual(fam.detections, check_fam.detections)
 
     def test_party_io(self):
         """Test reading and writing party objects."""
