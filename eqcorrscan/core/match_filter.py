@@ -1080,9 +1080,10 @@ class Tribe(object):
         :param filename:
             Filename to write to, if it exists it will be appended to
         """
-        for template in self.templates:
-            with pyasdf.ASDFDataSet(filename=filename,
-                                    compression="gzip-3") as ds:
+        with pyasdf.ASDFDataSet(filename=filename,
+                                compression="gzip-3") as ds:
+            for i, template in enumerate(self.templates):
+                print('Writing template %i of %i' % (i, len(self.templates)))
                 template._write(ds=ds)
         return self
 
@@ -1367,6 +1368,8 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
+        buff = 300  # Apply a buffer, often data downloaded is not the correct
+        #  length
         data_length = max([t.process_length for t in self.templates])
         pad = 0
         for template in self.templates:
@@ -1405,15 +1408,23 @@ class Tribe(object):
             for chan_id in template_channel_ids:
                 bulk_info.append((
                     chan_id[0], chan_id[1], chan_id[2], chan_id[3],
-                    starttime + (i * data_length) - pad,
-                    starttime + ((i + 1) * data_length) + pad))
-            st = client.get_waveforms_bulk(bulk_info)
-            party += self.detect(
-                stream=st, threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, daylong=daylong,
-                parallel_process=parallel_process,
-                ignore_length=ignore_length, group_size=group_size,
-                debug=debug)
+                    starttime + (i * data_length) - (pad + buff),
+                    starttime + ((i + 1) * data_length) + (pad + buff)))
+            try:
+                st = client.get_waveforms_bulk(bulk_info)
+                st.merge(fill_value='interpolate')
+                st.trim(starttime=starttime + (i * data_length) - pad,
+                        endtime=starttime + ((i + 1) * data_length) + pad)
+                party += self.detect(
+                    stream=st, threshold=threshold, threshold_type=threshold_type,
+                    trig_int=trig_int, plotvar=plotvar, daylong=daylong,
+                    parallel_process=parallel_process,
+                    ignore_length=ignore_length, group_size=group_size,
+                    debug=debug)
+            except Exception as e:
+                print('Error, routine incomplete, returning incomplete Party')
+                print('Error: %s' % str(e))
+                return party
         for family in party:
             family.detections = list(set(family.detections))
         return party
@@ -1730,6 +1741,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         if debug > 0:
             print('Computing detections between %s and %s' %
                   (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime))
+        st_chunk.trim(starttime=st_chunk[0].stats.starttime,
+                      endtime=st_chunk[0].stats.endtime)
+        for tr in st_chunk:
+            if len(tr) > len(st_chunk[0]):
+                tr.data = tr.data[0:len(st_chunk[0])]
         for i in range(n_groups):
             if group_size is not None:
                 end_group = (i + 1) * group_size
@@ -1744,7 +1760,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_names=[t.name for t in template_group],
                 template_list=[t.st for t in template_group], st=st_chunk,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar)
+                trig_int=trig_int, plotvar=plotvar, debug=debug)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
