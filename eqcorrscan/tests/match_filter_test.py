@@ -539,13 +539,13 @@ class TestMatchObjects(unittest.TestCase):
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
-        t1 = UTCDateTime(2004, 9, 28, 17)
-        t2 = t1 + 3600
+        cls.t1 = UTCDateTime(2004, 9, 28, 17)
+        cls.t2 = cls.t1 + 3600
         process_len = 3600
         # t1 = UTCDateTime(2004, 9, 28)
         # t2 = t1 + 80000
         # process_len = 80000
-        catalog = client.get_events(starttime=t1, endtime=t2,
+        catalog = client.get_events(starttime=cls.t1, endtime=cls.t2,
                                     minmagnitude=4,
                                     minlatitude=35.7, maxlatitude=36.1,
                                     minlongitude=-120.6,
@@ -559,6 +559,10 @@ class TestMatchObjects(unittest.TestCase):
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=process_len)
+        cls.onehztribe = Tribe().construct(
+            method='from_client', catalog=catalog, client_id='NCEDC',
+            lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
         # Download and process the day-long data
         template_stachans = []
         for template in cls.tribe.templates:
@@ -569,7 +573,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*',
                       stachan[2][0] + 'H' + stachan[2][1],
-                      t1, t1 + process_len)
+                      cls.t1, cls.t1 + process_len)
                      for stachan in template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous data')
@@ -646,6 +650,15 @@ class TestMatchObjects(unittest.TestCase):
                     print(fam.template)
                     print(check_fam.template)
             self.assertEqual(fam.detections, check_fam.detections)
+
+    def test_client_detect(self):
+        """Test the client_detect method."""
+        client = Client('NCEDC')
+        party = self.tribe.client_detect(
+            client=client, starttime=self.t1, endtime=self.t2,
+            threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            daylong=False, plotvar=False)
+        self.assertEqual(len(party), 4)
 
     def test_party_io(self):
         """Test reading and writing party objects."""
@@ -761,7 +774,7 @@ class TestMatchObjects(unittest.TestCase):
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
         # Hack day-long templates
-        daylong_tribe = self.tribe.copy()
+        daylong_tribe = self.onehztribe.copy()
         for template in daylong_tribe:
             template.process_length = 86400
         day_party = daylong_tribe.detect(

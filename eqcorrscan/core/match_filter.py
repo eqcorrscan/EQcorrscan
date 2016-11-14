@@ -1138,7 +1138,7 @@ class Tribe(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, ignore_length=False,
-               debug=0):
+               group_size=None, debug=0):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -1174,6 +1174,10 @@ class Tribe(object):
             are there for at least 80% of the day, if you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
+        :type group_size: int
+        :param group_size:
+            Maximum number of templates to run at once, use to reduce memory
+            consumption, if unset will use all templates.
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
@@ -1261,10 +1265,157 @@ class Tribe(object):
             group_party = _group_detect(
                 templates=group, stream=stream.copy(), threshold=threshold,
                 threshold_type=threshold_type, trig_int=trig_int,
-                plotvar=plotvar, pre_processed=False, daylong=daylong,
-                parallel_process=parallel_process,
+                plotvar=plotvar, group_size=group_size, pre_processed=False,
+                daylong=daylong, parallel_process=parallel_process,
                 ignore_length=ignore_length, debug=debug)
             party += group_party
+        return party
+
+    def client_detect(self, client, starttime, endtime, threshold,
+                      threshold_type, trig_int, plotvar, daylong=False,
+                      parallel_process=True, ignore_length=False,
+                      group_size=None, debug=0):
+        """
+        Detect using a Tribe of templates within a continuous stream.
+
+        :type client: `obspy.clients.*.Client`
+        :param client: Any obspy client with a dataselect service.
+        :type starttime: :class:`obspy.core.UTCDateTime`
+        :param starttime: Start-time for detections.
+        :type endtime: :class:`obspy.core.UTCDateTime`
+        :param endtime: End-time for detections
+        :type threshold: float
+        :param threshold:
+            Threshold level, if using `threshold_type='MAD'` then this will be
+            the multiple of the median absolute deviation.
+        :type threshold_type: str
+        :param threshold_type:
+            The type of threshold to be used, can be MAD, absolute or
+            av_chan_corr.  See Note on thresholding below.
+        :type trig_int: float
+        :param trig_int:
+            Minimum gap between detections in seconds. If multiple detections
+            occur within trig_int of one-another, the one with the highest
+            cross-correlation sum will be selected.
+        :type plotvar: bool
+        :param plotvar:
+            Turn plotting on or off, see warning about plotting below
+        :type daylong: bool
+        :param daylong:
+            Set to True to use the
+            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+            preforms additional checks and is more efficient for day-long data
+            over other methods.
+        :type parallel_process: bool
+        :param parallel_process:
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
+        :type group_size: int
+        :param group_size:
+            Maximum number of templates to run at once, use to reduce memory
+            consumption, if unset will use all templates.
+        :type debug: int
+        :param debug:
+            Debug level from 0-5 where five is more output, for debug levels
+            4 and 5, detections will not be computed in parallel.
+
+        :return:
+            :class:`eqcorrscan.core.match_filter.Party` of Families of
+            detections.
+
+        .. Note::
+            `stream` must not be pre-processed.
+
+        .. warning::
+            Plotting within the match-filter routine uses the Agg backend
+            with interactive plotting turned off.  This is because the function
+            is designed to work in bulk.  If you wish to turn interactive
+            plotting on you must import matplotlib in your script first,
+            when you then import match_filter you will get the warning that
+            this call to matplotlib has no effect, which will mean that
+            match_filter has not changed the plotting behaviour.
+
+        .. note::
+            **Thresholding:**
+
+            **MAD** threshold is calculated as the:
+
+            .. math::
+
+                threshold {\\times} (median(abs(cccsum)))
+
+            where :math:`cccsum` is the cross-correlation sum for a given
+            template.
+
+            **absolute** threshold is a true absolute threshold based on the
+            cccsum value.
+
+            **av_chan_corr** is based on the mean values of single-channel
+            cross-correlations assuming all data are present as required for
+            the template, e.g:
+
+            .. math::
+
+                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                len(template))
+
+            where :math:`template` is a single template from the input and the
+            length is the number of channels within this template.
+        """
+        party = Party()
+        data_length = max([t.process_length for t in self.templates])
+        pad = 0
+        for template in self.templates:
+            max_delay = (template.st.sort(['starttime'])[-1].stats.starttime -
+                         template.st.sort(['starttime'])[0].stats.starttime)
+            if max_delay > pad:
+                pad = max_delay
+        download_groups = int(endtime - starttime) / data_length
+        template_channel_ids = []
+        for template in self.templates:
+            for tr in template.st:
+                if tr.stats.network not in [None, '']:
+                    chan_id = (tr.stats.network, )
+                else:
+                    chan_id = ('*', )
+                if tr.stats.station not in [None, '']:
+                    chan_id += (tr.stats.station, )
+                else:
+                    chan_id += ('*', )
+                if tr.stats.location not in [None, '']:
+                    chan_id += (tr.stats.location, )
+                else:
+                    chan_id += ('*', )
+                if tr.stats.channel not in [None, '']:
+                    if len(tr.stats.channel) == 2:
+                        chan_id += (tr.stats.channel[0] + '?' +
+                                    tr.stats.channel[-1], )
+                    else:
+                        chan_id += (tr.stats.channel, )
+                else:
+                    chan_id += ('*', )
+                template_channel_ids.append(chan_id)
+        template_channel_ids = list(set(template_channel_ids))
+        for i in range(int(download_groups + 1)):
+            bulk_info = []
+            for chan_id in template_channel_ids:
+                bulk_info.append((
+                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
+                    starttime + (i * data_length) - pad,
+                    starttime + ((i + 1) * data_length) + pad))
+            st = client.get_waveforms_bulk(bulk_info)
+            party += self.detect(
+                stream=st, threshold=threshold, threshold_type=threshold_type,
+                trig_int=trig_int, plotvar=plotvar, daylong=daylong,
+                parallel_process=parallel_process,
+                ignore_length=ignore_length, group_size=group_size,
+                debug=debug)
+        for family in party:
+            family.detections = list(set(family.detections))
         return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
@@ -1482,7 +1633,7 @@ def _write_family(family, datastream):
 
 
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
-                  plotvar, pre_processed=False, daylong=False,
+                  plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, ignore_length=False, debug=0):
     """
     Pre-process and compute detections for a group of templates.
@@ -1509,7 +1660,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         cross-correlation sum will be selected.
     :type plotvar: bool
     :param plotvar:
-        Turn plotting on or off, see warning about plotting below
+        Turn plotting on or off, see warning about plotting below.
+    :type group_size: int
+    :param group_size:
+        Maximum number of templates to run at once, use to reduce memory
+        consumption, if unset will use all templates.
     :type pre_processed: bool
     :param pre_processed:
         Set to True if `stream` has already undergone processing, in this
@@ -1567,21 +1722,35 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         st = [stream]
     detections = []
     party = Party()
+    if group_size is not None:
+        n_groups = int(len(templates) / group_size) + 1
+    else:
+        n_groups = 1
     for st_chunk in st:
         if debug > 0:
             print('Computing detections between %s and %s' %
                   (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime))
-        detections += match_filter(
-            template_names=[t.name for t in templates],
-            template_list=[t.st for t in templates], st=st_chunk,
-            threshold=threshold, threshold_type=threshold_type,
-            trig_int=trig_int, plotvar=plotvar)
-    for template in templates:
-        family = Family(template=template, detections=[])
-        for detection in detections:
-            if detection.template_name == template.name:
-                family.append(detection)
-        party += family
+        for i in range(n_groups):
+            if group_size is not None:
+                end_group = (i + 1) * group_size
+                start_group = i * group_size
+                if i == n_groups:
+                    end_group = len(templates)
+            else:
+                end_group = len(templates)
+                start_group = 0
+            template_group = [t for t in templates[start_group: end_group]]
+            detections += match_filter(
+                template_names=[t.name for t in template_group],
+                template_list=[t.st for t in template_group], st=st_chunk,
+                threshold=threshold, threshold_type=threshold_type,
+                trig_int=trig_int, plotvar=plotvar)
+            for template in template_group:
+                family = Family(template=template, detections=[])
+                for detection in detections:
+                    if detection.template_name == template.name:
+                        family.append(detection)
+                party += family
     return party
 
 

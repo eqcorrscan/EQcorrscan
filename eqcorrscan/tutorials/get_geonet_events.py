@@ -89,11 +89,7 @@ def _get_geonet_pubids(publicids, parallel=True):
     :returns: Catalog of events
     :rtype: obspy.core.event.Catalog
     """
-    import obspy
-    if int(obspy.__version__.split('.')[0]) > 0:
-        from obspy.clients.fdsn import Client
-    else:
-        from obspy.fdsn import Client
+    from obspy.clients.fdsn import Client
     from obspy.core.event import Catalog
     from multiprocessing import Pool, cpu_count
 
