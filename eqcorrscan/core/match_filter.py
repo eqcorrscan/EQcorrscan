@@ -290,8 +290,13 @@ class Party(object):
             events = ds.events
             for template in tribe:
                 family = Family(template=template)
-                detection_ids = ds.auxiliary_data.\
-                    Detection[template.name].list()
+                try:
+                    detection_ids = ds.auxiliary_data.\
+                        Detection[template.name].list()
+                except KeyError:
+                    family.detections = []
+                    family.catalog = Catalog()
+                    continue
                 detections = []
                 for det_id in detection_ids:
                     cat = Catalog()
@@ -1329,7 +1334,11 @@ class Tribe(object):
             detections.
 
         .. Note::
-            `stream` must not be pre-processed.
+            Ensures that data overlap between loops, which will lead to no
+            missed detections at data start-stop points (see note for
+            :method:`detect`). This will result in end-time not being strictly
+            honoured, so detections may occur after the end-time set.  This is
+            because data must be run in the correct process-length.
 
         .. warning::
             Plotting within the match-filter routine uses the Agg backend
@@ -1416,8 +1425,9 @@ class Tribe(object):
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
                 party += self.detect(
-                    stream=st, threshold=threshold, threshold_type=threshold_type,
-                    trig_int=trig_int, plotvar=plotvar, daylong=daylong,
+                    stream=st, threshold=threshold,
+                    threshold_type=threshold_type, trig_int=trig_int,
+                    plotvar=plotvar, daylong=daylong,
                     parallel_process=parallel_process,
                     ignore_length=ignore_length, group_size=group_size,
                     debug=debug)

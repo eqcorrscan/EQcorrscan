@@ -412,7 +412,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                    length, prepick, swin, all_horiz=False, delayed=True,
-                   plot=False, debug=0, return_event=False):
+                   plot=False, parallel=True, debug=0, return_event=False):
     """
     Generate a multiplexed template from a local file.
 
@@ -450,6 +450,8 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
         pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: Display template plots or not
+    :type parallel: bool
+    :param parallel: Whether to process data in parallel or not.
     :type debug: int
     :param debug: Level of debugging output, higher=more
     :type return_event: bool
@@ -496,14 +498,19 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     else:
         daylong = False
     if daylong:
+        starttime = min([tr.stats.starttime for tr in st])
+        # Cope with the common starttime less than 1s before the start of day.
+        if (starttime + 10).date > starttime.date:
+            starttime = (starttime + 10).date
+        else:
+            starttime = starttime.date
         st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
                                     filt_order=filt_order, samp_rate=samp_rate,
-                                    debug=debug,
-                                    starttime=UTCDateTime(st[0].stats.
-                                                          starttime.date))
+                                    debug=debug, parallel=parallel,
+                                    starttime=UTCDateTime(starttime))
     else:
         st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                      filt_order=filt_order,
+                                      filt_order=filt_order, parallel=parallel,
                                       samp_rate=samp_rate, debug=debug)
     data_start = min([tr.stats.starttime for tr in st])
     data_end = max([tr.stats.endtime for tr in st])

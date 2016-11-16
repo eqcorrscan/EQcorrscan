@@ -121,12 +121,13 @@ def _inner_get_event(publicid, client):
     """
     import warnings
     from obspy.clients.fdsn.header import FDSNException
-    from obspy import read_events
+    from obspy import read_events, Catalog
+    catalog = Catalog()
     try:
         data_stream = client._download('http://quakeml.geonet.org.nz/' +
                                        'quakeml/1.2/' + publicid)
         data_stream.seek(0, 0)
-        catalog = read_events(data_stream, format="quakeml")
+        catalog += read_events(data_stream, format="quakeml")
         data_stream.close()
     except FDSNException:
         warnings.warn('Unable to download event: ' + publicid)
