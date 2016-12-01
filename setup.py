@@ -49,6 +49,13 @@ except ImportError:
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
+try:
+    import pyasdf  # NOQA
+except ImportError:
+    print(sys.path)
+    msg = '##### No pyasdf module, you need to install this yourself'
+    warnings.warn(msg)
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file

@@ -571,7 +571,7 @@ def extract_detections(detections, templates, archive, arc_type,
     The default is unset.  The  default extract_len is 90 seconds per channel.
 
     :type detections: list
-    :param detections: List of :class:`eqcorrscan.core.match_filter.DETECTION`.
+    :param detections: List of :class:`eqcorrscan.core.match_filter.Detection`.
     :type templates: list
     :param templates:
         A list of tuples of the template name and the template Stream used
@@ -610,13 +610,13 @@ def extract_detections(detections, templates, archive, arc_type,
     .. rubric: Example
 
     >>> from eqcorrscan.utils.clustering import extract_detections
-    >>> from eqcorrscan.core.match_filter import DETECTION
+    >>> from eqcorrscan.core.match_filter import Detection
     >>> from obspy import read, UTCDateTime
     >>> import os
     >>> # Use some dummy detections, you would use real one
-    >>> detections = [DETECTION('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
+    >>> detections = [Detection('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
     ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr'),
-    ...               DETECTION('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
+    ...               Detection('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
     ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr')]
     >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
     >>> archive = os.path.join(path_to_templates, 'day_vols')
@@ -842,7 +842,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=2)
+    ...                         minmagnitude=2)
     >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
 
     >>> from eqcorrscan.utils.clustering import space_cluster
@@ -852,7 +852,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6, catalog="ISC")
     >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
     """
     # Compute the distance matrix and linkage

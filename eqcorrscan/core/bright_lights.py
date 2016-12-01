@@ -37,7 +37,7 @@ from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
 from obspy.core.event import EventDescription, CreationInfo, Comment
 from obspy.core.trace import Stats
 
-from eqcorrscan.core.match_filter import DETECTION, normxcorr2
+from eqcorrscan.core.match_filter import Detection, normxcorr2
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.template_gen import template_gen
 
@@ -434,12 +434,12 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     :type realstations: list
     :param realstations:
         List of stations used to make the cumulative network response, will be
-        reported in the :class:`eqcorrscan.core.match_filter.DETECTION`
+        reported in the :class:`eqcorrscan.core.match_filter.Detection`
     :type length: float
     :param length: Maximum length of peak to look for in seconds
 
     :returns:
-        Detections as :class:`eqcorrscan.core.match_filter.DETECTION` objects.
+        Detections as :class:`eqcorrscan.core.match_filter.Detection` objects.
     :rtype: list
     """
     cum_net_resp = np.nan_to_num(cum_net_resp)  # Force no NaNs
@@ -462,7 +462,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     if peaks:
         for peak in peaks:
             node = nodes[peak[1]]
-            detections.append(DETECTION(template_name=str(node[0]) +
+            detections.append(Detection(template_name=str(node[0]) +
                                         '_' + str(node[1]) + '_' +
                                         str(node[2]),
                                         detect_time=peak[1] / samp_rate,

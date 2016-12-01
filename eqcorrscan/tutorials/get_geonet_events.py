@@ -89,11 +89,7 @@ def _get_geonet_pubids(publicids, parallel=True):
     :returns: Catalog of events
     :rtype: obspy.core.event.Catalog
     """
-    import obspy
-    if int(obspy.__version__.split('.')[0]) > 0:
-        from obspy.clients.fdsn import Client
-    else:
-        from obspy.fdsn import Client
+    from obspy.clients.fdsn import Client
     from obspy.core.event import Catalog
     from multiprocessing import Pool, cpu_count
 
@@ -125,12 +121,13 @@ def _inner_get_event(publicid, client):
     """
     import warnings
     from obspy.clients.fdsn.header import FDSNException
-    from obspy import read_events
+    from obspy import read_events, Catalog
+    catalog = Catalog()
     try:
         data_stream = client._download('http://quakeml.geonet.org.nz/' +
                                        'quakeml/1.2/' + publicid)
         data_stream.seek(0, 0)
-        catalog = read_events(data_stream, format="quakeml")
+        catalog += read_events(data_stream, format="quakeml")
         data_stream.close()
     except FDSNException:
         warnings.warn('Unable to download event: ' + publicid)

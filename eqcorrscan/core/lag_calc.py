@@ -28,7 +28,6 @@ from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
-from eqcorrscan.core.match_filter import normxcorr2
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -156,6 +155,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         Event object containing network, station, channel and pick information.
     :rtype: :class:`obspy.core.event.Event`
     """
+    from eqcorrscan.core.match_filter import normxcorr2
     event = Event()
     s_stachans = {}
     cccsum = 0
@@ -325,7 +325,7 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     :param detect_data: Stream to extract detection streams from.
     :type detections: list
     :param detections:
-        List of :class:`eqcorrscan.core.match_filter.DETECTION` to get
+        List of :class:`eqcorrscan.core.match_filter.Detection` to get
         data for.
     :type zipped_templates: zip
     :param zipped_templates: Zipped list of (template_name, template)
@@ -395,7 +395,7 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 log.debug(msg)
                 warnings.warn(msg)
                 detect_stream.remove(tr)
-            if tr.stats.endtime - tr.stats.starttime < template_len:
+            elif tr.stats.endtime - tr.stats.starttime < template_len:
                 msg = ("Insufficient data for %s.%s will not use."
                        % (tr.stats.station, tr.stats.channel))
                 log.debug(msg)
@@ -443,7 +443,7 @@ def lag_calc(detections, detect_data, template_names, templates,
 
     :type detections: list
     :param detections:
-        List of :class:`eqcorrscan.core.match_filter.DETECTION` objects.
+        List of :class:`eqcorrscan.core.match_filter.Detection` objects.
     :type detect_data: obspy.core.stream.Stream
     :param detect_data:
         All the data needed to cut from - can be a gappy Stream.
@@ -453,8 +453,8 @@ def lag_calc(detections, detect_data, template_names, templates,
         Must be in the same order as templates.
     :type templates: list
     :param templates:
-        List of the templates, templates should be
-        :class:`obspy.core.stream.Stream` objects.
+        List of the templates, templates must be a list of
+         :class:`obspy.core.stream.Stream` objects.
     :type shift_len: float
     :param shift_len:
         Shift length allowed for the pick in seconds, will be plus/minus this
@@ -483,7 +483,7 @@ def lag_calc(detections, detect_data, template_names, templates,
     :param parallel: Turn parallel processing on or off.
     :type debug: int
     :param debug: Debug output level, 0-5 with 5 being the most output.
-    .
+
 
     :returns:
         Catalog of events with picks.  No origin information is included.
