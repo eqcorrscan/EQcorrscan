@@ -227,29 +227,36 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     return b_values
 
 
-def _sim_WA(trace, PAZ, seedresp, water_level):
+def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.
 
     Returns a de-meaned, de-trended, Wood Anderson simulated trace in
-    it's place.
+    its place.
 
-    Works in-place on data and will destroy your original data, copy the \
+    Works in-place on data and will destroy your original data, copy the
     trace before giving it to this function!
 
     :type trace: obspy.core.trace.Trace
-    :param trace: A standard obspy trace, generally should be given without
-                    pre-filtering, if given with pre-filtering for use with
-                    amplitude determiniation for magnitudes you will need to
-                    worry about how you cope with the response of this filter
-                    yourself.
+    :param trace:
+        A standard obspy trace, generally should be given without
+        pre-filtering, if given with pre-filtering for use with
+        amplitude determination for magnitudes you will need to
+        worry about how you cope with the response of this filter
+        yourself.
     :type PAZ: dict
-    :param PAZ: Dictionary containing lists of poles and zeros, the gain and
-                the sensitivity. If unset will expect seedresp.
+    :param PAZ:
+        Dictionary containing lists of poles and zeros, the gain and
+        the sensitivity. If unset will expect seedresp.
     :type seedresp: dict
     :param seedresp: Seed response information - if unset will expect PAZ.
     :type water_level: int
     :param water_level: Water level for the simulation.
+    :type velocity: bool
+    :param velocity:
+        Whether to return a velocity trace or not - velocity is non-standard
+        for Wood-Anderson instruments, but institutes that use seiscomp3 or
+        Antelope require picks in velocity.
 
     :returns: Trace of Wood-Anderson simulated data
     :rtype: :class:`obspy.core.trace.Trace`
@@ -257,13 +264,16 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
     # Note Wood anderson sensitivity is 2080 as per Uhrhammer & Collins 1990
     PAZ_WA = {'poles': [-6.283 + 4.7124j, -6.283 - 4.7124j],
               'zeros': [0 + 0j], 'gain': 1.0, 'sensitivity': 2080}
+    if velocity:
+        PAZ_WA['zeros'] = [0 + 0j, 0 + 0j]
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
     if PAZ:
         trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
                               paz_remove=PAZ, paz_simulate=PAZ_WA,
-                              water_level=water_level, remove_sensitivity=True)
+                              water_level=water_level,
+                              remove_sensitivity=True)
     elif seedresp:
         trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
                               paz_remove=None, paz_simulate=PAZ_WA,
@@ -464,7 +474,7 @@ def _pairwise(iterable):
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
-                   remove_old=False, ps_multiplier=0.34):
+                   remove_old=False, ps_multiplier=0.34, velocity=False):
     """
     Pick amplitudes for local magnitude for a single event.
 
@@ -552,6 +562,11 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
         A p-s time multiplier of hypocentral distance - defaults to 0.34,
         based on p-s ratio of 1.68 and an S-velocity 0f 1.5km/s, deliberately
         chosen to be quite slow.
+    :type velocity: bool
+    :param velocity:
+        Whether to make the pick in velocity space or not. Original definition
+        of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
+        and Antelope uses a velocity measurement.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.Event`
@@ -633,9 +648,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             # Simulate a Wood Anderson Seismograph
             if PAZ and len(tr.data) > 10:
                 # Set ten data points to be the minimum to pass
-                tr = _sim_WA(tr, PAZ, None, 10)
+                tr = _sim_WA(tr, PAZ, None, 10, velocity=velocity)
             elif seedresp and len(tr.data) > 10:
-                tr = _sim_WA(tr, None, seedresp, 10)
+                tr = _sim_WA(tr, None, seedresp, 10, velocity=velocity)
             elif len(tr.data) > 10:
                 warnings.warn('No PAZ for ' + tr.stats.station + ' ' +
                               tr.stats.channel + ' at time: ' +
@@ -774,16 +789,13 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(filt_paz,
                                                                  1 / period) *
                               filt_paz['sensitivity'])
-            # Convert amplitude to mm
-            if PAZ:  # Divide by Gain to get to nm (returns pm? 10^-12)
+            if PAZ:
                 # amplitude *=PAZ['gain']
                 amplitude /= 1000
             if seedresp:  # Seedresp method returns mm
                 amplitude *= 1000000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
-            # Page 343 of Seisan manual:
-            #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
             # Append an amplitude reading to the event
             _waveform_id = WaveformStreamID(
@@ -794,18 +806,25 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 waveform_id=_waveform_id, phase_hint='IAML',
                 polarity='undecidable', time=tr.stats.starttime + delay,
                 evaluation_mode='automatic'))
-            event.amplitudes.append(Amplitude(
-                generic_amplitude=amplitude / 1e9, period=period,
-                pick_id=event.picks[pick_ind].resource_id,
-                waveform_id=event.picks[pick_ind].waveform_id, unit='m',
-                magnitude_hint='ML', type='AML', category='point'))
+            if not velocity:
+                event.amplitudes.append(Amplitude(
+                    generic_amplitude=amplitude / 1e9, period=period,
+                    pick_id=event.picks[pick_ind].resource_id,
+                    waveform_id=event.picks[pick_ind].waveform_id, unit='m',
+                    magnitude_hint='ML', type='AML', category='point'))
+            else:
+                event.amplitudes.append(Amplitude(
+                    generic_amplitude=amplitude / 1e9, period=period,
+                    pick_id=event.picks[pick_ind].resource_id,
+                    waveform_id=event.picks[pick_ind].waveform_id, unit='m/s',
+                    magnitude_hint='ML', type='AML', category='point'))
     return event
 
 
 def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
-                   remove_old=False):
+                   remove_old=False, velocity=False):
     """
     Function to pick amplitudes for local magnitudes from NORDIC s-files.
 
@@ -861,6 +880,11 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     :param remove_old:
         If True, will remove old amplitude picks from event and overwrite with
         new picks. Defaults to False.
+    :type velocity: bool
+    :param velocity:
+        Whether to make the pick in velocity space or not. Original definition
+        of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
+        and Antelope uses a velocity measurement.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.event.Event`
@@ -893,7 +917,7 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                                   pre_filt=pre_filt, lowcut=lowcut,
                                   highcut=highcut, corners=corners,
                                   min_snr=min_snr, plot=plot,
-                                  remove_old=remove_old)
+                                  remove_old=remove_old, velocity=velocity)
     new_sfile = sfile_util.eventtosfile(event=event_picked, userID=str('EQCO'),
                                         evtype=str('L'), outdir=str('.'),
                                         wavefiles=sfile_util.
