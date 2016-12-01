@@ -34,7 +34,7 @@ import pyasdf
 import re
 import datetime as dt
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from collections import Counter
 from obspy import Trace, Catalog, UTCDateTime, Stream
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
@@ -185,7 +185,6 @@ class Party(object):
         forwards_declustered_detections = copy.deepcopy(all_detections)
         # Forwards decluster
         for i, master in enumerate(all_detections):
-            print(master)
             for slave in all_detections[i + 1:]:
                 if slave.detect_time - master.detect_time < trig_int:
                     if slave.detect_val > master.detect_val:
@@ -218,7 +217,8 @@ class Party(object):
                     break
                 # Take best correlating detection in cluster
         # Convert this list into families
-        template_names = [d.template_name for d in declustered_detections]
+        template_names = list(set([d.template_name
+                                   for d in declustered_detections]))
         new_families = []
         for template_name in template_names:
             template = [fam.template for fam in self.families
@@ -257,7 +257,15 @@ class Party(object):
         if format.lower() == 'eqcorrscan':
             with pyasdf.ASDFDataSet(filename=filename,
                                     compression="gzip-3") as ds:
+                print('Writing tribe')
+                Tribe([f.template for f in self.families])._write(ds=ds)
+                # Write the catalog for detections
+                all_cat = Catalog()
                 for family in self.families:
+                    all_cat += family.catalog
+                ds.add_quakeml(all_cat)
+                for i, family in enumerate(self.families):
+                    print('Writing family %i' % i)
                     _write_family(family=family, datastream=ds)
         elif format.lower() == 'csv':
             if os.path.isfile(filename):
@@ -328,6 +336,9 @@ class Party(object):
                                       'detection ids, using the first match')
                         d.event = event[0]
                     detections.append(d)
+                    if len(event) == 0:
+                        warnings.warn('No event found for detection')
+                        continue
                     cat += d.event
                 family.detections = detections
                 family.catalog = cat
@@ -476,6 +487,26 @@ class Party(object):
         for fam in self.families:
             catalog += fam.catalog
         return catalog
+
+    def min_chans(self, min_chans):
+        """
+        Remove detections with fewer channels used than min_chans
+
+        :type min_chans: int
+        :param min_chans: Minimum number of channels to allow a detection.
+        :return: Party
+
+        .. Note:: Works in place on Party.
+        """
+        declustered = Party()
+        for family in self.families:
+            fam = Family(family.template)
+            for d in family.detections:
+                if d.no_chans > min_chans:
+                    fam.detections.append(d)
+            declustered.families.append(fam)
+        self.families = declustered.families
+        return self
 
 
 class Family(object):
@@ -776,49 +807,8 @@ class Template(object):
             and do not use parallel I/O
         """
         with pyasdf.ASDFDataSet(filename, compression="gzip-3") as ds:
-            self._write(ds=ds)
+            Tribe(templates=[self])._write(ds=ds)
         return self
-
-    def _write(self, ds):
-        """
-        Write template to ASDF format with metadata.
-
-        :type ds: :class:`pyasdf.ASDFDataSet`
-        :param filename:
-            Open pyASDF dataset to write to.
-
-        .. note::
-            File will be written using the pyASDF module, which writes to hdf5
-            files. Internally we use the gzip-3 compression for these files,
-            and do not use parallel I/O
-        """
-        if self.event is not None:
-            ds.add_quakeml(self.event)
-            ds.add_waveforms(self.st, event_id=self.event,
-                             tag="eqcorrscan_template_" + self.name)
-        else:
-            ds.add_waveforms(
-                self.st, tag="eqcorrscan_template_" + self.name)
-        chan_info = '_'.join(
-            ['.'.join([tr.stats.station, tr.stats.channel,
-                       tr.stats.starttime.strftime('%Y%jT%H%M%S%f'),
-                       tr.stats.endtime.strftime('%Y%jT%H%M%S%f')])
-             for tr in self.st])
-        template_dict = {
-            'lowcut': self.lowcut, 'highcut': self.highcut,
-            'samp_rate': self.samp_rate, 'filt_order': self.filt_order,
-            'prepick': self.prepick, 'process_length': self.process_length,
-            'template_starttime':
-                self.st.sort(['starttime'])[0].stats.starttime.strftime(
-                    '%Y%jT%H%M%S%f'),
-            'template_endtime':
-                self.st.sort(['starttime'])[-1].stats.endtime.strftime(
-                    '%Y%jT%H%M%S%f'),
-            'chan_info': chan_info
-        }
-        ds.add_auxiliary_data(data_type='TemplateParameters',
-                              path=self.name, parameters=template_dict,
-                              data=np.random.randn(2))
 
     def read(self, filename):
         """
@@ -993,6 +983,11 @@ class Template(object):
             lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
         self.name = name
+        for tr in st:
+            if not np.any(tr.data.astype(np.float16)):
+                warnings.warn('Data are zero in float16, missing data,'
+                              ' will not use: %s' % tr.id)
+                st.remove(tr)
         self.st = st
         self.lowcut = lowcut
         self.highcut = highcut
@@ -1077,20 +1072,77 @@ class Tribe(object):
         """Copy the Tribe."""
         return copy.deepcopy(self)
 
-    def write(self, filename):
+    def write(self, filename, debug=0):
         """
         Write the tribe to a file using ASDF formatting.
 
         :type filename: str
         :param filename:
-            Filename to write to, if it exists it will be appended to
+            Filename to write to, if it exists it will be appended to.
+        :type debug: int
+        :param debug:
+            Debug output, if greater than 0, will tell you how far through
+            writing it is.
         """
         with pyasdf.ASDFDataSet(filename=filename,
                                 compression="gzip-3") as ds:
-            for i, template in enumerate(self.templates):
-                print('Writing template %i of %i' % (i, len(self.templates)))
-                template._write(ds=ds)
+            self._write(ds=ds, debug=debug)
         return self
+
+    def _write(self, ds, debug=0):
+        """
+        Write tribe to ASDF format with metadata.
+
+        :type ds: :class:`pyasdf.ASDFDataSet`
+        :param ds:
+            Open pyASDF dataset to write to.
+        :type debug: int
+        :param debug:
+            Debug output, if greater than 0, will tell you how far through
+            writing it is.
+
+        .. note::
+            File will be written using the pyASDF module, which writes to hdf5
+            files. Internally we use the gzip-3 compression for these files,
+            and do not use parallel I/O
+        """
+        all_stream = Stream()
+        cat = Catalog()
+        for template in self.templates:
+            all_stream += template.st.copy()
+            cat += template.event
+        if debug > 0:
+            print('Adding waveform data to file')
+        ds.add_waveforms(waveform=all_stream, tag="template_waveforms")
+        if debug > 0:
+            print('Adding event data to file')
+        ds.add_quakeml(event=cat)
+        for i, template in enumerate(self.templates):
+            if debug > 0:
+                print('Adding meta-data for template %i' % i)
+            chan_info = '_'.join(
+                ['.'.join([tr.stats.station, tr.stats.channel,
+                           tr.stats.starttime.strftime('%Y%jT%H%M%S%f'),
+                           tr.stats.endtime.strftime('%Y%jT%H%M%S%f')])
+                 for tr in template.st])
+            template_dict = {
+                'lowcut': template.lowcut, 'highcut': template.highcut,
+                'samp_rate': template.samp_rate,
+                'filt_order': template.filt_order,
+                'prepick': template.prepick,
+                'process_length': template.process_length,
+                'template_starttime':
+                    template.st.sort([
+                        'starttime'])[0].stats.starttime.strftime(
+                        '%Y%jT%H%M%S%f'),
+                'template_endtime':
+                    template.st.sort(['starttime'])[-1].stats.endtime.strftime(
+                        '%Y%jT%H%M%S%f'),
+                'chan_info': chan_info
+            }
+            ds.add_auxiliary_data(data_type='TemplateParameters',
+                                  path=template.name, parameters=template_dict,
+                                  data=np.random.randn(2))
 
     def read(self, filename):
         """
@@ -1100,8 +1152,13 @@ class Tribe(object):
         :param filename: File to read templates from.
         """
         with pyasdf.ASDFDataSet(filename) as ds:
+            st = Stream()
+            for net_sta in ds.waveforms.list():
+                st += ds.waveforms[net_sta].template_waveforms
+            st.merge()
             events = ds.events
             for template_name in ds.auxiliary_data.TemplateParameters.list():
+                print('Adding template: ' + template_name)
                 template = Template(name=template_name)
                 if len([c for ev in events for c in ev.comments if
                         c.text == 'eqcorrscan_template_' +
@@ -1125,22 +1182,42 @@ class Tribe(object):
                 template.st = Stream()
                 chan_info = [c.split('.')
                              for c in template_dict['chan_info'].split('_')]
+                print('Trimming stream')
                 for chan in chan_info:
-                    st = ds.get_waveforms(
-                        network="*", station=chan[0], location="*",
-                        channel=chan[1],
+                    template.st += st.select(
+                        station=chan[0], channel=chan[1]).slice(
                         starttime=UTCDateTime(
                             dt.datetime.strptime(chan[2], '%Y%jT%H%M%S%f')),
                         endtime=UTCDateTime(
-                            dt.datetime.strptime(chan[3], '%Y%jT%H%M%S%f')),
-                        tag="eqcorrscan_template_" + template.name)
-                    template.st += st.trim(
-                        starttime=UTCDateTime(
-                            dt.datetime.strptime(chan[2], '%Y%jT%H%M%S%f')),
-                        endtime=UTCDateTime(
-                            dt.datetime.strptime(chan[3], '%Y%jT%H%M%S%f')))
+                            dt.datetime.strptime(chan[3],
+                                                 '%Y%jT%H%M%S%f'))).copy().split()
                 self.templates.append(template)
         return self
+
+    def cluster(self, method, **kwargs):
+        """
+        Cluster the tribe, returns multiple tribes each of which could be
+        stacked.
+
+        :type method: str
+        :param method:
+            Method of stacking, see :module:`eqcorrscan.utils.clustering`
+
+        :return: List of tribes.
+        """
+        from eqcorrscan.utils import clustering
+        tribes = []
+        func = getattr(clustering, method)
+        if method in ['space_cluster', 'space_time_cluster']:
+            cat = Catalog([t.event for t in self.templates])
+            groups = func(cat, **kwargs)
+            for group in groups:
+                new_tribe = Tribe()
+                for event in group:
+                    new_tribe.templates.extend([t for t in self.templates
+                                                if t.event == event])
+                tribes.append(new_tribe)
+        return tribes
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, ignore_length=False,
@@ -1479,6 +1556,11 @@ class Tribe(object):
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
+            for tr in template:
+                if not np.any(tr.data.astype(np.float16)):
+                    warnings.warn('Data are zero in float16, missing data,'
+                                  ' will not use: %s' % tr.id)
+                    template.remove(tr)
             t.st = template
             t.name = template.sort(['starttime'])[0].\
                 stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
@@ -1624,7 +1706,7 @@ class Detection(object):
         f.close()
 
 
-def _write_family(family, datastream):
+def _write_family(family, datastream, debug=1):
     """
     Write a party to an hdf5 formatted file, using ASDF.
 
@@ -1635,11 +1717,10 @@ def _write_family(family, datastream):
     """
     # Three elements need to be written, family.template, family.detections and
     # family.catalog
-    # Write the template
-    family.template._write(ds=datastream)
     # Write the detection objects
-    for detection in family.detections:
-        datastream.add_quakeml(detection.event)
+    for i, detection in enumerate(family.detections):
+        if debug > 0:
+            print('Writing detection %i for family' % i)
         chan_string = '_'.join(['.'.join(chan) for chan in detection.chans])
         det_dict = {
             'template_name': detection.template_name,
@@ -1715,6 +1796,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
+    ncores = cpu_count()
     st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
@@ -1770,7 +1852,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_names=[t.name for t in template_group],
                 template_list=[t.st for t in template_group], st=st_chunk,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, debug=debug)
+                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=ncores)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -1789,7 +1871,7 @@ def _group_process(template_group, parallel, debug, cores, stream):
     :type template_group: list
     :param template_group: List of Templates.
     :type parallel: bool
-    :param parallel: Wherether to use parallel processing or not
+    :param parallel: Whether to use parallel processing or not
     :type debug: int
     :param debug: Debug level from 0-5
     :type cores: int
@@ -2074,7 +2156,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
             np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
             np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
             np.save('inf_cccmean_image_%02d.npy' % i, image)
-        ccc = np.zeros(len(ccc))
+        ccc = np.zeros(len(ccc[0]))
         ccc = ccc.reshape((1, len(ccc)))
         # Returns zeros
     if debug >= 3:

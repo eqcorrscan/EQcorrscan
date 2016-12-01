@@ -525,7 +525,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :param winlen:
         Length of window, see above parameter, if var_wintype is False then
         this will be in seconds, otherwise it is the multiplier to the
-        p-s time, defaults to 0.5.
+        p-s time, defaults to 0.9.
     :type pre_pick: float
     :param pre_pick:
         Time before the s-pick to start the cut window, defaults to 0.2.
@@ -561,6 +561,11 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
         dividing the maximum amplitude in the signal window (pick window)
         by the normalized noise amplitude (taken from the whole window
         supplied).
+
+    .. Warning::
+        Works in place on data - will filter and remove response from data,
+        you are recommended to give this function a copy of the data if you
+        are using it in a loop.
     """
     # Convert these picks into a lists
     stations = []  # List of stations
@@ -662,7 +667,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     S_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'S']
                     S_pick = min(S_pick)
-                    P_modelled = S_pick - hypo_dist * ps_multiplier
+                    P_modelled = S_pick - (hypo_dist * ps_multiplier)
                     try:
                         tr.trim(starttime=S_pick - pre_pick,
                                 endtime=S_pick + (S_pick - P_modelled) *
@@ -674,11 +679,15 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     P_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'P']
                     P_pick = min(P_pick)
-                    S_modelled = P_pick + hypo_dist * ps_multiplier
+                    S_modelled = P_pick + (hypo_dist * ps_multiplier)
+                    print('P_pick=%s' % str(P_pick))
+                    print('hypo_dist: %s' % str(hypo_dist))
+                    print('S modelled=%s' % str(S_modelled))
                     try:
                         tr.trim(starttime=S_modelled - pre_pick,
                                 endtime=S_modelled + (S_modelled - P_pick) *
                                 winlen)
+                        print(tr)
                     except ValueError:
                         continue
                 # Work out the window length based on p-s time or distance
@@ -704,6 +713,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # are not using any kind of velocity model.
                 P_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'P']
+                print(picktimes)
                 P_pick = min(P_pick)
                 hypo_dist = [distances[i] for i in sta_picks
                              if picktypes[i] == 'P'][0]
@@ -722,7 +732,11 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # if i not in sta_picks]
                 continue
             # Get the amplitude
-            amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            try:
+                amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            except ValueError:
+                print('No amplitude picked for tr %s' % str(tr))
+                continue
             # Calculate the normalized noise amplitude
             noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
             if amplitude == 0.0:

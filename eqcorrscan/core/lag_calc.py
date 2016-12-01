@@ -395,7 +395,7 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 log.debug(msg)
                 warnings.warn(msg)
                 detect_stream.remove(tr)
-            if tr.stats.endtime - tr.stats.starttime < template_len:
+            elif tr.stats.endtime - tr.stats.starttime < template_len:
                 msg = ("Insufficient data for %s.%s will not use."
                        % (tr.stats.station, tr.stats.channel))
                 log.debug(msg)

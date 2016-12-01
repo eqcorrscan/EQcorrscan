@@ -842,7 +842,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=2)
+    ...                         minmagnitude=2)
     >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
 
     >>> from eqcorrscan.utils.clustering import space_cluster
@@ -852,7 +852,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6, catalog="ISC")
     >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
     """
     # Compute the distance matrix and linkage
