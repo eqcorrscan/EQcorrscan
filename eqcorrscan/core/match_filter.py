@@ -675,7 +675,7 @@ def match_filter(template_names, template_list, st, threshold,
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
             raise MatchFilterError(msg)
-
+    _spike_test(st, 0.99, 1e6)
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -922,6 +922,30 @@ def match_filter(template_names, template_list, st, threshold,
         return detections, detection_streams
     else:
         return detections, det_cat, detection_streams
+
+
+def _spike_test(stream, percent=0.99, multipler=1e6):
+    """
+    Check for very large spikes in data and raise an error if found.
+    
+    :param stream: Stream to look for spikes in.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param percent: Percentage as a decimal to calcualte range for.
+    :type percent: float
+    :param multiple: Multiplier of range to define a spike.
+    :type multiple: float
+    """
+    for tr in stream:
+        if (tr.data > 2 * np.max(
+            np.sort(np.abs(
+                tr))[0:int(percent * len(tr.data))]) * multipler).sum() > 0:
+            msg = ('Spikes above ' + str(multiplier) +
+                   ' of the range of ' + str(percent) + 
+                   ' of the data present, check. \n ' +
+                   'This would otherwise likely result in an issue during ' +
+                   'FFT prior to cross-correlation.\n' +
+                   'If you think this spike is real please report this as a bug.')
+            raise MatchFilterError(msg)
 
 
 def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
