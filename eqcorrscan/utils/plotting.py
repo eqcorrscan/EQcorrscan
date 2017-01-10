@@ -533,17 +533,16 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     Data will be aligned by their pick-time given in the appropriate picks.
     Requires an individual stream for each event you want to plot,
-    events are stored in the
-    :class:`obspy.core.event.Catalog` object, and there must be picks present
-    for the streams you wish to plot.  Events will be aligned if
-    `realign=True`, in this case the traces will be aligned using the window
-    defined by `cut`.
+    events are stored in the :class:`obspy.core.event.Catalog` object, and
+    there must be picks present for the streams you wish to plot.  Events will
+    be aligned if `realign=True`, in this case the traces will be aligned
+    using the window defined by `cut`.
 
     :type streams: list
     :param streams:
         List of the :class:`obspy.core.stream.Stream` objects to use, can
         contain more traces than you plan on plotting (e.g. from more channels)
-         - must be in the same order as events in catalog.
+        - must be in the same order as events in catalog.
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog of events, one for each stream.
     :type station: str
@@ -592,7 +591,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
     >>> from eqcorrscan.utils.plotting import multi_event_singlechan
     >>> import glob
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*.S??????')
     >>> catalog = Catalog()
     >>> streams = []
     >>> for sfile in sfiles:
@@ -624,9 +623,11 @@ def multi_event_singlechan(streams, catalog, station, channel,
         raise IOError('No picks for ' + station + ' ' + channel)
     traces = []
     al_traces = []
+    al_picks = []
     if isinstance(short_streams, Stream):
         short_streams = [short_streams]
     st_list = deepcopy(short_streams)
+    print(short_cat)
     for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
@@ -660,6 +661,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                 warnings.warn(msg)
             else:
                 al_traces.append(tr_cut)
+                al_picks.append(_pick)
         else:
             tr.trim(_pick.time - pre_pick,
                     _pick.time + clip - pre_pick,
@@ -675,18 +677,20 @@ def multi_event_singlechan(streams, catalog, station, channel,
     if realign:
         shift_len = int(0.25 * (cut[1] - cut[0]) *
                         al_traces[0].stats.sampling_rate)
-        shifts = stacking.align_traces(al_traces, shift_len)
-        for i in xrange(len(shifts)):
+        shifts = stacking.align_traces(al_traces, shift_len)[0]
+        for i in range(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
             _pick.time -= shifts[i]
-            traces[i].trim(_pick.time - pre_pick,
-                           _pick.time + clip - pre_pick,
-                           nearest_sample=False)
+            traces[i].trim(al_picks[i].time - pre_pick,
+                           al_picks[i].time + clip - pre_pick,
+                           nearest_sample=True)
     # We now have a list of traces
     if PWS:
         stack = 'PWS'
     else:
         stack = 'linstack'
+    for tr in traces:
+        print(tr)
     fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
     if title:
         fig.suptitle(title)
