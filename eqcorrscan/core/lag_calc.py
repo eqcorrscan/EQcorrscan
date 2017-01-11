@@ -16,8 +16,6 @@ from __future__ import unicode_literals
 import numpy as np
 import scipy
 import warnings
-import logging
-import sys
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
@@ -29,14 +27,6 @@ from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
 from eqcorrscan.core.match_filter import normxcorr2
-
-# Set up logging
-log = logging.getLogger(__name__)
-ch = logging.StreamHandler(stream=sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s -' +
-                              ' %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-log.addHandler(ch)
 
 
 class LagCalcError(Exception):
@@ -110,7 +100,8 @@ def _xcorr_interp(ccc, dt):
 
 def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                   pre_lag_ccsum=None, detect_chans=0,
-                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z']):
+                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                  debug=0):
     """
     Inner loop for correlating and assigning picks.
 
@@ -151,6 +142,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     :param vertical_chans:
         List of channel endings for vertical-channels, on which P-picks will
         be made.
+    :type debug: int
+    :param debug: Debug output level 0-5.
 
     :returns:
         Event object containing network, station, channel and pick information.
@@ -165,10 +158,11 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        log.debug('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
+        if debug > 3:
+            print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
         image = detection.select(station=temp_sta, channel=temp_chan)
         if len(image) == 0:
-            log.debug('No match in image.')
+            print('No match in image.')
             continue
         if interpolate:
             try:
@@ -176,7 +170,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 shift, cc_max = _xcorr_interp(ccc=ccc,
                                               dt=image[0].stats.delta)
             except IndexError:
-                log.error('Could not interpolate ccc, not smooth')
+                print('Could not interpolate ccc, not smooth')
                 ccc = normxcorr2(tr.data, image[0].data)
                 cc_max = np.amax(ccc)
                 shift = np.argmax(ccc) * image[0].stats.delta
@@ -188,11 +182,13 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             cc_max = np.amax(ccc)
             picktime = image[0].stats.starttime + (np.argmax(ccc) *
                                                    image[0].stats.delta)
-        log.debug('Maximum cross-corr=%s' % cc_max)
+        if debug > 3:
+            print('Maximum cross-corr=%s' % cc_max)
         checksum += cc_max
         used_chans += 1
         if cc_max < min_cc:
-            log.debug('Correlation below threshold, not used')
+            if debug > 3:
+                print('Correlation below threshold, not used')
             continue
         cccsum += cc_max
         # Perhaps weight each pick by the cc val or cc val^2?
@@ -202,7 +198,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         # Only take the S-pick with the best correlation
         elif temp_chan[-1] in horizontal_chans:
             phase = 'S'
-            log.debug('Making S-pick on: %s.%s.%s' %
+            if debug > 4:
+                print('Making S-pick on: %s.%s.%s' %
                       (temp_net, temp_sta, temp_chan))
             if temp_sta not in s_stachans.keys():
                 s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
@@ -211,8 +208,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 if np.amax(ccc) > s_stachans[temp_sta][1]:
                     picktime = picktime
                 else:
-                    picktime = s_stachans[temp_sta][2]
-                    temp_chan = s_stachans[temp_sta][0]
+                    continue
         else:
             phase = None
         _waveform_id = WaveformStreamID(
@@ -239,7 +235,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
 
 
 def _day_loop(detection_streams, template, min_cc, detections,
-              horizontal_chans, vertical_chans, interpolate, cores, parallel):
+              horizontal_chans, vertical_chans, interpolate, cores, parallel,
+              debug=0):
     """
     Function to loop through multiple detections for one template.
 
@@ -270,6 +267,8 @@ def _day_loop(detection_streams, template, min_cc, detections,
     :type interpolate: bool
     :param interpolate:
         Interpolate the correlation function to achieve sub-sample precision.
+    :type debug: int
+    :param debug: debug output level 0-5.
 
     :returns:
         Catalog object containing Event objects for each detection created by
@@ -284,7 +283,8 @@ def _day_loop(detection_streams, template, min_cc, detections,
         num_cores = len(detection_streams)
     if parallel:
         pool = Pool(processes=num_cores)
-        log.debug('Made pool of %i workers' % num_cores)
+        if debug > 4:
+            print('Made pool of %i workers' % num_cores)
         # Parallel generation of events for each detection:
         # results will be a list of (i, event class)
         results = [pool.apply_async(_channel_loop, (detection_streams[i], ),
@@ -294,7 +294,8 @@ def _day_loop(detection_streams, template, min_cc, detections,
                                      'pre_lag_ccsum': detections[i].detect_val,
                                      'detect_chans': detections[i].no_chans,
                                      'horizontal_chans': horizontal_chans,
-                                     'vertical_chans': vertical_chans})
+                                     'vertical_chans': vertical_chans,
+                                     'debug': debug})
                    for i in range(len(detection_streams))]
         pool.close()
         events_list = [p.get() for p in results]
@@ -310,7 +311,8 @@ def _day_loop(detection_streams, template, min_cc, detections,
                 pre_lag_ccsum=detections[i].detect_val,
                 detect_chans=detections[i].no_chans,
                 horizontal_chans=horizontal_chans,
-                vertical_chans=vertical_chans))
+                vertical_chans=vertical_chans,
+                debug=debug))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
@@ -392,13 +394,11 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 msg = ('No data in %s.%s for detection at time %s' %
                        (tr.stats.station, tr.stats.channel,
                         detection.detect_time))
-                log.debug(msg)
                 warnings.warn(msg)
                 detect_stream.remove(tr)
             if tr.stats.endtime - tr.stats.starttime < template_len:
                 msg = ("Insufficient data for %s.%s will not use."
                        % (tr.stats.station, tr.stats.channel))
-                log.debug(msg)
                 warnings.warn(msg)
                 detect_stream.remove(tr)
         # Check for duplicate traces
@@ -536,16 +536,6 @@ def lag_calc(detections, detect_data, template_names, templates,
 
         if the output[m] is for the same event as detections[n].
     """
-    if debug > 0:
-        log.setLevel(logging.WARNING)
-        ch.setLevel(logging.WARNING)
-    if debug > 2:
-        log.setLevel(logging.INFO)
-        ch.setLevel(logging.INFO)
-    if debug > 3:
-        log.setLevel(0)
-        ch.setLevel(0)
-    log.addHandler(ch)
     if debug > 2 and plot:
         prep_plot = True
     else:
@@ -579,10 +569,11 @@ def lag_calc(detections, detect_data, template_names, templates,
     # Segregate detections by template, then feed to day_loop
     initial_cat = Catalog()
     for template in zipped_templates:
-        log.info('Running lag-calc for template %s' % template[0])
+        print('Running lag-calc for template %s' % template[0])
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
-        log.info('There are %i detections' % len(template_detections))
+        if debug > 2:
+            print('There are %i detections' % len(template_detections))
         detect_streams = _prepare_data(detect_data=detect_data,
                                        detections=template_detections,
                                        zipped_templates=zipped_templates,
@@ -596,7 +587,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                                      horizontal_chans=horizontal_chans,
                                      vertical_chans=vertical_chans,
                                      interpolate=interpolate, cores=cores,
-                                     parallel=parallel)
+                                     parallel=parallel, debug=debug)
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):
@@ -617,7 +608,6 @@ def lag_calc(detections, detect_data, template_names, templates,
                             template_plot.remove(tr)
                     plot_repicked(template=template_plot, picks=event.picks,
                                   det_stream=plot_stream)
-    sys.stdout.flush()
     # Order the catalogue to match the input
     output_cat = Catalog()
     for det in detections:
