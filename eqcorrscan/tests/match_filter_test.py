@@ -589,7 +589,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
-                'test_data', 'test_party.h5'), format='asdf')
+                'test_data', 'test_party.tgz'))
         cls.family = cls.party.sort()[0].copy()
         print('Set Up finished')
 
@@ -620,24 +620,13 @@ class TestMatchObjects(unittest.TestCase):
         for template in self.tribe:
             self.assertTrue(isinstance(template, Template))
 
-    def test_tribe_io_asdf(self):
-        """Test reading and writing of Tribe objects."""
-        try:
-            if os.path.isfile('tribe_test.h5'):
-                os.remove('tribe_test.h5')
-            self.tribe.write(filename='tribe_test.h5', format='asdf')
-            tribe_back = read_tribe('tribe_test.h5', format='asdf')
-            self.assertEqual(self.tribe, tribe_back)
-        finally:
-            os.remove('tribe_test.h5')
-
-    def test_tribe_io_tar(self):
+    def test_tribe_io(self):
         """Test reading and writing or Tribe objects using tar form."""
         try:
             if os.path.isfile('test_tribe.tgz'):
                 os.remove('test_tribe.tgz')
-            self.tribe.write(filename='test_tribe.tgz', format='tar')
-            tribe_back = read_tribe('test_tribe.tgz', format='tar')
+            self.tribe.write(filename='test_tribe')
+            tribe_back = read_tribe('test_tribe.tgz')
             self.assertEqual(self.tribe, tribe_back)
         finally:
             os.remove('test_tribe.tgz')
@@ -673,14 +662,14 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_party_io(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.h5'):
-            os.remove('test_party_out.h5')
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
         try:
-            self.party.write(filename='test_party_out.h5')
-            party_back = read_party(fname='test_party_out.h5')
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname='test_party_out.tgz')
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.h5')
+            os.remove('test_party_out.tgz')
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
@@ -732,7 +721,7 @@ class TestMatchObjects(unittest.TestCase):
         # Check that the party is unaltered
         self.assertEqual(self.party, read_party(
             fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.h5')))
+                               'test_data', 'test_party.tgz')))
         for ev, chained_ev in zip(catalog, chained_cat):
             for i in range(len(ev.picks)):
                 for key in ev.picks[i].keys():
@@ -770,7 +759,7 @@ class TestMatchObjects(unittest.TestCase):
         # Check that the party is unaltered
         self.assertEqual(self.party, read_party(
             fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.h5')))
+                               'test_data', 'test_party.tgz')))
 
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
@@ -847,12 +836,12 @@ class TestMatchObjects(unittest.TestCase):
         """Test the write method of family."""
         family = self.family.copy()
         try:
-            family.write('test_family.h5')
-            party_back = read_party('test_family.h5')
+            family.write('test_family')
+            party_back = read_party('test_family.tgz')
             self.assertEqual(len(party_back), 1)
             self.assertEqual(party_back[0], family)
         finally:
-            os.remove('test_family.h5')
+            os.remove('test_family.tgz')
 
     def test_family_lag_calc(self):
         """Test the lag-calc method on family."""
@@ -891,19 +880,19 @@ class TestMatchObjects(unittest.TestCase):
         """Test template read/write."""
         test_template = self.family.template.copy()
         try:
-            test_template.write('test_template.h5')
-            template_back = Template().read('test_template.h5')
+            test_template.write('test_template')
+            template_back = Template().read('test_template.tgz')
             self.assertEqual(test_template, template_back)
         finally:
-            os.remove('test_template.h5')
+            os.remove('test_template.tgz')
         # Make sure we raise a useful error when trying to read from a
         # tribe file.
         try:
-            self.tribe.write(filename='test_template.h5')
+            self.tribe.write(filename='test_template')
             with self.assertRaises(IOError):
-                Template().read('test_template.h5')
+                Template().read('test_template.tgz')
         finally:
-            os.remove('test_template.h5')
+            os.remove('test_template.tgz')
 
     def test_template_detect(self):
         """Test detect method on Template objects."""

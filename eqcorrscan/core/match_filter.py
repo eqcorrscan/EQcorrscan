@@ -30,9 +30,7 @@ import os
 import time
 import copy
 import getpass
-import pyasdf
 import re
-import datetime as dt
 import tarfile
 import shutil
 import tempfile
@@ -40,7 +38,7 @@ import glob
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
-from obspy import Trace, Catalog, UTCDateTime, Stream, read
+from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
@@ -248,7 +246,7 @@ class Party(object):
 
         :type format: str
         :param format:
-            One of either 'tar', 'csv', 'asdf' or any obspy supported
+            One of either 'tar', 'csv', or any obspy supported
             catalog output. See note below on formats
         :type filename: str
         :param filename: Path to write file to.
@@ -256,10 +254,8 @@ class Party(object):
         .. NOTE::
             csv format will write out detection objects, all other
             outputs will write the catalog.  These cannot be rebuilt into
-            a Family object.  The only formats that can be read back into
-            Family objects is the 'asdf' and 'tar' type, however the 'asdf'
-            writing style here is in alpha and is only for development
-            purposes.
+            a Family object.  The only format that can be read back into
+            Family objects is the 'tar' type.
 
         .. NOTE::
             We recommend writing to the 'tar' format, which will write out
@@ -267,24 +263,8 @@ class Party(object):
             alongside the detections and store these in a tar archive. This
             is readable by other programs and maintains all information
             required for further study.
-
-        .. WARNING::
-            ASDF format is for development purposes only here.
         """
-        if format.lower() == 'asdf':
-            with pyasdf.ASDFDataSet(filename=filename,
-                                    compression="gzip-3") as ds:
-                print('Writing tribe')
-                Tribe([f.template for f in self.families])._write(ds=ds)
-                # Write the catalog for detections
-                all_cat = Catalog()
-                for family in self.families:
-                    all_cat += family.catalog
-                ds.add_quakeml(all_cat)
-                for i, family in enumerate(self.families):
-                    print('Writing family %i' % i)
-                    _write_family(family=family, datastream=ds)
-        elif format.lower() == 'csv':
+        if format.lower() == 'csv':
             if os.path.isfile(filename):
                 raise IOError('Will not overwrite existing filename %s'
                               % filename)
@@ -297,92 +277,83 @@ class Party(object):
                               % filename)
             os.makedirs(filename)
             Tribe([f.template for f in self.families]).write(
-                filename=filename, format='tar', compress=False)
+                filename=filename, compress=False)
             all_cat = Catalog()
             for family in self.families:
                 all_cat += family.catalog
-            all_cat.write(filename + '/catalog.xml', format='QUAKEML')
+            all_cat.write(filename + os.sep + 'catalog.xml',
+                          format='QUAKEML')
             for i, family in enumerate(self.families):
                 print('Writing family %i' % i)
-                _write_family(family=family, filename=filename)
+                _write_family(
+                    family=family, filename=filename + os.sep +
+                    family.template.name + '_detections.csv')
             with tarfile.open(filename + '.tgz', "w:gz") as tar:
                 tar.add(filename, arcname=os.path.basename(filename))
+            shutil.rmtree(filename)
         else:
             warnings.warn('Writing only the catalog component, metadata '
                           'will not be preserved')
             self.get_catalog().write(fielname=filename, format=format)
         return self
 
-    def read(self, filename=None, format='tar'):
+    def read(self, filename=None):
         """
         Read a Party from a file.
 
         :type filename: str
         :param filename: File to read from
-        :type format: str
-        :param format: Either tar or asdf, asdf is development only
         """
         if filename is None:
             # If there is no filename given, then read the example.
             filename = os.path.join(os.path.dirname(__file__),
                                     '..', 'tests', 'test_data',
-                                    'test_party.h5')
+                                    'test_party.tgz')
         # First work out how many templates there are and get them.
         tribe = Tribe()
-        tribe.read(filename=filename, format=format)
-        if format == 'asdf':
-            with pyasdf.ASDFDataSet(filename=filename) as ds:
-                self.families = []
-                events = ds.events
-                for template in tribe:
-                    family = Family(template=template)
-                    try:
-                        detection_ids = ds.auxiliary_data.\
-                            Detection[template.name].list()
-                    except KeyError:
-                        family.detections = []
-                        family.catalog = Catalog()
-                        continue
-                    detections = []
-                    for det_id in detection_ids:
-                        cat = Catalog()
-                        det_dict = ds.auxiliary_data.\
-                            Detection[template.name][det_id].parameters
-                        # Decode anything that needs to be
-                        for key in det_dict.keys():
-                            if isinstance(det_dict[key], bytes):
-                                det_dict.update(
-                                    {key: det_dict[key].decode("utf-8")})
-                        chans = [tuple(chan.split('.'))
-                                 for chan in det_dict['chans'].split('_')]
-                        d = Detection(
-                            template_name=template.name,
-                            detect_time=UTCDateTime(
-                                dt.datetime.strptime(det_dict['detect_time'],
-                                                     '%Y%jT%H%M%S%f')),
-                            no_chans=det_dict['no_chans'],
-                            detect_val=det_dict['detect_val'],
-                            threshold=det_dict['threshold'],
-                            typeofdet=det_dict['typeofdet'],
-                            chans=chans, id=det_id)
-                        event = [ev for ev in events
-                                 if str(ev.resource_id).split('/')[-1] == det_id]
-                        if len(event) == 1:
-                            d.event = event[0]
-                        elif len(event) > 1:
-                            warnings.warn('Muliple events with matching '
-                                          'detection ids, using the first match')
-                            d.event = event[0]
-                        detections.append(d)
-                        if len(event) == 0:
-                            warnings.warn('No event found for detection')
+        with tarfile.open(filename, "r:*") as arc:
+            temp_dir = tempfile.mkdtemp()
+            arc.extractall(path=temp_dir, members=_safemembers(arc))
+        party_dir = glob.glob(temp_dir + os.sep + '*')[0]
+        tribe._read_from_folder(dirname=party_dir)
+        # Read in families here!
+        all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+        for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
+            template = [t for t in tribe
+                        if t.name == family_file.split(os.sep)[-1].
+                            split('_detections.csv')[0]]
+            if len(template) == 0:
+                raise MatchFilterError(
+                    'Missing template for detection file: ' + family_file)
+            family = Family(template=template[0])
+            with open(family_file, 'r') as f:
+                for line in f:
+                    det_dict = {}
+                    for key_pair in line.rstrip().split(';'):
+                        key = key_pair.split(': ')[0].strip()
+                        value = key_pair.split(': ')[-1].strip()
+                        if key == 'event':
+                            det_dict.update(
+                                {'event': [e for e in all_cat
+                                           if str(e.resource_id).
+                                           split('/')[-1] == value][0]})
+                        elif key == 'detect_time':
+                            det_dict.update(
+                                {'detect_time': UTCDateTime(value)})
+                        elif key == 'chans':
+                            det_dict.update({'chans': ast.literal_eval(value)})
+                        elif key in ['template_name', 'typeofdet', 'id']:
+                            det_dict.update({key: value})
+                        elif key == 'no_chans':
+                            det_dict.update({key: int(value)})
+                        elif len(key) == 0:
                             continue
-                        cat += d.event
-                    family.detections = detections
-                    family.catalog = cat
-                    self.families.append(family)
-        elif format == 'tar':
-            self.families = _read_families(filename)
+                        else:
+                            det_dict.update({key: float(value)})
+                    family.detections.append(Detection(**det_dict))
+            family.catalog = Catalog([d.event for d in family.detections])
+            self.families.append(family)
+        shutil.rmtree(temp_dir)
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
@@ -641,13 +612,13 @@ class Family(object):
         """
         cumulative_detections(detections=self.detections)
 
-    def write(self, filename, format='eqcorrscan'):
+    def write(self, filename, format='tar'):
         """
         Write Family out, select output format.
 
         :type format: str
         :param format:
-            One of either 'eqcorrscan', 'csv', or any obspy supported
+            One of either 'tar', 'csv', or any obspy supported
             catalog output.
         :type filename: str
         :param filename: Path to write file to.
@@ -763,10 +734,13 @@ class Template(object):
         self.process_length = process_length
         self.prepick = prepick
         if event is not None:
-            event.comments.append(Comment(
-                    text="eqcorrscan_template_" + temp_name,
-                    creation_info=CreationInfo(agency='eqcorrscan',
-                                               author=getpass.getuser())))
+            if len(event.comments) > 0 and \
+               "eqcorrscan_template_" + temp_name not in \
+               [c.text for c in event.comments]:
+                event.comments.append(Comment(
+                        text="eqcorrscan_template_" + temp_name,
+                        creation_info=CreationInfo(agency='eqcorrscan',
+                                                   author=getpass.getuser())))
         self.event = event
 
     def __repr__(self):
@@ -832,34 +806,31 @@ class Template(object):
                 return False
         return True
 
-    def write(self, filename):
+    def write(self, filename, format='tar'):
         """
-        Write template to ASDF format with metadata.
+        Write template.
 
         :type filename: str
         :param filename:
             Filename to write to, if it already exists it will be opened and
             appended to, otherwise it will be created.
-
-        .. note::
-            File will be written using the pyASDF module, which writes to hdf5
-            files. Internally we use the gzip-3 compression for these files,
-            and do not use parallel I/O
+        :type format: str
+        :param format:
+            Format to write to, either 'tar' (to retain metadata), or any obspy
+            supported waveform format to just extract the waveform.
         """
-        with pyasdf.ASDFDataSet(filename, compression="gzip-3") as ds:
-            Tribe(templates=[self])._write(ds=ds)
+        if format == 'tar':
+            Tribe(templates=[self]).write(filename=filename)
+        else:
+            self.st.write(filename, format=format)
         return self
 
     def read(self, filename):
         """
-        Read template from ASDF format with metadata.
+        Read template from tar format with metadata.
 
         :type filename: str
         :param filename: Filename to read template from.
-
-        .. note::
-            Expects an hdf5, gzip-3 formatted file. Parallel I/O is not enabled
-            by default.
         """
         tribe = Tribe()
         tribe.read(filename=filename)
@@ -1112,40 +1083,30 @@ class Tribe(object):
         """Copy the Tribe."""
         return copy.deepcopy(self)
 
-    def write(self, filename, format='tar', compress=True, debug=0):
+    def write(self, filename, compress=True):
         """
-        Write the tribe to a file using ASDF or tar archive formatting.
+        Write the tribe to a file using tar archive formatting.
 
         :type filename: str
         :param filename:
             Filename to write to, if it exists it will be appended to.
-        :type format: str
-        :param format:
-            Format to write to, either asdf archive (use for development
-            only) or tar archive.
         :type compress: bool
         :param compress:
             Whether to compress the tar archive or not, if False then will
             just be files in a folder.
-        :type debug: int
-        :param debug:
-            Debug output, if greater than 0, will tell you how far through
-            writing it is.
         """
-        if format == 'asdf':
-            with pyasdf.ASDFDataSet(filename=filename,
-                                    compression="gzip-3") as ds:
-                self._write(ds=ds, debug=debug)
-        elif format == 'tar':
-            if not os.path.isdir(filename):
-                os.makedirs(filename)
-            self._par_write(filename)
-            for template in self.templates:
-                template.st.write(filename + '/' + template.name + '.ms')
-            if compress:
-                with tarfile.open(filename + '.tgz', "w:gz") as tar:
-                    tar.add(filename, arcname=os.path.basename(filename))
-                shutil.rmtree(filename)
+        if not os.path.isdir(filename):
+            os.makedirs(filename)
+        self._par_write(filename)
+        Catalog([t.event for t in self.templates]).write(
+            filename + os.sep + 'tribe_cat.xml', format='QUAKEML')
+        for template in self.templates:
+            template.st.write(filename + '/' + template.name + '.ms',
+                              format='MSEED')
+        if compress:
+            with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                tar.add(filename, arcname=os.path.basename(filename))
+            shutil.rmtree(filename)
         return self
 
     def _par_write(self, dirname):
@@ -1165,130 +1126,47 @@ class Tribe(object):
                 parfile.write('\n')
         return self
 
-    def _write(self, ds, debug=0):
+    def read(self, filename):
         """
-        Write tribe to ASDF format with metadata.
-
-        :type ds: :class:`pyasdf.ASDFDataSet`
-        :param ds:
-            Open pyASDF dataset to write to.
-        :type debug: int
-        :param debug:
-            Debug output, if greater than 0, will tell you how far through
-            writing it is.
-
-        .. note::
-            File will be written using the pyASDF module, which writes to hdf5
-            files. Internally we use the gzip-3 compression for these files,
-            and do not use parallel I/O
-        """
-        all_stream = Stream()
-        cat = Catalog()
-        for template in self.templates:
-            all_stream += template.st.copy()
-            cat += template.event
-        if debug > 0:
-            print('Adding waveform data to file')
-        ds.add_waveforms(waveform=all_stream, tag="template_waveforms")
-        if debug > 0:
-            print('Adding event data to file')
-        ds.add_quakeml(event=cat)
-        for i, template in enumerate(self.templates):
-            if debug > 0:
-                print('Adding meta-data for template %i' % i)
-            chan_info = '_'.join(
-                ['.'.join([tr.stats.station, tr.stats.channel,
-                           tr.stats.starttime.strftime('%Y%jT%H%M%S%f'),
-                           tr.stats.endtime.strftime('%Y%jT%H%M%S%f')])
-                 for tr in template.st])
-            template_dict = {
-                'lowcut': template.lowcut, 'highcut': template.highcut,
-                'samp_rate': template.samp_rate,
-                'filt_order': template.filt_order,
-                'prepick': template.prepick,
-                'process_length': template.process_length,
-                'template_starttime':
-                    template.st.sort([
-                        'starttime'])[0].stats.starttime.strftime(
-                        '%Y%jT%H%M%S%f'),
-                'template_endtime':
-                    template.st.sort(['starttime'])[-1].stats.endtime.strftime(
-                        '%Y%jT%H%M%S%f'),
-                'chan_info': chan_info
-            }
-            ds.add_auxiliary_data(data_type='TemplateParameters',
-                                  path=template.name, parameters=template_dict,
-                                  data=np.random.randn(2))
-
-    def read(self, filename, format='tar'):
-        """
-        Read a tribe of templates from an ASDF or tar formatted file.
+        Read a tribe of templates from a tar formatted file.
 
         :type filename: str
         :param filename: File to read templates from.
-        :type format: str
-        :param format: Either tar or asdf format to read from.
         """
-        if format == 'tar':
-            with tarfile.open(filename, "r:*") as arc:
-                temp_dir = tempfile.mkdtemp()
-                arc.extractall(path=temp_dir, members=_safemembers(arc))
-                templates = _par_read(dirname=filename, compressed=False)
-                t_files = glob.glob(temp_dir + '/*.ms')
-                for template in templates:
-                    t_file = [t for t in t_files
-                              if t.split('/')[-1] == template.name + '.ms']
-                    if len(t_file) == 0:
-                        print('No waveform for template: ' + template.name)
-                        templates.remove(template)
-                        continue
-                    elif len(t_file) > 1:
-                        print('Multiple waveforms found, using: ' + t_file[0])
-                    template.st = read(t_file[0])
-            self.templates.append(templates)
-        elif format == 'asdf':
-            with pyasdf.ASDFDataSet(filename) as ds:
-                st = Stream()
-                for net_sta in ds.waveforms.list():
-                    st += ds.waveforms[net_sta].template_waveforms
-                st.merge()
-                events = ds.events
-                for template_name in ds.auxiliary_data.TemplateParameters.list():
-                    print('Adding template: ' + template_name)
-                    template = Template(name=template_name)
-                    if len([c for ev in events for c in ev.comments if
-                            c.text == 'eqcorrscan_template_' +
-                            template_name]) > 0:
-                        template.event = [ev for ev in events for c in ev.comments
-                                          if c.text == 'eqcorrscan_template_' +
-                                          template_name][0]
-                    template_dict = ds.auxiliary_data.\
-                        TemplateParameters[template.name].parameters
-                    # Decode anything that needs to be
-                    for key in template_dict.keys():
-                        if isinstance(template_dict[key], bytes):
-                            template_dict.update(
-                                {key: template_dict[key].decode("utf-8")})
-                    template.lowcut = template_dict['lowcut']
-                    template.highcut = template_dict['highcut']
-                    template.process_length = template_dict['process_length']
-                    template.samp_rate = template_dict['samp_rate']
-                    template.filt_order = template_dict['filt_order']
-                    template.prepick = template_dict['prepick']
-                    template.st = Stream()
-                    chan_info = [c.split('.')
-                                 for c in template_dict['chan_info'].split('_')]
-                    print('Trimming stream')
-                    for chan in chan_info:
-                        template.st += st.select(
-                            station=chan[0], channel=chan[1]).slice(
-                            starttime=UTCDateTime(
-                                dt.datetime.strptime(chan[2], '%Y%jT%H%M%S%f')),
-                            endtime=UTCDateTime(
-                                dt.datetime.strptime(chan[3],
-                                                     '%Y%jT%H%M%S%f'))).copy().split()
-                    self.templates.append(template)
+        with tarfile.open(filename, "r:*") as arc:
+            temp_dir = tempfile.mkdtemp()
+            arc.extractall(path=temp_dir, members=_safemembers(arc))
+            tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
+            self._read_from_folder(dirname=tribe_dir)
+        shutil.rmtree(temp_dir)
         return self
+
+    def _read_from_folder(self, dirname):
+        """
+        Internal folder reader.
+
+        :type dirname: str
+        :param dirname: Folder to read from.
+        """
+        templates = _par_read(dirname=dirname, compressed=False)
+        t_files = glob.glob(dirname + os.sep + '*.ms')
+        tribe_cat = read_events(dirname + os.sep + 'tribe_cat.xml')
+        for template in templates:
+            for event in tribe_cat:
+                for comment in event.comments:
+                    if comment.text == 'eqcorrscan_template_' + template.name:
+                        template.event = event
+            t_file = [t for t in t_files
+                      if t.split(os.sep)[-1] == template.name + '.ms']
+            if len(t_file) == 0:
+                print('No waveform for template: ' + template.name)
+                templates.remove(template)
+                continue
+            elif len(t_file) > 1:
+                print('Multiple waveforms found, using: ' + t_file[0])
+            template.st = read(t_file[0])
+        self.templates.extend(templates)
+        return
 
     def cluster(self, method, **kwargs):
         """
@@ -1754,9 +1632,9 @@ class Detection(object):
     def __eq__(self, other):
         for key in self.__dict__.keys():
             if key == 'event':
-                # Resource_ids for events get changed by obspy so
-                # they don't match, so we won't check for them here.
-                continue
+                if not _test_event_similarity(
+                        self.event, other.event, verbose=True):
+                    return False
             if self.__dict__[key] != other.__dict__[key]:
                 return False
         return True
@@ -1802,42 +1680,114 @@ class Detection(object):
         f.close()
 
 
-def _write_family(family, datastream, debug=1):
+def _test_event_similarity(event_1, event_2, verbose=False):
     """
-    Write a party to an hdf5 formatted file, using ASDF.
+    Check the similarity of the components of obspy events, discounting
+    resource IDs, which are not maintained in nordic files.
 
-    :type family: :class:`eqcorrscan.core.match_filter.Family`
-    :param family: Family to write to the open pyASDF file
-    :type datastream: :class:`pyasdf.ASDFDataSet`
-    :param datastream: Open DataSet to write to, will not be closed internally.
-    """
-    # Three elements need to be written, family.template, family.detections and
-    # family.catalog
-    # Write the detection objects
-    for i, detection in enumerate(family.detections):
-        if debug > 0:
-            print('Writing detection %i for family' % i)
-        chan_string = '_'.join(['.'.join(chan) for chan in detection.chans])
-        det_dict = {
-            'template_name': detection.template_name,
-            'detect_time': detection.detect_time.strftime('%Y%jT%H%M%S%f'),
-            'no_chans': detection.no_chans, 'detect_val': detection.detect_val,
-            'threshold': detection.threshold, 'typeofdet': detection.typeofdet,
-            'chans': chan_string, 'id': detection.id}
-        datastream.add_auxiliary_data(
-            data_type='Detection', parameters=det_dict,
-            data=np.random.randn(2),
-            path=family.template.name + '/' + detection.id)
+    :type event_1: obspy.core.event.Event
+    :param event_1: First event
+    :type event_2: obspy.core.event.Event
+    :param event_2: Comparison event
+    :type verbose: bool
+    :param verbose: If true and fails will output why it fails.
 
+    :return: bool
+    """
+    # Check origins
+    if len(event_1.origins) != len(event_2.origins):
+        return False
+    for ori_1, ori_2 in zip(event_1.origins, event_2.origins):
+        for key in ori_1.keys():
+            if key not in ["resource_id", "comments", "arrivals",
+                           "method_id", "origin_uncertainty", "depth_type",
+                           "quality", "creation_info", "evaluation_mode",
+                           "depth_errors", "time_errors"]:
+                if ori_1[key] != ori_2[key]:
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (ori_1[key], ori_2[key], key))
+                    return False
+            elif key == "arrivals":
+                if len(ori_1[key]) != len(ori_2[key]):
+                    print('%i is not the same as %i for key %s' %
+                          (len(ori_1[key]), len(ori_2[key]), key))
+                    return False
+                for arr_1, arr_2 in zip(ori_1[key], ori_2[key]):
+                    for arr_key in arr_1.keys():
+                        if arr_key not in ["resource_id", "pick_id",
+                                           "distance"]:
+                            if arr_1[arr_key] != arr_2[arr_key]:
+                                if verbose:
+                                    print('%s does not match %s for key %s' %
+                                          (arr_1[arr_key], arr_2[arr_key],
+                                           arr_key))
+                                return False
+                    if arr_1["distance"] and round(
+                            arr_1["distance"]) != round(arr_2["distance"]):
+                            if verbose:
+                                print('%s does not match %s for key %s' %
+                                      (arr_1[arr_key], arr_2[arr_key],
+                                       arr_key))
+                            return False
+    # Check picks
+    if len(event_1.picks) != len(event_2.picks):
+        if verbose:
+            print('Number of picks is not equal')
+        return False
+    for pick_1, pick_2 in zip(event_1.picks, event_2.picks):
+        # Assuming same ordering of picks...
+        for key in pick_1.keys():
+            if key not in ["resource_id", "waveform_id"]:
+                if pick_1[key] != pick_2[key]:
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (pick_1[key], pick_2[key], key))
+                    return False
+            elif key == "waveform_id":
+                if pick_1[key].station_code != pick_2[key].station_code:
+                    if verbose:
+                        print('Station codes do not match')
+                    return False
+                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+                if pick_1[key].channel_code[-1] !=\
+                   pick_2[key].channel_code[-1]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+    # Check amplitudes
+    if not len(event_1.amplitudes) == len(event_2.amplitudes):
+        if verbose:
+            print('Not the same number of amplitudes')
+        return False
+    for amp_1, amp_2 in zip(event_1.amplitudes, event_2.amplitudes):
+        # Assuming same ordering of amplitudes
+        for key in amp_1.keys():
+            if key not in ["resource_id", "pick_id", "waveform_id", "snr"]:
+                if not amp_1[key] == amp_2[key]:
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (amp_1[key], amp_2[key], key))
+                    return False
+            elif key == "waveform_id":
+                if pick_1[key].station_code != pick_2[key].station_code:
+                    if verbose:
+                        print('Station codes do not match')
+                    return False
+                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+                if pick_1[key].channel_code[-1] !=\
+                   pick_2[key].channel_code[-1]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+    return True
 
-def _read_families(filename):
-    """
-    Read families from a tar archive.
-    :param filename:
-    :return:
-    """
-    families = []
-    return families
 
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
@@ -2029,7 +1979,7 @@ def _par_read(dirname, compressed=True):
         arc = tarfile.open(dirname, "r:*")
         members = arc.getmembers()
         _parfile = [member for member in members
-                    if member.name.split('/')[-1] ==
+                    if member.name.split(os.sep)[-1] ==
                     'template_parameters.csv']
         if len(_parfile) == 0:
             arc.close()
@@ -2043,7 +1993,7 @@ def _par_read(dirname, compressed=True):
         for key_pair in line.rstrip().split(','):
             if key_pair.split(':')[0].strip() == 'name':
                 t_in.__dict__[key_pair.split(':')[0].strip()] = \
-                    key_pair.split(':')[-1]
+                    key_pair.split(':')[-1].strip()
             elif key_pair.split(':')[0].strip() == 'filt_order':
                 t_in.__dict__[key_pair.split(':')[0].strip()] = \
                     int(key_pair.split(':')[-1])
@@ -2101,23 +2051,45 @@ def _safemembers(members):
             yield finfo
 
 
-def read_tribe(fname, format='tar'):
+def _write_family(family, filename):
     """
-    Read a Tribe of templates from an ASDF file.
+    Write a family to a csv file.
+
+    :type family: :class:`eqcorrscan.core.match_filter.Family`
+    :param family: Family to write to file
+    :type filename: str
+    :param filename: File to write to.
+    """
+    with open(filename, 'w') as f:
+        for detection in family.detections:
+            det_str = ''
+            for key in detection.__dict__.keys():
+                if key == 'event':
+                    value = str(detection.event.resource_id)
+                elif key in ['threshold', 'detect_val']:
+                    value = format(detection.__dict__[key], '.32f').rstrip('0')
+                else:
+                    value = str(detection.__dict__[key])
+                det_str += key + ': ' + value + '; '
+            f.write(det_str + '\n')
+    return
+
+
+def read_tribe(fname):
+    """
+    Read a Tribe of templates from a tar archive.
 
     :param fname: Filename to read from
     :return: :class:`eqcorrscan.core.match_filter.Tribe`
-    :type format: str
-    :param format: either tar or asdf, asdf is in development.
     """
     tribe = Tribe()
-    tribe.read(filename=fname, format=format)
+    tribe.read(filename=fname)
     return tribe
 
 
 def read_party(fname=None):
     """
-    Read detections and metadata from an ASDF formatted file.
+    Read detections and metadata from a tar archive.
 
     :type fname: str
     :param fname:
@@ -2171,7 +2143,7 @@ def read_detections(fname):
 
 def read_template(fname):
     """
-    Read a Template object from an ASDF formatted file.
+    Read a Template object from a tar archive.
 
     :type fname: str
     :param fname: Filename to read from
