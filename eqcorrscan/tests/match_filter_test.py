@@ -589,7 +589,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
-                'test_data', 'test_party.h5'))
+                'test_data', 'test_party.h5'), format='asdf')
         cls.family = cls.party.sort()[0].copy()
         print('Set Up finished')
 
@@ -620,16 +620,27 @@ class TestMatchObjects(unittest.TestCase):
         for template in self.tribe:
             self.assertTrue(isinstance(template, Template))
 
-    def test_tribe_io(self):
+    def test_tribe_io_asdf(self):
         """Test reading and writing of Tribe objects."""
         try:
             if os.path.isfile('tribe_test.h5'):
                 os.remove('tribe_test.h5')
-            self.tribe.write(filename='tribe_test.h5')
-            tribe_back = read_tribe('tribe_test.h5')
+            self.tribe.write(filename='tribe_test.h5', format='asdf')
+            tribe_back = read_tribe('tribe_test.h5', format='asdf')
             self.assertEqual(self.tribe, tribe_back)
         finally:
             os.remove('tribe_test.h5')
+
+    def test_tribe_io_tar(self):
+        """Test reading and writing or Tribe objects using tar form."""
+        try:
+            if os.path.isfile('test_tribe.tgz'):
+                os.remove('test_tribe.tgz')
+            self.tribe.write(filename='test_tribe.tgz', format='tar')
+            tribe_back = read_tribe('test_tribe.tgz', format='tar')
+            self.assertEqual(self.tribe, tribe_back)
+        finally:
+            os.remove('test_tribe.tgz')
 
     def test_tribe_detect(self):
         """Test the detect method on Tribe objects"""

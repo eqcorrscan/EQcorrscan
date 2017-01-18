@@ -33,10 +33,14 @@ import getpass
 import pyasdf
 import re
 import datetime as dt
+import tarfile
+import shutil
+import tempfile
+import glob
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
-from obspy import Trace, Catalog, UTCDateTime, Stream
+from obspy import Trace, Catalog, UTCDateTime, Stream, read
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
@@ -238,23 +242,36 @@ class Party(object):
         """
         return copy.deepcopy(self)
 
-    def write(self, filename, format='eqcorrscan'):
+    def write(self, filename, format='tar'):
         """
         Write Family out, select output format.
 
         :type format: str
         :param format:
-            One of either 'fam', 'csv', or any obspy supported catalog output.
+            One of either 'tar', 'csv', 'asdf' or any obspy supported
+            catalog output. See note below on formats
         :type filename: str
         :param filename: Path to write file to.
 
-        .. NOTE:: csv format will write out detection objects, all other
+        .. NOTE::
+            csv format will write out detection objects, all other
             outputs will write the catalog.  These cannot be rebuilt into
-            a Family object.  The only format that can be read back into
-            Family objects is the 'fam' type, which writes an HDF5 formatted
-            file.
+            a Family object.  The only formats that can be read back into
+            Family objects is the 'asdf' and 'tar' type, however the 'asdf'
+            writing style here is in alpha and is only for development
+            purposes.
+
+        .. NOTE::
+            We recommend writing to the 'tar' format, which will write out
+            all the template information (wavefiles as miniseed and metadata)
+            alongside the detections and store these in a tar archive. This
+            is readable by other programs and maintains all information
+            required for further study.
+
+        .. WARNING::
+            ASDF format is for development purposes only here.
         """
-        if format.lower() == 'eqcorrscan':
+        if format.lower() == 'asdf':
             with pyasdf.ASDFDataSet(filename=filename,
                                     compression="gzip-3") as ds:
                 print('Writing tribe')
@@ -274,16 +291,36 @@ class Party(object):
             for family in self.families:
                 for detection in family.detections:
                     detection.write(fname=filename, append=True)
+        elif format.lower() == 'tar':
+            if os.path.isdir(filename) or os.path.isfile(filename):
+                raise IOError('Will not overwrite existing filename %s'
+                              % filename)
+            os.makedirs(filename)
+            Tribe([f.template for f in self.families]).write(
+                filename=filename, format='tar', compress=False)
+            all_cat = Catalog()
+            for family in self.families:
+                all_cat += family.catalog
+            all_cat.write(filename + '/catalog.xml', format='QUAKEML')
+            for i, family in enumerate(self.families):
+                print('Writing family %i' % i)
+                _write_family(family=family, filename=filename)
+            with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                tar.add(filename, arcname=os.path.basename(filename))
         else:
+            warnings.warn('Writing only the catalog component, metadata '
+                          'will not be preserved')
             self.get_catalog().write(fielname=filename, format=format)
         return self
 
-    def read(self, filename=None):
+    def read(self, filename=None, format='tar'):
         """
         Read a Party from a file.
 
         :type filename: str
         :param filename: File to read from
+        :type format: str
+        :param format: Either tar or asdf, asdf is development only
         """
         if filename is None:
             # If there is no filename given, then read the example.
@@ -292,57 +329,60 @@ class Party(object):
                                     'test_party.h5')
         # First work out how many templates there are and get them.
         tribe = Tribe()
-        tribe.read(filename=filename)
-        with pyasdf.ASDFDataSet(filename=filename) as ds:
-            self.families = []
-            events = ds.events
-            for template in tribe:
-                family = Family(template=template)
-                try:
-                    detection_ids = ds.auxiliary_data.\
-                        Detection[template.name].list()
-                except KeyError:
-                    family.detections = []
-                    family.catalog = Catalog()
-                    continue
-                detections = []
-                for det_id in detection_ids:
-                    cat = Catalog()
-                    det_dict = ds.auxiliary_data.\
-                        Detection[template.name][det_id].parameters
-                    # Decode anything that needs to be
-                    for key in det_dict.keys():
-                        if isinstance(det_dict[key], bytes):
-                            det_dict.update(
-                                {key: det_dict[key].decode("utf-8")})
-                    chans = [tuple(chan.split('.'))
-                             for chan in det_dict['chans'].split('_')]
-                    d = Detection(
-                        template_name=template.name,
-                        detect_time=UTCDateTime(
-                            dt.datetime.strptime(det_dict['detect_time'],
-                                                 '%Y%jT%H%M%S%f')),
-                        no_chans=det_dict['no_chans'],
-                        detect_val=det_dict['detect_val'],
-                        threshold=det_dict['threshold'],
-                        typeofdet=det_dict['typeofdet'],
-                        chans=chans, id=det_id)
-                    event = [ev for ev in events
-                             if str(ev.resource_id).split('/')[-1] == det_id]
-                    if len(event) == 1:
-                        d.event = event[0]
-                    elif len(event) > 1:
-                        warnings.warn('Muliple events with matching '
-                                      'detection ids, using the first match')
-                        d.event = event[0]
-                    detections.append(d)
-                    if len(event) == 0:
-                        warnings.warn('No event found for detection')
+        tribe.read(filename=filename, format=format)
+        if format == 'asdf':
+            with pyasdf.ASDFDataSet(filename=filename) as ds:
+                self.families = []
+                events = ds.events
+                for template in tribe:
+                    family = Family(template=template)
+                    try:
+                        detection_ids = ds.auxiliary_data.\
+                            Detection[template.name].list()
+                    except KeyError:
+                        family.detections = []
+                        family.catalog = Catalog()
                         continue
-                    cat += d.event
-                family.detections = detections
-                family.catalog = cat
-                self.families.append(family)
+                    detections = []
+                    for det_id in detection_ids:
+                        cat = Catalog()
+                        det_dict = ds.auxiliary_data.\
+                            Detection[template.name][det_id].parameters
+                        # Decode anything that needs to be
+                        for key in det_dict.keys():
+                            if isinstance(det_dict[key], bytes):
+                                det_dict.update(
+                                    {key: det_dict[key].decode("utf-8")})
+                        chans = [tuple(chan.split('.'))
+                                 for chan in det_dict['chans'].split('_')]
+                        d = Detection(
+                            template_name=template.name,
+                            detect_time=UTCDateTime(
+                                dt.datetime.strptime(det_dict['detect_time'],
+                                                     '%Y%jT%H%M%S%f')),
+                            no_chans=det_dict['no_chans'],
+                            detect_val=det_dict['detect_val'],
+                            threshold=det_dict['threshold'],
+                            typeofdet=det_dict['typeofdet'],
+                            chans=chans, id=det_id)
+                        event = [ev for ev in events
+                                 if str(ev.resource_id).split('/')[-1] == det_id]
+                        if len(event) == 1:
+                            d.event = event[0]
+                        elif len(event) > 1:
+                            warnings.warn('Muliple events with matching '
+                                          'detection ids, using the first match')
+                            d.event = event[0]
+                        detections.append(d)
+                        if len(event) == 0:
+                            warnings.warn('No event found for detection')
+                            continue
+                        cat += d.event
+                    family.detections = detections
+                    family.catalog = cat
+                    self.families.append(family)
+        elif format == 'tar':
+            self.families = _read_families(filename)
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
@@ -1072,21 +1112,57 @@ class Tribe(object):
         """Copy the Tribe."""
         return copy.deepcopy(self)
 
-    def write(self, filename, debug=0):
+    def write(self, filename, format='tar', compress=True, debug=0):
         """
-        Write the tribe to a file using ASDF formatting.
+        Write the tribe to a file using ASDF or tar archive formatting.
 
         :type filename: str
         :param filename:
             Filename to write to, if it exists it will be appended to.
+        :type format: str
+        :param format:
+            Format to write to, either asdf archive (use for development
+            only) or tar archive.
+        :type compress: bool
+        :param compress:
+            Whether to compress the tar archive or not, if False then will
+            just be files in a folder.
         :type debug: int
         :param debug:
             Debug output, if greater than 0, will tell you how far through
             writing it is.
         """
-        with pyasdf.ASDFDataSet(filename=filename,
-                                compression="gzip-3") as ds:
-            self._write(ds=ds, debug=debug)
+        if format == 'asdf':
+            with pyasdf.ASDFDataSet(filename=filename,
+                                    compression="gzip-3") as ds:
+                self._write(ds=ds, debug=debug)
+        elif format == 'tar':
+            if not os.path.isdir(filename):
+                os.makedirs(filename)
+            self._par_write(filename)
+            for template in self.templates:
+                template.st.write(filename + '/' + template.name + '.ms')
+            if compress:
+                with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                    tar.add(filename, arcname=os.path.basename(filename))
+                shutil.rmtree(filename)
+        return self
+
+    def _par_write(self, dirname):
+        """
+        Internal write function to write a formatted parameter file.
+
+        :type dirname: str
+        :param dirname: Directory to write the parameter file to.
+        """
+        with open(dirname + '/' +
+                  'template_parameters.csv', 'w') as parfile:
+            for template in self.templates:
+                for key in template.__dict__.keys():
+                    if key not in ['st', 'event']:
+                        parfile.write(key + ': ' +
+                                      str(template.__dict__[key]) + ', ')
+                parfile.write('\n')
         return self
 
     def _write(self, ds, debug=0):
@@ -1144,54 +1220,74 @@ class Tribe(object):
                                   path=template.name, parameters=template_dict,
                                   data=np.random.randn(2))
 
-    def read(self, filename):
+    def read(self, filename, format='tar'):
         """
-        Read a tribe of templates from an ASDF formatted file.
+        Read a tribe of templates from an ASDF or tar formatted file.
 
         :type filename: str
         :param filename: File to read templates from.
+        :type format: str
+        :param format: Either tar or asdf format to read from.
         """
-        with pyasdf.ASDFDataSet(filename) as ds:
-            st = Stream()
-            for net_sta in ds.waveforms.list():
-                st += ds.waveforms[net_sta].template_waveforms
-            st.merge()
-            events = ds.events
-            for template_name in ds.auxiliary_data.TemplateParameters.list():
-                print('Adding template: ' + template_name)
-                template = Template(name=template_name)
-                if len([c for ev in events for c in ev.comments if
-                        c.text == 'eqcorrscan_template_' +
-                        template_name]) > 0:
-                    template.event = [ev for ev in events for c in ev.comments
-                                      if c.text == 'eqcorrscan_template_' +
-                                      template_name][0]
-                template_dict = ds.auxiliary_data.\
-                    TemplateParameters[template.name].parameters
-                # Decode anything that needs to be
-                for key in template_dict.keys():
-                    if isinstance(template_dict[key], bytes):
-                        template_dict.update(
-                            {key: template_dict[key].decode("utf-8")})
-                template.lowcut = template_dict['lowcut']
-                template.highcut = template_dict['highcut']
-                template.process_length = template_dict['process_length']
-                template.samp_rate = template_dict['samp_rate']
-                template.filt_order = template_dict['filt_order']
-                template.prepick = template_dict['prepick']
-                template.st = Stream()
-                chan_info = [c.split('.')
-                             for c in template_dict['chan_info'].split('_')]
-                print('Trimming stream')
-                for chan in chan_info:
-                    template.st += st.select(
-                        station=chan[0], channel=chan[1]).slice(
-                        starttime=UTCDateTime(
-                            dt.datetime.strptime(chan[2], '%Y%jT%H%M%S%f')),
-                        endtime=UTCDateTime(
-                            dt.datetime.strptime(chan[3],
-                                                 '%Y%jT%H%M%S%f'))).copy().split()
-                self.templates.append(template)
+        if format == 'tar':
+            with tarfile.open(filename, "r:*") as arc:
+                temp_dir = tempfile.mkdtemp()
+                arc.extractall(path=temp_dir, members=_safemembers(arc))
+                templates = _par_read(dirname=filename, compressed=False)
+                t_files = glob.glob(temp_dir + '/*.ms')
+                for template in templates:
+                    t_file = [t for t in t_files
+                              if t.split('/')[-1] == template.name + '.ms']
+                    if len(t_file) == 0:
+                        print('No waveform for template: ' + template.name)
+                        templates.remove(template)
+                        continue
+                    elif len(t_file) > 1:
+                        print('Multiple waveforms found, using: ' + t_file[0])
+                    template.st = read(t_file[0])
+            self.templates.append(templates)
+        elif format == 'asdf':
+            with pyasdf.ASDFDataSet(filename) as ds:
+                st = Stream()
+                for net_sta in ds.waveforms.list():
+                    st += ds.waveforms[net_sta].template_waveforms
+                st.merge()
+                events = ds.events
+                for template_name in ds.auxiliary_data.TemplateParameters.list():
+                    print('Adding template: ' + template_name)
+                    template = Template(name=template_name)
+                    if len([c for ev in events for c in ev.comments if
+                            c.text == 'eqcorrscan_template_' +
+                            template_name]) > 0:
+                        template.event = [ev for ev in events for c in ev.comments
+                                          if c.text == 'eqcorrscan_template_' +
+                                          template_name][0]
+                    template_dict = ds.auxiliary_data.\
+                        TemplateParameters[template.name].parameters
+                    # Decode anything that needs to be
+                    for key in template_dict.keys():
+                        if isinstance(template_dict[key], bytes):
+                            template_dict.update(
+                                {key: template_dict[key].decode("utf-8")})
+                    template.lowcut = template_dict['lowcut']
+                    template.highcut = template_dict['highcut']
+                    template.process_length = template_dict['process_length']
+                    template.samp_rate = template_dict['samp_rate']
+                    template.filt_order = template_dict['filt_order']
+                    template.prepick = template_dict['prepick']
+                    template.st = Stream()
+                    chan_info = [c.split('.')
+                                 for c in template_dict['chan_info'].split('_')]
+                    print('Trimming stream')
+                    for chan in chan_info:
+                        template.st += st.select(
+                            station=chan[0], channel=chan[1]).slice(
+                            starttime=UTCDateTime(
+                                dt.datetime.strptime(chan[2], '%Y%jT%H%M%S%f')),
+                            endtime=UTCDateTime(
+                                dt.datetime.strptime(chan[3],
+                                                     '%Y%jT%H%M%S%f'))).copy().split()
+                    self.templates.append(template)
         return self
 
     def cluster(self, method, **kwargs):
@@ -1734,6 +1830,15 @@ def _write_family(family, datastream, debug=1):
             path=family.template.name + '/' + detection.id)
 
 
+def _read_families(filename):
+    """
+    Read families from a tar archive.
+    :param filename:
+    :return:
+    """
+    families = []
+    return families
+
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, ignore_length=False, debug=0):
@@ -1910,15 +2015,103 @@ def _group_process(template_group, parallel, debug, cores, stream):
     return processed_streams
 
 
-def read_tribe(fname):
+def _par_read(dirname, compressed=True):
+    """
+    Internal write function to read a formatted parameter file.
+
+    :type dirname: str
+    :param dirname: Directory to read the parameter file from.
+    :type compressed: bool
+    :param compressed: Whether the directory is compressed or not.
+    """
+    templates = []
+    if compressed:
+        arc = tarfile.open(dirname, "r:*")
+        members = arc.getmembers()
+        _parfile = [member for member in members
+                    if member.name.split('/')[-1] ==
+                    'template_parameters.csv']
+        if len(_parfile) == 0:
+            arc.close()
+            raise MatchFilterError(
+                'No template parameter file in archive')
+        parfile = arc.extractfile(member[0])
+    else:
+        parfile = open(dirname + '/' + 'template_parameters.csv', 'r')
+    for line in parfile:
+        t_in = Template()
+        for key_pair in line.rstrip().split(','):
+            if key_pair.split(':')[0].strip() == 'name':
+                t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                    key_pair.split(':')[-1]
+            elif key_pair.split(':')[0].strip() == 'filt_order':
+                t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                    int(key_pair.split(':')[-1])
+            else:
+                try:
+                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                        float(key_pair.split(':')[-1])
+                except ValueError:
+                    pass
+        templates.append(t_in)
+    parfile.close()
+    if compressed:
+        arc.close()
+    return templates
+
+
+def _resolved(x):
+    return os.path.realpath(os.path.abspath(x))
+
+
+def _badpath(path, base):
+    """
+    joinpath will ignore base if path is absolute.
+    """
+    return not _resolved(os.path.join(base, path)).startswith(base)
+
+
+def _badlink(info, base):
+    """
+    Links are interpreted relative to the directory containing the link
+    """
+    tip = _resolved(os.path.join(base, os.path.dirname(info.name)))
+    return _badpath(info.linkname, base=tip)
+
+
+def _safemembers(members):
+    """Check members of a tar archive for safety.
+    Ensure that they do not contain paths or links outside of where we
+    need them - this would only happen if the archive wasn't made by
+    eqcorrscan.
+
+    :type members: :class:`tarfile.TarFile`
+    :param members: an open tarfile.
+    """
+    base = _resolved(".")
+
+    for finfo in members:
+        if _badpath(finfo.name, base):
+            print(finfo.name, "is blocked (illegal path)")
+        elif finfo.issym() and _badlink(finfo, base):
+            print(finfo.name, "is blocked: Hard link to", finfo.linkname)
+        elif finfo.islnk() and _badlink(finfo, base):
+            print(finfo.name, "is blocked: Symlink to", finfo.linkname)
+        else:
+            yield finfo
+
+
+def read_tribe(fname, format='tar'):
     """
     Read a Tribe of templates from an ASDF file.
 
     :param fname: Filename to read from
     :return: :class:`eqcorrscan.core.match_filter.Tribe`
+    :type format: str
+    :param format: either tar or asdf, asdf is in development.
     """
     tribe = Tribe()
-    tribe.read(filename=fname)
+    tribe.read(filename=fname, format=format)
     return tribe
 
 
