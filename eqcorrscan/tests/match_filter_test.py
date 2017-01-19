@@ -534,6 +534,21 @@ class TestNCEDCCases(unittest.TestCase):
                          plotvar=False, plotdir='.', cores=1)
 
 
+class TestMatchCopy(unittest.TestCase):
+    def test_tribe_copy(self):
+        """Test copy method"""
+        party = Party().read(
+            filename=os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                'test_data', 'test_party.tgz'))
+        tribe = Tribe(f.template for f in party.families)
+        copied = tribe.copy()
+        self.assertEqual(len(tribe), len(copied))
+        for t, copy_t in zip(tribe.templates, copied.templates):
+            self.assertEqual(t, copy_t)
+        self.assertEqual(tribe, copied)
+
+
 class TestMatchObjects(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -598,14 +613,6 @@ class TestMatchObjects(unittest.TestCase):
         self.assertTrue(self.tribe == self.tribe)
         self.assertFalse(self.tribe != self.tribe)
 
-    def test_tribe_copy(self):
-        """Test copy method"""
-        copied = self.tribe.copy()
-        self.assertEqual(len(self.tribe), len(copied))
-        for t, copy_t in zip(self.tribe.templates, copied.templates):
-            self.assertEqual(t, copy_t)
-        self.assertEqual(self.tribe, copied)
-
     def test_tribe_add(self):
         """Test add method"""
         added = self.tribe.copy()
@@ -654,7 +661,7 @@ class TestMatchObjects(unittest.TestCase):
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
-        party = self.tribe.client_detect(
+        party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
@@ -756,10 +763,6 @@ class TestMatchObjects(unittest.TestCase):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
-        # Check that the party is unaltered
-        self.assertEqual(self.party, read_party(
-            fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.tgz')))
 
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
@@ -777,15 +780,17 @@ class TestMatchObjects(unittest.TestCase):
         daylong_tribe = self.onehztribe.copy()
         for template in daylong_tribe:
             template.process_length = 86400
+        # Aftershock sequence, with 1Hz data, lots of good correlations = high
+        # MAD!
         day_party = daylong_tribe.detect(
-            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            stream=st, threshold=4.5, threshold_type='MAD', trig_int=6.0,
             daylong=True, plotvar=False, parallel_process=False)
-        self.assertEqual(len(day_party), 6)
+        self.assertEqual(len(day_party), 31)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
         self.assertEqual(len(day_catalog), 3)
         pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 6)
+        self.assertEqual(len(pre_picked_cat), 31)
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
@@ -897,10 +902,10 @@ class TestMatchObjects(unittest.TestCase):
     def test_template_detect(self):
         """Test detect method on Template objects."""
         test_template = self.family.template.copy()
-        party = test_template.detect(
+        party_t = test_template.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False)
-        self.assertEqual(len(party), 1)
+        self.assertEqual(len(party_t), 1)
 
     def test_template_construct(self):
         """Test template construction."""

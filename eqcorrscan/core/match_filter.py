@@ -321,7 +321,7 @@ class Party(object):
         for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
             template = [t for t in tribe
                         if t.name == family_file.split(os.sep)[-1].
-                            split('_detections.csv')[0]]
+                        split('_detections.csv')[0]]
             if len(template) == 0:
                 raise MatchFilterError(
                     'Missing template for detection file: ' + family_file)
@@ -574,7 +574,11 @@ class Family(object):
         """Check equality."""
         if not self.template == other.template:
             return False
-        if not self.detections == other.detections:
+        for det, other_det in zip(self.sort().detections,
+                                  other.sort().detections):
+            if det != other_det:
+                return False
+        if len(self.detections) != len(other.detections):
             return False
         # currently not checking for catalog...
         if len(self.catalog) != len(other.catalog):
@@ -770,18 +774,9 @@ class Template(object):
                         if tr.stats[trkey] != oth_tr.stats[trkey]:
                             return False
             elif key == 'event':
-                for event_key in self.event.keys():
-                    if event_key == 'comments':
-                        for comment, oth_commet in \
-                           zip(sorted(self.event.comments),
-                               sorted(other.event.comments)):
-                            if comment.text != oth_commet.text:
-                                return False
-                            if comment.creation_info != \
-                                    oth_commet.creation_info:
-                                return False
-                    elif self.event[event_key] != other.event[event_key]:
-                        return False
+                if not _test_event_similarity(
+                        self.event, other.event, verbose=True):
+                    return False
             elif not self.__dict__[key] == other.__dict__[key]:
                 return False
         return True
@@ -1611,14 +1606,14 @@ class Detection(object):
 
     def __repr__(self):
         """Simple print."""
-        print_str = ' '.join(['template name=', self.template_name, '\n',
-                              'detection id=', self.id, '\n',
-                              'detection time=', str(self.detect_time), '\n',
-                              'number of channels=', str(self.no_chans), '\n',
-                              'channels=', str(self.chans), '\n',
-                              'detection value=', str(self.detect_val), '\n',
-                              'threshold=', str(self.threshold), '\n',
-                              'detection type=', str(self.typeofdet)])
+        print_str = ' '.join(['template name =', self.template_name, '\n',
+                              'detection id =', self.id, '\n',
+                              'detection time =', str(self.detect_time), '\n',
+                              'number of channels =', str(self.no_chans), '\n',
+                              'channels =', str(self.chans), '\n',
+                              'detection value =', str(self.detect_val), '\n',
+                              'threshold =', str(self.threshold), '\n',
+                              'detection type =', str(self.typeofdet)])
         return "Detection(" + print_str + ")"
 
     def __str__(self):
@@ -1635,7 +1630,7 @@ class Detection(object):
                 if not _test_event_similarity(
                         self.event, other.event, verbose=True):
                     return False
-            if self.__dict__[key] != other.__dict__[key]:
+            elif self.__dict__[key] != other.__dict__[key]:
                 return False
         return True
 
@@ -1740,6 +1735,26 @@ def _test_event_similarity(event_1, event_2, verbose=False):
         for key in pick_1.keys():
             if key not in ["resource_id", "waveform_id"]:
                 if pick_1[key] != pick_2[key]:
+                    # Cope with a None set not being equal to a set, but still
+                    #  None quantity
+                    if pick_1[key] is None and pick_2[key] is not None:
+                        try:
+                            if not any(pick_2[key].__dict__.values()):
+                                continue
+                        except AttributeError:
+                            if verbose:
+                                print('%s is not the same as %s for key %s' %
+                                      (pick_1[key], pick_2[key], key))
+                            return False
+                    if pick_2[key] is None and pick_1[key] is not None:
+                        try:
+                            if not any(pick_1[key].__dict__.values()):
+                                continue
+                        except AttributeError:
+                            if verbose:
+                                print('%s is not the same as %s for key %s' %
+                                      (pick_1[key], pick_2[key], key))
+                            return False
                     if verbose:
                         print('%s is not the same as %s for key %s' %
                               (pick_1[key], pick_2[key], key))
@@ -2729,7 +2744,7 @@ def match_filter(template_names, template_list, st, threshold,
                                               channel=stachan[3]):
                         template.remove(tr)
                         print('Removing template channel %s.%s.%s.%s due to'
-                              'no matches in continuous data' %
+                              ' no matches in continuous data' %
                               (stachan[0], stachan[1], stachan[2], stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
@@ -2738,7 +2753,7 @@ def match_filter(template_names, template_list, st, threshold,
                 tr.stats.location, tr.stats.channel) in \
                 template_stachan.keys():
             print('Removing channel in continuous data for %s.%s.%s.%s:'
-                  'no match in template' %
+                  ' no match in template' %
                   (tr.stats.network, tr.stats.station, tr.stats.location,
                    tr.stats.channel))
             stream.remove(tr)
