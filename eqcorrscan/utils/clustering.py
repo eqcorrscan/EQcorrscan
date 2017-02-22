@@ -615,9 +615,9 @@ def extract_detections(detections, templates, archive, arc_type,
     >>> import os
     >>> # Use some dummy detections, you would use real one
     >>> detections = [Detection('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr'),
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0),
     ...               Detection('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr')]
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0)]
     >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
     >>> archive = os.path.join(path_to_templates, 'day_vols')
     >>> template_files = [os.path.join(path_to_templates, 'temp1.ms'),
@@ -848,11 +848,11 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> from eqcorrscan.utils.clustering import space_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("IRIS")
+    >>> client = Client("USGS")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                         minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6)
     >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
     """
     # Compute the distance matrix and linkage
@@ -909,11 +909,11 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     >>> from eqcorrscan.utils.clustering import space_time_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("IRIS")
+    >>> client = Client("USGS")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                         minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6)
     >>> groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
     """
     initial_spatial_groups = space_cluster(catalog=catalog, d_thresh=d_thresh,
@@ -966,8 +966,15 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     ...                            chan_thresh=3)
     Read in 22 detections
     Left with 17 detections
+
+    .. Note::
+        This is a legacy function, and will read detections from all versions.
+
+    .. Warning:: Only works if thresholding was done by MAD.
     """
     from eqcorrscan.core.match_filter import read_detections
+    warnings.warn('Legacy function, please use '
+                  'eqcorrscan.core.match_filter.Party.rethreshold.')
     old_detections = read_detections(path)
     old_thresh = float(old_thresh)
     new_thresh = float(new_thresh)

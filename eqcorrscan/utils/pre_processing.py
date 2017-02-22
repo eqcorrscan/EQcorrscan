@@ -162,13 +162,10 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         if not num_cores:
             num_cores = cpu_count()
         pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {'lowcut': lowcut,
-                                                     'highcut': highcut,
-                                                     'filt_order': filt_order,
-                                                     'samp_rate': samp_rate,
-                                                     'debug': debug,
-                                                     'starttime': False,
-                                                     'clip': False})
+        results = [pool.apply_async(process, (tr,), {
+            'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
+            'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
+            'clip': False})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -309,16 +306,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         if not num_cores:
             num_cores = cpu_count()
         pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {'lowcut': lowcut,
-                                                     'highcut': highcut,
-                                                     'filt_order': filt_order,
-                                                     'samp_rate': samp_rate,
-                                                     'debug': debug,
-                                                     'starttime': starttime,
-                                                     'clip': True,
-                                                     'ignore_length':
-                                                         ignore_length,
-                                                     'length': 86400})
+        results = [pool.apply_async(process, (tr,), {
+            'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
+            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+            'clip': True, 'ignore_length': ignore_length, 'length': 86400})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]

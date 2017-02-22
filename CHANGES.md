@@ -42,6 +42,9 @@ Detection;
     output Event objects, which can be written to a catalog:
         Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
     * Added 25 tests for these methods.
+    * Add parameters *threshold_type* and *threshold_input* to Detection
+    class.  Add support for legacy Detection objects via NaN and unset
+    values.
 * Removed support for obspy < 1.0.0
 * Update / correct doc-strings in template-gen functions when describing
 processing parameters.

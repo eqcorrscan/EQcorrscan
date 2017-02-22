@@ -43,7 +43,7 @@ from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
 from eqcorrscan.utils.timer import Timer
-from eqcorrscan.utils.findpeaks import find_peaks2_short
+from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
 from eqcorrscan.core import template_gen
@@ -163,7 +163,42 @@ class Party(object):
             all_dets.extend(fam.detections)
         cumulative_detections(detections=all_dets, plot_grouped=plot_grouped)
 
-    def decluster(self, trig_int):
+    def rethreshold(self, new_threshold, new_threshold_type='MAD'):
+        """
+        Remove detections from the Party that are below a new threshold.
+        Note, threshold can only be set higher.
+
+        .. Warning::
+            Works in place on Party.
+
+        :type new_threshold: float
+        :param new_threshold: New threshold level
+        :type new_threshold_type: str
+        :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
+        """
+        for family in self.families:
+            for d in family.detections:
+                if new_threshold_type == 'MAD' and d.threshold_type == 'MAD':
+                    new_thresh = (d.threshold /
+                                  d.threshold_input) * new_threshold
+                elif new_threshold_type == 'MAD' and d.threshold_type != 'MAD':
+                    raise MatchFilterError(
+                        'Cannot recalculate MAD level, '
+                        'use another threshold type')
+                elif new_threshold_type == 'absolute':
+                    new_thresh = new_threshold
+                elif new_threshold_type == 'av_chan_corr':
+                    new_thresh = new_threshold * d.no_chans
+                else:
+                    raise MatchFilterError(
+                        'new_threshold_type %s is not recognised' %
+                        str(new_threshold_type))
+                if d.detect_val < new_thresh:
+                    family.detections.remove(d)
+            family.catalog = Catalog([d.event for d in family])
+        return self
+
+    def decluster(self, trig_int, timing='detect'):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -174,7 +209,11 @@ class Party(object):
         detection) will be maintained.
 
         :type trig_int: float
-        :param trig_int: Minimum detection separation in seconds
+        :param trig_int: Minimum detection separation in seconds.
+        :type timing: str
+        :param timing:
+            Either 'detect' or 'origin' to decluster based on either the
+            detection time or the origin time.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -183,41 +222,20 @@ class Party(object):
         all_detections = []
         for fam in self.families:
             all_detections.extend(fam.detections)
-        all_detections.sort(key=lambda x: x.detect_time)
-        forwards_declustered_detections = copy.deepcopy(all_detections)
-        # Forwards decluster
-        for i, master in enumerate(all_detections):
-            for slave in all_detections[i + 1:]:
-                if slave.detect_time - master.detect_time < trig_int:
-                    if slave.detect_val > master.detect_val:
-                        if master in forwards_declustered_detections:
-                            forwards_declustered_detections.remove(master)
-                            # Master is gone, don't compare to others
-                            break
-                    else:
-                        if slave in forwards_declustered_detections:
-                            forwards_declustered_detections.remove(slave)
-                else:
-                    # Don't continue checking once the gap is large enough
-                    break
-        # Reversed decluster
-        forwards_declustered_detections.sort(key=lambda x: x.detect_time,
-                                             reverse=True)
-        declustered_detections = copy.deepcopy(forwards_declustered_detections)
-        for i, master in enumerate(forwards_declustered_detections):
-            for slave in forwards_declustered_detections[i + 1:]:
-                if master.detect_time - slave.detect_time < trig_int:
-                    if slave.detect_val > master.detect_val:
-                        if master in declustered_detections:
-                            declustered_detections.remove(master)
-                            break
-                    else:
-                        if slave in declustered_detections:
-                            declustered_detections.remove(slave)
-                else:
-                    # Don't continue checking once the gap is large enough
-                    break
-                # Take best correlating detection in cluster
+        if timing == 'detect':
+            detect_info = [(d.detect_time, d.detect_val)
+                           for d in all_detections]
+        elif timing == 'origin':
+            detect_info = [(d.event.origins[0].time, d.detect_val)
+                           for d in all_detections]
+        else:
+            raise MatchFilterError('timing is not detect or origin')
+        min_det = sorted(list(zip(*detect_info)[0]))[0]
+        detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
+                       for d in detect_info]
+        peaks_out, inds_out = decluster(
+            peaks=detect_info, trig_int=trig_int * 10**6, return_ind=True)
+        declustered_detections = [all_detections[ind] for ind in inds_out]
         # Convert this list into families
         template_names = list(set([d.template_name
                                    for d in declustered_detections]))
@@ -228,7 +246,9 @@ class Party(object):
             new_families.append(Family(
                 template=template,
                 detections=[d for d in declustered_detections
-                            if d.template_name == template_name]))
+                            if d.template_name == template_name],
+                catalog=Catalog([d.event for d in declustered_detections
+                                 if d.template_name == template_name])))
         self.families = new_families
         return self
 
@@ -342,7 +362,8 @@ class Party(object):
                                 {'detect_time': UTCDateTime(value)})
                         elif key == 'chans':
                             det_dict.update({'chans': ast.literal_eval(value)})
-                        elif key in ['template_name', 'typeofdet', 'id']:
+                        elif key in ['template_name', 'typeofdet', 'id',
+                                     'threshold_type']:
                             det_dict.update({key: value})
                         elif key == 'no_chans':
                             det_dict.update({key: int(value)})
@@ -775,7 +796,7 @@ class Template(object):
                             return False
             elif key == 'event':
                 if not _test_event_similarity(
-                        self.event, other.event, verbose=True):
+                        self.event, other.event, verbose=False):
                     return False
             elif not self.__dict__[key] == other.__dict__[key]:
                 return False
@@ -1570,6 +1591,12 @@ class Detection(object):
         will be the raw threshold value related to the cccsum.
     :type typeofdet: str
     :param typeofdet: Type of detection, STA, corr, bright
+    :type threshold_type: str
+    :param threshold_type: Type of threshold used for detection
+    :type threshold_input: float
+    :param threshold_input:
+        Threshold set for detection, relates to `threshold` according to the
+        `threshold_type`.
     :type chans: list
     :param chans: List of stations for the detection
     :type event: obspy.core.event.event.Event
@@ -1586,7 +1613,8 @@ class Detection(object):
     """
 
     def __init__(self, template_name, detect_time, no_chans, detect_val,
-                 threshold, typeofdet, chans=None, event=None, id=None):
+                 threshold, typeofdet, threshold_type, threshold_input,
+                 chans=None, event=None, id=None):
         """Main class of Detection."""
         self.template_name = template_name
         self.detect_time = detect_time
@@ -1595,6 +1623,8 @@ class Detection(object):
         self.detect_val = detect_val
         self.threshold = threshold
         self.typeofdet = typeofdet
+        self.threshold_type = threshold_type
+        self.threshold_input = threshold_input
         self.event = event
         if id is not None:
             self.id = id
@@ -1613,7 +1643,9 @@ class Detection(object):
                               'channels =', str(self.chans), '\n',
                               'detection value =', str(self.detect_val), '\n',
                               'threshold =', str(self.threshold), '\n',
-                              'detection type =', str(self.typeofdet)])
+                              'threshold type =', self.threshold_type, '\n',
+                              'input threshold =', str(self.threshold_input),
+                              '\n detection type =', str(self.typeofdet)])
         return "Detection(" + print_str + ")"
 
     def __str__(self):
@@ -1628,7 +1660,7 @@ class Detection(object):
         for key in self.__dict__.keys():
             if key == 'event':
                 if not _test_event_similarity(
-                        self.event, other.event, verbose=True):
+                        self.event, other.event, verbose=False):
                     return False
             elif self.__dict__[key] != other.__dict__[key]:
                 return False
@@ -1665,14 +1697,28 @@ class Detection(object):
             header = '; '.join(['Template name', 'Detection time (UTC)',
                                 'Number of channels', 'Channel list',
                                 'Detection value', 'Threshold',
+                                'Threshold type', 'Input threshold',
                                 'Detection type'])
             f.write(header + '\n')  # Write a header for the file
         print_str = '; '.join([self.template_name, str(self.detect_time),
                                str(self.no_chans), str(self.chans),
                                str(self.detect_val), str(self.threshold),
+                               self.threshold_type, str(self.threshold_input),
                                self.typeofdet])
         f.write(print_str + '\n')
         f.close()
+
+
+def _total_microsec(t1, t2):
+    """
+    Calculate difference between two datetime stamps in microseconds.
+
+    :type t1: :class: `datetime.datetime`
+    :type t2: :class: `datetime.datetime`
+    :return: int
+    """
+    td = t1 - t2
+    return (td.seconds + td.days * 24 * 3600) * 10**6 + td.microseconds
 
 
 def _test_event_similarity(event_1, event_2, verbose=False):
@@ -2081,7 +2127,7 @@ def _write_family(family, filename):
             for key in detection.__dict__.keys():
                 if key == 'event':
                     value = str(detection.event.resource_id)
-                elif key in ['threshold', 'detect_val']:
+                elif key in ['threshold', 'detect_val', 'threshold_input']:
                     value = format(detection.__dict__[key], '.32f').rstrip('0')
                 else:
                     value = str(detection.__dict__[key])
@@ -2145,13 +2191,16 @@ def read_detections(fname):
         detection[3] = ast.literal_eval(detection[3])
         detection[4] = float(detection[4])
         detection[5] = float(detection[5])
-        detections.append(Detection(template_name=detection[0],
-                                    detect_time=detection[1],
-                                    no_chans=detection[2],
-                                    detect_val=detection[4],
-                                    threshold=detection[5],
-                                    typeofdet=detection[6],
-                                    chans=detection[3]))
+        if len(detection) < 9:
+            detection.extend(['Unset', float('NaN')])
+        else:
+            detection[7] = float(detection[7])
+        detections.append(Detection(
+            template_name=detection[0], detect_time=detection[1],
+            no_chans=detection[2], detect_val=detection[4],
+            threshold=detection[5], threshold_type=detection[6],
+            threshold_input=detection[7], typeofdet=detection[8],
+            chans=detection[3]))
     f.close()
     return detections
 
@@ -2347,7 +2396,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
     return i, ccc
 
 
-def _channel_loop(templates, stream, cores=1, debug=0):
+def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     """
     Internal loop for parallel processing.
 
@@ -2368,6 +2417,10 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     :param cores: Number of cores to loop over
     :type debug: int
     :param debug: Debug level.
+    :type internal: bool
+    :param internal:
+        Whether to use the internal Python code (True) or the experimental
+        compilled code.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -2386,6 +2439,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
+    if not internal:
+        print('Not yet coded')
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -2497,7 +2552,7 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  debug=0, plot_format='png', output_cat=False,
-                 extract_detections=False, arg_check=True):
+                 extract_detections=False, arg_check=True, internal=True):
     """
     Main matched-filter detection function.
 
@@ -2528,26 +2583,33 @@ def match_filter(template_names, template_list, st, threshold,
     :type plotvar: bool
     :param plotvar: Turn plotting on or off
     :type plotdir: str
-    :param plotdir: Path to plotting folder, plots will be output here, \
-        defaults to run location.
+    :param plotdir:
+        Path to plotting folder, plots will be output here, defaults to run
+        location.
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
-    :param debug: Debug output level, the bigger the number, the more the \
-        output.
+    :param debug:
+        Debug output level, the bigger the number, the more the output.
     :type plot_format: str
     :param plot_format: Specify format of output plots if saved
     :type output_cat: bool
-    :param output_cat: Specifies if matched_filter will output an \
-        obspy.Catalog class containing events for each detection. Default \
-        is False, in which case matched_filter will output a list of \
-        detection classes, as normal.
+    :param output_cat:
+        Specifies if matched_filter will output an obspy.Catalog class
+        containing events for each detection. Default is False, in which case
+        matched_filter will output a list of detection classes, as normal.
     :type extract_detections: bool
-    :param extract_detections: Specifies whether or not to return a list of \
-        streams, one stream per detection.
+    :param extract_detections:
+        Specifies whether or not to return a list of streams, one stream per
+        detection.
     :type arg_check: bool
-    :param arg_check: Check arguments, defaults to True, but if running in \
-        bulk, and you are certain of your arguments, then set to False.\n
+    :param arg_check:
+        Check arguments, defaults to True, but if running in bulk, and you are
+        certain of your arguments, then set to False.
+    :type internal: bool
+    :param internal:
+        Whether to use the internal python code or the more experimental
+        compilled code.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -2660,6 +2722,15 @@ def match_filter(template_names, template_list, st, threshold,
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
             raise MatchFilterError(msg)
+        for tr in st:
+            if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
+                raise MatchFilterError('Sampling rates are not equal')
+        for template in template_list:
+            for tr in template:
+                if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
+                    raise MatchFilterError(
+                        'Template sampling rate does not '
+                        'match continuous data')
 
     # Copy the stream here because we will muck about with it
     stream = st.copy()
@@ -2804,10 +2875,9 @@ def match_filter(template_names, template_list, st, threshold,
         for template in templates:
             print(template)
         print(stream)
-    [cccsums, no_chans, chans] = _channel_loop(templates=templates,
-                                               stream=stream,
-                                               cores=cores,
-                                               debug=debug)
+    [cccsums, no_chans, chans] = _channel_loop(
+        templates=templates, stream=stream, cores=cores, debug=debug,
+        internal=internal)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
@@ -2897,10 +2967,12 @@ def match_filter(template_names, template_list, st, threshold,
                                                  station_code=tr.stats.station,
                                                  channel_code=tr.stats.channel)
                         ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                detections.append(Detection(template_names[i],
-                                            detecttime,
-                                            no_chans[i], peak[0], rawthresh,
-                                            'corr', chans[i], event=ev))
+                detections.append(Detection(
+                    template_name=template_names[i], detect_time=detecttime,
+                    no_chans=no_chans[i], detect_val=peak[0],
+                    threshold=rawthresh, typeofdet='corr',
+                    threshold_type=threshold_type, threshold_input=threshold,
+                    chans=chans[i], event=ev))
                 if output_cat:
                     det_cat.append(ev)
         if extract_detections:

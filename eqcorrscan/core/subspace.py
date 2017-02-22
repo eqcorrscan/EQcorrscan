@@ -470,18 +470,12 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     if process:
         if debug > 0:
             print('Processing Stream')
-        stream, stachans = _subspace_process(streams=[st.copy()],
-                                             lowcut=detector.lowcut,
-                                             highcut=detector.highcut,
-                                             filt_order=detector.filt_order,
-                                             sampling_rate=detector.
-                                             sampling_rate,
-                                             multiplex=detector.multiplex,
-                                             stachans=detector.stachans,
-                                             parallel=True,
-                                             align=False,
-                                             shift_len=None,
-                                             reject=False)
+        stream, stachans = _subspace_process(
+            streams=[st.copy()], lowcut=detector.lowcut,
+            highcut=detector.highcut, filt_order=detector.filt_order,
+            sampling_rate=detector.sampling_rate, multiplex=detector.multiplex,
+            stachans=detector.stachans, parallel=True, align=False,
+            shift_len=None, reject=False)
     else:
         # Check the sampling rate at the very least
         for tr in st:
@@ -516,33 +510,30 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         print('Finding peaks')
     peaks = []
     for i in range(len(stream[0])):
-        peaks.append(findpeaks.find_peaks2_short(arr=stats[i],
-                                                 thresh=threshold,
-                                                 trig_int=trig_int_samples,
-                                                 debug=debug))
+        peaks.append(findpeaks.find_peaks2_short(
+            arr=stats[i], thresh=threshold, trig_int=trig_int_samples,
+            debug=debug))
     if not detector.multiplex:
         # Conduct network coincidence triggering
-        peaks = findpeaks.coin_trig(peaks=peaks,
-                                    samp_rate=detector.sampling_rate,
-                                    moveout=moveout, min_trig=min_trig,
-                                    stachans=stachans, trig_int=trig_int)
+        peaks = findpeaks.coin_trig(
+            peaks=peaks, samp_rate=detector.sampling_rate, moveout=moveout,
+            min_trig=min_trig, stachans=stachans, trig_int=trig_int)
     else:
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
             if detector.multiplex:
-                detecttime = st[0].stats.starttime + (peak[1] /
-                                                      (detector.sampling_rate *
-                                                       len(detector.stachans)))
+                detecttime = st[0].stats.starttime + \
+                    (peak[1] / (detector.sampling_rate *
+                                len(detector.stachans)))
             else:
-                detecttime = st[0].stats.starttime + (peak[1] /
-                                                      detector.sampling_rate)
-            rid = ResourceIdentifier(id=detector.name + '_' +
-                                     str(detecttime),
-                                     prefix='smi:local')
+                detecttime = st[0].stats.starttime + \
+                    (peak[1] / detector.sampling_rate)
+            rid = ResourceIdentifier(
+                id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)
-            cr_i = CreationInfo(author='EQcorrscan',
-                                creation_time=UTCDateTime())
+            cr_i = CreationInfo(
+                author='EQcorrscan', creation_time=UTCDateTime())
             ev.creation_info = cr_i
             # All detection info in Comments for lack of a better idea
             thresh_str = 'threshold=' + str(threshold)
@@ -559,17 +550,16 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                 else:
                     net_code = ''
                 pick_tm = detecttime
-                wv_id = WaveformStreamID(network_code=net_code,
-                                         station_code=stachan[0],
-                                         channel_code=stachan[1])
+                wv_id = WaveformStreamID(
+                    network_code=net_code, station_code=stachan[0],
+                    channel_code=stachan[1])
                 ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-            detections.append(Detection(detector.name,
-                                        detecttime,
-                                        len(detector.stachans),
-                                        peak[0],
-                                        threshold,
-                                        'subspace', detector.stachans,
-                                        event=ev))
+            detections.append(
+                Detection(template_name=detector.name, detect_time=detecttime,
+                          no_chans=len(detector.stachans), detect_val=peak[0],
+                          threshold=threshold, typeofdet='subspace',
+                          threshold_type='abs', threshold_input=threshold,
+                          chans=detector.stachans, event=ev))
     outtoc = time.clock()
     print('Detection took %s seconds' % str(outtoc - outtic))
     if extract_detections:
