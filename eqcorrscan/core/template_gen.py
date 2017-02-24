@@ -72,7 +72,7 @@ class TemplateGenError(Exception):
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
              prepick, all_horiz=False, delayed=True, plot=False, debug=0,
-             return_event=False):
+             return_event=False, min_snr=min_snr):
     """
     Generate a multiplexed template from a list of SAC files.
 
@@ -112,6 +112,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     :param debug: Debug level, higher number=more output.
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -150,12 +156,13 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     event = sactoevent(st, debug=debug)
     # Process the data
     st.merge(fill_value='interpolate')
-    st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                  filt_order=filt_order,
-                                  samp_rate=samp_rate, debug=debug)
-    template = template_gen(picks=event.picks, st=st, length=length,
-                            swin=swin, prepick=prepick, plot=plot,
-                            debug=debug, all_horiz=all_horiz, delayed=delayed)
+    st = pre_processing.shortproc(
+        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+        samp_rate=samp_rate, debug=debug)
+    template = template_gen(
+        picks=event.picks, st=st, length=length, swin=swin, prepick=prepick,
+        plot=plot, debug=debug, all_horiz=all_horiz, delayed=delayed,
+        min_snr=min_snr)
     if return_event:
         return template, event, len(st[0].data) / samp_rate
     return template
@@ -163,7 +170,7 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
 
 def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
                prepick, all_horiz=False, delayed=True, plot=False, debug=0,
-               return_event=False):
+               return_event=False, min_snr=None):
     """
     Generate multiplexed template from a Nordic (Seisan) s-file.
 
@@ -200,6 +207,12 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     :param debug: Debug level, higher number=more output.
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -290,12 +303,13 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
             print(pick)
     # Process waveform data
     st.merge(fill_value='interpolate')
-    st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                  filt_order=filt_order, samp_rate=samp_rate,
-                                  debug=debug)
-    template = template_gen(picks=picks, st=st, length=length, swin=swin,
-                            prepick=prepick, all_horiz=all_horiz,
-                            plot=plot, debug=debug, delayed=delayed)
+    st = pre_processing.shortproc(
+        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+        samp_rate=samp_rate, debug=debug)
+    template = template_gen(
+        picks=picks, st=st, length=length, swin=swin, prepick=prepick,
+        all_horiz=all_horiz, plot=plot, debug=debug, delayed=delayed,
+        min_snr=min_snr)
     if return_event:
         return template, event, len(st[0].data) / samp_rate
     return template
@@ -303,7 +317,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
 
 def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin, all_horiz=False, delayed=True,
-                  plot=False, debug=0, return_event=False):
+                  plot=False, debug=0, return_event=False, min_snr=None):
     """
     Generate multiplexed template from a Nordic file using continuous data.
 
@@ -351,6 +365,12 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -398,13 +418,13 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
         st += read(wavefile)
     # Process waveform data
     st.merge(fill_value='interpolate')
-    st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
-                                filt_order=filt_order, samp_rate=samp_rate,
-                                starttime=day, debug=debug)
+    st = pre_processing.dayproc(
+        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+        samp_rate=samp_rate, starttime=day, debug=debug)
     # Cut and extract the templates
-    template = template_gen(picks, st, length, swin, prepick=prepick,
-                            all_horiz=all_horiz, plot=plot, debug=debug,
-                            delayed=delayed)
+    template = template_gen(
+        picks, st, length, swin, prepick=prepick, all_horiz=all_horiz,
+        plot=plot, debug=debug, delayed=delayed, min_snr=min_snr)
     if return_event:
         return template, event, len(st[0].data) / samp_rate
     return template
@@ -412,7 +432,8 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
 
 def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                    length, prepick, swin, all_horiz=False, delayed=True,
-                   plot=False, parallel=True, debug=0, return_event=False):
+                   plot=False, parallel=True, debug=0, return_event=False,
+                   min_snr=None):
     """
     Generate a multiplexed template from a local file.
 
@@ -456,6 +477,12 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: List of :class:`obspy.core.stream.Stream` newly cut templates
     :rtype: list
@@ -504,14 +531,14 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
             starttime = (starttime + 10).date
         else:
             starttime = starttime.date
-        st = pre_processing.dayproc(st=st, lowcut=lowcut, highcut=highcut,
-                                    filt_order=filt_order, samp_rate=samp_rate,
-                                    debug=debug, parallel=parallel,
-                                    starttime=UTCDateTime(starttime))
+        st = pre_processing.dayproc(
+            st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, debug=debug, parallel=parallel,
+            starttime=UTCDateTime(starttime))
     else:
-        st = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                      filt_order=filt_order, parallel=parallel,
-                                      samp_rate=samp_rate, debug=debug)
+        st = pre_processing.shortproc(
+            st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            parallel=parallel, samp_rate=samp_rate, debug=debug)
     data_start = min([tr.stats.starttime for tr in st])
     data_end = max([tr.stats.endtime for tr in st])
     # Read QuakeML file into Catalog class
@@ -554,9 +581,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
                               channels[i])
         st1 = st.copy()
         # Cut and extract the templates
-        template = template_gen(event.picks, st1, length, swin,
-                                prepick=prepick, plot=plot, debug=debug,
-                                all_horiz=all_horiz, delayed=delayed)
+        template = template_gen(
+            event.picks, st1, length, swin, prepick=prepick, plot=plot,
+            debug=debug, all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
         templates.append(template)
         process_lengths.append(len(st1[0].data) / samp_rate)
     if return_event:
@@ -567,7 +594,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400, data_pad=90,
                  all_horiz=False, delayed=True, plot=False, debug=0,
-                 return_event=False):
+                 return_event=False, min_snr=None):
     """
     Generate multiplexed template from SeisHub database.
 
@@ -612,6 +639,12 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: List of :class:`obspy.core.stream.Stream of newly cut templates
     :rtype: list
@@ -688,15 +721,14 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         for tr in st:
             tr.trim(starttime, endtime)
             print(len(tr))
-        st1 = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                       filt_order=filt_order,
-                                       samp_rate=samp_rate, debug=debug,
-                                       parallel=True)
+        st1 = pre_processing.shortproc(
+            st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, debug=debug, parallel=True)
         for event in sub_catalog:
-            template = template_gen(picks=event.picks, st=st1, length=length,
-                                    swin=swin, prepick=prepick,
-                                    all_horiz=all_horiz, plot=plot,
-                                    debug=debug, delayed=delayed)
+            template = template_gen(
+                picks=event.picks, st=st1, length=length, swin=swin,
+                prepick=prepick, all_horiz=all_horiz, plot=plot, debug=debug,
+                delayed=delayed, min_snr=min_snr)
             process_lengths.append(len(st1[0].data) / samp_rate)
             temp_list.append(template)
             del st, st1
@@ -708,7 +740,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
 def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
                 length, prepick, swin, process_len=86400, data_pad=90,
                 all_horiz=False, delayed=True, plot=False, debug=0,
-                return_event=False):
+                return_event=False, min_snr=None):
     """
     Generate multiplexed template from FDSN client.
 
@@ -754,6 +786,12 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :param debug: Level of debugging output, higher=more
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -844,17 +882,16 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             tr.trim(starttime, endtime)
             if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
-        st1 = pre_processing.shortproc(st=st, lowcut=lowcut, highcut=highcut,
-                                       filt_order=filt_order,
-                                       samp_rate=samp_rate,
-                                       debug=debug, parallel=True)
+        st1 = pre_processing.shortproc(
+            st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, debug=debug, parallel=True)
         if debug > 0:
             st1.plot()
         for event in sub_catalog:
-            template = template_gen(picks=event.picks, st=st1, length=length,
-                                    swin=swin, prepick=prepick,
-                                    plot=plot, debug=debug,
-                                    all_horiz=all_horiz, delayed=delayed)
+            template = template_gen(
+                picks=event.picks, st=st1, length=length, swin=swin,
+                prepick=prepick, plot=plot, debug=debug, all_horiz=all_horiz,
+                delayed=delayed, min_snr=min_snr)
             process_lengths.append(len(st1[0].data) / samp_rate)
             temp_list.append(template)
         del st, st1
@@ -865,7 +902,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
 
 def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
                        all_horiz=False, delayed=True, plot=False, debug=0,
-                       return_event=False):
+                       return_event=False, min_snr=None):
     """
     Generate multiple templates from one stream of data.
 
@@ -901,6 +938,12 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :param debug: Debug output level from 0-5.
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
 
     :returns: List of :class:`obspy.core.stream.Stream` templates.
     :rtype: list
@@ -948,7 +991,7 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
             template = template_gen(picks=picks, st=st_clip, length=length,
                                     swin=swin, prepick=prepick, plot=plot,
                                     debug=debug, all_horiz=all_horiz,
-                                    delayed=delayed)
+                                    delayed=delayed, min_snr=min_snr)
             process_lengths.append(st[0].stats.endtime - st[0].stats.starttime)
             templates.append(template)
     if return_event:
@@ -957,7 +1000,8 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
 
 
 def template_gen(picks, st, length, swin='all', prepick=0.05,
-                 all_horiz=False, delayed=True, plot=False, debug=0):
+                 all_horiz=False, delayed=True, plot=False, min_snr=None,
+                 debug=0):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -985,6 +1029,12 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: To plot the template or not, default is True
+    :type min_snr: float
+    :param min_snr:
+        Minimum signal-to-noise ratio for a channel to be included in the
+        template, where signal-to-noise ratio is calculated as the ratio of
+        the maximum amplitude in the template window to the rms amplitude in
+        the whole window given.
     :type debug: int
     :param debug: Debug output level from 0-5.
 
@@ -1004,6 +1054,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     """
     from eqcorrscan.utils.plotting import pretty_template_plot as\
         tplot
+    from eqcorrscan.core.bright_lights import _rms
     stations = []
     channels = []
     st_stachans = []
@@ -1086,6 +1137,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for tr in st:
+        noise_amp = _rms(tr.data)
         used_tr = False
         for pick in picks_copy:
             starttime = None
@@ -1133,6 +1185,11 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                 if debug > 0:
                     print('Cut starttime = ' + str(tr_cut.stats.starttime))
                     print('Cut endtime = ' + str(tr_cut.stats.endtime))
+                if min_snr is not None and \
+                   max(tr_cut.data) / noise_amp < min_snr:
+                    print('Signal-to-noise ratio below threshold for %s.%s' %
+                          (tr_cut.stats.station, tr_cut.stats.channel))
+                    continue
                 st1 += tr_cut
                 used_tr = True
         if debug > 0 and not used_tr:

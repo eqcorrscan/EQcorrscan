@@ -50,6 +50,9 @@ Detection;
 processing parameters.
 * Add warning message when removing channels from continuous data in
 match_filter;
+* Add min_snr option for template generation routines, if the
+signal-to-noise ratio is below a user-defined threshold, the channel
+will not be used.
 
 
 ## 0.1.6
