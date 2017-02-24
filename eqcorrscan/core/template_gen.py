@@ -72,7 +72,7 @@ class TemplateGenError(Exception):
 
 def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
              prepick, all_horiz=False, delayed=True, plot=False, debug=0,
-             return_event=False, min_snr=min_snr):
+             return_event=False, min_snr=None):
     """
     Generate a multiplexed template from a list of SAC files.
 

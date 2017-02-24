@@ -46,6 +46,7 @@ from eqcorrscan.utils.timer import Timer
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
+from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 
@@ -57,14 +58,33 @@ class MatchFilterError(Exception):
     def __init__(self, value):
         """
         Raise error.
+
+        .. rubric:: Example
+
+        >>> MatchFilterError('This raises an error')
+        This raises an error
         """
         self.value = value
 
     def __repr__(self):
+        """
+        Print the value of the error.
+
+        .. rubric:: Example
+        >>> print(MatchFilterError('Error').__repr__())
+        Error
+        """
         return self.value
 
     def __str__(self):
-        return 'MatchFilterError: ' + self.value
+        """
+        Print the error in a pretty way.
+
+        .. rubric:: Example
+        >>> print(MatchFilterError('Error'))
+        Error
+        """
+        return self.value
 
 
 class Party(object):
@@ -80,38 +100,140 @@ class Party(object):
             self.families.extend(families)
 
     def __repr__(self):
+        """
+        Print short info about the Party.
+        :return: str
+
+        .. rubric:: Example
+        >>> print(Party())
+        Party of 0 Families.
+        """
         print_str = ('Party of %s Families.' % len(self.families))
         return print_str
 
     def __iadd__(self, other):
+        """
+        Method for in-place addition '+='. Uses the Party.__add__() method.
+
+        :type other: `Party`
+        :param other: Another party to merge with the current family.
+        :return: Works in place on self.
+
+        .. rubric:: Example
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='b'),
+        ...                                  detections=[])])
+        >>> party_a += party_b
+        >>> print(party_a)
+        Party of 2 Families.
+        """
         return self.__add__(other)
 
     def __add__(self, other):
-        if isinstance(other, Party):
-            added = False
-            for oth_fam in other.families:
-                for fam in self.families:
-                    if fam.template == oth_fam.template:
-                        fam += oth_fam
-                        added = True
-                if not added:
-                    self.families.append(oth_fam)
-        elif isinstance(other, Family):
-            added = False
-            for fam in self.families:
-                if fam.template == other.template:
-                    fam += other
-                    added = True
-                    break
-            if not added:
-                self.families.append(other)
+        """
+        Method for addition '+'.
+
+        :type other: `Party` or `Family`
+        :param other: Another party to merge with the current family.
+        :return: Works in place on self.
+
+        .. Note:: Works in place on party, will alter this original party.
+
+        .. rubric:: Example
+
+        Addition of two parties together:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='b'),
+        ...                                  detections=[])])
+        >>> party_c = party_a + party_b
+        >>> print(party_c)
+        Party of 2 Families.
+
+
+        Addition of a family to a party:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> family_b = Family(template=Template(name='b'), detections=[])
+        >>> party_c = party_a + family_b
+        >>> print(party_c)
+        Party of 2 Families.
+
+
+        Addition of a party with some families using the same templates:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_c = party_a + party_b
+        >>> print(party_c)
+        Party of 1 Families.
+
+
+        Addition of non Family or Party objects is not allows:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> misc = 1.0
+        >>> party_c = party_a + misc # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Ambiguous add, only allowed Party or Family \
+        additions
+
+        """
+        if isinstance(other, Family):
+            families = [other]
+        elif isinstance(other, Party):
+            families = other.families
         else:
-            raise NotImplementedError('Ambiguous add, only allowed'
-                                      ' Party or Family additions.')
+            raise NotImplementedError(
+                'Ambiguous add, only allowed Party or Family additions.')
+        added = False
+        for oth_fam in families:
+            for fam in self.families:
+                if fam.template == oth_fam.template:
+                    fam += oth_fam
+                    added = True
+            if not added:
+                self.families.append(oth_fam)
         return self
 
     def __eq__(self, other):
-        if isinstance(other, Family):
+        """
+        Equality testing, rich comparison '=='.
+
+        :param other: Another object.
+        :return: bool
+
+        .. rubric:: Example
+
+        Compare equal Parties:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='a'))])
+        >>> party_a == party_b
+        True
+
+
+        Compare Parties with different templates:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='b'))])
+        >>> party_a == party_b
+        False
+
+
+        Compare a Party with a Family:
+
+        >>> party = Party(families=[Family(template=Template(name='a'))])
+        >>> family = Family(template=Template(name='a'))
+        >>> party == family
+        False
+        """
+        if not isinstance(other, Party):
             return False
         for family, oth_fam in zip(self.sort().families,
                                    other.sort().families):
@@ -121,22 +243,86 @@ class Party(object):
             return True
 
     def __ne__(self, other):
+        """
+        Rich comparison operator '!='.
+
+        :param other: other object
+        :return: bool
+
+        .. rubric:: Example
+
+        Compare two equal Parties:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='a'))])
+        >>> party_a != party_b
+        False
+        """
         return not self.__eq__(other)
 
     def __getitem__(self, index):
+        """
+        Get families from the Party. Can accept either an index or slice.
+
+        :param index: Family number or slice.
+        :return: Party (if a slice is given) or a single Family
+
+        .. rubric:: Example
+
+        Extract a single family:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party[1]
+        Family of 0 detections from template b
+
+
+        Extract a list of families by giving a slice:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party[1:]
+        Party of 2 Families.
+        """
         if isinstance(index, slice):
             return self.__class__(families=self.families.__getitem__(index))
         else:
             return self.families.__getitem__(index)
 
     def __len__(self):
+        """
+        Get total number of detections in Party.
+
+        :return: length, int
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b'))])
+        >>> len(party)
+        0
+        """
         length = 0
         for family in self.families:
             length += len(family)
         return length
 
     def sort(self):
-        """Sort the families by template name."""
+        """
+        Sort the families by template name.
+
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='a'))])
+        >>> party[0]
+        Family of 0 detections from template b
+        >>> party.sort()[0]
+        Family of 0 detections from template a
+        """
         self.families.sort(key=lambda x: x.template.name)
         return self
 
@@ -175,6 +361,40 @@ class Party(object):
         :param new_threshold: New threshold level
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
+
+        .. rubric:: Example
+
+        Using the MAD threshold on detections made using the MAD threshold:
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> party = party.rethreshold(10.0)
+        >>> len(party)
+        4
+        >>> # Note that all detections are self detections
+
+
+        Using the absolute thresholding method on the same Party:
+
+        >>> party = Party().read().rethreshold(6.0, 'absolute')
+        >>> len(party)
+        1
+
+
+        Using the av_chan_corr method on the same Party:
+
+        >>> party = Party().read().rethreshold(0.9, 'av_chan_corr')
+        >>> len(party)
+        4
+
+
+        Using another method that is not allowed:
+
+        >>> party = Party().read().rethreshold(
+        ...     10, 'reversed') # doctest +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        MatchFilterError: new_threshold_type reversed is not recognised
         """
         for family in self.families:
             for d in family.detections:
@@ -218,6 +438,26 @@ class Party(object):
         .. Warning::
             Works in place on object, if you need to keep the original safe
             then run this on a copy of the object!
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> declustered = party.decluster(20)
+        >>> len(party)
+        3
+
+
+        We can also decluster based on origin time rather than detection time.
+        As long as detections have events with them - in this case they do not
+        so it fails.
+
+        >>> party = Party().read()
+        >>> declustered = party.decluster(
+        ...     20, 'origin') # doctest +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        MatchFilterError: No origin set, cannot constrain
         """
         all_detections = []
         for fam in self.families:
@@ -226,15 +466,16 @@ class Party(object):
             detect_info = [(d.detect_time, d.detect_val)
                            for d in all_detections]
         elif timing == 'origin':
-            detect_info = [(d.event.origins[0].time, d.detect_val)
+            detect_info = [(_get_origin(d.event).time, d.detect_val)
                            for d in all_detections]
         else:
             raise MatchFilterError('timing is not detect or origin')
-        min_det = sorted(list(zip(*detect_info)[0]))[0]
+        min_det = sorted([d[0] for d in detect_info])[0]
         detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
                        for d in detect_info]
         peaks_out, inds_out = decluster(
             peaks=detect_info, trig_int=trig_int * 10**6, return_ind=True)
+        # Trig_int must be converted from seconds to micro-seconds
         declustered_detections = [all_detections[ind] for ind in inds_out]
         # Convert this list into families
         template_names = list(set([d.template_name
@@ -257,6 +498,13 @@ class Party(object):
         Returns a copy of the Party.
 
         :return: Copy of party
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = party.copy()
+        >>> party == party_b
+        True
         """
         return copy.deepcopy(self)
 
@@ -283,17 +531,36 @@ class Party(object):
             alongside the detections and store these in a tar archive. This
             is readable by other programs and maintains all information
             required for further study.
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> party.write('test_tar_write', format='tar')
+        Writing family 0
+        Writing family 1
+        Writing family 2
+        Writing family 3
+        Party of 4 Families.
+        >>> party.write('test_csv_write.csv', format='csv')
+        Party of 4 Families.
+        >>> # This will not overwrite old files:
+        >>> party.write('test_csv_write.csv',
+        ...             format='csv') # doctest +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        MatchFilterError: Will not overwrite existing file: test_csv_write.csv
+        >>> party.write('test_quakeml.ml', format='quakeml')
+        Party of 4 Families.
         """
         if format.lower() == 'csv':
             if os.path.isfile(filename):
-                raise IOError('Will not overwrite existing filename %s'
-                              % filename)
+                raise MatchFilterError(
+                    'Will not overwrite existing file: %s' % filename)
             for family in self.families:
                 for detection in family.detections:
                     detection.write(fname=filename, append=True)
         elif format.lower() == 'tar':
             if os.path.isdir(filename) or os.path.isfile(filename):
-                raise IOError('Will not overwrite existing filename %s'
+                raise IOError('Will not overwrite existing file: %s'
                               % filename)
             os.makedirs(filename)
             Tribe([f.template for f in self.families]).write(
@@ -301,8 +568,9 @@ class Party(object):
             all_cat = Catalog()
             for family in self.families:
                 all_cat += family.catalog
-            all_cat.write(filename + os.sep + 'catalog.xml',
-                          format='QUAKEML')
+            if not len(all_cat) == 0:
+                all_cat.write(filename + os.sep + 'catalog.xml',
+                              format='QUAKEML')
             for i, family in enumerate(self.families):
                 print('Writing family %i' % i)
                 _write_family(
@@ -314,7 +582,7 @@ class Party(object):
         else:
             warnings.warn('Writing only the catalog component, metadata '
                           'will not be preserved')
-            self.get_catalog().write(fielname=filename, format=format)
+            self.get_catalog().write(filename=filename, format=format)
         return self
 
     def read(self, filename=None):
@@ -323,6 +591,11 @@ class Party(object):
 
         :type filename: str
         :param filename: File to read from
+
+        .. rubric:: Example
+
+        >>> Party().read()
+        Party of 4 Families.
         """
         if filename is None:
             # If there is no filename given, then read the example.
@@ -337,7 +610,10 @@ class Party(object):
         party_dir = glob.glob(temp_dir + os.sep + '*')[0]
         tribe._read_from_folder(dirname=party_dir)
         # Read in families here!
-        all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+        if os.path.isfile(party_dir + os.sep + 'catalog.xml'):
+            all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+        else:
+            all_cat = Catalog()
         for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
             template = [t for t in tribe
                         if t.name == family_file.split(os.sep)[-1].
@@ -346,32 +622,7 @@ class Party(object):
                 raise MatchFilterError(
                     'Missing template for detection file: ' + family_file)
             family = Family(template=template[0])
-            with open(family_file, 'r') as f:
-                for line in f:
-                    det_dict = {}
-                    for key_pair in line.rstrip().split(';'):
-                        key = key_pair.split(': ')[0].strip()
-                        value = key_pair.split(': ')[-1].strip()
-                        if key == 'event':
-                            det_dict.update(
-                                {'event': [e for e in all_cat
-                                           if str(e.resource_id).
-                                           split('/')[-1] == value][0]})
-                        elif key == 'detect_time':
-                            det_dict.update(
-                                {'detect_time': UTCDateTime(value)})
-                        elif key == 'chans':
-                            det_dict.update({'chans': ast.literal_eval(value)})
-                        elif key in ['template_name', 'typeofdet', 'id',
-                                     'threshold_type']:
-                            det_dict.update({key: value})
-                        elif key == 'no_chans':
-                            det_dict.update({key: int(value)})
-                        elif len(key) == 0:
-                            continue
-                        else:
-                            det_dict.update({key: float(value)})
-                    family.detections.append(Detection(**det_dict))
+            family.detections.extend(_read_family(family_file, all_cat))
             family.catalog = Catalog([d.event for d in family.detections])
             self.families.append(family)
         shutil.rmtree(temp_dir)
@@ -514,6 +765,13 @@ class Party(object):
         Get an obspy catalog object from the party.
 
         :returns: :class:`obspy.core.event.Catalog`
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> cat = party.get_catalog()
+        >>> print(len(cat))
+        4
         """
         catalog = Catalog()
         for fam in self.families:
@@ -529,6 +787,15 @@ class Party(object):
         :return: Party
 
         .. Note:: Works in place on Party.
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> print(len(party))
+        4
+        >>> party = party.min_chans(5)
+        >>> print(len(party))
+        1
         """
         declustered = Party()
         for family in self.families:
@@ -550,8 +817,8 @@ class Family(object):
     :type detections: list
     :param detections: list of Detection objects
     :type catalog: obspy.core.event.Catalog
-    :param catalog: Catalog of detections, with information for the individual\
-        detections
+    :param catalog:
+        Catalog of detections, with information for the individual detections.
     """
     def __init__(self, template, detections=None, catalog=None):
         """Instantiation of Family object."""
@@ -568,56 +835,294 @@ class Family(object):
             self.catalog.extend(catalog)
 
     def __repr__(self):
+        """
+        Print method on Family.
+
+        :return: str
+
+        .. rubric:: Example
+
+        >>> family = Family(template=Template(name='a'))
+        >>> print(family)
+        Family of 0 detections from template a
+        """
         print_str = ('Family of %s detections from template %s' %
                      (len(self.detections), self.template.name))
         return print_str
 
     def __add__(self, other):
-        """Extend method."""
+        """
+        Extend method. Used for '+'
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_c = family_a + family_b
+        >>> print(family_c)
+        Family of 0 detections from template a
+
+
+        Can only extend family with the family of detections from the same
+        template:
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='b'))
+        >>> family_c = family_a + family_b # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Templates do not match
+
+
+        Can extend by adding a detection from the same template.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='a', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family = family_a + detection
+        >>> print(family)
+        Family of 1 detections from template a
+
+
+        Will not work if detections are made using a different Template.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='b', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family = family_a + detection # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Templates do not match
+
+
+        Can not extent a family with a list, or another object.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family = family_a + ['albert'] # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Can only extend with a Detection of Family object.
+        """
         if isinstance(other, Family):
             if other.template == self.template:
                 self.detections.extend(other.detections)
-                self.catalog += other.catalog
+                try:
+                    self.catalog += other.catalog
+                except TypeError:
+                    pass
             else:
                 raise NotImplementedError('Templates do not match')
-        elif isinstance(other, Detection):
+        elif isinstance(other, Detection) and other.template_name \
+                == self.template.name:
             self.detections.append(other)
-            self.catalog += other.event
+            try:
+                self.catalog += other.event
+            except TypeError:
+                pass
+        elif isinstance(other, Detection):
+            raise NotImplementedError('Template do not match')
         else:
             raise NotImplementedError('Can only extend with a Detection or '
                                       'Family object.')
         return self
 
     def __iadd__(self, other):
+        """
+        Rich method '+='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_a += family_b
+        >>> print(family_a)
+        Family of 0 detections from template a
+        """
         return self.__add__(other)
 
     def __eq__(self, other):
-        """Check equality."""
+        """
+        Check equality, rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'), detections=[])
+        >>> family_b = Family(template=Template(name='a'), detections=[])
+        >>> family_a == family_b
+        True
+        >>> family_c = Family(template=Template(name='b'))
+        >>> family_c == family_a
+        False
+
+
+        Test if families are equal without the same detections
+
+        >>> family_a = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_b = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a == family_b
+        False
+        >>> family_c = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a == family_c
+        False
+        """
         if not self.template == other.template:
             return False
-        for det, other_det in zip(self.sort().detections,
-                                  other.sort().detections):
-            if det != other_det:
-                return False
         if len(self.detections) != len(other.detections):
             return False
+        if len(self.detections) != 0 and len(other.detections) != 0:
+            for det, other_det in zip(self.sort().detections,
+                                      other.sort().detections):
+                if det != other_det:
+                    return False
         # currently not checking for catalog...
         if len(self.catalog) != len(other.catalog):
             return False
         return True
 
     def __ne__(self, other):
+        """
+        Rich comparison operator '!='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_b = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a != family_b
+        True
+        """
         return not self.__eq__(other)
 
     def __getitem__(self, index):
+        """
+        Retrieve a detection or series of detections from the Family.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> isinstance(family[0], Detection)
+        True
+        >>> len(family[0:])
+        2
+        """
         return self.detections.__getitem__(index)
 
     def __len__(self):
+        """Number of detections in Family.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> print(len(family))
+        2
+        """
         return len(self.detections)
 
+    def _uniq(self):
+        """
+        Get list of unique detections.
+        Works in place.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> len(family)
+        3
+        >>> len(family._uniq())
+        2
+        """
+        _detections = []
+        [_detections.append(d) for d in self.detections
+         if not _detections.count(d)]
+        self.detections = _detections
+        self.catalog = get_catalog(self.detections)
+        return self
+
     def sort(self):
-        """Sort by detection time."""
-        self.detections.sort(key=lambda d: d.detect_time)
+        """Sort by detection time.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family[0].detect_time
+        UTCDateTime(1970, 1, 1, 0, 3, 20)
+        >>> family.sort()[0].detect_time
+        UTCDateTime(1970, 1, 1, 0, 0)
+        """
+        self.detections = sorted(self.detections, key=lambda d: d.detect_time)
         return self
 
     def copy(self):
@@ -625,15 +1130,90 @@ class Family(object):
         Returns a copy of the family.
 
         :return: Copy of family
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family == family.copy()
+        True
         """
         return copy.deepcopy(self)
 
     def append(self, other):
+        """
+        Add another family or detection to the family.
+
+        .. rubric:: Example
+
+        Append a family to a family
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_a.append(family_b)
+        Family of 0 detections from template a
+
+
+        Append a detection to the family
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='a', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family_a.append(detection)
+        Family of 1 detections from template a
+        """
         return self.__add__(other)
 
     def plot(self):
         """
         Plot the cumulative number of detections in time.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family.plot(plot_grouped=True)  # doctest: +SKIP
+
+        .. plot::
+
+            from eqcorrscan.core.match_filter import Family
+            family = Family(
+                template=Template(name='a'), detections=[
+                Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+                          no_chans=8, detect_val=4.2, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0),
+                Detection(template_name='a', detect_time=UTCDateTime(0),
+                          no_chans=8, detect_val=4.5, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0),
+                Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+                          no_chans=8, detect_val=4.5, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0)])
+            family.plot()
         """
         cumulative_detections(detections=self.detections)
 
@@ -656,6 +1236,25 @@ class Family(object):
 
         .. Note:: csv format will append detections to filename, all others
             will overwrite any existing files.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a', st=read()), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family.write('test_family')
+        Writing family 0
         """
         Party(families=[self]).write(filename=filename, format=format)
         return
@@ -738,7 +1337,10 @@ class Family(object):
 
 
 class Template(object):
-    """Template holder."""
+    """
+    Template object holder. Contains waveform data and metadata parameters
+    used to generate the template.
+    """
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,
                  samp_rate=None, filt_order=None, process_length=None,
                  prepick=None, event=None):
@@ -755,6 +1357,11 @@ class Template(object):
         self.lowcut = lowcut
         self.highcut = highcut
         self.samp_rate = samp_rate
+        if st and samp_rate is not None:
+            for tr in st:
+                if not tr.stats.sampling_rate == self.samp_rate:
+                    raise MatchFilterError(
+                        'Sampling rates do not match in data.')
         self.filt_order = filt_order
         self.process_length = process_length
         self.prepick = prepick
@@ -769,6 +1376,27 @@ class Template(object):
         self.event = event
 
     def __repr__(self):
+        """
+        Print the template.
+
+
+        .. rubric:: Example
+
+        >>> print(Template())
+        Template()
+        >>> template = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> print(template) # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+             3 channels;
+             lowcut: 2.0 Hz;
+             highcut: 8.0 Hz;
+             sampling rate 100 Hz;
+             filter order: 4;
+             process length: 3600 s
+
+        """
         if self.name is None:
             return 'Template()'
         if self.st is None:
@@ -783,26 +1411,104 @@ class Template(object):
         return print_str
 
     def __eq__(self, other):
+        """
+        Check for Template equality, rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a == template_b
+        True
+
+
+        This will check all parameters of template including the data in the
+        stream.
+
+        >>> template_b.st[0].data = template_b.st[0].data[0:-1]
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.st[0].stats.station = 'MIS'
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.st = template_b.st[0]
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.lowcut = 5.0
+        >>> template_a == template_b
+        False
+
+
+        This will also test if the events in the templates are the same,
+        ignoring resource ID's as obspy will alter these so that they do not
+        match.
+
+        >>> party = Party().read()
+        >>> template_a = party.families[0].template
+        >>> template_b = template_a.copy()
+        >>> template_b.event.origins[0].time = \
+            template_a.event.origins[0].time + 20
+        >>> template_a == template_b
+        False
+        """
         for key in self.__dict__.keys():
             if key == 'st':
-                for tr, oth_tr in zip(self.st.sort(),
-                                      other.st.sort()):
-                    if not np.array_equal(tr.data, oth_tr.data):
-                        return False
-                    for trkey in ['network', 'station', 'channel', 'location',
-                                  'starttime', 'endtime', 'sampling_rate',
-                                  'delta', 'npts', 'calib']:
-                        if tr.stats[trkey] != oth_tr.stats[trkey]:
+                if isinstance(self.st, Stream) and \
+                   isinstance(other.st, Stream):
+                    for tr, oth_tr in zip(self.st.sort(),
+                                          other.st.sort()):
+                        if not np.array_equal(tr.data, oth_tr.data):
                             return False
+                        for trkey in ['network', 'station', 'channel',
+                                      'location', 'starttime', 'endtime',
+                                      'sampling_rate', 'delta', 'npts',
+                                      'calib']:
+                            if tr.stats[trkey] != oth_tr.stats[trkey]:
+                                return False
+                elif isinstance(
+                        self.st, Stream) and not isinstance(other.st, Stream):
+                    return False
+                elif not isinstance(
+                        self.st, Stream) and isinstance(other.st, Stream):
+                    return False
             elif key == 'event':
-                if not _test_event_similarity(
-                        self.event, other.event, verbose=False):
+                if isinstance(
+                        self.event, Event) and isinstance(other.event, Event):
+                    if not _test_event_similarity(
+                            self.event, other.event, verbose=False):
+                        return False
+                elif isinstance(
+                        self.event, Event) and not isinstance(
+                        other.event, Event):
+                    return False
+                elif not isinstance(
+                        self.event, Event) and isinstance(other.event, Event):
                     return False
             elif not self.__dict__[key] == other.__dict__[key]:
                 return False
         return True
 
     def __ne__(self, other):
+        """
+        Rich comparison operator '!='.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a != template_b
+        False
+        """
         return not self.__eq__(other)
 
     def copy(self):
@@ -810,11 +1516,34 @@ class Template(object):
         Returns a copy of the template.
 
         :return: Copy of template
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a == template_b
+        True
         """
         return copy.deepcopy(self)
 
     def same_processing(self, other):
-        """Check is the templates are processed the same."""
+        """
+        Check is the templates are processed the same.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a.same_processing(template_b)
+        True
+        >>> template_b.lowcut = 5.0
+        >>> template_a.same_processing(template_b)
+        False
+        """
         for key in self.__dict__.keys():
             if key in ['name', 'st', 'prepick', 'event', 'template_info']:
                 continue
@@ -834,6 +1563,29 @@ class Template(object):
         :param format:
             Format to write to, either 'tar' (to retain metadata), or any obspy
             supported waveform format to just extract the waveform.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_a.write('test_template') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
+        >>> template_a.write('test_waveform.ms',
+        ...                  format='MSEED') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
         """
         if format == 'tar':
             Tribe(templates=[self]).write(filename=filename)
@@ -847,6 +1599,24 @@ class Template(object):
 
         :type filename: str
         :param filename: Filename to read template from.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_a.write(
+        ...     'test_template_read') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
+        >>> template_b = Template().read('test_template_read.tgz')
+        >>> template_a == template_b
+        True
         """
         tribe = Tribe()
         tribe.read(filename=filename)
@@ -961,6 +1731,9 @@ class Template(object):
 
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
+
+        .. Note::
+            See tutorials for example.
         """
         party = _group_detect(
                 templates=[self], stream=stream.copy(), threshold=threshold,
@@ -1000,6 +1773,38 @@ class Template(object):
             `multi_template_gen` are not accommodated in this function and must
             be called from Tribe.construct as these generate multiple
             templates.
+
+        .. Note::
+            Calls functions from `eqcorrscan.core.template_gen`, see these
+            functions for details on what further arguments are required.
+
+        .. rubric:: Example
+
+        >>> sac_files = glob.glob(
+        ...     'eqcorrscan/tests/test_data/SAC/2014p611252/*')
+        >>> template = Template().construct(
+        ...     method='from_sac', name='test', lowcut=2.0, highcut=8.0,
+        ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
+        ...     length=2.0, sac_files=sac_files)
+        >>> print(template) # doctest: +NORMALIZE_WHITESPACE
+        Template test:
+         12 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 20.0 Hz;
+         filter order: 4;
+         process length: 300.0 s
+
+
+        This will raise an error if the method is unsupported:
+
+        >>> template = Template().construct(
+        ...     method='from_meta_file', name='test', lowcut=2.0, highcut=8.0,
+        ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
+        ...     length=2.0) # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Method is not supported, use \
+        Tribe.construct instead.
         """
         if method in ['from_meta_file', 'from_seishub', 'from_client',
                       'multi_template_gen']:
@@ -1036,52 +1841,146 @@ class Tribe(object):
             self.templates.extend(templates)
 
     def __repr__(self):
-        print_str = 'Tribe of %i templates' % self.__len__()
-        return print_str
+        """
+        Print information about the tribe.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> print(tribe)
+        Tribe of 1 templates
+        """
+        return 'Tribe of %i templates' % self.__len__()
 
     def __add__(self, other):
+        """
+        Add two Tribes or a Tribe and a Template together. '+'
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> tribe + Tribe(templates=[Template(name='b')])
+        Tribe of 2 templates
+        >>> tribe + Template(name='c')
+        Tribe of 3 templates
+        """
         if isinstance(other, Tribe):
             self.templates += other.templates
         elif isinstance(other, Template):
             self.templates.append(other)
         else:
-            raise TypeError('Must be either Template ot Selection')
+            raise TypeError('Must be either Template or Tribe')
         return self
 
     def __iadd__(self, other):
-        if isinstance(other, Tribe):
-            self.templates += other.templates
-        elif isinstance(other, Template):
-            self.templates.append(other)
-        else:
-            raise TypeError('Must be either Template ot Selection')
-        return self
+        """
+        Add in place: '+='
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> tribe += Tribe(templates=[Template(name='b')])
+        >>> print(tribe)
+        Tribe of 2 templates
+        >>> tribe += Template(name='c')
+        >>> print(tribe)
+        Tribe of 3 templates
+        """
+        return self.__add__(other)
 
     def __eq__(self, other):
+        """
+        Test for equality. Rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = Tribe(templates=[Template(name='b')])
+        >>> tribe_a == tribe_b
+        False
+        >>> tribe_a == tribe_a
+        True
+        """
         if self.sort().templates != other.sort().templates:
             return False
         return True
 
     def __ne__(self, other):
+        """
+        Test for inequality. Rich comparison operator '!='
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = Tribe(templates=[Template(name='b')])
+        >>> tribe_a != tribe_b
+        True
+        >>> tribe_a != tribe_a
+        False
+        """
         return not self.__eq__(other)
 
     def __len__(self):
+        """
+        Number of Templates in Tribe. len(tribe)
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> len(tribe_a)
+        1
+        """
         return len(self.templates)
 
     def __iter__(self):
+        """
+        Iterator for the Tribe.
+        """
         return list(self.templates).__iter__()
 
     def __getitem__(self, index):
+        """
+        Support slicing to get Templates from Tribe.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a'), Template(name='b'),
+        ...                          Template(name='c')])
+        >>> tribe[1] # doctest: +NORMALIZE_WHITESPACE
+        Template b:
+         0 channels;
+         lowcut: None Hz;
+         highcut: None Hz;
+         sampling rate None Hz;
+         filter order: None;
+         process length: None s
+        >>> tribe[0:2]
+        Tribe of 2 templates
+        """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
         else:
             return self.templates.__getitem__(index)
 
-    def __delitem__(self, index):
-        return self.templates.__delitem__(index)
-
     def sort(self):
-        """Sort the tribe, sorts by template name."""
+        """
+        Sort the tribe, sorts by template name.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c'), Template(name='b'),
+        ...                          Template(name='a')])
+        >>> tribe.sort()
+        Tribe of 3 templates
+        >>> tribe[0] # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         0 channels;
+         lowcut: None Hz;
+         highcut: None Hz;
+         sampling rate None Hz;
+         filter order: None;
+         process length: None s
+        """
         self.templates = sorted(self.templates, key=lambda x: x.name)
         return self
 
@@ -1091,12 +1990,28 @@ class Tribe(object):
 
         :type template: :class:`eqcorrscan.core.match_filter.Template`
         :param template: Template to remove from tribe
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c'), Template(name='b'),
+        ...                          Template(name='a')])
+        >>> tribe.remove(tribe.templates[0])
+        Tribe of 2 templates
         """
         self.templates.remove(template)
         return self
 
     def copy(self):
-        """Copy the Tribe."""
+        """
+        Copy the Tribe.
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = tribe_a.copy()
+        >>> tribe_a == tribe_b
+        True
+        """
         return copy.deepcopy(self)
 
     def write(self, filename, compress=True):
@@ -1110,12 +2025,23 @@ class Tribe(object):
         :param compress:
             Whether to compress the tar archive or not, if False then will
             just be files in a folder.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c', st=read())])
+        >>> tribe.write('test_tribe')
+        Tribe of 1 templates
         """
         if not os.path.isdir(filename):
             os.makedirs(filename)
         self._par_write(filename)
-        Catalog([t.event for t in self.templates]).write(
-            filename + os.sep + 'tribe_cat.xml', format='QUAKEML')
+        tribe_cat = Catalog()
+        for t in self.templates:
+            if t.event is not None:
+                tribe_cat.append(t.event)
+        if len(tribe_cat) > 0:
+            tribe_cat.write(filename + os.sep + 'tribe_cat.xml',
+                            format='QUAKEML')
         for template in self.templates:
             template.st.write(filename + '/' + template.name + '.ms',
                               format='MSEED')
@@ -1148,6 +2074,15 @@ class Tribe(object):
 
         :type filename: str
         :param filename: File to read templates from.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c', st=read())])
+        >>> tribe.write('test_tribe')
+        Tribe of 1 templates
+        >>> tribe_back = Tribe().read('test_tribe.tgz')
+        >>> tribe_back == tribe
+        True
         """
         with tarfile.open(filename, "r:*") as arc:
             temp_dir = tempfile.mkdtemp()
@@ -1166,7 +2101,10 @@ class Tribe(object):
         """
         templates = _par_read(dirname=dirname, compressed=False)
         t_files = glob.glob(dirname + os.sep + '*.ms')
-        tribe_cat = read_events(dirname + os.sep + 'tribe_cat.xml')
+        if os.path.isfile(dirname + os.sep + 'tribe_cat.xml'):
+            tribe_cat = read_events(dirname + os.sep + 'tribe_cat.xml')
+        else:
+            tribe_cat = Catalog()
         for template in templates:
             for event in tribe_cat:
                 for comment in event.comments:
@@ -1194,6 +2132,10 @@ class Tribe(object):
             Method of stacking, see :module:`eqcorrscan.utils.clustering`
 
         :return: List of tribes.
+
+        .. rubric:: Example
+
+
         """
         from eqcorrscan.utils import clustering
         tribes = []
@@ -1503,7 +2445,8 @@ class Tribe(object):
                 print('Error: %s' % str(e))
                 return party
         for family in party:
-            family.detections = list(set(family.detections))
+            family.detections = family._uniq().detections
+            family.catalog = get_catalog(family.detections)
         return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
@@ -1659,12 +2602,47 @@ class Detection(object):
     def __eq__(self, other):
         for key in self.__dict__.keys():
             if key == 'event':
-                if not _test_event_similarity(
-                        self.event, other.event, verbose=False):
+                if isinstance(self.event, Event) and \
+                   isinstance(other.event, Event):
+                    if not _test_event_similarity(
+                            self.event, other.event, verbose=False):
+                        return False
+                elif isinstance(
+                        self.event, Event) and not isinstance(
+                        other.event, Event):
+                    return False
+                elif not isinstance(
+                        self.event, Event) and isinstance(
+                        other.event, Event):
                     return False
             elif self.__dict__[key] != other.__dict__[key]:
                 return False
         return True
+
+    def __lt__(self, other):
+        if self.detect_time < other.detect_time:
+            return True
+        else:
+            return False
+
+    def __le__(self, other):
+        if self.detect_time <= other.detect_time:
+            return True
+        else:
+            return False
+
+    def __gt__(self, other):
+        return not self.__le__(other)
+
+    def __ge__(self, other):
+        return not self.__lt__(other)
+
+    def __hash__(self):
+        """
+        Cannot hash Detection objects, they may change.
+        :return: 0
+        """
+        return 0
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -1716,6 +2694,12 @@ def _total_microsec(t1, t2):
     :type t1: :class: `datetime.datetime`
     :type t2: :class: `datetime.datetime`
     :return: int
+
+    .. rubric:: Example
+
+    >>> _total_microsec(UTCDateTime(2013, 1, 1).datetime,
+    ...                 UTCDateTime(2014, 1, 1).datetime)
+    -31536000000000
     """
     td = t1 - t2
     return (td.seconds + td.days * 24 * 3600) * 10**6 + td.microseconds
@@ -1735,6 +2719,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
 
     :return: bool
     """
+    if not isinstance(event_1, Event) or not isinstance(event_2, Event):
+        raise NotImplementedError('Cannot compare things that are not Events')
     # Check origins
     if len(event_1.origins) != len(event_2.origins):
         return False
@@ -2056,8 +3042,11 @@ def _par_read(dirname, compressed=True):
                 t_in.__dict__[key_pair.split(':')[0].strip()] = \
                     key_pair.split(':')[-1].strip()
             elif key_pair.split(':')[0].strip() == 'filt_order':
-                t_in.__dict__[key_pair.split(':')[0].strip()] = \
-                    int(key_pair.split(':')[-1])
+                try:
+                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                        int(key_pair.split(':')[-1])
+                except ValueError:
+                    pass
             else:
                 try:
                     t_in.__dict__[key_pair.split(':')[0].strip()] = \
@@ -2125,7 +3114,7 @@ def _write_family(family, filename):
         for detection in family.detections:
             det_str = ''
             for key in detection.__dict__.keys():
-                if key == 'event':
+                if key == 'event' and detection.__dict__[key] is not None:
                     value = str(detection.event.resource_id)
                 elif key in ['threshold', 'detect_val', 'threshold_input']:
                     value = format(detection.__dict__[key], '.32f').rstrip('0')
@@ -2134,6 +3123,44 @@ def _write_family(family, filename):
                 det_str += key + ': ' + value + '; '
             f.write(det_str + '\n')
     return
+
+
+def _read_family(fname, all_cat):
+    """
+    Internal function to read csv family files.
+
+    :type fname: str
+    :param fname: Filename
+    :return: list of Detection
+    """
+    detections = []
+    with open(fname, 'r') as f:
+        for line in f:
+            det_dict = {}
+            for key_pair in line.rstrip().split(';'):
+                key = key_pair.split(': ')[0].strip()
+                value = key_pair.split(': ')[-1].strip()
+                if key == 'event':
+                    det_dict.update(
+                        {'event': [e for e in all_cat
+                                   if str(e.resource_id).
+                                   split('/')[-1] == value][0]})
+                elif key == 'detect_time':
+                    det_dict.update(
+                        {'detect_time': UTCDateTime(value)})
+                elif key == 'chans':
+                    det_dict.update({'chans': ast.literal_eval(value)})
+                elif key in ['template_name', 'typeofdet', 'id',
+                             'threshold_type']:
+                    det_dict.update({key: value})
+                elif key == 'no_chans':
+                    det_dict.update({key: int(value)})
+                elif len(key) == 0:
+                    continue
+                else:
+                    det_dict.update({key: float(value)})
+            detections.append(Detection(**det_dict))
+    return detections
 
 
 def read_tribe(fname):
@@ -2253,7 +3280,8 @@ def get_catalog(detections):
     """
     catalog = Catalog()
     for detection in detections:
-        catalog.append(detection.event)
+        if detection.event:
+            catalog.append(detection.event)
     return catalog
 
 
@@ -2991,3 +4019,12 @@ def match_filter(template_names, template_list, st, threshold,
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    # List files to be removed after doctest
+    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.ml',
+               'test_family.tgz', 'test_template.tgz', 'test_waveform.ms',
+               'test_template_read.tgz', 'test_tribe.tgz']
+    for f in cleanup:
+        if os.path.isfile(f):
+            os.remove(f)
+        elif os.path.isdir(f):
+            shutil.rmtree(f)

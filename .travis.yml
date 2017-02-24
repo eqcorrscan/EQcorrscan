@@ -75,7 +75,8 @@ install:
 
 script:
 #  - travis_wait 50 python setup.py test
-  - python setup.py test
+#  - python setup.py test
+   - py.test --ignore eqcorrscan/tests/tutorial_test.py
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
