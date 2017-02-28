@@ -7,7 +7,10 @@ matrix:
     - os: linux
       env: PYTHON_VERSION=3.5
     - os: linux
+      env: PYTHON_VERSION=3.6
+    - os: linuc
       env: PYTHON_VERSION=3.4
+    # PyASDF install has issues on 3.4
     #    - os: linux
     #      env: PYTHON_VERSION=3.3
     # There isn't and openCV3 for python 3.3 on Conda
@@ -76,7 +79,7 @@ install:
 script:
 #  - travis_wait 50 python setup.py test
 #  - python setup.py test
-   - py.test --ignore eqcorrscan/tests/tutorial_test.py
+   - py.test --ignore=eqcorrscan/tests/tutorial_test.py
 
 after_success:
   # Check how much code is actually tested and send this report to codecov

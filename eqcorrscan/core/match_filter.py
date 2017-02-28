@@ -38,6 +38,7 @@ import glob
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
+from scipy.signal import fftconvolve
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
@@ -387,14 +388,6 @@ class Party(object):
         >>> party = Party().read().rethreshold(0.9, 'av_chan_corr')
         >>> len(party)
         4
-
-
-        Using another method that is not allowed:
-
-        >>> party = Party().read().rethreshold(
-        ...     10, 'reversed') # doctest +IGNORE_EXCEPTION_DETAIL
-        Traceback (most recent call last):
-        MatchFilterError: new_threshold_type reversed is not recognised
         """
         for family in self.families:
             for d in family.detections:
@@ -447,17 +440,6 @@ class Party(object):
         >>> declustered = party.decluster(20)
         >>> len(party)
         3
-
-
-        We can also decluster based on origin time rather than detection time.
-        As long as detections have events with them - in this case they do not
-        so it fails.
-
-        >>> party = Party().read()
-        >>> declustered = party.decluster(
-        ...     20, 'origin') # doctest +IGNORE_EXCEPTION_DETAIL
-        Traceback (most recent call last):
-        MatchFilterError: No origin set, cannot constrain
         """
         all_detections = []
         for fam in self.families:
@@ -543,11 +525,6 @@ class Party(object):
         Party of 4 Families.
         >>> party.write('test_csv_write.csv', format='csv')
         Party of 4 Families.
-        >>> # This will not overwrite old files:
-        >>> party.write('test_csv_write.csv',
-        ...             format='csv') # doctest +IGNORE_EXCEPTION_DETAIL
-        Traceback (most recent call last):
-        MatchFilterError: Will not overwrite existing file: test_csv_write.csv
         >>> party.write('test_quakeml.ml', format='quakeml')
         Party of 4 Families.
         """
@@ -2494,6 +2471,9 @@ class Tribe(object):
                     warnings.warn('Data are zero in float16, missing data,'
                                   ' will not use: %s' % tr.id)
                     template.remove(tr)
+            if len(template) == 0:
+                print('Empty Template')
+                continue
             t.st = template
             t.name = template.sort(['starttime'])[0].\
                 stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')

@@ -645,18 +645,13 @@ class TestMatchObjects(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False)
         self.assertEqual(len(party), 4)
         for fam, check_fam in zip(party, self.party):
-            if not fam == check_fam:
-                print('Families not equal')
-                print(fam)
-                if not fam.detections == check_fam.detections:
-                    print('Detections not equal')
-                    print(fam.detections)
-                    print(check_fam.detections)
-                if not fam.template == check_fam.template:
-                    print('Template are not equal')
-                    print(fam.template)
-                    print(check_fam.template)
-            self.assertEqual(fam.detections, check_fam.detections)
+            for det, check_det in zip(fam.detections, check_fam.detections):
+                for key in det.__dict__.keys():
+                    if key == 'event':
+                        continue
+                    self.assertEqual(det.__dict__[key],
+                                     check_det.__dict__[key])
+            self.assertEqual(fam.template, check_fam.template)
 
     def test_client_detect(self):
         """Test the client_detect method."""

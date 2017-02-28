@@ -1178,6 +1178,10 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                 tr_cut = tr.copy().trim(starttime=starttime,
                                         endtime=starttime + length,
                                         nearest_sample=False)
+                if len(tr_cut.data) == 0:
+                    print('No data provided for %s.%s starting at %s' %
+                          (tr.stats.station, tr.stats.channel, str(starttime)))
+                    continue
                 # Ensure that the template is the correct length
                 if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
                                         length) + 1:

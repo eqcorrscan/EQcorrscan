@@ -9,7 +9,6 @@ from __future__ import unicode_literals
 
 import unittest
 import os
-import glob
 
 from obspy import read
 
