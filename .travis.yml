@@ -6,10 +6,10 @@ matrix:
       env: PYTHON_VERSION=2.7
     - os: linux
       env: PYTHON_VERSION=3.5
-    - os: linux
-      env: PYTHON_VERSION=3.6
-    - os: linuc
-      env: PYTHON_VERSION=3.4
+    # - os: linux
+    #   env: PYTHON_VERSION=3.6
+    # - os: linux
+    #   env: PYTHON_VERSION=3.4
     # PyASDF install has issues on 3.4
     #    - os: linux
     #      env: PYTHON_VERSION=3.3

@@ -2677,8 +2677,8 @@ def _total_microsec(t1, t2):
 
     .. rubric:: Example
 
-    >>> _total_microsec(UTCDateTime(2013, 1, 1).datetime,
-    ...                 UTCDateTime(2014, 1, 1).datetime)
+    >>> print(_total_microsec(UTCDateTime(2013, 1, 1).datetime,
+    ...                       UTCDateTime(2014, 1, 1).datetime))
     -31536000000000
     """
     td = t1 - t2
