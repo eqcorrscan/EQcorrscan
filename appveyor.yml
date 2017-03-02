@@ -71,7 +71,7 @@ test_script:
   - "%CMD_IN_ENV% py.test --ignore=eqcorrscan/tests/tutorial_test.py"
 
 after_test:
-  - "coverage combine"
+  #  - "coverage combine"
   - "powershell copy-item .coverage ..\\.coverage.empty"
   - "cd .."
   - "coverage combine"
