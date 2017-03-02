@@ -35,7 +35,7 @@ class TestSfileMethods(unittest.TestCase):
 
         event_list = [('GEONET', '2016p008122'),
                       ('NCEDC', '72572665'),
-                      ('USGS', 'nc72597260')]
+                      ('https://earthquake.usgs.gov', 'nc72597260')]
         for event_info in event_list:
             try:
                 client = Client(event_info[0])

@@ -848,7 +848,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> from eqcorrscan.utils.clustering import space_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("USGS")
+    >>> client = Client("https://earthquake.usgs.gov")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
@@ -909,7 +909,7 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     >>> from eqcorrscan.utils.clustering import space_time_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("USGS")
+    >>> client = Client("https://earthquake.usgs.gov")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
