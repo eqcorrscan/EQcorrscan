@@ -155,10 +155,9 @@ class TestTemplateGeneration(unittest.TestCase):
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
-        try:
-            from urllib2 import URLError
-        except ImportError:
-            from urllib.requests import URLError
+        from future import standard_library
+        with standard_library.hooks():
+            from urllib.request import URLError
         t = UTCDateTime(2009, 9, 3)
         test_cat = Catalog()
         test_cat.append(Event())
