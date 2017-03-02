@@ -2908,7 +2908,9 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     detections = []
     party = Party()
     if group_size is not None:
-        n_groups = int(len(templates) / group_size) + 1
+        n_groups = int(len(templates) / group_size)
+        if n_groups * group_size < len(templates):
+            n_groups += 1
     else:
         n_groups = 1
     for st_chunk in st:
