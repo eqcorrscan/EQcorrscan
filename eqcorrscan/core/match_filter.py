@@ -3562,7 +3562,8 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  debug=0, plot_format='png', output_cat=False,
-                 extract_detections=False, arg_check=True, internal=True):
+                 output_event=True, extract_detections=False,
+                 arg_check=True, internal=True):
     """
     Main matched-filter detection function.
 
@@ -3608,6 +3609,11 @@ def match_filter(template_names, template_list, st, threshold,
         Specifies if matched_filter will output an obspy.Catalog class
         containing events for each detection. Default is False, in which case
         matched_filter will output a list of detection classes, as normal.
+    :type output_event: bool
+    :param output_event:
+        Whether to include events in the Detection objects, defaults to True,
+        but for large cases you may want to turn this off as Event objects
+        can be quite memory intensive.
     :type extract_detections: bool
     :param extract_detections:
         Specifies whether or not to return a list of streams, one stream per
@@ -3950,39 +3956,43 @@ def match_filter(template_names, template_list, st, threshold,
                 # Detect time must be valid QuakeML uri within resource_id.
                 # This will write a formatted string which is still
                 # readable by UTCDateTime
-                rid = ResourceIdentifier(id=_template_names[i] + '_' +
-                                         str(detecttime.
-                                             strftime('%Y%m%dT%H%M%S.%f')),
-                                         prefix='smi:local')
-                ev = Event(resource_id=rid)
-                cr_i = CreationInfo(author='EQcorrscan',
-                                    creation_time=UTCDateTime())
-                ev.creation_info = cr_i
-                # All detection info in Comments for lack of a better idea
-                thresh_str = 'threshold=' + str(rawthresh)
-                ccc_str = 'detect_val=' + str(peak[0])
-                used_chans = 'channels used: ' +\
-                             ' '.join([str(pair) for pair in chans[i]])
-                ev.comments.append(Comment(text=thresh_str))
-                ev.comments.append(Comment(text=ccc_str))
-                ev.comments.append(Comment(text=used_chans))
-                min_template_tm = min([tr.stats.starttime for tr in template])
-                for tr in template:
-                    if (tr.stats.station, tr.stats.channel) not in chans[i]:
-                        continue
+                if not output_event and not output_cat:
+                    det_ev = None
+                else:
+                    ev = Event(resource_id=ResourceIdentifier(
+                        id=_template_names[i] + '_' +
+                           str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                        prefix='smi:local'))
+                    ev.creation_info = CreationInfo(
+                        author='EQcorrscan', creation_time=UTCDateTime())
+                    ev.comments.append(
+                        Comment(text='threshold=' + str(rawthresh)))
+                    ev.comments.append(
+                        Comment(text='detect_val=' + str(peak[0])))
+                    ev.comments.append(Comment(
+                        text='channels used: ' +
+                             ' '.join([str(pair) for pair in chans[i]])))
+                    min_template_tm = min(
+                        [tr.stats.starttime for tr in template])
+                    for tr in template:
+                        if (tr.stats.station, tr.stats.channel) not in chans[i]:
+                            continue
+                        else:
+                            pick_tm = detecttime + (tr.stats.starttime -
+                                                    min_template_tm)
+                            wv_id = WaveformStreamID(
+                                network_code=tr.stats.network,
+                                station_code=tr.stats.station,
+                                channel_code=tr.stats.channel)
+                            ev.picks.append(
+                                Pick(time=pick_tm, waveform_id=wv_id))
+                    if not output_event:
+                        det_ev = None
                     else:
-                        pick_tm = detecttime + (tr.stats.starttime -
-                                                min_template_tm)
-                        wv_id = WaveformStreamID(network_code=tr.stats.network,
-                                                 station_code=tr.stats.station,
-                                                 channel_code=tr.stats.channel)
-                        ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
+                        det_ev = ev
                 detections.append(Detection(
-                    template_name=template_names[i], detect_time=detecttime,
-                    no_chans=no_chans[i], detect_val=peak[0],
-                    threshold=rawthresh, typeofdet='corr',
-                    threshold_type=threshold_type, threshold_input=threshold,
-                    chans=chans[i], event=ev))
+                    _template_names[i], detecttime, no_chans[i], peak[0],
+                    rawthresh, 'corr', chans[i], event=det_ev))
                 if output_cat:
                     det_cat.append(ev)
         if extract_detections:
