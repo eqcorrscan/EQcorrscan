@@ -3991,8 +3991,11 @@ def match_filter(template_names, template_list, st, threshold,
                     else:
                         det_ev = ev
                 detections.append(Detection(
-                    _template_names[i], detecttime, no_chans[i], peak[0],
-                    rawthresh, 'corr', chans[i], event=det_ev))
+                    template_name=_template_names[i], detect_time=detecttime,
+                    no_chans=no_chans[i], detect_val=peak[0],
+                    threshold=rawthresh, typeofdet='corr', chans=chans[i],
+                    event=det_ev, threshold_type=threshold_type,
+                    threshold_input=threshold))
                 if output_cat:
                     det_cat.append(ev)
         if extract_detections:
