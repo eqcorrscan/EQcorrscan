@@ -643,7 +643,7 @@ class TestMatchObjects(unittest.TestCase):
         for tr in self.unproc_st:
             print(len(tr))
         for template in self.tribe:
-            for tr in template:
+            for tr in template.st:
                 print(len(tr))
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
