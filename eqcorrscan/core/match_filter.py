@@ -3961,7 +3961,7 @@ def match_filter(template_names, template_list, st, threshold,
                 else:
                     ev = Event(resource_id=ResourceIdentifier(
                         id=_template_names[i] + '_' +
-                           str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                        str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
                         prefix='smi:local'))
                     ev.creation_info = CreationInfo(
                         author='EQcorrscan', creation_time=UTCDateTime())
