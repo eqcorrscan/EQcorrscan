@@ -155,8 +155,12 @@ class TestTemplateGeneration(unittest.TestCase):
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
-        from future import standard_library
-        with standard_library.hooks():
+        # from future import standard_library
+        import sys
+        if sys.version_info.major == 2:
+            from future.backports.urllib.request import URLError
+        else:
+        # with standard_library.hooks():
             from urllib.request import URLError
         t = UTCDateTime(2009, 9, 3)
         test_cat = Catalog()
@@ -166,23 +170,20 @@ class TestTemplateGeneration(unittest.TestCase):
         test_cat[0].origins[0].latitude = 45
         test_cat[0].origins[0].longitude = 45
         test_cat[0].origins[0].depth = 5000
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHZ',
-                                                           network_code='BW'),
-                              phase_hint='PG', time=t + 2000))
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHN',
-                                                           network_code='BW'),
-                              phase_hint='SG', time=t + 2005))
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHE',
-                                                           network_code='BW'),
-                              phase_hint='SG', time=t + 2005.5))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHZ', network_code='BW'),
+            phase_hint='PG', time=t + 2000))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHN', network_code='BW'),
+            phase_hint='SG', time=t + 2005))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHE', network_code='BW'),
+            phase_hint='SG', time=t + 2005.5))
 
-        test_url = 'http://teide.geophysik.uni-muenchen.de:8080'
+        test_url = "http://teide.geophysik.uni-muenchen.de:8080"
 
         try:
             template = from_seishub(test_cat, url=test_url, lowcut=1.0,
