@@ -640,11 +640,6 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_tribe_detect(self):
         """Test the detect method on Tribe objects"""
-        for tr in self.unproc_st:
-            print(len(tr))
-        for template in self.tribe:
-            for tr in template.st:
-                print(len(tr))
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False)

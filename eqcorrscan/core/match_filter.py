@@ -3461,9 +3461,10 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     # Note: This requires all templates to be the same length, and all channels
     # to be the same length
     temp_len = len(templates[0][0].data)
-    cccs_matrix = np.array([np.array([np.array([0.0] * (len(stream[0].data) -
-                                     temp_len + 1))] *
-                            len(templates))] * 2, dtype=np.float32)
+    cccs_matrix = np.array(
+        [np.array([np.array([0.0] * (len(stream[0].data) - temp_len + 1))] *
+                  len(templates))] * 2, dtype=np.float32)
+    print(np.shape(cccs_matrix))
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
@@ -3515,8 +3516,11 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
                   str(np.shape(cccs)))
             print('cccs is using: ' + str(cccs.nbytes / 1000000) +
                   ' MB of memory')
-        cccs_matrix[1] = np.reshape(cccs, (1, len(templates),
-                                    max(np.shape(cccs))))
+        print('cccs is shaped: ' + str(np.shape(cccs)))
+        print(np.shape(np.reshape(cccs,
+                                  (1, len(templates), max(np.shape(cccs))))))
+        cccs_matrix[1] = np.reshape(
+            cccs, (1, len(templates), max(np.shape(cccs))))
         del cccs
         if debug >= 2:
             print('cccs_matrix shaped: ' + str(np.shape(cccs_matrix)))
