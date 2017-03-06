@@ -185,10 +185,10 @@ class TestTemplateGeneration(unittest.TestCase):
 
         if sys.version_info.major == 3:
             try:
-                template = from_seishub(test_cat, url=test_url, lowcut=1.0,
-                                        highcut=5.0, samp_rate=20, filt_order=4,
-                                        length=3, prepick=0.5, swin='all',
-                                        process_len=300)
+                template = from_seishub(
+                    test_cat, url=test_url, lowcut=1.0, highcut=5.0,
+                    samp_rate=20, filt_order=4, length=3, prepick=0.5,
+                    swin='all', process_len=300)
             except URLError:
                 warnings.warn('Timed out connection to seishub')
         else:
