@@ -78,8 +78,8 @@ install:
 
 script:
 #  - python eqcorrscan/tests/match_filter_test.py
-  - travis_wait 50 python setup.py test
-#   - python setup.py test
+#  - travis_wait 50 python setup.py test
+   - python setup.py test
 #   - py.test --ignore=../eqcorrscan/tests/tutorial_test.py
 
 after_success:

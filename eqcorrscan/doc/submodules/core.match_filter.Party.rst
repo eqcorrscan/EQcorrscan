@@ -13,7 +13,9 @@ match_filter.Party
       decluster
       get_catalog
       lag_calc
+      min_chans
       read
+      rethreshold
       sort
       write
 
@@ -22,6 +24,8 @@ match_filter.Party
    .. automethod:: decluster
    .. automethod:: get_catalog
    .. automethod:: lag_calc
+   .. automethod:: min_chans
    .. automethod:: read
+   .. automethod:: rethreshold
    .. automethod:: sort
    .. automethod:: write

@@ -923,16 +923,16 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
 
     >>> import glob
     >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*L.S*')
     >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
 
     .. plot::
 
         import glob, os
         from eqcorrscan.utils.plotting import interev_mag_sfiles
-        sfiles = glob.glob(os.path.
-                           realpath('../../../tests/test_data/REA/TEST_') +
-                           os.sep + '*')
+        sfiles = glob.glob(
+            os.path.realpath('../../../tests/test_data/REA/TEST_/') +
+            os.sep + '*L.S*')
         print(sfiles)
         interev_mag_sfiles(sfiles=sfiles)
     """
@@ -956,8 +956,8 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
         if origin and magnitude:
             times.append(origin.time)
             mags.append(magnitude.mag)
-    fig = interev_mag(times=times, mags=mags, save=save, savefile=savefile,
-                      size=size)
+    fig = interev_mag(
+        times=times, mags=mags, save=save, savefile=savefile, size=size)
     return fig
 
 

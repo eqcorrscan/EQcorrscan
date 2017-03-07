@@ -9,7 +9,9 @@ match_filter.Detection
 
    .. autosummary::
 
+      copy
       write
 
    .. automethod:: __init__
+   .. automethod:: copy
    .. automethod:: write

@@ -9,6 +9,8 @@ match_filter.Tribe
 
    .. autosummary::
 
+      client_detect
+      cluster
       construct
       copy
       detect
@@ -18,6 +20,8 @@ match_filter.Tribe
       write
 
    .. automethod:: __init__
+   .. automethod:: client_detect
+   .. automethod:: cluster
    .. automethod:: construct
    .. automethod:: copy
    .. automethod:: detect

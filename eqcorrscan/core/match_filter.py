@@ -1151,7 +1151,7 @@ class Family(object):
         """
         return self.__add__(other)
 
-    def plot(self):
+    def plot(self, plot_grouped=False):
         """
         Plot the cumulative number of detections in time.
 
@@ -1175,7 +1175,9 @@ class Family(object):
 
         .. plot::
 
-            from eqcorrscan.core.match_filter import Family
+            from eqcorrscan.core.match_filter import Family, Template
+            from eqcorrscan.core.match_filter import Detection
+            from obspy import UTCDateTime
             family = Family(
                 template=Template(name='a'), detections=[
                 Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
@@ -1190,9 +1192,10 @@ class Family(object):
                           no_chans=8, detect_val=4.5, threshold=1.2,
                           typeofdet='corr', threshold_type='MAD',
                           threshold_input=8.0)])
-            family.plot()
+            family.plot(plot_grouped=True)
         """
-        cumulative_detections(detections=self.detections)
+        cumulative_detections(
+            detections=self.detections, plot_grouped=plot_grouped)
 
     def write(self, filename, format='tar'):
         """
@@ -1208,8 +1211,7 @@ class Family(object):
         .. Note:: csv format will write out detection objects, all other
             outputs will write the catalog.  These cannot be rebuilt into
             a Family object.  The only format that can be read back into
-            Family objects is the 'fam' type, which writes an HDF5 formatted
-            file.
+            Family objects is the 'tar' type.
 
         .. Note:: csv format will append detections to filename, all others
             will overwrite any existing files.
@@ -2106,7 +2108,7 @@ class Tribe(object):
 
         :type method: str
         :param method:
-            Method of stacking, see :module:`eqcorrscan.utils.clustering`
+            Method of stacking, see :mod:`eqcorrscan.utils.clustering`
 
         :return: List of tribes.
 
@@ -2322,7 +2324,8 @@ class Tribe(object):
         .. Note::
             Ensures that data overlap between loops, which will lead to no
             missed detections at data start-stop points (see note for
-            :method:`detect`). This will result in end-time not being strictly
+            :meth:`eqcorrscan.core.match_filter.Family.detect` method).
+            This will result in end-time not being strictly
             honoured, so detections may occur after the end-time set.  This is
             because data must be run in the correct process-length.
 
@@ -2529,10 +2532,6 @@ class Detection(object):
         :func:`eqcorrscan.core.match_filter.Detection.write`
     :type id: str
     :param id: Identification for detection (should be unique).
-
-    .. todo:: Use Obspy.core.event class instead of detection. Requires \
-        internal knowledge of template parameters - which needs changes to \
-        how templates are stored.
     """
 
     def __init__(self, template_name, detect_time, no_chans, detect_val,
