@@ -305,7 +305,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     st.merge(fill_value='interpolate')
     st = pre_processing.shortproc(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, debug=debug)
+        samp_rate=samp_rate, debug=debug, seisan_chan_names=True)
     template = template_gen(
         picks=picks, st=st, length=length, swin=swin, prepick=prepick,
         all_horiz=all_horiz, plot=plot, debug=debug, delayed=delayed,
@@ -1052,8 +1052,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
     """
-    from eqcorrscan.utils.plotting import pretty_template_plot as\
-        tplot
+    from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.core.bright_lights import _rms
     stations = []
     channels = []
@@ -1107,28 +1106,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         if '.'.join([station, channels[i]]) not in st_stachans and debug > 0:
             warnings.warn('No data provided for ' + station + '.' +
                           channels[i])
-    # Select which channels we actually have picks for
-    for tr in st:
-        if tr.stats.station in stations:
-            # This is used to cope with seisan handling channel codes as
-            # two character codes, internally we will do the same.
-            if len(tr.stats.channel) == 3:
-                temp_channel = tr.stats.channel[0] + tr.stats.channel[2]
-            elif len(tr.stats.channel) == 2:
-                temp_channel = tr.stats.channel
-            # Take all channels
-            tr.stats.channel = temp_channel
-            if 'st1' not in locals():
-                st1 = Stream(tr)
-            else:
-                st1 += tr
-    if 'st1' not in locals():
-        msg = ('No data available for these picks or no picks match ' +
-               'these data!  Will not error, but you should check yo self')
-        warnings.warn(msg)
-        return
-    st = copy.deepcopy(st1)
-    del st1
     if plot:
         stplot = st.copy()
     # Get the earliest pick-time and use that if we are not using delayed.
@@ -1149,14 +1126,12 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                         'cross-correlation re-picking!'
                     warnings.warn(msg)
                     if pick.waveform_id.station_code == tr.stats.station and \
-                            pick.waveform_id.channel_code[0] + \
-                            pick.waveform_id.channel_code[-1] == \
+                            pick.waveform_id.channel_code == \
                             tr.stats.channel:
                         starttime = pick.time - prepick
                 else:
                     if pick.waveform_id.station_code == tr.stats.station and \
-                            pick.waveform_id.channel_code[0] + \
-                            pick.waveform_id.channel_code[-1] ==\
+                            pick.waveform_id.channel_code ==\
                             tr.stats.channel:
                         starttime = pick.time - prepick
                     # Cope with taking all the horizontals for S-picks.
@@ -1199,16 +1174,13 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         if debug > 0 and not used_tr:
             print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
     if plot:
-        background = stplot.trim(st1.sort(['starttime'])[0].stats.starttime -
-                                 10,
-                                 st1.sort(['starttime'])[-1].stats.endtime +
-                                 10)
-        tplot(st1, background=background,
-              title='Template for ' + str(st1[0].stats.starttime),
-              picks=picks_copy)
+        background = stplot.trim(
+            st1.sort(['starttime'])[0].stats.starttime - 10,
+            st1.sort(['starttime'])[-1].stats.endtime + 10)
+        tplot(st1, background=background, picks=picks_copy,
+              title='Template for ' + str(st1[0].stats.starttime))
         del stplot
     del st
-    # st1.plot(size=(800,600))
     return st1
 
 

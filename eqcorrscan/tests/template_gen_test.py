@@ -59,8 +59,8 @@ class TestTemplateGeneration(unittest.TestCase):
 
         Checks that the tutorial generates the templates we expect it to!
         """
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
         try:
             mktemplates(plot=False)
         except FDSNException:
@@ -68,14 +68,11 @@ class TestTemplateGeneration(unittest.TestCase):
             return
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
-            expected_template = read(os.path.join(testing_path,
-                                                  'tutorial_template_' +
-                                                  str(template_no) + '.ms'))
+            expected_template = read(os.path.join(
+                testing_path, 'tutorial_template_' + str(template_no) + '.ms'))
             for tr in template:
-                expected_tr = expected_template.select(station=tr.stats.
-                                                       station,
-                                                       channel=tr.stats.
-                                                       channel)[0]
+                expected_tr = expected_template.select(
+                    station=tr.stats.station, channel=tr.stats.channel)[0]
                 self.assertTrue((expected_tr.data.astype(np.float32) ==
                                  tr.data.astype(np.float32)).all())
             del(template)
@@ -261,6 +258,8 @@ class TestEdgeGen(unittest.TestCase):
         cls.st = read(os.path.join(cls.testing_path, 'test_data',
                                    'WAV', 'TEST_',
                                    '2013-09-15-0930-28.DFDPC_027_00'))
+        for tr in cls.st:
+            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         event = read_event(os.path.join(cls.testing_path, 'test_data',
                                         'REA', 'TEST_',
                                         '15-0931-08L.S201309'))
@@ -268,14 +267,14 @@ class TestEdgeGen(unittest.TestCase):
 
     def test_undefined_phase_type(self):
         with self.assertRaises(IOError):
-            template_gen(picks=self.picks, st=self.st.copy(), length=2,
-                         swin='bob')
+            template_gen(
+                picks=self.picks, st=self.st.copy(), length=2, swin='bob')
 
     def test_warn_zeros(self):
         st = self.st.copy()
         template = template_gen(self.picks, st.copy(), 10)
         self.assertTrue('LABE' in [tr.stats.station for tr in template])
-        st.select(station='LABE', channel='SHN')[0].data = np.zeros(10000)
+        st.select(station='LABE', channel='SN')[0].data = np.zeros(10000)
         template = template_gen(self.picks, st, 10)
         self.assertFalse('LABE' in [tr.stats.station for tr in template])
 

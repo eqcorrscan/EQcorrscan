@@ -231,11 +231,11 @@ def readheader(sfile):
         new_event.origins[0].latitude = _float_conv(topline[23:30])
         new_event.origins[0].longitude = _float_conv(topline[31:38])
         new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
-    else:
-        # The origin 'requires' a lat & long
-        new_event.origins[0].latitude = float('NaN')
-        new_event.origins[0].longitude = float('NaN')
-        new_event.origins[0].depth = float('NaN')
+    # else:
+    #     # The origin 'requires' a lat & long
+    #     new_event.origins[0].latitude = float('NaN')
+    #     new_event.origins[0].longitude = float('NaN')
+    #     new_event.origins[0].depth = float('NaN')
     # new_event.depth_ind = topline[44]
     # new_event.loc_ind = topline[45]
     new_event.creation_info = CreationInfo(agency_id=topline[45:48].

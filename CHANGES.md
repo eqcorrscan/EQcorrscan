@@ -53,6 +53,7 @@ match_filter;
 * Add min_snr option for template generation routines, if the
 signal-to-noise ratio is below a user-defined threshold, the channel
 will not be used.
+* Stop enforcing two-channel template channel names.
 
 
 ## 0.1.6

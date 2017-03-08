@@ -199,27 +199,24 @@ class TestGeoNetCase(unittest.TestCase):
         client = Client('GEONET')
         t1 = UTCDateTime(2016, 9, 4)
         t2 = t1 + 86400
-        catalog = get_geonet_events(startdate=t1, enddate=t2, minmag=4,
-                                    minlat=-49, maxlat=-35, minlon=175.0,
-                                    maxlon=185.0)
-        catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
-                                             top_n_picks=5)
+        catalog = get_geonet_events(
+            startdate=t1, enddate=t2, minmag=4, minlat=-49, maxlat=-35,
+            minlon=175.0, maxlon=185.0)
+        catalog = catalog_utils.filter_picks(
+            catalog, channels=['EHZ'], top_n_picks=5)
         for event in catalog:
             extra_pick = Pick()
             extra_pick.phase_hint = 'S'
             extra_pick.time = event.picks[0].time + 10
             extra_pick.waveform_id = event.picks[0].waveform_id
             event.picks.append(extra_pick)
-        cls.templates = template_gen.from_client(catalog=catalog,
-                                                 client_id='GEONET',
-                                                 lowcut=2.0, highcut=9.0,
-                                                 samp_rate=50.0, filt_order=4,
-                                                 length=3.0, prepick=0.15,
-                                                 swin='all', process_len=3600)
+        cls.templates = template_gen.from_client(
+            catalog=catalog, client_id='GEONET', lowcut=2.0, highcut=9.0,
+            samp_rate=50.0, filt_order=4, length=3.0, prepick=0.15, swin='all',
+            process_len=3600)
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
-                      tr.stats.channel[0] + 'H' + tr.stats.channel[1],
-                      t1 + (4 * 3600), t1 + (5 * 3600))
+                      tr.stats.channel, t1 + (4 * 3600), t1 + (5 * 3600))
                      for tr in cls.templates[0]]
         # Just downloading an hour of data
         print('Downloading data')
@@ -228,9 +225,9 @@ class TestGeoNetCase(unittest.TestCase):
         st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
         # This is slow?
         print('Processing continuous data')
-        cls.st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
-                                          filt_order=4, samp_rate=50.0,
-                                          debug=0, num_cores=1)
+        cls.st = pre_processing.shortproc(
+            st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
+            debug=0, num_cores=1)
         cls.st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -313,14 +310,12 @@ class TestNCEDCCases(unittest.TestCase):
         # t1 = UTCDateTime(2004, 9, 28)
         # t2 = t1 + 80000
         # process_len = 80000
-        catalog = client.get_events(starttime=t1, endtime=t2,
-                                    minmagnitude=4,
-                                    minlatitude=35.7, maxlatitude=36.1,
-                                    minlongitude=-120.6,
-                                    maxlongitude=-120.2,
-                                    includearrivals=True)
-        catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
-                                             top_n_picks=5)
+        catalog = client.get_events(
+            starttime=t1, endtime=t2, minmagnitude=4, minlatitude=35.7,
+            maxlatitude=36.1, minlongitude=-120.6, maxlongitude=-120.2,
+            includearrivals=True)
+        catalog = catalog_utils.filter_picks(
+            catalog, channels=['EHZ'], top_n_picks=5)
         cls.tribe = Tribe()
         print('Constructing tribe')
         cls.tribe.construct(
@@ -335,12 +330,10 @@ class TestNCEDCCases(unittest.TestCase):
         template_stachans = []
         for template in cls.templates:
             for tr in template:
-                template_stachans.append((tr.stats.network,
-                                          tr.stats.station,
-                                          tr.stats.channel))
+                template_stachans.append(
+                    (tr.stats.network, tr.stats.station, tr.stats.channel))
         template_stachans = list(set(template_stachans))
-        bulk_info = [(stachan[0], stachan[1], '*',
-                      stachan[2][0] + 'H' + stachan[2][1],
+        bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
                       t1, t1 + process_len)
                      for stachan in template_stachans]
         # Just downloading an hour of data
@@ -560,14 +553,12 @@ class TestMatchObjects(unittest.TestCase):
         # t1 = UTCDateTime(2004, 9, 28)
         # t2 = t1 + 80000
         # process_len = 80000
-        catalog = client.get_events(starttime=cls.t1, endtime=cls.t2,
-                                    minmagnitude=4,
-                                    minlatitude=35.7, maxlatitude=36.1,
-                                    minlongitude=-120.6,
-                                    maxlongitude=-120.2,
-                                    includearrivals=True)
-        catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
-                                             top_n_picks=5)
+        catalog = client.get_events(
+            starttime=cls.t1, endtime=cls.t2, minmagnitude=4,
+            minlatitude=35.7, maxlatitude=36.1, minlongitude=-120.6,
+            maxlongitude=-120.2, includearrivals=True)
+        catalog = catalog_utils.filter_picks(
+            catalog, channels=['EHZ'], top_n_picks=5)
         cls.tribe = Tribe()
         print('Constructing tribe')
         cls.tribe.construct(
@@ -582,12 +573,10 @@ class TestMatchObjects(unittest.TestCase):
         template_stachans = []
         for template in cls.tribe.templates:
             for tr in template.st:
-                template_stachans.append((tr.stats.network,
-                                          tr.stats.station,
-                                          tr.stats.channel))
+                template_stachans.append(
+                    (tr.stats.network, tr.stats.station, tr.stats.channel))
         cls.template_stachans = list(set(template_stachans))
-        bulk_info = [(stachan[0], stachan[1], '*',
-                      stachan[2][0] + 'H' + stachan[2][1],
+        bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
                       cls.t1, cls.t1 + process_len)
                      for stachan in template_stachans]
         # Just downloading an hour of data
@@ -763,9 +752,7 @@ class TestMatchObjects(unittest.TestCase):
         """Conduct a test using day-long data."""
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28)
-        bulk_info = [(stachan[0], stachan[1], '*',
-                      stachan[2][0] + 'H' + stachan[2][1],
-                      t1, t1 + 86400)
+        bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
                      for stachan in self.template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous day-long data')
@@ -962,15 +949,15 @@ def test_match_filter(debug=0, plotvar=False, extract_detections=False,
     for template in templates:
         for tr in template:
             tr.data += 1  # Make the synthetic data not be all zeros
-        pre_processing.shortproc(st=template, lowcut=1.0, highcut=4.0,
-                                 filt_order=3, samp_rate=10.0)
+        pre_processing.shortproc(
+            st=template, lowcut=1.0, highcut=4.0, filt_order=3, samp_rate=10.0,
+            seisan_chan_names=True)
     template_names = list(string.ascii_lowercase)[0:len(templates)]
-    detections =\
-        match_filter(template_names=template_names,
-                     template_list=templates, st=data, threshold=threshold,
-                     threshold_type=threshold_type, trig_int=6.0,
-                     plotvar=plotvar, plotdir='.', cores=1, debug=debug,
-                     output_cat=False, extract_detections=extract_detections)
+    detections = match_filter(
+        template_names=template_names, template_list=templates, st=data,
+        threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
+        plotvar=plotvar, plotdir='.', cores=1, debug=debug, output_cat=False,
+        extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]
         detections = detections[0]

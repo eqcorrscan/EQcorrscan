@@ -2268,7 +2268,7 @@ class Tribe(object):
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plotvar, daylong=False,
                       parallel_process=True, ignore_length=False,
-                      group_size=None, debug=0):
+                      group_size=None, debug=0, return_stream=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2316,6 +2316,10 @@ class Tribe(object):
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
             4 and 5, detections will not be computed in parallel.
+        :type return_stream: bool
+        :param return_stream:
+            Whether to also output the stream downloaded, useful if you plan
+            to use the stream for something else, e.g. lag_calc.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -2427,7 +2431,10 @@ class Tribe(object):
         for family in party:
             family.detections = family._uniq().detections
             family.catalog = get_catalog(family.detections)
-        return party
+        if return_stream:
+            return party, st
+        else:
+            return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
                   prepick, **kwargs):
@@ -3463,7 +3470,6 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     cccs_matrix = np.array(
         [np.array([np.array([0.0] * (len(stream[0].data) - temp_len + 1))] *
                   len(templates))] * 2, dtype=np.float32)
-    print(np.shape(cccs_matrix))
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
@@ -3477,14 +3483,13 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
             print("Starting parallel run for station " + station +
                   " channel " + channel)
         tic = time.clock()
+        # Send off to sister function
         with Timer() as t:
-            # Send off to sister function
             pool = Pool(processes=num_cores)
-            results = [pool.apply_async(_template_loop, (templates[i], ),
-                                        {'chan': tr.data,
-                                         'stream_ind': stream_ind,
-                                         'debug': debug, 'i': i})
-                       for i in range(len(templates))]
+            results = [pool.apply_async(
+                _template_loop, (templates[i], ), {
+                    'chan': tr.data, 'stream_ind': stream_ind, 'debug': debug,
+                    'i': i}) for i in range(len(templates))]
             pool.close()
         if debug >= 1:
             print("--------- TIMER:    Correlation loop took: %s s" % t.secs)
@@ -3515,9 +3520,6 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
                   str(np.shape(cccs)))
             print('cccs is using: ' + str(cccs.nbytes / 1000000) +
                   ' MB of memory')
-        print('cccs is shaped: ' + str(np.shape(cccs)))
-        print(np.shape(np.reshape(cccs,
-                                  (1, len(templates), max(np.shape(cccs))))))
         cccs_matrix[1] = np.reshape(
             cccs, (1, len(templates), max(np.shape(cccs))))
         del cccs

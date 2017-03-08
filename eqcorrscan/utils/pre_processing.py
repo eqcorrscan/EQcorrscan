@@ -55,7 +55,8 @@ def _check_daylong(tr):
 
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
-              parallel=False, num_cores=False, starttime=None, endtime=None):
+              parallel=False, num_cores=False, starttime=None, endtime=None,
+              seisan_chan_names=False):
     """
     Basic function to bandpass and downsample.
 
@@ -87,6 +88,10 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type endtime: obspy.core.utcdatetime.UTCDateTime
     :param endtime:
         Desired data end time, will trim to this before processing
+    :type seisan_chan_names: bool
+    :param seisan_chan_names:
+        Whether channels are named like seisan channels (which are two letters
+        rather than SEED convention of three) - defaults to True.
 
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
@@ -109,8 +114,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...                debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
- 20.0 Hz, 1800 samples
+    AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
+| 20.0 Hz, 1800 samples
 
     .. rubric:: Example, low-pass
 
@@ -121,8 +126,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
- 20.0 Hz, 1800 samples
+    AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
+| 20.0 Hz, 1800 samples
 
     .. rubric:: Example, high-pass
 
@@ -133,8 +138,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
-    AF.LABE..SZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z |\
- 20.0 Hz, 1800 samples
+    AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
+| 20.0 Hz, 1800 samples
     """
     if isinstance(st, Trace):
         tracein = True
@@ -165,7 +170,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False})
+            'clip': False, 'seisan_chan_names': seisan_chan_names})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -175,7 +180,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=False, clip=False)
+                    starttime=False, clip=False,
+                    seisan_chan_names=seisan_chan_names)
     if tracein:
         st.merge()
         return st[0]
@@ -183,7 +189,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
 
 def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
-            parallel=True, num_cores=False, ignore_length=False):
+            parallel=True, num_cores=False, ignore_length=False,
+            seisan_chan_names=False):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -214,6 +221,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         then this will use all the cores.
     :type ignore_length: bool
     :param ignore_length: See warning below.
+    :type seisan_chan_names: bool
+    :param seisan_chan_names:
+        Whether channels are named like seisan channels (which are two letters
+        rather than SEED convention of three) - defaults to True.
 
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -246,7 +257,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
  20.0 Hz, 1728000 samples
 
 
@@ -268,7 +279,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
  20.0 Hz, 1728000 samples
 
     .. rubric:: Example, high-pass
@@ -289,7 +300,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
  20.0 Hz, 1728000 samples
     """
     # Add sanity check for filter
@@ -309,7 +320,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
-            'clip': True, 'ignore_length': ignore_length, 'length': 86400})
+            'clip': True, 'ignore_length': ignore_length, 'length': 86400,
+            'seisan_chan_names': seisan_chan_names})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -319,8 +331,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         for tr in st:
             process(tr=tr, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=starttime, clip=True,
-                    ignore_length=ignore_length, length=86400)
+                    starttime=starttime, clip=True, length=86400,
+                    ignore_length=ignore_length,
+                    seisan_chan_names=seisan_chan_names)
     if tracein:
         st.merge()
         return st[0]
@@ -329,7 +342,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             starttime=False, clip=False, length=86400,
-            seisan_chan_names=True, ignore_length=False):
+            seisan_chan_names=False, ignore_length=False):
     """
     Basic function to process data, usually called by dayproc or shortproc.
 

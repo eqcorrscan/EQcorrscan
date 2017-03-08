@@ -40,7 +40,7 @@ Within a virtual environment, a fresh install should be as simple as:
 
 In version 0.2.0 we added the dependency **pyASDF** which is not yet listed on pypi.
 Documentation for pyASDF is online here: |pyasdf|.  Because this isn't on pypi,
-you need to install this yourself by following the install insturctions on their
+you need to install this yourself by following the install instructions on their
 site.  As of 08/11/16 this was:
 
 git clone https://github.com/SeismicData/pyasdf.git

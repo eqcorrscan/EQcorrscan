@@ -782,22 +782,20 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 st = copy_of_stream.select(station=station)
                 if len(st) != 0:
                     for tr in st:
-                        _waveform_id = WaveformStreamID(station_code=tr.stats.
-                                                        station,
-                                                        channel_code=tr.stats.
-                                                        channel,
-                                                        network_code='NA')
-                        event.picks.append(Pick(waveform_id=_waveform_id,
-                                                time=tr.stats.starttime +
-                                                detect_lag +
-                                                detection.detect_time +
-                                                pre_pick,
-                                                onset='emergent',
-                                                evalutation_mode='automatic'))
+                        _waveform_id = WaveformStreamID(
+                            station_code=tr.stats.station,
+                            channel_code=tr.stats.channel,
+                            network_code=tr.stats.network)
+                        event.picks.append(Pick(
+                            waveform_id=_waveform_id,
+                            time=tr.stats.starttime + detect_lag +
+                            detection.detect_time + pre_pick,
+                            onset='emergent', evalutation_mode='automatic'))
             if debug > 0:
                 print('Generating template for detection: ' + str(j))
-            template = (template_gen(event.picks, copy_of_stream,
-                        template_length, 'all'))
+            template = template_gen(
+                picks=event.picks, st=copy_of_stream, length=template_length,
+                swin='all')
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
             # In the interests of RAM conservation we write then read
