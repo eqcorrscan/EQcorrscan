@@ -38,7 +38,6 @@ import glob
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
-from scipy.signal import fftconvolve
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
@@ -681,9 +680,10 @@ class Party(object):
             master_chans = [(tr.stats.station,
                              tr.stats.channel) for tr in master.template.st]
             if len(master_chans) > len(set(master_chans)):
-                warnings.warn('%s has duplicate channels, will not use this '
+                warnings.warn(master.template.name +
+                              ' has duplicate channels, will not use this '
                               'template for lag-calc as this is not coded')
-                break
+                continue
             for group in template_groups:
                 if master.template in group:
                     break
@@ -714,27 +714,31 @@ class Party(object):
             if not pre_processed:
                 processed_streams = _group_process(
                     template_group=group, cores=cores, parallel=parallel,
-                    stream=stream, debug=debug)
+                    stream=stream.copy(), debug=debug)
+                processed_stream = Stream()
+                for p in processed_streams:
+                    processed_stream += p
+                processed_stream.merge()
             else:
-                processed_streams = [stream.copy()]
-            for processed_stream in processed_streams:
-                temp_cat = lag_calc(
-                    detections=det_group, detect_data=processed_stream,
-                    template_names=[t.name for t in group],
-                    templates=[t.st for t in group],
-                    shift_len=shift_len, min_cc=min_cc,
-                    horizontal_chans=horizontal_chans,
-                    vertical_chans=vertical_chans, cores=cores,
-                    interpolate=interpolate, plot=plot,
-                    parallel=parallel, debug=debug)
-                for event in temp_cat:
-                    det = [d for d in det_group
-                           if d.id == event.resource_id][0]
-                    pre_pick = [t for t in group
-                                if t.name == det.template_name][0].prepick
-                    for pick in event.picks:
-                        pick.time += pre_pick
-                catalog += temp_cat
+                processed_stream = stream
+            print(stream)
+            temp_cat = lag_calc(
+                detections=det_group, detect_data=processed_stream,
+                template_names=[t.name for t in group],
+                templates=[t.st for t in group],
+                shift_len=shift_len, min_cc=min_cc,
+                horizontal_chans=horizontal_chans,
+                vertical_chans=vertical_chans, cores=cores,
+                interpolate=interpolate, plot=plot,
+                parallel=parallel, debug=debug)
+            for event in temp_cat:
+                det = [d for d in det_group
+                       if str(d.id) == str(event.resource_id)][0]
+                pre_pick = [t for t in group
+                            if t.name == det.template_name][0].prepick
+                for pick in event.picks:
+                    pick.time += pre_pick
+            catalog += temp_cat
         return catalog
 
     def get_catalog(self):
@@ -2982,9 +2986,9 @@ def _group_process(template_group, parallel, debug, cores, stream):
         func = dayproc
     else:
         func = shortproc
-    n_chunks = int((stream[0].stats.endtime -
-                    stream[0].stats.starttime + 1) /
-                   master.process_length)
+    starttime = stream.sort(['starttime'])[0].stats.starttime
+    endtime = stream.sort(['endtime'])[-1].stats.endtime
+    n_chunks = int((endtime - starttime + 1) / master.process_length)
     if n_chunks == 0:
         print('Data must be process_length or longer, '
               'not computing detections')
@@ -3129,6 +3133,8 @@ def _read_family(fname, all_cat):
                 key = key_pair.split(': ')[0].strip()
                 value = key_pair.split(': ')[-1].strip()
                 if key == 'event':
+                    if len(all_cat) == 0:
+                        continue
                     det_dict.update(
                         {'event': [e for e in all_cat
                                    if str(e.resource_id).

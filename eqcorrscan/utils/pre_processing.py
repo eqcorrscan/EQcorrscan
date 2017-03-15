@@ -163,6 +163,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     elif endtime:
         for tr in st:
             tr.trim(endtime=endtime)
+    for tr in st:
+        if len(tr.data) == 0:
+            st.remove(tr)
+            print('No data for %s.%s after trim' %
+                  (tr.stats.station, tr.stats.channel))
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -257,8 +262,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
- 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
+948393Z | 20.0 Hz, 1728000 samples
 
 
     .. rubric:: Example, low-pass
@@ -279,8 +284,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
- 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
+948393Z | 20.0 Hz, 1728000 samples
 
     .. rubric:: Example, high-pass
 
@@ -300,8 +305,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.948393Z |\
- 20.0 Hz, 1728000 samples
+    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
+948393Z | 20.0 Hz, 1728000 samples
     """
     # Add sanity check for filter
     if isinstance(st, Trace):
