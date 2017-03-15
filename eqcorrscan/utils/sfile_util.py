@@ -419,14 +419,20 @@ def readpicks(sfile):
             polarity = 'negative'
         else:
             polarity = "undecidable"
+        if int(line[18:20]) == 24:
+            pickhr = 0
+            pickday = evtime + 86400
+        else:
+            pickhr = int(line[18:20])
+            pickday = evtime
         try:
-            time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]),
+            time = UTCDateTime(pickday.year, pickday.month, pickday.day,
+                               pickhr, int(line[20:22]),
                                int(line[23:28].split('.')[0]),
                                int(line[23:28].split('.')[1]) * 10000)
-        except (ValueError):
+        except ValueError:
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]), 0, 0)
+                               pickhr, int(line[20:22]), 0, 0)
             time += 60  # Add 60 seconds on to the time, this copes with s-file
             # preference to write seconds in 1-60 rather than 0-59 which
             # datetime objects accept
