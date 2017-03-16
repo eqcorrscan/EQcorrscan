@@ -113,7 +113,7 @@ class Detector(object):
             if not len(list_item) == len(other_list):
                 return False
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(item, other_item, atol=0.001):
                     return False
         return True
 
