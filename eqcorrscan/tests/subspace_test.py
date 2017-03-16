@@ -156,7 +156,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                 if not np.allclose(item, other_item):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(item, other_item, atol=0.005))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -191,7 +191,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                 if not np.allclose(item, other_item):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(item, other_item, atol=0.005))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -227,7 +227,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                 if not np.allclose(item, other_item):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(item, other_item, atol=0.005))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -267,7 +267,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                 if not np.allclose(item, other_item):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(item, other_item, atol=0.005))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
