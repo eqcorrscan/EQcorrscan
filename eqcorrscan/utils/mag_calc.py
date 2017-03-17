@@ -754,7 +754,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 print('No amplitude picked for tr %s' % str(tr))
                 continue
             # Calculate the normalized noise amplitude
-            noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
+            noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             if amplitude == 0.0:
                 continue
             if amplitude / noise_amplitude < min_snr:
