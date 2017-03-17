@@ -10,7 +10,6 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 import os
 import eqcorrscan
@@ -49,6 +48,13 @@ except ImportError:
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
 
+try:
+    import pyasdf  # NOQA
+except ImportError:
+    print(sys.path)
+    msg = '##### No pyasdf module, you need to install this yourself'
+    warnings.warn(msg)
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
@@ -67,7 +73,7 @@ if sys.version_info.major == 2:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'scipy>=0.14', 'multiprocessing',
-                            'LatLon', 'h5py', 'cython']
+                            'LatLon', 'h5py', 'cython', 'bottleneck']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
@@ -77,7 +83,8 @@ else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.14', 'LatLon', 'h5py', 'cython']
+                            'scipy>=0.14', 'LatLon', 'h5py', 'cython',
+                            'bottleneck']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',

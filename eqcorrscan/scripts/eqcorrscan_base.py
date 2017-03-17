@@ -11,8 +11,8 @@ def run():
     python session for debugging."""
     from eqcorrscan.utils import pre_processing
     from eqcorrscan.utils.archive_read import read_data
-    from eqcorrscan.core.match_filter import match_filter
-    from obspy import UTCDateTime, Stream
+    from eqcorrscan.core import match_filter
+    from obspy import UTCDateTime
     from eqcorrscan.utils.parameters import read_parameters
     import warnings
     import os
