@@ -26,14 +26,14 @@ def mktemplates(network_code='GEONET',
     catalog = Catalog()
     for publicID in publicIDs:
         if network_code == 'GEONET':
-            data_stream = client._download('http://quakeml.geonet.org.nz/' +
-                                           'quakeml/1.2/' + publicID)
+            data_stream = client._download(
+                'http://quakeml.geonet.org.nz/quakeml/1.2/' + publicID)
             data_stream.seek(0, 0)
             catalog += read_events(data_stream, format="quakeml")
             data_stream.close()
         else:
-            catalog += client.get_events(eventid=publicID,
-                                         includearrivals=True)
+            catalog += client.get_events(
+                eventid=publicID, includearrivals=True)
 
     # Lets plot the catalog to see what we have
     if plot:
@@ -51,13 +51,10 @@ def mktemplates(network_code='GEONET',
                 event.picks.remove(pick)
 
     # Now we can generate the templates
-    templates = template_gen.from_client(catalog=catalog,
-                                         client_id=network_code,
-                                         lowcut=2.0, highcut=9.0,
-                                         samp_rate=20.0, filt_order=4,
-                                         length=3.0, prepick=0.15,
-                                         swin='all', process_len=3600,
-                                         debug=0, plot=plot)
+    templates = template_gen.from_client(
+        catalog=catalog, client_id=network_code, lowcut=2.0, highcut=9.0,
+        samp_rate=20.0, filt_order=4, length=3.0, prepick=0.15, swin='all',
+        process_len=3600, debug=0, plot=plot)
 
     # We now have a series of templates! Using Obspy's Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the

@@ -37,7 +37,7 @@ from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
 from obspy.core.event import EventDescription, CreationInfo, Comment
 from obspy.core.trace import Stats
 
-from eqcorrscan.core.match_filter import DETECTION, normxcorr2
+from eqcorrscan.core.match_filter import Detection, normxcorr2
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.template_gen import template_gen
 
@@ -434,12 +434,12 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     :type realstations: list
     :param realstations:
         List of stations used to make the cumulative network response, will be
-        reported in the :class:`eqcorrscan.core.match_filter.DETECTION`
+        reported in the :class:`eqcorrscan.core.match_filter.Detection`
     :type length: float
     :param length: Maximum length of peak to look for in seconds
 
     :returns:
-        Detections as :class:`eqcorrscan.core.match_filter.DETECTION` objects.
+        Detections as :class:`eqcorrscan.core.match_filter.Detection` objects.
     :rtype: list
     """
     cum_net_resp = np.nan_to_num(cum_net_resp)  # Force no NaNs
@@ -462,17 +462,17 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     if peaks:
         for peak in peaks:
             node = nodes[peak[1]]
-            detections.append(DETECTION(template_name=str(node[0]) +
-                                        '_' + str(node[1]) + '_' +
-                                        str(node[2]),
-                                        detect_time=peak[1] / samp_rate,
-                                        no_chans=len(realstations),
-                                        detect_val=peak[0], threshold=thresh,
-                                        typeofdet='brightness',
-                                        chans=realstations,
-                                        id=str(node[0]) + '_' + str(node[1]) +
-                                        '_' + str(node[2]) +
-                                        str(peak[1] / samp_rate)))
+            detections.append(
+                Detection(template_name=str(node[0]) + '_' +
+                          str(node[1]) + '_' + str(node[2]),
+                          detect_time=peak[1] / samp_rate,
+                          no_chans=len(realstations), detect_val=peak[0],
+                          threshold=thresh, typeofdet='brightness',
+                          chans=realstations, id=str(node[0]) + '_' +
+                          str(node[1]) + '_' + str(node[2]) +
+                          str(peak[1] / samp_rate),
+                          threshold_type=thresh_type,
+                          threshold_input=threshold))
     else:
         detections = []
     print('I have found ' + str(len(peaks)) + ' possible detections')
@@ -782,22 +782,20 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 st = copy_of_stream.select(station=station)
                 if len(st) != 0:
                     for tr in st:
-                        _waveform_id = WaveformStreamID(station_code=tr.stats.
-                                                        station,
-                                                        channel_code=tr.stats.
-                                                        channel,
-                                                        network_code='NA')
-                        event.picks.append(Pick(waveform_id=_waveform_id,
-                                                time=tr.stats.starttime +
-                                                detect_lag +
-                                                detection.detect_time +
-                                                pre_pick,
-                                                onset='emergent',
-                                                evalutation_mode='automatic'))
+                        _waveform_id = WaveformStreamID(
+                            station_code=tr.stats.station,
+                            channel_code=tr.stats.channel,
+                            network_code=tr.stats.network)
+                        event.picks.append(Pick(
+                            waveform_id=_waveform_id,
+                            time=tr.stats.starttime + detect_lag +
+                            detection.detect_time + pre_pick,
+                            onset='emergent', evalutation_mode='automatic'))
             if debug > 0:
                 print('Generating template for detection: ' + str(j))
-            template = (template_gen(event.picks, copy_of_stream,
-                        template_length, 'all'))
+            template = template_gen(
+                picks=event.picks, st=copy_of_stream, length=template_length,
+                swin='all')
             template_name = template_saveloc + '/' +\
                 str(template[0].stats.starttime) + '.ms'
             # In the interests of RAM conservation we write then read

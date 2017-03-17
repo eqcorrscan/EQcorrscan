@@ -163,6 +163,69 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     return tmp_catalog
 
 
+def spatial_clip(catalog, corners, mindepth=None, maxdepth=None):
+    """
+    Clip the catalog to a spatial box, can be irregular.
+
+    Can only be irregular in 2D, depth must be between bounds.
+
+    :type catalog: :class:`obspy.core.catalog.Catalog`
+    :param catalog: Catalog to clip.
+    :type corners: :class:`matplotlib.path.Path`
+    :param corners: Corners to clip the catalog to
+    :type mindepth: float
+    :param mindepth: Minimum depth for earthquakes in km.
+    :type maxdepth: float
+    :param maxdepth: Maximum depth for earthquakes in km.
+
+    .. Note::
+        Corners is expected to be a :class:`matplotlib.path.Path` in the form
+        of tuples of (lat, lon) in decimal degrees.
+    """
+    cat_out = catalog.copy()
+    if mindepth is not None:
+        for event in cat_out:
+            try:
+                origin = _get_origin(event)
+            except IOError:
+                continue
+            if origin.depth < mindepth * 1000:
+                cat_out.events.remove(event)
+    if maxdepth is not None:
+        for event in cat_out:
+            try:
+                origin = _get_origin(event)
+            except IOError:
+                continue
+            if origin.depth > maxdepth * 1000:
+                cat_out.events.remove(event)
+    for event in cat_out:
+        try:
+            origin = _get_origin(event)
+        except IOError:
+            continue
+        if not corners.contains_point((origin.latitude, origin.longitude)):
+            cat_out.events.remove(event)
+    return cat_out
+
+
+def _get_origin(event):
+    """
+    Get the origin of an event.
+
+    :type event: :class:`obspy.core.event.Event`
+    :param event: Event to get the origin of.
+    :return: :class:`obspy.core.event.Origin`
+    """
+    from eqcorrscan.core.match_filter import MatchFilterError
+    if event.preferred_origin() is not None:
+        origin = event.preferred_origin()
+    elif len(event.origins) > 0:
+        origin = event.origins[0]
+    else:
+        raise MatchFilterError('No origin set, cannot constrain')
+    return origin
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
