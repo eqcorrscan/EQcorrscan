@@ -258,16 +258,14 @@ class SubspaceTestingMethods(unittest.TestCase):
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
-            # for item, other_item in zip(list_item, other_list):
-            #     print(item.shape)
-            #     print(other_item.shape)
-            #     print('Next')
             for item, other_item in zip(list_item, other_list):
                 self.assertEqual(item.shape, other_item.shape)
                 if not np.allclose(item, other_item):
+                    print(key)
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.005))
+                self.assertTrue(
+                    np.allclose(np.abs(item), np.abs(other_item), atol=0.005))
 
     def test_refactor(self):
         """Test subspace refactoring, checks that np.dot(U.T, U) is\

@@ -65,6 +65,13 @@ class Detector(object):
     :param v: Full rank right (output) singular vectors.
     :type dimension: int
     :param dimension: Dimension of data.
+
+    .. warning::
+        Changing between scipy.linalg.svd solvers (obvious changes between
+        scipy version 0.18.x and 0.19.0) result in sign changes in svd results.
+        You should only run a detector created using the same scipy version
+        as you currently run.
+
     """
     def __init__(self, name=None, sampling_rate=None, multiplex=None,
                  stachans=None, lowcut=None, highcut=None,
@@ -188,13 +195,11 @@ class Detector(object):
         self.name = name
         self.multiplex = multiplex
         # Pre-process data
-        p_streams, stachans = \
-            _subspace_process(streams=copy.deepcopy(streams),
-                              lowcut=lowcut, highcut=highcut,
-                              filt_order=filt_order,
-                              sampling_rate=sampling_rate, multiplex=multiplex,
-                              align=align, shift_len=shift_len, reject=reject,
-                              plot=plot, no_missed=no_missed)
+        p_streams, stachans = _subspace_process(
+            streams=copy.deepcopy(streams), lowcut=lowcut, highcut=highcut,
+            filt_order=filt_order, sampling_rate=sampling_rate,
+            multiplex=multiplex, align=align, shift_len=shift_len,
+            reject=reject, plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
         v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
         if not multiplex:
@@ -633,26 +638,20 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         if not parallel:
             processed_stream = Stream()
             for stachan in input_stachans:
-                dummy, tr = _internal_process(st=st, lowcut=lowcut,
-                                              highcut=highcut,
-                                              filt_order=filt_order,
-                                              sampling_rate=sampling_rate,
-                                              first_length=first_length,
-                                              stachan=stachan, debug=0)
+                dummy, tr = _internal_process(
+                    st=st, lowcut=lowcut, highcut=highcut,
+                    filt_order=filt_order, sampling_rate=sampling_rate,
+                    first_length=first_length, stachan=stachan, debug=0)
                 processed_stream += tr
             processed_streams.append(processed_stream)
         else:
             pool = Pool(processes=cpu_count())
-            results = [pool.apply_async(_internal_process, (st,),
-                                        {'lowcut': lowcut,
-                                         'highcut': highcut,
-                                         'filt_order': filt_order,
-                                         'sampling_rate': sampling_rate,
-                                         'first_length': first_length,
-                                         'stachan': stachan,
-                                         'debug': 0,
-                                         'i': i})
-                       for i, stachan in enumerate(input_stachans)]
+            results = [pool.apply_async(
+                _internal_process, (st,),
+                {'lowcut': lowcut, 'highcut': highcut,
+                 'filt_order': filt_order, 'sampling_rate': sampling_rate,
+                 'first_length': first_length, 'stachan': stachan, 'debug': 0,
+                 'i': i}) for i, stachan in enumerate(input_stachans)]
             pool.close()
             processed_stream = [p.get() for p in results]
             pool.join()
@@ -666,10 +665,9 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                     print('Removed stream with empty trace')
                     break
     if align:
-        processed_streams = align_design(design_set=processed_streams,
-                                         shift_len=shift_len,
-                                         reject=reject, multiplex=multiplex,
-                                         plot=plot, no_missed=no_missed)
+        processed_streams = align_design(
+            design_set=processed_streams, shift_len=shift_len, reject=reject,
+            multiplex=multiplex, plot=plot, no_missed=no_missed)
     output_streams = []
     for processed_stream in processed_streams:
         if len(processed_stream) == 0:
@@ -678,13 +676,13 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
         # Need to order the stream according to input_stachans
         _st = Stream()
         for stachan in input_stachans:
-            tr = processed_stream.select(station=stachan[0],
-                                         channel=stachan[1])
+            tr = processed_stream.select(
+                station=stachan[0], channel=stachan[1])
             if len(tr) >= 1:
                 _st += tr[0]
             elif multiplex and len(tr) == 0:
-                raise IndexError('Missing data for %s.%s' %
-                                 (stachan[0], stachan[1]))
+                raise IndexError(
+                    'Missing data for %s.%s' % (stachan[0], stachan[1]))
         if multiplex:
             st = multi(stream=_st)
             st = Stream(Trace(st))
@@ -716,10 +714,9 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
     elif len(tr) == 1:
         tr = tr[0]
         tr.detrend('simple')
-        tr = pre_processing.process(tr=tr, lowcut=lowcut, highcut=highcut,
-                                    filt_order=filt_order,
-                                    samp_rate=sampling_rate, debug=debug,
-                                    seisan_chan_names=False)
+        tr = pre_processing.process(
+            tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=sampling_rate, debug=debug, seisan_chan_names=False)
     else:
         msg = ('Multiple channels for ' + stachan[0] + '.' +
                stachan[1] + ' in a single design stream.')
@@ -824,26 +821,24 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                 warnings.warn('Too many matches for %s %s' % (stachan[0],
                                                               stachan[1]))
         shift_len_samples = int(shift_len * trace_list[0].stats.sampling_rate)
-        shifts, cccs = stacking.align_traces(trace_list=trace_list,
-                                             shift_len=shift_len_samples,
-                                             positive=True)
+        shifts, cccs = stacking.align_traces(
+            trace_list=trace_list, shift_len=shift_len_samples, positive=True)
         for i, shift in enumerate(shifts):
             st = design_set[trace_ids[i]]
-            start_t = st.select(station=stachan[0],
-                                channel=stachan[1])[0].stats.starttime
+            start_t = st.select(
+                station=stachan[0], channel=stachan[1])[0].stats.starttime
             start_t += shift_len
             start_t -= shift
-            st.select(station=stachan[0],
-                      channel=stachan[1])[0].trim(start_t,
-                                                  start_t + clip_len)
+            st.select(
+                station=stachan[0], channel=stachan[1])[0].trim(
+                start_t, start_t + clip_len)
             if cccs[i] < reject:
                 if multiplex and not no_missed:
                     st.select(station=stachan[0],
-                              channel=stachan[1])[0].data =\
-                        np.zeros(int(clip_len *
-                                     (st.select(station=stachan[0],
-                                                channel=stachan[1])[0].
-                                      stats.sampling_rate) + 1))
+                              channel=stachan[1])[0].data = np.zeros(
+                        int(clip_len * (st.select(
+                            station=stachan[0],
+                            channel=stachan[1])[0].stats.sampling_rate) + 1))
                     warnings.warn('Padding stream with zero trace for ' +
                                   'station ' + stachan[0] + '.' + stachan[1])
                 elif multiplex and no_missed:
@@ -933,32 +928,27 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
             if det_par == parameter_set:
                 parameter_detectors.append(detector)
         stream, stachans = \
-            _subspace_process(streams=[stream.copy()],
-                              lowcut=parameter_set[0],
-                              highcut=parameter_set[1],
-                              filt_order=parameter_set[2],
-                              sampling_rate=parameter_set[3],
-                              multiplex=parameter_set[4],
-                              stachans=parameter_set[5],
-                              parallel=True, align=False, shift_len=None,
-                              reject=False)
+            _subspace_process(
+                streams=[stream.copy()], lowcut=parameter_set[0],
+                highcut=parameter_set[1], filt_order=parameter_set[2],
+                sampling_rate=parameter_set[3], multiplex=parameter_set[4],
+                stachans=parameter_set[5], parallel=True, align=False,
+                shift_len=None, reject=False)
         if not parallel:
             for detector in parameter_detectors:
-                detections += _detect(detector=detector, st=stream[0],
-                                      threshold=threshold, trig_int=trig_int,
-                                      moveout=moveout, min_trig=min_trig,
-                                      process=False, extract_detections=False,
-                                      debug=0)
+                detections += _detect(
+                    detector=detector, st=stream[0], threshold=threshold,
+                    trig_int=trig_int, moveout=moveout, min_trig=min_trig,
+                    process=False, extract_detections=False, debug=0)
         else:
             if num_cores:
                 ncores = num_cores
             else:
                 ncores = cpu_count()
             pool = Pool(processes=ncores)
-            results = [pool.apply_async(_detect,
-                                        args=(detector, stream[0], threshold,
-                                              trig_int, moveout, min_trig,
-                                              False, False, 0))
+            results = [pool.apply_async(
+                _detect, args=(detector, stream[0], threshold, trig_int,
+                               moveout, min_trig, False, False, 0))
                        for detector in parameter_detectors]
             pool.close()
             _detections = [p.get() for p in results]
