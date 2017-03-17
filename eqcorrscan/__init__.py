@@ -14,7 +14,7 @@ import warnings
 __all__ = ['core', 'utils', 'tutorials']
 
 
-__version__ = '0.1.6'
+__version__ = '0.1.6dirty'
 
 
 # Cope with changes to name-space to remove most of the camel-case

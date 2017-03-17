@@ -16,16 +16,18 @@ from __future__ import unicode_literals
 import numpy as np
 import warnings
 import datetime as dt
+import copy
+import os
 
 import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
-from obspy import UTCDateTime, Stream, Catalog
+from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
-from eqcorrscan.core.match_filter import DETECTION, normxcorr2
-from eqcorrscan.utils import stacking, sfile_util
+from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
+from eqcorrscan.utils.sfile_util import readheader
 
 
 def _check_save_args(save, savefile):
@@ -318,7 +320,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type template_names: list
     :param template_names: List of the template names in order of the dates
     :type detections: list
-    :param detections: List of :class:`eqcorrscan.core.match_filter.DETECTION`
+    :param detections: List of :class:`eqcorrscan.core.match_filter.Detection`
     :type plot_grouped: bool
     :param plot_grouped: Plot detections for each template individually, or \
         group them all together - set to False (plot template detections \
@@ -337,7 +339,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
 
     .. note::
         Can either take lists of
-        :class:`eqcorrscan.core.match_filter.DETECTION` objects directly, or
+        :class:`eqcorrscan.core.match_filter.Detection` objects directly, or
         two lists of dates and template names - either/or, not both.
 
     .. rubric:: Example
@@ -363,6 +365,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
     """
+    from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
     colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
@@ -376,9 +379,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         dates = []
         template_names = []
         for detection in detections:
-            if not type(detection) == DETECTION:
+            if not type(detection) == Detection:
                 msg = 'detection not of type: ' +\
-                    'eqcorrscan.core.match_filter.DETECTION'
+                    'eqcorrscan.core.match_filter.Detection'
                 raise IOError(msg)
             dates.append(detection.detect_time.datetime)
             template_names.append(detection.template_name)
@@ -433,24 +436,24 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     timedif = max_date - min_date
     if 10800 <= timedif.total_seconds() <= 25200:
         hours = mdates.MinuteLocator(byminute=[0, 30])
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 10))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 10))
     elif 7200 <= timedif.total_seconds() < 10800:
         hours = mdates.MinuteLocator(byminute=[0, 15, 30, 45])
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 5))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     elif timedif.total_seconds() <= 1200:
-        hours = mdates.MinuteLocator(byminute=range(0, 60, 2))
-        mins = mdates.MinuteLocator(byminute=range(0, 60, 0.5))
+        hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 2))
+        mins = mdates.MinuteLocator(byminute=np.arange(0, 60, 0.5))
     elif 25200 < timedif.total_seconds() <= 86400:
-        hours = mdates.HourLocator(byhour=range(0, 24, 3))
-        mins = mdates.HourLocator(byhour=range(0, 24, 1))
+        hours = mdates.HourLocator(byhour=np.arange(0, 24, 3))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 1))
     elif 86400 < timedif.total_seconds() <= 172800:
-        hours = mdates.HourLocator(byhour=range(0, 24, 6))
-        mins = mdates.HourLocator(byhour=range(0, 24, 1))
+        hours = mdates.HourLocator(byhour=np.arange(0, 24, 6))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 1))
     elif timedif.total_seconds() > 172800:
         hours = mdates.AutoDateLocator()
-        mins = mdates.HourLocator(byhour=range(0, 24, 3))
+        mins = mdates.HourLocator(byhour=np.arange(0, 24, 3))
     else:
-        hours = mdates.MinuteLocator(byminute=range(0, 60, 5))
+        hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     # Minor locator overruns maxticks for ~year-long datasets
     if timedif.total_seconds() < 172800:
         ax1.xaxis.set_minor_locator(mins)
@@ -726,6 +729,7 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :type title: str
     :param title: Title to plot
     """
+    from eqcorrscan.core.match_filter import normxcorr2
     if stack in ['linstack', 'PWS']:
         fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
                                  figsize=size)
@@ -750,11 +754,11 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
         axes[ind].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
     if stack == 'PWS':
-        linstack = stacking.PWS_stack(traces)
+        stacked = PWS_stack(traces)
     elif stack == 'linstack':
-        linstack = stacking.linstack(traces)
+        stacked = linstack(traces)
     if stack in ['linstack', 'PWS']:
-        tr = linstack[0]
+        tr = stacked[0]
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate
@@ -924,16 +928,16 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
 
     >>> import glob
     >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*')
+    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*L.S*')
     >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
 
     .. plot::
 
         import glob, os
         from eqcorrscan.utils.plotting import interev_mag_sfiles
-        sfiles = glob.glob(os.path.
-                           realpath('../../../tests/test_data/REA/TEST_') +
-                           os.sep + '*')
+        sfiles = glob.glob(
+            os.path.realpath('../../../tests/test_data/REA/TEST_/') +
+            os.sep + '*L.S*')
         print(sfiles)
         interev_mag_sfiles(sfiles=sfiles)
     """
@@ -941,7 +945,7 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
     times = []
     mags = []
     for sfile in sfiles:
-        head = sfile_util.readheader(sfile)
+        head = readheader(sfile)
         if head.preferred_origin():
             origin = head.preferred_origin()
         elif len(head.origins) > 0:
@@ -957,13 +961,14 @@ def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
         if origin and magnitude:
             times.append(origin.time)
             mags.append(magnitude.mag)
-    fig = interev_mag(times=times, mags=mags, save=save, savefile=savefile,
-                      size=size)
+    fig = interev_mag(
+        times=times, mags=mags, save=save, savefile=savefile, size=size)
     return fig
 
 
 def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
-    r"""Plot inter-event times against magnitude.
+    """
+    Plot inter-event times against magnitude.
 
     :type times: list
     :param times: list of the detection times, must be sorted the same as mags
@@ -1006,7 +1011,7 @@ def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
         interev_mag(times, magnitudes)
     """
     _check_save_args(save, savefile)
-    l = [(times[i], mags[i]) for i in xrange(len(times))]
+    l = [(times[i], mags[i]) for i in range(len(times))]
     l.sort(key=lambda tup: tup[0])
     times = [x[0] for x in l]
     mags = [x[1] for x in l]
@@ -1202,19 +1207,19 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
-    >>> from eqcorrscan.utils import sfile_util
+    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
     >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
     ...                              'TEST_',
     ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = sfile_util.readpicks(test_file)
+    >>> event = readpicks(test_file)
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
-    >>> template = template_gen._template_gen(event.picks, st, 2)
+    >>> template = template_gen.template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
     ...                      picks=event.picks) # doctest: +SKIP
 
@@ -1223,19 +1228,19 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         from obspy import read
         from eqcorrscan.core import template_gen
         from eqcorrscan.utils.plotting import pretty_template_plot
-        from eqcorrscan.utils import sfile_util
+        from eqcorrscan.utils.sfile_util import readpicks
         import os
         test_file = os.path.realpath('../../..') + \
             '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
         test_wavefile = os.path.realpath('../../..') +\
             '/tests/test_data/WAV/TEST_/' +\
             '2013-09-01-0410-35.DFDPC_024_00'
-        event = sfile_util.readpicks(test_file)
+        event = readpicks(test_file)
         st = read(test_wavefile)
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
-        template = template_gen._template_gen(event.picks, st, 2)
+        template = template_gen.template_gen(event.picks, st, 2)
         pretty_template_plot(template, background=st,
                              picks=event.picks)
     """
@@ -1729,7 +1734,7 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
         from eqcorrscan.utils.synth_seis import seis_sim
         import os
         real = read()
-        synth = Stream(Trace(seis_sim(SP=100, flength=200)))
+        synth = Stream(Trace(seis_sim(sp=100, flength=200)))
         synth[0].stats.station = 'RJOB'
         synth[0].stats.channel = 'EHZ'
         synth[0].stats.sampling_rate = 100
@@ -2055,6 +2060,128 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
         # Fig.close()
     else:
         return ax1, ax2
+
+
+def subspace_detector_plot(detector, stachans, size, show):
+    """
+    Plotting for the subspace detector class.
+
+    Plot the output basis vectors for the detector at the given dimension.
+
+    Corresponds to the first n horizontal vectors of the V matrix.
+
+    :type detector: :class:`eqcorrscan.core.subspace.Detector`
+    :type stachans: list
+    :param stachans: list of tuples of station, channel pairs to plot.
+    :type stachans: list
+    :param stachans: List of tuples of (station, channel) to use.  Can set\
+        to 'all' to use all the station-channel pairs available. If \
+        detector is multiplexed, will just plot that.
+    :type size: tuple
+    :param size: Figure size.
+    :type show: bool
+    :param show: Whether or not to show the figure.
+
+    :returns: Figure
+    :rtype: matplotlib.pyplot.Figure
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core import subspace
+    >>> import os
+    >>> detector = subspace.Detector()
+    >>> detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+    ...                            '..', 'tests', 'test_data', 'subspace',
+    ...                            'stat_test_detector.h5'))
+    Detector: Tester
+    >>> subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
+    ...                        show=True) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.core import subspace
+        from eqcorrscan.utils.plotting import subspace_detector_plot
+        import os
+        print('running subspace plot')
+        detector = subspace.Detector()
+        detector.read(os.path.join('..', '..', '..', 'tests', 'test_data',
+                                   'subspace', 'stat_test_detector.h5'))
+        subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
+                               show=True)
+    """
+    if stachans == 'all' and not detector.multiplex:
+        stachans = detector.stachans
+    elif detector.multiplex:
+        stachans = [('multi', ' ')]
+    if np.isinf(detector.dimension):
+        nrows = detector.data[0].shape[1]
+    else:
+        nrows = detector.dimension
+    fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
+                             sharex=True, sharey=True, figsize=size)
+    x = np.arange(len(detector.v[0]), dtype=np.float32)
+    if detector.multiplex:
+        x /= len(detector.stachans) * detector.sampling_rate
+    else:
+        x /= detector.sampling_rate
+    for column, stachan in enumerate(stachans):
+        channel = detector.v[column]
+        for row, vector in enumerate(channel.T[0:nrows]):
+            if len(stachans) == 1:
+                if nrows == 1:
+                    axis = axes
+                else:
+                    axis = axes[row]
+            else:
+                axis = axes[row, column]
+            if row == 0:
+                axis.set_title('.'.join(stachan))
+            axis.plot(x, vector, 'k', linewidth=1.1)
+            if column == 0:
+                axis.set_ylabel('Basis %s' % (row + 1))
+            if row == nrows - 1:
+                axis.set_xlabel('Time (s)')
+    plt.subplots_adjust(hspace=0.05)
+    plt.subplots_adjust(wspace=0.05)
+    if show:
+        plt.show()
+    return fig
+
+
+def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
+                       plot_format, i):
+    """
+    Plotting function for match_filter.
+
+    :param stream: Stream to plot
+    :param cccsum: Cross-correlation sum to plot
+    :param template_names: Template names used
+    :param rawthresh: Threshold level
+    :param plotdir: Location to save plots
+    :param plot_format: Output plot type (e.g. png, svg, eps, pdf...)
+    :param i: Template index name to plot.
+    """
+    plt.ioff()
+    stream_plot = copy.deepcopy(stream[0])
+    # Downsample for plotting
+    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
+    cccsum_plot = Trace(cccsum)
+    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
+    # Resample here to maintain shape better
+    cccsum_hist = cccsum_plot.copy()
+    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
+                                           sampling_rate / 10)).data
+    cccsum_plot = chunk_data(cccsum_plot, 10, 'Maxabs').data
+    # Enforce same length
+    stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
+    cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
+    cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
+    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
+                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
+                 '.' + plot_format)
+    triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
+                trace=stream_plot, threshold=rawthresh, save=True,
+                savefile=plot_name)
 
 
 if __name__ == "__main__":

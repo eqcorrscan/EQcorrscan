@@ -12,11 +12,12 @@ import numpy as np
 import os
 import glob
 
-from obspy import UTCDateTime
+from obspy import UTCDateTime, read_events
 
 from eqcorrscan.utils.catalog_to_dd import _cc_round, _av_weight, readSTATION0
 from eqcorrscan.utils.catalog_to_dd import sfiles_to_event, write_catalog
 from eqcorrscan.utils.catalog_to_dd import write_correlations, read_phase
+from eqcorrscan.utils.catalog_to_dd import write_event
 from eqcorrscan.utils import sfile_util
 from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils.timer import Timer
@@ -138,6 +139,30 @@ class TestCatalogMethods(unittest.TestCase):
         output_check_file.close()
         os.remove('station.dat')
 
+    def test_failed_write_event(self):
+        """
+        Check that we fail elegantly without an origin.
+        """
+        cat = read_events()
+        for event in cat:
+            event.origins = []
+        with self.assertRaises(IOError):
+            write_event(catalog=cat)
+
+    def test_no_time_residual(self):
+        cat = read_events()
+        write_event(catalog=cat)
+        self.assertTrue(os.path.isfile('event.dat'))
+        os.remove('event.dat')
+
+    def test_no_magnitudes(self):
+        cat = read_events()
+        for event in cat:
+            event.magnitudes = []
+        write_event(catalog=cat)
+        self.assertTrue(os.path.isfile('event.dat'))
+        os.remove('event.dat')
+
     def test_write_event(self):
         """
         Simple test function to test the writing of events.
@@ -178,24 +203,86 @@ class TestCatalogMethods(unittest.TestCase):
                                      float(output_event_info[-2]))
         os.remove('event.dat')
 
-    def test_write_catalog(self):
-        """
-        Simple testing function for the write_catalogue function in \
-        catalog_to_dd.
-        """
-        # Set forced variables
+    def test_read_phase(self):
+        """Function to test the phase reading function"""
+        test_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                 'test_data', 'tunnel.phase')
+        test_catalog = read_phase(test_file)
+        self.assertEqual(len(test_catalog), 2)
+        self.assertEqual(test_catalog[0].origins[0].latitude, -43.169)
+        self.assertEqual(test_catalog[0].origins[0].longitude, 170.646)
+        self.assertEqual(test_catalog[0].origins[0].depth, -288)
+        self.assertEqual(test_catalog[0].origins[0].time,
+                         UTCDateTime('2012-01-30T01:45:43.25'))
+        self.assertEqual(test_catalog[1].origins[0].latitude, -43.169)
+        self.assertEqual(test_catalog[1].origins[0].longitude, 170.646)
+        self.assertEqual(test_catalog[1].origins[0].depth, -288)
+        self.assertEqual(test_catalog[1].origins[0].time,
+                         UTCDateTime('2012-01-30T06:48:43.07'))
+
+    def test_picks_without_phase_hints(self):
+        """Check that things still run when phase_hints are missing."""
         maximum_seperation = 1  # Maximum inter-event seperation in km
         minimum_links = 8  # Minimum inter-event links to generate a pair
         # We have to make an event list first
+        max_shift_len = 0.2
+        wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'test_data', 'WAV', 'TEST_')
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_')
         sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
+        sfile_list = sfile_list[0:10]
+        sfile_list.append(
+            os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                         'test_data', 'sfile_wout_phase_hint'))
         event_ids = list(range(len(sfile_list)))
         event_list = zip(event_ids, sfile_list)
         # In python 3.x this gives an error as zip is now an object...
         event_list = list(event_list)  # Do this for compatability
         write_catalog(event_list=event_list, max_sep=maximum_seperation,
                       min_link=minimum_links)
+        self.assertTrue(os.path.isfile('dt.ct'))
+        write_correlations(event_list, wavbase, extract_len=2, pre_pick=0.5,
+                           shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
+                           max_sep=1, min_link=8, cc_thresh=0.0, plotvar=False)
+        self.assertTrue(os.path.isfile('dt.cc'))
+
+
+class FullTestCases(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
+        cls.wavbase = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
+        cls.sfile_list = glob.glob(os.path.join(cls.testing_path,
+                                                '*L.S??????'))[0:15]
+        cls.maximum_separation = 1  # Maximum inter-event separation in km
+        cls.minimum_links = 8  # Minimum inter-event links to generate a pair
+        # We have to make an event list first
+        cls.event_ids = list(range(len(cls.sfile_list)))
+        cls.event_list = zip(cls.event_ids, cls.sfile_list)
+        # In python 3.x this gives an error as zip is now an object...
+        cls.event_list = list(cls.event_list)  # Do this for comparability
+        write_catalog(event_list=cls.event_list,
+                      max_sep=cls.maximum_separation,
+                      min_link=cls.minimum_links)
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     os.remove('phase.dat')
+    #     os.remove('dt.ct')
+    #     if os.path.isfile('dt.ct2'):
+    #         os.remove('dt.ct2')
+    #     os.remove('dt.cc')
+    #     if os.path.isfile('dt.cc2'):
+    #         os.remove('dt.cc2')
+
+    def test_write_catalog(self):
+        """
+        Simple testing function for the write_catalogue function in \
+        catalog_to_dd.
+        """
         self.assertTrue(os.path.isfile('dt.ct'))
         # Check dt.ct file, should contain only a few linked events
         dt_file_out = open('dt.ct', 'r')
@@ -206,12 +293,12 @@ class TestCatalogMethods(unittest.TestCase):
             if line[0] == '#':
                 if i != 0:
                     # Check the number of links
-                    self.assertTrue(len(event_links) >= minimum_links)
+                    self.assertTrue(len(event_links) >= self.minimum_links)
                     # Check the distance between events
-                    event_1_name = [event[1] for event in event_list
+                    event_1_name = [event[1] for event in self.event_list
                                     if event[0] ==
                                     int(event_pair.split()[1])][0]
-                    event_2_name = [event[1] for event in event_list
+                    event_2_name = [event[1] for event in self.event_list
                                     if event[0] ==
                                     int(event_pair.split()[2])][0]
                     event_1 = sfile_util.readheader(event_1_name)
@@ -225,7 +312,7 @@ class TestCatalogMethods(unittest.TestCase):
                     hypocentral_seperation = dist_calc(event_1_location,
                                                        event_2_location)
                     self.assertTrue(hypocentral_seperation <
-                                    maximum_seperation)
+                                    self.maximum_separation)
                     # Check that the differential times are accurate
                     event_1_picks = sfile_util.readpicks(event_1_name).picks
                     event_2_picks = sfile_util.readpicks(event_2_name).picks
@@ -261,10 +348,6 @@ class TestCatalogMethods(unittest.TestCase):
                 event_links.append(line)
         self.assertTrue(os.path.isfile('phase.dat'))
         dt_file_out.close()
-        os.remove('phase.dat')
-        os.remove('dt.ct')
-        if os.path.isfile('dt.ct2'):
-            os.remove('dt.ct2')
 
     def test_write_correlations(self):
         """
@@ -272,24 +355,17 @@ class TestCatalogMethods(unittest.TestCase):
         Hard to test accurately...
         """
         max_shift_len = 0.2
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_')
-        wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'WAV', 'TEST_')
-        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
-        event_ids = list(range(len(sfile_list)))
-        event_list = list(zip(event_ids, sfile_list))
         with Timer() as t:
-            write_correlations(event_list, wavbase, extract_len=2,
+            write_correlations(self.event_list, self.wavbase, extract_len=2,
                                pre_pick=0.5, shift_len=max_shift_len,
-                               lowcut=2.0, highcut=10.0, max_sep=1, min_link=8,
+                               lowcut=2.0, highcut=10.0,
+                               max_sep=self.maximum_separation,
+                               min_link=self.minimum_links,
                                cc_thresh=0.0, plotvar=False)
-        msg = 'Running ' + str(len(list(event_list))) + \
+        msg = 'Running ' + str(len(list(self.event_list))) + \
               ' events took %s s' % t.secs
         print(msg)
         self.assertTrue(os.path.isfile('dt.cc'))
-        # Generate a complementary dt.ct file and check against that
-        write_catalog(event_list=event_list, max_sep=1, min_link=8)
         cc = open('dt.cc', 'r')
         cc_pairs = []
         observations = []
@@ -341,66 +417,6 @@ class TestCatalogMethods(unittest.TestCase):
                                                       cc_obs['diff_time'])
                                 self.assertTrue(corr_correction <
                                                 max_shift_len)
-
-        os.remove('dt.cc')
-        os.remove('dt.ct')
-        os.remove('phase.dat')
-        if os.path.isfile('dt.cc2'):
-            os.remove('dt.cc2')
-        if os.path.isfile('dt.ct2'):
-            os.remove('dt.ct2')
-
-    def test_read_phase(self):
-        """Function to test the phase reading function"""
-        test_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                 'test_data', 'tunnel.phase')
-        test_catalog = read_phase(test_file)
-        self.assertEqual(len(test_catalog), 2)
-        self.assertEqual(test_catalog[0].origins[0].latitude, -43.169)
-        self.assertEqual(test_catalog[0].origins[0].longitude, 170.646)
-        self.assertEqual(test_catalog[0].origins[0].depth, -288)
-        self.assertEqual(test_catalog[0].origins[0].time,
-                         UTCDateTime('2012-01-30T01:45:43.25'))
-        self.assertEqual(test_catalog[1].origins[0].latitude, -43.169)
-        self.assertEqual(test_catalog[1].origins[0].longitude, 170.646)
-        self.assertEqual(test_catalog[1].origins[0].depth, -288)
-        self.assertEqual(test_catalog[1].origins[0].time,
-                         UTCDateTime('2012-01-30T06:48:43.07'))
-
-    def test_picks_without_phase_hints(self):
-        """Check that things still run when phase_hints are missing."""
-        maximum_seperation = 1  # Maximum inter-event seperation in km
-        minimum_links = 8  # Minimum inter-event links to generate a pair
-        # We have to make an event list first
-        max_shift_len = 0.2
-        wavbase = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'WAV', 'TEST_')
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_')
-        sfile_list = glob.glob(os.path.join(testing_path, '*L.S??????'))
-        sfile_list = sfile_list[0:10]
-        sfile_list.append(
-            os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                         'test_data', 'sfile_wout_phase_hint'))
-        event_ids = list(range(len(sfile_list)))
-        event_list = zip(event_ids, sfile_list)
-        # In python 3.x this gives an error as zip is now an object...
-        event_list = list(event_list)  # Do this for compatability
-        write_catalog(event_list=event_list, max_sep=maximum_seperation,
-                      min_link=minimum_links)
-        self.assertTrue(os.path.isfile('dt.ct'))
-        write_correlations(event_list, wavbase, extract_len=2, pre_pick=0.5,
-                           shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
-                           max_sep=1, min_link=8, cc_thresh=0.0, plotvar=False)
-        self.assertTrue(os.path.isfile('dt.cc'))
-        os.remove('dt.cc')
-        os.remove('dt.ct')
-        os.remove('phase.dat')
-        if os.path.isfile('dt.cc2'):
-            os.remove('dt.cc2')
-        if os.path.isfile('dt.ct2'):
-            os.remove('dt.ct2')
-
 
 if __name__ == '__main__':
     unittest.main()
