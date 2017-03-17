@@ -177,8 +177,8 @@ def cross_net(stream, env=False, debug=0, master=False):
         if debug > 2:
             print(event.picks[i])
     event.origins[0].time = min([pick.time for pick in event.picks]) - 1
-    event.origins[0].latitude = float('nan')
-    event.origins[0].longitude = float('nan')
+    # event.origins[0].latitude = float('nan')
+    # event.origins[0].longitude = float('nan')
     # Set arbitrary origin time
     del st
     return event
@@ -288,8 +288,8 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     event.picks = picks
     if len(event.picks) > 0:
         event.origins[0].time = min([pick.time for pick in event.picks]) - 1
-        event.origins[0].latitude = float('nan')
-        event.origins[0].longitude = float('nan')
+        # event.origins[0].latitude = float('nan')
+        # event.origins[0].longitude = float('nan')
     # Set arbitrary origin time
     return event
 

@@ -31,16 +31,29 @@ install:
   # Install the build and runtime dependencies of the project.
   - "conda update -q --yes conda"
   - "conda config --add channels menpo"
-  - "conda config --add channels obspy"
+  - "conda config --add channels conda-forge"
   # Create a conda environment using the astropy bonus packages
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy scipy opencv3 matplotlib obspy mock flake8 pyflakes=0.9.0 cython h5py"
+  - "conda install -q --yes pip numpy scipy opencv3 matplotlib obspy mock flake8 pyflakes=0.9.0 cython h5py bottleneck"
   # additional dependecies
   #  - "choco install opencv"
   #  - "powershell copy-item C:\\OpenCV\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
   - "pip install pyimgur"
+  - "mkdir pyasdf && cd pyasdf"
+  - "git init"
+  - "git remote add -f origin https://github.com/SeismicData/pyasdf.git"
+  - "git config core.sparsecheckout true"
+  - "echo setup.py >> .git/info/sparse-checkout"
+  - "echo README.md >> .git/info/sparse-checkout"
+  - "echo LICENSE.txt >> .git/info/sparse-checkout"
+  - "echo pyasdf/*.py >> .git/info/sparse-checkout"
+  - "git pull origin master"
+  - "pip install -v -e ."
+  - "cd .."
+#  - "rm -rf pyasdf"
+#  - "pip install git+ssh://git@github.com/SeismicData/pyasdf.git"
   - "pip install -U future"
   - "pip install pytest"
   - "pip install pytest-pep8"
@@ -55,10 +68,10 @@ build: false
 
 test_script:
   - "%CMD_IN_ENV% python setup.py develop"
-  - "%CMD_IN_ENV% py.test"
+  - "%CMD_IN_ENV% py.test --ignore=eqcorrscan/tests/tutorial_test.py"
 
 after_test:
-  - "coverage combine"
+  #  - "coverage combine"
   - "powershell copy-item .coverage ..\\.coverage.empty"
   - "cd .."
   - "coverage combine"
