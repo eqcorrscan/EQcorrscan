@@ -30,3 +30,5 @@ station.dat
 .coverage.*
 eqcorrscan/core/subspace_statistic.c
 eqcorrscan/core/sliding_normxcorr.c
+dt.c*
+phase.dat

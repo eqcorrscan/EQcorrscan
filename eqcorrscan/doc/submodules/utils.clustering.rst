@@ -12,14 +12,14 @@ clustering
        :toctree: autogen
        :nosignatures:
 
-       SVD
-       SVD_2_stream
+       svd
+       svd_to_stream
        cluster
        corr_cluster
        cross_chan_coherence
        dist_mat_km
        distance_matrix
-       empirical_SVD
+       empirical_svd
        extract_detections
        group_delays
        re_thresh_csv

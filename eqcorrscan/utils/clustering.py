@@ -16,16 +16,18 @@ from __future__ import unicode_literals
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
+import os
 
 from multiprocessing import Pool, cpu_count
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from obspy.signal.cross_correlation import xcorr
-from obspy import Stream, Catalog
+from obspy import Stream, Catalog, UTCDateTime, Trace
 
 from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils import stacking
+from eqcorrscan.utils.archive_read import read_data
 
 
 def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
@@ -55,23 +57,20 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     cccoh = 0.0
     kchan = 0
-    if allow_shift:
-        for tr in st1:
-            tr2 = st2.select(station=tr.stats.station,
-                             channel=tr.stats.channel)
-            if tr2:
-                index, corval = xcorr(tr, tr2[0], shift_len)
-                cccoh += corval
-                kchan += 1
-    else:
-        for tr in st1:
-            tr1 = tr.data
-            # Assume you only have one waveform for each channel
-            tr2 = st2.select(station=tr.stats.station,
-                             channel=tr.stats.channel)
-            if tr2:
-                cccoh += normxcorr2(tr1, tr2[0].data)[0][0]
-                kchan += 1
+    for tr in st1:
+        tr2 = st2.select(station=tr.stats.station,
+                         channel=tr.stats.channel)
+        if tr2 and tr.stats.sampling_rate != tr2[0].stats.sampling_rate:
+            warnings.warn('Sampling rates do not match, not using: %s.%s'
+                          % (tr.stats.station, tr.stats.channel))
+        if tr2 and allow_shift:
+            index, corval = xcorr(tr, tr2[0],
+                                  int(shift_len * tr.stats.sampling_rate))
+            cccoh += corval
+            kchan += 1
+        elif tr2:
+            cccoh += normxcorr2(tr.data, tr2[0].data)[0][0]
+            kchan += 1
     if kchan:
         cccoh /= kchan
         return cccoh, i
@@ -408,6 +407,14 @@ def svd(stream_list, full=False):
 
 def empirical_SVD(stream_list, linear=True):
     """
+    Depreciated. Use empirical_svd.
+    """
+    warnings.warn('Depreciated, use empirical_svd instead.')
+    return empirical_svd(stream_list=stream_list, linear=linear)
+
+
+def empirical_svd(stream_list, linear=True):
+    """
     Empirical subspace detector generation function.
 
     Takes a list of \
@@ -428,7 +435,6 @@ def empirical_SVD(stream_list, linear=True):
 
     :returns: list of two :class:`obspy.core.stream.Stream` s
     """
-    from eqcorrscan.utils import stacking
     # Run a check to ensure all traces are the same length
     stachans = list(set([(tr.stats.station, tr.stats.channel)
                          for st in stream_list for tr in st]))
@@ -463,14 +469,23 @@ def empirical_SVD(stream_list, linear=True):
 
 def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     """
+    Depreciated. Use svd_to_stream
+    """
+    warnings.warn('Depreciated, use svd_to_stream instead.')
+    return svd_to_stream(svectors=SVectors, stachans=stachans, k=k,
+                         sampling_rate=sampling_rate)
+
+
+def svd_to_stream(svectors, stachans, k, sampling_rate):
+    """
     Convert the singular vectors output by SVD to streams.
 
     One stream will be generated for each singular vector level,
     for all channels.  Useful for plotting, and aiding seismologists thinking
     of waveforms!
 
-    :type SVectors: list
-    :param SVectors: List of :class:`numpy.ndarray` Singular vectors
+    :type svectors: list
+    :param svectors: List of :class:`numpy.ndarray` Singular vectors
     :type stachans: list
     :param stachans: List of station.channel Strings
     :type k: int
@@ -479,25 +494,24 @@ def SVD_2_stream(SVectors, stachans, k, sampling_rate):
     :param sampling_rate: Sampling rate in Hz
 
     :returns:
-        SVstreams, List of :class:`obspy.core.stream.Stream`, with
-        SVStreams[0] being composed of the highest rank singular vectors.
+        svstreams, List of :class:`obspy.core.stream.Stream`, with
+        svStreams[0] being composed of the highest rank singular vectors.
     """
-    from obspy import Stream, Trace
-    SVstreams = []
+    svstreams = []
     for i in range(k):
-        SVstream = []
+        svstream = []
         for j, stachan in enumerate(stachans):
-            if len(SVectors[j]) <= k:
+            if len(svectors[j]) <= k:
                 warnings.warn('Too few traces at %s for a %02d dimensional '
                               'subspace. Detector streams will not include '
                               'this channel.' % (stachan, k))
             else:
-                SVstream.append(Trace(SVectors[j][i],
+                svstream.append(Trace(svectors[j][i],
                                       header={'station': stachan.split('.')[0],
                                               'channel': stachan.split('.')[1],
                                               'sampling_rate': sampling_rate}))
-        SVstreams.append(Stream(SVstream))
-    return SVstreams
+        svstreams.append(Stream(svstream))
+    return svstreams
 
 
 def corr_cluster(trace_list, thresh=0.9):
@@ -557,7 +571,7 @@ def extract_detections(detections, templates, archive, arc_type,
     The default is unset.  The  default extract_len is 90 seconds per channel.
 
     :type detections: list
-    :param detections: List of :class:`eqcorrscan.core.match_filter.DETECTION`.
+    :param detections: List of :class:`eqcorrscan.core.match_filter.Detection`.
     :type templates: list
     :param templates:
         A list of tuples of the template name and the template Stream used
@@ -578,6 +592,8 @@ def extract_detections(detections, templates, archive, arc_type,
         if set each detection will be saved into this directory with files
         named according to the detection time, NOT than the waveform
         start time. Detections will be saved into template subdirectories.
+        Files written will be multiplexed miniseed files, the encoding will
+        be chosen automatically and will likely be float.
     :type extract_Z: bool
     :param extract_Z:
         Set to True to also extract Z channels for detections delays will be
@@ -585,7 +601,7 @@ def extract_detections(detections, templates, archive, arc_type,
         channels were used in the template.
     :type additional_stations: list
     :param additional_stations:
-        List of tuples of (station, channel, network) to also extract data
+        List of tuples of (station, channel) to also extract data
         for using an average delay.
 
     :returns: list of :class:`obspy.core.streams.Stream`
@@ -594,14 +610,14 @@ def extract_detections(detections, templates, archive, arc_type,
     .. rubric: Example
 
     >>> from eqcorrscan.utils.clustering import extract_detections
-    >>> from eqcorrscan.core.match_filter import DETECTION
+    >>> from eqcorrscan.core.match_filter import Detection
     >>> from obspy import read, UTCDateTime
     >>> import os
     >>> # Use some dummy detections, you would use real one
-    >>> detections = [DETECTION('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr'),
-    ...               DETECTION('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr')]
+    >>> detections = [Detection('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0),
+    ...               Detection('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
+    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0)]
     >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
     >>> archive = os.path.join(path_to_templates, 'day_vols')
     >>> template_files = [os.path.join(path_to_templates, 'temp1.ms'),
@@ -625,10 +641,37 @@ def extract_detections(detections, templates, archive, arc_type,
  1.0 Hz, 91 samples
     AF.WHYM..SHZ | 2012-03-26T18:04:15.000000Z - 2012-03-26T18:05:45.000000Z |\
  1.0 Hz, 91 samples
+    >>> # Extract from stations not included in the detections
+    >>> extracted = extract_detections(
+    ...    detections, templates, archive=archive, arc_type='day_vols',
+    ...    additional_stations=[('GOVA', 'SHZ')])
+    Adding additional stations
+    Added station GOVA.SHZ
+    Added station GOVA.SHZ
+    Working on detections for day: 2012-03-26T00:00:00.000000Z
+    Cutting for detections at: 2012/03/26 09:15:00
+    Cutting for detections at: 2012/03/26 18:05:00
+    >>> print(extracted[0].sort())
+    3 Trace(s) in Stream:
+    AF.EORO..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z |\
+ 1.0 Hz, 91 samples
+    AF.GOVA..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z |\
+ 1.0 Hz, 91 samples
+    AF.WHYM..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z |\
+ 1.0 Hz, 91 samples
+    >>> # The detections can be saved to a file:
+    >>> extract_detections(detections, templates, archive=archive,
+    ...                    arc_type='day_vols',
+    ...                    additional_stations=[('GOVA', 'SHZ')], outdir='.')
+    Adding additional stations
+    Added station GOVA.SHZ
+    Added station GOVA.SHZ
+    Working on detections for day: 2012-03-26T00:00:00.000000Z
+    Cutting for detections at: 2012/03/26 09:15:00
+    Written file: ./temp1/2012-03-26_09-15-00.ms
+    Cutting for detections at: 2012/03/26 18:05:00
+    Written file: ./temp2/2012-03-26_18-05-00.ms
     """
-    from obspy import UTCDateTime
-    import os
-    from eqcorrscan.utils.archive_read import read_data
     # Sort the template according to start-times, needed so that stachan[i]
     # corresponds to delays[i]
     all_delays = []  # List of tuples of template name, delays
@@ -700,8 +743,6 @@ def extract_detections(detections, templates, archive, arc_type,
                           detection_day]
         del stachans, delays
         for detection in day_detections:
-            template = [t[1] for t in templates
-                        if t[0] == detection.template_name]
             print('Cutting for detections at: ' +
                   detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
@@ -711,18 +752,18 @@ def extract_detections(detections, templates, archive, arc_type,
                         endtime=UTCDateTime(detection.detect_time) +
                         extract_len / 2)
             if outdir:
-                if not os.path.isdir(os.path.join(outdir, template)):
-                    os.makedirs(os.path.join(outdir, template))
-                detect_wav.write(os.path.join(outdir, template,
+                if not os.path.isdir(os.path.join(outdir,
+                                                  detection.template_name)):
+                    os.makedirs(os.path.join(outdir, detection.template_name))
+                detect_wav.write(os.path.join(outdir, detection.template_name,
                                               detection.detect_time.
                                               strftime('%Y-%m-%d_%H-%M-%S') +
                                               '.ms'),
-                                 format='MSEED', encoding='STEIM2')
-                print('Written file: %s' % os.path.join(outdir, template,
-                                                        detection.detect_time.
-                                                        strftime('%Y-%m-%d'
-                                                                 '_%H-%M-%S') +
-                                                        '.ms'))
+                                 format='MSEED')
+                print('Written file: %s' %
+                      '/'.join([outdir, detection.template_name,
+                                detection.detect_time.
+                                strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -801,17 +842,17 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=2)
+    ...                         minmagnitude=2)
     >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
 
     >>> from eqcorrscan.utils.clustering import space_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("IRIS")
+    >>> client = Client("https://earthquake.usgs.gov")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                        minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6)
     >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
     """
     # Compute the distance matrix and linkage
@@ -868,11 +909,11 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     >>> from eqcorrscan.utils.clustering import space_time_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
-    >>> client = Client("IRIS")
+    >>> client = Client("https://earthquake.usgs.gov")
     >>> starttime = UTCDateTime("2002-01-01")
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
-    ...                         minmagnitude=6, catalog="ISC")
+    ...                         minmagnitude=6)
     >>> groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
     """
     initial_spatial_groups = space_cluster(catalog=catalog, d_thresh=d_thresh,
@@ -925,8 +966,15 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     ...                            chan_thresh=3)
     Read in 22 detections
     Left with 17 detections
+
+    .. Note::
+        This is a legacy function, and will read detections from all versions.
+
+    .. Warning:: Only works if thresholding was done by MAD.
     """
     from eqcorrscan.core.match_filter import read_detections
+    warnings.warn('Legacy function, please use '
+                  'eqcorrscan.core.match_filter.Party.rethreshold.')
     old_detections = read_detections(path)
     old_thresh = float(old_thresh)
     new_thresh = float(new_thresh)
