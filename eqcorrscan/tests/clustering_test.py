@@ -34,7 +34,7 @@ class ClusteringTestMethods(unittest.TestCase):
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         warnings.simplefilter("always")
-        client = Client("USGS")
+        client = Client("https://earthquake.usgs.gov")
         starttime = UTCDateTime("2002-01-01")
         endtime = UTCDateTime("2002-01-02")
         cls.cat = client.get_events(starttime=starttime, endtime=endtime,

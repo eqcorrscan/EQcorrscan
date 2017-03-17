@@ -231,11 +231,11 @@ def readheader(sfile):
         new_event.origins[0].latitude = _float_conv(topline[23:30])
         new_event.origins[0].longitude = _float_conv(topline[31:38])
         new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
-    else:
-        # The origin 'requires' a lat & long
-        new_event.origins[0].latitude = float('NaN')
-        new_event.origins[0].longitude = float('NaN')
-        new_event.origins[0].depth = float('NaN')
+    # else:
+    #     # The origin 'requires' a lat & long
+    #     new_event.origins[0].latitude = float('NaN')
+    #     new_event.origins[0].longitude = float('NaN')
+    #     new_event.origins[0].depth = float('NaN')
     # new_event.depth_ind = topline[44]
     # new_event.loc_ind = topline[45]
     new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -419,14 +419,20 @@ def readpicks(sfile):
             polarity = 'negative'
         else:
             polarity = "undecidable"
+        if int(line[18:20]) == 24:
+            pickhr = 0
+            pickday = evtime + 86400
+        else:
+            pickhr = int(line[18:20])
+            pickday = evtime
         try:
-            time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]),
+            time = UTCDateTime(pickday.year, pickday.month, pickday.day,
+                               pickhr, int(line[20:22]),
                                int(line[23:28].split('.')[0]),
                                int(line[23:28].split('.')[1]) * 10000)
-        except (ValueError):
+        except ValueError:
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]), 0, 0)
+                               pickhr, int(line[20:22]), 0, 0)
             time += 60  # Add 60 seconds on to the time, this copes with s-file
             # preference to write seconds in 1-60 rather than 0-59 which
             # datetime objects accept

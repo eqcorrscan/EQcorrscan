@@ -62,18 +62,16 @@ class BrightnessTestMethods(unittest.TestCase):
         maxlat = -43
         mindepth = 4
         maxdepth = 10
-        stations, allnodes, alllags = _read_tt(path=self.testing_path,
-                                               stations=['COSA'],
-                                               phase='S', phaseout='S')
+        stations, allnodes, alllags = _read_tt(
+            path=self.testing_path, stations=['COSA'], phase='S', phaseout='S')
         corners = [(minlon, minlat),
                    (maxlon, minlat),
                    (maxlon, maxlat),
                    (minlon, maxlat)]
         corners = path.Path(corners, closed=True)
-        stations, nodes, lags = _resample_grid(stations, allnodes, alllags,
-                                               mindepth=mindepth,
-                                               maxdepth=maxdepth,
-                                               corners=corners)
+        stations, nodes, lags = _resample_grid(
+            stations, allnodes, alllags, mindepth=mindepth, maxdepth=maxdepth,
+            corners=corners)
         for node in nodes:
             self.assertTrue(minlon < node[0] < maxlon)
             self.assertTrue(minlat < node[1] < maxlat)
@@ -81,19 +79,18 @@ class BrightnessTestMethods(unittest.TestCase):
 
         for node in allnodes:
             if node not in nodes:
-                self.assertFalse((minlon < node[0] < maxlon) and
-                                 (minlat < node[1] < maxlat) and
-                                 (mindepth < node[2] < maxdepth))
+                self.assertFalse(
+                    (minlon < node[0] < maxlon) and
+                    (minlat < node[1] < maxlat) and
+                    (mindepth < node[2] < maxdepth))
 
     def test_rm_similarlags(self):
         threshold = 2
-        stations, allnodes, alllags = _read_tt(path=self.testing_path,
-                                               stations=['COSA'],
-                                               phase='S', phaseout='S')
-        stations, nodes, lags = _rm_similarlags(stations=stations,
-                                                nodes=allnodes,
-                                                lags=alllags,
-                                                threshold=threshold)
+        stations, allnodes, alllags = _read_tt(
+            path=self.testing_path, stations=['COSA'], phase='S', phaseout='S')
+        stations, nodes, lags = _rm_similarlags(
+            stations=stations, nodes=allnodes, lags=alllags,
+            threshold=threshold)
         for lag in lags:
             for _lag in lag:
                 other_lags = np.array([l for l in lag if not l == _lag])
@@ -224,15 +221,10 @@ class TestBrightnessMain(unittest.TestCase):
 
     def test_brightness(self):
         st = self.st.copy()
-        detections, nodes_out = brightness(stations=self.stations,
-                                           nodes=self.nodes,
-                                           lags=self.lags, stream=st,
-                                           threshold=1.885,
-                                           thresh_type='MAD',
-                                           template_length=1,
-                                           template_saveloc='.',
-                                           coherence_thresh=(10, 1),
-                                           cores=1)
+        detections, nodes_out = brightness(
+            stations=self.stations, nodes=self.nodes, lags=self.lags,
+            stream=st, threshold=1.885, thresh_type='MAD', template_length=1,
+            template_saveloc='.', coherence_thresh=(10, 1), cores=1)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
 
@@ -240,15 +232,10 @@ class TestBrightnessMain(unittest.TestCase):
         st = self.st.copy()
         for tr in st:
             tr.data *= 40000
-        detections, nodes_out = brightness(stations=self.stations,
-                                           nodes=self.nodes,
-                                           lags=self.lags, stream=st,
-                                           threshold=1.885,
-                                           thresh_type='MAD',
-                                           template_length=1,
-                                           template_saveloc='.',
-                                           coherence_thresh=(10, 1),
-                                           cores=1)
+        detections, nodes_out = brightness(
+            stations=self.stations, nodes=self.nodes, lags=self.lags,
+            stream=st, threshold=1.885, thresh_type='MAD', template_length=1,
+            template_saveloc='.', coherence_thresh=(10, 1), cores=1)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
 
@@ -265,30 +252,22 @@ class TestBrightnessMain(unittest.TestCase):
 
     def test_mem_issue(self):
         st = self.st.copy()
-        detections, nodes_out = brightness(stations=self.stations,
-                                           nodes=self.nodes,
-                                           lags=self.lags, stream=st,
-                                           threshold=1.885,
-                                           thresh_type='MAD',
-                                           template_length=1,
-                                           template_saveloc='.',
-                                           coherence_thresh=(10, 1),
-                                           cores=1, mem_issue=True, instance=2)
+        detections, nodes_out = brightness(
+            stations=self.stations, nodes=self.nodes, lags=self.lags,
+            stream=st, threshold=1.885, thresh_type='MAD', template_length=1,
+            template_saveloc='.', coherence_thresh=(10, 1), cores=1,
+            mem_issue=True, instance=2)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
         shutil.rmtree('tmp2')
 
     def test_mem_issue_parallel(self):
         st = self.st.copy()
-        detections, nodes_out = brightness(stations=self.stations,
-                                           nodes=self.nodes,
-                                           lags=self.lags, stream=st,
-                                           threshold=1.885,
-                                           thresh_type='MAD',
-                                           template_length=1,
-                                           template_saveloc='.',
-                                           coherence_thresh=(10, 1),
-                                           cores=3, mem_issue=True, instance=3)
+        detections, nodes_out = brightness(
+            stations=self.stations, nodes=self.nodes, lags=self.lags,
+            stream=st, threshold=1.885, thresh_type='MAD', template_length=1,
+            template_saveloc='.', coherence_thresh=(10, 1), cores=3,
+            mem_issue=True, instance=3)
         self.assertEqual(len(detections), 0)
         self.assertEqual(len(detections), len(nodes_out))
         shutil.rmtree('tmp3')

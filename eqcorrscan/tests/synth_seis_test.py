@@ -52,8 +52,7 @@ class TestSynth(unittest.TestCase):
 
 class TestSVDSim(unittest.TestCase):
     def test_svd_sim(self):
-        V, s, U, stachans = SVD_sim(sp=15, lowcut=2, highcut=8,
-                                    samp_rate=20)
+        V, s, U, stachans = SVD_sim(sp=15, lowcut=2, highcut=8, samp_rate=20)
         self.assertEqual(V[0].shape[0], s[0].shape[0])
         self.assertEqual(V[0].shape[0], U[0].shape[1])
         self.assertEqual(len(stachans), 1)
@@ -100,11 +99,12 @@ class TestRandomData(unittest.TestCase):
     def test_generate_synth_dataset(self):
         for debug in [0, 2, 3]:
             templates, data, seeds = generate_synth_data(
-                nsta=5, ntemplates=5, nseeds=10, samp_rate=100, t_length=10,
+                nsta=2, ntemplates=2, nseeds=2, samp_rate=100, t_length=10,
                 max_amp=10, max_lag=20, debug=debug)
-            self.assertEqual(len(templates), 5)
-            self.assertEqual(len(seeds[0]['time']), 10)
+            self.assertEqual(len(templates), 2)
+            self.assertEqual(len(seeds[0]['time']), 2)
             self.assertTrue(isinstance(data, Stream))
+
 
 if __name__ == '__main__':
     unittest.main()

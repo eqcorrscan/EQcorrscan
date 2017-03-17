@@ -14,7 +14,7 @@ import warnings
 from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
 from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
 from eqcorrscan.core.template_gen import from_sfile
-from eqcorrscan.core.match_filter import normxcorr2, DETECTION
+from eqcorrscan.core.match_filter import normxcorr2, Detection
 from eqcorrscan.utils.sfile_util import read_event
 
 
@@ -43,14 +43,16 @@ class TestMethods(unittest.TestCase):
                                                   '21-1759-04L.S201309'))
         detection_spicks_event = read_event(
             os.path.join(cls.testing_path, '18-2350-07L.S201309'))
-        cls.detections = [DETECTION(
+        cls.detections = [Detection(
             detect_time=detection_event.origins[0].time, detect_val=2.0,
             no_chans=5, threshold=1.9, typeofdet='corr', event=detection_event,
-            template_name='test_template'),
-                          DETECTION(
+            template_name='test_template', threshold_type='MAD',
+            threshold_input=8.0),
+                          Detection(
             detect_time=detection_spicks_event.origins[0].time, detect_val=2.0,
             no_chans=5, threshold=1.9, typeofdet='corr',
-            event=detection_spicks_event, template_name='test_template')]
+            event=detection_spicks_event, template_name='test_template',
+            threshold_type='MAD', threshold_input=8.0)]
         tstart = min(tr.stats.starttime for tr in cls.template)
         cls.delays = [('test_template', [(tr.stats.station, tr.stats.channel,
                                           tr.stats.starttime - tstart)
