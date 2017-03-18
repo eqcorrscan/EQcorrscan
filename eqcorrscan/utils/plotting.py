@@ -626,9 +626,11 @@ def multi_event_singlechan(streams, catalog, station, channel,
         raise IOError('No picks for ' + station + ' ' + channel)
     traces = []
     al_traces = []
+    al_picks = []
     if isinstance(short_streams, Stream):
         short_streams = [short_streams]
     st_list = deepcopy(short_streams)
+    print(short_cat)
     for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
@@ -662,6 +664,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                 warnings.warn(msg)
             else:
                 al_traces.append(tr_cut)
+                al_picks.append(_pick)
         else:
             tr.trim(_pick.time - pre_pick,
                     _pick.time + clip - pre_pick,
@@ -677,18 +680,20 @@ def multi_event_singlechan(streams, catalog, station, channel,
     if realign:
         shift_len = int(0.25 * (cut[1] - cut[0]) *
                         al_traces[0].stats.sampling_rate)
-        shifts = align_traces(al_traces, shift_len)
-        for i in xrange(len(shifts)):
+        shifts = stacking.align_traces(al_traces, shift_len)[0]
+        for i in range(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
             _pick.time -= shifts[i]
-            traces[i].trim(_pick.time - pre_pick,
-                           _pick.time + clip - pre_pick,
-                           nearest_sample=False)
+            traces[i].trim(al_picks[i].time - pre_pick,
+                           al_picks[i].time + clip - pre_pick,
+                           nearest_sample=True)
     # We now have a list of traces
     if PWS:
         stack = 'PWS'
     else:
         stack = 'linstack'
+    for tr in traces:
+        print(tr)
     fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
     if title:
         fig.suptitle(title)

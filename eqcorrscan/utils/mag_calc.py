@@ -33,6 +33,7 @@ from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
 from obspy import UTCDateTime, read
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
+from obspy.geodetics import degrees2kilometers
 
 from eqcorrscan.utils import sfile_util
 
@@ -656,13 +657,13 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                               tr.stats.channel + ' at time: ' +
                               str(tr.stats.starttime))
                 continue
-            noise = tr.copy()  # Copy the data to use for noise calculation
+            noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
             pick_id = event.picks[sta_picks[0]].resource_id
             arrival = [arrival for arrival in event.origins[0].arrivals
                        if arrival.pick_id == pick_id][0]
-            hypo_dist = arrival.distance
+            hypo_dist = degrees2kilometers(arrival.distance)
             if var_wintype and hypo_dist:
                 if 'S' in [picktypes[i] for i in sta_picks] and\
                    'P' in [picktypes[i] for i in sta_picks]:
@@ -753,7 +754,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 print('No amplitude picked for tr %s' % str(tr))
                 continue
             # Calculate the normalized noise amplitude
-            noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
+            noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             if amplitude == 0.0:
                 continue
             if amplitude / noise_amplitude < min_snr:
