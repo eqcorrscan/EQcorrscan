@@ -4026,7 +4026,7 @@ def match_filter(template_names, template_list, st, threshold,
 def _spike_test(stream, percent=0.99, multipler=1e6):
     """
     Check for very large spikes in data and raise an error if found.
-    
+
     :param stream: Stream to look for spikes in.
     :type stream: :class:`obspy.core.stream.Stream`
     :param percent: Percentage as a decimal to calcualte range for.
@@ -4039,11 +4039,12 @@ def _spike_test(stream, percent=0.99, multipler=1e6):
             np.sort(np.abs(
                 tr))[0:int(percent * len(tr.data))]) * multipler).sum() > 0:
             msg = ('Spikes above ' + str(multiplier) +
-                   ' of the range of ' + str(percent) + 
+                   ' of the range of ' + str(percent) +
                    ' of the data present, check. \n ' +
                    'This would otherwise likely result in an issue during ' +
                    'FFT prior to cross-correlation.\n' +
-                   'If you think this spike is real please report this as a bug.')
+                   'If you think this spike is real please report ' +
+                   'this as a bug.')
             raise MatchFilterError(msg)
 
 
