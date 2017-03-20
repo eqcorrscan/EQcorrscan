@@ -133,7 +133,7 @@ class TestCoreMethods(unittest.TestCase):
         """Send it the wrong type."""
         ccc = normxcorr2(template=[0, 1, 2, 3, 4], image='bob')
         self.assertEqual(ccc, 'NaN')
-        
+    
     def test_spike_test(self):
         """Check that an error is raised!"""
         stream = read()
