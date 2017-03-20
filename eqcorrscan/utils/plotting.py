@@ -867,9 +867,9 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     # Only take traces that match in both accounting for streams shorter than
     # templates
     template_stachans = [(tr.stats.station, tr.stats.channel)
-                          for tr in template]
+                         for tr in template]
     stream_stachans = [(tr.stats.station, tr.stats.channel)
-                        for tr in stream]
+                       for tr in stream]
     temp = Stream([tr for tr in template
                    if (tr.stats.station,
                        tr.stats.channel) in stream_stachans])
