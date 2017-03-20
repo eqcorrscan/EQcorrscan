@@ -43,6 +43,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from six import string_types
 from obspy import UTCDateTime
+from obspy.geodetics import degrees2kilometers, kilometer2degrees
 import numpy as np
 import warnings
 
@@ -448,7 +449,7 @@ def readpicks(sfile):
         azimuthres = _int_conv(line[60:63])
         timeres = _float_conv(line[63:68])
         finalweight = _int_conv(line[68:70])
-        distance = _float_conv(line[70:75])
+        distance = kilometer2degrees(_float_conv(line[70:75]))
         CAZ = _int_conv(line[76:79])
         # Create a new obspy.event.Pick class for this pick
         _waveform_id = WaveformStreamID(station_code=station,
@@ -1054,7 +1055,7 @@ def nordpick(event):
                 timeres = ' '
             # Extract distance
             if arrival.distance:
-                distance = arrival.distance
+                distance = degrees2kilometers(arrival.distance)
                 if distance >= 100.0:
                     distance = str(_int_conv(distance))
                 elif 10.0 < distance < 100.0:
