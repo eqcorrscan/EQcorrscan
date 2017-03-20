@@ -799,7 +799,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param stream: Stream of data to be plotted as the background.
     :type template: obspy.core.stream.Stream
     :param template: Template to be plotted on top of the base stream.
-    :type times: list of detection times
+    :type times: list
+    :param times: list of detection times, one for each event
     :type streamcolour: str
     :param streamcolour: String of matplotlib colour types for the stream
     :type templatecolour: str
@@ -816,36 +817,78 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     :returns: :class:`matplotlib.figure.Figure`
 
+    .. rubric:: Example
 
-    .. image:: ../../plots/detection_multiplot.png
+    >>> from obspy import read
+    >>> import os
+    >>> from eqcorrscan.core import template_gen
+    >>> from eqcorrscan.utils.plotting import detection_multiplot
+    >>> from eqcorrscan.utils.sfile_util import readpicks
+    >>>
+    >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
+    ...                          'TEST_', '01-0411-15L.S201309')
+    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
+    ...                              'TEST_',
+    ...                              '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = readpicks(test_file)
+    >>> st = read(test_wavefile)
+    >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
+    >>> for tr in st:
+    ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+    >>> template = template_gen.template_gen(event.picks, st, 2)
+    >>> times = [min([pk.time -0.05 for pk in event.picks])]
+    >>> detection_multiplot(stream=st, template=template,
+    ...                     times=times) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy import read
+        import os
+        from eqcorrscan.core import template_gen
+        from eqcorrscan.utils.plotting import detection_multiplot
+        from eqcorrscan.utils.sfile_util import readpicks
+        test_file = os.path.realpath('../../..') + \
+            '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
+        test_wavefile = os.path.realpath('../../..') +\
+            '/tests/test_data/WAV/TEST_/' +\
+            '2013-09-01-0410-35.DFDPC_024_00'
+        event = readpicks(test_file)
+        st = read(test_wavefile)
+        st.filter('bandpass', freqmin=2.0, freqmax=15.0)
+        for tr in st:
+            tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+        template = template_gen.template_gen(event.picks, st, 2)
+        times = [min([pk.time -0.05 for pk in event.picks])]
+        detection_multiplot(stream=st, template=template,
+                            times=times)
 
     """
     _check_save_args(save, savefile)
     # Only take traces that match in both accounting for streams shorter than
     # templates
     template_stachans = [(tr.stats.station, tr.stats.channel)
-                         for tr in template]
+                          for tr in template]
     stream_stachans = [(tr.stats.station, tr.stats.channel)
-                       for tr in stream]
-    template = Stream([tr for tr in template
-                       if (tr.stats.station,
-                           tr.stats.channel) in stream_stachans])
-    stream = Stream([tr for tr in stream
-                     if (tr.stats.station,
-                         tr.stats.channel) in template_stachans])
-    ntraces = min(len(template), len(stream))
+                        for tr in stream]
+    temp = Stream([tr for tr in template
+                   if (tr.stats.station,
+                       tr.stats.channel) in stream_stachans])
+    st = Stream([tr for tr in stream
+                 if (tr.stats.station,
+                     tr.stats.channel) in template_stachans])
+    ntraces = len(temp)
     fig, axes = plt.subplots(ntraces, 1, sharex=True, figsize=size)
-    if len(template) > 1:
+    if len(temp) > 1:
         axes = axes.ravel()
-    mintime = min([tr.stats.starttime for tr in template])
-    template.sort(keys=['starttime'])
-    for i, template_tr in enumerate(template):
-        if len(template) > 1:
+    mintime = min([tr.stats.starttime for tr in temp])
+    temp.sort(keys=['starttime'])
+    for i, template_tr in enumerate(temp):
+        if len(temp) > 1:
             axis = axes[i]
         else:
             axis = axes
-        image = stream.select(station=template_tr.stats.station,
-                              channel='*' + template_tr.stats.channel[-1])
+        image = st.select(station=template_tr.stats.station,
+                          channel='*' + template_tr.stats.channel[-1])
         if not image:
             msg = ' '.join(['No data for', template_tr.stats.station,
                             template_tr.stats.channel])
