@@ -4048,48 +4048,6 @@ def _spike_test(stream, percent=0.99, multipler=1e6):
             raise MatchFilterError(msg)
 
 
-def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
-                       plot_format, i):
-    """
-    Plotting function to match_filter.
-
-    :param stream:
-    :param cccsum:
-    :param template_names:
-    :param rawthresh:
-    :param plotdir:
-    :param plot_format:
-    :param i:
-    :param debug:
-    :return:
-    """
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    from eqcorrscan.utils import plotting
-    stream_plot = copy.deepcopy(stream[0])
-    # Downsample for plotting
-    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
-    cccsum_plot = Trace(cccsum)
-    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
-    # Resample here to maintain shape better
-    cccsum_hist = cccsum_plot.copy()
-    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
-                                           sampling_rate / 10)).data
-    cccsum_plot = plotting.chunk_data(cccsum_plot, 10, 'Maxabs').data
-    # Enforce same length
-    stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
-    cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
-    cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
-                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
-                 '.' + plot_format)
-    plotting.triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
-                         trace=stream_plot, threshold=rawthresh, save=True,
-                         savefile=plot_name)
-
-
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
