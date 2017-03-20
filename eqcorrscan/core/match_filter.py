@@ -4023,7 +4023,7 @@ def match_filter(template_names, template_list, st, threshold,
         return detections, det_cat, detection_streams
 
 
-def _spike_test(stream, percent=0.99, multipler=1e6):
+def _spike_test(stream, percent=0.99, multiplier=1e6):
     """
     Check for very large spikes in data and raise an error if found.
 
@@ -4037,7 +4037,7 @@ def _spike_test(stream, percent=0.99, multipler=1e6):
     for tr in stream:
         if (tr.data > 2 * np.max(
             np.sort(np.abs(
-                tr))[0:int(percent * len(tr.data))]) * multipler).sum() > 0:
+                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
             msg = ('Spikes above ' + str(multiplier) +
                    ' of the range of ' + str(percent) +
                    ' of the data present, check. \n ' +
