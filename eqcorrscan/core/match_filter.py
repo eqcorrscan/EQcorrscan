@@ -41,6 +41,7 @@ from collections import Counter
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
+from scipy.fftpack import next_fast_len
 
 from eqcorrscan.utils.timer import Timer
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
@@ -3357,6 +3358,127 @@ def normxcorr2(template, image):
     return ccc
 
 
+def multi_normxcorr(templates, stream):
+    """
+    Compute the normalized cross-correlation of multiple templates with data.
+    :param templates: np.ndarray
+    :param stream: np.ndarray
+    :return: np.ndarray
+    """
+    # TODO:: Try other fft methods: pyfftw?
+    import bottleneck
+    from scipy.signal.signaltools import _centered
+    from scipy.fftpack.helper import next_fast_len
+
+    stream = stream.astype(np.float32)
+    # templates = templates.astype(np.float32)
+    template_length = templates.shape[1]
+    stream_length = len(stream)
+    fftshape = next_fast_len(template_length + stream_length - 1)
+    # Set up normalizers
+    stream_mean_array = bottleneck.move_mean(
+        stream, template_length)[template_length - 1:]
+    stream_std_array = bottleneck.move_std(
+        stream, template_length)[template_length - 1:]
+    # Normalize and flip the templates
+    norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
+        templates.std(axis=-1, keepdims=True) * template_length))
+    norm_sum = norm.sum(axis=-1, keepdims=True)
+    stream_fft = np.fft.rfft(stream, fftshape)
+    template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
+    res = np.fft.irfft(template_fft * stream_fft,
+                       fftshape)[:, 0:template_length + stream_length -1]
+    res = ((_centered(res, stream_length - template_length + 1)) -
+           norm_sum * stream_mean_array) / stream_std_array
+    return res
+
+
+def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
+    """
+    Cross-correlate multiple channels either in parallel or not
+
+    :type templates: list
+    :param templates:
+        A list of templates, where each one should be an obspy.Stream object
+        containing multiple traces of seismic data and the relevant header
+        information.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+        A single Stream object to be correlated with the templates.  This is
+        in effect the image in normxcorr2 and cv2.
+    :type dask: bool
+    :param dask:
+        Whether to use dask for multiprocessing or not, if False, will use
+        python native multiprocessing.
+    :type compute: bool
+    :param compute:
+        Only valid if dask==True, if compute==False, returned result with be
+        a dask.delayed object, useful if you are using dask to compute multiple
+        time-steps at the same time.
+    :type cores: int
+    :param cores:
+        Number of processed to use, if set to None, and dask==False, no
+        multiprocessing will be done.
+    :type cores: int
+    :param cores: Number of cores to loop over
+
+    :returns:
+        New list of :class:`numpy.ndarray` objects.  These will contain
+        the correlation sums for each template for this day of data.
+    :rtype: list
+    :returns:
+        list of ints as number of channels used for each cross-correlation.
+    :rtype: list
+    :returns:
+        list of list of tuples of station, channel for all cross-correlations.
+    :rtype: list
+
+    .. Note::
+        Each template must contain the same channels as every other template,
+        the stream must also contain the same channels (note that if there
+        are duplicate channels in the template you do not need duplicate
+        channels in the stream).
+    """
+    # Do some reshaping
+    stream.sort()
+    for template in templates:
+        template.sort()
+    seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
+    template_array = {}
+    for i, seed_id in enumerate(seed_ids):
+        t_ar = np.array([template[i].data for template in templates])
+        template_array.update({seed_id: t_ar})
+    if use_dask:
+        import dask
+        xcorrs = []
+        for seed_id in seed_ids:
+            tr_xcorrs = dask.delayed(multi_normxcorr)(
+                templates=template_array[seed_id],
+                stream=stream.select(id=seed_id.split('_')[0])[0].data)
+            xcorrs.append(tr_xcorrs)
+        cccsums = dask.delayed(np.sum)(xcorrs, axis=0)
+        if compute:
+            cccsums.compute()
+    elif cores is None:
+        cccsums = np.zeros([len(templates), ])
+        for seed_id in seed_ids:
+            tr_xcorrs = multi_normxcorr(
+                templates=template_array[seed_id],
+                stream=stream.select(id=seed_id.split('_')[0])[0].data)
+            cccsums = np.sum(cccsums, tr_xcorrs)
+    else:
+        pool = Pool(processes=cores)
+        results = [pool.apply_async(
+            multi_normxcorr)(template_array[seed_id],
+                             stream.select(id=seed_id.split('_')[0])[0].data)
+                   for seed_id in seed_ids]
+        pool.close()
+        xcorrs = [p.get() for p in results]
+        pool.join()
+        cccsums = np.sum(xcorrs, axis=0)
+    return cccsums
+
+
 def _template_loop(template, chan, stream_ind, debug=0, i=0):
     """
     Handle individual template correlations.
@@ -3418,7 +3540,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
     return i, ccc
 
 
-def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
+def _channel_loop(templates, stream, cores=1, debug=0):
     """
     Internal loop for parallel processing.
 
@@ -3439,10 +3561,6 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     :param cores: Number of cores to loop over
     :type debug: int
     :param debug: Debug level.
-    :type internal: bool
-    :param internal:
-        Whether to use the internal Python code (True) or the experimental
-        compilled code.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -3461,8 +3579,6 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
-    if not internal:
-        print('Not yet coded')
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
