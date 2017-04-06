@@ -3393,7 +3393,7 @@ def multi_normxcorr(templates, stream):
     return res
 
 
-def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
+def multichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
     """
     Cross-correlate multiple channels either in parallel or not
 
@@ -3460,12 +3460,13 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
         if compute:
             cccsums.compute()
     elif cores is None:
-        cccsums = np.zeros([len(templates), ])
+        cccsums = np.zeros([len(templates),
+                            len(stream[0]) - len(templates[0][0]) + 1])
         for seed_id in seed_ids:
             tr_xcorrs = multi_normxcorr(
                 templates=template_array[seed_id],
                 stream=stream.select(id=seed_id.split('_')[0])[0].data)
-            cccsums = np.sum(cccsums, tr_xcorrs)
+            cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
     else:
         pool = Pool(processes=cores)
         results = [pool.apply_async(
