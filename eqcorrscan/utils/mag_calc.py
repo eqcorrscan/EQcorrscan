@@ -36,6 +36,8 @@ from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
 from eqcorrscan.utils import sfile_util
+from eqcorrscan.core.match_filter import MatchFilterError
+from eqcorrscan.utils.catalog_utils import _get_origin
 
 
 def dist_calc(loc1, loc2):
@@ -588,8 +590,11 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     channels = []  # List of channels
     picktimes = []  # List of pick times
     picktypes = []  # List of pick types
-    distances = []  # List of hypocentral distances
     picks_out = []
+    try:
+        depth = _get_origin(event).depth
+    except MatchFilterError:
+        depth = 0
     if remove_old and event.amplitudes:
         for amp in event.amplitudes:
             # Find the pick and remove it too
@@ -604,9 +609,8 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             channels.append(pick.waveform_id.channel_code)
             picktimes.append(pick.time)
             picktypes.append(pick.phase_hint)
-            arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick.resource_id][0]
-            distances.append(arrival.distance)
+    if len(picktypes) == 0:
+        warnings.warn('No P or S picks found')
     st.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
@@ -637,9 +641,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     print(tr)
                     continue
             # Find the response information
-            resp_info = _find_resp(tr.stats.station, tr.stats.channel,
-                                   tr.stats.network, tr.stats.starttime,
-                                   tr.stats.delta, respdir)
+            resp_info = _find_resp(
+                tr.stats.station, tr.stats.channel, tr.stats.network,
+                tr.stats.starttime, tr.stats.delta, respdir)
             PAZ = []
             seedresp = []
             if resp_info and 'gain' in resp_info:
@@ -657,51 +661,52 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                               tr.stats.channel + ' at time: ' +
                               str(tr.stats.starttime))
                 continue
-            noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
             pick_id = event.picks[sta_picks[0]].resource_id
             arrival = [arrival for arrival in event.origins[0].arrivals
                        if arrival.pick_id == pick_id][0]
-            hypo_dist = degrees2kilometers(arrival.distance)
+            hypo_dist = np.sqrt(
+                np.square(degrees2kilometers(arrival.distance)) +
+                np.square(depth / 1000))
             if var_wintype and hypo_dist:
                 if 'S' in [picktypes[i] for i in sta_picks] and\
                    'P' in [picktypes[i] for i in sta_picks]:
                     # If there is an S-pick we can use this :D
-                    S_pick = [picktimes[i] for i in sta_picks
+                    s_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_pick = [picktimes[i] for i in sta_picks
+                    s_pick = min(s_pick)
+                    p_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
+                    p_pick = min(p_pick)
                     try:
-                        tr.trim(starttime=S_pick - pre_pick,
-                                endtime=S_pick + (S_pick - P_pick) * winlen)
+                        tr.trim(starttime=s_pick - pre_pick,
+                                endtime=s_pick + (s_pick - p_pick) * winlen)
                     except ValueError:
                         continue
                 elif 'S' in [picktypes[i] for i in sta_picks]:
-                    S_pick = [picktimes[i] for i in sta_picks
+                    s_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_modelled = S_pick - (hypo_dist * ps_multiplier)
+                    s_pick = min(s_pick)
+                    p_modelled = s_pick - (hypo_dist * ps_multiplier)
                     try:
-                        tr.trim(starttime=S_pick - pre_pick,
-                                endtime=S_pick + (S_pick - P_modelled) *
+                        tr.trim(starttime=s_pick - pre_pick,
+                                endtime=s_pick + (s_pick - p_modelled) *
                                 winlen)
                     except ValueError:
                         continue
                 else:
                     # In this case we only have a P pick
-                    P_pick = [picktimes[i] for i in sta_picks
+                    p_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    S_modelled = P_pick + (hypo_dist * ps_multiplier)
-                    print('P_pick=%s' % str(P_pick))
+                    p_pick = min(p_pick)
+                    s_modelled = p_pick + (hypo_dist * ps_multiplier)
+                    print('P_pick=%s' % str(p_pick))
                     print('hypo_dist: %s' % str(hypo_dist))
-                    print('S modelled=%s' % str(S_modelled))
+                    print('S modelled=%s' % str(s_modelled))
                     try:
-                        tr.trim(starttime=S_modelled - pre_pick,
-                                endtime=S_modelled + (S_modelled - P_pick) *
+                        tr.trim(starttime=s_modelled - pre_pick,
+                                endtime=s_modelled + (s_modelled - p_pick) *
                                 winlen)
                         print(tr)
                     except ValueError:
@@ -714,12 +719,12 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
 
                 # Take the minimum S-pick time if more than one S-pick is
                 # available
-                S_pick = [picktimes[i] for i in sta_picks
+                s_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'S']
-                S_pick = min(S_pick)
+                s_pick = min(s_pick)
                 try:
-                    tr.trim(starttime=S_pick - pre_pick,
-                            endtime=S_pick + winlen)
+                    tr.trim(starttime=s_pick - pre_pick,
+                            endtime=s_pick + winlen)
                 except ValueError:
                     continue
             else:
@@ -727,25 +732,18 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # fixed we need to calculate an expected S_pick based on the
                 # hypocentral distance, this will be quite hand-wavey as we
                 # are not using any kind of velocity model.
-                P_pick = [picktimes[i] for i in sta_picks
+                p_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'P']
                 print(picktimes)
-                P_pick = min(P_pick)
-                hypo_dist = [distances[i] for i in sta_picks
-                             if picktypes[i] == 'P'][0]
-                S_modelled = P_pick + hypo_dist * ps_multiplier
+                p_pick = min(p_pick)
+                s_modelled = p_pick + hypo_dist * ps_multiplier
                 try:
-                    tr.trim(starttime=S_modelled - pre_pick,
-                            endtime=S_modelled + winlen)
+                    tr.trim(starttime=s_modelled - pre_pick,
+                            endtime=s_modelled + winlen)
                 except ValueError:
                     continue
             if len(tr.data) <= 10:
-                # Should remove the P and S picks if len(tr.data)==0
                 warnings.warn('No data found for: ' + tr.stats.station)
-                # print 'No data in miniseed file for '+tr.stats.station+\
-                # ' removing picks'
-                # picks_out=[picks_out[i] for i in range(len(picks_out))\
-                # if i not in sta_picks]
                 continue
             # Get the amplitude
             try:
@@ -776,22 +774,15 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # Generate poles and zeros for the filter we used earlier: this
                 # is how the filter is designed in the convenience methods of
                 # filtering in obspy.
-                z, p, k = iirfilter(corners, [lowcut / (0.5 *
-                                                        tr.stats.
-                                                        sampling_rate),
-                                              highcut / (0.5 *
-                                                         tr.stats.
-                                                         sampling_rate)],
-                                    btype='band', ftype='butter', output='zpk')
-                filt_paz = {'poles': list(p),
-                            'zeros': list(z),
-                            'gain': k,
+                z, p, k = iirfilter(
+                    corners, [lowcut / (0.5 * tr.stats.sampling_rate),
+                              highcut / (0.5 * tr.stats.sampling_rate)],
+                    btype='band', ftype='butter', output='zpk')
+                filt_paz = {'poles': list(p), 'zeros': list(z), 'gain': k,
                             'sensitivity': 1.0}
-                amplitude /= (paz_2_amplitude_value_of_freq_resp(filt_paz,
-                                                                 1 / period) *
-                              filt_paz['sensitivity'])
+                amplitude /= (paz_2_amplitude_value_of_freq_resp(
+                    filt_paz, 1 / period) * filt_paz['sensitivity'])
             if PAZ:
-                # amplitude *=PAZ['gain']
                 amplitude /= 1000
             if seedresp:  # Seedresp method returns mm
                 amplitude *= 1000000
