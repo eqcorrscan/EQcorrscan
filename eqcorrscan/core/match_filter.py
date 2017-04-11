@@ -3865,19 +3865,18 @@ def match_filter(template_names, template_list, st, threshold,
                    % (key[0], key[1], key[2], key[3]))
             raise MatchFilterError(msg)
     # Pad out templates to have all channels
+    _templates = []
+    used_template_names = []
     for template, template_name in zip(templates, _template_names):
         if len(template) == 0:
             msg = ('No channels matching in continuous data for ' +
                    'template' + template_name)
             warnings.warn(msg)
-            templates.remove(template)
-            _template_names.remove(template_name)
             continue
         for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(network=stachan[0],
-                                                     station=stachan[1],
-                                                     location=stachan[2],
-                                                     channel=stachan[3]))
+            number_of_channels = len(template.select(
+                network=stachan[0], station=stachan[1], location=stachan[2],
+                channel=stachan[3]))
             if number_of_channels < template_stachan[stachan]:
                 missed_channels = template_stachan[stachan] -\
                                   number_of_channels
@@ -3892,10 +3891,14 @@ def match_filter(template_names, template_list, st, threshold,
                 for dummy in range(missed_channels):
                     template += nulltrace
         template.sort()
+        _templates.append(template)
+        used_template_names.append(template_name)
         # Quick check that this has all worked
         if len(template) != max([len(t) for t in templates]):
             raise MatchFilterError('Internal error forcing same template '
                                    'lengths, report this error.')
+    templates = _templates
+    _template_names = used_template_names
     if debug >= 2:
         print('Starting the correlation run for this day')
     if debug >= 3:
