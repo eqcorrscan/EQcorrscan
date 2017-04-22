@@ -2135,7 +2135,7 @@ class Tribe(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, ignore_length=False,
-               group_size=None, debug=0):
+               group_size=None, do_template_check=False, debug=0):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2243,20 +2243,21 @@ class Tribe(object):
         """
         party = Party()
         template_groups = [[]]
-        if debug > 0:
-            print('Breaking tribe into groups')
-        for master in self.templates:
-            for group in template_groups:
-                if master in group:
-                    break
-            else:
-                new_group = [master]
-                for slave in self.templates:
-                    if master.same_processing(slave):
-                        new_group.append(slave)
-                template_groups.append(new_group)
-        # template_groups will contain an empty first list
-        template_groups = template_groups[1:]
+        if do_template_check:
+            for master in self.templates:
+                for group in template_groups:
+                    if master in group:
+                        break
+                else:
+                    new_group = [master]
+                    for slave in self.templates:
+                        if master.same_processing(slave) and master != slave:
+                            new_group.append(slave)
+                    template_groups.append(new_group)
+            # template_groups will contain an empty first list
+            template_groups = template_groups[1:]
+        else:
+            template_groups = [[self.templates]]
         if debug > 0:
             print('We have %d groups. Feeding to _group_detect now'
                   % len(template_groups))
