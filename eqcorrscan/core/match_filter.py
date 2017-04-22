@@ -3479,9 +3479,9 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     temp_len = len(templates[0][0].data)
     cccs_matrix = np.zeros([2, len(templates),
                             len(stream[0].data) - temp_len + 1])
-    # cccs_matrix = np.array(
-    #     [np.array([np.array([0.0] * (len(stream[0].data) - temp_len + 1))] *
-    #               len(templates))] * 2, dtype=np.float32)
+    if debug >= 3:
+        print('cccs_matrix is using: ' +
+              str(cccs_matrix.nbytes / 1000000) + 'MB')
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
