@@ -2243,6 +2243,8 @@ class Tribe(object):
         """
         party = Party()
         template_groups = [[]]
+        if debug > 0:
+            print('Breaking tribe into groups')
         for master in self.templates:
             for group in template_groups:
                 if master in group:
@@ -2255,9 +2257,9 @@ class Tribe(object):
                 template_groups.append(new_group)
         # template_groups will contain an empty first list
         template_groups = template_groups[1:]
-        # for group in template_groups:
-        #     if len(group) == 0:
-        #         template_groups.remove(group)
+        if debug > 0:
+            print('We have %d groups. Feeding to _group_detect now'
+                  % len(template_groups))
         # now we can compute the detections for each group
         for group in template_groups:
             group_party = _group_detect(
@@ -4040,7 +4042,8 @@ def _spike_test(stream, percent=0.99, multiplier=1e6):
     :type multiple: float
     """
     for tr in stream:
-        print('Checking stachan: %s.%s' % (tr.stats.station, tr.stats.channel))
+        print('Checking stachan %s.%s for spikes'
+              % (tr.stats.station, tr.stats.channel))
         if (tr.data > 2 * np.max(
             np.sort(np.abs(
                 tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
