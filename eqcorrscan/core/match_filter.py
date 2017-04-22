@@ -2244,6 +2244,7 @@ class Tribe(object):
         party = Party()
         template_groups = [[]]
         if do_template_check:
+            # Separate temps into groups if they are processed in diff ways
             for master in self.templates:
                 for group in template_groups:
                     if master in group:
@@ -2257,7 +2258,7 @@ class Tribe(object):
             # template_groups will contain an empty first list
             template_groups = template_groups[1:]
         else:
-            template_groups = [[self.templates]]
+            template_groups = [self.templates]
         if debug > 0:
             print('We have %d groups. Feeding to _group_detect now'
                   % len(template_groups))
