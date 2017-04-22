@@ -2254,9 +2254,10 @@ class Tribe(object):
                         new_group.append(slave)
                 template_groups.append(new_group)
         # template_groups will contain an empty first list
-        for group in template_groups:
-            if len(group) == 0:
-                template_groups.remove(group)
+        template_groups = template_groups[1:]
+        # for group in template_groups:
+        #     if len(group) == 0:
+        #         template_groups.remove(group)
         # now we can compute the detections for each group
         for group in template_groups:
             group_party = _group_detect(
