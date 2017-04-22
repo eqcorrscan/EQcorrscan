@@ -2250,7 +2250,7 @@ class Tribe(object):
             else:
                 new_group = [master]
                 for slave in self.templates:
-                    if master.same_processing(slave) and master != slave:
+                    if master.same_processing(slave):
                         new_group.append(slave)
                 template_groups.append(new_group)
         # template_groups will contain an empty first list
