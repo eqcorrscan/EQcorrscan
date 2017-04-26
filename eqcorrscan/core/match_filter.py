@@ -3570,6 +3570,74 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     return cccsums, no_chans, chans
 
 
+def reverse_template_gen(templates, streams, n_false, save=False, cores=1,
+                         debug=0):
+    """
+    generate reversed template threshold as found in Slinkard, et. al (2014)
+    loops over the streams in streams and returns a threshold corresponding
+    to a false alarm rate = FAR for the given set of streams.  For example,
+    to achieve a false alarm rate of 1 false detection every 10 days, FAR=1
+    and streams is a list of 10 daylong streams
+
+    returns: LIST of thresholds one for each template, list of max reverse ccs,
+    list of mean reverse ccs.
+    :type templates: list
+    :param templates:
+        list of templates of which each template is a stream of obspy traces
+    :type streams: list
+    :param streams:
+        a list of daylong obspy streams for correlation.  The length of the
+        list should be the number of days to take n_false number of false
+        detections over.
+    :type n_false: int
+    :param n_false:
+        number of false detections allowable for the duration of streams.
+    :type save: bool
+    :param save: save the cccsums from reverse correlation
+    :type cores: int
+    :param cores: number of cores to use
+    :type debug: int
+    :param debug: debugger output level, higher number equals more output
+    """
+
+    import heapq
+    reversed_templates = copy.deepcopy(templates)
+    for reversed_template in reversed_templates:
+        for tr in reversed_template:
+            tr.data = tr.data[::-1]
+    if debug > 0:
+        print('I have ' + str(len(reversed_templates)) + ' templates')
+    for i, st in enumerate(streams):
+        reversed_cccsums, reversed_nochans, reversed_chans = _channel_loop(
+            reversed_templates, st, cores=cores, debug=debug)
+        if i == 0:
+            rev_cccsum = reversed_cccsums
+            if debug > 0:
+                print('no chans is ' + str(reversed_nochans))
+        else:
+            rev_cccsum = np.concatenate((rev_cccsum, reversed_cccsums), axis=1)
+    if save:
+        headerstr = 'templates: '
+        for template in templates:
+            headerstr = headerstr + template[0].stats.starttime.strftime(
+                '%Y%m%dT%H%M%S;')
+        np.savetxt('cccsums_reversed_template.txt', rev_cccsum,
+                   fmt='%10.5f', delimiter=',', newline='\n', header=headerstr)
+    thresholds = []
+    maxccs = []
+    meanccs = []
+    for rsum in rev_cccsum:
+        if debug > 0:
+            print('max is ' + str(max(abs(rsum))))
+            print('mean is ' + str(np.mean(abs(rsum))))
+        threshold = heapq.nlargest(n_false, abs(rsum))
+        threshold = min(threshold)
+        thresholds.append(threshold)
+        maxccs.append(max(abs(rsum)))
+        meanccs.append(np.mean(abs(rsum)))
+    return thresholds, maxccs, meanccs
+
+
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  debug=0, plot_format='png', output_cat=False,
@@ -3746,8 +3814,10 @@ def match_filter(template_names, template_list, st, threshold,
             msg = 'st must be of type: obspy.core.stream.Stream'
             raise MatchFilterError(msg)
         if str(threshold_type) not in [str('MAD'), str('absolute'),
-                                       str('av_chan_corr')]:
-            msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
+                                       str('av_chan_corr'),
+                                       str('reverse_temp')]:
+            msg = ('threshold_type must be one of: MAD, absolute, '
+                   'av_chan_corr, reverse_temp')
             raise MatchFilterError(msg)
         for tr in st:
             if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
@@ -3930,6 +4000,8 @@ def match_filter(template_names, template_list, st, threshold,
             rawthresh = threshold
         elif str(threshold_type) == str('av_chan_corr'):
             rawthresh = threshold * no_chans[i]
+        elif str(threshold_type) == str('reverse_temp'):
+            rawthresh = threshold[i]
         # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
         print(' '.join(['Threshold is set at:', str(rawthresh)]))
         print(' '.join(['Max of data is:', str(max(cccsum))]))
