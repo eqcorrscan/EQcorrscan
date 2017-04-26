@@ -43,6 +43,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from six import string_types
 from obspy import UTCDateTime
+from obspy.geodetics import degrees2kilometers, kilometer2degrees
 import numpy as np
 import warnings
 
@@ -231,11 +232,11 @@ def readheader(sfile):
         new_event.origins[0].latitude = _float_conv(topline[23:30])
         new_event.origins[0].longitude = _float_conv(topline[31:38])
         new_event.origins[0].depth = _float_conv(topline[39:43]) * 1000
-    else:
-        # The origin 'requires' a lat & long
-        new_event.origins[0].latitude = float('NaN')
-        new_event.origins[0].longitude = float('NaN')
-        new_event.origins[0].depth = float('NaN')
+    # else:
+    #     # The origin 'requires' a lat & long
+    #     new_event.origins[0].latitude = float('NaN')
+    #     new_event.origins[0].longitude = float('NaN')
+    #     new_event.origins[0].depth = float('NaN')
     # new_event.depth_ind = topline[44]
     # new_event.loc_ind = topline[45]
     new_event.creation_info = CreationInfo(agency_id=topline[45:48].
@@ -419,14 +420,20 @@ def readpicks(sfile):
             polarity = 'negative'
         else:
             polarity = "undecidable"
+        if int(line[18:20]) == 24:
+            pickhr = 0
+            pickday = evtime + 86400
+        else:
+            pickhr = int(line[18:20])
+            pickday = evtime
         try:
-            time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]),
+            time = UTCDateTime(pickday.year, pickday.month, pickday.day,
+                               pickhr, int(line[20:22]),
                                int(line[23:28].split('.')[0]),
                                int(line[23:28].split('.')[1]) * 10000)
-        except (ValueError):
+        except ValueError:
             time = UTCDateTime(evtime.year, evtime.month, evtime.day,
-                               int(line[18:20]), int(line[20:22]), 0, 0)
+                               pickhr, int(line[20:22]), 0, 0)
             time += 60  # Add 60 seconds on to the time, this copes with s-file
             # preference to write seconds in 1-60 rather than 0-59 which
             # datetime objects accept
@@ -442,7 +449,7 @@ def readpicks(sfile):
         azimuthres = _int_conv(line[60:63])
         timeres = _float_conv(line[63:68])
         finalweight = _int_conv(line[68:70])
-        distance = _float_conv(line[70:75])
+        distance = kilometer2degrees(_float_conv(line[70:75]))
         CAZ = _int_conv(line[76:79])
         # Create a new obspy.event.Pick class for this pick
         _waveform_id = WaveformStreamID(station_code=station,
@@ -1048,7 +1055,7 @@ def nordpick(event):
                 timeres = ' '
             # Extract distance
             if arrival.distance:
-                distance = arrival.distance
+                distance = degrees2kilometers(arrival.distance)
                 if distance >= 100.0:
                     distance = str(_int_conv(distance))
                 elif 10.0 < distance < 100.0:

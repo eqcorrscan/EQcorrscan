@@ -91,3 +91,14 @@ in the clustering_ module.
 .. _Harris: https://e-reports-ext.llnl.gov/pdf/335299.pdf
 .. _clustering: submodules/utils.clustering.html
 
+API-docs
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   submodules/core.bright_lights
+   submodules/core.lag_calc
+   submodules/core.match_filter
+   submodules/core.subspace
+   submodules/core.template_gen

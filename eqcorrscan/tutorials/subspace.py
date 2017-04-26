@@ -9,6 +9,14 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 
 """
 
+from obspy.clients.fdsn import Client
+from obspy import UTCDateTime
+
+from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.clustering import space_cluster
+from eqcorrscan.core import subspace
+
 
 def run_tutorial(plot=False, multiplex=True, return_streams=False):
     """
@@ -21,16 +29,6 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # around this.  It is not strictly part of EQcorrscan, so we haven't
     # included it here, but you can find it in the tutorials directory of the
     # github repository
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-    else:
-        from obspy.fdsn import Client
-    from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
-    from obspy import UTCDateTime
-    from eqcorrscan.utils.catalog_utils import filter_picks
-    from eqcorrscan.utils.clustering import space_cluster
-    from eqcorrscan.core import subspace
 
     cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
                             maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
@@ -77,7 +75,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # We also want the continuous stream to detect in.
     t1 = UTCDateTime(2016, 5, 11, 19)
     t2 = UTCDateTime(2016, 5, 11, 20)
-    # We are going to look in a single hour just to minimize cost, but you can \
+    # We are going to look in a single hour just to minimize cost, but you can
     # run for much longer.
     bulk_info = [('NZ', stachan[0], '*',
                   stachan[1][0] + '?' + stachan[1][-1],
