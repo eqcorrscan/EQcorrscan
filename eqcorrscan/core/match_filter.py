@@ -1349,8 +1349,7 @@ class Template(object):
         self.process_length = process_length
         self.prepick = prepick
         if event is not None:
-            if len(event.comments) > 0 and \
-               "eqcorrscan_template_" + temp_name not in \
+            if "eqcorrscan_template_" + temp_name not in \
                [c.text for c in event.comments]:
                 event.comments.append(Comment(
                         text="eqcorrscan_template_" + temp_name,
