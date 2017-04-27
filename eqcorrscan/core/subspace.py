@@ -17,6 +17,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import scipy
 import warnings
 import time
 import h5py
@@ -32,7 +33,7 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
-from eqcorrscan.utils.plotting import subspace_detector_plot
+from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
 
 
 class Detector(object):
@@ -225,11 +226,11 @@ class Detector(object):
             if channel.shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
                                  % channel.shape[1])
-            self.data[i] = channel[:, 0:dimension]
+            self.data[i] = channel[:, 0:dimension+1]
         self.dimension = dimension
         return self
 
-    def energy_capture(self):
+    def energy_capture(self, stachans='all', size=(10, 7), show=True):
         """
         Calculate the average percentage energy capture for this subspace.
 
@@ -242,7 +243,10 @@ class Detector(object):
         for channel in self.sigma:
             fc = np.sum(channel[0:self.dimension]) / np.sum(channel)
             percent_captrue += fc
-        return 100 * (percent_captrue / len(self.sigma))
+        if show:
+            return subspace_fc_plot(self, stachans, size, show)
+        else:
+            return 100 * (percent_captrue / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
                process=True, extract_detections=False, debug=0):
