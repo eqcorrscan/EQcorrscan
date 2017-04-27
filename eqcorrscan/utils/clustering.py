@@ -802,7 +802,7 @@ def dist_mat_km(catalog):
                       master_ori.longitude,
                       master_ori.depth // 1000)
         for slave in catalog:
-            if master.preferred_origin():
+            if slave.preferred_origin():
                 slave_ori = slave.preferred_origin()
             else:
                 slave_ori = slave.origins[0]
