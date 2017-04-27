@@ -2251,7 +2251,7 @@ def subspace_fc_plot(detector, stachans, size, show):
     for x in range(1, len(stachans)):
         if len(stachans) % x == 0:
             pfs.append(x)
-    ncols = min(pfs, key=lambda x: abs((len(stachans) - x)))
+    ncols = min(pfs, key=lambda x:abs((np.floor(np.sqrt(len(stachans))) - x)))
     nrows = len(stachans) // ncols
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
                              sharex=True, sharey=True, figsize=size)
@@ -2274,10 +2274,12 @@ def subspace_fc_plot(detector, stachans, size, show):
             axis.plot(fcs, color='grey')
         avg = [np.average(dim[1]) for dim in av_fc_dict.items()]
         axis.plot(avg, color='red', linewidth=3.)
-        axis.set_ylabel('Fractional Energy Capture (Fc)')
-        axis.set_xlabel('Subspace Dimension')
-    plt.subplots_adjust(hspace=0.05)
-    plt.subplots_adjust(wspace=0.05)
+        if column % ncols == 0 or column == 0:
+            axis.set_ylabel('Fractional Energy Capture (Fc)')
+        if column + 1 > len(stachans) - ncols:
+            axis.set_xlabel('Subspace Dimension')
+    plt.subplots_adjust(hspace=0.2)
+    plt.subplots_adjust(wspace=0.2)
     if show:
         plt.show()
     return fig
