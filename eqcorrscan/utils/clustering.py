@@ -396,8 +396,9 @@ def svd(stream_list, full=False):
         if not len(chan_mat.shape) > 1:
             warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
             continue
+        # Be sure to transpose chan_mat as waveforms must define columns
         chan_mat = np.asarray(chan_mat)
-        u, s, v = np.linalg.svd(chan_mat, full_matrices=full)
+        u, s, v = np.linalg.svd(chan_mat.T, full_matrices=full)
         svalues.append(s)
         svectors.append(v)
         uvectors.append(u)
