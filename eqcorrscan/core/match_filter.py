@@ -3306,8 +3306,9 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
                 print('No data in stream for pick:')
                 print(pick)
                 continue
-            cut_stream += tr.copy().trim(starttime=pick.time - pad,
-                                         endtime=pick.time - pad + length)
+            cut_stream += tr.slice(
+                starttime=pick.time - pad,
+                endtime=pick.time - pad + length).copy()
         streams.append(cut_stream)
     return streams
 
