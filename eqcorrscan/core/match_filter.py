@@ -2901,8 +2901,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                           % master.process_length)
         kwargs = {'st': stream, 'lowcut': master.lowcut,
                   'highcut': master.highcut, 'filt_order': master.filt_order,
-                  'samp_rate': master.samp_rate,
-                  'starttime': UTCDateTime(stream[0].stats.starttime.date),
+                  'samp_rate': master.samp_rate, 'starttime': None,
                   'debug': debug, 'parallel': parallel_process,
                   'num_cores': False, 'ignore_length': ignore_length}
         st = [dayproc(**kwargs)]
