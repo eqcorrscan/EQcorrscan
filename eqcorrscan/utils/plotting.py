@@ -681,7 +681,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     if realign:
         shift_len = int(0.25 * (cut[1] - cut[0]) *
                         al_traces[0].stats.sampling_rate)
-        shifts = stacking.align_traces(al_traces, shift_len)[0]
+        shifts = align_traces(al_traces, shift_len)[0]
         for i in range(len(shifts)):
             print('Shifting by ' + str(shifts[i]) + ' seconds')
             _pick.time -= shifts[i]
@@ -2161,8 +2161,9 @@ def subspace_detector_plot(detector, stachans, size, show):
     elif detector.multiplex:
         stachans = [('multi', ' ')]
     if np.isinf(detector.dimension):
-        warnings.warn('Infinite subspace dimension. Only plotting as many'
-                      'dimensions as events in design set')
+        msg = ' '.join(['Infinite subspace dimension. Only plotting as many',
+                        'dimensions as events in design set'])
+        warnings.warn(msg)
         nrows = detector.v[0].shape[1]
     else:
         nrows = detector.dimension
@@ -2246,15 +2247,18 @@ def subspace_fc_plot(detector, stachans, size, show):
         stachans = detector.stachans
     elif detector.multiplex:
         stachans = [('multi', ' ')]
-    # Work out how many rows and columns to have
+    # Work out how many rows and columns are most 'square'
     pfs = []
     for x in range(1, len(stachans)):
         if len(stachans) % x == 0:
             pfs.append(x)
-    ncols = min(pfs, key=lambda x:abs((np.floor(np.sqrt(len(stachans))) - x)))
+    if stachans == [('multi', ' ')]:
+        ncols = 1
+    else:
+        ncols = min(pfs, key=lambda x:abs((np.floor(np.sqrt(len(stachans))) - x)))
     nrows = len(stachans) // ncols
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
-                             sharex=True, sharey=True, figsize=size)
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True,
+                             sharey=True, figsize=size, squeeze=False)
     for column, axis in enumerate(axes.reshape(-1)):
         axis.set_title('.'.join(stachans[column]))
         sig = diagsvd(detector.sigma[column], detector.u[column].shape[0],
@@ -2275,7 +2279,7 @@ def subspace_fc_plot(detector, stachans, size, show):
         avg = [np.average(dim[1]) for dim in av_fc_dict.items()]
         axis.plot(avg, color='red', linewidth=3.)
         if column % ncols == 0 or column == 0:
-            axis.set_ylabel('Fractional Energy Capture (Fc)')
+            axis.set_ylabel('Frac. E Capture (Fc)')
         if column + 1 > len(stachans) - ncols:
             axis.set_xlabel('Subspace Dimension')
     plt.subplots_adjust(hspace=0.2)

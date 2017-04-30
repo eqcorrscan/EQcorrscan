@@ -230,23 +230,24 @@ class Detector(object):
         self.dimension = dimension
         return self
 
-    def energy_capture(self, stachans='all', size=(10, 7), show=True):
+    def energy_capture(self, stachans='all', size=(10, 7), show=False):
         """
         Calculate the average percentage energy capture for this subspace.
 
         :return: Percentage energy capture
         :rtype: float
         """
-        percent_captrue = 0
+        if show:
+            return subspace_fc_plot(detector=self, stachans=stachans,
+                                    size=size, show=show)
+        percent_capture = 0
         if np.isinf(self.dimension):
             return 100
         for channel in self.sigma:
             fc = np.sum(channel[0:self.dimension]) / np.sum(channel)
-            percent_captrue += fc
-        if show:
-            return subspace_fc_plot(self, stachans, size, show)
+            percent_capture += fc
         else:
-            return 100 * (percent_captrue / len(self.sigma))
+            return 100 * (percent_capture / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
                process=True, extract_detections=False, debug=0):
