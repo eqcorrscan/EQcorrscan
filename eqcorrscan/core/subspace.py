@@ -223,9 +223,9 @@ class Detector(object):
         """
         # Take leftmost 'dimension' input basis vectors
         for i, channel in enumerate(self.u):
-            if channel.shape[1] < dimension:
+            if self.data[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
-                                 % channel.shape[1])
+                                 % self.data[i].shape[1])
             self.data[i] = channel[:, 0:dimension+1]
         self.dimension = dimension
         return self
