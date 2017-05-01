@@ -223,7 +223,7 @@ class Detector(object):
         """
         # Take leftmost 'dimension' input basis vectors
         for i, channel in enumerate(self.u):
-            if self.data[i].shape[1] < dimension:
+            if self.v[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
                                  % self.data[i].shape[1])
             self.data[i] = channel[:, 0:dimension+1]
@@ -497,7 +497,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     if debug > 0:
         print('Computing detection statistics')
     stats = np.zeros((len(stream[0]),
-                      len(stream[0][0]) - len(detector.data[0][0]) + 1),
+                      len(stream[0][0]) - len(detector.data[0].T[0]) + 1),
                      dtype=np.float32)
     for det_channel, in_channel, i in zip(detector.data, stream[0],
                                           np.arange(len(stream[0]))):

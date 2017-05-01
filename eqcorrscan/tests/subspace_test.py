@@ -276,7 +276,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=False, shift_len=None)
-        for dim in range(2, len(detector.u[0])):
+        for dim in range(2, len(detector.v[0])):
             detector.partition(dim)
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
@@ -290,7 +290,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True, shift_len=0.2,
                            reject=0.0)
-        for dim in range(2, len(detector.u[0])):
+        for dim in range(2, len(detector.v[0])):
             detector.partition(dim)
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
