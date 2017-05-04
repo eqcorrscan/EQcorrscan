@@ -22,7 +22,8 @@ ctypedef np.float32_t DTYPE_t
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
-                  np.ndarray[DTYPE_t, ndim=1] data):
+                  np.ndarray[DTYPE_t, ndim=2] data,
+                  unsigned int inc):
     """
     Base function to calculate the subspace detection statistic.
 
@@ -37,25 +38,31 @@ def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
     :param detector: U matrix from singular value decomposition
     :type data: np.ndarry
     :param data: Data to detect within
+    :type inc: int
+    :param inc: Step size during stat loop
 
     :returns: Detection statistic from 0-1
     :rtype: np.ndarray
     """
     cdef int i
     cdef int datamax = data.shape[0]
-    cdef int ulen = detector.shape[1]
-    cdef int umax = detector.shape[0]
-    cdef int imax = datamax - ulen + 1
+    cdef int ulen = detector.shape[0]
+    cdef int onedet = ulen // inc
+    cdef int onetr = datamax // inc
+    cdef int umax = detector.shape[1]
+    cdef int imax = onetr - onedet + 1
     cdef np.ndarray[DTYPE_t, ndim=1] stats = np.zeros(imax, dtype=DTYPE)
     # Check that there will not be an empty window
-    cdef np.ndarray[DTYPE_t, ndim=1] _data = \
-        np.concatenate([data, np.zeros((umax * imax) -
-                                       datamax, dtype=DTYPE)])
+    #cdef np.ndarray[DTYPE_t, ndim=1] _data = \
+    #    np.concatenate([data, np.zeros((umax * imax) -
+    #                                   datamax, dtype=DTYPE)])
     cdef np.ndarray[DTYPE_t, ndim=2] uut = np.dot(detector, detector.T)
     # Actual loop after static typing
-    for i in range(imax):
-        stats[i] = np.dot(_data[i:i + umax],
-                          np.dot(uut, _data[i:i + umax].T))
+    for i in range(0, imax, inc):
+        xp = data[i:i+ulen].T.dot(uut).dot(data[i:i+ulen])
+        xt = data[i:i+ulen].T.dot(data[i:i+ulen])
+        stats[i] = (xp / xt)[0]
+        #stats[i] = data[i:i+ulen].T.dot(uut).dot(data[i:i+ulen])[0]
     # Cope with case of errored internal loop
     if np.all(np.isnan(stats)):
         return np.zeros(imax, dtype=DTYPE)

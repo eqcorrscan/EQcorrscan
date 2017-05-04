@@ -121,7 +121,8 @@ class Detector(object):
             if not len(list_item) == len(other_list):
                 return False
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item, atol=0.001):
+                if not np.allclose(np.absolute(item),
+                                   np.absolute(other_item), atol=0.001):
                     return False
         return True
 
@@ -225,7 +226,7 @@ class Detector(object):
         for i, channel in enumerate(self.u):
             if self.v[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
-                                 % self.data[i].shape[1])
+                                 % self.v[i].shape[1])
             self.data[i] = channel[:, 0:dimension+1]
         self.dimension = dimension
         return self
@@ -496,14 +497,22 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     outtic = time.clock()
     if debug > 0:
         print('Computing detection statistics')
+    # If multiplexed, how many samples do we increment by?
+    if detector.multiplex:
+        inc = np.uint32(len(detector.stachans))
+    else:
+        inc = np.uint32(1)
+    # Stats must be same size for multiplexed or non multiplexed!
     stats = np.zeros((len(stream[0]),
-                      len(stream[0][0]) - len(detector.data[0].T[0]) + 1),
+                      (len(stream[0][0]) // inc) -
+                      (len(detector.data[0].T[0]) // inc) + 1),
                      dtype=np.float32)
     for det_channel, in_channel, i in zip(detector.data, stream[0],
                                           np.arange(len(stream[0]))):
         stats[i] = subspace_statistic.\
             det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data.astype(np.float32))
+                          data=in_channel.data[:,None].astype(np.float32),
+                          inc=inc)
         if debug > 0:
             print(stats[i].shape)
         if debug > 3:

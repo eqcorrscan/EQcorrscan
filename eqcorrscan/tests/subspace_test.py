@@ -148,15 +148,15 @@ class SubspaceTestingMethods(unittest.TestCase):
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -188,10 +188,11 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -224,10 +225,11 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item, atol=0.001))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -260,7 +262,8 @@ class SubspaceTestingMethods(unittest.TestCase):
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
                 self.assertEqual(item.shape, other_item.shape)
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item),
+                                   np.abs(other_item)):
                     print(key)
                     print(item)
                     print(other_item)
