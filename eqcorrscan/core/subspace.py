@@ -203,7 +203,7 @@ class Detector(object):
             multiplex=multiplex, align=align, shift_len=shift_len,
             reject=reject, plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
-        v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
+        u, sigma, v, svd_stachans = svd(stream_list=p_streams, full=True)
         if not multiplex:
             stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
         self.stachans = stachans
@@ -855,6 +855,7 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                             channel=stachan[1])[0].stats.sampling_rate) + 1))
                     warnings.warn('Padding stream with zero trace for ' +
                                   'station ' + stachan[0] + '.' + stachan[1])
+                    print('zero padding')
                 elif multiplex and no_missed:
                     remove_set.append(st)
                     warnings.warn('Will remove stream due to low-correlation')

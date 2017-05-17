@@ -356,11 +356,8 @@ def svd(stream_list, full=False):
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
-    stachans = []
-    for st in stream_list:
-        for tr in st:
-            stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
-    stachans = list(set(stachans))
+    stachans = list(set([(tr.stats.station, tr.stats.channel)
+                         for st in stream_list for tr in st]))
     stachans.sort()
     # Initialize a list for the output matrices, one matrix per-channel
     svalues = []
@@ -369,18 +366,19 @@ def svd(stream_list, full=False):
     for stachan in stachans:
         lengths = []
         for st in stream_list:
-            tr = st.select(station=stachan.split('.')[0],
-                           channel=stachan.split('.')[1])
+            tr = st.select(station=stachan[0],
+                           channel=stachan[1])
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                warnings.warn('Stream does not contain ' + stachan)
+                warnings.warn('Stream does not contain %s'
+                              % '.'.join(list(stachan)))
                 continue
             lengths.append(len(tr.data))
         min_length = min(lengths)
         for stream in stream_list:
-            chan = stream.select(station=stachan.split('.')[0],
-                                 channel=stachan.split('.')[1])
+            chan = stream.select(station=stachan[0],
+                                 channel=stachan[1])
             if chan:
                 if len(chan[0].data) > min_length:
                     if abs(len(chan[0].data) - min_length) > 0.1 *\
@@ -394,7 +392,8 @@ def svd(stream_list, full=False):
                 else:
                     chan_mat = np.vstack((chan_mat, chan[0].data))
         if not len(chan_mat.shape) > 1:
-            warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
+            warnings.warn('Matrix of traces is less than 2D for %s'
+                          % '.'.join(list(stachan)))
             continue
         # Be sure to transpose chan_mat as waveforms must define columns
         chan_mat = np.asarray(chan_mat)
@@ -403,7 +402,7 @@ def svd(stream_list, full=False):
         svectors.append(v)
         uvectors.append(u)
         del(chan_mat)
-    return svectors, svalues, uvectors, stachans
+    return uvectors, svalues, svectors, stachans
 
 
 def empirical_SVD(stream_list, linear=True):
