@@ -1349,8 +1349,7 @@ class Template(object):
         self.process_length = process_length
         self.prepick = prepick
         if event is not None:
-            if len(event.comments) > 0 and \
-               "eqcorrscan_template_" + temp_name not in \
+            if "eqcorrscan_template_" + temp_name not in \
                [c.text for c in event.comments]:
                 event.comments.append(Comment(
                         text="eqcorrscan_template_" + temp_name,
@@ -3309,8 +3308,9 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
                 print('No data in stream for pick:')
                 print(pick)
                 continue
-            cut_stream += tr.copy().trim(starttime=pick.time - pad,
-                                         endtime=pick.time - pad + length)
+            cut_stream += tr.slice(
+                starttime=pick.time - pad,
+                endtime=pick.time - pad + length).copy()
         streams.append(cut_stream)
     return streams
 
