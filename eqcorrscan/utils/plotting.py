@@ -2263,12 +2263,12 @@ def subspace_fc_plot(detector, stachans, size, show):
         axis.set_title('.'.join(stachans[column]))
         sig = diagsvd(detector.sigma[column], detector.u[column].shape[0],
                       detector.v[column].shape[0])
-        A = np.dot(sig, detector.v[column])
+        A = np.dot(sig, detector.v[column]) # v is v.H from scipy.svd
         if detector.dimension > max(
                 detector.v[column].shape) or detector.dimension == np.inf:
-            dim = max(detector.v[column].shape)
+            dim = max(detector.v[column].shape) + 1
         else:
-            dim = detector.dimension
+            dim = detector.dimension + 1
         av_fc_dict = {i: [] for i in range(dim)}
         for ai in A.T:
             fcs = []

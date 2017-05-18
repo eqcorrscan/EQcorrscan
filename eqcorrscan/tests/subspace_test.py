@@ -84,13 +84,13 @@ class SimpleSubspaceMethods(unittest.TestCase):
         detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace',
                                    'stat_test_detector.h5'))
+        detector.partition(2)
         stream = read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace', 'test_trace.ms'))
-        tr_data = stream[0].data
-        stat = subspace_statistic.det_statistic(detector.data[0].
-                                                astype(np.float32),
-                                                tr_data.astype(np.float32))
-        self.assertEqual((stat.max().round(6) - 0.252336).round(6), 0)
+        tr_data = stream[0].data[:,None].astype(np.float32)
+        stat = subspace_statistic.det_statistic(
+            detector.data[0].astype(np.float32), tr_data, np.uint32(1))
+        self.assertEqual((stat.max().round(6) - 0.306929).round(6), 0)
 
 
 class SubspaceTestingMethods(unittest.TestCase):
@@ -309,7 +309,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(9)
+                           shift_len=6, reject=0.2).partition(6)
         st = self.st
         detections = detector.detect(st=st, threshold=0.009, trig_int=2,
                                      debug=1)
@@ -322,7 +322,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(9)
+                           shift_len=6, reject=0.2).partition(6)
         st = self.st
         detections = detector.detect(st=st, threshold=0.05, trig_int=4,
                                      debug=0, moveout=2, min_trig=5)

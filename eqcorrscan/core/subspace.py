@@ -204,8 +204,6 @@ class Detector(object):
             reject=reject, plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
         u, sigma, v, svd_stachans = svd(stream_list=p_streams, full=True)
-        if not multiplex:
-            stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
         self.stachans = stachans
         # self.delays = delays
         self.u = u
@@ -503,28 +501,25 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     else:
         inc = np.uint32(1)
     # Stats must be same size for multiplexed or non multiplexed!
+    if debug > 0:
+        print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
                       (len(stream[0][0]) // inc) -
                       (len(detector.data[0].T[0]) // inc) + 1),
                      dtype=np.float32)
+    # Hard typing in Cython loop requires float32 type.
     for det_channel, in_channel, i in zip(detector.data, stream[0],
                                           np.arange(len(stream[0]))):
         stats[i] = subspace_statistic.\
             det_statistic(detector=det_channel.astype(np.float32),
                           data=in_channel.data[:,None].astype(np.float32),
                           inc=inc)
-        if debug > 0:
-            print(stats[i].shape)
-        if debug > 3:
+        if debug >= 1:
+            print('Stats matrix is shape %s' % str(stats[i].shape))
+        if debug >= 3:
             plt.plot(stats[i])
             plt.show()
-        # Hard typing in Cython loop requires float32 type.
-    # statistics
-    if detector.multiplex:
-        trig_int_samples = (len(detector.stachans) *
-                            detector.sampling_rate * trig_int)
-    else:
-        trig_int_samples = detector.sampling_rate * trig_int
+    trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
         print('Finding peaks')
     peaks = []
@@ -541,13 +536,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
-            if detector.multiplex:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / (detector.sampling_rate *
-                                len(detector.stachans)))
-            else:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / detector.sampling_rate)
+            detecttime = st[0].stats.starttime + \
+                (peak[1] / detector.sampling_rate)
             rid = ResourceIdentifier(
                 id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)

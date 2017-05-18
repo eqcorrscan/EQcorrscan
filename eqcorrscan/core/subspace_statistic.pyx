@@ -47,25 +47,18 @@ def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
     cdef int i
     cdef int datamax = data.shape[0]
     cdef int ulen = detector.shape[0]
-    cdef int onedet = ulen // inc
-    cdef int onetr = datamax // inc
-    cdef int umax = detector.shape[1]
-    cdef int imax = onetr - onedet + 1
-    cdef np.ndarray[DTYPE_t, ndim=1] stats = np.zeros(imax, dtype=DTYPE)
-    # Check that there will not be an empty window
-    #cdef np.ndarray[DTYPE_t, ndim=1] _data = \
-    #    np.concatenate([data, np.zeros((umax * imax) -
-    #                                   datamax, dtype=DTYPE)])
+    cdef int stat_imax = (datamax // inc) - (ulen // inc) + 1
+    cdef int dat_imax = (datamax - ulen) + 1
+    cdef np.ndarray[DTYPE_t, ndim=1] stats = np.zeros(stat_imax, dtype=DTYPE)
     cdef np.ndarray[DTYPE_t, ndim=2] uut = np.dot(detector, detector.T)
     # Actual loop after static typing
-    for i in range(0, imax, inc):
+    for j, i in enumerate(range(0, dat_imax, inc)):
         xp = data[i:i+ulen].T.dot(uut).dot(data[i:i+ulen])
         xt = data[i:i+ulen].T.dot(data[i:i+ulen])
-        stats[i] = (xp / xt)[0]
-        #stats[i] = data[i:i+ulen].T.dot(uut).dot(data[i:i+ulen])[0]
+        stats[j] = (xp / xt)[0]
     # Cope with case of errored internal loop
     if np.all(np.isnan(stats)):
-        return np.zeros(imax, dtype=DTYPE)
+        return np.zeros(stat_imax, dtype=DTYPE)
     else:
         return stats
 
