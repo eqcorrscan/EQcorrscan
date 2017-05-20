@@ -3370,6 +3370,8 @@ def multi_normxcorr(templates, stream):
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
 
+    # Generate a template mask
+    used_chans = templates.any(axis=1)
     stream = stream.astype(np.float32)
     # templates = templates.astype(np.float32)
     template_length = templates.shape[1]
@@ -3390,7 +3392,7 @@ def multi_normxcorr(templates, stream):
                        fftshape)[:, 0:template_length + stream_length -1]
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
-    return res
+    return res, used_chans
 
 
 def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
@@ -3412,7 +3414,7 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
         python native multiprocessing.
     :type compute: bool
     :param compute:
-        Only valid if dask==True, if compute==False, returned result with be
+        Only valid if dask==True. If compute==False, returned result with be
         a dask.delayed object, useful if you are using dask to compute multiple
         time-steps at the same time.
     :type cores: int
@@ -3439,6 +3441,8 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
+    no_chans = np.zeros(len(templates))
+    chans = [[] for _i in len(templates)]
     # Do some reshaping
     stream.sort()
     for template in templates:
@@ -3448,24 +3452,28 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
     for i, seed_id in enumerate(seed_ids):
         t_ar = np.array([template[i].data for template in templates])
         template_array.update({seed_id: t_ar})
-    if use_dask:
-        import dask
-        xcorrs = []
-        for seed_id in seed_ids:
-            tr_xcorrs = dask.delayed(multi_normxcorr)(
-                templates=template_array[seed_id],
-                stream=stream.select(id=seed_id.split('_')[0])[0].data)
-            xcorrs.append(tr_xcorrs)
-        cccsums = dask.delayed(np.sum)(xcorrs, axis=0)
-        if compute:
-            cccsums.compute()
-    elif cores is None:
+    # if use_dask:
+    #     import dask
+    #     xcorrs = []
+    #     for seed_id in seed_ids:
+    #         tr_xcorrs, tr_chans = dask.delayed(multi_normxcorr)(
+    #             templates=template_array[seed_id],
+    #             stream=stream.select(id=seed_id.split('_')[0])[0].data)
+    #         xcorrs.append(tr_xcorrs)
+    #     cccsums = dask.delayed(np.sum)(xcorrs, axis=0)
+    #     if compute:
+    #         cccsums.compute()
+    if cores is None:
         cccsums = np.zeros([len(templates), ])
         for seed_id in seed_ids:
-            tr_xcorrs = multi_normxcorr(
+            tr_xcorrs, tr_chans = multi_normxcorr(
                 templates=template_array[seed_id],
                 stream=stream.select(id=seed_id.split('_')[0])[0].data)
             cccsums = np.sum(cccsums, tr_xcorrs)
+            no_chans += tr_chans.astype(np.int)
+            for chan, state in zip(chans, tr_chans):
+                if state:
+                    chan.append(seed_id)
     else:
         pool = Pool(processes=cores)
         results = [pool.apply_async(
@@ -3473,10 +3481,17 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
                              stream.select(id=seed_id.split('_')[0])[0].data)
                    for seed_id in seed_ids]
         pool.close()
-        xcorrs = [p.get() for p in results]
+        results = [p.get() for p in results]
+        xcorrs = [p[0] for p in results]
+        tr_chans = np.array([p[1] for p in results])
         pool.join()
         cccsums = np.sum(xcorrs, axis=0)
-    return cccsums
+        no_chans = np.sum(tr_chans.astype(np.int), axis=0)
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append(seed_id)
+    return cccsums, no_chans, chans
 
 
 def _template_loop(template, chan, stream_ind, debug=0, i=0):
@@ -3922,7 +3937,7 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError(msg)
     outtic = time.clock()
     if debug >= 2:
-        print('Ensuring all template channels have matches in long data')
+        print('Ensuring all template channels have matches in continuous data')
     template_stachan = {}
     # Work out what station-channel pairs are in the templates, including
     # duplicate station-channel pairs.  We will use this information to fill
@@ -4018,9 +4033,10 @@ def match_filter(template_names, template_list, st, threshold,
         for template in templates:
             print(template)
         print(stream)
-    [cccsums, no_chans, chans] = _channel_loop(
-        templates=templates, stream=stream, cores=cores, debug=debug,
-        internal=internal)
+    # [cccsums, no_chans, chans] = _channel_loop(
+    #     templates=templates, stream=stream, cores=cores, debug=debug)
+    [cccsums, no_chans, chans] = multichannel_xcorr(
+        templates=templates, stream=stream, cores=cores)]
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
