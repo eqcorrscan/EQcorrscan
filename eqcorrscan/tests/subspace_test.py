@@ -309,11 +309,12 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(6)
+                           shift_len=4, reject=0.3,
+                           no_missed=False).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.009, trig_int=2,
+        detections = detector.detect(st=st, threshold=0.2, trig_int=4,
                                      debug=1)
-        self.assertEqual(len(detections), 2)
+        self.assertEqual(len(detections), 36)
 
     def test_not_multiplexed(self):
         """Test that a non-multiplexed detector gets the same result."""
@@ -322,11 +323,11 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(6)
+                           shift_len=4, reject=0.3).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.05, trig_int=4,
-                                     debug=0, moveout=2, min_trig=5)
-        self.assertEqual(len(detections), 1)
+        detections = detector.detect(st=st, threshold=0.5, trig_int=4,
+                                     debug=1, moveout=2, min_trig=5)
+        self.assertEqual(len(detections), 17)
 
     def test_multi_detectors(self):
         """Test the efficient looping in subspace."""
@@ -335,27 +336,27 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector1.construct(streams=templates, lowcut=2, highcut=9,
                             filt_order=4, sampling_rate=20, multiplex=False,
                             name=str('Tester1'), align=True,
-                            shift_len=6, reject=0.2).partition(9)
+                            shift_len=6, reject=0.2).partition(4)
         templates = copy.deepcopy(self.templates)
         detector2 = subspace.Detector()
         detector2.construct(streams=templates[0:20], lowcut=2, highcut=9,
                             filt_order=4, sampling_rate=20, multiplex=False,
                             name=str('Tester2'), align=True,
-                            shift_len=6, reject=0.2).partition(9)
+                            shift_len=6, reject=0.2).partition(4)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
-                                              threshold=0.05,
+                                              threshold=0.7,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=False, num_cores=2)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 14)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
-                                              threshold=0.05,
+                                              threshold=0.7,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=True, num_cores=2)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 14)
 
     def partition_fail(self):
         templates = copy.deepcopy(self.templates)

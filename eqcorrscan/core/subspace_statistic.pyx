@@ -1,3 +1,4 @@
+# cython: linetrace=True
 """
 Internal loop for subspace detection statistic calculation. Testing speedups.
 
@@ -15,15 +16,16 @@ from __future__ import unicode_literals
 import numpy as np
 cimport numpy as np
 import cython
+from scipy.linalg.cython_blas cimport ddot
 
 DTYPE = np.float32
 ctypedef np.float32_t DTYPE_t
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
-                  np.ndarray[DTYPE_t, ndim=2] data,
-                  unsigned int inc):
+def det_statistic(float[:,:] detector,
+                  float[:,:] data,
+                  size_t inc):
     """
     Base function to calculate the subspace detection statistic.
 
@@ -44,21 +46,22 @@ def det_statistic(np.ndarray[DTYPE_t, ndim=2] detector,
     :returns: Detection statistic from 0-1
     :rtype: np.ndarray
     """
-    cdef int i
-    cdef int datamax = data.shape[0]
-    cdef int ulen = detector.shape[0]
-    cdef int stat_imax = (datamax // inc) - (ulen // inc) + 1
-    cdef int dat_imax = (datamax - ulen) + 1
-    cdef np.ndarray[DTYPE_t, ndim=1] stats = np.zeros(stat_imax, dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=2] uut = np.dot(detector, detector.T)
+    cdef size_t i, datamax = data.shape[0]
+    cdef size_t ulen = detector.shape[0]
+    cdef size_t stat_imax = (datamax // inc) - (ulen // inc) + 1
+    cdef size_t dat_imax = (datamax - ulen) + 1
+    cdef float[:] stats = np.zeros(dat_imax, dtype=DTYPE)
+    cdef float[:,:] uut = np.dot(detector, detector.T)
     # Actual loop after static typing
-    for j, i in enumerate(range(0, dat_imax, inc)):
-        xp = data[i:i+ulen].T.dot(uut).dot(data[i:i+ulen])
-        xt = data[i:i+ulen].T.dot(data[i:i+ulen])
-        stats[j] = (xp / xt)[0]
+    for i in range(0, dat_imax, inc):
+        xp = np.dot(data[i:i+ulen].T, np.dot(uut, data[i:i+ulen]))
+        xt = np.dot(data[i:i+ulen].T, data[i:i+ulen])
+        stats[i] = (xp / xt)
+    # Downsample stats
+    stats = stats[::inc]
     # Cope with case of errored internal loop
     if np.all(np.isnan(stats)):
         return np.zeros(stat_imax, dtype=DTYPE)
     else:
-        return stats
+        return np.array(stats)
 

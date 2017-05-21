@@ -3279,7 +3279,7 @@ def get_catalog(detections):
     return catalog
 
 
-def extract_from_stream(stream, detections, pad=2.0, length=30.0):
+def extract_from_stream(stream, detections, pad=5.0, length=30.0):
     """
     Extract waveforms for a list of detections from a stream.
 
