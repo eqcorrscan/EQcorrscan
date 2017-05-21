@@ -517,7 +517,16 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))
         if debug >= 3:
-            plt.plot(stats[i])
+            fig, ax = plt.subplots()
+            t = np.arange(len(stats[i]))
+            ax.plot(t, stats[i], color='k')
+            ax.axis('tight')
+            ax.set_ylim([0, 1])
+            ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
+                    label='Threshold')
+            ax.legend()
+            plt.title('%s.%s' % (in_channel.stats.station,
+                                 in_channel.stats.channel))
             plt.show()
     trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
