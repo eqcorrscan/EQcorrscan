@@ -56,7 +56,7 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage opencv3 bottleneck
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage opencv3 bottleneck xarray
   - source activate test-environment
   - conda install $PYFLAKES
   - conda install pyproj
