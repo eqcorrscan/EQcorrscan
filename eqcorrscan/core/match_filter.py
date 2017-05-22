@@ -3358,11 +3358,16 @@ def normxcorr2(template, image):
     return ccc
 
 
-def multi_normxcorr(templates, stream):
+def multi_normxcorr(templates, stream, pads):
     """
     Compute the normalized cross-correlation of multiple templates with data.
-    :param templates: np.ndarray
-    :param stream: np.ndarray
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+    
     :return: np.ndarray
     """
     # TODO:: Try other fft methods: pyfftw?
@@ -3392,10 +3397,13 @@ def multi_normxcorr(templates, stream):
                        fftshape)[:, 0:template_length + stream_length -1]
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
+    for i in range(len(pads)):
+        res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
     return res, used_chans
 
 
-def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
+def multichannel_xcorr(templates, stream, use_dask=False, compute=True,
+                       cores=1):
     """
     Cross-correlate multiple channels either in parallel or not
 
@@ -3442,16 +3450,27 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
         channels in the stream).
     """
     no_chans = np.zeros(len(templates))
-    chans = [[] for _i in len(templates)]
+    chans = [[] for _i in range(len(templates))]
     # Do some reshaping
-    stream.sort()
+    stream.sort(['network', 'station', 'location', 'channel'])
+    t_starts = []
     for template in templates:
-        template.sort()
+        template.sort(['network', 'station', 'location', 'channel'])
+        t_starts.append(min([tr.stats.starttime for tr in template]))
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     template_array = {}
+    stream_array = {}
+    pad_array = {}
     for i, seed_id in enumerate(seed_ids):
         t_ar = np.array([template[i].data for template in templates])
         template_array.update({seed_id: t_ar})
+        stream_array.update(
+            {seed_id: stream.select(id=seed_id.split('_')[0])[0].data})
+        pad_list = [
+            int(round(template[i].stats.sampling_rate *
+                      (template[i].stats.starttime - t_starts[j])))
+            for j, template in zip(range(len(templates)), templates)]
+        pad_array.update({seed_id: pad_list})
     # if use_dask:
     #     import dask
     #     xcorrs = []
@@ -3464,12 +3483,13 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
     #     if compute:
     #         cccsums.compute()
     if cores is None:
-        cccsums = np.zeros([len(templates), ])
+        cccsums = np.zeros([len(templates),
+                            len(stream[0]) - len(templates[0][0]) + 1])
         for seed_id in seed_ids:
             tr_xcorrs, tr_chans = multi_normxcorr(
                 templates=template_array[seed_id],
-                stream=stream.select(id=seed_id.split('_')[0])[0].data)
-            cccsums = np.sum(cccsums, tr_xcorrs)
+                stream=stream_array[seed_id], pads=pad_array[seed_id])
+            cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
@@ -3477,8 +3497,8 @@ def mulichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
     else:
         pool = Pool(processes=cores)
         results = [pool.apply_async(
-            multi_normxcorr)(template_array[seed_id],
-                             stream.select(id=seed_id.split('_')[0])[0].data)
+            multi_normxcorr, (template_array[seed_id], stream_array[seed_id],
+                              pad_array[seed_id]))
                    for seed_id in seed_ids]
         pool.close()
         results = [p.get() for p in results]
@@ -4036,7 +4056,7 @@ def match_filter(template_names, template_list, st, threshold,
     # [cccsums, no_chans, chans] = _channel_loop(
     #     templates=templates, stream=stream, cores=cores, debug=debug)
     [cccsums, no_chans, chans] = multichannel_xcorr(
-        templates=templates, stream=stream, cores=cores)]
+        templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
