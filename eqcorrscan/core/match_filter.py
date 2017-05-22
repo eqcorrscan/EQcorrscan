@@ -1350,8 +1350,7 @@ class Template(object):
         self.process_length = process_length
         self.prepick = prepick
         if event is not None:
-            if len(event.comments) > 0 and \
-               "eqcorrscan_template_" + temp_name not in \
+            if "eqcorrscan_template_" + temp_name not in \
                [c.text for c in event.comments]:
                 event.comments.append(Comment(
                         text="eqcorrscan_template_" + temp_name,
@@ -2889,7 +2888,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
-    ncores = cpu_count()
+    if parallel_process:
+        ncores = cpu_count()
+    else:
+        ncores = 1
     st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
@@ -3307,8 +3309,9 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
                 print('No data in stream for pick:')
                 print(pick)
                 continue
-            cut_stream += tr.copy().trim(starttime=pick.time - pad,
-                                         endtime=pick.time - pad + length)
+            cut_stream += tr.slice(
+                starttime=pick.time - pad,
+                endtime=pick.time - pad + length).copy()
         streams.append(cut_stream)
     return streams
 
@@ -3909,7 +3912,7 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
-
+    _spike_test(st, 0.99, 1e6)
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -4016,19 +4019,18 @@ def match_filter(template_names, template_list, st, threshold,
                    % (key[0], key[1], key[2], key[3]))
             raise MatchFilterError(msg)
     # Pad out templates to have all channels
+    _templates = []
+    used_template_names = []
     for template, template_name in zip(templates, _template_names):
         if len(template) == 0:
             msg = ('No channels matching in continuous data for ' +
                    'template' + template_name)
             warnings.warn(msg)
-            templates.remove(template)
-            _template_names.remove(template_name)
             continue
         for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(network=stachan[0],
-                                                     station=stachan[1],
-                                                     location=stachan[2],
-                                                     channel=stachan[3]))
+            number_of_channels = len(template.select(
+                network=stachan[0], station=stachan[1], location=stachan[2],
+                channel=stachan[3]))
             if number_of_channels < template_stachan[stachan]:
                 missed_channels = template_stachan[stachan] -\
                                   number_of_channels
@@ -4043,10 +4045,14 @@ def match_filter(template_names, template_list, st, threshold,
                 for dummy in range(missed_channels):
                     template += nulltrace
         template.sort()
+        _templates.append(template)
+        used_template_names.append(template_name)
         # Quick check that this has all worked
         if len(template) != max([len(t) for t in templates]):
             raise MatchFilterError('Internal error forcing same template '
                                    'lengths, report this error.')
+    templates = _templates
+    _template_names = used_template_names
     if debug >= 2:
         print('Starting the correlation run for this day')
     if debug >= 3:
@@ -4173,6 +4179,31 @@ def match_filter(template_names, template_list, st, threshold,
         return detections, detection_streams
     else:
         return detections, det_cat, detection_streams
+
+
+def _spike_test(stream, percent=0.99, multiplier=1e6):
+    """
+    Check for very large spikes in data and raise an error if found.
+
+    :param stream: Stream to look for spikes in.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param percent: Percentage as a decimal to calcualte range for.
+    :type percent: float
+    :param multiple: Multiplier of range to define a spike.
+    :type multiple: float
+    """
+    for tr in stream:
+        if (tr.data > 2 * np.max(
+            np.sort(np.abs(
+                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
+            msg = ('Spikes above ' + str(multiplier) +
+                   ' of the range of ' + str(percent) +
+                   ' of the data present, check. \n ' +
+                   'This would otherwise likely result in an issue during ' +
+                   'FFT prior to cross-correlation.\n' +
+                   'If you think this spike is real please report ' +
+                   'this as a bug.')
+            raise MatchFilterError(msg)
 
 
 if __name__ == "__main__":

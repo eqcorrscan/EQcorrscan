@@ -23,7 +23,7 @@ from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
 from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
 from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
-from eqcorrscan.core.match_filter import read_party, read_tribe
+from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
 
@@ -133,6 +133,13 @@ class TestCoreMethods(unittest.TestCase):
         """Send it the wrong type."""
         ccc = normxcorr2(template=[0, 1, 2, 3, 4], image='bob')
         self.assertEqual(ccc, 'NaN')
+
+    def test_spike_test(self):
+        """Check that an error is raised!"""
+        stream = read()
+        stream[0].data[100] = 1e20
+        with self.assertRaises(MatchFilterError):
+            _spike_test(stream)
 
 
 class TestSynthData(unittest.TestCase):
