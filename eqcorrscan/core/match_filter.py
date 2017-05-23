@@ -52,6 +52,31 @@ from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 
 
+def _spike_test(stream, percent=0.99, multiplier=1e6):
+    """
+    Check for very large spikes in data and raise an error if found.
+
+    :param stream: Stream to look for spikes in.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param percent: Percentage as a decimal to calcualte range for.
+    :type percent: float
+    :param multiplier: Multiplier of range to define a spike.
+    :type multiplier: float
+    """
+    for tr in stream:
+        if (tr.data > 2 * np.max(
+            np.sort(np.abs(
+                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
+            msg = ('Spikes above ' + str(multiplier) +
+                   ' of the range of ' + str(percent) +
+                   ' of the data present, check. \n ' +
+                   'This would otherwise likely result in an issue during ' +
+                   'FFT prior to cross-correlation.\n' +
+                   'If you think this spike is real please report ' +
+                   'this as a bug.')
+            raise MatchFilterError(msg)
+
+
 class MatchFilterError(Exception):
     """
     Default error for match-filter errors.
@@ -3380,8 +3405,10 @@ def multi_normxcorr(templates, stream, pads):
 
     # Generate a template mask
     used_chans = templates.any(axis=1)
-    stream = stream.astype(np.float32)
-    # templates = templates.astype(np.float32)
+    # Currently have to use float64 as bottleneck runs into issues with other
+    # types: https://github.com/kwgoodman/bottleneck/issues/164
+    stream = stream.astype(np.float64)
+    templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
     fftshape = next_fast_len(template_length + stream_length - 1)
@@ -3402,7 +3429,7 @@ def multi_normxcorr(templates, stream, pads):
            norm_sum * stream_mean_array) / stream_std_array
     for i in range(len(pads)):
         res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
-    return res, used_chans
+    return res.astype(np.float32), used_chans
 
 
 def multichannel_xcorr(templates, stream, use_dask=False, compute=True,
@@ -4179,31 +4206,6 @@ def match_filter(template_names, template_list, st, threshold,
         return detections, detection_streams
     else:
         return detections, det_cat, detection_streams
-
-
-def _spike_test(stream, percent=0.99, multiplier=1e6):
-    """
-    Check for very large spikes in data and raise an error if found.
-
-    :param stream: Stream to look for spikes in.
-    :type stream: :class:`obspy.core.stream.Stream`
-    :param percent: Percentage as a decimal to calcualte range for.
-    :type percent: float
-    :param multiple: Multiplier of range to define a spike.
-    :type multiple: float
-    """
-    for tr in stream:
-        if (tr.data > 2 * np.max(
-            np.sort(np.abs(
-                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
-            msg = ('Spikes above ' + str(multiplier) +
-                   ' of the range of ' + str(percent) +
-                   ' of the data present, check. \n ' +
-                   'This would otherwise likely result in an issue during ' +
-                   'FFT prior to cross-correlation.\n' +
-                   'If you think this spike is real please report ' +
-                   'this as a bug.')
-            raise MatchFilterError(msg)
 
 
 if __name__ == "__main__":
