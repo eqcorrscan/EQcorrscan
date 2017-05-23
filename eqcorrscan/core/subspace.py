@@ -225,7 +225,7 @@ class Detector(object):
             if self.v[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
                                  % self.v[i].shape[1])
-            self.data[i] = channel[:, 0:dimension+1]
+            self.data[i] = channel[:, 0:dimension]
         self.dimension = dimension
         return self
 
@@ -512,7 +512,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                                           np.arange(len(stream[0]))):
         stats[i] = subspace_statistic.\
             det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data[:,None].astype(np.float32),
+                          data=in_channel.data.astype(np.float32),
                           inc=inc)
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))

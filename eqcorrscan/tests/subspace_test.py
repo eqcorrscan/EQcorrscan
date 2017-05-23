@@ -314,7 +314,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         st = self.st
         detections = detector.detect(st=st, threshold=0.2, trig_int=4,
                                      debug=1)
-        self.assertEqual(len(detections), 36)
+        self.assertEqual(len(detections), 34)
 
     def test_not_multiplexed(self):
         """Test that a non-multiplexed detector gets the same result."""

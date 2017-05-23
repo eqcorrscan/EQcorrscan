@@ -16,7 +16,7 @@ from __future__ import unicode_literals
 import numpy as np
 cimport numpy as np
 import cython
-from scipy.linalg.cython_blas cimport ddot
+from scipy.linalg.blas import sdot, sgemv
 
 DTYPE = np.float32
 ctypedef np.float32_t DTYPE_t
@@ -24,7 +24,7 @@ ctypedef np.float32_t DTYPE_t
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def det_statistic(float[:,:] detector,
-                  float[:,:] data,
+                  float[:] data,
                   size_t inc):
     """
     Base function to calculate the subspace detection statistic.
