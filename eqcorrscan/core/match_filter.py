@@ -3395,7 +3395,7 @@ def multi_normxcorr(templates, stream, pads):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
-    
+
     :return: np.ndarray
     """
     # TODO:: Try other fft methods: pyfftw?
