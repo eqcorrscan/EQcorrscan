@@ -3424,11 +3424,15 @@ def multi_normxcorr(templates, stream, pads):
     stream_fft = np.fft.rfft(stream, fftshape)
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
-                       fftshape)[:, 0:template_length + stream_length -1]
+                       fftshape)[:, 0:template_length + stream_length - 1]
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
     for i in range(len(pads)):
-        res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
+        # This is a hack from padding templates with nan data
+        if np.isnan(res[i]).all():
+            res[i] = np.zeros(len(res[i]))
+        else:
+            res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
     return res.astype(np.float32), used_chans
 
 
@@ -3523,7 +3527,8 @@ def multichannel_xcorr(templates, stream, use_dask=False, compute=True,
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
-                    chan.append(seed_id)
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
     else:
         pool = Pool(processes=cores)
         results = [pool.apply_async(
@@ -3540,7 +3545,8 @@ def multichannel_xcorr(templates, stream, use_dask=False, compute=True,
         for seed_id, tr_chan in zip(seed_ids, tr_chans):
             for chan, state in zip(chans, tr_chan):
                 if state:
-                    chan.append(seed_id)
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
     return cccsums, no_chans, chans
 
 
@@ -4086,8 +4092,6 @@ def match_filter(template_names, template_list, st, threshold,
         for template in templates:
             print(template)
         print(stream)
-    # [cccsums, no_chans, chans] = _channel_loop(
-    #     templates=templates, stream=stream, cores=cores, debug=debug)
     [cccsums, no_chans, chans] = multichannel_xcorr(
         templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:

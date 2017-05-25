@@ -645,8 +645,8 @@ class TestMatchObjects(unittest.TestCase):
                 for key in det.__dict__.keys():
                     if key == 'event':
                         continue
-                    self.assertEqual(det.__dict__[key],
-                                     check_det.__dict__[key])
+                    self.assertAlmostEqual(
+                        det.__dict__[key], check_det.__dict__[key], places=3)
             # self.assertEqual(fam.template, check_fam.template)
 
     def test_client_detect(self):
