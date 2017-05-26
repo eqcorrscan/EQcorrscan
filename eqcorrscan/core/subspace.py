@@ -24,6 +24,7 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
+import pandas as pd
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
@@ -493,6 +494,14 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         stream = [st]
         stachans = detector.stachans
     outtic = time.clock()
+    # Here do the ffts
+    fftlen = 2 ** stream[0][0].data.shape[0].bit_length()
+    stream_fd = [scipy.fftpack.fft(tr.data, n=fftlen)
+                 for tr in stream[0]]
+    detector_fd = []
+    for dat_mat in detector.data:
+        detector_fd.append(np.array([scipy.fftpack.fft(col, n=fftlen)
+                                     for col in dat_mat.T]))
     if debug > 0:
         print('Computing detection statistics')
     # If multiplexed, how many samples do we increment by?
@@ -507,13 +516,15 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                       (len(stream[0][0]) // inc) -
                       (len(detector.data[0].T[0]) // inc) + 1),
                      dtype=np.float32)
-    # Hard typing in Cython loop requires float32 type.
-    for det_channel, in_channel, i in zip(detector.data, stream[0],
-                                          np.arange(len(stream[0]))):
-        stats[i] = subspace_statistic.\
-            det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data.astype(np.float32),
-                          inc=inc)
+    for det_chan, det_freq, in_chan, in_freq, i in zip(detector.data,
+                                                       detector_fd,
+                                                       stream[0], stream_fd,
+                                                       np.arange(len(stream[0]))):
+        # Calculate det_statistic in frequency domain
+        stats[i] = det_stat_freq(det_chan.astype(np.float32),
+                                 det_freq.astype(np.float32),
+                                 in_chan.data.astype(np.float32),
+                                 in_freq.astype(np.float32), inc)
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))
         if debug >= 3:
@@ -525,8 +536,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
                     label='Threshold')
             ax.legend()
-            plt.title('%s.%s' % (in_channel.stats.station,
-                                 in_channel.stats.channel))
+            plt.title('%s.%s' % (in_chan.stats.station,
+                                 in_chan.stats.channel))
             plt.show()
     trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
@@ -545,8 +556,11 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
+            # Be careful here, as stats starttime is ulen / Nc * samp_rate
+            det_len = detector.data[0].shape[0] / len(detector.stachans) \
+                / detector.sampling_rate
             detecttime = st[0].stats.starttime + \
-                (peak[1] / detector.sampling_rate)
+                (peak[1] / detector.sampling_rate) + det_len
             rid = ResourceIdentifier(
                 id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)
@@ -584,6 +598,24 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         detection_streams = extract_from_stream(st, detections)
         return detections, detection_streams
     return detections
+
+
+def det_stat_freq(det_time, det_freq, data_time, data_freq, inc):
+    ulen = np.int32(det_time.shape[0]) # Length of detector
+    mean = pd.rolling_mean(data_time, ulen)[ulen-1:]
+    mean = mean.reshape(1, len(mean))
+    var = pd.rolling_sum(np.square(data_time), ulen)[ulen-1:]
+    # var *= ulen # Rolling power of data (window is detector length)
+    det_sum = np.sum(det_time, axis=0) # Stacked detector
+    det_sum = det_sum.reshape(len(det_sum), 1)
+    av_norm = np.multiply(mean, det_sum)
+    freq_cor = np.multiply(det_freq, data_freq) # Correlations in freq domain
+    #Do inverse fft back to time domain
+    iff = scipy.real(scipy.fftpack.ifft(freq_cor))[:, ulen-1:len(data_time)] \
+          - av_norm
+    # Ratio of projected to envelope = det_stat across all channels
+    result = np.sum(np.square(iff), axis=0) / var
+    return result[::inc] # Account for multiplexed data
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
