@@ -24,6 +24,7 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
+import pandas as pd
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
@@ -515,12 +516,10 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                       (len(stream[0][0]) // inc) -
                       (len(detector.data[0].T[0]) // inc) + 1),
                      dtype=np.float32)
-    # Hard typing in Cython loop requires float32 type.
     for det_chan, det_freq, in_chan, in_freq, i in zip(detector.data,
                                                        detector_fd,
                                                        stream[0], stream_fd,
                                                        np.arange(len(stream[0]))):
-        print(det_chan.shape, det_freq.shape, in_chan.data.shape, in_freq.shape)
         # Calculate det_statistic in frequency domain
         stats[i] = det_stat_freq(det_chan.astype(np.float32),
                                  det_freq.astype(np.float32),
@@ -603,10 +602,10 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
 
 def det_stat_freq(det_time, det_freq, data_time, data_freq, inc):
     ulen = np.int32(det_time.shape[0]) # Length of detector
-    mean = np.mean(rolling_window(data_time, ulen), 1) # Rolling mean of data
+    mean = pd.rolling_mean(data_time, ulen)[ulen-1:]
     mean = mean.reshape(1, len(mean))
-    var = np.var(rolling_window(data_time, ulen), 1) # Rolling variance of data
-    var *= ulen # Rolling power of data (window is detector length)
+    var = pd.rolling_sum(np.square(data_time), ulen)[ulen-1:]
+    # var *= ulen # Rolling power of data (window is detector length)
     det_sum = np.sum(det_time, axis=0) # Stacked detector
     det_sum = det_sum.reshape(len(det_sum), 1)
     av_norm = np.multiply(mean, det_sum)
@@ -617,13 +616,6 @@ def det_stat_freq(det_time, det_freq, data_time, data_freq, inc):
     # Ratio of projected to envelope = det_stat across all channels
     result = np.sum(np.square(iff), axis=0) / var
     return result[::inc] # Account for multiplexed data
-
-
-def rolling_window(a, window):
-    # Function inteded to bypass pandas dependency as used in detex
-    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-    strides = a.strides + (a.strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
