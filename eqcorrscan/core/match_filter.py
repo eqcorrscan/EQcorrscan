@@ -3404,7 +3404,7 @@ def multi_normxcorr(templates, stream, pads):
     from scipy.fftpack.helper import next_fast_len
 
     # Generate a template mask
-    used_chans = templates.any(axis=1)
+    used_chans = ~np.isnan(templates).any(axis=1)
     # Currently have to use float64 as bottleneck runs into issues with other
     # types: https://github.com/kwgoodman/bottleneck/issues/164
     stream = stream.astype(np.float64)

@@ -648,7 +648,7 @@ class TestMatchObjects(unittest.TestCase):
                     if isinstance(det.__dict__[key], float):
                         self.assertAlmostEqual(
                             det.__dict__[key], check_det.__dict__[key],
-                            places=3)
+                            places=2)
                     else:
                         self.assertEqual(
                             det.__dict__[key], check_det.__dict__[key])
