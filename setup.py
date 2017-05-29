@@ -81,12 +81,12 @@ if sys.version_info.major == 2:
                             'LatLon']
 else:
     if not READ_THE_DOCS:
-        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'scipy>=0.14', 'LatLon', 'h5py', 'cython',
                             'bottleneck', 'xarray']
     else:
-        install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
+        install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'LatLon']
 # install_requires.append('ConfigParser')
