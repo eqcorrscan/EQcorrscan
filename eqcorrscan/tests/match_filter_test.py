@@ -341,7 +341,7 @@ class TestNCEDCCases(unittest.TestCase):
                     (tr.stats.network, tr.stats.station, tr.stats.channel))
         template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      t1, t1 + process_len)
+                      t1, t1 + process_len + 1)
                      for stachan in template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous data')
