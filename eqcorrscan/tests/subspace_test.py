@@ -90,7 +90,7 @@ class SimpleSubspaceMethods(unittest.TestCase):
         tr_data = stream[0].data.astype(np.float32)
         stat = subspace_statistic.det_statistic(
             detector.data[0].astype(np.float32), tr_data, np.uint32(1))
-        self.assertEqual((stat.max().round(6) - 0.306929).round(6), 0)
+        self.assertEqual((stat.max().round(6) - 0.253248).round(6), 0)
 
 
 class SubspaceTestingMethods(unittest.TestCase):
