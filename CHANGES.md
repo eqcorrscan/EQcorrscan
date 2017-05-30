@@ -54,6 +54,9 @@ match_filter;
 signal-to-noise ratio is below a user-defined threshold, the channel
 will not be used.
 * Stop enforcing two-channel template channel names.
+* Fix bug in detection_multiplot which didn't allow streams with
+fewer traces than template;
+* Update internals to SciPy correlation rather than openCV (Major change);
 
 
 ## 0.1.6

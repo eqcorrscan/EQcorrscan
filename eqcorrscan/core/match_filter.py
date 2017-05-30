@@ -52,6 +52,31 @@ from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 
 
+def _spike_test(stream, percent=0.99, multiplier=1e6):
+    """
+    Check for very large spikes in data and raise an error if found.
+
+    :param stream: Stream to look for spikes in.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param percent: Percentage as a decimal to calcualte range for.
+    :type percent: float
+    :param multiplier: Multiplier of range to define a spike.
+    :type multiplier: float
+    """
+    for tr in stream:
+        if (tr.data > 2 * np.max(
+            np.sort(np.abs(
+                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
+            msg = ('Spikes above ' + str(multiplier) +
+                   ' of the range of ' + str(percent) +
+                   ' of the data present, check. \n ' +
+                   'This would otherwise likely result in an issue during ' +
+                   'FFT prior to cross-correlation.\n' +
+                   'If you think this spike is real please report ' +
+                   'this as a bug.')
+            raise MatchFilterError(msg)
+
+
 class MatchFilterError(Exception):
     """
     Default error for match-filter errors.
@@ -1350,8 +1375,7 @@ class Template(object):
         self.process_length = process_length
         self.prepick = prepick
         if event is not None:
-            if len(event.comments) > 0 and \
-               "eqcorrscan_template_" + temp_name not in \
+            if "eqcorrscan_template_" + temp_name not in \
                [c.text for c in event.comments]:
                 event.comments.append(Comment(
                         text="eqcorrscan_template_" + temp_name,
@@ -2889,7 +2913,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
-    ncores = cpu_count()
+    if parallel_process:
+        ncores = cpu_count()
+    else:
+        ncores = 1
     st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
@@ -3307,8 +3334,9 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
                 print('No data in stream for pick:')
                 print(pick)
                 continue
-            cut_stream += tr.copy().trim(starttime=pick.time - pad,
-                                         endtime=pick.time - pad + length)
+            cut_stream += tr.slice(
+                starttime=pick.time - pad,
+                endtime=pick.time - pad + length).copy()
         streams.append(cut_stream)
     return streams
 
@@ -3358,11 +3386,16 @@ def normxcorr2(template, image):
     return ccc
 
 
-def multi_normxcorr(templates, stream):
+def multi_normxcorr(templates, stream, pads):
     """
     Compute the normalized cross-correlation of multiple templates with data.
-    :param templates: np.ndarray
-    :param stream: np.ndarray
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+
     :return: np.ndarray
     """
     # TODO:: Try other fft methods: pyfftw?
@@ -3370,8 +3403,12 @@ def multi_normxcorr(templates, stream):
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
 
-    stream = stream.astype(np.float32)
-    # templates = templates.astype(np.float32)
+    # Generate a template mask
+    used_chans = ~np.isnan(templates).any(axis=1)
+    # Currently have to use float64 as bottleneck runs into issues with other
+    # types: https://github.com/kwgoodman/bottleneck/issues/164
+    stream = stream.astype(np.float64)
+    templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
     fftshape = next_fast_len(template_length + stream_length - 1)
@@ -3387,13 +3424,20 @@ def multi_normxcorr(templates, stream):
     stream_fft = np.fft.rfft(stream, fftshape)
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
-                       fftshape)[:, 0:template_length + stream_length -1]
+                       fftshape)[:, 0:template_length + stream_length - 1]
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
-    return res
+    for i in range(len(pads)):
+        # This is a hack from padding templates with nan data
+        if np.isnan(res[i]).all():
+            res[i] = np.zeros(len(res[i]))
+        else:
+            res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
+    return res.astype(np.float32), used_chans
 
 
-def multichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1):
+def multichannel_xcorr(templates, stream, use_dask=False, compute=True,
+                       cores=1):
     """
     Cross-correlate multiple channels either in parallel or not
 
@@ -3412,7 +3456,7 @@ def multichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1)
         python native multiprocessing.
     :type compute: bool
     :param compute:
-        Only valid if dask==True, if compute==False, returned result with be
+        Only valid if dask==True. If compute==False, returned result with be
         a dask.delayed object, useful if you are using dask to compute multiple
         time-steps at the same time.
     :type cores: int
@@ -3439,45 +3483,71 @@ def multichannel_xcorr(templates, stream, use_dask=False, compute=True, cores=1)
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
+    no_chans = np.zeros(len(templates))
+    chans = [[] for _i in range(len(templates))]
     # Do some reshaping
-    stream.sort()
+    stream.sort(['network', 'station', 'location', 'channel'])
+    t_starts = []
     for template in templates:
-        template.sort()
+        template.sort(['network', 'station', 'location', 'channel'])
+        t_starts.append(min([tr.stats.starttime for tr in template]))
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     template_array = {}
+    stream_array = {}
+    pad_array = {}
     for i, seed_id in enumerate(seed_ids):
         t_ar = np.array([template[i].data for template in templates])
         template_array.update({seed_id: t_ar})
-    if use_dask:
-        import dask
-        xcorrs = []
-        for seed_id in seed_ids:
-            tr_xcorrs = dask.delayed(multi_normxcorr)(
-                templates=template_array[seed_id],
-                stream=stream.select(id=seed_id.split('_')[0])[0].data)
-            xcorrs.append(tr_xcorrs)
-        cccsums = dask.delayed(np.sum)(xcorrs, axis=0)
-        if compute:
-            cccsums.compute()
-    elif cores is None:
+        stream_array.update(
+            {seed_id: stream.select(id=seed_id.split('_')[0])[0].data})
+        pad_list = [
+            int(round(template[i].stats.sampling_rate *
+                      (template[i].stats.starttime - t_starts[j])))
+            for j, template in zip(range(len(templates)), templates)]
+        pad_array.update({seed_id: pad_list})
+    # if use_dask:
+    #     import dask
+    #     xcorrs = []
+    #     for seed_id in seed_ids:
+    #         tr_xcorrs, tr_chans = dask.delayed(multi_normxcorr)(
+    #             templates=template_array[seed_id],
+    #             stream=stream.select(id=seed_id.split('_')[0])[0].data)
+    #         xcorrs.append(tr_xcorrs)
+    #     cccsums = dask.delayed(np.sum)(xcorrs, axis=0)
+    #     if compute:
+    #         cccsums.compute()
+    if cores is None:
         cccsums = np.zeros([len(templates),
                             len(stream[0]) - len(templates[0][0]) + 1])
         for seed_id in seed_ids:
-            tr_xcorrs = multi_normxcorr(
+            tr_xcorrs, tr_chans = multi_normxcorr(
                 templates=template_array[seed_id],
-                stream=stream.select(id=seed_id.split('_')[0])[0].data)
+                stream=stream_array[seed_id], pads=pad_array[seed_id])
             cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
+            no_chans += tr_chans.astype(np.int)
+            for chan, state in zip(chans, tr_chans):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
     else:
         pool = Pool(processes=cores)
         results = [pool.apply_async(
-            multi_normxcorr)(template_array[seed_id],
-                             stream.select(id=seed_id.split('_')[0])[0].data)
+            multi_normxcorr, (template_array[seed_id], stream_array[seed_id],
+                              pad_array[seed_id]))
                    for seed_id in seed_ids]
         pool.close()
-        xcorrs = [p.get() for p in results]
+        results = [p.get() for p in results]
+        xcorrs = [p[0] for p in results]
+        tr_chans = np.array([p[1] for p in results])
         pool.join()
         cccsums = np.sum(xcorrs, axis=0)
-    return cccsums
+        no_chans = np.sum(tr_chans.astype(np.int), axis=0)
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
+    return cccsums, no_chans, chans
 
 
 def _template_loop(template, chan, stream_ind, debug=0, i=0):
@@ -3875,7 +3945,7 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
-
+    _spike_test(st, 0.99, 1e6)
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -3923,7 +3993,7 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError(msg)
     outtic = time.clock()
     if debug >= 2:
-        print('Ensuring all template channels have matches in long data')
+        print('Ensuring all template channels have matches in continuous data')
     template_stachan = {}
     # Work out what station-channel pairs are in the templates, including
     # duplicate station-channel pairs.  We will use this information to fill
@@ -3982,19 +4052,18 @@ def match_filter(template_names, template_list, st, threshold,
                    % (key[0], key[1], key[2], key[3]))
             raise MatchFilterError(msg)
     # Pad out templates to have all channels
+    _templates = []
+    used_template_names = []
     for template, template_name in zip(templates, _template_names):
         if len(template) == 0:
             msg = ('No channels matching in continuous data for ' +
                    'template' + template_name)
             warnings.warn(msg)
-            templates.remove(template)
-            _template_names.remove(template_name)
             continue
         for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(network=stachan[0],
-                                                     station=stachan[1],
-                                                     location=stachan[2],
-                                                     channel=stachan[3]))
+            number_of_channels = len(template.select(
+                network=stachan[0], station=stachan[1], location=stachan[2],
+                channel=stachan[3]))
             if number_of_channels < template_stachan[stachan]:
                 missed_channels = template_stachan[stachan] -\
                                   number_of_channels
@@ -4009,19 +4078,22 @@ def match_filter(template_names, template_list, st, threshold,
                 for dummy in range(missed_channels):
                     template += nulltrace
         template.sort()
+        _templates.append(template)
+        used_template_names.append(template_name)
         # Quick check that this has all worked
         if len(template) != max([len(t) for t in templates]):
             raise MatchFilterError('Internal error forcing same template '
                                    'lengths, report this error.')
+    templates = _templates
+    _template_names = used_template_names
     if debug >= 2:
         print('Starting the correlation run for this day')
     if debug >= 3:
         for template in templates:
             print(template)
         print(stream)
-    [cccsums, no_chans, chans] = _channel_loop(
-        templates=templates, stream=stream, cores=cores, debug=debug,
-        internal=internal)
+    [cccsums, no_chans, chans] = multichannel_xcorr(
+        templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
