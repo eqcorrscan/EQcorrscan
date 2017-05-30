@@ -2887,7 +2887,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
-    ncores = cpu_count()
+    if parallel_process:
+        ncores = cpu_count()
+    else:
+        ncores = 1
     st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
