@@ -227,11 +227,11 @@ class ClusteringTestMethods(unittest.TestCase):
                 tr.resample(sampling_rate=samp_rate)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
-        svstreams = svd_to_stream(svectors=SVectors, stachans=stachans, k=4,
+        svstreams = svd_to_stream(uvectors=SVectors, stachans=stachans, k=4,
                                   sampling_rate=samp_rate)
         self.assertEqual(len(svstreams), 4)
         with warnings.catch_warnings(record=True) as w:
-            SVD_2_stream(SVectors=SVectors, stachans=stachans, k=4,
+            SVD_2_stream(uvectors=SVectors, stachans=stachans, k=4,
                          sampling_rate=samp_rate)
             self.assertEqual(len(w), 1)
             self.assertTrue('Depreciated' in str(w[0].message))
