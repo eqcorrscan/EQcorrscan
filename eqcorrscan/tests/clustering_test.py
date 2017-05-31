@@ -175,10 +175,10 @@ class ClusteringTestMethods(unittest.TestCase):
                 tr.detrend('simple')
                 tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-        SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
+        UVectors, SValues, SVectors, stachans = svd(stream_list=stream_list)
         self.assertEqual(len(SVectors), len(stachans))
         self.assertEqual(len(SValues), len(stachans))
-        self.assertEqual(len(Uvectors), len(stachans))
+        self.assertEqual(len(UVectors), len(stachans))
         for SVec in SVectors:
             self.assertEqual(len(SVec), len(stream_list))
         with warnings.catch_warnings(record=True) as w:
