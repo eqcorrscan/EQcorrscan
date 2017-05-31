@@ -501,13 +501,13 @@ def svd_to_stream(uvectors, stachans, k, sampling_rate):
     for i in range(k):
         svstream = []
         for j, stachan in enumerate(stachans):
-            if len(svectors[j]) <= k:
+            if len(uvectors[j]) <= k:
                 warnings.warn('Too few traces at %s for a %02d dimensional '
                               'subspace. Detector streams will not include '
                               'this channel.' % ('.'.join(stachan[0],
                                                           stachan[1]), k))
             else:
-                svstream.append(Trace(svectors[j][i],
+                svstream.append(Trace(uvectors[j][i],
                                       header={'station': stachan[0],
                                               'channel': stachan[1],
                                               'sampling_rate': sampling_rate}))
