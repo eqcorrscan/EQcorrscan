@@ -233,6 +233,8 @@ class ShortTests(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             _xcorr_interp(ccc, 0.1)
+        for _w in w:
+            print(_w.message)
         self.assertEqual(len(w), 2)
         self.assertTrue('Less than 5 samples' in str(w[0].message))
         self.assertTrue('Residual in quadratic fit' in str(w[1].message))
