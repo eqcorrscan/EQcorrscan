@@ -111,58 +111,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         window = arr[peak_slice[0].start: peak_slice[0].stop]
         initial_peaks.append((max(window),
                               int(peak_slice[0].start + np.argmax(window))))
-    # Sort initial peaks according to amplitude
-    peaks_sort = sorted(initial_peaks, key=lambda amplitude: amplitude[0],
-                        reverse=True)
-    # Debugging
-    if debug >= 4:
-        for peak in initial_peaks:
-            print(peak)
     if initial_peaks:
-        peaks.append(peaks_sort[0])  # Definitely take the biggest peak
-        if debug > 3:
-            print(' '.join(['Added the biggest peak of', str(peaks[0][0]),
-                            'at sample', str(peaks[0][1])]))
-        if len(initial_peaks) > 1:
-            if debug > 3:
-                msg = ' '.join(['Multiple peaks found, checking',
-                                'them now to see if they overlap'])
-                print(msg)
-            for next_peak in peaks_sort:
-                # i in range(1,len(peaks_sort)):
-                # Loop through the amplitude sorted peaks
-                # if the next highest amplitude peak is within trig_int of any
-                # peak already in peaks then we don't want it, else, add it
-                # next_peak=peaks_sort[i]
-                if debug > 3:
-                    print(next_peak)
-                for peak in peaks:
-                    # Use add as a switch for whether or not to append
-                    # next peak to peaks, if once gone through all the peaks
-                    # it is True, then we will add it, otherwise we won't!
-                    if abs(next_peak[1] - peak[1]) < trig_int:
-                        if debug > 3:
-                            msg = ' '.join(['Difference in time is',
-                                            str(next_peak[1] - peak[1]), '\n',
-                                            'Which is less than',
-                                            str(trig_int)])
-                            print(msg)
-                        add = False
-                        # Need to exit the loop here if false
-                        break
-                    else:
-                        add = True
-                if add:
-                    if debug > 3:
-                        msg = ' '.join(['Adding peak of', str(next_peak[0]),
-                                        'at sample', str(next_peak[1])])
-                        print(msg)
-                    peaks.append(next_peak)
-                elif debug > 3:
-                    msg = ' '.join(['I did not add peak of', str(next_peak[0]),
-                                    'at sample', str(next_peak[1])])
-                    print(msg)
-
+        peaks = decluster(peaks=initial_peaks, trig_int=trig_int, debug=debug)
         if debug >= 3:
             from eqcorrscan.utils import plotting
             _fname = ''.join(['peaks_',
@@ -176,6 +126,82 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     else:
         print('No peaks for you!')
         return peaks
+
+
+def decluster(peaks, trig_int, return_ind=False, debug=0):
+    """
+    Decluster peaks based on an enforced minimum separation.
+
+    :type peaks: list
+    :param peaks: list of tuples of (value, sample)
+    :type trig_int: int
+    :param trig_int: Minimum trigger interval in samples
+    :type return_ind: bool
+    :param return_ind:
+        Whether to also return the indices of the original peaks or not.
+
+    :return: list of tuples of (value, sample)
+    """
+    peaks_sort = sorted(zip(peaks, np.arange(len(peaks))),
+                        key=lambda amplitude: amplitude[0][0],
+                        reverse=True)
+    peaks_sort, inds = zip(*peaks_sort)
+    # Debugging
+    if debug >= 4:
+        for peak in peaks:
+            print(peak)
+    peaks_out = []
+    ind_out = []
+    add = False
+    ind_out.append(inds[0])
+    peaks_out.append(peaks_sort[0])  # Definitely take the biggest peak
+    if debug > 3:
+        print(' '.join(['Added the biggest peak of', str(peaks_out[0][0]),
+                        'at sample', str(peaks_out[0][1])]))
+    if len(peaks) > 1:
+        if debug > 3:
+            msg = ' '.join(['Multiple peaks found, checking',
+                            'them now to see if they overlap'])
+            print(msg)
+        for next_peak, next_ind in zip(peaks_sort, inds):
+            # i in range(1,len(peaks_sort)):
+            # Loop through the amplitude sorted peaks
+            # if the next highest amplitude peak is within trig_int of any
+            # peak already in peaks then we don't want it, else, add it
+            # next_peak=peaks_sort[i]
+            if debug > 3:
+                print(next_peak)
+            for peak in peaks_out:
+                # Use add as a switch for whether or not to append
+                # next peak to peaks, if once gone through all the peaks
+                # it is True, then we will add it, otherwise we won't!
+                if abs(next_peak[1] - peak[1]) < trig_int:
+                    if debug > 3:
+                        msg = ' '.join(['Difference in time is',
+                                        str(next_peak[1] - peak[1]), '\n',
+                                        'Which is less than',
+                                        str(trig_int)])
+                        print(msg)
+                    add = False
+                    # Need to exit the loop here if false
+                    break
+                else:
+                    add = True
+            if add:
+                if debug > 3:
+                    msg = ' '.join(['Adding peak of', str(next_peak[0]),
+                                    'at sample', str(next_peak[1])])
+                    print(msg)
+                ind_out.append(next_ind)
+                peaks_out.append(next_peak)
+            elif debug > 3:
+                msg = ' '.join(['I did not add peak of', str(next_peak[0]),
+                                'at sample', str(next_peak[1])])
+                print(msg)
+    if return_ind:
+        return peaks_out, ind_out
+    else:
+        return peaks_out
 
 
 def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,

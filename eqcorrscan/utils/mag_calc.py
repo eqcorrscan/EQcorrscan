@@ -33,8 +33,11 @@ from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
 from obspy import UTCDateTime, read
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
+from obspy.geodetics import degrees2kilometers
 
 from eqcorrscan.utils import sfile_util
+from eqcorrscan.core.match_filter import MatchFilterError
+from eqcorrscan.utils.catalog_utils import _get_origin
 
 
 def dist_calc(loc1, loc2):
@@ -166,6 +169,11 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     ...                         plotvar=False)
     >>> round(b_values[4][1])
     1.0
+    >>> # We can set a maximum magnitude:
+    >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
+    ...                         plotvar=False, max_mag=5)
+    >>> round(b_values[4][1])
+    1.0
     """
     b_values = []
     # Calculate the cdf for all magnitudes
@@ -222,29 +230,36 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     return b_values
 
 
-def _sim_WA(trace, PAZ, seedresp, water_level):
+def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.
 
     Returns a de-meaned, de-trended, Wood Anderson simulated trace in
-    it's place.
+    its place.
 
-    Works in-place on data and will destroy your original data, copy the \
+    Works in-place on data and will destroy your original data, copy the
     trace before giving it to this function!
 
     :type trace: obspy.core.trace.Trace
-    :param trace: A standard obspy trace, generally should be given without
-                    pre-filtering, if given with pre-filtering for use with
-                    amplitude determiniation for magnitudes you will need to
-                    worry about how you cope with the response of this filter
-                    yourself.
+    :param trace:
+        A standard obspy trace, generally should be given without
+        pre-filtering, if given with pre-filtering for use with
+        amplitude determination for magnitudes you will need to
+        worry about how you cope with the response of this filter
+        yourself.
     :type PAZ: dict
-    :param PAZ: Dictionary containing lists of poles and zeros, the gain and
-                the sensitivity. If unset will expect seedresp.
+    :param PAZ:
+        Dictionary containing lists of poles and zeros, the gain and
+        the sensitivity. If unset will expect seedresp.
     :type seedresp: dict
     :param seedresp: Seed response information - if unset will expect PAZ.
     :type water_level: int
     :param water_level: Water level for the simulation.
+    :type velocity: bool
+    :param velocity:
+        Whether to return a velocity trace or not - velocity is non-standard
+        for Wood-Anderson instruments, but institutes that use seiscomp3 or
+        Antelope require picks in velocity.
 
     :returns: Trace of Wood-Anderson simulated data
     :rtype: :class:`obspy.core.trace.Trace`
@@ -252,13 +267,16 @@ def _sim_WA(trace, PAZ, seedresp, water_level):
     # Note Wood anderson sensitivity is 2080 as per Uhrhammer & Collins 1990
     PAZ_WA = {'poles': [-6.283 + 4.7124j, -6.283 - 4.7124j],
               'zeros': [0 + 0j], 'gain': 1.0, 'sensitivity': 2080}
+    if velocity:
+        PAZ_WA['zeros'] = [0 + 0j, 0 + 0j]
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
     if PAZ:
         trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
                               paz_remove=PAZ, paz_simulate=PAZ_WA,
-                              water_level=water_level, remove_sensitivity=True)
+                              water_level=water_level,
+                              remove_sensitivity=True)
     elif seedresp:
         trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
                               paz_remove=None, paz_simulate=PAZ_WA,
@@ -287,7 +305,6 @@ def _max_p2t(data, delta):
         seconds from the start of the data window.
     :rtype: tuple
     """
-    debug_plot = False
     turning_points = []  # A list of tuples of (amplitude, sample)
     for i in range(1, len(data) - 1):
         if (data[i] < data[i - 1] and data[i] < data[i + 1]) or\
@@ -297,8 +314,6 @@ def _max_p2t(data, delta):
         amplitudes = np.empty([len(turning_points) - 1],)
         half_periods = np.empty([len(turning_points) - 1],)
     else:
-        plt.plot(data)
-        plt.show()
         print('Turning points has length: ' + str(len(turning_points)) +
               ' data have length: ' + str(len(data)))
         return 0.0, 0.0, 0.0
@@ -309,13 +324,6 @@ def _max_p2t(data, delta):
                                    turning_points[i - 1][0])
     amplitude = np.max(amplitudes)
     period = 2 * half_periods[np.argmax(amplitudes)]
-    if debug_plot:
-        plt.plot(data, 'k')
-        plt.plot([turning_points[np.argmax(amplitudes)][1],
-                  turning_points[np.argmax(amplitudes) - 1][1]],
-                 [turning_points[np.argmax(amplitudes)][0],
-                  turning_points[np.argmax(amplitudes) - 1][0]], 'r')
-        plt.show()
     return amplitude, period, delta * turning_points[np.argmax(amplitudes)][1]
 
 
@@ -469,7 +477,7 @@ def _pairwise(iterable):
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
-                   remove_old=False):
+                   remove_old=False, ps_multiplier=0.34, velocity=False):
     """
     Pick amplitudes for local magnitude for a single event.
 
@@ -508,8 +516,8 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
 
         6. We use a variable window-length by default that takes into account
         P-S times if available, this is in an effort to include only the
-        body waves.  When P-S times are not available we hard-wire a P-S
-        at 0.34 x hypocentral distance.
+        body waves.  When P-S times are not available we us the ps_multiplier
+        variable, which defaults to 0.34 x hypocentral distance.
 
     :type event: obspy.core.event.event.Event
     :param event: Event to pick
@@ -518,22 +526,22 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :type respdir: str
     :param respdir: Path to the response information directory
     :type chans: list
-    :param chans: List of the channels to pick on, defaults to ['Z'] - should \
-        just be the orientations, e.g. Z,1,2,N,E
+    :param chans:
+        List of the channels to pick on, defaults to ['Z'] - should just be
+        the orientations, e.g. Z, 1, 2, N, E
     :type var_wintype: bool
-    :param var_wintype: If True, the winlen will be \
-        multiplied by the P-S time if both P and S picks are \
-        available, otherwise it will be multiplied by the \
-        hypocentral distance*0.34 - derived using a p-s ratio of \
-        1.68 and S-velocity of 1.5km/s to give a large window, \
-        defaults to True
+    :param var_wintype:
+        If True, the winlen will be multiplied by the P-S time if both P and
+        S picks are available, otherwise it will be multiplied by the
+        hypocentral distance*ps_multiplier, defaults to True
     :type winlen: float
-    :param winlen: Length of window, see above parameter, if var_wintype is \
-        False then this will be in seconds, otherwise it is the \
-        multiplier to the p-s time, defaults to 0.5.
+    :param winlen:
+        Length of window, see above parameter, if var_wintype is False then
+        this will be in seconds, otherwise it is the multiplier to the
+        p-s time, defaults to 0.9.
     :type pre_pick: float
-    :param pre_pick: Time before the s-pick to start the cut window, defaults \
-        to 0.2
+    :param pre_pick:
+        Time before the s-pick to start the cut window, defaults to 0.2.
     :type pre_filt: bool
     :param pre_filt: To apply a pre-filter or not, defaults to True
     :type lowcut: float
@@ -543,39 +551,56 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :type corners: int
     :param corners: Number of corners to use in the pre-filter
     :type min_snr: float
-    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
-        below on signal-to-noise ratio calculation.
+    :param min_snr:
+        Minimum signal-to-noise ratio to allow a pick - see note below on
+        signal-to-noise ratio calculation.
     :type plot: bool
     :param plot: Turn plotting on or off.
     :type remove_old: bool
     :param remove_old:
         If True, will remove old amplitude picks from event and overwrite
         with new picks. Defaults to False.
+    :type ps_multiplier: float
+    :param ps_multiplier:
+        A p-s time multiplier of hypocentral distance - defaults to 0.34,
+        based on p-s ratio of 1.68 and an S-velocity 0f 1.5km/s, deliberately
+        chosen to be quite slow.
+    :type velocity: bool
+    :param velocity:
+        Whether to make the pick in velocity space or not. Original definition
+        of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
+        and Antelope uses a velocity measurement.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.Event`
 
-    .. Note:: Signal-to-noise ratio is calculated using the filtered data by \
-        dividing the maximum amplitude in the signal window (pick window) \
-        by the normalized noise amplitude (taken from the whole window \
+    .. Note::
+        Signal-to-noise ratio is calculated using the filtered data by
+        dividing the maximum amplitude in the signal window (pick window)
+        by the normalized noise amplitude (taken from the whole window
         supplied).
+
+    .. Warning::
+        Works in place on data - will filter and remove response from data,
+        you are recommended to give this function a copy of the data if you
+        are using it in a loop.
     """
-    # Hardwire a p-s multiplier of hypocentral distance based on p-s ratio of
-    # 1.68 and an S-velocity 0f 1.5km/s, deliberately chosen to be quite slow
-    ps_multiplier = 0.34
     # Convert these picks into a lists
     stations = []  # List of stations
     channels = []  # List of channels
     picktimes = []  # List of pick times
     picktypes = []  # List of pick types
-    distances = []  # List of hypocentral distances
     picks_out = []
+    try:
+        depth = _get_origin(event).depth
+    except MatchFilterError:
+        depth = 0
     if remove_old and event.amplitudes:
         for amp in event.amplitudes:
             # Find the pick and remove it too
             pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
             event.picks.remove(pick)
-            event.amplitudes.remove(amp)
+        event.amplitudes = []
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
             picks_out.append(pick)  # Need to be able to remove this if there
@@ -584,24 +609,18 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             channels.append(pick.waveform_id.channel_code)
             picktimes.append(pick.time)
             picktypes.append(pick.phase_hint)
-            arrival = [arrival for arrival in event.origins[0].arrivals
-                       if arrival.pick_id == pick.resource_id][0]
-            distances.append(arrival.distance)
+    if len(picktypes) == 0:
+        warnings.warn('No P or S picks found')
     st.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
-    del(arrival)
     for sta in uniq_stas:
         for chan in chans:
             print('Working on ' + sta + ' ' + chan)
             tr = st.select(station=sta, channel='*' + chan)
             if not tr:
-                # Remove picks from file
-                # picks_out=[picks_out[i] for i in range(len(picks))\
-                # if picks_out[i].station+picks_out[i].channel != \
-                # sta+chan]
-                warnings.warn('There is no station and channel match in the '
-                              'wavefile!')
+                warnings.warn(
+                    'There is no station and channel match in the wavefile!')
                 continue
             else:
                 tr = tr[0]
@@ -622,9 +641,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     print(tr)
                     continue
             # Find the response information
-            resp_info = _find_resp(tr.stats.station, tr.stats.channel,
-                                   tr.stats.network, tr.stats.starttime,
-                                   tr.stats.delta, respdir)
+            resp_info = _find_resp(
+                tr.stats.station, tr.stats.channel, tr.stats.network,
+                tr.stats.starttime, tr.stats.delta, respdir)
             PAZ = []
             seedresp = []
             if resp_info and 'gain' in resp_info:
@@ -634,57 +653,62 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             # Simulate a Wood Anderson Seismograph
             if PAZ and len(tr.data) > 10:
                 # Set ten data points to be the minimum to pass
-                tr = _sim_WA(tr, PAZ, None, 10)
+                tr = _sim_WA(tr, PAZ, None, 10, velocity=velocity)
             elif seedresp and len(tr.data) > 10:
-                tr = _sim_WA(tr, None, seedresp, 10)
+                tr = _sim_WA(tr, None, seedresp, 10, velocity=velocity)
             elif len(tr.data) > 10:
                 warnings.warn('No PAZ for ' + tr.stats.station + ' ' +
                               tr.stats.channel + ' at time: ' +
                               str(tr.stats.starttime))
                 continue
-            noise = tr.copy()  # Copy the data to use for noise calculation
             sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
             pick_id = event.picks[sta_picks[0]].resource_id
             arrival = [arrival for arrival in event.origins[0].arrivals
                        if arrival.pick_id == pick_id][0]
-            hypo_dist = arrival.distance
+            hypo_dist = np.sqrt(
+                np.square(degrees2kilometers(arrival.distance)) +
+                np.square(depth / 1000))
             if var_wintype and hypo_dist:
                 if 'S' in [picktypes[i] for i in sta_picks] and\
                    'P' in [picktypes[i] for i in sta_picks]:
                     # If there is an S-pick we can use this :D
-                    S_pick = [picktimes[i] for i in sta_picks
+                    s_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_pick = [picktimes[i] for i in sta_picks
+                    s_pick = min(s_pick)
+                    p_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
+                    p_pick = min(p_pick)
                     try:
-                        tr.trim(starttime=S_pick - pre_pick,
-                                endtime=S_pick + (S_pick - P_pick) * winlen)
+                        tr.trim(starttime=s_pick - pre_pick,
+                                endtime=s_pick + (s_pick - p_pick) * winlen)
                     except ValueError:
                         continue
                 elif 'S' in [picktypes[i] for i in sta_picks]:
-                    S_pick = [picktimes[i] for i in sta_picks
+                    s_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'S']
-                    S_pick = min(S_pick)
-                    P_modelled = S_pick - hypo_dist * ps_multiplier
+                    s_pick = min(s_pick)
+                    p_modelled = s_pick - (hypo_dist * ps_multiplier)
                     try:
-                        tr.trim(starttime=S_pick - pre_pick,
-                                endtime=S_pick + (S_pick - P_modelled) *
+                        tr.trim(starttime=s_pick - pre_pick,
+                                endtime=s_pick + (s_pick - p_modelled) *
                                 winlen)
                     except ValueError:
                         continue
                 else:
                     # In this case we only have a P pick
-                    P_pick = [picktimes[i] for i in sta_picks
+                    p_pick = [picktimes[i] for i in sta_picks
                               if picktypes[i] == 'P']
-                    P_pick = min(P_pick)
-                    S_modelled = P_pick + hypo_dist * ps_multiplier
+                    p_pick = min(p_pick)
+                    s_modelled = p_pick + (hypo_dist * ps_multiplier)
+                    print('P_pick=%s' % str(p_pick))
+                    print('hypo_dist: %s' % str(hypo_dist))
+                    print('S modelled=%s' % str(s_modelled))
                     try:
-                        tr.trim(starttime=S_modelled - pre_pick,
-                                endtime=S_modelled + (S_modelled - P_pick) *
+                        tr.trim(starttime=s_modelled - pre_pick,
+                                endtime=s_modelled + (s_modelled - p_pick) *
                                 winlen)
+                        print(tr)
                     except ValueError:
                         continue
                 # Work out the window length based on p-s time or distance
@@ -695,12 +719,12 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
 
                 # Take the minimum S-pick time if more than one S-pick is
                 # available
-                S_pick = [picktimes[i] for i in sta_picks
+                s_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'S']
-                S_pick = min(S_pick)
+                s_pick = min(s_pick)
                 try:
-                    tr.trim(starttime=S_pick - pre_pick,
-                            endtime=S_pick + winlen)
+                    tr.trim(starttime=s_pick - pre_pick,
+                            endtime=s_pick + winlen)
                 except ValueError:
                     continue
             else:
@@ -708,29 +732,27 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # fixed we need to calculate an expected S_pick based on the
                 # hypocentral distance, this will be quite hand-wavey as we
                 # are not using any kind of velocity model.
-                P_pick = [picktimes[i] for i in sta_picks
+                p_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'P']
-                P_pick = min(P_pick)
-                hypo_dist = [distances[i] for i in sta_picks
-                             if picktypes[i] == 'P'][0]
-                S_modelled = P_pick + hypo_dist * ps_multiplier
+                print(picktimes)
+                p_pick = min(p_pick)
+                s_modelled = p_pick + hypo_dist * ps_multiplier
                 try:
-                    tr.trim(starttime=S_modelled - pre_pick,
-                            endtime=S_modelled + winlen)
+                    tr.trim(starttime=s_modelled - pre_pick,
+                            endtime=s_modelled + winlen)
                 except ValueError:
                     continue
             if len(tr.data) <= 10:
-                # Should remove the P and S picks if len(tr.data)==0
                 warnings.warn('No data found for: ' + tr.stats.station)
-                # print 'No data in miniseed file for '+tr.stats.station+\
-                # ' removing picks'
-                # picks_out=[picks_out[i] for i in range(len(picks_out))\
-                # if i not in sta_picks]
                 continue
             # Get the amplitude
-            amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            try:
+                amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
+            except ValueError:
+                print('No amplitude picked for tr %s' % str(tr))
+                continue
             # Calculate the normalized noise amplitude
-            noise_amplitude = np.sqrt(np.mean(np.square(noise.data)))
+            noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             if amplitude == 0.0:
                 continue
             if amplitude / noise_amplitude < min_snr:
@@ -752,58 +774,49 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # Generate poles and zeros for the filter we used earlier: this
                 # is how the filter is designed in the convenience methods of
                 # filtering in obspy.
-                z, p, k = iirfilter(corners, [lowcut / (0.5 *
-                                                        tr.stats.
-                                                        sampling_rate),
-                                              highcut / (0.5 *
-                                                         tr.stats.
-                                                         sampling_rate)],
-                                    btype='band', ftype='butter', output='zpk')
-                filt_paz = {'poles': list(p),
-                            'zeros': list(z),
-                            'gain': k,
+                z, p, k = iirfilter(
+                    corners, [lowcut / (0.5 * tr.stats.sampling_rate),
+                              highcut / (0.5 * tr.stats.sampling_rate)],
+                    btype='band', ftype='butter', output='zpk')
+                filt_paz = {'poles': list(p), 'zeros': list(z), 'gain': k,
                             'sensitivity': 1.0}
-                amplitude /= (paz_2_amplitude_value_of_freq_resp(filt_paz,
-                                                                 1 / period) *
-                              filt_paz['sensitivity'])
-            # Convert amplitude to mm
-            if PAZ:  # Divide by Gain to get to nm (returns pm? 10^-12)
-                # amplitude *=PAZ['gain']
+                amplitude /= (paz_2_amplitude_value_of_freq_resp(
+                    filt_paz, 1 / period) * filt_paz['sensitivity'])
+            if PAZ:
                 amplitude /= 1000
             if seedresp:  # Seedresp method returns mm
                 amplitude *= 1000000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
-            # Page 343 of Seisan manual:
-            #   Amplitude (Zero-Peak) in units of nm, nm/s, nm/s^2 or counts
             amplitude *= 0.5
             # Append an amplitude reading to the event
-            _waveform_id = WaveformStreamID(station_code=tr.stats.station,
-                                            channel_code=tr.stats.channel,
-                                            network_code=tr.stats.network)
+            _waveform_id = WaveformStreamID(
+                station_code=tr.stats.station, channel_code=tr.stats.channel,
+                network_code=tr.stats.network)
             pick_ind = len(event.picks)
-            event.picks.append(Pick(waveform_id=_waveform_id,
-                                    phase_hint='IAML',
-                                    polarity='undecidable',
-                                    time=tr.stats.starttime + delay,
-                                    evaluation_mode='automatic'))
-            event.amplitudes.append(Amplitude(generic_amplitude=amplitude /
-                                              1e9, period=period,
-                                              pick_id=event.
-                                              picks[pick_ind].resource_id,
-                                              waveform_id=event.
-                                              picks[pick_ind].waveform_id,
-                                              unit='m',
-                                              magnitude_hint='ML',
-                                              type='AML',
-                                              category='point'))
+            event.picks.append(Pick(
+                waveform_id=_waveform_id, phase_hint='IAML',
+                polarity='undecidable', time=tr.stats.starttime + delay,
+                evaluation_mode='automatic'))
+            if not velocity:
+                event.amplitudes.append(Amplitude(
+                    generic_amplitude=amplitude / 1e9, period=period,
+                    pick_id=event.picks[pick_ind].resource_id,
+                    waveform_id=event.picks[pick_ind].waveform_id, unit='m',
+                    magnitude_hint='ML', type='AML', category='point'))
+            else:
+                event.amplitudes.append(Amplitude(
+                    generic_amplitude=amplitude / 1e9, period=period,
+                    pick_id=event.picks[pick_ind].resource_id,
+                    waveform_id=event.picks[pick_ind].waveform_id, unit='m/s',
+                    magnitude_hint='ML', type='AML', category='point'))
     return event
 
 
 def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
-                   remove_old=False):
+                   remove_old=False, velocity=False):
     """
     Function to pick amplitudes for local magnitudes from NORDIC s-files.
 
@@ -859,6 +872,11 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
     :param remove_old:
         If True, will remove old amplitude picks from event and overwrite with
         new picks. Defaults to False.
+    :type velocity: bool
+    :param velocity:
+        Whether to make the pick in velocity space or not. Original definition
+        of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
+        and Antelope uses a velocity measurement.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.event.Event`
@@ -891,7 +909,7 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
                                   pre_filt=pre_filt, lowcut=lowcut,
                                   highcut=highcut, corners=corners,
                                   min_snr=min_snr, plot=plot,
-                                  remove_old=remove_old)
+                                  remove_old=remove_old, velocity=velocity)
     new_sfile = sfile_util.eventtosfile(event=event_picked, userID=str('EQCO'),
                                         evtype=str('L'), outdir=str('.'),
                                         wavefiles=sfile_util.
@@ -901,6 +919,13 @@ def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
+    """Depreciated."""
+    print('Depreciated, use svd_moments instead')
+    return svd_moments(u=U, s=s, v=V, stachans=stachans,
+                       event_list=event_list, n_svs=n_SVs)
+
+
+def svd_moments(u, s, v, stachans, event_list, n_svs=4):
     """
     Calculate relative moments/amplitudes using singular-value decomposition.
 
@@ -912,16 +937,16 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     `Rubinstein & Ellsworth (2010).
     <http://www.bssaonline.org/content/100/5A/1952.short>`_
 
-    :type U: list
-    :param U:
+    :type u: list
+    :param u:
         List of the :class:`numpy.ndarray` input basis vectors from the SVD,
         one array for each channel used.
     :type s: list
     :param s:
         List of the :class:`numpy.ndarray` of singular values, one array for
         each channel.
-    :type V: list
-    :param V:
+    :type v: list
+    :param v:
         List of :class:`numpy.ndarray` of output basis vectors from SVD, one
         array per channel.
     :type stachans: list
@@ -933,8 +958,8 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
         of indexes that map the basis vectors to their relative events and \
         channels - if you have every channel for every event generating these \
         is trivial (see example).
-    :type n_SVs: int
-    :param n_SVs: Number of singular values to use, defaults to 4.
+    :type n_svs: int
+    :param n_svs: Number of singular values to use, defaults to 4.
 
     :returns: M, array of relative moments
     :rtype: :class:`numpy.ndarray`
@@ -947,11 +972,11 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
 
     .. rubric:: Example
 
-    >>> from eqcorrscan.utils.mag_calc import SVD_moments
+    >>> from eqcorrscan.utils.mag_calc import svd_moments
     >>> from obspy import read
     >>> import glob
     >>> import os
-    >>> from eqcorrscan.utils.clustering import SVD
+    >>> from eqcorrscan.utils.clustering import svd
     >>> import numpy as np
     >>> # Do the set-up
     >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
@@ -971,9 +996,9 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     ...         st_list.append(i)
     ...     event_list.append(st_list) # doctest: +SKIP
     >>> event_list = np.asarray(event_list).T.tolist()
-    >>> SVec, SVal, U, stachans = SVD(stream_list=stream_list) # doctest: +SKIP
+    >>> SVec, SVal, U, stachans = svd(stream_list=stream_list) # doctest: +SKIP
     ['GCSZ.EHZ', 'WV04.SHZ', 'WHAT2.SH1']
-    >>> M, events_out = SVD_moments(U=U, s=SVal, V=SVec, stachans=stachans,
+    >>> M, events_out = svd_moments(u=U, s=SVal, v=SVec, stachans=stachans,
     ...                             event_list=event_list) # doctest: +SKIP
 
     """
@@ -985,12 +1010,12 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     if len(stachans) == 1:
         print('Only provided data from one station-channel - '
               'will not try to invert')
-        return U[0][:, 0], event_list[0]
+        return u[0][:, 0], event_list[0]
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
         # Copy the relevant vectors so as not to destroy them
-        U_working = copy.deepcopy(U[i])
-        V_working = copy.deepcopy(V[i])
+        U_working = copy.deepcopy(u[i])
+        V_working = copy.deepcopy(v[i])
         s_working = copy.deepcopy(s[i])
         ev_list = event_list[i]
         if len(ev_list) > len(V_working):
@@ -1000,7 +1025,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
             f_dump.close()
             raise IOError('More events than represented in V')
         # Set all non-important singular values to zero
-        s_working[n_SVs:len(s_working)] = 0
+        s_working[n_svs:len(s_working)] = 0
         s_working = np.diag(s_working)
         # Convert to numpy matrices
         U_working = np.matrix(U_working)
