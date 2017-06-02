@@ -23,6 +23,7 @@ import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
+from scipy.linalg import diagsvd
 from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
@@ -2160,18 +2161,20 @@ def subspace_detector_plot(detector, stachans, size, show):
     elif detector.multiplex:
         stachans = [('multi', ' ')]
     if np.isinf(detector.dimension):
-        nrows = detector.data[0].shape[1]
+        warnings.warn('Infinite subspace dimension. Only plotting as many'
+                      'dimensions as events in design set')
+        nrows = detector.v[0].shape[1]
     else:
         nrows = detector.dimension
     fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
                              sharex=True, sharey=True, figsize=size)
-    x = np.arange(len(detector.v[0]), dtype=np.float32)
+    x = np.arange(len(detector.u[0]), dtype=np.float32)
     if detector.multiplex:
         x /= len(detector.stachans) * detector.sampling_rate
     else:
         x /= detector.sampling_rate
     for column, stachan in enumerate(stachans):
-        channel = detector.v[column]
+        channel = detector.u[column]
         for row, vector in enumerate(channel.T[0:nrows]):
             if len(stachans) == 1:
                 if nrows == 1:
@@ -2189,6 +2192,94 @@ def subspace_detector_plot(detector, stachans, size, show):
                 axis.set_xlabel('Time (s)')
     plt.subplots_adjust(hspace=0.05)
     plt.subplots_adjust(wspace=0.05)
+    if show:
+        plt.show()
+    return fig
+
+
+def subspace_fc_plot(detector, stachans, size, show):
+    """
+    Plot the fractional energy capture of the detector for all events in
+    the design set
+
+    :type detector: :class:`eqcorrscan.core.subspace.Detector`
+    :type stachans: list
+    :param stachans: list of tuples of station, channel pairs to plot.
+    :type stachans: list
+    :param stachans: List of tuples of (station, channel) to use.  Can set\
+        to 'all' to use all the station-channel pairs available. If \
+        detector is multiplexed, will just plot that.
+    :type size: tuple
+    :param size: Figure size.
+    :type show: bool
+    :param show: Whether or not to show the figure.
+
+    :returns: Figure
+    :rtype: matplotlib.pyplot.Figure
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core import subspace
+    >>> import os
+    >>> detector = subspace.Detector()
+    >>> detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+    ...                            '..', 'tests', 'test_data', 'subspace',
+    ...                            'stat_test_detector.h5'))
+    Detector: Tester
+    >>> subspace_fc_plot(detector=detector, stachans='all', size=(10, 7),
+    ...                        show=True) # doctest: +SKIP
+
+    .. plot::
+
+        from eqcorrscan.core import subspace
+        from eqcorrscan.utils.plotting import subspace_detector_plot
+        import os
+        print('running subspace plot')
+        detector = subspace.Detector()
+        detector.read(os.path.join('..', '..', '..', 'tests', 'test_data',
+                                   'subspace', 'stat_test_detector.h5'))
+        subspace_fc_plot(detector=detector, stachans='all', size=(10, 7),
+                               show=True)
+
+    """
+    if stachans == 'all' and not detector.multiplex:
+        stachans = detector.stachans
+    elif detector.multiplex:
+        stachans = [('multi', ' ')]
+    # Work out how many rows and columns to have
+    pfs = []
+    for x in range(1, len(stachans)):
+        if len(stachans) % x == 0:
+            pfs.append(x)
+    ncols = min(pfs, key=lambda x:abs((np.floor(np.sqrt(len(stachans))) - x)))
+    nrows = len(stachans) // ncols
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
+                             sharex=True, sharey=True, figsize=size)
+    for column, axis in enumerate(axes.reshape(-1)):
+        axis.set_title('.'.join(stachans[column]))
+        sig = diagsvd(detector.sigma[column], detector.u[column].shape[0],
+                      detector.v[column].shape[0])
+        A = np.dot(sig, detector.v[column])
+        if detector.dimension > max(
+                detector.v[column].shape) or detector.dimension == np.inf:
+            dim = max(detector.v[column].shape)
+        else:
+            dim = detector.dimension
+        av_fc_dict = {i: [] for i in range(dim)}
+        for ai in A.T:
+            fcs = []
+            for j in range(dim):
+                av_fc_dict[j].append(float(np.dot(ai[:j].T, ai[:j])))
+                fcs.append(float(np.dot(ai[:j].T, ai[:j])))
+            axis.plot(fcs, color='grey')
+        avg = [np.average(dim[1]) for dim in av_fc_dict.items()]
+        axis.plot(avg, color='red', linewidth=3.)
+        if column % ncols == 0 or column == 0:
+            axis.set_ylabel('Fractional Energy Capture (Fc)')
+        if column + 1 > len(stachans) - ncols:
+            axis.set_xlabel('Subspace Dimension')
+    plt.subplots_adjust(hspace=0.2)
+    plt.subplots_adjust(wspace=0.2)
     if show:
         plt.show()
     return fig

@@ -2135,7 +2135,7 @@ class Tribe(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, ignore_length=False,
-               group_size=None, debug=0):
+               group_size=None, do_template_check=False, debug=0):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2243,20 +2243,25 @@ class Tribe(object):
         """
         party = Party()
         template_groups = [[]]
-        for master in self.templates:
-            for group in template_groups:
-                if master in group:
-                    break
-            else:
-                new_group = [master]
-                for slave in self.templates:
-                    if master.same_processing(slave) and master != slave:
-                        new_group.append(slave)
-                template_groups.append(new_group)
-        # template_groups will contain an empty first list
-        for group in template_groups:
-            if len(group) == 0:
-                template_groups.remove(group)
+        if do_template_check:
+            # Separate temps into groups if they are processed in diff ways
+            for master in self.templates:
+                for group in template_groups:
+                    if master in group:
+                        break
+                else:
+                    new_group = [master]
+                    for slave in self.templates:
+                        if master.same_processing(slave) and master != slave:
+                            new_group.append(slave)
+                    template_groups.append(new_group)
+            # template_groups will contain an empty first list
+            template_groups = template_groups[1:]
+        else:
+            template_groups = [self.templates]
+        if debug > 0:
+            print('We have %d groups. Feeding to _group_detect now'
+                  % len(template_groups))
         # now we can compute the detections for each group
         for group in template_groups:
             group_party = _group_detect(
@@ -3476,9 +3481,11 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     # Note: This requires all templates to be the same length, and all channels
     # to be the same length
     temp_len = len(templates[0][0].data)
-    cccs_matrix = np.array(
-        [np.array([np.array([0.0] * (len(stream[0].data) - temp_len + 1))] *
-                  len(templates))] * 2, dtype=np.float32)
+    cccs_matrix = np.zeros([2, len(templates),
+                            len(stream[0].data) - temp_len + 1])
+    if debug >= 3:
+        print('cccs_matrix is using: ' +
+              str(cccs_matrix.nbytes / 1000000) + 'MB')
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
@@ -4041,6 +4048,8 @@ def _spike_test(stream, percent=0.99, multiplier=1e6):
     :type multiple: float
     """
     for tr in stream:
+        print('Checking stachan %s.%s for spikes'
+              % (tr.stats.station, tr.stats.channel))
         if (tr.data > 2 * np.max(
             np.sort(np.abs(
                 tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
