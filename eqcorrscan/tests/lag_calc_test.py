@@ -17,6 +17,8 @@ from eqcorrscan.core.template_gen import from_sfile
 from eqcorrscan.core.match_filter import normxcorr2, Detection
 from eqcorrscan.utils.sfile_util import read_event
 
+warnings.simplefilter("always")
+
 
 class TestMethods(unittest.TestCase):
     @classmethod
