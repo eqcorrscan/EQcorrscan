@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>1. Introduction to the EQcorrscan package &mdash; EQcorrscan 0.1.2rc documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/EQcorrscan_logo.ico"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="index.html"/>
+        <link rel="next" title="2. What’s new" href="updates.html"/>
+        <link rel="prev" title="Welcome to EQcorrscan’s documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">1. Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#why-eqcorrscan">1.1. Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">1.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-environments">1.3. Supported environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">1.4. Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">4. Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">5. Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>1. Introduction to the EQcorrscan package</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/intro.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="introduction-to-the-eqcorrscan-package">
+<h1>1. Introduction to the EQcorrscan package<a class="headerlink" href="#introduction-to-the-eqcorrscan-package" title="Permalink to this headline">¶</a></h1>
+<p>This document is designed to give you an overview of the capabilities and
+implementation of the EQcorrscan python module.</p>
+<div class="section" id="why-eqcorrscan">
+<h2>1.1. Why EQcorrscan?<a class="headerlink" href="#why-eqcorrscan" title="Permalink to this headline">¶</a></h2>
+<p>EQcorrscan is designed to compute matched-filter detections of earthquakes,
+or any seismic signal (explosions work <em>really</em> well) by comparing templates
+with continuous data.  The main benefit of EQcorrscan is the level of
+parallel processing that can be achieved.  By exploiting the fact that each template
+does not rely on any other template, detections from a single template through
+a day of seismic data can be computed in parallel.  By computing these in parallel
+rather than a single template through multiple days we reduce IO load.  At a low
+level, each time-step is computed in parallel by using the openCV matchTemplate
+function.  The net result is that these functions are <em>very</em> scalable, we have
+obtained a speed-up from 2 months to 10 hours by migrating from a small cluster
+to a large one (for a 6.5 year long continuous dataset and 800 templates).</p>
+<p>The authors of EQcorrscan foresee this project as an open repository for the
+development of software for the detection and analysis of repeating and
+near-repeating earthquakes.  This repository will continue to grow and develop
+and any and all help/criticism will be appreciated.</p>
+<p>We have a long way to go with this project - if you want to get involved the
+best place to start, and the most valuable thing for your understanding, and
+for the health of this repository would be to contribute tests and
+documentation.  Ideally we would like to have one test for every function!</p>
+</div>
+<div class="section" id="installation">
+<h2>1.2. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>A fresh install should be as simple as:</p>
+<p><strong>pip install eqcorrscan</strong></p>
+<p>Most codes should work without any effort on your part.  However you may need to
+install the openCV-python package yourself.</p>
+<p>On Linux:</p>
+<p><strong>apt-get install python-opencv</strong></p>
+<p>On OSX:</p>
+<p><strong>port install py27-numpy</strong>
+<strong>port install opencv +python27</strong>
+or
+<strong>brew install opencv</strong></p>
+<p>Note you may have issues with homebrew if you don&#8217;t have numpy installed: but if
+you don&#8217;t have numpy installed then you have bigger issues...</p>
+<p>This install has only been tested on Linux and OSX machines.  You
+should be prepared for small differences in the results of your correlations
+relating to floating-point truncation differences between 32 and 64-Bit
+machines.</p>
+<p>If you plan to run the bright_lights or generating a synthetic grid of
+templates you will need to have grid csv files, which the authors have
+previously used NonLinLoc to generate.  This is not provided here and should
+be sourced from <a href="http://alomax.free.fr/nlloc/" target="_blank">NonLinLoc</a>. This will provide
+the Grid2Time routine which is required to set-up a lag-time grid for your
+velocity model.  You should read the NonLinLoc documentation for more
+information regarding how this process works and the input files you are
+required to give.</p>
+</div>
+<div class="section" id="supported-environments">
+<h2>1.3. Supported environments<a class="headerlink" href="#supported-environments" title="Permalink to this headline">¶</a></h2>
+<p>Currently we only support Linux and OSX environments running Python 2.7.  We
+do not yet support Python 3.x as the multiprocessing package we rely on, called
+multiprocessing, has not been ported to Python 3.x.  EQcorrscan is mostly ready
+to go syntax-wise for 3.x, so when the dependencies get ported we should be
+good to go.</p>
+</div>
+<div class="section" id="functions">
+<h2>1.4. Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<p>This package is divided into sub-directories of <em>core</em> and <em>utils</em>.  The
+<em>utils</em> directory contains simple functions for integration with <a href="http://seisan.info/" target="_blank">Seisan</a>,
+these are in the <em>Sfile_util.py</em>
+module and functions therein which are essentially barebones and do not have the
+full functionality that seisan can handle.  <em>utils</em> also contains a simple
+peak-finding algorithm <em>find_peaks.py</em> which looks for peaks within noisy data
+above a certain threshold and within windows.  Many other functions have been
+added to this module to handle the analysis of repeating and near-repeating
+earthquakes, including stacking routines, clustering algorithms, magnitude
+calculation both by amplitude picking and by singular value decomposition.  I
+recommend you take a look in here to see if any of it is useful.  There are also
+some plotting routines that make handling large datasets a little simpler.  Most
+recently I have added a simple synthetic seismogram generator, which is currently
+my main project focus.</p>
+<p>Since earlier versions the <em>core</em> modules have moved away from using parameter
+files, and instead rely on explicit argument calls.  The parameter files are
+still included by not documented here (see inside the par files), and remain
+useful when generating batch scripts (see the scripts in the github repo).</p>
+<p>Within <em>core</em> you will find the core routines to generate templates,
+<em>(template_gen)</em> search for likely templates <em>(bright_lights)</em> and
+compute cross-channel correlations from these templates <em>(match_filter)</em>.  The
+bright_lights and match_filter submodules have been designed with parallel
+computing in mind, to the extent that the more cores and machines you have
+running them the better.  These rely on the python multiprocessing module to
+handle parallelisation at lower-levels.  You can also do some &#8216;brute-force&#8217;
+parallelisation on a day level when computing detections over multiple days.
+I tend to run one day per node of a cluster computer, with each day running
+templates in parallel.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="updates.html" class="btn btn-neutral float-right" title="2. What’s new" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to EQcorrscan’s documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.2rc',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

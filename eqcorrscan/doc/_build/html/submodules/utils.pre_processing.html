@@ -1,0 +1,360 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>5.6. pre_processing &mdash; EQcorrscan 0.1.2rc documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
+        <link rel="up" title="5. Utils" href="../utils.html"/>
+        <link rel="next" title="5.7. seismo_logs" href="utils.seismo_logs.html"/>
+        <link rel="prev" title="5.5. mag_calc" href="utils.mag_calc.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">5. Utils</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="utils.clustering.html">5.1. clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.plotting.html">5.2. plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.findpeaks.html">5.3. findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.locate.html">5.4. locate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.mag_calc.html">5.5. mag_calc</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">5.6. pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.seismo_logs.html">5.7. seismo_logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sfile_util.html">5.8. sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.stacking.html">5.9. stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.synth_seis.html">5.10. synth_seis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.catalog_to_dd.html">5.11. catalog_to_dd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.sac_util.html">5.12. sac_util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../utils.html">5. Utils</a> &raquo;</li>
+      
+    <li>5.6. pre_processing</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/submodules/utils.pre_processing.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pre_processing">
+<span id="pre-processing"></span><h1>5.6. pre_processing<a class="headerlink" href="#module-pre_processing" title="Permalink to this headline">¶</a></h1>
+<p>Utilities module for the EQcorrscan package written by Calum Chamberlain of Victoria University Wellington.  These functions are designed to do the basic processing of the data using obspy modules (which also rely on scipy and numpy).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body">Calum Chamberlain, Chet Hopp.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body">GNU Lesser General Public License, Version 3
+(<a class="reference external" href="https://www.gnu.org/copyleft/lesser.html">https://www.gnu.org/copyleft/lesser.html</a>)</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="pre_processing._check_daylong">
+<code class="descclassname">pre_processing.</code><code class="descname">_check_daylong</code><span class="sig-paren">(</span><em>tr</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#_check_daylong"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing._check_daylong" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to check the data quality of the daylong file - check to see that the day isn&#8217;t just zeros, with large steps, if it is then the resampling will hate it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to check if the data are daylong.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return qual:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.dayproc">
+<code class="descclassname">pre_processing.</code><code class="descname">dayproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>starttime</em>, <em>debug=0</em>, <em>parallel=True</em>, <em>num_cores=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#dayproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.dayproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for dayproc to parallel multiple traces in a stream.</p>
+<p>Works in place on data.  This is employed to ensure all parts of the data     are processed in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process (can be trace)</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut in Hz for bandpass</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Corners for bandpass</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
+<li><strong>parallel</strong> (<em>bool</em>) &#8211; Set to True to process traces in parallel, this is often         faster than serial processing of traces: defaults to True</li>
+<li><strong>num_cores</strong> (<em>int</em>) &#8211; Control the number of cores for parallel processing,         if set to False then this will use all the cores.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Will convert channel names to two characters long.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.process">
+<code class="descclassname">pre_processing.</code><code class="descname">process</code><span class="sig-paren">(</span><em>tr</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug</em>, <em>starttime=False</em>, <em>full_day=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass, downsample and check headers and length of trace to ensure files start at the start of a day and are daylong.</p>
+<p>Works in place on data.  This is employed to ensure all parts of the data are processed in the same way.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Usually this function is called via dayproc or shortproc.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tr</strong> (<em>obspy.Trace</em>) &#8211; Trace to process</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut in Hz, if set to None and lowcut is set, will use a highpass filter.</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Number of corners for filter.</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Desired sampling rate in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug output level from 0-5, higher numbers = more output</li>
+<li><strong>starttime</strong> (<em>obspy.UTCDateTime</em>) &#8211; Desired start of trace</li>
+<li><strong>full_day</strong> (<em>bool</em>) &#8211; Whether to expect, and enforce a full day of data or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Will convert channel names to two charecters long.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pre_processing.shortproc">
+<code class="descclassname">pre_processing.</code><code class="descname">shortproc</code><span class="sig-paren">(</span><em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>filt_order</em>, <em>samp_rate</em>, <em>debug=0</em>, <em>parallel=False</em>, <em>num_cores=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pre_processing.html#shortproc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.shortproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic function to bandpass and downsample.</p>
+<p>Works in place on data.  This is employed to ensure all parts of the data are processed in the same way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>st</strong> (<em>obspy.Stream</em>) &#8211; Stream to process</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut for bandpass in Hz</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut for bandpass in Hz</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Number of corners for bandpass filter</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; Sampling rate desired in Hz</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug flag from 0-5, higher numbers = more output</li>
+<li><strong>parallel</strong> (<em>bool</em>) &#8211; Set to True to process traces in parallel, for small numbers of traces this is often slower than serial processing, defaults to False</li>
+<li><strong>num_cores</strong> (<em>int</em>) &#8211; Control the number of cores for parallel processing, if set to False then this will use all the cores.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Will convert channel names to two characters long.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you intend to use this for processing templates you should consider how resampling will effect your cross-correlations. Minor differences in resampling between day-long files (which you are likely to use for continuous detection) and shorter files will reduce your cross-correlations!</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.seismo_logs.html" class="btn btn-neutral float-right" title="5.7. seismo_logs" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="utils.mag_calc.html" class="btn btn-neutral" title="5.5. mag_calc" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.2rc',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

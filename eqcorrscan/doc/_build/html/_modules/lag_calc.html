@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>lag_calc &mdash; EQcorrscan 0.0.8 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#matched-filter-detection">Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>lag_calc</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for lag_calc</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions to generate lag-times for events detected by correlation.</span>
+
+<span class="sd">Part of the EQcorrscan module to integrate seisan nordic files into a full</span>
+<span class="sd">cross-channel correlation for detection routine.</span>
+<span class="sd">EQcorrscan is a python module designed to run match filter routines for</span>
+<span class="sd">seismology, within it are routines for integration to seisan and obspy.</span>
+<span class="sd">With obspy integration (which is necessary) all main waveform formats can be</span>
+<span class="sd">read in and output.</span>
+
+<span class="sd">This main section contains a script, LFE_search.py which demonstrates the usage</span>
+<span class="sd">of the built in functions from template generation from picked waveforms</span>
+<span class="sd">through detection by match filter of continuous data to the generation of lag</span>
+<span class="sd">times to be used for relative locations.</span>
+
+<span class="sd">The match-filter routine described here was used a previous Matlab code for the</span>
+<span class="sd">Chamberlain et al. 2014 G-cubed publication.  The basis for the lag-time</span>
+<span class="sd">generation section is outlined in Hardebeck &amp; Shelly 2011, GRL.</span>
+
+<span class="sd">Code generated by Calum John Chamberlain of Victoria University of Wellington,</span>
+<span class="sd">2015.</span>
+
+
+<span class="sd">.. rubric:: Note</span>
+<span class="sd">Pre-requisites:</span>
+<span class="sd">    - gcc             - for the installation of the openCV correlation routine</span>
+<span class="sd">    - python-cv2      - Python bindings for the openCV routines</span>
+<span class="sd">    - python-joblib   - used for parallel processing</span>
+<span class="sd">    - python-obspy    - used for lots of common seismological processing</span>
+<span class="sd">                        - requires:</span>
+<span class="sd">                            - numpy</span>
+<span class="sd">                            - scipy</span>
+<span class="sd">                            - matplotlib</span>
+<span class="sd">    - NonLinLoc       - used outside of all codes for travel-time generation</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">match_filter</span> <span class="kn">import</span> <span class="n">DETECTION</span><span class="p">,</span> <span class="n">normxcorr2</span>
+
+<div class="viewcode-block" id="_channel_loop"><a class="viewcode-back" href="../submodules/core.lag_calc.html#lag_calc._channel_loop">[docs]</a><span class="k">def</span> <span class="nf">_channel_loop</span><span class="p">(</span><span class="n">detection</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility function to take a stream of data for the detected event and parse</span>
+<span class="sd">    the correct data to lag_gen</span>
+
+<span class="sd">    :type detection: obspy.Stream</span>
+<span class="sd">    :param detection: Stream of data for the slave event detected using template</span>
+<span class="sd">    :type template: obspy.Stream</span>
+<span class="sd">    :param template: Stream of data as the template for the detection.</span>
+<span class="sd">    :type i: int, optional</span>
+<span class="sd">    :param i: Used to track which process has occured when running in parallel</span>
+
+<span class="sd">    :returns: picks, a tuple of (lag in s, cross-correlation value, station, chan)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.Sfile_util</span> <span class="kn">import</span> <span class="n">PICK</span>
+    <span class="n">picks</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="n">image</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                                <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">image</span><span class="p">:</span> <span class="c">#Ideally this if statement would be removed.</span>
+            <span class="n">ccc</span> <span class="o">=</span> <span class="n">normxcorr2</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">shiftlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ccc</span><span class="p">)</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sample_rate</span>
+            <span class="c"># Convert the maximum cross-correlation time to an actual time</span>
+            <span class="n">picktime</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">+</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ccc</span><span class="p">)</span><span class="o">*</span><span class="n">image</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+            <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PICK</span><span class="p">())</span>
+            <span class="p">((</span><span class="n">lag</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ccc</span><span class="p">),</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">picks</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="day_loop"><a class="viewcode-back" href="../submodules/core.lag_calc.html#lag_calc.day_loop">[docs]</a><span class="k">def</span> <span class="nf">day_loop</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">,</span> <span class="n">template</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to loop through multiple detections for one template - ostensibly</span>
+<span class="sd">    designed to run for the same day of data for I/O simplicity, but as you</span>
+<span class="sd">    are passing stream objects it could run for all the detections ever, as long</span>
+<span class="sd">    as you have the RAM!</span>
+
+<span class="sd">    :type detection_streams: List of obspy.Stream</span>
+<span class="sd">    :param detection_streams: List of all the detections for this template that you</span>
+<span class="sd">                    want to compute the optimum pick for.</span>
+<span class="sd">    :type template: obspy.Stream</span>
+<span class="sd">    :param template: The original template used to detect the detections passed</span>
+
+<span class="sd">    :returns: lags - List of List of tuple: lags[i] corresponds to detection[i],</span>
+<span class="sd">                lags[i][j] corresponds to a channel of detection[i], within</span>
+<span class="sd">                this tuple is the lag (in seconds), normalised correlation,</span>
+<span class="sd">                station and channel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">cpu_count</span> <span class="c"># Used to run detections in parallel</span>
+    <span class="n">lags</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">num_cores</span><span class="o">=</span><span class="n">cpu_count</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">num_cores</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">):</span>
+        <span class="n">num_cores</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">)</span>
+    <span class="n">pool</span><span class="o">=</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">num_cores</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">=</span><span class="p">[</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_channel_loop</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">template</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>\
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_streams</span><span class="p">))]</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+    <span class="n">lags</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c"># Sort based on i</span>
+    <span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="n">lag</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">]</span>
+    <span class="c"># Convert lag time to moveout time</span>
+    <span class="n">mintime</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s">&#39;starttime&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+    <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">:</span>
+        <span class="n">delay</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">lag</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">lag</span><span class="p">[</span><span class="mi">3</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span>\
+            <span class="n">mintime</span>
+        <span class="n">lag</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+=</span><span class="n">delay</span>
+    <span class="k">return</span> <span class="n">lags</span>
+</div>
+<div class="viewcode-block" id="lag_calc"><a class="viewcode-back" href="../submodules/core.lag_calc.html#lag_calc.lag_calc">[docs]</a><span class="k">def</span> <span class="nf">lag_calc</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">detect_data</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">shift_len</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">min_cc</span><span class="o">=</span><span class="mf">0.4</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overseer function to take a list of detection objects, cut the data for</span>
+<span class="sd">    them to lengths of the same length of the template + shift_len on</span>
+<span class="sd">    either side. This will then write out SEISAN s-file for the detections</span>
+<span class="sd">    with pick times based on the lag-times found at the maximum correlation,</span>
+<span class="sd">    providing that correlation is above the min_cc.</span>
+
+<span class="sd">    :type detections: List of DETECTION</span>
+<span class="sd">    :param detections: List of DETECTION objects</span>
+<span class="sd">    :type detect_data: obspy.Stream</span>
+<span class="sd">    :param detect_data: All the data needed to cut from - can be a gappy Stream</span>
+<span class="sd">    :type templates: List of tuple of String, obspy.Stream</span>
+<span class="sd">    :param templates: List of the templates used as tuples of template name, template</span>
+<span class="sd">    :type shift_len: float</span>
+<span class="sd">    :param shift_len: Shift length allowed for the pick in seconds, will be</span>
+<span class="sd">                    plus/minus this amount - default=0.2</span>
+<span class="sd">    :type min_cc: float</span>
+<span class="sd">    :param min_cc: Minimum cross-correlation value to be considered a pick,</span>
+<span class="sd">                    default=0.4</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span>
+    <span class="c"># First work out the delays for each template</span>
+    <span class="n">delays</span><span class="o">=</span><span class="p">[]</span> <span class="c"># List of tuples</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="n">temp_delays</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">tempate</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">temp_delays</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>\
+                    <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="o">-</span><span class="n">template</span><span class="o">.</span><span class="n">sort</span><span class="p">[</span><span class="s">&#39;starttime&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
+        <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">temp_delays</span><span class="p">))</span>
+    <span class="n">detect_streams</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+        <span class="n">detect_stream</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">detect_data</span><span class="p">:</span>
+            <span class="n">tr_copy</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">template</span><span class="o">=</span><span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">templates</span> <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">template</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>
+                            <span class="n">channel</span><span class="o">=</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">template</span><span class="p">:</span>
+                <span class="n">template_len</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span> <span class="c"># If there is no template-data match then skip the rest</span>
+                         <span class="c"># of the trace loop.</span>
+            <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">delay</span> <span class="k">for</span> <span class="n">delay</span> <span class="ow">in</span> <span class="n">delays</span> <span class="k">if</span> <span class="n">delay</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">delay</span><span class="o">=</span><span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">delay</span> <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="ow">and</span> \
+                    <span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">detect_stream</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr_copy</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="o">-</span>\
+                        <span class="n">shift_len</span><span class="o">+</span><span class="n">delay</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">detection</span><span class="o">.</span><span class="n">detect_time</span><span class="o">+</span><span class="n">delay</span><span class="o">+</span>\
+                        <span class="n">shift_len</span><span class="o">+</span><span class="n">template_len</span><span class="p">))</span>
+        <span class="n">detect_streams</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">detection</span><span class="o">.</span><span class="n">template_name</span><span class="p">,</span> <span class="n">Stream</span><span class="p">(</span><span class="n">detect_stream</span><span class="p">)))</span>
+        <span class="c"># Tuple of template name and data stream</span>
+    <span class="c"># Segregate detections by template</span>
+    <span class="n">lags</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">templates</span><span class="p">:</span>
+        <span class="n">template_detections</span><span class="o">=</span><span class="p">[</span><span class="n">detect</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">detect</span> <span class="ow">in</span> <span class="n">detect_streams</span>\
+                <span class="k">if</span> <span class="n">detect</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">template</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">lags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">day_loop</span><span class="p">(</span><span class="n">template_detections</span><span class="p">,</span> <span class="n">template</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="c"># Write out the lags!</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">:</span>
+        <span class="c"># I think I have an old version of Sfile_util here</span>
+        <span class="n">sfilename</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">blanksfile</span><span class="p">(</span><span class="n">wavefile</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">,</span> <span class="s">&#39;PYTH&#39;</span><span class="p">,</span> <span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="n">picks</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
+            <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">PICK</span><span class="p">())</span>
+        <span class="n">Sfile_util</span><span class="o">.</span><span class="n">populateSfile</span><span class="p">(</span><span class="n">sfilename</span><span class="p">,</span> <span class="n">picks</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

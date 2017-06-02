@@ -1,0 +1,567 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>catalogue2DD &mdash; EQcorrscan 0.0.8 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.0.8 documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> EQcorrscan</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction to the EQcorrscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#why-eqcorrscan">Why EQcorrscan?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#functions">Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#matched-filter-detection">Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.bright_lights.html">bright_lights</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.template_gen.html">template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.match_filter.html">match_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/core.lag_calc.html">lag_calc</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.Sfile_util.html">Sfile_util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.findpeaks.html">findpeaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.clustering.html">clustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.pre_processing.html">pre_processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.EQcorrscan_plotting.html">EQcorrscan_plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.mag_calc.html">mag_calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.stacking.html">stacking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submodules/utils.catalogue2DD.html">catalogue2DD</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>catalogue2DD</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for catalogue2DD</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module written by Calum Chamberlain as part of the EQcorrscan package.</span>
+
+<span class="sd">This module contains functions to convert a seisan catalogue to files ready for</span>
+<span class="sd">relocation in hypoDD - it will generate both a catalogue (dt.ct) file, event</span>
+<span class="sd">file (event.dat), station information file (station.dat), and a correlation</span>
+<span class="sd">oiutput file correlated every event in the catalogue with every other event to</span>
+<span class="sd">optimize the picks (dt.cc).</span>
+
+<span class="sd">The correlation routine relies on obspy&#39;s xcorrPickCorrection function from the</span>
+<span class="sd">obspy.signal.cross_correlation module.  This function optimizes picks to better</span>
+<span class="sd">than sample accuracy by interpolating the correlation function and finding the</span>
+<span class="sd">maximum of this rather than the true maximum correlation value.  The output</span>
+<span class="sd">from this function is stored in the dt.cc file.</span>
+
+<span class="sd">Information for the station.dat file is read from SEISAN&#39;s STATION0.HYP file</span>
+
+<span class="sd">Earthquake picks and locations are taken from the catalogued s-files - these</span>
+<span class="sd">must be pre-located before entering this routine as origin times and hypocentre</span>
+<span class="sd">locations are needed for event.dat files.</span>
+
+<span class="sd">Copyright 2015 Calum Chamberlain</span>
+
+<span class="sd">This file is part of EQcorrscan.</span>
+
+<span class="sd">    EQcorrscan is free software: you can redistribute it and/or modify</span>
+<span class="sd">    it under the terms of the GNU General Public License as published by</span>
+<span class="sd">    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="sd">    (at your option) any later version.</span>
+
+<span class="sd">    EQcorrscan is distributed in the hope that it will be useful,</span>
+<span class="sd">    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="sd">    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="sd">    GNU General Public License for more details.</span>
+
+<span class="sd">    You should have received a copy of the GNU General Public License</span>
+<span class="sd">    along with EQcorrscan.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">eqcorrscan.utils</span> <span class="kn">import</span> <span class="n">Sfile_util</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="_cc_round"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD._cc_round">[docs]</a><span class="k">def</span> <span class="nf">_cc_round</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience function to take a float and round it to dp padding with zeros</span>
+<span class="sd">    to return a string</span>
+
+<span class="sd">    :type num: float</span>
+<span class="sd">    :param num: Number to round</span>
+<span class="sd">    :type dp: int</span>
+<span class="sd">    :param dp: Number of decimal places to round to.</span>
+
+<span class="sd">    :returns: string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">)</span>
+    <span class="n">num</span><span class="o">=</span><span class="s">&#39;{0:.{1}f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">num</span>
+</div>
+<div class="viewcode-block" id="_av_weight"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD._av_weight">[docs]</a><span class="k">def</span> <span class="nf">_av_weight</span><span class="p">(</span><span class="n">W1</span><span class="p">,</span> <span class="n">W2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to convert from two seisan weights (0-4) to one hypoDD weight(0-1)</span>
+
+<span class="sd">    :type W1: str</span>
+<span class="sd">    :param W1: Seisan input weight (0-4)</span>
+<span class="sd">    :type W2: str</span>
+<span class="sd">    :param W2: Seisan input weight (0-4)</span>
+
+<span class="sd">    :returns: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">W1</span><span class="o">==</span><span class="s">&#39; &#39;</span><span class="p">:</span>
+        <span class="n">W1</span><span class="o">=</span><span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">W1</span><span class="o">==</span><span class="s">&#39;9&#39;</span><span class="p">:</span>
+        <span class="n">W1</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">W1</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">W1</span><span class="p">)</span><span class="o">/</span><span class="mf">4.0</span>
+    <span class="k">if</span> <span class="n">W2</span><span class="o">==</span><span class="s">&#39; &#39;</span><span class="p">:</span>
+        <span class="n">W2</span><span class="o">=</span><span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">W2</span><span class="o">==</span><span class="s">&#39;9&#39;</span><span class="p">:</span>
+        <span class="n">W2</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">W2</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mf">4.0</span>
+    <span class="n">W</span><span class="o">=</span><span class="p">(</span><span class="n">W1</span><span class="o">+</span><span class="n">W2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">return</span> <span class="n">_cc_round</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="readSTATION0"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD.readSTATION0">[docs]</a><span class="k">def</span> <span class="nf">readSTATION0</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">stations</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to read the STATION0.HYP file on the path given.  Outputs written</span>
+<span class="sd">    in station.dat file.</span>
+
+<span class="sd">    :type path: String</span>
+<span class="sd">    :param path: Path to the STATION0.HYP file</span>
+<span class="sd">    :type station: List</span>
+<span class="sd">    :param station: Stations to look for</span>
+
+<span class="sd">    :returns: List of tuples of station, lat, long, elevation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stalist</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s">&#39;/STATION0.HYP&#39;</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+            <span class="n">station</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">print</span> <span class="n">station</span>
+            <span class="n">lat</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">14</span><span class="p">]</span> <span class="c"># Format is either ddmm.mmS/N or ddmm(.)mmmS/N</span>
+            <span class="k">if</span> <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">:</span>
+                <span class="n">NS</span><span class="o">=-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">NS</span><span class="o">=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">lat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;.&#39;</span><span class="p">:</span>
+                <span class="n">lat</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">NS</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lat</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">lat</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">NS</span>
+            <span class="n">lon</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">14</span><span class="p">:</span><span class="mi">23</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;S&#39;</span><span class="p">:</span>
+                <span class="n">EW</span><span class="o">=-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">EW</span><span class="o">=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">lon</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;.&#39;</span><span class="p">:</span>
+                <span class="n">lon</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">EW</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lon</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">lon</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="n">EW</span>
+            <span class="n">elev</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">23</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">stalist</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">station</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">elev</span><span class="p">))</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;station.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">stalist</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">sta</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">stalist</span>
+</div>
+<div class="viewcode-block" id="write_event"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD.write_event">[docs]</a><span class="k">def</span> <span class="nf">write_event</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to write out an event.dat file of the events</span>
+
+<span class="sd">    :type sfile_list: List</span>
+<span class="sd">    :param sfile_list: List of s-files to sort and put into the database</span>
+
+<span class="sd">    :returns: List of tuples of event ID (int) and Sfile name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">event_list</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">sort_list</span><span class="o">=</span><span class="p">[(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">sfile</span><span class="p">)</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sfile_list</span><span class="p">]</span>
+    <span class="n">sort_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">sfile_list</span><span class="o">=</span><span class="p">[</span><span class="n">sfile</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="n">sort_list</span><span class="p">]</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;event.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sfile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sfile_list</span><span class="p">):</span>
+        <span class="n">event_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">sfile</span><span class="p">))</span>
+        <span class="n">evinfo</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">month</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;  &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;  &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;  &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;   &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">Mag_1</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;    0.00    0.00   &#39;</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">evinfo</span><span class="o">.</span><span class="n">t_RMS</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">)</span><span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">event_list</span>
+</div>
+<div class="viewcode-block" id="write_catalogue"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD.write_catalogue">[docs]</a><span class="k">def</span> <span class="nf">write_catalogue</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to write the dt.ct file needed by hypoDD - takes input event list</span>
+<span class="sd">    from write_event as a list of tuples of event id and sfile.  It will read</span>
+<span class="sd">    the pick information from the seisan formated s-file using the Sfile_util</span>
+<span class="sd">    utilities.</span>
+
+<span class="sd">    :type event_list: List of tuple</span>
+<span class="sd">    :param event_list: List of tuples of event_id (int) and sfile (String)</span>
+<span class="sd">    :type max_sep: float</span>
+<span class="sd">    :param max_sep: Maximum seperation between event pairs in km</span>
+<span class="sd">    :type min_link: int</span>
+<span class="sd">    :param min_link: Minimum links for an event to be paired</span>
+
+<span class="sd">    :returns: List stations</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.mag_calc</span> <span class="kn">import</span> <span class="n">dist_conv</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;dt.ct&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">fphase</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;phase.dat&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">stations</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">evcount</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">master</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">event_list</span><span class="p">):</span>
+        <span class="n">master_sfile</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">master_event_id</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">master_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span>
+        <span class="n">master_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
+        <span class="c"># print &#39;Master origin time: &#39;+str(master_ori_time)</span>
+        <span class="n">master_location</span><span class="o">=</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+        <span class="n">header</span><span class="o">=</span><span class="s">&#39;#  &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">master_ori_time</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+        <span class="n">fphase</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">master_picks</span><span class="p">:</span>
+            <span class="n">fphase</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;  &#39;</span><span class="o">+</span><span class="n">_cc_round</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span>\
+                         <span class="s">&#39;   &#39;</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
+            <span class="c"># Use this tactic to only output unique event pairings</span>
+            <span class="n">slave_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">slave_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c"># Write out the header line</span>
+            <span class="n">event_text</span><span class="o">=</span><span class="s">&#39;#&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">master_event_id</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">slave_event_id</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="n">slave_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span>
+            <span class="n">slave_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
+            <span class="n">slave_location</span><span class="o">=</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dist_calc</span><span class="p">(</span><span class="n">master_location</span><span class="p">,</span> <span class="n">slave_location</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_sep</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">links</span><span class="o">=</span><span class="mi">0</span> <span class="c"># Count the number of linkages</span>
+            <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">master_picks</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
+                    <span class="k">continue</span> <span class="c"># Only use P and S picks, not amplitude or &#39;other&#39;</span>
+                <span class="c"># Find station, phase pairs</span>
+                <span class="n">slave_matches</span><span class="o">=</span><span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">slave_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span>\
+                               <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="p">]</span>
+                <span class="c"># Loop through the matches</span>
+                <span class="k">for</span> <span class="n">slave_pick</span> <span class="ow">in</span> <span class="n">slave_matches</span><span class="p">:</span>
+                    <span class="n">links</span><span class="o">+=</span><span class="mi">1</span>
+                    <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                            <span class="n">_cc_round</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span>\
+                            <span class="n">_cc_round</span><span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
+                            <span class="n">_av_weight</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">slave_pick</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span>\
+                            <span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+                    <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
+                <span class="n">evcount</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">print</span> <span class="s">&#39;You have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">evcount</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; links&#39;</span>
+    <span class="c"># f.write(&#39;\n&#39;)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">fphase</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stations</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="write_correlations"><a class="viewcode-back" href="../submodules/utils.catalogue2DD.html#catalogue2DD.write_correlations">[docs]</a><span class="k">def</span> <span class="nf">write_correlations</span><span class="p">(</span><span class="n">event_list</span><span class="p">,</span> <span class="n">wavbase</span><span class="p">,</span> <span class="n">extract_len</span><span class="p">,</span> <span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
+                       <span class="n">lowcut</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">highcut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_sep</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_link</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> \
+                       <span class="n">coh_thresh</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to write a dt.cc file for hypoDD input - takes an input list of</span>
+<span class="sd">    events and computes pick refienements by correlation.</span>
+
+<span class="sd">    Note that this is **NOT** fast.</span>
+
+<span class="sd">    :type event_list: List of tuple</span>
+<span class="sd">    :param event_list: List of tuples of event_id (int) and sfile (String)</span>
+<span class="sd">    :type wavbase: string</span>
+<span class="sd">    :param wavbase: Path to the seisan wave directory that the wavefiles in the</span>
+<span class="sd">                    S-files are stored</span>
+<span class="sd">    :type extract_len: float</span>
+<span class="sd">    :param extract_len: Length in seconds to extract around the pick</span>
+<span class="sd">    :type pre_pick: float</span>
+<span class="sd">    :param pre_pick: Time before the pick to start the correclation window</span>
+<span class="sd">    :type shift_len: float</span>
+<span class="sd">    :param shift_len: Time to allow pick to vary</span>
+<span class="sd">    :type lowcut: float</span>
+<span class="sd">    :param lowcut: Lowcut in Hz - default=1.0</span>
+<span class="sd">    :type highcut: float</span>
+<span class="sd">    :param highcut: Highcut in Hz - deafult=10.0</span>
+<span class="sd">    :type max_sep: float</span>
+<span class="sd">    :param max_sep: Maximum seperation between event pairs in km</span>
+<span class="sd">    :type min_link: int</span>
+<span class="sd">    :param min_link: Minimum links for an event to be paired</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obspy.signal.cross_correlation</span> <span class="kn">import</span> <span class="n">xcorrPickCorrection</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+    <span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
+    <span class="kn">from</span> <span class="nn">eqcorrscan.utils.mag_conv</span> <span class="kn">import</span> <span class="n">dist_calc</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+    <span class="n">corr_list</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">f</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;dt.cc&#39;</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">master</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">event_list</span><span class="p">):</span>
+        <span class="n">master_sfile</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">master_event_id</span><span class="o">=</span><span class="n">master</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">master_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span>
+        <span class="n">master_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
+        <span class="n">master_location</span><span class="o">=</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+        <span class="n">master_wavefiles</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readwavename</span><span class="p">(</span><span class="n">master_sfile</span><span class="p">)</span>
+        <span class="n">masterpath</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">wavbase</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="s">&#39;????&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="s">&#39;??&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="n">master_wavefiles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">masterpath</span><span class="p">:</span>
+            <span class="n">masterstream</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="n">masterpath</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">master_wavefiles</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">wavefile</span> <span class="ow">in</span> <span class="n">master_wavefiles</span><span class="p">:</span>
+                <span class="n">wavepath</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">wavbase</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="o">+</span><span class="n">wavefile</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">wavepath</span><span class="p">:</span>
+                    <span class="n">masterstream</span><span class="o">+=</span><span class="n">read</span><span class="p">(</span><span class="n">wavepath</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;Couldn&#39;t find wavefile&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">event_list</span><span class="p">)):</span>
+            <span class="c"># Use this tactic to only output unique event pairings</span>
+            <span class="n">slave_sfile</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">slave_event_id</span><span class="o">=</span><span class="n">event_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">slave_wavefiles</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readwavename</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">slavestream</span><span class="o">=</span><span class="n">read</span><span class="p">(</span><span class="n">wavbase</span><span class="o">+</span><span class="s">&#39;/*/*/&#39;</span><span class="o">+</span><span class="n">slave_wavefiles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;No wavefile found: &#39;</span><span class="o">+</span><span class="n">slave_wavefiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">slave_sfile</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slave_wavefiles</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">wavefile</span> <span class="ow">in</span> <span class="n">slave_wavefiles</span><span class="p">:</span>
+                    <span class="n">slavestream</span><span class="o">+=</span><span class="n">read</span><span class="p">(</span><span class="n">wavbase</span><span class="o">+</span><span class="s">&#39;/*/*/&#39;</span><span class="o">+</span><span class="n">wavefile</span><span class="p">)</span>
+            <span class="c"># Write out the header line</span>
+            <span class="n">event_text</span><span class="o">=</span><span class="s">&#39;#&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">master_event_id</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span>\
+                    <span class="nb">str</span><span class="p">(</span><span class="n">slave_event_id</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; 0.0   </span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="n">slave_picks</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readpicks</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span>
+            <span class="n">slave_ori_time</span><span class="o">=</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">time</span>
+            <span class="n">slave_location</span><span class="o">=</span><span class="p">(</span><span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>\
+                         <span class="n">Sfile_util</span><span class="o">.</span><span class="n">readheader</span><span class="p">(</span><span class="n">slave_sfile</span><span class="p">)</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dist_calc</span><span class="p">(</span><span class="n">master_location</span><span class="p">,</span> <span class="n">slave_location</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_sep</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">links</span><span class="o">=</span><span class="mi">0</span>
+            <span class="n">phases</span><span class="o">=</span><span class="mi">0</span>
+            <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">master_picks</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span><span class="s">&#39;S&#39;</span><span class="p">]:</span>
+                    <span class="k">continue</span> <span class="c"># Only use P and S picks, not amplitude or &#39;other&#39;</span>
+                <span class="c"># Find station, phase pairs</span>
+                <span class="n">slave_matches</span><span class="o">=</span><span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">slave_picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">station</span><span class="o">==</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span>\
+                               <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">phase</span><span class="o">==</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">masterstream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                                       <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="n">mastertr</span><span class="o">=</span><span class="n">masterstream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> \
+                                                 <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;No waveform data for &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span>
+                    <span class="k">print</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">slave_sfile</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">master_sfile</span>
+                    <span class="k">break</span>
+                <span class="c"># Loop through the matches</span>
+                <span class="k">for</span> <span class="n">slave_pick</span> <span class="ow">in</span> <span class="n">slave_matches</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">slavestream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                                          <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                        <span class="n">slavetr</span><span class="o">=</span><span class="n">slavestream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">station</span><span class="p">,</span>\
+                                               <span class="n">channel</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="o">+</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;No slave data for &#39;</span><span class="o">+</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span>\
+                                <span class="n">slave_pick</span><span class="o">.</span><span class="n">channel</span>
+                        <span class="k">print</span> <span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">channel</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">slave_sfile</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">master_sfile</span>
+                        <span class="k">break</span>
+                    <span class="c"># Correct the picks</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">correction</span><span class="p">,</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">xcorrPickCorrection</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">mastertr</span><span class="p">,</span>\
+                                                             <span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>\
+                                                             <span class="n">slavetr</span><span class="p">,</span><span class="n">pre_pick</span><span class="p">,</span>\
+                                                             <span class="n">extract_len</span><span class="o">-</span><span class="n">pre_pick</span><span class="p">,</span> <span class="n">shift_len</span><span class="p">,</span>\
+                                                             <span class="nb">filter</span><span class="o">=</span><span class="s">&quot;bandpass&quot;</span><span class="p">,</span>\
+                                                             <span class="n">filter_options</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;freqmin&#39;</span><span class="p">:</span><span class="n">lowcut</span><span class="p">,</span>
+                                                                             <span class="s">&#39;freqmax&#39;</span><span class="p">:</span><span class="n">highcut</span><span class="p">},</span><span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                        <span class="c"># Get the differntial travel time using the corrected time.</span>
+
+                        <span class="n">dt</span><span class="o">=</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="o">-</span><span class="n">master_ori_time</span><span class="p">)</span><span class="o">-</span>\
+                                <span class="p">(</span><span class="n">slave_pick</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">correction</span><span class="o">-</span><span class="n">slave_ori_time</span><span class="p">)</span>
+                        <span class="n">links</span><span class="o">+=</span><span class="mi">1</span>
+                        <span class="k">if</span> <span class="n">cc</span><span class="o">*</span><span class="n">cc</span> <span class="o">&gt;=</span> <span class="n">coh_thresh</span><span class="p">:</span>
+                            <span class="n">phases</span><span class="o">+=</span><span class="mi">1</span>
+                            <span class="c">#added by Caro</span>
+                            <span class="n">event_text</span><span class="o">+=</span><span class="n">pick</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span>\
+                                    <span class="n">_cc_round</span><span class="p">(</span><span class="n">correction</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="o">+</span>\
+                                    <span class="n">_cc_round</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">+</span>\
+                                    <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">pick</span><span class="o">.</span><span class="n">phase</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+                            <span class="c"># links+=1</span>
+                        <span class="n">corr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cc</span><span class="o">*</span><span class="n">cc</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span> <span class="c"># Should warn here</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Couldn&#39;t compute correlation correction&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">links</span> <span class="o">&gt;=</span> <span class="n">min_link</span> <span class="ow">and</span> <span class="n">phases</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">event_text</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">corr_list</span><span class="p">,</span> <span class="mi">150</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="c"># f.write(&#39;\n&#39;)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">f2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Calum John Chamberlain.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

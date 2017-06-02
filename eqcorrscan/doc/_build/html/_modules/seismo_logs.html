@@ -1,0 +1,368 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>seismo_logs &mdash; EQcorrscan 0.1.2rc documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
+        <link rel="up" title="Module code" href="index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">4. Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      
+    <li>seismo_logs</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for seismo_logs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions to read log-files for seismic data to determine whether there are \</span>
+<span class="sd">timing issues present.  Designed to be used with the EQcorrscan package and \</span>
+<span class="sd">to flag data that has more than a threshold timing issue.</span>
+
+<span class="sd">.. note:: Currently only written to read RefTek rt130 log-files, and will not \</span>
+<span class="sd">    read all parameters - only for use when checking logs during \</span>
+<span class="sd">    cross-correlation.  For full log-file exploration, Passcal tools: logpeek \</span>
+<span class="sd">    is useful.</span>
+
+<span class="sd">:copyright:</span>
+<span class="sd">    Calum Chamberlain, Chet Hopp.</span>
+
+<span class="sd">:license:</span>
+<span class="sd">    GNU Lesser General Public License, Version 3</span>
+<span class="sd">    (https://www.gnu.org/copyleft/lesser.html)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+
+<div class="viewcode-block" id="rt_time_log"><a class="viewcode-back" href="../submodules/utils.seismo_logs.html#seismo_logs.rt_time_log">[docs]</a><span class="k">def</span> <span class="nf">rt_time_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">startdate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to open and read a log-file as written by a RefTek RT130 \</span>
+<span class="sd">    datalogger. The information within is then scanned for timing errors \</span>
+<span class="sd">    above the threshold.</span>
+
+<span class="sd">    :type logfile: String</span>
+<span class="sd">    :param logfile: The logfile to look in</span>
+<span class="sd">    :type startdate: :class: datetime.date</span>
+<span class="sd">    :param startdate: The start of the file as a date - files contain timing \</span>
+<span class="sd">        and the julian day, but not the year.</span>
+
+<span class="sd">    :returns: List of tuple of :class: datetime.datetime, float as time \</span>
+<span class="sd">        stamps and phase error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+    <span class="kn">import</span> <span class="nn">re</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">phase_err</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lock</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Extract all the phase errors</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;INTERNAL CLOCK PHASE ERROR&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;INTERNAL CLOCK PHASE ERROR&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="n">d_start</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span> <span class="o">-</span> <span class="mi">13</span>
+            <span class="n">phase_err</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span>
+                                                   <span class="s1">&#39;:&#39;</span> <span class="o">+</span>
+                                                   <span class="n">line</span><span class="p">[</span><span class="n">d_start</span><span class="p">:</span><span class="n">d_start</span> <span class="o">+</span> <span class="mi">12</span><span class="p">],</span>
+                                                   <span class="s1">&#39;%Y:%j:%H:%M:%S&#39;</span><span class="p">),</span>
+                             <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="o">*</span>
+                             <span class="mf">0.000001</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;EXTERNAL CLOCK POWER IS TURNED OFF&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;EXTERNAL CLOCK POWER IS TURNED OFF&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="n">d_start</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span> <span class="o">-</span> <span class="mi">13</span>
+            <span class="n">lock</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">startdate</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span>
+                                              <span class="s1">&#39;:&#39;</span><span class="o">+</span><span class="n">line</span><span class="p">[</span><span class="n">d_start</span><span class="p">:</span><span class="n">d_start</span> <span class="o">+</span> <span class="mi">12</span><span class="p">],</span>
+                                              <span class="s1">&#39;%Y:%j:%H:%M:%S&#39;</span><span class="p">),</span>
+                        <span class="mi">999</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">phase_err</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">phase_err</span> <span class="o">=</span> <span class="n">lock</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">phase_err</span></div>
+
+
+<div class="viewcode-block" id="rt_location_log"><a class="viewcode-back" href="../submodules/utils.seismo_logs.html#seismo_logs.rt_location_log">[docs]</a><span class="k">def</span> <span class="nf">rt_location_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to read a specific RefTek RT130 log-file and find all location \</span>
+<span class="sd">    information.</span>
+
+<span class="sd">    :type logfile: String</span>
+<span class="sd">    :param logfile: The logfile to look in</span>
+
+<span class="sd">    :returns: list of tuples of lat, lon, elevation in decimal degrees and km.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">re</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">locations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;GPS: POSITION:&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="c1"># Line is of form:</span>
+            <span class="c1"># jjj:hh:mm:ss GPS: POSITION: xDD:MM:SS.SS xDDD:MM:SS.SS xMMMMMMM</span>
+            <span class="n">loc</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">end</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">lat_sign</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lat_sign</span> <span class="o">==</span> <span class="s1">&#39;S&#39;</span><span class="p">:</span>
+                <span class="n">lat</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">lon_sign</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lon_sign</span> <span class="o">==</span> <span class="s1">&#39;W&#39;</span><span class="p">:</span>
+                <span class="n">lon</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">elev_sign</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">elev_unit</span> <span class="o">=</span> <span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">elev_unit</span> <span class="o">==</span> <span class="s1">&#39;M&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Elevation is not in M&#39;</span><span class="p">)</span>
+            <span class="n">elev</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">elev_sign</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">elev</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="c1"># Convert to km</span>
+            <span class="n">elev</span> <span class="o">/=</span> <span class="mi">1000</span>
+            <span class="n">locations</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">elev</span><span class="p">))</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">locations</span></div>
+
+
+<div class="viewcode-block" id="flag_time_err"><a class="viewcode-back" href="../submodules/utils.seismo_logs.html#seismo_logs.flag_time_err">[docs]</a><span class="k">def</span> <span class="nf">flag_time_err</span><span class="p">(</span><span class="n">phase_err</span><span class="p">,</span> <span class="n">time_thresh</span><span class="o">=</span><span class="mf">0.02</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fucntion to scan through a list of tuples of time stamps and phase errors \</span>
+<span class="sd">    and return a list of time stamps with timing errors above a threshold.</span>
+
+<span class="sd">    :type phase_err: List of Tuple of float, datetime.datetime</span>
+<span class="sd">    :type time_thresh: float</span>
+<span class="sd">    :param time_thresh: Threshold to declare a timing error for</span>
+
+<span class="sd">    :returns: List of datetime.datetime</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">time_err</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">stamp</span> <span class="ow">in</span> <span class="n">phase_err</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">stamp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">time_thresh</span><span class="p">:</span>
+            <span class="n">time_err</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stamp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">time_err</span></div>
+
+
+<div class="viewcode-block" id="check_all_logs"><a class="viewcode-back" href="../submodules/utils.seismo_logs.html#seismo_logs.check_all_logs">[docs]</a><span class="k">def</span> <span class="nf">check_all_logs</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">time_thresh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to check all the log-files in a directory tree for timing errors.</span>
+
+<span class="sd">    :type directory: String</span>
+<span class="sd">    :param directory: Directory to search within</span>
+<span class="sd">    :type time_thresh: float</span>
+<span class="sd">    :param time_thresh: Time threshold in seconds</span>
+
+<span class="sd">    :returns: List of :class: datetime.datetime for which timing is above \</span>
+<span class="sd">        threshold</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">glob</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+    <span class="n">log_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">directory</span><span class="o">+</span><span class="s1">&#39;/*/0/000000000_00000000&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;I have &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">log_files</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39; log files to scan&#39;</span><span class="p">)</span>
+    <span class="n">total_phase_errs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">log_file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">log_files</span><span class="p">):</span>
+        <span class="n">startdate</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">log_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">4</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">7</span><span class="p">],</span>
+                                         <span class="s1">&#39;%Y%j&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">total_phase_errs</span> <span class="o">+=</span> <span class="n">rt_time_log</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="n">startdate</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">log_files</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;% </span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">time_errs</span> <span class="o">=</span> <span class="n">flag_time_err</span><span class="p">(</span><span class="n">total_phase_errs</span><span class="p">,</span> <span class="n">time_thresh</span><span class="p">)</span>
+    <span class="n">time_errs</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">time_errs</span><span class="p">,</span> <span class="n">total_phase_errs</span></div>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.2rc',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

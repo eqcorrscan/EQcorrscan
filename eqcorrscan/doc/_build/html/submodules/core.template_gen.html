@@ -1,0 +1,494 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>4.2. template_gen &mdash; EQcorrscan 0.1.2rc documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/EQcorrscan_logo.ico"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="../index.html"/>
+        <link rel="up" title="4. Core" href="../core.html"/>
+        <link rel="next" title="4.3. match_filter" href="core.match_filter.html"/>
+        <link rel="prev" title="4.1. bright_lights" href="core.bright_lights.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="../_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">3. EQcorrscan tutorial</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../core.html">4. Core</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core.bright_lights.html">4.1. bright_lights</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">4.2. template_gen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.match_filter.html">4.3. match_filter</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">5. Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../core.html">4. Core</a> &raquo;</li>
+      
+    <li>4.2. template_gen</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/submodules/core.template_gen.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-template_gen">
+<span id="template-gen"></span><h1>4.2. template_gen<a class="headerlink" href="#module-template_gen" title="Permalink to this headline">¶</a></h1>
+<p>Functions to generate template waveforms and information to go with them for the application of cross-correlation of seismic data for the detection of repeating events.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All of these functions work for a single template, however all of them call _template_gen, which takes care of pick association and cutting.  If you have many templates in one day of data it would be simple to write a wrapper that cuts multiple templates from one day of processed data rather than re-processing the same day of data for each template.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All functions use obspy filters, which are implemented such that if both highcut and lowcut are set a bandpass filter will be used, but of highcut is not set (None) then a highpass filter will be used and if only the highcut is set then a lowpass filter will be used.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">copyright:</th><td class="field-body">Calum Chamberlain, Chet Hopp.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">license:</th><td class="field-body">GNU Lesser General Public License, Version 3
+(<a class="reference external" href="https://www.gnu.org/copyleft/lesser.html">https://www.gnu.org/copyleft/lesser.html</a>)</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="template_gen._template_gen">
+<code class="descclassname">template_gen.</code><code class="descname">_template_gen</code><span class="sig-paren">(</span><em>picks</em>, <em>st</em>, <em>length</em>, <em>swin=u'all'</em>, <em>prepick=0.05</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#_template_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen._template_gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a cut template in the obspy Stream class from a given set of picks and data, also in an obspy stream class.  Should be given pre-processed data (downsampled and filtered).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>picks</strong> (<em>List of obspy.core.event.Pick</em>) &#8211; Picks to extract data around</li>
+<li><strong>st</strong> &#8211; Stream to etract templates from</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Length of template in seconds</li>
+<li><strong>swin</strong> (<em>string</em>) &#8211; P, S or all, defaults to all</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Length in seconds to extract before the pick time default is 0.05 seconds</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; To plot the template or not, default is True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">By convention templates are generated with P-phases on the vertical channel and S-phases on the horizontal channels, normal seismograph naming conventions are assumed, where Z denotes vertical and N, E, R, T, 1 and 2 denote horizontal channels, either oriented or not.  To this end we will <strong>only</strong> use Z channels if they have a P-pick, and will use one or other horizontal channels <strong>only</strong> if there is an S-pick on it.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If there is no phase_hint included in picks, and swin=all, all channels with picks will be used.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.extract_from_stack">
+<code class="descclassname">template_gen.</code><code class="descname">extract_from_stack</code><span class="sig-paren">(</span><em>stack</em>, <em>template</em>, <em>length</em>, <em>pre_pick</em>, <em>pre_pad</em>, <em>Z_include=False</em>, <em>pre_processed=True</em>, <em>samp_rate=None</em>, <em>lowcut=None</em>, <em>highcut=None</em>, <em>filt_order=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#extract_from_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.extract_from_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to extract a new template from a stack of previous detections.
+Requires the stack, the template used to make the detections for the stack, and we need to know if the stack has been pre-processed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stack</strong> (<em>:class:obspy.Stream</em>) &#8211; Waveform stack from detections.  Can be of any length and can have delays already included, or not.</li>
+<li><strong>template</strong> (<em>:class:obspy.Stream</em>) &#8211; Template used to make the detections in the stack. Will use the delays of this for the new template.</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Length of new template in seconds</li>
+<li><strong>pre_pick</strong> (<em>float</em>) &#8211; Extract additional data before the detection, seconds</li>
+<li><strong>pre_pad</strong> (<em>float</em>) &#8211; Pad used in seconds when extracting the data, e.g. the time before the detection extracted.  If using clustering.extract_detections this half the length of the extracted waveform.</li>
+<li><strong>Z_include</strong> (<em>bool</em>) &#8211; If True will include any Z-channels even if there is no template for this channel, as long as there is a template for this station at a different channel.  If this is False and Z channels are included in the template Z channels will be included in the new_template anyway.</li>
+<li><strong>pre_processed</strong> (<em>bool</em>) &#8211; Have the data been pre-processed, if True (default) then we will only cut the data here.</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; If pre_processed=False then this is required, desired sampling rate in Hz, defaults to False.</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; If pre_processed=False then this is required, lowcut in Hz, defaults to False.</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; If pre_processed=False then this is required, highcut in Hz, defaults to False</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; If pre_processed=False then this is required, filter order, defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_client">
+<code class="descclassname">template_gen.</code><code class="descname">from_client</code><span class="sig-paren">(</span><em>catalog</em>, <em>client_id</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate templates from a SeisHub database.Must be given an obspy.Catalog class and the SeisHub url as input. The function returns a list of obspy.Stream classes containting steams for each desired template.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>catalog</strong> (<em>obspy.Catalog</em>) &#8211; Catalog class containing desired template events</li>
+<li><strong>url</strong> (<em>string</em>) &#8211; url of SeisHub database instance</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in templatedefaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in templatedefaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look intemplate defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look intemplate defaults file</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in templatedefaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Plot templates or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_contbase">
+<code class="descclassname">template_gen.</code><code class="descname">from_contbase</code><span class="sig-paren">(</span><em>sfile</em>, <em>contbase_list</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_contbase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_contbase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read in picks from sfile then generate the template from the picks within this and the wavefiles from the continous database of day-long files.  Included is a section to sanity check that the files are daylong and that they start at the start of the day.  You should ensure this is the case otherwise this may alter your data if your data are daylong but the headers are incorrectly set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sfile</strong> (<em>string</em>) &#8211; sfilename must be the path to a seisan nordic type s-file containing waveform and pick information, all other arguments can be numbers save for swin which must be either P, S or all (case-sensitive).</li>
+<li><strong>contbase_list</strong> (<em>List of tuple of string</em>) &#8211; List of tuples of the form [&#8216;path&#8217;, &#8216;type&#8217;, &#8216;network&#8217;].  Where path is the path to the continuous database, type is the directory structure, which can be either Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day structure, or, yyyymmdd which is a single directory for every day.</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Turns template plotting on or off.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_quakeml">
+<code class="descclassname">template_gen.</code><code class="descname">from_quakeml</code><span class="sig-paren">(</span><em>quakeml</em>, <em>st</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_quakeml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_quakeml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a template from a local quakeml file and an obspy.Stream object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>quakeml</strong> (<em>string</em>) &#8211; QuakeML file containing pick information, can contain multiple events.</li>
+<li><strong>st</strong> (<em>class: obspy.Stream</em>) &#8211; Stream containing waveform data for template (hopefully). Note that this should be the same length of stream as you will use for the continuous detection, e.g. if you detect in day-long files, give this a day-long file!</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Display template plots or not</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of obspy.Stream Newly cut templates</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">We suggest giving this function a full day of data, to ensure templates are generated with <strong>exactly</strong> the same processing as the continuous data.  Not doing this will result in slightly reduced cross-correlation values.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_sac">
+<code class="descclassname">template_gen.</code><code class="descname">from_sac</code><span class="sig-paren">(</span><em>sac_files</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>swin</em>, <em>prepick=0.05</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_sac"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_sac" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read picks and waveforms from SAC data, and generate a     template from these.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sac_files</strong> (<em>list or stream</em>) &#8211; List or stream of sac waveforms, or list of paths to         sac waveforms.</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in template             defaults file</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut (Hz), if set to None will look in template             defaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look in             template defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look in             template defaults file</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in template             defaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Length to extract prior to the pick in seconds.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug level, higher number=more output.</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Turns template plotting on or off.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This functionality is not supported for obspy versions below         1.0.0 as references times are not read in by SACIO, which are needed         for defining pick times.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_seishub">
+<code class="descclassname">template_gen.</code><code class="descname">from_seishub</code><span class="sig-paren">(</span><em>catalog</em>, <em>url</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>prepick</em>, <em>swin</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_seishub"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_seishub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate templates from a SeisHub database.Must be given an obspy.Catalog class and the SeisHub url as input. The function returns a list of obspy.Stream classes containting steams for each desired template.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>catalog</strong> (<em>obspy.Catalog</em>) &#8211; Catalog class containing desired template events</li>
+<li><strong>url</strong> (<em>string</em>) &#8211; url of SeisHub database instance</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>lowcut</strong> &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Pre-pick time in seconds</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Level of debugging output, higher=more</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Plot templates or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="template_gen.from_sfile">
+<code class="descclassname">template_gen.</code><code class="descname">from_sfile</code><span class="sig-paren">(</span><em>sfile</em>, <em>lowcut</em>, <em>highcut</em>, <em>samp_rate</em>, <em>filt_order</em>, <em>length</em>, <em>swin</em>, <em>prepick=0.05</em>, <em>debug=0</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/template_gen.html#from_sfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#template_gen.from_sfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to read in picks from sfile then generate the template from the picks within this and the wavefile found in the pick file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sfile</strong> (<em>string</em>) &#8211; sfilename must be the path to a seisan nordic type s-file containing waveform and pick information.</li>
+<li><strong>lowcut</strong> (<em>float</em>) &#8211; Low cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>highcut</strong> (<em>float</em>) &#8211; High cut (Hz), if set to None will look in template defaults file</li>
+<li><strong>samp_rate</strong> (<em>float</em>) &#8211; New sampling rate in Hz, if set to None will look in template defaults file</li>
+<li><strong>filt_order</strong> (<em>int</em>) &#8211; Filter level, if set to None will look in template defaults file</li>
+<li><strong>swin</strong> (<em>str</em>) &#8211; Either &#8216;all&#8217;, &#8216;P&#8217; or &#8216;S&#8217;, to select which phases to output.</li>
+<li><strong>length</strong> (<em>float</em>) &#8211; Extract length in seconds, if None will look in template defaults file.</li>
+<li><strong>prepick</strong> (<em>float</em>) &#8211; Length to extract prior to the pick in seconds.</li>
+<li><strong>debug</strong> (<em>int</em>) &#8211; Debug level, higher number=more output.</li>
+<li><strong>plot</strong> (<em>bool</em>) &#8211; Turns template plotting on or off.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">obspy.Stream Newly cut template</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This will use whatever data is pointed to in the s-file, if this is not the coninuous data, we recommend using other functions. Differences in processing between short files and day-long files (inherent to resampling) will produce lower cross-correlations.</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="core.match_filter.html" class="btn btn-neutral float-right" title="4.3. match_filter" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="core.bright_lights.html" class="btn btn-neutral" title="4.1. bright_lights" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.1.2rc',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

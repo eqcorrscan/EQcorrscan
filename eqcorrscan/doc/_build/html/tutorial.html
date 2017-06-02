@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3. EQcorrscan tutorial &mdash; EQcorrscan 0.1.2rc documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/EQcorrscan_logo.ico"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="EQcorrscan 0.1.2rc documentation" href="index.html"/>
+        <link rel="next" title="3.1. Template creation" href="tutorials/template-creation.html"/>
+        <link rel="prev" title="2. What’s new" href="updates.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> EQcorrscan
+          
+
+          
+            
+            <img src="_static/EQcorrscan_logo.jpg" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction to the EQcorrscan package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="updates.html">2. What&#8217;s new</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">3. EQcorrscan tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/template-creation.html">3.1. Template creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/matched-filter.html">3.2. Matched-filter detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/clustering.html">3.5. Clustering and stacking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">4. Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">5. Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">EQcorrscan</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>3. EQcorrscan tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="eqcorrscan-tutorial">
+<h1>3. EQcorrscan tutorial<a class="headerlink" href="#eqcorrscan-tutorial" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to EQcorrscan - this package is designed to compute earthquake detections
+using a paralleled matched-filter network cross-correlation routine.  The inner
+loop of this package is the cross-correlation of templates of seismic data
+with day-long seismic data.  This inner function is the openCV.match_template
+function - this appears to be a well optimized cross-correlation function, and
+is written in c++.  Cross-correlations are computed in the frequency domain
+for large datasets, for which a day of seismic data usually qualifies.</p>
+<p>Before continuing with this tutorial please check that you have installed all
+the pre-requisite modules, as not all will be installed by the setup.py file.
+The list of these is in the Introduction section of this documentation.</p>
+<p>As you will see, this package is divided into two main sub-modules, the
+Core and Utils sub-modules.  The Core sub-module contains the main, high-level
+functions:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">bright_lights:</th><td class="field-body">A brightness based template detection routine;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">template_gen:</th><td class="field-body">A series of routines to generate templates for match-filter detection
+from continuous or cut data, with pick-times defined either manually, or from a
+<em>Seisan</em> s-file;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">match_filter:</th><td class="field-body">The main matched-filter routines, this is split into several
+smaller functions to allow python based parallelisation;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">lag_calc:</th><td class="field-body">Routines for calculating optimal lag-times for events detected
+by the match-filter routine, these lags can then be used to define new picks
+for high accuracy relocations. <em>Under-development</em></td>
+</tr>
+</tbody>
+</table>
+<p>The Utils sub-module contains useful, but small functions.  These functions are
+rarely cpu intensive, but perform vital operations, such as reading <em>Seisan</em> s-files,
+finding peaks in noisy data, converting a seisan database to hypoDD formatted
+files and computing cross-correlations between detections for hypoDD (a double
+difference relocation software), calculating magnitudes, clustering detections,
+stacking detections, making pretty plots, and processing seismic data in the
+same way repeatedly using <em>Obspy</em>&#8216;s functionality.</p>
+<p>What follows is a (hopefully) expanding set of tutorials that should take you
+through some of the key functionality of the EQcorrscan package.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/template-creation.html">3.1. Template creation</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/matched-filter.html">3.2. Matched-filter detection</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lag-calc.html">3.3. Lag time calculation and pick correction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/mag-calc.html">3.4. Magnitude calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/clustering.html">3.5. Clustering and stacking</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorials/template-creation.html" class="btn btn-neutral float-right" title="3.1. Template creation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="updates.html" class="btn btn-neutral" title="2. What’s new" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, 2016: Calum John Chamberlain &amp; Chet Hopp.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.2rc',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
