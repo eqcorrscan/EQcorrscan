@@ -474,7 +474,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :return: list of detections
     :rtype: list of eqcorrscan.core.match_filter.Detection
     """
-    from eqcorrscan.core import subspace_statistic
+    import pandas as pd
     detections = []
     # First process the stream
     if process:
@@ -496,23 +496,28 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     outtic = time.clock()
     # If multiplexed, how many samples do we increment by?
     if detector.multiplex:
-        inc = np.uint32(len(detector.stachans))
+        Nc = np.uint32(len(detector.stachans))
     else:
-        inc = np.uint32(1)
+        Nc = np.uint32(1)
     # TODO Here we can implement a looping over chunks of data with the add-overlap method?
     # Here do the ffts
-    fftlen = int(((len(stream[0][0].data) // inc) +
-                 (detector.data[0].shape[0] // inc)
-                  - 1) * inc) # (Nt + Nb -1) * Nc
-    # fftlen = 1<<fftlen.bit_length() # get next highest power of 2
-    # TODO should also be factor of inc
-    num_st_fd = [scipy.fftpack.fft(tr.data, n=fftlen)
+    min_fftlen = int(stream[0][0].data.shape[0] + detector.data[0].shape[0] - Nc)
+    # fftlen = 1<<min_fftlen.bit_length()
+    M = min_fftlen // Nc
+    num_st_fd = [scipy.fftpack.fft(tr.data, n=min_fftlen)
                  for tr in stream[0]]
-    w = scipy.fftpack.fft(np.ones(detector.data[0].shape[0]), n=fftlen)
+    denom_st_fd = [scipy.fftpack.fft(np.square(tr.data), n=min_fftlen)
+                   for tr in stream[0]]
+    # Frequency domain of boxcar
+    w = scipy.fftpack.fft(scipy.signal.boxcar(detector.data[0].shape[0]),
+                          n=min_fftlen)
+    detex_den = pd.rolling_var(stream[0][0].data, detector.data[0].shape[0])
+    detex_den *= detector.data[0].shape[0]
+    detex_den= detex_den[::Nc]
     # This should go into the detector object as in Detex
     detector_fd = []
     for dat_mat in detector.data:
-        detector_fd.append(np.array([scipy.fftpack.fft(col[::-1], n=fftlen)
+        detector_fd.append(np.array([scipy.fftpack.fft(col[::-1], n=min_fftlen)
                                      for col in dat_mat.T]))
     if debug > 0:
         print('Computing detection statistics')
@@ -520,21 +525,15 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     if debug > 0:
         print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
-                      (len(stream[0][0]) // inc) +
-                      (detector.data[0].shape[0] // inc) - 1),
-                     dtype=np.float32)
-    for det_time, det_freq, data_time, data_freq, i in zip(detector.data,
-                                                           detector_fd,
-                                                           stream[0],
-                                                           num_st_fd,
-                                                           np.arange(len(stream[0]))):
+                      (len(stream[0][0]) // Nc) +
+                      (detector.data[0].shape[0] // Nc) - 1))
+    for det_freq, data_freq_sq, data_freq, i in zip(detector_fd,
+                                                    denom_st_fd,
+                                                    num_st_fd,
+                                                    np.arange(len(stream[0]))):
         # Calculate det_statistic in frequency domain
-        stats[i] = det_stat_freq(det_time.astype(np.float32),
-                                 det_freq.astype(np.float32),
-                                 data_time.data.astype(np.float32),
-                                 data_freq.astype(np.float32),
-                                 w,
-                                 inc)
+        stats[i] = det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, M,
+                                 detex_den)
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))
         if debug >= 3:
@@ -546,8 +545,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
                     label='Threshold')
             ax.legend()
-            plt.title('%s.%s' % (data_time.stats.station,
-                                 data_time.stats.channel))
+            plt.title('%s' % str(stream[0][i].stats.station))
             plt.show()
     trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
@@ -570,7 +568,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             det_len = detector.data[0].shape[0] / len(detector.stachans) \
                 / detector.sampling_rate
             detecttime = st[0].stats.starttime + \
-                (peak[1] / detector.sampling_rate) + det_len
+                (peak[1] / detector.sampling_rate)
             rid = ResourceIdentifier(
                 id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)
@@ -610,20 +608,25 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     return detections
 
 
-def det_stat_freq(det_time, det_freq, data_time, data_freq, w, inc):
+def det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, M, detex_den):
     num_cor = np.multiply(det_freq, data_freq) # Numerator convolution
-    den_cor = np.multiply(w, data_freq) # Denominator convolution
-    # Alias both by factor of inc
-    num_cor = num_cor[:,::inc]
-    den_cor = den_cor[::inc]
+    den_cor = np.multiply(w, data_freq_sq) # Denominator convolution
+    # Alias the products
+    print(num_cor.shape)
+    print(den_cor.shape)
+    num = num_cor.reshape(num_cor.shape[0], Nc, M).sum(axis=1)
+    den = den_cor.reshape(Nc, M).sum(axis=0)
+    print(num.shape)
+    print(den.shape)
     #Do inverse fft back to time domain
-    num_ifft = scipy.real(scipy.fftpack.ifft(num_cor))
-    denominator = scipy.real(scipy.fftpack.ifft(den_cor))
+    num_ifft = scipy.fftpack.ifft(num)
+    denominator = scipy.fftpack.ifft(den)
     # Ratio of projected to envelope = det_stat across all channels
     result = np.sum(np.square(num_ifft), axis=0) / denominator
-    plt.plot(denominator)
-    plt.show()
     plt.plot(np.sum(np.square(num_ifft), axis=0))
+    plt.show()
+    plt.plot(denominator)
+    plt.plot(detex_den)
     plt.show()
     plt.plot(result)
     plt.show()
