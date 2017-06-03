@@ -72,18 +72,17 @@ if sys.version_info.major == 2:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.14', 'multiprocessing',
-                            'LatLon', 'h5py', 'cython', 'bottleneck', 'xarray']
+                            'scipy>=0.18', 'LatLon', 'cython', 
+                            'bottleneck', 'xarray']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'multiprocessing',
                             'LatLon']
 else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.14', 'LatLon', 'h5py', 'cython',
+                            'scipy>=0.18', 'LatLon', 'cython',
                             'bottleneck', 'xarray']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
