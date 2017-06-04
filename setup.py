@@ -71,23 +71,19 @@ scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 if sys.version_info.major == 2:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.12.0', 'obspy>=1.0.0',
-                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.18', 'LatLon', 'cython', 
-                            'bottleneck', 'xarray']
+                            'matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+                            'cython', 'bottleneck']
     else:
         install_requires = ['numpy>=1.12.0', 'obspy>=1.0.0',
-                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'LatLon']
+                            'matplotlib>=1.3.0', 'LatLon']
 else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.12.0', 'obspy>=1.0.0',
-                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.18', 'LatLon', 'cython',
-                            'bottleneck', 'xarray']
+                            'matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+                            'cython', 'bottleneck']
     else:
         install_requires = ['numpy>=1.12.0', 'obspy>=1.0.0',
-                            'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'LatLon']
+                            'matplotlib>=1.3.0', 'LatLon']
 # install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
