@@ -35,7 +35,7 @@ install:
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 opencv3 matplotlib==1.5.3 obspy==1.0.3 mock flake8 pyflakes=0.9.0 cython h5py bottleneck"
+  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 opencv3 matplotlib==1.5.3 mock flake8 pyflakes=0.9.0 cython h5py bottleneck"
   # additional dependecies
   #  - "choco install opencv"
   #  - "powershell copy-item C:\\OpenCV\\opencv\\build\\python\\2.7\\x64\\cv2.pyd C:\\conda\\envs\\test\\lib\\site-packages\\."
@@ -51,8 +51,20 @@ install:
   - "git pull origin master"
   - "pip install -v -e ."
   - "cd .."
-#  - "rm -rf pyasdf"
-#  - "pip install git+ssh://git@github.com/SeismicData/pyasdf.git"
+
+  # Obspy 1.0.3 conda clashes with numpy >= 1.12... install via git until 1.1.0
+  - "mkdir obspy && cd obspy && git init"
+  - "git remote add -f origin https://github.com/obspy/obspy.git"
+  - "git config core.sparsecheckout true"
+  - "echo setup.py >> .git/info/sparse-checkout"
+  - "echo README.md >> .git/info/sparse-checkout"
+  - "echo LICENSE.txt >> .git/info/sparse-checkout"
+  - "echo pyasdf/*.py >> .git/info/sparse-checkout"
+  - "git pull origin master"
+  - "pip install -v -e ."
+  - "cd .."
+
+  # Install other pip dependancies
   - "pip install -U future"
   - "pip install pytest"
   - "pip install pytest-pep8"
@@ -60,7 +72,6 @@ install:
   - "pip install pytest-xdist"
   - "pip install codecov"
   # list package versions
-  - "conda install -q --yes numpy>=1.12.0"
   - "conda list"
 
 # Not a .NET project
