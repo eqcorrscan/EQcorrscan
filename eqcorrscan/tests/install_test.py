@@ -17,11 +17,6 @@ class TestImport(unittest.TestCase):
             print("You have not properly installed: cv2")
             i += 1
         try:
-            import joblib  # NOQA
-        except ImportError:
-            print("You have not properly installed: joblib")
-            i += 1
-        try:
             import numpy  # NOQA
         except ImportError:
             print("You have not properly installed: numpy")
