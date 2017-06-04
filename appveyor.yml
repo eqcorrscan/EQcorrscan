@@ -14,17 +14,16 @@ environment:
     PR_URL: "--pr-url https://github.com/%APPVEYOR_REPO_NAME%/pull/%APPVEYOR_PULL_REQUEST_NUMBER%"
 
   matrix:
-    - PYTHON_VERSION: "2.7"
+    - PYTHON: "C:\\Miniconda-x64"
+      PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
 
 platform:
   - x64
 
 install:
-  # Install miniconda using a powershell script.
   - '.\\misc\\appveyor\\trim_path.bat'
   - "ECHO %PATH%"
-  - "powershell ./misc/appveyor/install-miniconda.ps1"
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   # Check that we have the expected version and architecture for Python
   - "%CMD_IN_ENV% python --version"
@@ -67,8 +66,7 @@ install:
 build: false
 
 test_script:
-  - "%CMD_IN_ENV% python setup.py build"
-  - "%CMD_IN_ENV% pip install . --no-deps"
+  - "%CMD_IN_ENV% python setup.py develop"
   - "%CMD_IN_ENV% py.test --ignore=eqcorrscan/tests/tutorial_test.py"
 
 after_test:
