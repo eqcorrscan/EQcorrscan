@@ -61,6 +61,8 @@ install:
   - "echo LICENSE.txt >> .git/info/sparse-checkout"
   - "echo pyasdf/*.py >> .git/info/sparse-checkout"
   - "git pull origin master"
+  - "cp obspy/core/util/libnames.py ."
+  - "cp obspy/core/util/version.py ."
   - "python setup.py install"
   - "cd .."
 
