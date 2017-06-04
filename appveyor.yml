@@ -47,7 +47,7 @@ install:
   - "git pull origin master"
   - "python setup.py install"
   - "cd .."
-  - "rm -r obspy"
+  - "rm -rf obspy"
 
   - "mkdir pyasdf && cd pyasdf"
   - "git init"
