@@ -40,7 +40,6 @@ from collections import Counter
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
-from scipy.fftpack import next_fast_len
 
 from eqcorrscan.utils.timer import Timer
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster

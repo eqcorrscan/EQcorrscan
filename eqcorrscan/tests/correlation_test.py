@@ -14,28 +14,21 @@ class CorrelationTesting(unittest.TestCase):
     def test_cv2(self):
         """Test the cv2 library installed"""
         import numpy as np
-        import cv2
         import os
         from obspy import read
+        from eqcorrscan.core.match_filter import normxcorr2
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         image = read(os.path.join(testing_path, 'test_image.ms'))[0].\
             data.astype(np.float32)
         template = read(os.path.join(testing_path, 'test_template.ms'))[0].\
             data.astype(np.float32)
-        ccc = cv2.matchTemplate(image=image, templ=template,
-                                method=cv2.TM_CCOEFF_NORMED)
+        ccc = normxcorr2(image=image, template=template)
         ccc = ccc.flatten()
         expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
         matlab_ccc = np.load(os.path.join(testing_path, 'test_ccc_matlab.npy'))
-        if (ccc == expected_ccc).all():
-            print('Using openCV from source')
-            self.assertTrue((ccc == expected_ccc).all())
-        elif (ccc == matlab_ccc).all():
-            print('Using pre-compiled openCV')
-            self.assertTrue((ccc == matlab_ccc).all())
-        else:
-            print('Well fuck, they are all different!')
+        self.assertTrue(np.allclose(ccc, expected_ccc, atol=0.003))
+        self.assertTrue(np.allclose(ccc, matlab_ccc, atol=0.003))
 
 
 if __name__ == '__main__':
