@@ -18,7 +18,7 @@ from obspy.core.event import Pick
 from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core import template_gen, match_filter
-from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
+from eqcorrscan.core.match_filter import MatchFilterError
 from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
 from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
@@ -85,49 +85,6 @@ class TestCoreMethods(unittest.TestCase):
         if not (ccc == expected_ccc).all():
             warnings.warn('The expected result was not achieved, ' +
                           'but it has the same shape')
-
-    def test_perfect_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.random.randn(100).astype(np.float32)))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000).astype(np.float32)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertEqual(ccc.astype(np.float16).max(), 1.0)
-
-    def test_false_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.array([np.nan] * 100)))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertTrue(np.all(ccc == 0))
-
-    def test_normal_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.random.randn(100) * 10.0))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        image += np.random.randn(1099)  # Add random noise
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertNotEqual(ccc.max(), 1.0)
 
     def test_failed_normxcorr(self):
         """Send it the wrong type."""
