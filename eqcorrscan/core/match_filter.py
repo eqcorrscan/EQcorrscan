@@ -56,15 +56,15 @@ def _spike_test(stream, percent=0.99, multiplier=1e6):
 
     :param stream: Stream to look for spikes in.
     :type stream: :class:`obspy.core.stream.Stream`
-    :param percent: Percentage as a decimal to calcualte range for.
+    :param percent: Percentage as a decimal to calculate range for.
     :type percent: float
     :param multiplier: Multiplier of range to define a spike.
     :type multiplier: float
     """
     for tr in stream:
-        if (tr.data > 2 * np.max(
-            np.sort(np.abs(
-                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
+        if (tr.data > 2 * np.max(np.sort(
+                np.abs(tr.data))[0:int(percent * len(tr.data))]
+                                 ) * multiplier).sum() > 0:
             msg = ('Spikes above ' + str(multiplier) +
                    ' of the range of ' + str(percent) +
                    ' of the data present, check. \n ' +
