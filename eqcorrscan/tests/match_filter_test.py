@@ -78,13 +78,11 @@ class TestCoreMethods(unittest.TestCase):
         image = image[0].data.astype(np.float32)
         ccc = normxcorr2(template, image)[0]
         expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
-        # We know that conda installs of openCV give a different results
-        # to source built - allow this and allow it to pass.
-        self.assertTrue((np.gradient(expected_ccc).round(2) ==
-                         np.gradient(ccc).round(2)).all())
-        if not (ccc == expected_ccc).all():
-            warnings.warn('The expected result was not achieved, ' +
-                          'but it has the same shape')
+        # We know that conda installs give a slightly different result
+        self.assertTrue(np.allclose(expected_ccc, ccc, atol=0.003))
+        # Differences occur for low correlation values, peak should be the same
+        self.assertTrue(expected_ccc.max(), ccc.max())
+        self.assertTrue(expected_ccc.argmax(), ccc.argmax())
 
     def test_failed_normxcorr(self):
         """Send it the wrong type."""

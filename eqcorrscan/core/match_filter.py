@@ -3371,8 +3371,12 @@ def normxcorr2(template, image):
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
-    ccc = multi_normxcorr(templates=np.array([template]),
-                          stream=image, pads=[0])[0][0]
+    if len(template) > len(image):
+        ccc = multi_normxcorr(templates=np.array([image]),
+                              stream=template, pads=[0])[0][0]
+    else:
+        ccc = multi_normxcorr(templates=np.array([template]),
+                              stream=image, pads=[0])[0][0]
     ccc = ccc.reshape((1, len(ccc)))
     return ccc
 
@@ -3398,24 +3402,33 @@ def multi_normxcorr(templates, stream, pads):
     used_chans = ~np.isnan(templates).any(axis=1)
     # Currently have to use float64 as bottleneck runs into issues with other
     # types: https://github.com/kwgoodman/bottleneck/issues/164
-    stream = stream.astype(np.float64)
-    templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
+    stream_64 = stream.astype(np.float64)
     stream_mean_array = bottleneck.move_mean(
-        stream, template_length)[template_length - 1:]
+        stream_64, template_length)[template_length - 1:].astype(np.float32)
+    # CPU bound
     stream_std_array = bottleneck.move_std(
-        stream, template_length)[template_length - 1:]
+        stream_64, template_length)[template_length - 1:].astype(np.float32)
+    # If there are zeros in the data (e.g. signal padded with zeros) then
+    # division by zero happens resulting in inf - convert these zeros to inf
+    stream_std_array[stream_std_array == 0] = np.inf
+    #  Multi-core
+    del(stream_64)
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
+    # CPU bound
     norm_sum = norm.sum(axis=-1, keepdims=True)
-    stream_fft = np.fft.rfft(stream, fftshape)
+    stream_fft = np.fft.rfft(stream, fftshape)  # CPU bound
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
+    # CPU bound
     res = np.fft.irfft(template_fft * stream_fft,
                        fftshape)[:, 0:template_length + stream_length - 1]
+    # CPU bound
+    # Note:: Can run fftw with a threads argument, gets slightly faster result
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
     for i in range(len(pads)):
@@ -3424,7 +3437,6 @@ def multi_normxcorr(templates, stream, pads):
             res[i] = np.zeros(len(res[i]))
         else:
             res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
-    res = np.nan_to_num(res)
     return res.astype(np.float32), used_chans
 
 

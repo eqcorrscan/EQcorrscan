@@ -57,7 +57,11 @@ will not be used.
 * Fix bug in detection_multiplot which didn't allow streams with
 fewer traces than template;
 * Update internals to SciPy correlation rather than openCV (Major change);
-
+    * OpenCV has been removed as a dependancy;
+    * eqcorrscan.core.match_filter.normxcorr2 now calls a SciPy routine;
+    * multiple templates can be correlated in parallel in a vectorised SciPy
+    routine, this is called in parallel for multiple channels of data using
+    multiprocessing
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
