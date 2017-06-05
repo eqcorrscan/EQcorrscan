@@ -23,7 +23,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 
-import cv2
 import warnings
 import ast
 import os
