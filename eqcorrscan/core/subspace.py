@@ -474,7 +474,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :return: list of detections
     :rtype: list of eqcorrscan.core.match_filter.Detection
     """
-    import pandas as pd
     detections = []
     # First process the stream
     if process:
@@ -503,7 +502,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     fft_vars = do_ffts(detector, stream, Nc)
     if debug > 0:
         print('Computing detection statistics')
-    # Stats must be same size for multiplexed or non multiplexed!
     if debug > 0:
         print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
@@ -544,9 +542,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
-            # Be careful here, as stats starttime is ulen / Nc * samp_rate
-            det_len = detector.data[0].shape[0] / len(detector.stachans) \
-                / detector.sampling_rate
             detecttime = st[0].stats.starttime + \
                 (peak[1] / detector.sampling_rate)
             rid = ResourceIdentifier(
