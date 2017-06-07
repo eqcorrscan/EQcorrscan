@@ -24,7 +24,6 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
-import pandas as pd
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
