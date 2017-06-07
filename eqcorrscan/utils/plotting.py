@@ -1674,8 +1674,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     ...                                                    freqmin=2,
     ...                                                    freqmax=8)
     ...     stream_list.append(tr)
-    >>> svec, sval, uvec, stachans = svd(stream_list=stream_list)
-    >>> SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+    >>> uvec, sval, svec, stachans = svd(stream_list=stream_list)
+    >>> SVstreams = SVD_2_stream(uvectors=uvec, stachans=stachans, k=3,
     ...                          sampling_rate=100)
     >>> SVD_plot(SVStreams=SVstreams, SValues=sval,
     ...          stachans=stachans) # doctest: +SKIP
@@ -1704,8 +1704,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     _check_save_args(save, savefile)
     for sval, stachan in zip(SValues, stachans):
         print(stachan)
-        plot_traces = [SVStream.select(station=stachan.split('.')[0],
-                                       channel=stachan.split('.')[1])[0]
+        plot_traces = [SVStream.select(station=stachan[0],
+                                       channel=stachan[1])[0]
                        for SVStream in SVStreams]
         fig, axes = plt.subplots(len(plot_traces), 1, sharex=True)
         if len(plot_traces) > 1:
@@ -2255,7 +2255,8 @@ def subspace_fc_plot(detector, stachans, size, show):
     if stachans == [('multi', ' ')]:
         ncols = 1
     else:
-        ncols = min(pfs, key=lambda x:abs((np.floor(np.sqrt(len(stachans))) - x)))
+        ncols = min(pfs,
+                    key=lambda x: abs((np.floor(np.sqrt(len(stachans))) - x)))
     nrows = len(stachans) // ncols
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True,
                              sharey=True, figsize=size, squeeze=False)
@@ -2263,7 +2264,7 @@ def subspace_fc_plot(detector, stachans, size, show):
         axis.set_title('.'.join(stachans[column]))
         sig = diagsvd(detector.sigma[column], detector.u[column].shape[0],
                       detector.v[column].shape[0])
-        A = np.dot(sig, detector.v[column]) # v is v.H from scipy.svd
+        A = np.dot(sig, detector.v[column])  # v is v.H from scipy.svd
         if detector.dimension > max(
                 detector.v[column].shape) or detector.dimension == np.inf:
             dim = max(detector.v[column].shape) + 1

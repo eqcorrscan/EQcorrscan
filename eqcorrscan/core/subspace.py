@@ -17,7 +17,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import scipy
 import warnings
 import time
 import h5py
@@ -604,11 +603,11 @@ def do_ffts(detector, stream, Nc):
 
 
 def det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
-    num_cor = np.multiply(det_freq, data_freq) #  Numerator convolution
-    den_cor = np.multiply(w, data_freq_sq) #  Denominator convolution
+    num_cor = np.multiply(det_freq, data_freq)  # Numerator convolution
+    den_cor = np.multiply(w, data_freq_sq)  # Denominator convolution
     # Do inverse fft
     # First and last Nt - 1 samples are invalid; clip them off
-    num_ifft = np.real(np.fft.ifft(num_cor))[:,ulen-1:mplen:Nc]
+    num_ifft = np.real(np.fft.ifft(num_cor))[:, ulen-1:mplen:Nc]
     denominator = np.real(np.fft.ifft(den_cor))[ulen-1:mplen:Nc]
     # Ratio of projected to envelope energy = det_stat across all channels
     result = np.sum(np.square(num_ifft), axis=0) / denominator

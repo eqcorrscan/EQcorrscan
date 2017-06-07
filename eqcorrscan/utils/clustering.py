@@ -467,16 +467,16 @@ def empirical_svd(stream_list, linear=True):
     return [first_subspace, second_subspace]
 
 
-def SVD_2_stream(SVectors, stachans, k, sampling_rate):
+def SVD_2_stream(uvectors, stachans, k, sampling_rate):
     """
     Depreciated. Use svd_to_stream
     """
     warnings.warn('Depreciated, use svd_to_stream instead.')
-    return svd_to_stream(svectors=SVectors, stachans=stachans, k=k,
+    return svd_to_stream(uvectors=uvectors, stachans=stachans, k=k,
                          sampling_rate=sampling_rate)
 
 
-def svd_to_stream(svectors, stachans, k, sampling_rate):
+def svd_to_stream(uvectors, stachans, k, sampling_rate):
     """
     Convert the singular vectors output by SVD to streams.
 
@@ -501,14 +501,15 @@ def svd_to_stream(svectors, stachans, k, sampling_rate):
     for i in range(k):
         svstream = []
         for j, stachan in enumerate(stachans):
-            if len(svectors[j]) <= k:
+            if len(uvectors[j]) <= k:
                 warnings.warn('Too few traces at %s for a %02d dimensional '
                               'subspace. Detector streams will not include '
-                              'this channel.' % (stachan, k))
+                              'this channel.' % ('.'.join(stachan[0],
+                                                          stachan[1]), k))
             else:
-                svstream.append(Trace(svectors[j][i],
-                                      header={'station': stachan.split('.')[0],
-                                              'channel': stachan.split('.')[1],
+                svstream.append(Trace(uvectors[j][i],
+                                      header={'station': stachan[0],
+                                              'channel': stachan[1],
                                               'sampling_rate': sampling_rate}))
         svstreams.append(Stream(svstream))
     return svstreams
@@ -797,7 +798,7 @@ def dist_mat_km(catalog):
         if master.preferred_origin():
             master_ori = master.preferred_origin()
         else:
-            master_ori = master.origins[0]
+            master_ori = master.origins[-1]
         master_tup = (master_ori.latitude,
                       master_ori.longitude,
                       master_ori.depth // 1000)
@@ -805,7 +806,7 @@ def dist_mat_km(catalog):
             if slave.preferred_origin():
                 slave_ori = slave.preferred_origin()
             else:
-                slave_ori = slave.origins[0]
+                slave_ori = slave.origins[-1]
             slave_tup = (slave_ori.latitude,
                          slave_ori.longitude,
                          slave_ori.depth // 1000)
