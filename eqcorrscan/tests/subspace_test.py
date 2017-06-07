@@ -87,10 +87,13 @@ class SimpleSubspaceMethods(unittest.TestCase):
         detector.partition(2)
         stream = read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace', 'test_trace.ms'))
-        tr_data = stream[0].data[:,None].astype(np.float32)
-        stat = subspace_statistic.det_statistic(
-            detector.data[0].astype(np.float32), tr_data, np.uint32(1))
-        self.assertEqual((stat.max().round(6) - 0.306929).round(6), 0)
+        st = [stream]
+        fft_vars = subspace.do_ffts(detector, st, len(detector.stachans))
+        stat = subspace.det_stat_freq(fft_vars[0][0], fft_vars[1][0],
+                                      fft_vars[2][0], fft_vars[3],
+                                      len(detector.stachans), fft_vars[4],
+                                      fft_vars[5])
+        self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
 class SubspaceTestingMethods(unittest.TestCase):
@@ -309,8 +312,8 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=True,
-                           shift_len=3, reject=0.3,
-                           no_missed=True).partition(4)
+                           shift_len=4, reject=0.3,
+                           no_missed=False).partition(4)
         st = self.st
         detections = detector.detect(st=st, threshold=0.2, trig_int=4,
                                      debug=1)
@@ -327,7 +330,7 @@ class SubspaceTestingMethods(unittest.TestCase):
         st = self.st
         detections = detector.detect(st=st, threshold=0.5, trig_int=4,
                                      debug=1, moveout=2, min_trig=5)
-        self.assertEqual(len(detections), 17)
+        self.assertEqual(len(detections), 16)
 
     def test_multi_detectors(self):
         """Test the efficient looping in subspace."""
@@ -349,14 +352,14 @@ class SubspaceTestingMethods(unittest.TestCase):
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=False, num_cores=2)
-        self.assertEqual(len(detections), 14)
+        self.assertEqual(len(detections), 6)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
                                               threshold=0.7,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=True, num_cores=2)
-        self.assertEqual(len(detections), 14)
+        self.assertEqual(len(detections), 6)
 
     def partition_fail(self):
         templates = copy.deepcopy(self.templates)
