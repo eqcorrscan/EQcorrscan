@@ -582,8 +582,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
 
 
 def do_ffts(detector, stream, Nc):
-    min_fftlen = int(stream[0][0].data.shape[0] + detector.data[0].shape[0]
-                     - Nc)
+    min_fftlen = int(stream[0][0].data.shape[0] +
+                     detector.data[0].shape[0] - Nc)
     fftlen = 1 << min_fftlen.bit_length()
     mplen = stream[0][0].data.shape[0]
     ulen = detector.data[0].shape[0]
