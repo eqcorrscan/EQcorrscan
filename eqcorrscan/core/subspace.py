@@ -17,6 +17,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import scipy
 import warnings
 import time
 import h5py
@@ -32,7 +33,7 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
-from eqcorrscan.utils.plotting import subspace_detector_plot
+from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
 
 
 class Detector(object):
@@ -120,7 +121,8 @@ class Detector(object):
             if not len(list_item) == len(other_list):
                 return False
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item, atol=0.001):
+                if not np.allclose(np.absolute(item),
+                                   np.absolute(other_item), atol=0.001):
                     return False
         return True
 
@@ -201,9 +203,7 @@ class Detector(object):
             multiplex=multiplex, align=align, shift_len=shift_len,
             reject=reject, plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
-        v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
-        if not multiplex:
-            stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
+        u, sigma, v, svd_stachans = svd(stream_list=p_streams, full=True)
         self.stachans = stachans
         # self.delays = delays
         self.u = u
@@ -222,27 +222,31 @@ class Detector(object):
         """
         # Take leftmost 'dimension' input basis vectors
         for i, channel in enumerate(self.u):
-            if channel.shape[1] < dimension:
+            if self.v[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
-                                 % channel.shape[1])
+                                 % self.v[i].shape[1])
             self.data[i] = channel[:, 0:dimension]
         self.dimension = dimension
         return self
 
-    def energy_capture(self):
+    def energy_capture(self, stachans='all', size=(10, 7), show=False):
         """
         Calculate the average percentage energy capture for this subspace.
 
         :return: Percentage energy capture
         :rtype: float
         """
-        percent_captrue = 0
+        if show:
+            return subspace_fc_plot(detector=self, stachans=stachans,
+                                    size=size, show=show)
+        percent_capture = 0
         if np.isinf(self.dimension):
             return 100
         for channel in self.sigma:
             fc = np.sum(channel[0:self.dimension]) / np.sum(channel)
-            percent_captrue += fc
-        return 100 * (percent_captrue / len(self.sigma))
+            percent_capture += fc
+        else:
+            return 100 * (percent_capture / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
                process=True, extract_detections=False, debug=0):
@@ -491,26 +495,40 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     outtic = time.clock()
     if debug > 0:
         print('Computing detection statistics')
+    # If multiplexed, how many samples do we increment by?
+    if detector.multiplex:
+        inc = np.uint32(len(detector.stachans))
+    else:
+        inc = np.uint32(1)
+    # Stats must be same size for multiplexed or non multiplexed!
+    if debug > 0:
+        print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
-                      len(stream[0][0]) - len(detector.data[0][0]) + 1),
+                      (len(stream[0][0]) // inc) -
+                      (len(detector.data[0].T[0]) // inc) + 1),
                      dtype=np.float32)
+    # Hard typing in Cython loop requires float32 type.
     for det_channel, in_channel, i in zip(detector.data, stream[0],
                                           np.arange(len(stream[0]))):
         stats[i] = subspace_statistic.\
             det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data.astype(np.float32))
-        if debug > 0:
-            print(stats[i].shape)
-        if debug > 3:
-            plt.plot(stats[i])
+                          data=in_channel.data.astype(np.float32),
+                          inc=inc)
+        if debug >= 1:
+            print('Stats matrix is shape %s' % str(stats[i].shape))
+        if debug >= 3:
+            fig, ax = plt.subplots()
+            t = np.arange(len(stats[i]))
+            ax.plot(t, stats[i], color='k')
+            ax.axis('tight')
+            ax.set_ylim([0, 1])
+            ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
+                    label='Threshold')
+            ax.legend()
+            plt.title('%s.%s' % (in_channel.stats.station,
+                                 in_channel.stats.channel))
             plt.show()
-        # Hard typing in Cython loop requires float32 type.
-    # statistics
-    if detector.multiplex:
-        trig_int_samples = (len(detector.stachans) *
-                            detector.sampling_rate * trig_int)
-    else:
-        trig_int_samples = detector.sampling_rate * trig_int
+    trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
         print('Finding peaks')
     peaks = []
@@ -527,13 +545,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
-            if detector.multiplex:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / (detector.sampling_rate *
-                                len(detector.stachans)))
-            else:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / detector.sampling_rate)
+            detecttime = st[0].stats.starttime + \
+                (peak[1] / detector.sampling_rate)
             rid = ResourceIdentifier(
                 id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)
@@ -841,6 +854,7 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                             channel=stachan[1])[0].stats.sampling_rate) + 1))
                     warnings.warn('Padding stream with zero trace for ' +
                                   'station ' + stachan[0] + '.' + stachan[1])
+                    print('zero padding')
                 elif multiplex and no_missed:
                     remove_set.append(st)
                     warnings.warn('Will remove stream due to low-correlation')

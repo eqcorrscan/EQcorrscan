@@ -356,11 +356,8 @@ def svd(stream_list, full=False):
     """
     # Convert templates into ndarrays for each channel
     # First find all unique channels:
-    stachans = []
-    for st in stream_list:
-        for tr in st:
-            stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
-    stachans = list(set(stachans))
+    stachans = list(set([(tr.stats.station, tr.stats.channel)
+                         for st in stream_list for tr in st]))
     stachans.sort()
     # Initialize a list for the output matrices, one matrix per-channel
     svalues = []
@@ -369,18 +366,19 @@ def svd(stream_list, full=False):
     for stachan in stachans:
         lengths = []
         for st in stream_list:
-            tr = st.select(station=stachan.split('.')[0],
-                           channel=stachan.split('.')[1])
+            tr = st.select(station=stachan[0],
+                           channel=stachan[1])
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                warnings.warn('Stream does not contain ' + stachan)
+                warnings.warn('Stream does not contain %s'
+                              % '.'.join(list(stachan)))
                 continue
             lengths.append(len(tr.data))
         min_length = min(lengths)
         for stream in stream_list:
-            chan = stream.select(station=stachan.split('.')[0],
-                                 channel=stachan.split('.')[1])
+            chan = stream.select(station=stachan[0],
+                                 channel=stachan[1])
             if chan:
                 if len(chan[0].data) > min_length:
                     if abs(len(chan[0].data) - min_length) > 0.1 *\
@@ -394,15 +392,17 @@ def svd(stream_list, full=False):
                 else:
                     chan_mat = np.vstack((chan_mat, chan[0].data))
         if not len(chan_mat.shape) > 1:
-            warnings.warn('Matrix of traces is less than 2D for %s' % stachan)
+            warnings.warn('Matrix of traces is less than 2D for %s'
+                          % '.'.join(list(stachan)))
             continue
+        # Be sure to transpose chan_mat as waveforms must define columns
         chan_mat = np.asarray(chan_mat)
-        u, s, v = np.linalg.svd(chan_mat, full_matrices=full)
+        u, s, v = np.linalg.svd(chan_mat.T, full_matrices=full)
         svalues.append(s)
         svectors.append(v)
         uvectors.append(u)
         del(chan_mat)
-    return svectors, svalues, uvectors, stachans
+    return uvectors, svalues, svectors, stachans
 
 
 def empirical_SVD(stream_list, linear=True):
@@ -467,16 +467,16 @@ def empirical_svd(stream_list, linear=True):
     return [first_subspace, second_subspace]
 
 
-def SVD_2_stream(SVectors, stachans, k, sampling_rate):
+def SVD_2_stream(uvectors, stachans, k, sampling_rate):
     """
     Depreciated. Use svd_to_stream
     """
     warnings.warn('Depreciated, use svd_to_stream instead.')
-    return svd_to_stream(svectors=SVectors, stachans=stachans, k=k,
+    return svd_to_stream(uvectors=uvectors, stachans=stachans, k=k,
                          sampling_rate=sampling_rate)
 
 
-def svd_to_stream(svectors, stachans, k, sampling_rate):
+def svd_to_stream(uvectors, stachans, k, sampling_rate):
     """
     Convert the singular vectors output by SVD to streams.
 
@@ -501,14 +501,15 @@ def svd_to_stream(svectors, stachans, k, sampling_rate):
     for i in range(k):
         svstream = []
         for j, stachan in enumerate(stachans):
-            if len(svectors[j]) <= k:
+            if len(uvectors[j]) <= k:
                 warnings.warn('Too few traces at %s for a %02d dimensional '
                               'subspace. Detector streams will not include '
-                              'this channel.' % (stachan, k))
+                              'this channel.' % ('.'.join(stachan[0],
+                                                          stachan[1]), k))
             else:
-                svstream.append(Trace(svectors[j][i],
-                                      header={'station': stachan.split('.')[0],
-                                              'channel': stachan.split('.')[1],
+                svstream.append(Trace(uvectors[j][i],
+                                      header={'station': stachan[0],
+                                              'channel': stachan[1],
                                               'sampling_rate': sampling_rate}))
         svstreams.append(Stream(svstream))
     return svstreams
@@ -797,7 +798,7 @@ def dist_mat_km(catalog):
         if master.preferred_origin():
             master_ori = master.preferred_origin()
         else:
-            master_ori = master.origins[0]
+            master_ori = master.origins[-1]
         master_tup = (master_ori.latitude,
                       master_ori.longitude,
                       master_ori.depth // 1000)
@@ -805,7 +806,7 @@ def dist_mat_km(catalog):
             if slave.preferred_origin():
                 slave_ori = slave.preferred_origin()
             else:
-                slave_ori = slave.origins[0]
+                slave_ori = slave.origins[-1]
             slave_tup = (slave_ori.latitude,
                          slave_ori.longitude,
                          slave_ori.depth // 1000)
