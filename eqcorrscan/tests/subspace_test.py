@@ -88,8 +88,8 @@ class SimpleSubspaceMethods(unittest.TestCase):
         stream = read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace', 'test_trace.ms'))
         st = [stream]
-        fft_vars = subspace.do_ffts(detector, st, len(detector.stachans))
-        stat = subspace.det_stat_freq(fft_vars[0][0], fft_vars[1][0],
+        fft_vars = subspace._do_ffts(detector, st, len(detector.stachans))
+        stat = subspace._det_stat_freq(fft_vars[0][0], fft_vars[1][0],
                                       fft_vars[2][0], fft_vars[3],
                                       len(detector.stachans), fft_vars[4],
                                       fft_vars[5])

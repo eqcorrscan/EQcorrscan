@@ -23,6 +23,7 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
+import scipy
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
@@ -497,7 +498,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     else:
         Nc = 1
     # Here do all ffts
-    fft_vars = do_ffts(detector, stream, Nc)
+    fft_vars = _do_ffts(detector, stream, Nc)
     if debug > 0:
         print('Computing detection statistics')
     if debug > 0:
@@ -508,8 +509,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                                                     fft_vars[2],
                                                     np.arange(len(stream[0]))):
         # Calculate det_statistic in frequency domain
-        stats[i] = det_stat_freq(det_freq, data_freq_sq, data_freq,
-                                 fft_vars[3], Nc, fft_vars[4], fft_vars[5])
+        stats[i] = _det_stat_freq(det_freq, data_freq_sq, data_freq,
+                                  fft_vars[3], Nc, fft_vars[4], fft_vars[5])
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))
         if debug >= 3:
@@ -581,34 +582,36 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     return detections
 
 
-def do_ffts(detector, stream, Nc):
+def _do_ffts(detector, stream, Nc):
+    # Perform ffts on data, detector and denominator boxcar
     min_fftlen = int(stream[0][0].data.shape[0] +
                      detector.data[0].shape[0] - Nc)
-    fftlen = 1 << min_fftlen.bit_length()
+    fftlen = scipy.fftpack.next_fast_len(min_fftlen)
     mplen = stream[0][0].data.shape[0]
     ulen = detector.data[0].shape[0]
-    num_st_fd = [np.fft.fft(tr.data, n=fftlen)
+    num_st_fd = [np.fft.rfft(tr.data, n=fftlen)
                  for tr in stream[0]]
-    denom_st_fd = [np.fft.fft(np.square(tr.data), n=fftlen)
+    denom_st_fd = [np.fft.rfft(np.square(tr.data), n=fftlen)
                    for tr in stream[0]]
     # Frequency domain of boxcar
-    w = np.fft.fft(np.ones(detector.data[0].shape[0]),
+    w = np.fft.rfft(np.ones(detector.data[0].shape[0]),
                    n=fftlen)
     # This should go into the detector object as in Detex
     detector_fd = []
     for dat_mat in detector.data:
-        detector_fd.append(np.array([np.fft.fft(col[::-1], n=fftlen)
+        detector_fd.append(np.array([np.fft.rfft(col[::-1], n=fftlen)
                                      for col in dat_mat.T]))
     return detector_fd, denom_st_fd, num_st_fd, w, ulen, mplen
 
 
-def det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
+def _det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
+    # Compute detection statistic in the frequency domain
     num_cor = np.multiply(det_freq, data_freq)  # Numerator convolution
     den_cor = np.multiply(w, data_freq_sq)  # Denominator convolution
     # Do inverse fft
     # First and last Nt - 1 samples are invalid; clip them off
-    num_ifft = np.real(np.fft.ifft(num_cor))[:, ulen-1:mplen:Nc]
-    denominator = np.real(np.fft.ifft(den_cor))[ulen-1:mplen:Nc]
+    num_ifft = np.real(np.fft.irfft(num_cor))[:, ulen-1:mplen:Nc]
+    denominator = np.real(np.fft.irfft(den_cor))[ulen-1:mplen:Nc]
     # Ratio of projected to envelope energy = det_stat across all channels
     result = np.sum(np.square(num_ifft), axis=0) / denominator
     return result
