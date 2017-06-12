@@ -595,7 +595,7 @@ def _do_ffts(detector, stream, Nc):
                    for tr in stream[0]]
     # Frequency domain of boxcar
     w = np.fft.rfft(np.ones(detector.data[0].shape[0]),
-                   n=fftlen)
+                    n=fftlen)
     # This should go into the detector object as in Detex
     detector_fd = []
     for dat_mat in detector.data:
