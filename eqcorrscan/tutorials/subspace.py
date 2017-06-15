@@ -85,7 +85,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # We set a very low threshold because the detector is not that great, we
     # haven't aligned it particularly well - however, at this threshold we make
     # two real detections.
-    detections, det_streams = detector.detect(st=st, threshold=0.005,
+    detections, det_streams = detector.detect(st=st, threshold=0.3,
                                               trig_int=2,
                                               extract_detections=True)
     if return_streams:

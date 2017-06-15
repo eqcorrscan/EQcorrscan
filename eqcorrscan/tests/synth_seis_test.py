@@ -52,7 +52,7 @@ class TestSynth(unittest.TestCase):
 
 class TestSVDSim(unittest.TestCase):
     def test_svd_sim(self):
-        V, s, U, stachans = SVD_sim(sp=15, lowcut=2, highcut=8, samp_rate=20)
+        U, s, V, stachans = SVD_sim(sp=15, lowcut=2, highcut=8, samp_rate=20)
         self.assertEqual(V[0].shape[0], s[0].shape[0])
         self.assertEqual(V[0].shape[0], U[0].shape[1])
         self.assertEqual(len(stachans), 1)
