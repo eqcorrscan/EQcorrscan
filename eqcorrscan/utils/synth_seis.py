@@ -133,8 +133,8 @@ def SVD_sim(sp, lowcut, highcut, samp_rate,
             tr.filter('bandpass', freqmin=lowcut, freqmax=highcut)
     # We have a list of obspy Trace objects, we can pass this to EQcorrscan's
     # SVD functions
-    V, s, U, stachans = clustering.svd(synthetics)
-    return V, s, U, stachans
+    U, s, V, stachans = clustering.svd(synthetics)
+    return U, s, V, stachans
 
 
 def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,

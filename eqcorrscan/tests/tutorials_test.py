@@ -95,7 +95,7 @@ class TestTutorialScripts(unittest.TestCase):
     def test_subspace(self):
         """Test the subspace tutorial."""
         detections = subspace.run_tutorial(plot=False)
-        self.assertEqual(len(detections), 2)
+        self.assertEqual(len(detections), 11)
 
 if __name__ == '__main__':
     """

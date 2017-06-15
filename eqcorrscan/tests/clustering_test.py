@@ -175,10 +175,10 @@ class ClusteringTestMethods(unittest.TestCase):
                 tr.detrend('simple')
                 tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-        SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
+        UVectors, SValues, SVectors, stachans = svd(stream_list=stream_list)
         self.assertEqual(len(SVectors), len(stachans))
         self.assertEqual(len(SValues), len(stachans))
-        self.assertEqual(len(Uvectors), len(stachans))
+        self.assertEqual(len(UVectors), len(stachans))
         for SVec in SVectors:
             self.assertEqual(len(SVec), len(stream_list))
         with warnings.catch_warnings(record=True) as w:
@@ -227,11 +227,11 @@ class ClusteringTestMethods(unittest.TestCase):
                 tr.resample(sampling_rate=samp_rate)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
-        svstreams = svd_to_stream(svectors=SVectors, stachans=stachans, k=4,
+        svstreams = svd_to_stream(uvectors=SVectors, stachans=stachans, k=4,
                                   sampling_rate=samp_rate)
         self.assertEqual(len(svstreams), 4)
         with warnings.catch_warnings(record=True) as w:
-            SVD_2_stream(SVectors=SVectors, stachans=stachans, k=4,
+            SVD_2_stream(uvectors=SVectors, stachans=stachans, k=4,
                          sampling_rate=samp_rate)
             self.assertEqual(len(w), 1)
             self.assertTrue('Depreciated' in str(w[0].message))

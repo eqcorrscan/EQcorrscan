@@ -925,7 +925,7 @@ def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
                        event_list=event_list, n_svs=n_SVs)
 
 
-def svd_moments(u, s, v, stachans, event_list, n_svs=4):
+def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     """
     Calculate relative moments/amplitudes using singular-value decomposition.
 
@@ -969,6 +969,15 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
 
     .. note:: M is an array of relative moments (or amplitudes), these cannot
         be directly compared to true moments without calibration.
+
+    .. note:: When comparing this method with the method used for creation
+        of subspace detectors (Harris 2006) it is important to note that the
+        input `design set` matrix in Harris contains waveforms as columns,
+        whereas in Rubinstein & Ellsworth it contains waveforms as rows
+        (i.e. the transpose of the Harris data matrix). The U and V matrices
+        are therefore swapped between the two approaches. This is accounted
+        for in EQcorrscan but may lead to confusion when reviewing the code.
+        Here we use the Harris approach.
 
     .. rubric:: Example
 
@@ -1014,16 +1023,18 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
         # Copy the relevant vectors so as not to destroy them
-        U_working = copy.deepcopy(u[i])
-        V_working = copy.deepcopy(v[i])
-        s_working = copy.deepcopy(s[i])
+        # Here we'll swap into the Rubinstein U and V matrices
+        U_working = copy.deepcopy(v[i].T)
+        V_working = copy.deepcopy(u[i])
+        s_working = copy.deepcopy(s[i].T)
         ev_list = event_list[i]
-        if len(ev_list) > len(V_working):
-            print('V is : ' + str(len(V_working)))
-            f_dump = open('mag_calc_V_working.pkl', 'wb')
-            pickle.dump(V_working, f_dump)
+        if len(ev_list) > len(U_working):
+            print('U is : ' + str(U_working.shape))
+            print('ev_list is len %s' % str(len(ev_list)))
+            f_dump = open('mag_calc_U_working.pkl', 'wb')
+            pickle.dump(U_working, f_dump)
             f_dump.close()
-            raise IOError('More events than represented in V')
+            raise IOError('More events than represented in U')
         # Set all non-important singular values to zero
         s_working[n_svs:len(s_working)] = 0
         s_working = np.diag(s_working)
@@ -1031,7 +1042,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
         U_working = np.matrix(U_working)
         V_working = np.matrix(V_working)
         s_working = np.matrix(s_working)
-
         SVD_weights = U_working[:, 0]
         # If all the weights are negative take the abs
         if np.all(SVD_weights < 0):
@@ -1060,10 +1070,10 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
             # We will normalize by the minimum weight
             _weights = list(zip(*list(pairs[pairsIndex])))[0]
             _indeces = list(zip(*list(pairs[pairsIndex])))[1]
-            min_weight = min(_weights)
-            max_weight = max(_weights)
-            min_index = _indeces[np.argmin(_weights)]
-            max_index = _indeces[np.argmax(_weights)]
+            min_weight = min(np.abs(_weights))
+            max_weight = max(np.abs(_weights))
+            min_index = _indeces[np.argmin(np.abs(_weights))]
+            max_index = _indeces[np.argmax(np.abs(_weights))]
             row = []
             # Working out values for each row of kernel matrix
             for j in range(len(SVD_weights)):
@@ -1109,7 +1119,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
     W[-1, -1] = len(K) - 1
     # Make K into a matrix
     K = np.matrix(K)
-
     ############
 
     # Solve using the weighted least squares equation, K.T is K transpose
@@ -1117,7 +1126,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=4):
 
     # M are the relative moments of the events
     M = Kinv[:, -1]
-
+    # XXX TODO This still needs an outlier removal step
     return M, events_out
 
 
