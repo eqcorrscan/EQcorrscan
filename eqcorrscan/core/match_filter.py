@@ -29,15 +29,26 @@ import ast
 import os
 import time
 import copy
+import getpass
+import re
+import tarfile
+import shutil
+import tempfile
+import glob
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from collections import Counter
-from obspy import Trace, Catalog, UTCDateTime, Stream
+from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
 from eqcorrscan.utils.timer import Timer
-from eqcorrscan.utils import findpeaks
+from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
+from eqcorrscan.utils.plotting import cumulative_detections
+from eqcorrscan.utils.pre_processing import dayproc, shortproc
+from eqcorrscan.utils.catalog_utils import _get_origin
+from eqcorrscan.core import template_gen
+from eqcorrscan.core.lag_calc import lag_calc
 
 
 class MatchFilterError(Exception):
@@ -47,17 +58,2472 @@ class MatchFilterError(Exception):
     def __init__(self, value):
         """
         Raise error.
+
+        .. rubric:: Example
+
+        >>> MatchFilterError('This raises an error')
+        This raises an error
         """
         self.value = value
 
     def __repr__(self):
+        """
+        Print the value of the error.
+
+        .. rubric:: Example
+        >>> print(MatchFilterError('Error').__repr__())
+        Error
+        """
         return self.value
 
     def __str__(self):
-        return 'MatchFilterError: ' + self.value
+        """
+        Print the error in a pretty way.
+
+        .. rubric:: Example
+        >>> print(MatchFilterError('Error'))
+        Error
+        """
+        return self.value
 
 
-class DETECTION(object):
+class Party(object):
+    """
+    Container for multiple Family objects.
+    """
+    def __init__(self, families=None):
+        """Instantiate the Party object."""
+        self.families = []
+        if isinstance(families, Family):
+            families = [families]
+        if families:
+            self.families.extend(families)
+
+    def __repr__(self):
+        """
+        Print short info about the Party.
+        :return: str
+
+        .. rubric:: Example
+        >>> print(Party())
+        Party of 0 Families.
+        """
+        print_str = ('Party of %s Families.' % len(self.families))
+        return print_str
+
+    def __iadd__(self, other):
+        """
+        Method for in-place addition '+='. Uses the Party.__add__() method.
+
+        :type other: `Party`
+        :param other: Another party to merge with the current family.
+        :return: Works in place on self.
+
+        .. rubric:: Example
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='b'),
+        ...                                  detections=[])])
+        >>> party_a += party_b
+        >>> print(party_a)
+        Party of 2 Families.
+        """
+        return self.__add__(other)
+
+    def __add__(self, other):
+        """
+        Method for addition '+'.
+
+        :type other: `Party` or `Family`
+        :param other: Another party to merge with the current family.
+        :return: Works in place on self.
+
+        .. Note:: Works in place on party, will alter this original party.
+
+        .. rubric:: Example
+
+        Addition of two parties together:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='b'),
+        ...                                  detections=[])])
+        >>> party_c = party_a + party_b
+        >>> print(party_c)
+        Party of 2 Families.
+
+
+        Addition of a family to a party:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> family_b = Family(template=Template(name='b'), detections=[])
+        >>> party_c = party_a + family_b
+        >>> print(party_c)
+        Party of 2 Families.
+
+
+        Addition of a party with some families using the same templates:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_b = Party(families=[Family(template=Template(name='a'),
+        ...                                  detections=[])])
+        >>> party_c = party_a + party_b
+        >>> print(party_c)
+        Party of 1 Families.
+
+
+        Addition of non Family or Party objects is not allows:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> misc = 1.0
+        >>> party_c = party_a + misc # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Ambiguous add, only allowed Party or Family \
+        additions
+
+        """
+        if isinstance(other, Family):
+            families = [other]
+        elif isinstance(other, Party):
+            families = other.families
+        else:
+            raise NotImplementedError(
+                'Ambiguous add, only allowed Party or Family additions.')
+        added = False
+        for oth_fam in families:
+            for fam in self.families:
+                if fam.template == oth_fam.template:
+                    fam += oth_fam
+                    added = True
+            if not added:
+                self.families.append(oth_fam)
+        return self
+
+    def __eq__(self, other):
+        """
+        Equality testing, rich comparison '=='.
+
+        :param other: Another object.
+        :return: bool
+
+        .. rubric:: Example
+
+        Compare equal Parties:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='a'))])
+        >>> party_a == party_b
+        True
+
+
+        Compare Parties with different templates:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='b'))])
+        >>> party_a == party_b
+        False
+
+
+        Compare a Party with a Family:
+
+        >>> party = Party(families=[Family(template=Template(name='a'))])
+        >>> family = Family(template=Template(name='a'))
+        >>> party == family
+        False
+        """
+        if not isinstance(other, Party):
+            return False
+        for family, oth_fam in zip(self.sort().families,
+                                   other.sort().families):
+            if family != oth_fam:
+                return False
+        else:
+            return True
+
+    def __ne__(self, other):
+        """
+        Rich comparison operator '!='.
+
+        :param other: other object
+        :return: bool
+
+        .. rubric:: Example
+
+        Compare two equal Parties:
+
+        >>> party_a = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = Party(families=[Family(template=Template(name='a'))])
+        >>> party_a != party_b
+        False
+        """
+        return not self.__eq__(other)
+
+    def __getitem__(self, index):
+        """
+        Get families from the Party. Can accept either an index or slice.
+
+        :param index: Family number or slice.
+        :return: Party (if a slice is given) or a single Family
+
+        .. rubric:: Example
+
+        Extract a single family:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party[1]
+        Family of 0 detections from template b
+
+
+        Extract a list of families by giving a slice:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party[1:]
+        Party of 2 Families.
+        """
+        if isinstance(index, slice):
+            return self.__class__(families=self.families.__getitem__(index))
+        else:
+            return self.families.__getitem__(index)
+
+    def __len__(self):
+        """
+        Get total number of detections in Party.
+
+        :return: length, int
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b'))])
+        >>> len(party)
+        0
+        """
+        length = 0
+        for family in self.families:
+            length += len(family)
+        return length
+
+    def sort(self):
+        """
+        Sort the families by template name.
+
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='a'))])
+        >>> party[0]
+        Family of 0 detections from template b
+        >>> party.sort()[0]
+        Family of 0 detections from template a
+        """
+        self.families.sort(key=lambda x: x.template.name)
+        return self
+
+    def plot(self, plot_grouped=False):
+        """
+        Plot the cumulative detections in time.
+
+        :type plot_grouped: bool
+        :param plot_grouped:
+            Whether to plot all families together (plot_grouped=True), or each
+            as a separate line.
+
+        .. Example::
+
+        >>> Party().read().plot(plot_grouped=True)  # doctest: +SKIP
+
+        .. plot::
+
+            from eqcorrscan.core.match_filter import Party
+            Party().read().plot(plot_grouped=True)
+        """
+        all_dets = []
+        for fam in self.families:
+            all_dets.extend(fam.detections)
+        cumulative_detections(detections=all_dets, plot_grouped=plot_grouped)
+
+    def rethreshold(self, new_threshold, new_threshold_type='MAD'):
+        """
+        Remove detections from the Party that are below a new threshold.
+        Note, threshold can only be set higher.
+
+        .. Warning::
+            Works in place on Party.
+
+        :type new_threshold: float
+        :param new_threshold: New threshold level
+        :type new_threshold_type: str
+        :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
+
+        .. rubric:: Example
+
+        Using the MAD threshold on detections made using the MAD threshold:
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> party = party.rethreshold(10.0)
+        >>> len(party)
+        4
+        >>> # Note that all detections are self detections
+
+
+        Using the absolute thresholding method on the same Party:
+
+        >>> party = Party().read().rethreshold(6.0, 'absolute')
+        >>> len(party)
+        1
+
+
+        Using the av_chan_corr method on the same Party:
+
+        >>> party = Party().read().rethreshold(0.9, 'av_chan_corr')
+        >>> len(party)
+        4
+        """
+        for family in self.families:
+            for d in family.detections:
+                if new_threshold_type == 'MAD' and d.threshold_type == 'MAD':
+                    new_thresh = (d.threshold /
+                                  d.threshold_input) * new_threshold
+                elif new_threshold_type == 'MAD' and d.threshold_type != 'MAD':
+                    raise MatchFilterError(
+                        'Cannot recalculate MAD level, '
+                        'use another threshold type')
+                elif new_threshold_type == 'absolute':
+                    new_thresh = new_threshold
+                elif new_threshold_type == 'av_chan_corr':
+                    new_thresh = new_threshold * d.no_chans
+                else:
+                    raise MatchFilterError(
+                        'new_threshold_type %s is not recognised' %
+                        str(new_threshold_type))
+                if d.detect_val < new_thresh:
+                    family.detections.remove(d)
+            family.catalog = Catalog([d.event for d in family])
+        return self
+
+    def decluster(self, trig_int, timing='detect', metric='avg_cor'):
+        """
+        De-cluster a Party of detections by enforcing a detection separation.
+
+        De-clustering occurs between events detected by different (or the same)
+        templates. If multiple detections occur within trig_int then the
+        preferred detection will be determined by the metric argument. This
+        can be either the average single-station correlation coefficient which
+        is calculated as Detection.detect_val / Detection.no_chans, or the
+        raw cross channel correlation sum which is simply Detection.detect_val.
+
+        :type trig_int: float
+        :param trig_int: Minimum detection separation in seconds.
+        :type metric: str
+        :param metric: What metric to sort peaks by. Either 'avg_cor' which
+            takes the single station average correlation or 'cor_sum' which
+            takes the total correlation sum across all channels.
+        :type timing: str
+        :param timing:
+            Either 'detect' or 'origin' to decluster based on either the
+            detection time or the origin time.
+
+        .. Warning::
+            Works in place on object, if you need to keep the original safe
+            then run this on a copy of the object!
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> declustered = party.decluster(20)
+        >>> len(party)
+        3
+        """
+        all_detections = []
+        for fam in self.families:
+            all_detections.extend(fam.detections)
+        if timing == 'detect':
+            if metric == 'avg_cor':
+                detect_info = [(d.detect_time, d.detect_val / d.no_chans)
+                               for d in all_detections]
+            elif metric == 'cor_sum':
+                detect_info = [(d.detect_time, d.detect_val)
+                               for d in all_detections]
+            else:
+                raise MatchFilterError('metric is not cor_sum or avg_cor')
+        elif timing == 'origin':
+            if metric == 'avg_cor':
+                detect_info = [(_get_origin(d.event).time,
+                                d.detect_val / d.no_chans)
+                               for d in all_detections]
+            elif metric == 'cor_sum':
+                detect_info = [(_get_origin(d.event).time, d.detect_val)
+                               for d in all_detections]
+            else:
+                raise MatchFilterError('metric is not cor_sum or avg_cor')
+        else:
+            raise MatchFilterError('timing is not detect or origin')
+        min_det = sorted([d[0] for d in detect_info])[0]
+        detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
+                       for d in detect_info]
+        peaks_out, inds_out = decluster(
+            peaks=detect_info, trig_int=trig_int * 10**6, return_ind=True)
+        # Trig_int must be converted from seconds to micro-seconds
+        declustered_detections = [all_detections[ind] for ind in inds_out]
+        # Convert this list into families
+        template_names = list(set([d.template_name
+                                   for d in declustered_detections]))
+        new_families = []
+        for template_name in template_names:
+            template = [fam.template for fam in self.families
+                        if fam.template.name == template_name][0]
+            new_families.append(Family(
+                template=template,
+                detections=[d for d in declustered_detections
+                            if d.template_name == template_name],
+                catalog=Catalog([d.event for d in declustered_detections
+                                 if d.template_name == template_name])))
+        self.families = new_families
+        return self
+
+    def copy(self):
+        """
+        Returns a copy of the Party.
+
+        :return: Copy of party
+
+        .. rubric:: Example
+
+        >>> party = Party(families=[Family(template=Template(name='a'))])
+        >>> party_b = party.copy()
+        >>> party == party_b
+        True
+        """
+        return copy.deepcopy(self)
+
+    def write(self, filename, format='tar'):
+        """
+        Write Family out, select output format.
+
+        :type format: str
+        :param format:
+            One of either 'tar', 'csv', or any obspy supported
+            catalog output. See note below on formats
+        :type filename: str
+        :param filename: Path to write file to.
+
+        .. NOTE::
+            csv format will write out detection objects, all other
+            outputs will write the catalog.  These cannot be rebuilt into
+            a Family object.  The only format that can be read back into
+            Family objects is the 'tar' type.
+
+        .. NOTE::
+            We recommend writing to the 'tar' format, which will write out
+            all the template information (wavefiles as miniseed and metadata)
+            alongside the detections and store these in a tar archive. This
+            is readable by other programs and maintains all information
+            required for further study.
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> party.write('test_tar_write', format='tar')
+        Writing family 0
+        Writing family 1
+        Writing family 2
+        Writing family 3
+        Party of 4 Families.
+        >>> party.write('test_csv_write.csv', format='csv')
+        Party of 4 Families.
+        >>> party.write('test_quakeml.ml', format='quakeml')
+        Party of 4 Families.
+        """
+        if format.lower() == 'csv':
+            if os.path.isfile(filename):
+                raise MatchFilterError(
+                    'Will not overwrite existing file: %s' % filename)
+            for family in self.families:
+                for detection in family.detections:
+                    detection.write(fname=filename, append=True)
+        elif format.lower() == 'tar':
+            if os.path.isdir(filename) or os.path.isfile(filename):
+                raise IOError('Will not overwrite existing file: %s'
+                              % filename)
+            os.makedirs(filename)
+            Tribe([f.template for f in self.families]).write(
+                filename=filename, compress=False)
+            all_cat = Catalog()
+            for family in self.families:
+                all_cat += family.catalog
+            if not len(all_cat) == 0:
+                all_cat.write(filename + os.sep + 'catalog.xml',
+                              format='QUAKEML')
+            for i, family in enumerate(self.families):
+                print('Writing family %i' % i)
+                _write_family(
+                    family=family, filename=filename + os.sep +
+                    family.template.name + '_detections.csv')
+            with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                tar.add(filename, arcname=os.path.basename(filename))
+            shutil.rmtree(filename)
+        else:
+            warnings.warn('Writing only the catalog component, metadata '
+                          'will not be preserved')
+            self.get_catalog().write(filename=filename, format=format)
+        return self
+
+    def read(self, filename=None):
+        """
+        Read a Party from a file.
+
+        :type filename: str
+        :param filename: File to read from
+
+        .. rubric:: Example
+
+        >>> Party().read()
+        Party of 4 Families.
+        """
+        if filename is None:
+            # If there is no filename given, then read the example.
+            filename = os.path.join(os.path.dirname(__file__),
+                                    '..', 'tests', 'test_data',
+                                    'test_party.tgz')
+        # First work out how many templates there are and get them.
+        tribe = Tribe()
+        with tarfile.open(filename, "r:*") as arc:
+            temp_dir = tempfile.mkdtemp()
+            arc.extractall(path=temp_dir, members=_safemembers(arc))
+        party_dir = glob.glob(temp_dir + os.sep + '*')[0]
+        tribe._read_from_folder(dirname=party_dir)
+        # Read in families here!
+        if os.path.isfile(party_dir + os.sep + 'catalog.xml'):
+            all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+        else:
+            all_cat = Catalog()
+        for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
+            template = [t for t in tribe
+                        if t.name == family_file.split(os.sep)[-1].
+                        split('_detections.csv')[0]]
+            if len(template) == 0:
+                raise MatchFilterError(
+                    'Missing template for detection file: ' + family_file)
+            family = Family(template=template[0])
+            family.detections.extend(_read_family(family_file, all_cat))
+            family.catalog = Catalog([d.event for d in family.detections])
+            self.families.append(family)
+        shutil.rmtree(temp_dir)
+        return self
+
+    def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
+                 horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                 cores=1, interpolate=False, plot=False, parallel=True,
+                 debug=0):
+        """
+        Compute picks based on cross-correlation alignment.
+
+        :type stream: obspy.core.stream.Stream
+        :param stream:
+            All the data needed to cut from - can be a gappy Stream.
+        :type pre_processed: bool
+        :param pre_processed:
+            Whether the stream has been pre-processed or not to match the
+            templates. See note below.
+        :type shift_len: float
+        :param shift_len:
+            Shift length allowed for the pick in seconds, will be plus/minus
+            this amount - default=0.2
+        :type min_cc: float
+        :param min_cc:
+            Minimum cross-correlation value to be considered a pick,
+            default=0.4.
+        :type horizontal_chans: list
+        :param horizontal_chans:
+            List of channel endings for horizontal-channels, on which S-picks
+            will be made.
+        :type vertical_chans: list
+        :param vertical_chans:
+            List of channel endings for vertical-channels, on which P-picks
+            will be made.
+        :type cores: int
+        :param cores:
+            Number of cores to use in parallel processing, defaults to one.
+        :type interpolate: bool
+        :param interpolate:
+            Interpolate the correlation function to achieve sub-sample
+            precision.
+        :type plot: bool
+        :param plot:
+            To generate a plot for every detection or not, defaults to False
+        :type parallel: bool
+        :param parallel: Turn parallel processing on or off.
+        :type debug: int
+        :param debug: Debug output level, 0-5 with 5 being the most output.
+
+        :returns:
+            Catalog of events with picks.  No origin information is included.
+            These events can then be written out via
+            :func:`obspy.core.event.Catalog.write`, or to Nordic Sfiles using
+            :func:`eqcorrscan.utils.sfile_util.eventtosfile` and located
+            externally.
+        :rtype: obspy.core.event.Catalog
+
+        .. Note::
+            Note on pre-processing: You can provide a pre-processed stream,
+            which may be beneficial for detections over large time periods
+            (the stream can have gaps, which reduces memory usage).  However,
+            in this case the processing steps are not checked, so you must
+            ensure that all the template in the Party have the same sampling
+            rate and filtering as the stream.
+            If pre-processing has not be done then the data will be processed
+            according to the parameters in the templates, in this case
+            templates will be grouped by processing parameters and run with
+            similarly processed data.  In this case, all templates do not have
+            to have the same processing parameters.
+
+        .. Note::
+            Picks are corrected for the template pre-pick time.
+        """
+        catalog = Catalog()
+        template_groups = [[]]
+        detection_groups = [[]]
+        for master in self.families:
+            master_chans = [(tr.stats.station,
+                             tr.stats.channel) for tr in master.template.st]
+            if len(master_chans) > len(set(master_chans)):
+                warnings.warn(master.template.name +
+                              ' has duplicate channels, will not use this '
+                              'template for lag-calc as this is not coded')
+                continue
+            for group in template_groups:
+                if master.template in group:
+                    break
+            else:
+                new_group = [master.template.copy()]
+                new_det_group = copy.deepcopy(master.detections)
+                for slave in self.families:
+                    if master.template.same_processing(slave.template) and\
+                                    master.template != slave.template:
+                        slave_chans = [
+                            (tr.stats.station,
+                             tr.stats.channel) for tr in slave.template.st]
+                        if len(slave_chans) > len(set(slave_chans)):
+                            continue
+                        else:
+                            new_group.append(slave.template.copy())
+                            new_det_group.extend(
+                                copy.deepcopy(slave.detections))
+                template_groups.append(new_group)
+                detection_groups.append(new_det_group)
+        # template_groups will contain an empty first list
+        for group, det_group in zip(template_groups, detection_groups):
+            if len(group) == 0:
+                template_groups.remove(group)
+                detection_groups.remove(det_group)
+        # Process the data for each group and time-chunk
+        for group, det_group in zip(template_groups, detection_groups):
+            if not pre_processed:
+                processed_streams = _group_process(
+                    template_group=group, cores=cores, parallel=parallel,
+                    stream=stream.copy(), debug=debug)
+                processed_stream = Stream()
+                for p in processed_streams:
+                    processed_stream += p
+                processed_stream.merge()
+            else:
+                processed_stream = stream
+            print(stream)
+            temp_cat = lag_calc(
+                detections=det_group, detect_data=processed_stream,
+                template_names=[t.name for t in group],
+                templates=[t.st for t in group],
+                shift_len=shift_len, min_cc=min_cc,
+                horizontal_chans=horizontal_chans,
+                vertical_chans=vertical_chans, cores=cores,
+                interpolate=interpolate, plot=plot,
+                parallel=parallel, debug=debug)
+            for event in temp_cat:
+                det = [d for d in det_group
+                       if str(d.id) == str(event.resource_id)][0]
+                pre_pick = [t for t in group
+                            if t.name == det.template_name][0].prepick
+                for pick in event.picks:
+                    pick.time += pre_pick
+            catalog += temp_cat
+        return catalog
+
+    def get_catalog(self):
+        """
+        Get an obspy catalog object from the party.
+
+        :returns: :class:`obspy.core.event.Catalog`
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> cat = party.get_catalog()
+        >>> print(len(cat))
+        4
+        """
+        catalog = Catalog()
+        for fam in self.families:
+            catalog += fam.catalog
+        return catalog
+
+    def min_chans(self, min_chans):
+        """
+        Remove detections with fewer channels used than min_chans
+
+        :type min_chans: int
+        :param min_chans: Minimum number of channels to allow a detection.
+        :return: Party
+
+        .. Note:: Works in place on Party.
+
+        .. rubric:: Example
+
+        >>> party = Party().read()
+        >>> print(len(party))
+        4
+        >>> party = party.min_chans(5)
+        >>> print(len(party))
+        1
+        """
+        declustered = Party()
+        for family in self.families:
+            fam = Family(family.template)
+            for d in family.detections:
+                if d.no_chans > min_chans:
+                    fam.detections.append(d)
+            declustered.families.append(fam)
+        self.families = declustered.families
+        return self
+
+
+class Family(object):
+    """
+    Container for Detection objects from a single template.
+
+    :type template: eqcorrscan.core.match_filter.Template
+    :param template: The template used to detect the family
+    :type detections: list
+    :param detections: list of Detection objects
+    :type catalog: obspy.core.event.Catalog
+    :param catalog:
+        Catalog of detections, with information for the individual detections.
+    """
+    def __init__(self, template, detections=None, catalog=None):
+        """Instantiation of Family object."""
+        self.template = template
+        self.detections = []
+        self.catalog = Catalog()
+        if isinstance(detections, Detection):
+            detections = [detections]
+        if isinstance(catalog, Event):
+            catalog = Catalog(catalog)
+        if detections:
+            self.detections.extend(detections)
+        if catalog:
+            self.catalog.extend(catalog)
+
+    def __repr__(self):
+        """
+        Print method on Family.
+
+        :return: str
+
+        .. rubric:: Example
+
+        >>> family = Family(template=Template(name='a'))
+        >>> print(family)
+        Family of 0 detections from template a
+        """
+        print_str = ('Family of %s detections from template %s' %
+                     (len(self.detections), self.template.name))
+        return print_str
+
+    def __add__(self, other):
+        """
+        Extend method. Used for '+'
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_c = family_a + family_b
+        >>> print(family_c)
+        Family of 0 detections from template a
+
+
+        Can only extend family with the family of detections from the same
+        template:
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='b'))
+        >>> family_c = family_a + family_b # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Templates do not match
+
+
+        Can extend by adding a detection from the same template.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='a', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family = family_a + detection
+        >>> print(family)
+        Family of 1 detections from template a
+
+
+        Will not work if detections are made using a different Template.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='b', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family = family_a + detection # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Templates do not match
+
+
+        Can not extent a family with a list, or another object.
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family = family_a + ['albert'] # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Can only extend with a Detection of Family object.
+        """
+        if isinstance(other, Family):
+            if other.template == self.template:
+                self.detections.extend(other.detections)
+                try:
+                    self.catalog += other.catalog
+                except TypeError:
+                    pass
+            else:
+                raise NotImplementedError('Templates do not match')
+        elif isinstance(other, Detection) and other.template_name \
+                == self.template.name:
+            self.detections.append(other)
+            try:
+                self.catalog += other.event
+            except TypeError:
+                pass
+        elif isinstance(other, Detection):
+            raise NotImplementedError('Template do not match')
+        else:
+            raise NotImplementedError('Can only extend with a Detection or '
+                                      'Family object.')
+        return self
+
+    def __iadd__(self, other):
+        """
+        Rich method '+='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_a += family_b
+        >>> print(family_a)
+        Family of 0 detections from template a
+        """
+        return self.__add__(other)
+
+    def __eq__(self, other):
+        """
+        Check equality, rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(template=Template(name='a'), detections=[])
+        >>> family_b = Family(template=Template(name='a'), detections=[])
+        >>> family_a == family_b
+        True
+        >>> family_c = Family(template=Template(name='b'))
+        >>> family_c == family_a
+        False
+
+
+        Test if families are equal without the same detections
+
+        >>> family_a = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_b = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a == family_b
+        False
+        >>> family_c = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a == family_c
+        False
+        """
+        if not self.template == other.template:
+            return False
+        if len(self.detections) != len(other.detections):
+            return False
+        if len(self.detections) != 0 and len(other.detections) != 0:
+            for det, other_det in zip(self.sort().detections,
+                                      other.sort().detections):
+                if det != other_det:
+                    return False
+        # currently not checking for catalog...
+        if len(self.catalog) != len(other.catalog):
+            return False
+        return True
+
+    def __ne__(self, other):
+        """
+        Rich comparison operator '!='
+
+        .. rubric:: Example
+
+        >>> family_a = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_b = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family_a != family_b
+        True
+        """
+        return not self.__eq__(other)
+
+    def __getitem__(self, index):
+        """
+        Retrieve a detection or series of detections from the Family.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> isinstance(family[0], Detection)
+        True
+        >>> len(family[0:])
+        2
+        """
+        return self.detections.__getitem__(index)
+
+    def __len__(self):
+        """Number of detections in Family.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> print(len(family))
+        2
+        """
+        return len(self.detections)
+
+    def _uniq(self):
+        """
+        Get list of unique detections.
+        Works in place.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> len(family)
+        3
+        >>> len(family._uniq())
+        2
+        """
+        _detections = []
+        [_detections.append(d) for d in self.detections
+         if not _detections.count(d)]
+        self.detections = _detections
+        self.catalog = get_catalog(self.detections)
+        return self
+
+    def sort(self):
+        """Sort by detection time.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family[0].detect_time
+        UTCDateTime(1970, 1, 1, 0, 3, 20)
+        >>> family.sort()[0].detect_time
+        UTCDateTime(1970, 1, 1, 0, 0)
+        """
+        self.detections = sorted(self.detections, key=lambda d: d.detect_time)
+        return self
+
+    def copy(self):
+        """
+        Returns a copy of the family.
+
+        :return: Copy of family
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family == family.copy()
+        True
+        """
+        return copy.deepcopy(self)
+
+    def append(self, other):
+        """
+        Add another family or detection to the family.
+
+        .. rubric:: Example
+
+        Append a family to a family
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> family_b = Family(template=Template(name='a'))
+        >>> family_a.append(family_b)
+        Family of 0 detections from template a
+
+
+        Append a detection to the family
+
+        >>> family_a = Family(template=Template(name='a'))
+        >>> detection = Detection(
+        ...     template_name='a', detect_time=UTCDateTime(), no_chans=5,
+        ...     detect_val=2.5, threshold=1.23, typeofdet='corr',
+        ...     threshold_type='MAD', threshold_input=8.0)
+        >>> family_a.append(detection)
+        Family of 1 detections from template a
+        """
+        return self.__add__(other)
+
+    def plot(self, plot_grouped=False):
+        """
+        Plot the cumulative number of detections in time.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a'), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family.plot(plot_grouped=True)  # doctest: +SKIP
+
+        .. plot::
+
+            from eqcorrscan.core.match_filter import Family, Template
+            from eqcorrscan.core.match_filter import Detection
+            from obspy import UTCDateTime
+            family = Family(
+                template=Template(name='a'), detections=[
+                Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+                          no_chans=8, detect_val=4.2, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0),
+                Detection(template_name='a', detect_time=UTCDateTime(0),
+                          no_chans=8, detect_val=4.5, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0),
+                Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+                          no_chans=8, detect_val=4.5, threshold=1.2,
+                          typeofdet='corr', threshold_type='MAD',
+                          threshold_input=8.0)])
+            family.plot(plot_grouped=True)
+        """
+        cumulative_detections(
+            detections=self.detections, plot_grouped=plot_grouped)
+
+    def write(self, filename, format='tar'):
+        """
+        Write Family out, select output format.
+
+        :type format: str
+        :param format:
+            One of either 'tar', 'csv', or any obspy supported
+            catalog output.
+        :type filename: str
+        :param filename: Path to write file to.
+
+        .. Note:: csv format will write out detection objects, all other
+            outputs will write the catalog.  These cannot be rebuilt into
+            a Family object.  The only format that can be read back into
+            Family objects is the 'tar' type.
+
+        .. Note:: csv format will append detections to filename, all others
+            will overwrite any existing files.
+
+        .. rubric:: Example
+
+        >>> family = Family(
+        ...     template=Template(name='a', st=read()), detections=[
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,
+        ...               no_chans=8, detect_val=4.2, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0),
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0),
+        ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 10,
+        ...               no_chans=8, detect_val=4.5, threshold=1.2,
+        ...               typeofdet='corr', threshold_type='MAD',
+        ...               threshold_input=8.0)])
+        >>> family.write('test_family')
+        Writing family 0
+        """
+        Party(families=[self]).write(filename=filename, format=format)
+        return
+
+    def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
+                 horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                 cores=1, interpolate=False, plot=False, parallel=True,
+                 debug=0):
+        """
+        Compute picks based on cross-correlation alignment.
+
+        :type stream: obspy.core.stream.Stream
+        :param stream:
+            All the data needed to cut from - can be a gappy Stream.
+        :type pre_processed: bool
+        :param pre_processed:
+            Whether the stream has been pre-processed or not to match the
+            templates. See note below.
+        :type shift_len: float
+        :param shift_len:
+            Shift length allowed for the pick in seconds, will be
+            plus/minus this amount - default=0.2
+        :type min_cc: float
+        :param min_cc:
+            Minimum cross-correlation value to be considered a pick,
+            default=0.4.
+        :type horizontal_chans: list
+        :param horizontal_chans:
+            List of channel endings for horizontal-channels, on which
+            S-picks will be made.
+        :type vertical_chans: list
+        :param vertical_chans:
+            List of channel endings for vertical-channels, on which P-picks
+            will be made.
+        :type cores: int
+        :param cores:
+            Number of cores to use in parallel processing, defaults to one.
+        :type interpolate: bool
+        :param interpolate:
+            Interpolate the correlation function to achieve sub-sample
+            precision.
+        :type plot: bool
+        :param plot:
+            To generate a plot for every detection or not, defaults to False
+        :type parallel: bool
+        :param parallel: Turn parallel processing on or off.
+        :type debug: int
+        :param debug: Debug output level, 0-5 with 5 being the most output.
+
+        :returns:
+            Catalog of events with picks.  No origin information is included.
+            These events can then be written out via
+            :func:`obspy.core.event.Catalog.write`, or to Nordic Sfiles using
+            :func:`eqcorrscan.utils.sfile_util.eventtosfile` and located
+            externally.
+        :rtype: obspy.core.event.Catalog
+
+        .. Note::
+            Note on pre-processing: You can provide a pre-processed stream,
+            which may be beneficial for detections over large time periods
+            (the stream can have gaps, which reduces memory usage).  However,
+            in this case the processing steps are not checked, so you must
+            ensure that all the template in the Party have the same sampling
+            rate and filtering as the stream.
+            If pre-processing has not be done then the data will be processed
+            according to the parameters in the templates, in this case
+            templates will be grouped by processing parameters and run with
+            similarly processed data.  In this case, all templates do not have
+            to have the same processing parameters.
+
+        .. Note::
+            Picks are corrected for the template pre-pick time.
+        """
+        return Party(families=[self]).lag_calc(
+            stream=stream, pre_processed=pre_processed, shift_len=shift_len,
+            min_cc=min_cc, horizontal_chans=horizontal_chans,
+            vertical_chans=vertical_chans, cores=cores,
+            interpolate=interpolate, plot=plot, parallel=parallel,
+            debug=debug)
+
+
+class Template(object):
+    """
+    Template object holder. Contains waveform data and metadata parameters
+    used to generate the template.
+    """
+    def __init__(self, name=None, st=None, lowcut=None, highcut=None,
+                 samp_rate=None, filt_order=None, process_length=None,
+                 prepick=None, event=None):
+        name_regex = re.compile(r"^[a-z_0-9]+$")
+        if name is not None and not re.match(name_regex, name):
+            raise ValueError("Invalid name: '%s' - Must satisfy the regex "
+                             "'%s'." % (name, name_regex.pattern))
+        if name is None:
+            temp_name = "unnamed"
+        else:
+            temp_name = name
+        self.name = name
+        self.st = st
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.samp_rate = samp_rate
+        if st and samp_rate is not None:
+            for tr in st:
+                if not tr.stats.sampling_rate == self.samp_rate:
+                    raise MatchFilterError(
+                        'Sampling rates do not match in data.')
+        self.filt_order = filt_order
+        self.process_length = process_length
+        self.prepick = prepick
+        if event is not None:
+            if "eqcorrscan_template_" + temp_name not in \
+               [c.text for c in event.comments]:
+                event.comments.append(Comment(
+                        text="eqcorrscan_template_" + temp_name,
+                        creation_info=CreationInfo(agency='eqcorrscan',
+                                                   author=getpass.getuser())))
+        self.event = event
+
+    def __repr__(self):
+        """
+        Print the template.
+
+
+        .. rubric:: Example
+
+        >>> print(Template())
+        Template()
+        >>> template = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> print(template) # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+             3 channels;
+             lowcut: 2.0 Hz;
+             highcut: 8.0 Hz;
+             sampling rate 100 Hz;
+             filter order: 4;
+             process length: 3600 s
+
+        """
+        if self.name is None:
+            return 'Template()'
+        if self.st is None:
+            st_len = 0
+        else:
+            st_len = len(self.st)
+        print_str = ('Template %s: \n\t %s channels;\n\t lowcut: %s Hz;'
+                     '\n\t highcut: %s Hz;\n\t sampling rate %s Hz;'
+                     '\n\t filter order: %s; \n\t process length: %s s'
+                     % (self.name, st_len, self.lowcut, self.highcut,
+                        self.samp_rate, self.filt_order, self.process_length))
+        return print_str
+
+    def __eq__(self, other):
+        """
+        Check for Template equality, rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a == template_b
+        True
+
+
+        This will check all parameters of template including the data in the
+        stream.
+
+        >>> template_b.st[0].data = template_b.st[0].data[0:-1]
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.st[0].stats.station = 'MIS'
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.st = template_b.st[0]
+        >>> template_a == template_b
+        False
+
+        >>> template_b = template_a.copy()
+        >>> template_b.lowcut = 5.0
+        >>> template_a == template_b
+        False
+
+
+        This will also test if the events in the templates are the same,
+        ignoring resource ID's as obspy will alter these so that they do not
+        match.
+
+        >>> party = Party().read()
+        >>> template_a = party.families[0].template
+        >>> template_b = template_a.copy()
+        >>> template_b.event.origins[0].time = \
+            template_a.event.origins[0].time + 20
+        >>> template_a == template_b
+        False
+        """
+        for key in self.__dict__.keys():
+            if key == 'st':
+                if isinstance(self.st, Stream) and \
+                   isinstance(other.st, Stream):
+                    for tr, oth_tr in zip(self.st.sort(),
+                                          other.st.sort()):
+                        if not np.array_equal(tr.data, oth_tr.data):
+                            return False
+                        for trkey in ['network', 'station', 'channel',
+                                      'location', 'starttime', 'endtime',
+                                      'sampling_rate', 'delta', 'npts',
+                                      'calib']:
+                            if tr.stats[trkey] != oth_tr.stats[trkey]:
+                                return False
+                elif isinstance(
+                        self.st, Stream) and not isinstance(other.st, Stream):
+                    return False
+                elif not isinstance(
+                        self.st, Stream) and isinstance(other.st, Stream):
+                    return False
+            elif key == 'event':
+                if isinstance(
+                        self.event, Event) and isinstance(other.event, Event):
+                    if not _test_event_similarity(
+                            self.event, other.event, verbose=False):
+                        return False
+                elif isinstance(
+                        self.event, Event) and not isinstance(
+                        other.event, Event):
+                    return False
+                elif not isinstance(
+                        self.event, Event) and isinstance(other.event, Event):
+                    return False
+            elif not self.__dict__[key] == other.__dict__[key]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        """
+        Rich comparison operator '!='.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a != template_b
+        False
+        """
+        return not self.__eq__(other)
+
+    def copy(self):
+        """
+        Returns a copy of the template.
+
+        :return: Copy of template
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a == template_b
+        True
+        """
+        return copy.deepcopy(self)
+
+    def same_processing(self, other):
+        """
+        Check is the templates are processed the same.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_b = template_a.copy()
+        >>> template_a.same_processing(template_b)
+        True
+        >>> template_b.lowcut = 5.0
+        >>> template_a.same_processing(template_b)
+        False
+        """
+        for key in self.__dict__.keys():
+            if key in ['name', 'st', 'prepick', 'event', 'template_info']:
+                continue
+            if not self.__dict__[key] == other.__dict__[key]:
+                return False
+        return True
+
+    def write(self, filename, format='tar'):
+        """
+        Write template.
+
+        :type filename: str
+        :param filename:
+            Filename to write to, if it already exists it will be opened and
+            appended to, otherwise it will be created.
+        :type format: str
+        :param format:
+            Format to write to, either 'tar' (to retain metadata), or any obspy
+            supported waveform format to just extract the waveform.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_a.write('test_template') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
+        >>> template_a.write('test_waveform.ms',
+        ...                  format='MSEED') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
+        """
+        if format == 'tar':
+            Tribe(templates=[self]).write(filename=filename)
+        else:
+            self.st.write(filename, format=format)
+        return self
+
+    def read(self, filename):
+        """
+        Read template from tar format with metadata.
+
+        :type filename: str
+        :param filename: Filename to read template from.
+
+        .. rubric:: Example
+
+        >>> template_a = Template(
+        ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
+        ...     filt_order=4, process_length=3600, prepick=0.5)
+        >>> template_a.write(
+        ...     'test_template_read') # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         3 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 100 Hz;
+         filter order: 4;
+         process length: 3600 s
+        >>> template_b = Template().read('test_template_read.tgz')
+        >>> template_a == template_b
+        True
+        """
+        tribe = Tribe()
+        tribe.read(filename=filename)
+        if len(tribe) > 1:
+            raise IOError('Multiple templates in file')
+        for key in self.__dict__.keys():
+            self.__dict__[key] = tribe[0].__dict__[key]
+        return self
+
+    def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
+               pre_processed=False, daylong=False, parallel_process=True,
+               ignore_length=False, debug=0):
+        """
+        Detect using a single template within a continuous stream.
+
+        :type stream: `obspy.core.stream.Stream`
+        :param stream: Continuous data to detect within using the Template.
+        :type threshold: float
+        :param threshold:
+            Threshold level, if using `threshold_type='MAD'` then this will be
+            the multiple of the median absolute deviation.
+        :type threshold_type: str
+        :param threshold_type:
+            The type of threshold to be used, can be MAD, absolute or
+            av_chan_corr.  See Note on thresholding below.
+        :type trig_int: float
+        :param trig_int:
+            Minimum gap between detections in seconds. If multiple detections
+            occur within trig_int of one-another, the one with the highest
+            cross-correlation sum will be selected.
+        :type plotvar: bool
+        :param plotvar:
+            Turn plotting on or off, see warning about plotting below
+        :type pre_processed: bool
+        :param pre_processed:
+            Set to True if `stream` has already undergone processing, in this
+            case eqcorrscan will only check that the sampling rate is correct.
+            Defaults to False, which will use the
+            :mod:`eqcorrscan.utils.pre_processing` routines to resample and
+            filter the continuous data.
+        :type daylong: bool
+        :param daylong:
+            Set to True to use the
+            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+            preforms additional checks and is more efficient for day-long data
+            over other methods.
+        :type parallel_process: bool
+        :param parallel_process:
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
+        :type debug: int
+        :param debug:
+            Debug level from 0-5 where five is more output, for debug levels
+            4 and 5, detections will not be computed in parallel.
+
+        :returns: Family of detections.
+
+        .. warning::
+            Plotting within the match-filter routine uses the Agg backend
+            with interactive plotting turned off.  This is because the function
+            is designed to work in bulk.  If you wish to turn interactive
+            plotting on you must import matplotlib in your script first, when
+            you then import match_filter you will get the warning that this
+            call to matplotlib has no effect, which will mean that
+            match_filter has not changed the plotting behaviour.
+
+        .. note::
+            **Data overlap:**
+
+            Internally this routine shifts and trims the data according to
+            the offsets in the template (e.g. if trace 2 starts 2 seconds
+            after trace 1 in the template then the continuous data will be
+            shifted by 2 seconds to align peak correlations prior to summing).
+            Because of this, detections at the start and end of continuous data
+            streams **may be missed**.  The maximum time-period that might be
+            missing detections is the maximum offset in the template.
+
+            To work around this, if you are conducting matched-filter
+            detections through long-duration continuous data, we suggest using
+            some overlap (a few seconds, on the order of the maximum offset
+            in the templates) in the continous data.  You will then need to
+            post-process the detections (which should be done anyway to remove
+            duplicates).
+
+        .. note::
+            **Thresholding:**
+
+            **MAD** threshold is calculated as the:
+
+            .. math::
+
+                threshold {\\times} (median(abs(cccsum)))
+
+            where :math:`cccsum` is the cross-correlation sum for a
+            given template.
+
+            **absolute** threshold is a true absolute threshold based on the
+            cccsum value.
+
+            **av_chan_corr** is based on the mean values of single-channel
+            cross-correlations assuming all data are present as required
+            for the template, e.g:
+
+            .. math::
+
+                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                len(template))
+
+            where :math:`template` is a single template from the input and the
+            length is the number of channels within this template.
+
+        .. Note::
+            See tutorials for example.
+        """
+        party = _group_detect(
+                templates=[self], stream=stream.copy(), threshold=threshold,
+                threshold_type=threshold_type, trig_int=trig_int,
+                plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
+                parallel_process=parallel_process,
+                ignore_length=ignore_length, debug=debug)
+        return party[0]
+
+    def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
+                  prepick, **kwargs):
+        """
+        Construct a template using a given method.
+        :param method:
+            Method to make the template, see
+            :mod:`eqcorrscan.core.template_gen` for possible methods.
+        :type method: str
+        :type name: str
+        :param name: Name for the template
+        :type lowcut: float
+        :param lowcut:
+            Low cut (Hz), if set to None will not apply a lowcut
+        :type highcut: float
+        :param highcut:
+            High cut (Hz), if set to None will not apply a highcut.
+        :type samp_rate: float
+        :param samp_rate:
+            New sampling rate in Hz.
+        :type filt_order: int
+        :param filt_order:
+            Filter level (number of corners).
+        :type prepick: float
+        :param prepick: Pre-pick time in seconds
+
+        .. Note::
+            methods `from_meta_file`, `from_seishub`, `from_client` and
+            `multi_template_gen` are not accommodated in this function and must
+            be called from Tribe.construct as these generate multiple
+            templates.
+
+        .. Note::
+            Calls functions from `eqcorrscan.core.template_gen`, see these
+            functions for details on what further arguments are required.
+
+        .. rubric:: Example
+
+        >>> sac_files = glob.glob(
+        ...     'eqcorrscan/tests/test_data/SAC/2014p611252/*')
+        >>> template = Template().construct(
+        ...     method='from_sac', name='test', lowcut=2.0, highcut=8.0,
+        ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
+        ...     length=2.0, sac_files=sac_files)
+        >>> print(template) # doctest: +NORMALIZE_WHITESPACE
+        Template test:
+         12 channels;
+         lowcut: 2.0 Hz;
+         highcut: 8.0 Hz;
+         sampling rate 20.0 Hz;
+         filter order: 4;
+         process length: 300.0 s
+
+
+        This will raise an error if the method is unsupported:
+
+        >>> template = Template().construct(
+        ...     method='from_meta_file', name='test', lowcut=2.0, highcut=8.0,
+        ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
+        ...     length=2.0) # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        NotImplementedError: Method is not supported, use \
+        Tribe.construct instead.
+        """
+        if method in ['from_meta_file', 'from_seishub', 'from_client',
+                      'multi_template_gen']:
+            raise NotImplementedError('Method is not supported, '
+                                      'use Tribe.construct instead.')
+        func = getattr(template_gen, method)
+        st, event, process_length = func(
+            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        self.name = name
+        for tr in st:
+            if not np.any(tr.data.astype(np.float16)):
+                warnings.warn('Data are zero in float16, missing data,'
+                              ' will not use: %s' % tr.id)
+                st.remove(tr)
+        self.st = st
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.filt_order = filt_order
+        self.samp_rate = samp_rate
+        self.process_length = process_length
+        self.prepick = prepick
+        self.event = event
+        return self
+
+
+class Tribe(object):
+    """Holder for multiple templates."""
+    def __init__(self, templates=None):
+        self.templates = []
+        if isinstance(templates, Template):
+            templates = [templates]
+        if templates:
+            self.templates.extend(templates)
+
+    def __repr__(self):
+        """
+        Print information about the tribe.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> print(tribe)
+        Tribe of 1 templates
+        """
+        return 'Tribe of %i templates' % self.__len__()
+
+    def __add__(self, other):
+        """
+        Add two Tribes or a Tribe and a Template together. '+'
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> tribe + Tribe(templates=[Template(name='b')])
+        Tribe of 2 templates
+        >>> tribe + Template(name='c')
+        Tribe of 3 templates
+        """
+        if isinstance(other, Tribe):
+            self.templates += other.templates
+        elif isinstance(other, Template):
+            self.templates.append(other)
+        else:
+            raise TypeError('Must be either Template or Tribe')
+        return self
+
+    def __iadd__(self, other):
+        """
+        Add in place: '+='
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a')])
+        >>> tribe += Tribe(templates=[Template(name='b')])
+        >>> print(tribe)
+        Tribe of 2 templates
+        >>> tribe += Template(name='c')
+        >>> print(tribe)
+        Tribe of 3 templates
+        """
+        return self.__add__(other)
+
+    def __eq__(self, other):
+        """
+        Test for equality. Rich comparison operator '=='
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = Tribe(templates=[Template(name='b')])
+        >>> tribe_a == tribe_b
+        False
+        >>> tribe_a == tribe_a
+        True
+        """
+        if self.sort().templates != other.sort().templates:
+            return False
+        return True
+
+    def __ne__(self, other):
+        """
+        Test for inequality. Rich comparison operator '!='
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = Tribe(templates=[Template(name='b')])
+        >>> tribe_a != tribe_b
+        True
+        >>> tribe_a != tribe_a
+        False
+        """
+        return not self.__eq__(other)
+
+    def __len__(self):
+        """
+        Number of Templates in Tribe. len(tribe)
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> len(tribe_a)
+        1
+        """
+        return len(self.templates)
+
+    def __iter__(self):
+        """
+        Iterator for the Tribe.
+        """
+        return list(self.templates).__iter__()
+
+    def __getitem__(self, index):
+        """
+        Support slicing to get Templates from Tribe.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='a'), Template(name='b'),
+        ...                          Template(name='c')])
+        >>> tribe[1] # doctest: +NORMALIZE_WHITESPACE
+        Template b:
+         0 channels;
+         lowcut: None Hz;
+         highcut: None Hz;
+         sampling rate None Hz;
+         filter order: None;
+         process length: None s
+        >>> tribe[0:2]
+        Tribe of 2 templates
+        """
+        if isinstance(index, slice):
+            return self.__class__(templates=self.templates.__getitem__(index))
+        else:
+            return self.templates.__getitem__(index)
+
+    def sort(self):
+        """
+        Sort the tribe, sorts by template name.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c'), Template(name='b'),
+        ...                          Template(name='a')])
+        >>> tribe.sort()
+        Tribe of 3 templates
+        >>> tribe[0] # doctest: +NORMALIZE_WHITESPACE
+        Template a:
+         0 channels;
+         lowcut: None Hz;
+         highcut: None Hz;
+         sampling rate None Hz;
+         filter order: None;
+         process length: None s
+        """
+        self.templates = sorted(self.templates, key=lambda x: x.name)
+        return self
+
+    def remove(self, template):
+        """
+        Remove a template from the tribe.
+
+        :type template: :class:`eqcorrscan.core.match_filter.Template`
+        :param template: Template to remove from tribe
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c'), Template(name='b'),
+        ...                          Template(name='a')])
+        >>> tribe.remove(tribe.templates[0])
+        Tribe of 2 templates
+        """
+        self.templates.remove(template)
+        return self
+
+    def copy(self):
+        """
+        Copy the Tribe.
+
+        .. rubric:: Example
+
+        >>> tribe_a = Tribe(templates=[Template(name='a')])
+        >>> tribe_b = tribe_a.copy()
+        >>> tribe_a == tribe_b
+        True
+        """
+        return copy.deepcopy(self)
+
+    def write(self, filename, compress=True):
+        """
+        Write the tribe to a file using tar archive formatting.
+
+        :type filename: str
+        :param filename:
+            Filename to write to, if it exists it will be appended to.
+        :type compress: bool
+        :param compress:
+            Whether to compress the tar archive or not, if False then will
+            just be files in a folder.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c', st=read())])
+        >>> tribe.write('test_tribe')
+        Tribe of 1 templates
+        """
+        if not os.path.isdir(filename):
+            os.makedirs(filename)
+        self._par_write(filename)
+        tribe_cat = Catalog()
+        for t in self.templates:
+            if t.event is not None:
+                tribe_cat.append(t.event)
+        if len(tribe_cat) > 0:
+            tribe_cat.write(filename + os.sep + 'tribe_cat.xml',
+                            format='QUAKEML')
+        for template in self.templates:
+            template.st.write(filename + '/' + template.name + '.ms',
+                              format='MSEED')
+        if compress:
+            with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                tar.add(filename, arcname=os.path.basename(filename))
+            shutil.rmtree(filename)
+        return self
+
+    def _par_write(self, dirname):
+        """
+        Internal write function to write a formatted parameter file.
+
+        :type dirname: str
+        :param dirname: Directory to write the parameter file to.
+        """
+        with open(dirname + '/' +
+                  'template_parameters.csv', 'w') as parfile:
+            for template in self.templates:
+                for key in template.__dict__.keys():
+                    if key not in ['st', 'event']:
+                        parfile.write(key + ': ' +
+                                      str(template.__dict__[key]) + ', ')
+                parfile.write('\n')
+        return self
+
+    def read(self, filename):
+        """
+        Read a tribe of templates from a tar formatted file.
+
+        :type filename: str
+        :param filename: File to read templates from.
+
+        .. rubric:: Example
+
+        >>> tribe = Tribe(templates=[Template(name='c', st=read())])
+        >>> tribe.write('test_tribe')
+        Tribe of 1 templates
+        >>> tribe_back = Tribe().read('test_tribe.tgz')
+        >>> tribe_back == tribe
+        True
+        """
+        with tarfile.open(filename, "r:*") as arc:
+            temp_dir = tempfile.mkdtemp()
+            arc.extractall(path=temp_dir, members=_safemembers(arc))
+            tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
+            self._read_from_folder(dirname=tribe_dir)
+        shutil.rmtree(temp_dir)
+        return self
+
+    def _read_from_folder(self, dirname):
+        """
+        Internal folder reader.
+
+        :type dirname: str
+        :param dirname: Folder to read from.
+        """
+        templates = _par_read(dirname=dirname, compressed=False)
+        t_files = glob.glob(dirname + os.sep + '*.ms')
+        if os.path.isfile(dirname + os.sep + 'tribe_cat.xml'):
+            tribe_cat = read_events(dirname + os.sep + 'tribe_cat.xml')
+        else:
+            tribe_cat = Catalog()
+        for template in templates:
+            for event in tribe_cat:
+                for comment in event.comments:
+                    if comment.text == 'eqcorrscan_template_' + template.name:
+                        template.event = event
+            t_file = [t for t in t_files
+                      if t.split(os.sep)[-1] == template.name + '.ms']
+            if len(t_file) == 0:
+                print('No waveform for template: ' + template.name)
+                templates.remove(template)
+                continue
+            elif len(t_file) > 1:
+                print('Multiple waveforms found, using: ' + t_file[0])
+            template.st = read(t_file[0])
+        self.templates.extend(templates)
+        return
+
+    def cluster(self, method, **kwargs):
+        """
+        Cluster the tribe, returns multiple tribes each of which could be
+        stacked.
+
+        :type method: str
+        :param method:
+            Method of stacking, see :mod:`eqcorrscan.utils.clustering`
+
+        :return: List of tribes.
+
+        .. rubric:: Example
+
+
+        """
+        from eqcorrscan.utils import clustering
+        tribes = []
+        func = getattr(clustering, method)
+        if method in ['space_cluster', 'space_time_cluster']:
+            cat = Catalog([t.event for t in self.templates])
+            groups = func(cat, **kwargs)
+            for group in groups:
+                new_tribe = Tribe()
+                for event in group:
+                    new_tribe.templates.extend([t for t in self.templates
+                                                if t.event == event])
+                tribes.append(new_tribe)
+        return tribes
+
+    def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
+               daylong=False, parallel_process=True, ignore_length=False,
+               group_size=None, debug=0):
+        """
+        Detect using a Tribe of templates within a continuous stream.
+
+        :type stream: `obspy.core.stream.Stream`
+        :param stream: Continuous data to detect within using the Template.
+        :type threshold: float
+        :param threshold:
+            Threshold level, if using `threshold_type='MAD'` then this will be
+            the multiple of the median absolute deviation.
+        :type threshold_type: str
+        :param threshold_type:
+            The type of threshold to be used, can be MAD, absolute or
+            av_chan_corr.  See Note on thresholding below.
+        :type trig_int: float
+        :param trig_int:
+            Minimum gap between detections in seconds. If multiple detections
+            occur within trig_int of one-another, the one with the highest
+            cross-correlation sum will be selected.
+        :type plotvar: bool
+        :param plotvar:
+            Turn plotting on or off, see warning about plotting below
+        :type daylong: bool
+        :param daylong:
+            Set to True to use the
+            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+            preforms additional checks and is more efficient for day-long data
+            over other methods.
+        :type parallel_process: bool
+        :param parallel_process:
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
+        :type group_size: int
+        :param group_size:
+            Maximum number of templates to run at once, use to reduce memory
+            consumption, if unset will use all templates.
+        :type debug: int
+        :param debug:
+            Debug level from 0-5 where five is more output, for debug levels
+            4 and 5, detections will not be computed in parallel.
+
+        :return:
+            :class:`eqcorrscan.core.match_filter.Party` of Families of
+            detections.
+
+        .. Note::
+            `stream` must not be pre-processed.
+
+        .. warning::
+            Plotting within the match-filter routine uses the Agg backend
+            with interactive plotting turned off.  This is because the function
+            is designed to work in bulk.  If you wish to turn interactive
+            plotting on you must import matplotlib in your script first,
+            when you then import match_filter you will get the warning that
+            this call to matplotlib has no effect, which will mean that
+            match_filter has not changed the plotting behaviour.
+
+        .. note::
+            **Data overlap:**
+
+            Internally this routine shifts and trims the data according to the
+            offsets in the template (e.g. if trace 2 starts 2 seconds after
+            trace 1 in the template then the continuous data will be shifted
+            by 2 seconds to align peak correlations prior to summing).
+            Because of this, detections at the start and end of continuous
+            data streams **may be missed**.  The maximum time-period that
+            might be missing detections is the maximum offset in the template.
+
+            To work around this, if you are conducting matched-filter
+            detections through long-duration continuous data, we suggest
+            using some overlap (a few seconds, on the order of the maximum
+            offset in the templates) in the continous data.  You will then
+            need to post-process the detections (which should be done anyway
+            to remove duplicates).
+
+        .. note::
+            **Thresholding:**
+
+            **MAD** threshold is calculated as the:
+
+            .. math::
+
+                threshold {\\times} (median(abs(cccsum)))
+
+            where :math:`cccsum` is the cross-correlation sum for a given
+            template.
+
+            **absolute** threshold is a true absolute threshold based on the
+            cccsum value.
+
+            **av_chan_corr** is based on the mean values of single-channel
+            cross-correlations assuming all data are present as required for
+            the template, e.g:
+
+            .. math::
+
+                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                len(template))
+
+            where :math:`template` is a single template from the input and the
+            length is the number of channels within this template.
+        """
+        party = Party()
+        template_groups = [[]]
+        for master in self.templates:
+            for group in template_groups:
+                if master in group:
+                    break
+            else:
+                new_group = [master]
+                for slave in self.templates:
+                    if master.same_processing(slave) and master != slave:
+                        new_group.append(slave)
+                template_groups.append(new_group)
+        # template_groups will contain an empty first list
+        for group in template_groups:
+            if len(group) == 0:
+                template_groups.remove(group)
+        # now we can compute the detections for each group
+        for group in template_groups:
+            group_party = _group_detect(
+                templates=group, stream=stream.copy(), threshold=threshold,
+                threshold_type=threshold_type, trig_int=trig_int,
+                plotvar=plotvar, group_size=group_size, pre_processed=False,
+                daylong=daylong, parallel_process=parallel_process,
+                ignore_length=ignore_length, debug=debug)
+            party += group_party
+        return party
+
+    def client_detect(self, client, starttime, endtime, threshold,
+                      threshold_type, trig_int, plotvar, daylong=False,
+                      parallel_process=True, ignore_length=False,
+                      group_size=None, debug=0, return_stream=False):
+        """
+        Detect using a Tribe of templates within a continuous stream.
+
+        :type client: `obspy.clients.*.Client`
+        :param client: Any obspy client with a dataselect service.
+        :type starttime: :class:`obspy.core.UTCDateTime`
+        :param starttime: Start-time for detections.
+        :type endtime: :class:`obspy.core.UTCDateTime`
+        :param endtime: End-time for detections
+        :type threshold: float
+        :param threshold:
+            Threshold level, if using `threshold_type='MAD'` then this will be
+            the multiple of the median absolute deviation.
+        :type threshold_type: str
+        :param threshold_type:
+            The type of threshold to be used, can be MAD, absolute or
+            av_chan_corr.  See Note on thresholding below.
+        :type trig_int: float
+        :param trig_int:
+            Minimum gap between detections in seconds. If multiple detections
+            occur within trig_int of one-another, the one with the highest
+            cross-correlation sum will be selected.
+        :type plotvar: bool
+        :param plotvar:
+            Turn plotting on or off, see warning about plotting below
+        :type daylong: bool
+        :param daylong:
+            Set to True to use the
+            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+            preforms additional checks and is more efficient for day-long data
+            over other methods.
+        :type parallel_process: bool
+        :param parallel_process:
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
+        :type group_size: int
+        :param group_size:
+            Maximum number of templates to run at once, use to reduce memory
+            consumption, if unset will use all templates.
+        :type debug: int
+        :param debug:
+            Debug level from 0-5 where five is more output, for debug levels
+            4 and 5, detections will not be computed in parallel.
+        :type return_stream: bool
+        :param return_stream:
+            Whether to also output the stream downloaded, useful if you plan
+            to use the stream for something else, e.g. lag_calc.
+
+        :return:
+            :class:`eqcorrscan.core.match_filter.Party` of Families of
+            detections.
+
+        .. Note::
+            Ensures that data overlap between loops, which will lead to no
+            missed detections at data start-stop points (see note for
+            :meth:`eqcorrscan.core.match_filter.Family.detect` method).
+            This will result in end-time not being strictly
+            honoured, so detections may occur after the end-time set.  This is
+            because data must be run in the correct process-length.
+
+        .. warning::
+            Plotting within the match-filter routine uses the Agg backend
+            with interactive plotting turned off.  This is because the function
+            is designed to work in bulk.  If you wish to turn interactive
+            plotting on you must import matplotlib in your script first,
+            when you then import match_filter you will get the warning that
+            this call to matplotlib has no effect, which will mean that
+            match_filter has not changed the plotting behaviour.
+
+        .. note::
+            **Thresholding:**
+
+            **MAD** threshold is calculated as the:
+
+            .. math::
+
+                threshold {\\times} (median(abs(cccsum)))
+
+            where :math:`cccsum` is the cross-correlation sum for a given
+            template.
+
+            **absolute** threshold is a true absolute threshold based on the
+            cccsum value.
+
+            **av_chan_corr** is based on the mean values of single-channel
+            cross-correlations assuming all data are present as required for
+            the template, e.g:
+
+            .. math::
+
+                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                len(template))
+
+            where :math:`template` is a single template from the input and the
+            length is the number of channels within this template.
+        """
+        party = Party()
+        buff = 300  # Apply a buffer, often data downloaded is not the correct
+        #  length
+        data_length = max([t.process_length for t in self.templates])
+        pad = 0
+        for template in self.templates:
+            max_delay = (template.st.sort(['starttime'])[-1].stats.starttime -
+                         template.st.sort(['starttime'])[0].stats.starttime)
+            if max_delay > pad:
+                pad = max_delay
+        download_groups = int(endtime - starttime) / data_length
+        template_channel_ids = []
+        for template in self.templates:
+            for tr in template.st:
+                if tr.stats.network not in [None, '']:
+                    chan_id = (tr.stats.network, )
+                else:
+                    chan_id = ('*', )
+                if tr.stats.station not in [None, '']:
+                    chan_id += (tr.stats.station, )
+                else:
+                    chan_id += ('*', )
+                if tr.stats.location not in [None, '']:
+                    chan_id += (tr.stats.location, )
+                else:
+                    chan_id += ('*', )
+                if tr.stats.channel not in [None, '']:
+                    if len(tr.stats.channel) == 2:
+                        chan_id += (tr.stats.channel[0] + '?' +
+                                    tr.stats.channel[-1], )
+                    else:
+                        chan_id += (tr.stats.channel, )
+                else:
+                    chan_id += ('*', )
+                template_channel_ids.append(chan_id)
+        template_channel_ids = list(set(template_channel_ids))
+        for i in range(int(download_groups + 1)):
+            bulk_info = []
+            for chan_id in template_channel_ids:
+                bulk_info.append((
+                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
+                    starttime + (i * data_length) - (pad + buff),
+                    starttime + ((i + 1) * data_length) + (pad + buff)))
+            try:
+                st = client.get_waveforms_bulk(bulk_info)
+                st.merge(fill_value='interpolate')
+                st.trim(starttime=starttime + (i * data_length) - pad,
+                        endtime=starttime + ((i + 1) * data_length) + pad)
+                party += self.detect(
+                    stream=st, threshold=threshold,
+                    threshold_type=threshold_type, trig_int=trig_int,
+                    plotvar=plotvar, daylong=daylong,
+                    parallel_process=parallel_process,
+                    ignore_length=ignore_length, group_size=group_size,
+                    debug=debug)
+            except Exception as e:
+                print('Error, routine incomplete, returning incomplete Party')
+                print('Error: %s' % str(e))
+                return party
+        for family in party:
+            family.detections = family._uniq().detections
+            family.catalog = get_catalog(family.detections)
+        if return_stream:
+            return party, st
+        else:
+            return party
+
+    def construct(self, method, lowcut, highcut, samp_rate, filt_order,
+                  prepick, **kwargs):
+        """
+        Generate a Tribe of Templates.  See :mod:`eqcorrscan.core.template_gen`
+        for available methods.
+
+        :param method: Method of Tribe generation.
+        :param kwargs: Arguments for the given method.
+        :type lowcut: float
+        :param lowcut:
+            Low cut (Hz), if set to None will not apply a lowcut
+        :type highcut: float
+        :param highcut:
+            High cut (Hz), if set to None will not apply a highcut.
+        :type samp_rate: float
+        :param samp_rate:
+            New sampling rate in Hz.
+        :type filt_order: int
+        :param filt_order:
+            Filter level (number of corners).
+        :type prepick: float
+        :param prepick: Pre-pick time in seconds
+
+        .. Note::
+            Methods: `from_contbase`, `from_sfile` and `from_sac` are not
+            supported by Tribe.construct and must use Template.construct.
+
+        .. Note:: Templates will be named according to their start-time.
+        """
+        if method in ['from_contbase', 'from_sfile', 'from_sac']:
+            raise NotImplementedError('Tribe.construct does not support '
+                                      'single-event methods, use '
+                                      'Template.construct instead.')
+        func = getattr(template_gen, method)
+        templates, catalog, process_lengths = func(
+            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        for template, event, process_len in zip(templates, catalog,
+                                                process_lengths):
+            t = Template()
+            for tr in template:
+                if not np.any(tr.data.astype(np.float16)):
+                    warnings.warn('Data are zero in float16, missing data,'
+                                  ' will not use: %s' % tr.id)
+                    template.remove(tr)
+            if len(template) == 0:
+                print('Empty Template')
+                continue
+            t.st = template
+            t.name = template.sort(['starttime'])[0].\
+                stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            t.lowcut = lowcut
+            t.highcut = highcut
+            t.filt_order = filt_order
+            t.samp_rate = samp_rate
+            t.process_length = process_len
+            t.prepick = prepick
+            event.comments.append(Comment(
+                text="eqcorrscan_template_" + t.name,
+                creation_info=CreationInfo(agency='eqcorrscan',
+                                           author=getpass.getuser())))
+            t.event = event
+            self.templates.append(t)
+        return self
+
+
+class Detection(object):
     """
     Single detection from detection routines in eqcorrscan.
     Information required for a full detection based on cross-channel \
@@ -79,26 +2545,27 @@ class DETECTION(object):
         will be the raw threshold value related to the cccsum.
     :type typeofdet: str
     :param typeofdet: Type of detection, STA, corr, bright
+    :type threshold_type: str
+    :param threshold_type: Type of threshold used for detection
+    :type threshold_input: float
+    :param threshold_input:
+        Threshold set for detection, relates to `threshold` according to the
+        `threshold_type`.
     :type chans: list
     :param chans: List of stations for the detection
     :type event: obspy.core.event.event.Event
     :param event:
         Obspy Event object for this detection, note that this is lost when
-        writing to a :class:`DETECTION` objects to csv files using
-        :func:`eqcorrscan.core.match_filter.DETECTION.write`
+        writing to a :class:`Detection` objects to csv files using
+        :func:`eqcorrscan.core.match_filter.Detection.write`
     :type id: str
     :param id: Identification for detection (should be unique).
-
-    .. todo:: Use Obspy.core.event class instead of detection. Requires \
-        internal knowledge of template parameters - which needs changes to \
-        how templates are stored.
     """
 
-    def __init__(self, template_name, detect_time,
-                 no_chans, detect_val,
-                 threshold, typeofdet,
+    def __init__(self, template_name, detect_time, no_chans, detect_val,
+                 threshold, typeofdet, threshold_type, threshold_input,
                  chans=None, event=None, id=None):
-        """Main class of DETECTION."""
+        """Main class of Detection."""
         self.template_name = template_name
         self.detect_time = detect_time
         self.no_chans = no_chans
@@ -106,26 +2573,30 @@ class DETECTION(object):
         self.detect_val = detect_val
         self.threshold = threshold
         self.typeofdet = typeofdet
+        self.threshold_type = threshold_type
+        self.threshold_input = threshold_input
         self.event = event
         if id is not None:
             self.id = id
         else:
             self.id = (''.join(template_name.split(' ')) + '_' +
-                       detect_time.strftime('%Y%m%d-%H%M%S%f'))
+                       detect_time.strftime('%Y%m%d_%H%M%S%f'))
         if event is not None:
             event.resource_id = self.id
 
     def __repr__(self):
         """Simple print."""
-        print_str = ' '.join(['template name=', self.template_name, '\n',
-                              'detection id=', self.id, '\n',
-                              'detection time=', str(self.detect_time), '\n',
-                              'number of channels=', str(self.no_chans), '\n',
-                              'channels=', str(self.chans), '\n',
-                              'detection value=', str(self.detect_val), '\n',
-                              'threshold=', str(self.threshold), '\n',
-                              'detection type=', str(self.typeofdet)])
-        return "DETECTION(" + print_str + ")"
+        print_str = ' '.join(['template name =', self.template_name, '\n',
+                              'detection id =', self.id, '\n',
+                              'detection time =', str(self.detect_time), '\n',
+                              'number of channels =', str(self.no_chans), '\n',
+                              'channels =', str(self.chans), '\n',
+                              'detection value =', str(self.detect_val), '\n',
+                              'threshold =', str(self.threshold), '\n',
+                              'threshold type =', self.threshold_type, '\n',
+                              'input threshold =', str(self.threshold_input),
+                              '\n detection type =', str(self.typeofdet)])
+        return "Detection(" + print_str + ")"
 
     def __str__(self):
         """Full print."""
@@ -135,9 +2606,66 @@ class DETECTION(object):
                               str(self.chans)])
         return print_str
 
+    def __eq__(self, other):
+        for key in self.__dict__.keys():
+            if key == 'event':
+                if isinstance(self.event, Event) and \
+                   isinstance(other.event, Event):
+                    if not _test_event_similarity(
+                            self.event, other.event, verbose=False):
+                        return False
+                elif isinstance(
+                        self.event, Event) and not isinstance(
+                        other.event, Event):
+                    return False
+                elif not isinstance(
+                        self.event, Event) and isinstance(
+                        other.event, Event):
+                    return False
+            elif self.__dict__[key] != other.__dict__[key]:
+                return False
+        return True
+
+    def __lt__(self, other):
+        if self.detect_time < other.detect_time:
+            return True
+        else:
+            return False
+
+    def __le__(self, other):
+        if self.detect_time <= other.detect_time:
+            return True
+        else:
+            return False
+
+    def __gt__(self, other):
+        return not self.__le__(other)
+
+    def __ge__(self, other):
+        return not self.__lt__(other)
+
+    def __hash__(self):
+        """
+        Cannot hash Detection objects, they may change.
+        :return: 0
+        """
+        return 0
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def copy(self):
+        """
+        Returns a copy of the detection.
+
+        :return: Copy of detection
+        """
+        return copy.deepcopy(self)
+
     def write(self, fname, append=True):
         """
-        Write detection to file.
+        Write detection to csv formatted file.
+
         Will append if append==True and file exists
 
         :type fname: str
@@ -154,29 +2682,542 @@ class DETECTION(object):
             header = '; '.join(['Template name', 'Detection time (UTC)',
                                 'Number of channels', 'Channel list',
                                 'Detection value', 'Threshold',
+                                'Threshold type', 'Input threshold',
                                 'Detection type'])
             f.write(header + '\n')  # Write a header for the file
         print_str = '; '.join([self.template_name, str(self.detect_time),
                                str(self.no_chans), str(self.chans),
                                str(self.detect_val), str(self.threshold),
+                               self.threshold_type, str(self.threshold_input),
                                self.typeofdet])
         f.write(print_str + '\n')
         f.close()
 
 
+def _total_microsec(t1, t2):
+    """
+    Calculate difference between two datetime stamps in microseconds.
+
+    :type t1: :class: `datetime.datetime`
+    :type t2: :class: `datetime.datetime`
+    :return: int
+
+    .. rubric:: Example
+
+    >>> print(_total_microsec(UTCDateTime(2013, 1, 1).datetime,
+    ...                       UTCDateTime(2014, 1, 1).datetime))
+    -31536000000000
+    """
+    td = t1 - t2
+    return (td.seconds + td.days * 24 * 3600) * 10**6 + td.microseconds
+
+
+def _test_event_similarity(event_1, event_2, verbose=False):
+    """
+    Check the similarity of the components of obspy events, discounting
+    resource IDs, which are not maintained in nordic files.
+
+    :type event_1: obspy.core.event.Event
+    :param event_1: First event
+    :type event_2: obspy.core.event.Event
+    :param event_2: Comparison event
+    :type verbose: bool
+    :param verbose: If true and fails will output why it fails.
+
+    :return: bool
+    """
+    if not isinstance(event_1, Event) or not isinstance(event_2, Event):
+        raise NotImplementedError('Cannot compare things that are not Events')
+    # Check origins
+    if len(event_1.origins) != len(event_2.origins):
+        return False
+    for ori_1, ori_2 in zip(event_1.origins, event_2.origins):
+        for key in ori_1.keys():
+            if key not in ["resource_id", "comments", "arrivals",
+                           "method_id", "origin_uncertainty", "depth_type",
+                           "quality", "creation_info", "evaluation_mode",
+                           "depth_errors", "time_errors"]:
+                if ori_1[key] != ori_2[key]:
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (ori_1[key], ori_2[key], key))
+                    return False
+            elif key == "arrivals":
+                if len(ori_1[key]) != len(ori_2[key]):
+                    print('%i is not the same as %i for key %s' %
+                          (len(ori_1[key]), len(ori_2[key]), key))
+                    return False
+                for arr_1, arr_2 in zip(ori_1[key], ori_2[key]):
+                    for arr_key in arr_1.keys():
+                        if arr_key not in ["resource_id", "pick_id",
+                                           "distance"]:
+                            if arr_1[arr_key] != arr_2[arr_key]:
+                                if verbose:
+                                    print('%s does not match %s for key %s' %
+                                          (arr_1[arr_key], arr_2[arr_key],
+                                           arr_key))
+                                return False
+                    if arr_1["distance"] and round(
+                            arr_1["distance"]) != round(arr_2["distance"]):
+                            if verbose:
+                                print('%s does not match %s for key %s' %
+                                      (arr_1[arr_key], arr_2[arr_key],
+                                       arr_key))
+                            return False
+    # Check picks
+    if len(event_1.picks) != len(event_2.picks):
+        if verbose:
+            print('Number of picks is not equal')
+        return False
+    for pick_1, pick_2 in zip(event_1.picks, event_2.picks):
+        # Assuming same ordering of picks...
+        for key in pick_1.keys():
+            if key not in ["resource_id", "waveform_id"]:
+                if pick_1[key] != pick_2[key]:
+                    # Cope with a None set not being equal to a set, but still
+                    #  None quantity
+                    if pick_1[key] is None and pick_2[key] is not None:
+                        try:
+                            if not any(pick_2[key].__dict__.values()):
+                                continue
+                        except AttributeError:
+                            if verbose:
+                                print('%s is not the same as %s for key %s' %
+                                      (pick_1[key], pick_2[key], key))
+                            return False
+                    if pick_2[key] is None and pick_1[key] is not None:
+                        try:
+                            if not any(pick_1[key].__dict__.values()):
+                                continue
+                        except AttributeError:
+                            if verbose:
+                                print('%s is not the same as %s for key %s' %
+                                      (pick_1[key], pick_2[key], key))
+                            return False
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (pick_1[key], pick_2[key], key))
+                    return False
+            elif key == "waveform_id":
+                if pick_1[key].station_code != pick_2[key].station_code:
+                    if verbose:
+                        print('Station codes do not match')
+                    return False
+                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+                if pick_1[key].channel_code[-1] !=\
+                   pick_2[key].channel_code[-1]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+    # Check amplitudes
+    if not len(event_1.amplitudes) == len(event_2.amplitudes):
+        if verbose:
+            print('Not the same number of amplitudes')
+        return False
+    for amp_1, amp_2 in zip(event_1.amplitudes, event_2.amplitudes):
+        # Assuming same ordering of amplitudes
+        for key in amp_1.keys():
+            if key not in ["resource_id", "pick_id", "waveform_id", "snr"]:
+                if not amp_1[key] == amp_2[key]:
+                    if verbose:
+                        print('%s is not the same as %s for key %s' %
+                              (amp_1[key], amp_2[key], key))
+                    return False
+            elif key == "waveform_id":
+                if pick_1[key].station_code != pick_2[key].station_code:
+                    if verbose:
+                        print('Station codes do not match')
+                    return False
+                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+                if pick_1[key].channel_code[-1] !=\
+                   pick_2[key].channel_code[-1]:
+                    if verbose:
+                        print('Channel codes do not match')
+                    return False
+    return True
+
+
+def _group_detect(templates, stream, threshold, threshold_type, trig_int,
+                  plotvar, group_size=None, pre_processed=False, daylong=False,
+                  parallel_process=True, ignore_length=False, debug=0):
+    """
+    Pre-process and compute detections for a group of templates.
+
+    Will process the stream object, so if running in a loop, you will want
+    to copy the stream before passing it to this function.
+
+    :type templates: list
+    :param templates: List of :class:`eqcorrscan.core.match_filter.Template`s
+    :type stream: `obspy.core.stream.Stream`
+    :param stream: Continuous data to detect within using the Template.
+    :type threshold: float
+    :param threshold:
+        Threshold level, if using `threshold_type='MAD'` then this will be
+        the multiple of the median absolute deviation.
+    :type threshold_type: str
+    :param threshold_type:
+        The type of threshold to be used, can be MAD, absolute or
+        av_chan_corr.  See Note on thresholding below.
+    :type trig_int: float
+    :param trig_int:
+        Minimum gap between detections in seconds. If multiple detections
+        occur within trig_int of one-another, the one with the highest
+        cross-correlation sum will be selected.
+    :type plotvar: bool
+    :param plotvar:
+        Turn plotting on or off, see warning about plotting below.
+    :type group_size: int
+    :param group_size:
+        Maximum number of templates to run at once, use to reduce memory
+        consumption, if unset will use all templates.
+    :type pre_processed: bool
+    :param pre_processed:
+        Set to True if `stream` has already undergone processing, in this
+        case eqcorrscan will only check that the sampling rate is correct.
+        Defaults to False, which will use the
+        :mod:`eqcorrscan.utils.pre_processing` routines to resample and
+        filter the continuous data.
+    :type daylong: bool
+    :param daylong:
+        Set to True to use the
+        :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+        preforms additional checks and is more efficient for day-long data
+        over other methods.
+    :type parallel_process: bool
+    :param parallel_process:
+    :type ignore_length: bool
+    :param ignore_length:
+        If using daylong=True, then dayproc will try check that the data
+        are there for at least 80% of the day, if you don't want this check
+        (which will raise an error if too much data are missing) then set
+        ignore_length=True.  This is not recommended!
+    :type debug: int
+    :param debug:
+        Debug level from 0-5 where five is more output, for debug levels
+        4 and 5, detections will not be computed in parallel.
+
+    :return:
+        :class:`eqcorrscan.core.match_filter.Party` of families of detections.
+    """
+    if parallel_process:
+        ncores = cpu_count()
+    else:
+        ncores = 1
+    st = [Stream()]
+    master = templates[0]
+    # Check that they are all processed the same.
+    for template in templates:
+        if not template.same_processing(master):
+            raise MatchFilterError('Templates must be processed the same.')
+    if not pre_processed and daylong:
+        if not master.process_length == 86400:
+            warnings.warn('Processing day-long data, but template was cut '
+                          'from %i s long data, will reduce correlations'
+                          % master.process_length)
+        kwargs = {'st': stream, 'lowcut': master.lowcut,
+                  'highcut': master.highcut, 'filt_order': master.filt_order,
+                  'samp_rate': master.samp_rate,
+                  'starttime': UTCDateTime(stream[0].stats.starttime.date),
+                  'debug': debug, 'parallel': parallel_process,
+                  'num_cores': False, 'ignore_length': ignore_length}
+        st = [dayproc(**kwargs)]
+    elif not pre_processed and not daylong:
+        st = _group_process(
+            template_group=templates, parallel=parallel_process, debug=debug,
+            cores=False, stream=stream)
+    elif pre_processed:
+        warnings.warn('Not performing any processing on the '
+                      'continuous data.')
+        st = [stream]
+    detections = []
+    party = Party()
+    if group_size is not None:
+        n_groups = int(len(templates) / group_size)
+        if n_groups * group_size < len(templates):
+            n_groups += 1
+    else:
+        n_groups = 1
+    for st_chunk in st:
+        if debug > 0:
+            print('Computing detections between %s and %s' %
+                  (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime))
+        st_chunk.trim(starttime=st_chunk[0].stats.starttime,
+                      endtime=st_chunk[0].stats.endtime)
+        for tr in st_chunk:
+            if len(tr) > len(st_chunk[0]):
+                tr.data = tr.data[0:len(st_chunk[0])]
+        for i in range(n_groups):
+            if group_size is not None:
+                end_group = (i + 1) * group_size
+                start_group = i * group_size
+                if i == n_groups:
+                    end_group = len(templates)
+            else:
+                end_group = len(templates)
+                start_group = 0
+            template_group = [t for t in templates[start_group: end_group]]
+            detections += match_filter(
+                template_names=[t.name for t in template_group],
+                template_list=[t.st for t in template_group], st=st_chunk,
+                threshold=threshold, threshold_type=threshold_type,
+                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=ncores)
+            for template in template_group:
+                family = Family(template=template, detections=[])
+                for detection in detections:
+                    if detection.template_name == template.name:
+                        family.append(detection)
+                party += family
+    return party
+
+
+def _group_process(template_group, parallel, debug, cores, stream):
+    """
+    Process data into chunks based on template procesing length.
+
+    Templates in template_group must all have the same processing parameters.
+
+    :type template_group: list
+    :param template_group: List of Templates.
+    :type parallel: bool
+    :param parallel: Whether to use parallel processing or not
+    :type debug: int
+    :param debug: Debug level from 0-5
+    :type cores: int
+    :param cores: Number of cores to use, can be False to use all available.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param stream: Stream to process, will be left intact.
+
+    :return: list of processed streams.
+    """
+    master = template_group[0]
+    processed_streams = []
+    kwargs = {
+        'filt_order': master.filt_order,
+        'highcut': master.highcut, 'lowcut': master.lowcut,
+        'samp_rate': master.samp_rate, 'debug': debug,
+        'parallel': parallel, 'num_cores': cores}
+    if master.process_length == 86400:
+        func = dayproc
+    else:
+        func = shortproc
+    starttime = stream.sort(['starttime'])[0].stats.starttime
+    endtime = stream.sort(['endtime'])[-1].stats.endtime
+    n_chunks = int((endtime - starttime + 1) / master.process_length)
+    if n_chunks == 0:
+        print('Data must be process_length or longer, '
+              'not computing detections')
+    for i in range(n_chunks):
+        kwargs.update(
+            {'starttime': stream[0].stats.starttime +
+             (i * master.process_length)})
+        if master.process_length != 86400:
+            kwargs.update(
+                {'endtime': kwargs['starttime'] +
+                 master.process_length})
+        processed_streams.append(func(st=stream.copy(), **kwargs))
+    return processed_streams
+
+
+def _par_read(dirname, compressed=True):
+    """
+    Internal write function to read a formatted parameter file.
+
+    :type dirname: str
+    :param dirname: Directory to read the parameter file from.
+    :type compressed: bool
+    :param compressed: Whether the directory is compressed or not.
+    """
+    templates = []
+    if compressed:
+        arc = tarfile.open(dirname, "r:*")
+        members = arc.getmembers()
+        _parfile = [member for member in members
+                    if member.name.split(os.sep)[-1] ==
+                    'template_parameters.csv']
+        if len(_parfile) == 0:
+            arc.close()
+            raise MatchFilterError(
+                'No template parameter file in archive')
+        parfile = arc.extractfile(member[0])
+    else:
+        parfile = open(dirname + '/' + 'template_parameters.csv', 'r')
+    for line in parfile:
+        t_in = Template()
+        for key_pair in line.rstrip().split(','):
+            if key_pair.split(':')[0].strip() == 'name':
+                t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                    key_pair.split(':')[-1].strip()
+            elif key_pair.split(':')[0].strip() == 'filt_order':
+                try:
+                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                        int(key_pair.split(':')[-1])
+                except ValueError:
+                    pass
+            else:
+                try:
+                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
+                        float(key_pair.split(':')[-1])
+                except ValueError:
+                    pass
+        templates.append(t_in)
+    parfile.close()
+    if compressed:
+        arc.close()
+    return templates
+
+
+def _resolved(x):
+    return os.path.realpath(os.path.abspath(x))
+
+
+def _badpath(path, base):
+    """
+    joinpath will ignore base if path is absolute.
+    """
+    return not _resolved(os.path.join(base, path)).startswith(base)
+
+
+def _badlink(info, base):
+    """
+    Links are interpreted relative to the directory containing the link
+    """
+    tip = _resolved(os.path.join(base, os.path.dirname(info.name)))
+    return _badpath(info.linkname, base=tip)
+
+
+def _safemembers(members):
+    """Check members of a tar archive for safety.
+    Ensure that they do not contain paths or links outside of where we
+    need them - this would only happen if the archive wasn't made by
+    eqcorrscan.
+
+    :type members: :class:`tarfile.TarFile`
+    :param members: an open tarfile.
+    """
+    base = _resolved(".")
+
+    for finfo in members:
+        if _badpath(finfo.name, base):
+            print(finfo.name, "is blocked (illegal path)")
+        elif finfo.issym() and _badlink(finfo, base):
+            print(finfo.name, "is blocked: Hard link to", finfo.linkname)
+        elif finfo.islnk() and _badlink(finfo, base):
+            print(finfo.name, "is blocked: Symlink to", finfo.linkname)
+        else:
+            yield finfo
+
+
+def _write_family(family, filename):
+    """
+    Write a family to a csv file.
+
+    :type family: :class:`eqcorrscan.core.match_filter.Family`
+    :param family: Family to write to file
+    :type filename: str
+    :param filename: File to write to.
+    """
+    with open(filename, 'w') as f:
+        for detection in family.detections:
+            det_str = ''
+            for key in detection.__dict__.keys():
+                if key == 'event' and detection.__dict__[key] is not None:
+                    value = str(detection.event.resource_id)
+                elif key in ['threshold', 'detect_val', 'threshold_input']:
+                    value = format(detection.__dict__[key], '.32f').rstrip('0')
+                else:
+                    value = str(detection.__dict__[key])
+                det_str += key + ': ' + value + '; '
+            f.write(det_str + '\n')
+    return
+
+
+def _read_family(fname, all_cat):
+    """
+    Internal function to read csv family files.
+
+    :type fname: str
+    :param fname: Filename
+    :return: list of Detection
+    """
+    detections = []
+    with open(fname, 'r') as f:
+        for line in f:
+            det_dict = {}
+            for key_pair in line.rstrip().split(';'):
+                key = key_pair.split(': ')[0].strip()
+                value = key_pair.split(': ')[-1].strip()
+                if key == 'event':
+                    if len(all_cat) == 0:
+                        continue
+                    det_dict.update(
+                        {'event': [e for e in all_cat
+                                   if str(e.resource_id).
+                                   split('/')[-1] == value][0]})
+                elif key == 'detect_time':
+                    det_dict.update(
+                        {'detect_time': UTCDateTime(value)})
+                elif key == 'chans':
+                    det_dict.update({'chans': ast.literal_eval(value)})
+                elif key in ['template_name', 'typeofdet', 'id',
+                             'threshold_type']:
+                    det_dict.update({key: value})
+                elif key == 'no_chans':
+                    det_dict.update({key: int(value)})
+                elif len(key) == 0:
+                    continue
+                else:
+                    det_dict.update({key: float(value)})
+            detections.append(Detection(**det_dict))
+    return detections
+
+
+def read_tribe(fname):
+    """
+    Read a Tribe of templates from a tar archive.
+
+    :param fname: Filename to read from
+    :return: :class:`eqcorrscan.core.match_filter.Tribe`
+    """
+    tribe = Tribe()
+    tribe.read(filename=fname)
+    return tribe
+
+
+def read_party(fname=None):
+    """
+    Read detections and metadata from a tar archive.
+
+    :type fname: str
+    :param fname:
+        Filename to read from, if this contains a single Family, then will
+        return a party of length = 1
+    :return: :class:`eqcorrscan.core.match_filter.Party`
+    """
+    party = Party()
+    party.read(filename=fname)
+    return party
+
+
 def read_detections(fname):
-    """Read detections from a file to a list of DETECTION objects.
+    """
+    Read detections from a file to a list of Detection objects.
 
     :type fname: str
     :param fname: File to read from, must be a file written to by \
-        DETECTION.write.
+        Detection.write.
 
-    :returns: list of :class:`eqcorrscan.core.match_filter.DETECTION`
+    :returns: list of :class:`eqcorrscan.core.match_filter.Detection`
     :rtype: list
 
     .. note::
-        :class:`eqcorrscan.core.match_filter.DETECTION`'s returned do not
-        contain DETECTION.event
+        :class:`eqcorrscan.core.match_filter.Detection`'s returned do not
+        contain Detection.event
     """
     f = open(fname, 'r')
     detections = []
@@ -191,22 +3232,39 @@ def read_detections(fname):
         detection[3] = ast.literal_eval(detection[3])
         detection[4] = float(detection[4])
         detection[5] = float(detection[5])
-        detections.append(DETECTION(template_name=detection[0],
-                                    detect_time=detection[1],
-                                    no_chans=detection[2],
-                                    detect_val=detection[4],
-                                    threshold=detection[5],
-                                    typeofdet=detection[6],
-                                    chans=detection[3]))
+        if len(detection) < 9:
+            detection.extend(['Unset', float('NaN')])
+        else:
+            detection[7] = float(detection[7])
+        detections.append(Detection(
+            template_name=detection[0], detect_time=detection[1],
+            no_chans=detection[2], detect_val=detection[4],
+            threshold=detection[5], threshold_type=detection[6],
+            threshold_input=detection[7], typeofdet=detection[8],
+            chans=detection[3]))
     f.close()
     return detections
+
+
+def read_template(fname):
+    """
+    Read a Template object from a tar archive.
+
+    :type fname: str
+    :param fname: Filename to read from
+
+    :return: :class:`eqcorrscan.core.match_filter.Template`
+    """
+    template = Template()
+    template.read(filename=fname)
+    return template
 
 
 def write_catalog(detections, fname, format="QUAKEML"):
     """Write events contained within detections to a catalog file.
 
     :type detections: list
-    :param detections: list of eqcorrscan.core.match_filter.DETECTION
+    :param detections: list of eqcorrscan.core.match_filter.Detection
     :type fname: str
     :param fname: Name of the file to write to
     :type format: str
@@ -220,10 +3278,10 @@ def write_catalog(detections, fname, format="QUAKEML"):
 def get_catalog(detections):
     """
     Generate an :class:`obspy.core.event.Catalog` from list of \
-    :class:`DETECTION`'s.
+    :class:`Detection`'s.
 
     :type detections: list
-    :param detections: list of :class:`eqcorrscan.core.match_filter.DETECTION`
+    :param detections: list of :class:`eqcorrscan.core.match_filter.Detection`
 
     :returns: Catalog of detected events.
     :rtype: :class:`obspy.core.event.Catalog`
@@ -231,16 +3289,17 @@ def get_catalog(detections):
     .. warning::
         Will only work if the detections have an event associated with them.
         This will not be the case if detections have been written to csv
-        format using :func:`eqcorrscan.core.match_filter.DETECTION.write`
+        format using :func:`eqcorrscan.core.match_filter.Detection.write`
         and read back in.
     """
     catalog = Catalog()
     for detection in detections:
-        catalog.append(detection.event)
+        if detection.event:
+            catalog.append(detection.event)
     return catalog
 
 
-def extract_from_stream(stream, detections, pad=2.0, length=30.0):
+def extract_from_stream(stream, detections, pad=5.0, length=30.0):
     """
     Extract waveforms for a list of detections from a stream.
 
@@ -267,8 +3326,9 @@ def extract_from_stream(stream, detections, pad=2.0, length=30.0):
                 print('No data in stream for pick:')
                 print(pick)
                 continue
-            cut_stream += tr.copy().trim(starttime=pick.time - pad,
-                                         endtime=pick.time - pad + length)
+            cut_stream += tr.slice(
+                starttime=pick.time - pad,
+                endtime=pick.time - pad + length).copy()
         streams.append(cut_stream)
     return streams
 
@@ -356,7 +3416,7 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
     #
     # There is an interesting issue found in the tests that sometimes what
     # should be a perfect correlation results in a max of ccc of 0.99999994
-    # Converting to float16 'corrects' this to 1.0 - bad workaround.
+    # Converting to float16 'corrects' this to 1.0 - bit of a hack.
     if debug >= 3:
         print('********* DEBUG:  ' + station + '.' +
               channel + ' ccc MAX: ' + str(np.max(ccc[0])))
@@ -364,24 +3424,22 @@ def _template_loop(template, chan, stream_ind, debug=0, i=0):
               channel + ' ccc MEAN: ' + str(np.mean(ccc[0])))
     if np.isinf(np.mean(ccc[0])):
         warnings.warn('Mean of ccc is infinite, check!')
-        if debug >= 3:
+        if debug >= 4:
             np.save('inf_cccmean_ccc_%02d.npy' % i, ccc[0])
             np.save('inf_cccmean_template_%02d.npy' % i, template_data.data)
             np.save('inf_cccmean_image_%02d.npy' % i, image)
-        ccc = np.zeros(len(ccc))
+        ccc = np.zeros(len(ccc[0]))
         ccc = ccc.reshape((1, len(ccc)))
         # Returns zeros
     if debug >= 3:
         print('shape of ccc: ' + str(np.shape(ccc)))
         print('A single ccc is using: ' + str(ccc.nbytes / 1000000) + 'MB')
         print('ccc type is: ' + str(type(ccc)))
-    if debug >= 3:
-        print('shape of ccc: ' + str(np.shape(ccc)))
         print("Parallel worker " + str(i) + " complete")
     return i, ccc
 
 
-def _channel_loop(templates, stream, cores=1, debug=0):
+def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     """
     Internal loop for parallel processing.
 
@@ -402,6 +3460,10 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     :param cores: Number of cores to loop over
     :type debug: int
     :param debug: Debug level.
+    :type internal: bool
+    :param internal:
+        Whether to use the internal Python code (True) or the experimental
+        compilled code.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -420,6 +3482,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
+    if not internal:
+        print('Not yet coded')
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -430,9 +3494,9 @@ def _channel_loop(templates, stream, cores=1, debug=0):
     # Note: This requires all templates to be the same length, and all channels
     # to be the same length
     temp_len = len(templates[0][0].data)
-    cccs_matrix = np.array([np.array([np.array([0.0] * (len(stream[0].data) -
-                                     temp_len + 1))] *
-                            len(templates))] * 2, dtype=np.float32)
+    cccs_matrix = np.array(
+        [np.array([np.array([0.0] * (len(stream[0].data) - temp_len + 1))] *
+                  len(templates))] * 2, dtype=np.float32)
     # Initialize number of channels array
     no_chans = np.array([0] * len(templates))
     chans = [[] for _ in range(len(templates))]
@@ -446,13 +3510,13 @@ def _channel_loop(templates, stream, cores=1, debug=0):
             print("Starting parallel run for station " + station +
                   " channel " + channel)
         tic = time.clock()
+        # Send off to sister function
         with Timer() as t:
-            # Send off to sister function
             pool = Pool(processes=num_cores)
-            results = [pool.apply_async(_template_loop,
-                                        args=(templates[i], tr.data,
-                                              stream_ind, debug, i))
-                       for i in range(len(templates))]
+            results = [pool.apply_async(
+                _template_loop, (templates[i], ), {
+                    'chan': tr.data, 'stream_ind': stream_ind, 'debug': debug,
+                    'i': i}) for i in range(len(templates))]
             pool.close()
         if debug >= 1:
             print("--------- TIMER:    Correlation loop took: %s s" % t.secs)
@@ -483,8 +3547,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
                   str(np.shape(cccs)))
             print('cccs is using: ' + str(cccs.nbytes / 1000000) +
                   ' MB of memory')
-        cccs_matrix[1] = np.reshape(cccs, (1, len(templates),
-                                    max(np.shape(cccs))))
+        cccs_matrix[1] = np.reshape(
+            cccs, (1, len(templates), max(np.shape(cccs))))
         del cccs
         if debug >= 2:
             print('cccs_matrix shaped: ' + str(np.shape(cccs_matrix)))
@@ -530,7 +3594,8 @@ def _channel_loop(templates, stream, cores=1, debug=0):
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  debug=0, plot_format='png', output_cat=False,
-                 extract_detections=False, arg_check=True):
+                 output_event=True, extract_detections=False,
+                 arg_check=True, internal=True):
     """
     Main matched-filter detection function.
 
@@ -561,32 +3626,44 @@ def match_filter(template_names, template_list, st, threshold,
     :type plotvar: bool
     :param plotvar: Turn plotting on or off
     :type plotdir: str
-    :param plotdir: Path to plotting folder, plots will be output here, \
-        defaults to run location.
+    :param plotdir:
+        Path to plotting folder, plots will be output here, defaults to run
+        location.
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
-    :param debug: Debug output level, the bigger the number, the more the \
-        output.
+    :param debug:
+        Debug output level, the bigger the number, the more the output.
     :type plot_format: str
     :param plot_format: Specify format of output plots if saved
     :type output_cat: bool
-    :param output_cat: Specifies if matched_filter will output an \
-        obspy.Catalog class containing events for each detection. Default \
-        is False, in which case matched_filter will output a list of \
-        detection classes, as normal.
+    :param output_cat:
+        Specifies if matched_filter will output an obspy.Catalog class
+        containing events for each detection. Default is False, in which case
+        matched_filter will output a list of detection classes, as normal.
+    :type output_event: bool
+    :param output_event:
+        Whether to include events in the Detection objects, defaults to True,
+        but for large cases you may want to turn this off as Event objects
+        can be quite memory intensive.
     :type extract_detections: bool
-    :param extract_detections: Specifies whether or not to return a list of \
-        streams, one stream per detection.
+    :param extract_detections:
+        Specifies whether or not to return a list of streams, one stream per
+        detection.
     :type arg_check: bool
-    :param arg_check: Check arguments, defaults to True, but if running in \
-        bulk, and you are certain of your arguments, then set to False.\n
+    :param arg_check:
+        Check arguments, defaults to True, but if running in bulk, and you are
+        certain of your arguments, then set to False.
+    :type internal: bool
+    :param internal:
+        Whether to use the internal python code or the more experimental
+        compilled code.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
-        then only the list of :class:`eqcorrscan.core.match_filter.DETECTION`'s
+        then only the list of :class:`eqcorrscan.core.match_filter.Detection`'s
         will be output:
-    :return: :class:`eqcorrscan.core.match_filter.DETECTION`'s detections for
+    :return: :class:`eqcorrscan.core.match_filter.Detection`'s detections for
         each detection made.
     :rtype: list
     .. rubric::
@@ -610,6 +3687,23 @@ def match_filter(template_names, template_list, st, threshold,
         them import match_filter you will get the warning that this call to
         matplotlib has no effect, which will mean that match_filter has not
         changed the plotting behaviour.
+
+    .. note::
+        **Data overlap:**
+
+        Internally this routine shifts and trims the data according to the
+        offsets in the template (e.g. if trace 2 starts 2 seconds after trace 1
+        in the template then the continuous data will be shifted by 2 seconds
+        to align peak correlations prior to summing).  Because of this,
+        detections at the start and end of continuous data streams
+        **may be missed**.  The maximum time-period that might be missing
+        detections is the maximum offset in the template.
+
+        To work around this, if you are conducting matched-filter detections
+        through long-duration continuous data, we suggest using some overlap
+        (a few seconds, on the order of the maximum offset in the templates)
+        in the continous data.  You will then need to post-process the
+        detections (which should be done anyway to remove duplicates).
 
     .. note::
         **Thresholding:**
@@ -639,7 +3733,7 @@ def match_filter(template_names, template_list, st, threshold,
     .. note::
         The output_cat flag will create an :class:`obspy.core.eventCatalog`
         containing one event for each
-        :class:`eqcorrscan.core.match_filter.DETECTION`'s generated by
+        :class:`eqcorrscan.core.match_filter.Detection`'s generated by
         match_filter. Each event will contain a number of comments dealing
         with correlation values and channels used for the detection. Each
         channel used for the detection will have a corresponding
@@ -654,6 +3748,7 @@ def match_filter(template_names, template_list, st, threshold,
     """
     import matplotlib
     matplotlib.use('Agg')
+    from eqcorrscan.utils.plotting import _match_filter_plot
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
@@ -675,7 +3770,16 @@ def match_filter(template_names, template_list, st, threshold,
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
             raise MatchFilterError(msg)
-
+        for tr in st:
+            if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
+                raise MatchFilterError('Sampling rates are not equal')
+        for template in template_list:
+            for tr in template:
+                if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
+                    raise MatchFilterError(
+                        'Template sampling rate does not '
+                        'match continuous data')
+    _spike_test(st, 0.99, 1e6)
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -758,12 +3862,19 @@ def match_filter(template_names, template_list, st, threshold,
                                               location=stachan[2],
                                               channel=stachan[3]):
                         template.remove(tr)
+                        print('Removing template channel %s.%s.%s.%s due to'
+                              ' no matches in continuous data' %
+                              (stachan[0], stachan[1], stachan[2], stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
     for tr in stream:
         if not (tr.stats.network, tr.stats.station,
                 tr.stats.location, tr.stats.channel) in \
                 template_stachan.keys():
+            print('Removing channel in continuous data for %s.%s.%s.%s:'
+                  ' no match in template' %
+                  (tr.stats.network, tr.stats.station, tr.stats.location,
+                   tr.stats.channel))
             stream.remove(tr)
     # Check for duplicate channels
     stachans = [(tr.stats.network, tr.stats.station,
@@ -775,19 +3886,18 @@ def match_filter(template_names, template_list, st, threshold,
                    % (key[0], key[1], key[2], key[3]))
             raise MatchFilterError(msg)
     # Pad out templates to have all channels
+    _templates = []
+    used_template_names = []
     for template, template_name in zip(templates, _template_names):
         if len(template) == 0:
             msg = ('No channels matching in continuous data for ' +
                    'template' + template_name)
             warnings.warn(msg)
-            templates.remove(template)
-            _template_names.remove(template_name)
             continue
         for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(network=stachan[0],
-                                                     station=stachan[1],
-                                                     location=stachan[2],
-                                                     channel=stachan[3]))
+            number_of_channels = len(template.select(
+                network=stachan[0], station=stachan[1], location=stachan[2],
+                channel=stachan[3]))
             if number_of_channels < template_stachan[stachan]:
                 missed_channels = template_stachan[stachan] -\
                                   number_of_channels
@@ -802,20 +3912,23 @@ def match_filter(template_names, template_list, st, threshold,
                 for dummy in range(missed_channels):
                     template += nulltrace
         template.sort()
+        _templates.append(template)
+        used_template_names.append(template_name)
         # Quick check that this has all worked
         if len(template) != max([len(t) for t in templates]):
             raise MatchFilterError('Internal error forcing same template '
                                    'lengths, report this error.')
+    templates = _templates
+    _template_names = used_template_names
     if debug >= 2:
         print('Starting the correlation run for this day')
-    if debug >= 4:
+    if debug >= 3:
         for template in templates:
             print(template)
         print(stream)
-    [cccsums, no_chans, chans] = _channel_loop(templates=templates,
-                                               stream=stream,
-                                               cores=cores,
-                                               debug=debug)
+    [cccsums, no_chans, chans] = _channel_loop(
+        templates=templates, stream=stream, cores=cores, debug=debug,
+        internal=internal)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
@@ -860,7 +3973,7 @@ def match_filter(template_names, template_list, st, threshold,
                     cccsum)
         tic = time.clock()
         if max(cccsum) > rawthresh:
-            peaks = findpeaks.find_peaks2_short(
+            peaks = find_peaks2_short(
                 arr=cccsum, thresh=rawthresh,
                 trig_int=trig_int * stream[0].stats.sampling_rate, debug=debug,
                 starttime=stream[0].stats.starttime,
@@ -878,37 +3991,47 @@ def match_filter(template_names, template_list, st, threshold,
                 # Detect time must be valid QuakeML uri within resource_id.
                 # This will write a formatted string which is still
                 # readable by UTCDateTime
-                rid = ResourceIdentifier(id=_template_names[i] + '_' +
-                                         str(detecttime.
-                                             strftime('%Y%m%dT%H%M%S.%f')),
-                                         prefix='smi:local')
-                ev = Event(resource_id=rid)
-                cr_i = CreationInfo(author='EQcorrscan',
-                                    creation_time=UTCDateTime())
-                ev.creation_info = cr_i
-                # All detection info in Comments for lack of a better idea
-                thresh_str = 'threshold=' + str(rawthresh)
-                ccc_str = 'detect_val=' + str(peak[0])
-                used_chans = 'channels used: ' +\
-                             ' '.join([str(pair) for pair in chans[i]])
-                ev.comments.append(Comment(text=thresh_str))
-                ev.comments.append(Comment(text=ccc_str))
-                ev.comments.append(Comment(text=used_chans))
-                min_template_tm = min([tr.stats.starttime for tr in template])
-                for tr in template:
-                    if (tr.stats.station, tr.stats.channel) not in chans[i]:
-                        continue
+                if not output_event and not output_cat:
+                    det_ev = None
+                else:
+                    ev = Event(resource_id=ResourceIdentifier(
+                        id=_template_names[i] + '_' +
+                        str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                        prefix='smi:local'))
+                    ev.creation_info = CreationInfo(
+                        author='EQcorrscan', creation_time=UTCDateTime())
+                    ev.comments.append(
+                        Comment(text='threshold=' + str(rawthresh)))
+                    ev.comments.append(
+                        Comment(text='detect_val=' + str(peak[0])))
+                    ev.comments.append(Comment(
+                        text='channels used: ' +
+                             ' '.join([str(pair) for pair in chans[i]])))
+                    min_template_tm = min(
+                        [tr.stats.starttime for tr in template])
+                    for tr in template:
+                        if (tr.stats.station, tr.stats.channel) \
+                           not in chans[i]:
+                            continue
+                        else:
+                            pick_tm = detecttime + (tr.stats.starttime -
+                                                    min_template_tm)
+                            wv_id = WaveformStreamID(
+                                network_code=tr.stats.network,
+                                station_code=tr.stats.station,
+                                channel_code=tr.stats.channel)
+                            ev.picks.append(
+                                Pick(time=pick_tm, waveform_id=wv_id))
+                    if not output_event:
+                        det_ev = None
                     else:
-                        pick_tm = detecttime + (tr.stats.starttime -
-                                                min_template_tm)
-                        wv_id = WaveformStreamID(network_code=tr.stats.network,
-                                                 station_code=tr.stats.station,
-                                                 channel_code=tr.stats.channel)
-                        ev.picks.append(Pick(time=pick_tm, waveform_id=wv_id))
-                detections.append(DETECTION(_template_names[i],
-                                            detecttime,
-                                            no_chans[i], peak[0], rawthresh,
-                                            'corr', chans[i], event=ev))
+                        det_ev = ev
+                detections.append(Detection(
+                    template_name=_template_names[i], detect_time=detecttime,
+                    no_chans=no_chans[i], detect_val=peak[0],
+                    threshold=rawthresh, typeofdet='corr', chans=chans[i],
+                    event=det_ev, threshold_type=threshold_type,
+                    threshold_input=threshold))
                 if output_cat:
                     det_cat.append(ev)
         if extract_detections:
@@ -924,47 +4047,40 @@ def match_filter(template_names, template_list, st, threshold,
         return detections, det_cat, detection_streams
 
 
-def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
-                       plot_format, i):
+def _spike_test(stream, percent=0.99, multiplier=1e6):
     """
-    Plotting function to match_filter.
+    Check for very large spikes in data and raise an error if found.
 
-    :param stream:
-    :param cccsum:
-    :param template_names:
-    :param rawthresh:
-    :param plotdir:
-    :param plot_format:
-    :param i:
-    :param debug:
-    :return:
+    :param stream: Stream to look for spikes in.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param percent: Percentage as a decimal to calcualte range for.
+    :type percent: float
+    :param multiple: Multiplier of range to define a spike.
+    :type multiple: float
     """
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    from eqcorrscan.utils import plotting
-    stream_plot = copy.deepcopy(stream[0])
-    # Downsample for plotting
-    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
-    cccsum_plot = Trace(cccsum)
-    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
-    # Resample here to maintain shape better
-    cccsum_hist = cccsum_plot.copy()
-    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
-                                           sampling_rate / 10)).data
-    cccsum_plot = plotting.chunk_data(cccsum_plot, 10, 'Maxabs').data
-    # Enforce same length
-    stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
-    cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
-    cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
-                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
-                 '.' + plot_format)
-    plotting.triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
-                         trace=stream_plot, threshold=rawthresh, save=True,
-                         savefile=plot_name)
+    for tr in stream:
+        if (tr.data > 2 * np.max(
+            np.sort(np.abs(
+                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
+            msg = ('Spikes above ' + str(multiplier) +
+                   ' of the range of ' + str(percent) +
+                   ' of the data present, check. \n ' +
+                   'This would otherwise likely result in an issue during ' +
+                   'FFT prior to cross-correlation.\n' +
+                   'If you think this spike is real please report ' +
+                   'this as a bug.')
+            raise MatchFilterError(msg)
+
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    # List files to be removed after doctest
+    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.ml',
+               'test_family.tgz', 'test_template.tgz', 'test_waveform.ms',
+               'test_template_read.tgz', 'test_tribe.tgz']
+    for f in cleanup:
+        if os.path.isfile(f):
+            os.remove(f)
+        elif os.path.isdir(f):
+            shutil.rmtree(f)

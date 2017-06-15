@@ -6,15 +6,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
 import unittest
+from obspy.clients.fdsn import Client
+from obspy import UTCDateTime
+
+from eqcorrscan.utils.catalog_utils import filter_picks
 
 
 class CatalogUtilsTests(unittest.TestCase):
     def test_filter_picks(self):
-        """ Test various methods of filetring picks in a catalog."""
-        from obspy.clients.fdsn import Client
-        from eqcorrscan.utils.catalog_utils import filter_picks
-        from obspy import UTCDateTime
+        """ Test various methods of filtering picks in a catalog."""
         client = Client(str("NCEDC"))
         t1 = UTCDateTime(2004, 9, 28)
         t2 = t1 + 86400

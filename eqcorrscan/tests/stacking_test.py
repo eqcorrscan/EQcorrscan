@@ -5,78 +5,54 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from eqcorrscan.utils.stacking import linstack, PWS_stack, align_traces
+
 import unittest
+import numpy as np
+import os
+import glob
+
+from obspy import Stream, Trace, read
+
+from eqcorrscan.utils.stacking import linstack, PWS_stack, align_traces
 
 
 class TestStackingMethods(unittest.TestCase):
-    def test_linstack(self):
-        """Test the utils.stacking.linstack function."""
-        # Generate synth data
-        import numpy as np
-        from obspy import Stream, Trace
-
-        synth = Stream(Trace())
-        synth[0].data = np.zeros(200)
-        synth[0].data[100] = 1.0
+    @classmethod
+    def setUpClass(cls):
+        cls.synth = Stream(Trace())
+        cls.synth[0].data = np.zeros(200)
+        cls.synth[0].data[100] = 1.0
         sine_x = np.arange(0, 10.0, 0.5)
         damped_sine = np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
-        synth[0].data = np.convolve(synth[0].data, damped_sine)
+        cls.synth[0].data = np.convolve(cls.synth[0].data, damped_sine)
         # Normalize:
-        synth[0].data = synth[0].data / synth[0].data.max()
-        maximum_synth = synth[0].data.max()
-        RMS_max = np.sqrt(np.mean(np.square(synth[0].data)))
-        streams = [synth.copy() for i in range(10)]
+        cls.synth[0].data = cls.synth[0].data / cls.synth[0].data.max()
+        cls.maximum_synth = cls.synth[0].data.max()
+        cls.RMS_max = np.sqrt(np.mean(np.square(cls.synth[0].data)))
+        cls.streams = [cls.synth.copy() for i in range(10)]
 
-        stack = linstack(streams, normalize=True)
+    def test_linstack(self):
+        """Test the utils.stacking.linstack function."""
+        stack = linstack(self.streams, normalize=True)
         # Check normalized amplitude is correct
         self.assertEqual(np.float32(stack[0].data.max()),
-                         np.float32(10 * maximum_synth / RMS_max))
-        stack = linstack(streams, normalize=False)
+                         np.float32(10 * self.maximum_synth / self.RMS_max))
+        stack = linstack(self.streams, normalize=False)
         # Check amplitude is preserved
-        self.assertEqual(stack[0].data.max(), 10 * maximum_synth)
+        self.assertEqual(stack[0].data.max(), 10 * self.maximum_synth)
         # Check length is preserved
-        self.assertEqual(len(synth[0].data), len(stack[0].data))
+        self.assertEqual(len(self.synth[0].data), len(stack[0].data))
 
     def test_phase_weighted_stack(self):
         """Test the utils.stacking.PWS_stack."""
-        # Generate synth data
-        import numpy as np
-        from obspy import Stream, Trace
-
-        synth = Stream(Trace())
-        synth[0].data = np.zeros(200)
-        synth[0].data[100] = 1.0
-        sine_x = np.arange(0, 10.0, 0.5)
-        damped_sine = np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
-        synth[0].data = np.convolve(synth[0].data, damped_sine)
-        # Normalize:
-        synth[0].data = synth[0].data / synth[0].data.max()
-        # maximum_synth = synth[0].data.max()
-        # RMS_max = np.sqrt(np.mean(np.square(synth[0].data)))
-        streams = [synth.copy() for i in range(10)]
-
-        stack = PWS_stack(streams, weight=2, normalize=True)
+        stack = PWS_stack(self.streams, weight=2, normalize=True)
         # Check length is preserved
-        self.assertEqual(len(synth[0].data), len(stack[0].data))
+        self.assertEqual(len(self.synth[0].data), len(stack[0].data))
 
     def test_align_traces(self):
         """Test the utils.stacking.align_traces function."""
         # Generate synth data
-        import numpy as np
-        from obspy import Trace
-
-        synth = Trace()
-        synth.data = np.zeros(200)
-        synth.data[100] = 1.0
-        sine_x = np.arange(0, 10.0, 0.5)
-        damped_sine = np.exp(-sine_x) * np.sin(2 * np.pi * sine_x)
-        synth.data = np.convolve(synth.data, damped_sine)
-        # Normalize:
-        synth.data = synth.data / synth.data.max()
-        # maximum_synth = synth[0].data.max()
-        # RMS_max = np.sqrt(np.mean(np.square(synth[0].data)))
-        traces = [synth.copy() for i in range(10)]
+        traces = [st[0].copy() for st in self.streams]
 
         shifts, ccs = align_traces(traces, shift_len=2, master=False)
         for shift in shifts:
@@ -93,24 +69,24 @@ class TestStackingMethods(unittest.TestCase):
         for shift_in, shift_out in zip(shifts_in, shifts):
             self.assertEqual(-1 * shift_in, shift_out)
 
-    def test_known_align(self):
-        """Test alignment with a known outcome."""
-        from obspy import read
-        import os
-        import glob
-        # from eqcorrscan.utils.stacking import align_traces
+
+class TestAlignRealData(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'WAV', 'TEST_')
-        # testing_path = 'eqcorrscan/tests/test_data/WAV/TEST_/'
-        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
-        trace_list = []
+        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*DFDPC*')))
+        cls.trace_list = []
         for wavfile in wavefiles:
             st = read(wavfile)
             tr = st.select(station='FRAN', channel='SH1')
             if len(tr) == 1:
                 tr.detrend('simple').filter('bandpass', freqmin=2, freqmax=20)
-                trace_list.append(tr[0])
-        shifts, ccs = align_traces(trace_list=trace_list, shift_len=200)
+                cls.trace_list.append(tr[0])
+
+    def test_known_align(self):
+        """Test alignment with a known outcome."""
+        shifts, ccs = align_traces(trace_list=self.trace_list, shift_len=200)
         ccs = [float(str(cc)) for cc in ccs]
         f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                               'test_data', 'known_alignment.csv'), 'r')
@@ -125,20 +101,7 @@ class TestStackingMethods(unittest.TestCase):
 
     def test_known_align_positive(self):
         """Test a known alignment case with forced positive correlation."""
-        from obspy import read
-        import os
-        import glob
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'WAV', 'TEST_')
-        wavefiles = sorted(glob.glob(os.path.join(testing_path, '*')))
-        trace_list = []
-        for wavfile in wavefiles:
-            st = read(wavfile)
-            tr = st.select(station='FRAN', channel='SH1')
-            if len(tr) == 1:
-                tr.detrend('simple').filter('bandpass', freqmin=2, freqmax=20)
-                trace_list.append(tr[0])
-        shifts, ccs = align_traces(trace_list=trace_list, shift_len=200,
+        shifts, ccs = align_traces(trace_list=self.trace_list, shift_len=200,
                                    positive=True)
         ccs = [float(str(cc)) for cc in ccs]
         f = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),

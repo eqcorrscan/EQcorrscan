@@ -19,8 +19,6 @@ import numpy as np
 from scipy.signal import hilbert
 from copy import deepcopy
 
-from eqcorrscan.core.match_filter import normxcorr2
-
 
 def linstack(streams, normalize=True):
     """
@@ -129,6 +127,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
     :returns: list of shifts and correlations for best alignment in seconds.
     :rtype: list
     """
+    from eqcorrscan.core.match_filter import normxcorr2
     from eqcorrscan.utils.plotting import xcorr_plot
     traces = deepcopy(trace_list)
     if not master:
@@ -136,7 +135,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
         master = traces[0]
         MAD_master = np.median(np.abs(master.data))
         for i in range(1, len(traces)):
-            if np.median(np.abs(traces[i])) > MAD_master:
+            if np.median(np.abs(traces[i].data)) > MAD_master:
                 master = traces[i]
                 MAD_master = np.median(np.abs(master.data))
     else:
