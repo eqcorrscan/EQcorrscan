@@ -707,6 +707,10 @@ class TestMatchObjects(unittest.TestCase):
                     for dif in time_difs:
                         if dif != 0:
                             self.assertTrue(dif > trig_int)
+                with self.assertRaises(MatchFilterError):
+                    self.party.copy().decluster(trig_int=trig_int,
+                                                timing='origin',
+                                                metric=metric)
 
     def test_party_lag_calc(self):
         """Test the lag-calc method on Party objects."""
