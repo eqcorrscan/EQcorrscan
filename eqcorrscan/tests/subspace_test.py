@@ -14,7 +14,7 @@ import copy
 
 from obspy import Stream, read
 
-from eqcorrscan.core import subspace, subspace_statistic
+from eqcorrscan.core import subspace
 
 
 class SimpleSubspaceMethods(unittest.TestCase):
@@ -87,10 +87,13 @@ class SimpleSubspaceMethods(unittest.TestCase):
         detector.partition(2)
         stream = read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace', 'test_trace.ms'))
-        tr_data = stream[0].data.astype(np.float32)
-        stat = subspace_statistic.det_statistic(
-            detector.data[0].astype(np.float32), tr_data, np.uint32(1))
-        self.assertEqual((stat.max().round(6) - 0.253248).round(6), 0)
+        st = [stream]
+        fft_vars = subspace._do_ffts(detector, st, len(detector.stachans))
+        stat = subspace._det_stat_freq(fft_vars[0][0], fft_vars[1][0],
+                                       fft_vars[2][0], fft_vars[3],
+                                       len(detector.stachans), fft_vars[4],
+                                       fft_vars[5])
+        self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
 class SubspaceTestingMethods(unittest.TestCase):
