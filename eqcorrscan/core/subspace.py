@@ -583,7 +583,28 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
 
 
 def _do_ffts(detector, stream, Nc):
-    # Perform ffts on data, detector and denominator boxcar
+    """
+    Perform ffts on data, detector and denominator boxcar
+
+    :type detector: eqcorrscan.core.subspace.Detector
+    :param detector: Detector object for doing detecting
+    :type stream: list of obspy.core.stream.Stream
+    :param stream: List of streams processed according to detector
+    :type Nc: int
+    :param Nc: Number of channels in data. 1 for non-multiplexed
+
+    :return: list of time-reversed detector(s) in freq domain
+    :rtype: list
+    :return: list of squared data stream(s) in freq domain
+    :rtype: list
+    :return: list of data stream(s) in freq domain
+    :return: detector-length boxcar in freq domain
+    :rtype: numpy.ndarray
+    :return: length of detector
+    :rtype: int
+    :return: length of data
+    :rtype: int
+    """
     min_fftlen = int(stream[0][0].data.shape[0] +
                      detector.data[0].shape[0] - Nc)
     fftlen = scipy.fftpack.next_fast_len(min_fftlen)
@@ -605,7 +626,27 @@ def _do_ffts(detector, stream, Nc):
 
 
 def _det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
-    # Compute detection statistic in the frequency domain
+    """
+    Compute detection statistic in the frequency domain
+
+    :type det_freq: numpy.ndarray
+    :param det_freq: detector in freq domain
+    :type data_freq_sq: numpy.ndarray
+    :param data_freq_sq: squared data in freq domain
+    :type data_freq: numpy.ndarray
+    :param data_freq: data in freq domain
+    :type w: numpy.ndarray
+    :param w: boxcar in freq domain
+    :type Nc: int
+    :param Nc: number of channels in data stream
+    :type ulen: int
+    :param ulen: length of detector
+    :type mplen: int
+    :param mplen: length of data
+
+    :return: Array of detection statistics
+    :rtype: numpy.ndarray
+    """
     num_cor = np.multiply(det_freq, data_freq)  # Numerator convolution
     den_cor = np.multiply(w, data_freq_sq)  # Denominator convolution
     # Do inverse fft
