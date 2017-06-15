@@ -17,13 +17,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import scipy
 import warnings
 import time
 import h5py
 import getpass
 import eqcorrscan
 import copy
+import scipy
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
@@ -473,7 +473,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :return: list of detections
     :rtype: list of eqcorrscan.core.match_filter.Detection
     """
-    from eqcorrscan.core import subspace_statistic
     detections = []
     # First process the stream
     if process:
@@ -493,27 +492,25 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         stream = [st]
         stachans = detector.stachans
     outtic = time.clock()
-    if debug > 0:
-        print('Computing detection statistics')
     # If multiplexed, how many samples do we increment by?
     if detector.multiplex:
-        inc = np.uint32(len(detector.stachans))
+        Nc = len(detector.stachans)
     else:
-        inc = np.uint32(1)
-    # Stats must be same size for multiplexed or non multiplexed!
+        Nc = 1
+    # Here do all ffts
+    fft_vars = _do_ffts(detector, stream, Nc)
+    if debug > 0:
+        print('Computing detection statistics')
     if debug > 0:
         print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
-                      (len(stream[0][0]) // inc) -
-                      (len(detector.data[0].T[0]) // inc) + 1),
-                     dtype=np.float32)
-    # Hard typing in Cython loop requires float32 type.
-    for det_channel, in_channel, i in zip(detector.data, stream[0],
-                                          np.arange(len(stream[0]))):
-        stats[i] = subspace_statistic.\
-            det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data.astype(np.float32),
-                          inc=inc)
+                      (len(stream[0][0]) // Nc) - (fft_vars[4] // Nc) + 1))
+    for det_freq, data_freq_sq, data_freq, i in zip(fft_vars[0], fft_vars[1],
+                                                    fft_vars[2],
+                                                    np.arange(len(stream[0]))):
+        # Calculate det_statistic in frequency domain
+        stats[i] = _det_stat_freq(det_freq, data_freq_sq, data_freq,
+                                  fft_vars[3], Nc, fft_vars[4], fft_vars[5])
         if debug >= 1:
             print('Stats matrix is shape %s' % str(stats[i].shape))
         if debug >= 3:
@@ -525,8 +522,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
                     label='Threshold')
             ax.legend()
-            plt.title('%s.%s' % (in_channel.stats.station,
-                                 in_channel.stats.channel))
+            plt.title('%s' % str(stream[0][i].stats.station))
             plt.show()
     trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
@@ -584,6 +580,82 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         detection_streams = extract_from_stream(st, detections)
         return detections, detection_streams
     return detections
+
+
+def _do_ffts(detector, stream, Nc):
+    """
+    Perform ffts on data, detector and denominator boxcar
+
+    :type detector: eqcorrscan.core.subspace.Detector
+    :param detector: Detector object for doing detecting
+    :type stream: list of obspy.core.stream.Stream
+    :param stream: List of streams processed according to detector
+    :type Nc: int
+    :param Nc: Number of channels in data. 1 for non-multiplexed
+
+    :return: list of time-reversed detector(s) in freq domain
+    :rtype: list
+    :return: list of squared data stream(s) in freq domain
+    :rtype: list
+    :return: list of data stream(s) in freq domain
+    :return: detector-length boxcar in freq domain
+    :rtype: numpy.ndarray
+    :return: length of detector
+    :rtype: int
+    :return: length of data
+    :rtype: int
+    """
+    min_fftlen = int(stream[0][0].data.shape[0] +
+                     detector.data[0].shape[0] - Nc)
+    fftlen = scipy.fftpack.next_fast_len(min_fftlen)
+    mplen = stream[0][0].data.shape[0]
+    ulen = detector.data[0].shape[0]
+    num_st_fd = [np.fft.rfft(tr.data, n=fftlen)
+                 for tr in stream[0]]
+    denom_st_fd = [np.fft.rfft(np.square(tr.data), n=fftlen)
+                   for tr in stream[0]]
+    # Frequency domain of boxcar
+    w = np.fft.rfft(np.ones(detector.data[0].shape[0]),
+                    n=fftlen)
+    # This should go into the detector object as in Detex
+    detector_fd = []
+    for dat_mat in detector.data:
+        detector_fd.append(np.array([np.fft.rfft(col[::-1], n=fftlen)
+                                     for col in dat_mat.T]))
+    return detector_fd, denom_st_fd, num_st_fd, w, ulen, mplen
+
+
+def _det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
+    """
+    Compute detection statistic in the frequency domain
+
+    :type det_freq: numpy.ndarray
+    :param det_freq: detector in freq domain
+    :type data_freq_sq: numpy.ndarray
+    :param data_freq_sq: squared data in freq domain
+    :type data_freq: numpy.ndarray
+    :param data_freq: data in freq domain
+    :type w: numpy.ndarray
+    :param w: boxcar in freq domain
+    :type Nc: int
+    :param Nc: number of channels in data stream
+    :type ulen: int
+    :param ulen: length of detector
+    :type mplen: int
+    :param mplen: length of data
+
+    :return: Array of detection statistics
+    :rtype: numpy.ndarray
+    """
+    num_cor = np.multiply(det_freq, data_freq)  # Numerator convolution
+    den_cor = np.multiply(w, data_freq_sq)  # Denominator convolution
+    # Do inverse fft
+    # First and last Nt - 1 samples are invalid; clip them off
+    num_ifft = np.real(np.fft.irfft(num_cor))[:, ulen-1:mplen:Nc]
+    denominator = np.real(np.fft.irfft(den_cor))[ulen-1:mplen:Nc]
+    # Ratio of projected to envelope energy = det_stat across all channels
+    result = np.sum(np.square(num_ifft), axis=0) / denominator
+    return result
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,

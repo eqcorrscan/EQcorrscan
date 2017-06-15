@@ -18,8 +18,6 @@ from codecs import open
 from os import path
 import warnings
 import glob
-from distutils.extension import Extension
-import numpy as np
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -31,15 +29,8 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
-if not READ_THE_DOCS:
-    from Cython.Distutils import build_ext
-    ext = [Extension("eqcorrscan.core.subspace_statistic",
-                     ["eqcorrscan/core/subspace_statistic.pyx"],
-                     include_dirs=[np.get_include()])]
-    cmd_class = {'build_ext': build_ext}
-else:
-    ext = []
-    cmd_class = {}
+ext = []
+cmd_class = {}
 
 try:
     import cv2  # NOQA
