@@ -351,8 +351,8 @@ class Party(object):
         if dates:
             for fam in self.families:
                 all_dets.extend([det for det in fam.detections
-                                 if det.detect_time < dates[1]
-                                 and det.detect_time > dates[0]])
+                                 if det.detect_time < dates[1] and
+                                 det.detect_time > dates[0]])
         else:
             for fam in self.families:
                 all_dets.extend(fam.detections)

@@ -411,6 +411,8 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         if color == 'blue':
             linestyle = linestyles.next()
         counts = np.arange(-1, len(template_dates))
+        if per_day:
+            ax1.hist()
         ax1.plot(plot_dates, counts, linestyle,
                  color=color, label=template_names[k],
                  linewidth=2.0, drawstyle='step')
