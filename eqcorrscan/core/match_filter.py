@@ -326,7 +326,7 @@ class Party(object):
         self.families.sort(key=lambda x: x.template.name)
         return self
 
-    def plot(self, plot_grouped=False):
+    def plot(self, plot_grouped=False, dates=None):
         """
         Plot the cumulative detections in time.
 
@@ -345,9 +345,17 @@ class Party(object):
             Party().read().plot(plot_grouped=True)
         """
         all_dets = []
-        for fam in self.families:
-            all_dets.extend(fam.detections)
-        cumulative_detections(detections=all_dets, plot_grouped=plot_grouped)
+        if dates:
+            for fam in self.families:
+                all_dets.extend([det for det in fam.detections
+                                 if det.detect_time < dates[1]
+                                 and det.detect_time > dates[0]])
+        else:
+            for fam in self.families:
+                all_dets.extend(fam.detections)
+        fig = cumulative_detections(detections=all_dets,
+                                    plot_grouped=plot_grouped)
+        return fig
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """

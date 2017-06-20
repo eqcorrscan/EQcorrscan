@@ -23,6 +23,7 @@ import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
+from itertools import cycle
 from scipy.linalg import diagsvd
 from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
@@ -369,9 +370,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
-    colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
-              'firebrick', 'purple', 'darkgoldenrod', 'gray']
-    linestyles = ['-', '-.', '--', ':']
+    colors = cycle(['blue', 'green', 'red', 'cyan', 'magenta', 'yellow',
+                    'black', 'firebrick', 'purple', 'darkgoldenrod', 'gray'])
+    linestyles = cycle(['-', '-.', '--', ':'])
     # Check that dates is a list of lists
     if not detections:
         if type(dates[0]) != list:
@@ -400,28 +401,19 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             _dates += template_dates
         dates = [_dates]
         template_names = ['All templates']
-    i = 0
-    j = 0
-    # This is an ugly way of looping through colours and linestyles, it would
-    # be better with itertools functions...
     fig, ax1 = plt.subplots()
     min_date = min([min(_d) for _d in dates])
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
+        color = colors.next()
+        if color == 'blue':
+            linestyle = linestyles.next()
         counts = np.arange(-1, len(template_dates))
-        ax1.step(plot_dates, counts, linestyles[j],
-                 color=colors[i], label=template_names[k],
-                 linewidth=3.0)
-        if i < len(colors) - 1:
-            i += 1
-        else:
-            i = 0
-            if j < len(linestyles) - 1:
-                j += 1
-            else:
-                j = 0
+        ax1.plot(plot_dates, counts, linestyle,
+                 color=color, label=template_names[k],
+                 linewidth=2.0, drawstyle='step')
     ax1.set_xlabel('Date')
     ax1.set_ylabel('Cumulative detections')
     plt.title('Cumulative detections for all templates')
