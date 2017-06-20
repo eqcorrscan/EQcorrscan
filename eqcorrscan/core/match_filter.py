@@ -334,6 +334,9 @@ class Party(object):
         :param plot_grouped:
             Whether to plot all families together (plot_grouped=True), or each
             as a separate line.
+        :type dates: list
+        :param dates: list of obspy.core.UTCDateTime objects bounding the
+            plot. The first should be the start date, the last the end date.
 
         .. Example::
 
