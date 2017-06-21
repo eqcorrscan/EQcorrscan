@@ -307,8 +307,8 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
 
 def cumulative_detections(dates=None, template_names=None, detections=None,
-                          plot_grouped=False, show=True, plot_legend=True,
-                          save=False, savefile=None):
+                          plot_grouped=False, rate=False, show=True,
+                          plot_legend=True, save=False, savefile=None):
     """
     Plot cumulative detections in time.
 
@@ -327,6 +327,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :param plot_grouped: Plot detections for each template individually, or \
         group them all together - set to False (plot template detections \
         individually) by default.
+    :type rate: bool
+    :param rate: Whether or not to plot the rate of detection per day. Only
+        works for plot_grouped=True
     :type show: bool
     :param show: Whether or not to show the plot, defaults to True.
     :type plot_legend: bool
@@ -403,6 +406,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         template_names = ['All templates']
     fig, ax1 = plt.subplots()
     min_date = min([min(_d) for _d in dates])
+    max_date = max([max(_d) for _d in dates])
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
@@ -411,14 +415,21 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         if color == 'blue':
             linestyle = linestyles.next()
         counts = np.arange(-1, len(template_dates))
-        if per_day:
-            ax1.hist()
-        ax1.plot(plot_dates, counts, linestyle,
-                 color=color, label=template_names[k],
-                 linewidth=2.0, drawstyle='step')
+        if rate:
+            if not plot_grouped:
+                msg = 'Plotting rate only implemented for plot_grouped=True'
+                raise NotImplementedError(msg)
+            bins = (max_date - min_date).days
+            ax1.hist(mdates.date2num(plot_dates), bins=bins)
+            ax1.set_ylabel('Detections per day')
+            plt.title('Rate of detection for all templates')
+        else:
+            ax1.plot(plot_dates, counts, linestyle,
+                     color=color, label=template_names[k],
+                     linewidth=2.0, drawstyle='step')
+            ax1.set_ylabel('Cumulative detections')
+            plt.title('Cumulative detections for all templates')
     ax1.set_xlabel('Date')
-    ax1.set_ylabel('Cumulative detections')
-    plt.title('Cumulative detections for all templates')
     # Set formatters for x-labels
     mins = mdates.MinuteLocator()
     max_date = dates[0][0]
@@ -459,10 +470,12 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     ax1.xaxis.set_major_formatter(hrFMT)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
-    ax1.set_ylim([0, max([len(_d) for _d in dates])])
+    if not rate:
+        ax1.set_ylim([0, max([len(_d) for _d in dates])])
     plt.setp(labels, rotation=15)
     if plot_legend:
-        ax1.legend(loc=2, prop={'size': 8}, ncol=2)
+        leg = ax1.legend(loc=2, prop={'size': 8}, ncol=2)
+        leg.get_frame().set_alpha(0.5)
     if save:
         fig.savefig(savefile)
         plt.close()

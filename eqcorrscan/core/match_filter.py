@@ -326,7 +326,7 @@ class Party(object):
         self.families.sort(key=lambda x: x.template.name)
         return self
 
-    def plot(self, plot_grouped=False, dates=None):
+    def plot(self, plot_grouped=False, dates=None, rate=False):
         """
         Plot the cumulative detections in time.
 
@@ -337,6 +337,9 @@ class Party(object):
         :type dates: list
         :param dates: list of obspy.core.UTCDateTime objects bounding the
             plot. The first should be the start date, the last the end date.
+        :type rate: bool
+        :param rate: Whether or not to plot the daily rate of detection as
+            opposed to cumulative number. Only works with plot_grouped=True.
 
         .. Example::
 
@@ -357,7 +360,8 @@ class Party(object):
             for fam in self.families:
                 all_dets.extend(fam.detections)
         fig = cumulative_detections(detections=all_dets,
-                                    plot_grouped=plot_grouped)
+                                    plot_grouped=plot_grouped,
+                                    rate=rate)
         return fig
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
