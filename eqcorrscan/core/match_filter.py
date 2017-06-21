@@ -434,18 +434,23 @@ class Party(object):
             family.catalog = Catalog([d.event for d in family])
         return self
 
-    def decluster(self, trig_int, timing='detect'):
+    def decluster(self, trig_int, timing='detect', metric='avg_cor'):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
         De-clustering occurs between events detected by different (or the same)
         templates. If multiple detections occur within trig_int then the
-        detection with the highest average single-channel correlation
-        (calculated as the cross-correlation sum / number of channels used in
-        detection) will be maintained.
+        preferred detection will be determined by the metric argument. This
+        can be either the average single-station correlation coefficient which
+        is calculated as Detection.detect_val / Detection.no_chans, or the
+        raw cross channel correlation sum which is simply Detection.detect_val.
 
         :type trig_int: float
         :param trig_int: Minimum detection separation in seconds.
+        :type metric: str
+        :param metric: What metric to sort peaks by. Either 'avg_cor' which
+            takes the single station average correlation or 'cor_sum' which
+            takes the total correlation sum across all channels.
         :type timing: str
         :param timing:
             Either 'detect' or 'origin' to decluster based on either the
@@ -468,11 +473,24 @@ class Party(object):
         for fam in self.families:
             all_detections.extend(fam.detections)
         if timing == 'detect':
-            detect_info = [(d.detect_time, d.detect_val)
-                           for d in all_detections]
+            if metric == 'avg_cor':
+                detect_info = [(d.detect_time, d.detect_val / d.no_chans)
+                               for d in all_detections]
+            elif metric == 'cor_sum':
+                detect_info = [(d.detect_time, d.detect_val)
+                               for d in all_detections]
+            else:
+                raise MatchFilterError('metric is not cor_sum or avg_cor')
         elif timing == 'origin':
-            detect_info = [(_get_origin(d.event).time, d.detect_val)
-                           for d in all_detections]
+            if metric == 'avg_cor':
+                detect_info = [(_get_origin(d.event).time,
+                                d.detect_val / d.no_chans)
+                               for d in all_detections]
+            elif metric == 'cor_sum':
+                detect_info = [(_get_origin(d.event).time, d.detect_val)
+                               for d in all_detections]
+            else:
+                raise MatchFilterError('metric is not cor_sum or avg_cor')
         else:
             raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
