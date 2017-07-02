@@ -50,31 +50,6 @@ from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 
 
-def _spike_test(stream, percent=0.99, multiplier=1e6):
-    """
-    Check for very large spikes in data and raise an error if found.
-
-    :param stream: Stream to look for spikes in.
-    :type stream: :class:`obspy.core.stream.Stream`
-    :param percent: Percentage as a decimal to calcualte range for.
-    :type percent: float
-    :param multiplier: Multiplier of range to define a spike.
-    :type multiplier: float
-    """
-    for tr in stream:
-        if (tr.data > 2 * np.max(
-            np.sort(np.abs(
-                tr))[0:int(percent * len(tr.data))]) * multiplier).sum() > 0:
-            msg = ('Spikes above ' + str(multiplier) +
-                   ' of the range of ' + str(percent) +
-                   ' of the data present, check. \n ' +
-                   'This would otherwise likely result in an issue during ' +
-                   'FFT prior to cross-correlation.\n' +
-                   'If you think this spike is real please report ' +
-                   'this as a bug.')
-            raise MatchFilterError(msg)
-
-
 class MatchFilterError(Exception):
     """
     Default error for match-filter errors.
@@ -3389,7 +3364,8 @@ def multi_normxcorr(templates, stream, pads):
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
 
-    :return: np.ndarray
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
     """
     # TODO:: Try other fft methods: pyfftw?
     import bottleneck
@@ -3402,29 +3378,27 @@ def multi_normxcorr(templates, stream, pads):
     # types: https://github.com/kwgoodman/bottleneck/issues/164
     template_length = templates.shape[1]
     stream_length = len(stream)
+    stream = stream.astype(np.float64)
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
-    stream_64 = stream.astype(np.float64)
     stream_mean_array = bottleneck.move_mean(
-        stream_64, template_length)[template_length - 1:].astype(np.float32)
+        stream, template_length)[template_length - 1:].astype(np.float32)
     # CPU bound
     stream_std_array = bottleneck.move_std(
-        stream_64, template_length)[template_length - 1:].astype(np.float32)
+        stream, template_length)[template_length - 1:].astype(np.float32)
     # If there are zeros in the data (e.g. signal padded with zeros) then
     # division by zero happens resulting in inf - convert these zeros to inf
     stream_std_array[stream_std_array == 0] = np.inf
-    #  Multi-core
-    del(stream_64)
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
     # CPU bound
     norm_sum = norm.sum(axis=-1, keepdims=True)
-    stream_fft = np.fft.rfft(stream, fftshape)  # CPU bound
-    template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     # CPU bound
-    res = np.fft.irfft(template_fft * stream_fft,
-                       fftshape)[:, 0:template_length + stream_length - 1]
+    res = np.fft.irfft(
+        np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1) *
+        np.fft.rfft(stream, fftshape),
+        fftshape)[:, 0:template_length + stream_length - 1]
     # CPU bound
     # Note:: Can run fftw with a threads argument, gets slightly faster result
     res = ((_centered(res, stream_length - template_length + 1)) -
@@ -3449,17 +3423,7 @@ def multichannel_xcorr(templates, stream, cores=1):
         information.
     :type stream: obspy.core.stream.Stream
     :param stream:
-        A single Stream object to be correlated with the templates.  This is
-        in effect the image in normxcorr2 and cv2.
-    :type dask: bool
-    :param dask:
-        Whether to use dask for multiprocessing or not, if False, will use
-        python native multiprocessing.
-    :type compute: bool
-    :param compute:
-        Only valid if dask==True. If compute==False, returned result with be
-        a dask.delayed object, useful if you are using dask to compute multiple
-        time-steps at the same time.
+        A single Stream object to be correlated with the templates.
     :type cores: int
     :param cores:
         Number of processed to use, if set to None, and dask==False, no
@@ -3603,10 +3567,6 @@ def match_filter(template_names, template_list, st, threshold,
     :param arg_check:
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
-    :type internal: bool
-    :param internal:
-        Whether to use the internal python code or the more experimental
-        compilled code.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -3728,7 +3688,6 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
-    _spike_test(st, 0.99, 1e6)
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
