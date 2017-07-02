@@ -9,7 +9,7 @@
 """
 
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 import sys
 import os
 import eqcorrscan
@@ -29,7 +29,12 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
-ext = []
+ext = [Extension('eqcorrscan.core.multi_normxcorr',
+                 include_dirs=[],
+                 libraries=[],
+                 library_dirs=[],
+                 extra_compile_args=['-fopenmp'],
+                 sources=['eqcorrscan/core/multi_normxcorr.cpp'])]
 cmd_class = {}
 
 try:
