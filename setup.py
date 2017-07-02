@@ -13,10 +13,13 @@ from setuptools import setup, find_packages, Extension
 import sys
 import os
 import eqcorrscan
+import platform
 # To use a consistent encoding
 from codecs import open
 from os import path
 from distutils import sysconfig
+from numpy.distutils.ccompiler import get_default_compiler
+
 import warnings
 import glob
 try:
@@ -29,15 +32,30 @@ except ImportError:
     print(msg)
     read_md = lambda f: open(f, 'r').read()
 
+# If we are on read-the-docs then we don't need to build all the code
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+# Windows has some peculiarities
+if platform.system() == "Windows" and (
+        'msvc' in sys.argv or
+        '-c' not in sys.argv and
+        get_default_compiler() == 'msvc'):
+    IS_MSVC = True
+else:
+    IS_MSVC = False
 
 global_inc = os.path.dirname(sysconfig.get_python_inc())
+global_libs = os.path.dirname(global_inc) + os.sep + 'lib'
+
+if IS_MSVC:
+    mp_args = '-openmp'
+else:
+    mp_args = '-fopenmp'
 
 ext = [Extension('eqcorrscan.core.multi_normxcorr',
                  include_dirs=[global_inc],
-                 libraries=[],
-                 library_dirs=[],
-                 extra_compile_args=['-fopenmp'],
+                 libraries=['opencv_core', 'opencv_highgui', 'opencv_ximgproc'],
+                 library_dirs=[global_libs],
+                 extra_compile_args=[mp_args],
                  sources=['eqcorrscan/core/multi_normxcorr.cpp'])]
 cmd_class = {}
 
@@ -47,13 +65,8 @@ except ImportError:
     print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
     warnings.warn(msg)
-
-try:
-    import pyasdf  # NOQA
-except ImportError:
-    print(sys.path)
-    msg = '##### No pyasdf module, you need to install this yourself'
-    warnings.warn(msg)
+    # If there is no openCV then we can't build the extension
+    ext = []
 
 here = path.abspath(path.dirname(__file__))
 
