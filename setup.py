@@ -16,6 +16,7 @@ import eqcorrscan
 # To use a consistent encoding
 from codecs import open
 from os import path
+from distutils import sysconfig
 import warnings
 import glob
 try:
@@ -29,8 +30,11 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+
+global_inc = os.path.dirname(sysconfig.get_python_inc())
+
 ext = [Extension('eqcorrscan.core.multi_normxcorr',
-                 include_dirs=[],
+                 include_dirs=[global_inc],
                  libraries=[],
                  library_dirs=[],
                  extra_compile_args=['-fopenmp'],
