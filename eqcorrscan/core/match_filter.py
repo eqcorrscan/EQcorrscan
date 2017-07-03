@@ -3333,6 +3333,55 @@ def extract_from_stream(stream, detections, pad=5.0, length=30.0):
     return streams
 
 
+def _multi_normxcorr2_opencv(templates, image):
+    """
+    Call compiled parallel cpp loop for multiple templates.
+    
+    :type templates: list
+    :param templates: 
+        List of `obspy.core.stream.Trace` templates of same length
+    :type image: `obspy.core.stream.Trace`
+    :param image: Continuous data to scan through.
+    :return: np.ndarray or cross-correlations
+    """
+    import ctypes
+    from future.utils import native_str
+
+    # Sort the import from the shared object and the variable types
+    libname = glob.glob(os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), 'multi_normxcorr*.so'))[0]
+    corr = ctypes.CDLL(libname)
+    corr.multiCorr_cv.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_int, ctypes.c_int]
+
+    # Reshape the templates into an array
+    template_array = np.empty((len(templates), len(templates[0].data)))
+    for i, template in enumerate(templates):
+        template_array[i] = template.data
+    template_array = np.ascontiguousarray(template_array, np.float32)
+    # Initialize output array
+    cccs = np.zeros(
+        len(templates) * (len(image.data) - template_array.shape[1] + 1),
+        dtype=np.float32, order='C')
+    # Call the cpp routine
+    res = corr.multiCorr_cv(
+        template_array.flatten(),
+        np.ascontiguousarray(image.data.astype(np.float32)),
+        cccs, template_array.shape[0], len(image.data),
+        len(image.data) - template_array.shape[0] + 1, len(templates))
+    if res:
+        raise MemoryError('Error in c routine')
+    cccs = cccs.reshape(
+        len(templates), len(image.data) - template_array.shape[1] + 1)
+    return cccs
+
+
 def normxcorr2(template, image):
     """
     Thin wrapper on openCV match_template function.
@@ -3463,7 +3512,7 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
     :type internal: bool
     :param internal:
         Whether to use the internal Python code (True) or the experimental
-        compilled code.
+        compiled code.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -3482,8 +3531,6 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
         are duplicate channels in the template you do not need duplicate
         channels in the stream).
     """
-    if not internal:
-        print('Not yet coded')
     num_cores = cores
     if len(templates) < num_cores:
         num_cores = len(templates)
@@ -3511,42 +3558,51 @@ def _channel_loop(templates, stream, cores=1, debug=0, internal=True):
                   " channel " + channel)
         tic = time.clock()
         # Send off to sister function
-        with Timer() as t:
-            pool = Pool(processes=num_cores)
-            results = [pool.apply_async(
-                _template_loop, (templates[i], ), {
-                    'chan': tr.data, 'stream_ind': stream_ind, 'debug': debug,
-                    'i': i}) for i in range(len(templates))]
-            pool.close()
-        if debug >= 1:
-            print("--------- TIMER:    Correlation loop took: %s s" % t.secs)
-            print(" I have " + str(len(results)) + " results")
-        with Timer() as t:
-            cccs_list = [p.get() for p in results]
-            pool.join()
-        if debug >= 1:
-            print("--------- TIMER:    Getting results took: %s s" % t.secs)
-        with Timer() as t:
-            # Sort by placeholder returned from _template_loop
-            cccs_list.sort(key=lambda tup: tup[0])
-        if debug >= 1:
-            print("--------- TIMER:    Sorting took: %s s" % t.secs)
-        with Timer() as t:
-            cccs_list = [ccc[1] for ccc in cccs_list]
-        if debug >= 1:
-            print("--------- TIMER:    Extracting arrays took: %s s" % t.secs)
-        if debug >= 3:
-            print('cccs_list is shaped: ' + str(np.shape(cccs_list)))
-        with Timer() as t:
-            cccs = np.concatenate(cccs_list, axis=0)
-        if debug >= 1:
-            print("--------- TIMER:    cccs_list conversion: %s s" % t.secs)
-        del cccs_list
-        if debug >= 2:
-            print('After looping through templates the cccs is shaped: ' +
-                  str(np.shape(cccs)))
-            print('cccs is using: ' + str(cccs.nbytes / 1000000) +
-                  ' MB of memory')
+        if internal:
+            with Timer() as t:
+                pool = Pool(processes=num_cores)
+                results = [pool.apply_async(
+                    _template_loop, (templates[i], ), {
+                        'chan': tr.data, 'stream_ind': stream_ind,
+                        'debug': debug, 'i': i})
+                    for i in range(len(templates))]
+                pool.close()
+            if debug >= 1:
+                print("--------- TIMER:    Correlation loop took: %s s" %
+                      t.secs)
+                print(" I have " + str(len(results)) + " results")
+            with Timer() as t:
+                cccs_list = [p.get() for p in results]
+                pool.join()
+            if debug >= 1:
+                print("--------- TIMER:    Getting results took: %s s" %
+                      t.secs)
+            with Timer() as t:
+                # Sort by placeholder returned from _template_loop
+                cccs_list.sort(key=lambda tup: tup[0])
+            if debug >= 1:
+                print("--------- TIMER:    Sorting took: %s s" % t.secs)
+            with Timer() as t:
+                cccs_list = [ccc[1] for ccc in cccs_list]
+            if debug >= 1:
+                print("--------- TIMER:    Extracting arrays took: %s s" %
+                      t.secs)
+            if debug >= 3:
+                print('cccs_list is shaped: ' + str(np.shape(cccs_list)))
+            with Timer() as t:
+                cccs = np.concatenate(cccs_list, axis=0)
+            if debug >= 1:
+                print("--------- TIMER:    cccs_list conversion: %s s" %
+                      t.secs)
+            del cccs_list
+            if debug >= 2:
+                print('After looping through templates the cccs is shaped: ' +
+                      str(np.shape(cccs)))
+                print('cccs is using: ' + str(cccs.nbytes / 1000000) +
+                      ' MB of memory')
+        else:
+            cccs = _multi_normxcorr2_opencv(
+                templates=[t[stream_ind] for t in templates], image=tr)
         cccs_matrix[1] = np.reshape(
             cccs, (1, len(templates), max(np.shape(cccs))))
         del cccs
@@ -3595,7 +3651,7 @@ def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.', cores=1,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
-                 arg_check=True, internal=True):
+                 arg_check=True, internal=False):
     """
     Main matched-filter detection function.
 
