@@ -881,9 +881,9 @@ class TestMatchObjects(unittest.TestCase):
                 length=3.0, prepick=0.15, swin='all', process_len=6)
 
 
-def test_match_filter(debug=0, plotvar=False, extract_detections=False,
-                      threshold_type='MAD', threshold=10,
-                      template_excess=False, stream_excess=False):
+def test_match_filter(
+        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
+        threshold=10, template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.

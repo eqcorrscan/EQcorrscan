@@ -41,7 +41,6 @@ from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
 from obspy.core.event import Comment, WaveformStreamID
 
-from eqcorrscan.utils.timer import Timer
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
@@ -3414,6 +3413,7 @@ def multi_normxcorr(templates, stream, pads):
     import bottleneck
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
+    from eqcorrscan.utils.normalise import norm_compiled
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
@@ -3424,18 +3424,18 @@ def multi_normxcorr(templates, stream, pads):
     stream = stream.astype(np.float64)
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
-    stream_mean_array = bottleneck.move_mean(
-        stream, template_length)[template_length - 1:].astype(np.float32)
-    # CPU bound
-    stream_std_array = bottleneck.move_std(
-        stream, template_length)[template_length - 1:].astype(np.float32)
-    # If there are zeros in the data (e.g. signal padded with zeros) then
-    # division by zero happens resulting in inf - convert these zeros to inf
-    stream_std_array[stream_std_array == 0] = np.inf
-    # Normalize and flip the templates
+    # stream_mean_array = bottleneck.move_mean(
+    #     stream, template_length)[template_length - 1:].astype(np.float32)
+    # # CPU bound
+    # stream_std_array = bottleneck.move_std(
+    #     stream, template_length)[template_length - 1:].astype(np.float32)
+    # # If there are zeros in the data (e.g. signal padded with zeros) then
+    # # division by zero happens resulting in inf - convert these zeros to inf
+    # stream_std_array[stream_std_array == 0] = np.inf
+    # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
-    # CPU bound
+    # # CPU bound
     norm_sum = norm.sum(axis=-1, keepdims=True)
     # CPU bound
     res = np.fft.irfft(
@@ -3444,8 +3444,12 @@ def multi_normxcorr(templates, stream, pads):
         fftshape)[:, 0:template_length + stream_length - 1]
     # CPU bound
     # Note:: Can run fftw with a threads argument, gets slightly faster result
-    res = ((_centered(res, stream_length - template_length + 1)) -
-           norm_sum * stream_mean_array) / stream_std_array
+    # res = ((_centered(res, stream_length - template_length + 1)) -
+    #        norm_sum * stream_mean_array) / stream_std_array
+    # res = normalise_corr(_centered(res, stream_length - template_length + 1),
+    #                      stream, norm_sum, template_length)
+    res = norm_compiled(_centered(res, stream_length - template_length + 1),
+                        stream, norm_sum, template_length)
     for i in range(len(pads)):
         # This is a hack from padding templates with nan data
         if np.isnan(res[i]).all():

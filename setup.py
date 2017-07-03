@@ -13,10 +13,11 @@ from setuptools import setup, find_packages
 import sys
 import os
 import eqcorrscan
+import numpy as np
 # To use a consistent encoding
 from codecs import open
 from os import path
-import warnings
+from distutils.extension import Extension
 import glob
 try:
     from pypandoc import convert
@@ -29,8 +30,13 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
-ext = []
-cmd_class = {}
+if not READ_THE_DOCS:
+    ext = [Extension("eqcorrscan.lib.norm",
+                     ["eqcorrscan/utils/src/norm.c"])]
+    cmd_class = {}
+else:
+    ext = []
+    cmd_class = {}
 
 here = path.abspath(path.dirname(__file__))
 
