@@ -62,7 +62,7 @@ install:
   - conda install pyproj
   - conda install h5py
   - if [[ "$OS" == "MacOSX" ]]; then
-      conda install -c intel openmp
+      conda install -c intel openmp;
     fi
   - pip install coveralls
   - pip install geographiclib
