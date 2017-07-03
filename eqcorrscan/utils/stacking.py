@@ -99,17 +99,10 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
     """
     Align traces relative to each other based on their cross-correlation value.
 
-    Uses the :func:`obspy.signal.cross_correlation.xcorr` function to find the
-    optimum shift to align traces relative to a master event.  Either uses a
-    given master to align traces, or uses the first trace in the list.
-
-    .. Note::
-        The cross-correlation function may yield an error/warning
-        about shift_len being too large: this is raised by the
-        :func:`obspy.signal.cross_correlation.xcorr` routine when the shift_len
-        is greater than half the length of either master or a trace, then
-        the correlation will not be robust.  We may switch to a different
-        correlation routine later.
+    Uses the :func:`eqcorrscan.core.match_filter.normxcorr2` function to find
+    the optimum shift to align traces relative to a master event.  Either uses
+    a given master to align traces, or uses the trace with the highest MAD
+    amplitude.
 
     :type trace_list: list
     :param trace_list: List of traces to align
@@ -135,7 +128,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
         master = traces[0]
         MAD_master = np.median(np.abs(master.data))
         for i in range(1, len(traces)):
-            if np.median(np.abs(traces[i])) > MAD_master:
+            if np.median(np.abs(traces[i].data)) > MAD_master:
                 master = traces[i]
                 MAD_master = np.median(np.abs(master.data))
     else:

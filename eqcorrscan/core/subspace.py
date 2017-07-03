@@ -23,6 +23,7 @@ import h5py
 import getpass
 import eqcorrscan
 import copy
+import scipy
 
 import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
@@ -32,7 +33,7 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
-from eqcorrscan.utils.plotting import subspace_detector_plot
+from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
 
 
 class Detector(object):
@@ -120,7 +121,8 @@ class Detector(object):
             if not len(list_item) == len(other_list):
                 return False
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item, atol=0.001):
+                if not np.allclose(np.absolute(item),
+                                   np.absolute(other_item), atol=0.001):
                     return False
         return True
 
@@ -201,9 +203,7 @@ class Detector(object):
             multiplex=multiplex, align=align, shift_len=shift_len,
             reject=reject, plot=plot, no_missed=no_missed)
         # Compute the SVD, use the cluster.SVD function
-        v, sigma, u, svd_stachans = svd(stream_list=p_streams, full=True)
-        if not multiplex:
-            stachans = [tuple(stachan.split('.')) for stachan in svd_stachans]
+        u, sigma, v, svd_stachans = svd(stream_list=p_streams, full=True)
         self.stachans = stachans
         # self.delays = delays
         self.u = u
@@ -222,27 +222,31 @@ class Detector(object):
         """
         # Take leftmost 'dimension' input basis vectors
         for i, channel in enumerate(self.u):
-            if channel.shape[1] < dimension:
+            if self.v[i].shape[1] < dimension:
                 raise IndexError('Channel is max dimension %s'
-                                 % channel.shape[1])
+                                 % self.v[i].shape[1])
             self.data[i] = channel[:, 0:dimension]
         self.dimension = dimension
         return self
 
-    def energy_capture(self):
+    def energy_capture(self, stachans='all', size=(10, 7), show=False):
         """
         Calculate the average percentage energy capture for this subspace.
 
         :return: Percentage energy capture
         :rtype: float
         """
-        percent_captrue = 0
+        if show:
+            return subspace_fc_plot(detector=self, stachans=stachans,
+                                    size=size, show=show)
+        percent_capture = 0
         if np.isinf(self.dimension):
             return 100
         for channel in self.sigma:
             fc = np.sum(channel[0:self.dimension]) / np.sum(channel)
-            percent_captrue += fc
-        return 100 * (percent_captrue / len(self.sigma))
+            percent_capture += fc
+        else:
+            return 100 * (percent_capture / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
                process=True, extract_detections=False, debug=0):
@@ -469,7 +473,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :return: list of detections
     :rtype: list of eqcorrscan.core.match_filter.Detection
     """
-    from eqcorrscan.core import subspace_statistic
     detections = []
     # First process the stream
     if process:
@@ -489,28 +492,39 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         stream = [st]
         stachans = detector.stachans
     outtic = time.clock()
+    # If multiplexed, how many samples do we increment by?
+    if detector.multiplex:
+        Nc = len(detector.stachans)
+    else:
+        Nc = 1
+    # Here do all ffts
+    fft_vars = _do_ffts(detector, stream, Nc)
     if debug > 0:
         print('Computing detection statistics')
+    if debug > 0:
+        print('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
-                      len(stream[0][0]) - len(detector.data[0][0]) + 1),
-                     dtype=np.float32)
-    for det_channel, in_channel, i in zip(detector.data, stream[0],
-                                          np.arange(len(stream[0]))):
-        stats[i] = subspace_statistic.\
-            det_statistic(detector=det_channel.astype(np.float32),
-                          data=in_channel.data.astype(np.float32))
-        if debug > 0:
-            print(stats[i].shape)
-        if debug > 3:
-            plt.plot(stats[i])
+                      (len(stream[0][0]) // Nc) - (fft_vars[4] // Nc) + 1))
+    for det_freq, data_freq_sq, data_freq, i in zip(fft_vars[0], fft_vars[1],
+                                                    fft_vars[2],
+                                                    np.arange(len(stream[0]))):
+        # Calculate det_statistic in frequency domain
+        stats[i] = _det_stat_freq(det_freq, data_freq_sq, data_freq,
+                                  fft_vars[3], Nc, fft_vars[4], fft_vars[5])
+        if debug >= 1:
+            print('Stats matrix is shape %s' % str(stats[i].shape))
+        if debug >= 3:
+            fig, ax = plt.subplots()
+            t = np.arange(len(stats[i]))
+            ax.plot(t, stats[i], color='k')
+            ax.axis('tight')
+            ax.set_ylim([0, 1])
+            ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
+                    label='Threshold')
+            ax.legend()
+            plt.title('%s' % str(stream[0][i].stats.station))
             plt.show()
-        # Hard typing in Cython loop requires float32 type.
-    # statistics
-    if detector.multiplex:
-        trig_int_samples = (len(detector.stachans) *
-                            detector.sampling_rate * trig_int)
-    else:
-        trig_int_samples = detector.sampling_rate * trig_int
+    trig_int_samples = detector.sampling_rate * trig_int
     if debug > 0:
         print('Finding peaks')
     peaks = []
@@ -527,13 +541,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         peaks = peaks[0]
     if len(peaks) > 0:
         for peak in peaks:
-            if detector.multiplex:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / (detector.sampling_rate *
-                                len(detector.stachans)))
-            else:
-                detecttime = st[0].stats.starttime + \
-                    (peak[1] / detector.sampling_rate)
+            detecttime = st[0].stats.starttime + \
+                (peak[1] / detector.sampling_rate)
             rid = ResourceIdentifier(
                 id=detector.name + '_' + str(detecttime), prefix='smi:local')
             ev = Event(resource_id=rid)
@@ -571,6 +580,82 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         detection_streams = extract_from_stream(st, detections)
         return detections, detection_streams
     return detections
+
+
+def _do_ffts(detector, stream, Nc):
+    """
+    Perform ffts on data, detector and denominator boxcar
+
+    :type detector: eqcorrscan.core.subspace.Detector
+    :param detector: Detector object for doing detecting
+    :type stream: list of obspy.core.stream.Stream
+    :param stream: List of streams processed according to detector
+    :type Nc: int
+    :param Nc: Number of channels in data. 1 for non-multiplexed
+
+    :return: list of time-reversed detector(s) in freq domain
+    :rtype: list
+    :return: list of squared data stream(s) in freq domain
+    :rtype: list
+    :return: list of data stream(s) in freq domain
+    :return: detector-length boxcar in freq domain
+    :rtype: numpy.ndarray
+    :return: length of detector
+    :rtype: int
+    :return: length of data
+    :rtype: int
+    """
+    min_fftlen = int(stream[0][0].data.shape[0] +
+                     detector.data[0].shape[0] - Nc)
+    fftlen = scipy.fftpack.next_fast_len(min_fftlen)
+    mplen = stream[0][0].data.shape[0]
+    ulen = detector.data[0].shape[0]
+    num_st_fd = [np.fft.rfft(tr.data, n=fftlen)
+                 for tr in stream[0]]
+    denom_st_fd = [np.fft.rfft(np.square(tr.data), n=fftlen)
+                   for tr in stream[0]]
+    # Frequency domain of boxcar
+    w = np.fft.rfft(np.ones(detector.data[0].shape[0]),
+                    n=fftlen)
+    # This should go into the detector object as in Detex
+    detector_fd = []
+    for dat_mat in detector.data:
+        detector_fd.append(np.array([np.fft.rfft(col[::-1], n=fftlen)
+                                     for col in dat_mat.T]))
+    return detector_fd, denom_st_fd, num_st_fd, w, ulen, mplen
+
+
+def _det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
+    """
+    Compute detection statistic in the frequency domain
+
+    :type det_freq: numpy.ndarray
+    :param det_freq: detector in freq domain
+    :type data_freq_sq: numpy.ndarray
+    :param data_freq_sq: squared data in freq domain
+    :type data_freq: numpy.ndarray
+    :param data_freq: data in freq domain
+    :type w: numpy.ndarray
+    :param w: boxcar in freq domain
+    :type Nc: int
+    :param Nc: number of channels in data stream
+    :type ulen: int
+    :param ulen: length of detector
+    :type mplen: int
+    :param mplen: length of data
+
+    :return: Array of detection statistics
+    :rtype: numpy.ndarray
+    """
+    num_cor = np.multiply(det_freq, data_freq)  # Numerator convolution
+    den_cor = np.multiply(w, data_freq_sq)  # Denominator convolution
+    # Do inverse fft
+    # First and last Nt - 1 samples are invalid; clip them off
+    num_ifft = np.real(np.fft.irfft(num_cor))[:, ulen-1:mplen:Nc]
+    denominator = np.real(np.fft.irfft(den_cor))[ulen-1:mplen:Nc]
+    # Ratio of projected to envelope energy = det_stat across all channels
+    result = np.sum(np.square(num_ifft), axis=0) / denominator
+    return result
 
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
@@ -841,6 +926,7 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                             channel=stachan[1])[0].stats.sampling_rate) + 1))
                     warnings.warn('Padding stream with zero trace for ' +
                                   'station ' + stachan[0] + '.' + stachan[1])
+                    print('zero padding')
                 elif multiplex and no_missed:
                     remove_set.append(st)
                     warnings.warn('Will remove stream due to low-correlation')
