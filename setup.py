@@ -14,11 +14,14 @@ import sys
 import os
 import eqcorrscan
 import numpy as np
+from numpy.distutils.ccompiler import get_default_compiler
 # To use a consistent encoding
 from codecs import open
 from os import path
 from distutils.extension import Extension
 import glob
+import platform
+
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -37,6 +40,16 @@ if not READ_THE_DOCS:
 else:
     ext = []
     cmd_class = {}
+
+# check for MSVC
+if platform.system() == "Windows" and (
+        'msvc' in sys.argv or
+        '-c' not in sys.argv and
+        get_default_compiler() == 'msvc'):
+    IS_MSVC = True
+else:
+    IS_MSVC = False
+
 
 here = path.abspath(path.dirname(__file__))
 
