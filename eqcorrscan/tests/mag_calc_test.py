@@ -275,6 +275,7 @@ class TestAmpPickEvent(unittest.TestCase):
         self.assertEqual(len(picked_event.amplitudes), 1)
 
     def test_amp_pick_missing_channel(self):
+        warnings.simplefilter("always")
         with warnings.catch_warnings(record=True) as w:
             picked_event = amp_pick_event(event=self.event.copy(),
                                           st=self.st.copy()[0:-4],
@@ -283,8 +284,6 @@ class TestAmpPickEvent(unittest.TestCase):
             missed = False
             for m in w:
                 if 'no station and channel match' in str(m.message):
-                    self.assertTrue('no station and channel match' in
-                                    str(m.message))
                     missed = True
             self.assertTrue(missed)
         self.assertEqual(len(picked_event.amplitudes), 1)

@@ -3414,7 +3414,7 @@ def multi_normxcorr(templates, stream, pads):
     # TODO:: Try other fft methods: pyfftw?
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
-    from eqcorrscan.utils.normalise import multi_norm_compiled as norm_compiled
+    from eqcorrscan.utils.normalise import multi_norm
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
@@ -3431,16 +3431,13 @@ def multi_normxcorr(templates, stream, pads):
         np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1) *
         np.fft.rfft(stream, fftshape),
         fftshape)[:, 0:template_length + stream_length - 1]
+    del norm
     res = res.astype(np.float32)
     # CPU bound
-    res = norm_compiled(_centered(res, stream_length - template_length + 1),
-                        stream, norm_sum, template_length)
+    res = multi_norm(_centered(res, stream_length - template_length + 1),
+                     stream, norm_sum, template_length)
     for i in range(len(pads)):
-        # This is a hack from padding templates with nan data
-        if np.isnan(res[i]).all():
-            res[i] = np.zeros(len(res[i]))
-        else:
-            res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
+        res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
     return res, used_chans
 
 
