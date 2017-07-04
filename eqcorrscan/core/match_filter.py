@@ -3414,7 +3414,7 @@ def multi_normxcorr(templates, stream, pads):
     # TODO:: Try other fft methods: pyfftw?
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
-    from eqcorrscan.utils.normalise import norm_compiled
+    from eqcorrscan.utils.normalise import multi_norm_compiled as norm_compiled
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)

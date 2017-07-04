@@ -88,6 +88,48 @@ def norm_compiled(ccc, image, norm_sum, template_length):
     return np.round(ccc, 6)  # Some float conversion results in max of > 1
 
 
+def multi_norm_compiled(ccc, image, norm_sum, template_length):
+    """
+    
+    :param ccc: 
+    :param image: 
+    :param norm_sum: 
+    :param template_length: 
+    :return: 
+    """
+
+    from future.utils import native_str
+
+    norman = _load_cdll('norm')
+
+    norman.multi_normalise.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_int]
+    norman.multi_normalise.restype = ctypes.c_int
+
+    ccc_len = ccc.shape[1]
+    n = ccc.shape[0]
+    image = np.ascontiguousarray(image, np.float32)
+    norm_sum = np.ascontiguousarray(norm_sum.flatten(), np.float32)
+    ccc = np.ascontiguousarray(ccc.flatten(), np.float32)
+    ret = norman.multi_normalise(
+        ccc, ccc_len, image, norm_sum, template_length, n
+    )
+    if ret != 0:
+        raise MemoryError()
+    if np.any(ccc > 1.001):
+        raise MatchFilterError('Normalisation error in C code')
+    ccc[ccc > 1.0] = 1.0
+    ccc = ccc.reshape(n, ccc_len)
+    return np.round(ccc, 6)  # Some float conversion results in max of > 1
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

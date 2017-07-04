@@ -70,3 +70,15 @@ int normalise(float *ccc, int ccc_len, float *image, float norm_sum, int templat
 	}
 	return 0;
 }
+
+
+int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n)
+{
+    int i;
+
+    for (i=0; i<n; ++i)
+    {
+        normalise(&ccc[i * ccc_len], ccc_len, image, norm_sum[i], template_len);
+    }
+    return 0;
+}
