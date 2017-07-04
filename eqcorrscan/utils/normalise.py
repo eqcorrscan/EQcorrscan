@@ -121,6 +121,7 @@ def multi_norm_compiled(ccc, image, norm_sum, template_length):
     ret = norman.multi_normalise(
         ccc, ccc_len, image, norm_sum, template_length, n
     )
+    ccc[np.isnan(ccc)] = 0.0
     if ret != 0:
         raise MemoryError()
     if np.any(ccc > 1.001):
