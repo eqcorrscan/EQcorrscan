@@ -39,9 +39,14 @@ int normalise(float *ccc, int ccc_len, float *image, float norm_sum, int templat
 		var += powf(image[i] - mean, 2);
 	}
 	std = sqrtf(var / (template_len));
-
-	ccc[0] = (ccc[0] - norm_sum * mean ) / std;
-
+    if (std == 0.0)
+    {
+        ccc[0] = 0.0;
+    }
+    else
+    {
+	    ccc[0] = (ccc[0] - norm_sum * mean ) / std;
+    }
     // Loop through updating as we go
 	for(i=1; i<ccc_len; ++i)
 	{

@@ -82,8 +82,8 @@ def norm_compiled(ccc, image, norm_sum, template_length):
         ccc[i] = normalised
         if ret != 0:
             raise MemoryError()
-    # if np.any(ccc > 1.001):
-    #     raise MatchFilterError('Normalisation error in C code')
+    if np.any(ccc > 1.001):
+        raise MatchFilterError('Normalisation error in C code')
     ccc[ccc > 1.0] = 1.0
     return np.round(ccc, 6)  # Some float conversion results in max of > 1
 
