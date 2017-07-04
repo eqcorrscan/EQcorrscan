@@ -9,10 +9,9 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
-import warnings
 
 import numpy as np
-from obspy import read, Stream, Trace, UTCDateTime, read_events
+from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick
 from obspy.core.util.base import NamedTemporaryFile

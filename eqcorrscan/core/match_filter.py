@@ -3387,11 +3387,13 @@ def normxcorr2(template, image):
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     if len(template) > len(image):
-        ccc = multi_normxcorr(templates=np.array([image]),
-                              stream=template, pads=[0])[0][0]
+        ccc = multi_normxcorr(
+            templates=np.array([image]).astype(np.float32),
+            stream=template.astype(np.float32), pads=[0])[0][0]
     else:
-        ccc = multi_normxcorr(templates=np.array([template]),
-                              stream=image, pads=[0])[0][0]
+        ccc = multi_normxcorr(
+            templates=np.array([template]).astype(np.float32),
+            stream=image.astype(np.float32), pads=[0])[0][0]
     ccc = ccc.reshape((1, len(ccc)))
     return ccc
 
@@ -3410,28 +3412,15 @@ def multi_normxcorr(templates, stream, pads):
     :return: np.ndarray channels used
     """
     # TODO:: Try other fft methods: pyfftw?
-    import bottleneck
     from scipy.signal.signaltools import _centered
     from scipy.fftpack.helper import next_fast_len
     from eqcorrscan.utils.normalise import norm_compiled
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
-    # Currently have to use float64 as bottleneck runs into issues with other
-    # types: https://github.com/kwgoodman/bottleneck/issues/164
     template_length = templates.shape[1]
     stream_length = len(stream)
-    stream = stream.astype(np.float64)
     fftshape = next_fast_len(template_length + stream_length - 1)
-    # Set up normalizers
-    # stream_mean_array = bottleneck.move_mean(
-    #     stream, template_length)[template_length - 1:].astype(np.float32)
-    # # CPU bound
-    # stream_std_array = bottleneck.move_std(
-    #     stream, template_length)[template_length - 1:].astype(np.float32)
-    # # If there are zeros in the data (e.g. signal padded with zeros) then
-    # # division by zero happens resulting in inf - convert these zeros to inf
-    # stream_std_array[stream_std_array == 0] = np.inf
     # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
@@ -3442,12 +3431,8 @@ def multi_normxcorr(templates, stream, pads):
         np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1) *
         np.fft.rfft(stream, fftshape),
         fftshape)[:, 0:template_length + stream_length - 1]
+    res = res.astype(np.float32)
     # CPU bound
-    # Note:: Can run fftw with a threads argument, gets slightly faster result
-    # res = ((_centered(res, stream_length - template_length + 1)) -
-    #        norm_sum * stream_mean_array) / stream_std_array
-    # res = normalise_corr(_centered(res, stream_length - template_length + 1),
-    #                      stream, norm_sum, template_length)
     res = norm_compiled(_centered(res, stream_length - template_length + 1),
                         stream, norm_sum, template_length)
     for i in range(len(pads)):
@@ -3456,7 +3441,7 @@ def multi_normxcorr(templates, stream, pads):
             res[i] = np.zeros(len(res[i]))
         else:
             res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
-    return res.astype(np.float32), used_chans
+    return res, used_chans
 
 
 def multichannel_xcorr(templates, stream, cores=1):
@@ -3508,10 +3493,12 @@ def multichannel_xcorr(templates, stream, cores=1):
     stream_array = {}
     pad_array = {}
     for i, seed_id in enumerate(seed_ids):
-        t_ar = np.array([template[i].data for template in templates])
+        t_ar = np.array([template[i].data
+                         for template in templates]).astype(np.float32)
         template_array.update({seed_id: t_ar})
         stream_array.update(
-            {seed_id: stream.select(id=seed_id.split('_')[0])[0].data})
+            {seed_id: stream.select(
+                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
         pad_list = [
             int(round(template[i].stats.sampling_rate *
                       (template[i].stats.starttime - t_starts[j])))
