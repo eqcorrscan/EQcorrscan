@@ -23,12 +23,10 @@ pytest_runner*
 .coverage
 eqcorrscan/doc/_build
 eqcorrscan/doc/submodules/autogen
-station.dat
 *L.S??????
 *R.S??????
 .idea
 .coverage.*
-eqcorrscan/core/subspace_statistic.c
-eqcorrscan/core/sliding_normxcorr.c
 dt.c*
 phase.dat
+eqcorrscan/utils/src/norm
