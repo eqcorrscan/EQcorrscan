@@ -77,7 +77,7 @@ def multi_norm(ccc, image, norm_sum, template_length):
 
     from future.utils import native_str
 
-    norman = _load_cdll('norm')
+    norman = _load_cdll('libutils')
 
     norman.multi_normalise.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,

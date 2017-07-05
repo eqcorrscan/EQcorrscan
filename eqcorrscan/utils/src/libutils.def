@@ -1,0 +1,5 @@
+LIBRARY libutils.dll
+EXPORTS
+    multi_normalise
+    normalise
+    multi_normalise_loop

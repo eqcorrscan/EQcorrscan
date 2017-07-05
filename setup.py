@@ -14,14 +14,23 @@ from setuptools import setup, find_packages
 import sys
 import os
 import eqcorrscan
-import numpy as np
+import inspect
+import numpy as np     # @UnusedImport # NOQA
 from numpy.distutils.ccompiler import get_default_compiler
+from numpy.distutils.misc_util import Configuration
 # To use a consistent encoding
 from codecs import open
 from os import path
 from distutils.extension import Extension
 import glob
 import platform
+
+SETUP_DIRECTORY = os.path.dirname(os.path.abspath(inspect.getfile(
+    inspect.currentframe())))
+UTIL_PATH = os.path.join(SETUP_DIRECTORY, "eqcorrscan", "utils")
+sys.path.insert(0, UTIL_PATH)
+from libnames import _get_lib_name  # @UnresolvedImport
+sys.path.pop(0)
 
 try:
     from pypandoc import convert
@@ -33,10 +42,16 @@ except ImportError:
     print(msg)
     read_md = lambda f: open(f, 'r').read()
 
+# helper function for collecting export symbols from .def files
+def export_symbols(*path):
+    lines = open(os.path.join(*path), 'r').readlines()[2:]
+    return [s.strip() for s in lines if s.strip() != '']
+
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
-    ext = [Extension("eqcorrscan.lib.norm",
-                     ["eqcorrscan/utils/src/norm.c"])]
+    ext = [Extension("eqcorrscan.lib.libutils",
+                     ["eqcorrscan/utils/src/norm.c"],
+                     export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"))]
     cmd_class = {}
 else:
     ext = []
@@ -119,6 +134,8 @@ def add_features():
             EXTERNAL_LIBS=True
         )
     }
+
+
 # install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
@@ -185,7 +202,8 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov', 'pytest-pep8', 'pytest-xdist'],
 
-    # Build our extension for subspace detection
+    # Build our extension
     cmdclass=cmd_class,
-    ext_modules=ext
+    ext_modules=ext,
+    features=add_features()
 )
