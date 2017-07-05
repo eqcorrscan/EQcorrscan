@@ -9,6 +9,7 @@
 """
 
 # Always prefer setuptools over distutils
+import setuptools
 from setuptools import setup, find_packages
 import sys
 import os
@@ -80,6 +81,44 @@ else:
     else:
         install_requires = ['numpy>=1.12.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'LatLon']
+
+if IS_MSVC:
+    import distutils
+    from distutils.msvc9compiler import MSVCCompiler
+
+    if distutils.__version__.startswith('2.'):
+        def _library_dir_option(self, dir):
+            return '/LIBPATH:"%s"' % (dir)
+
+        MSVCCompiler.library_dir_option = _library_dir_option
+
+    # Sort linking issues with init exported symbols
+    def _get_export_symbols(self, ext):
+        return ext.export_symbols
+    from distutils.command.build_ext import build_ext
+    build_ext.get_export_symbols = _get_export_symbols
+
+# add --with-system-libs command-line option if possible
+def add_features():
+    if 'setuptools' not in sys.modules:
+        return {}
+
+    class ExternalLibFeature(setuptools.Feature):
+        def include_in(self,dist):
+            global EXTERNAL_LIBS
+            EXTERNAL_LIBS = True
+
+        def exclude_from(self,dist):
+            global EXTERNAL_LIBS
+            EXTERNAL_LIBS = False
+
+    return {
+        'system-libs': ExternalLibFeature(
+            'use of system C libraries',
+            standard=False,
+            EXTERNAL_LIBS=True
+        )
+    }
 # install_requires.append('ConfigParser')
 setup(
     name='EQcorrscan',
