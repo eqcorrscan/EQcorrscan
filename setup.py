@@ -60,17 +60,16 @@ while not_found_lib:
     else:
         lib_dir = os.path.dirname(lib_dir)
 
+print("\t\tLooking for libraries here:---------->> " + lib_dir)
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
-    ext = [Extension("eqcorrscan.lib.libutils",
-                      ["eqcorrscan/utils/src/multi_corr.c"],
-                     export_symbols=export_symbols(
-                         "eqcorrscan/utils/src/libutils.def"),
-                     extra_compile_args=extra_args,
-                     extra_link_args=extra_args,
-                     libraries=['fftw3f'],
-                     library_dirs=[lib_dir])]
+    ext = [Extension(
+        "eqcorrscan.lib.libutils",
+        sources=["eqcorrscan/utils/src/multi_corr.c"],
+        export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"),
+        extra_compile_args=extra_args, extra_link_args=extra_args,
+        libraries=['fftw3f'], library_dirs=[lib_dir])]
     cmd_class = {}
 else:
     ext = []
