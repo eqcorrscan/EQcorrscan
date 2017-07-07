@@ -50,7 +50,16 @@ else:
 if IS_MSVC:
     extra_args = ['/openmp']
 else:
-    extra_args = ['-fopenmp', '-lfftw3f']
+    extra_args = ['-fopenmp']
+
+lib_dir = np.__file__
+not_found_lib = True
+while not_found_lib:
+    if os.path.basename(lib_dir) == 'lib':
+        not_found_lib = False
+    else:
+        lib_dir = os.path.dirname(lib_dir)
+
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
@@ -59,7 +68,9 @@ if not READ_THE_DOCS:
                      export_symbols=export_symbols(
                          "eqcorrscan/utils/src/libutils.def"),
                      extra_compile_args=extra_args,
-                     extra_link_args=extra_args)]
+                     extra_link_args=extra_args,
+                     libraries=['fftw3f'],
+                     library_dirs=[lib_dir])]
     cmd_class = {}
 else:
     ext = []
@@ -120,11 +131,11 @@ def add_features():
         return {}
 
     class ExternalLibFeature(setuptools.Feature):
-        def include_in(self,dist):
+        def include_in(self, dist):
             global EXTERNAL_LIBS
             EXTERNAL_LIBS = True
 
-        def exclude_from(self,dist):
+        def exclude_from(self, dist):
             global EXTERNAL_LIBS
             EXTERNAL_LIBS = False
 
