@@ -30,3 +30,4 @@ eqcorrscan/doc/submodules/autogen
 dt.c*
 phase.dat
 eqcorrscan/utils/src/norm
+eqcorrscan/utils/src/multi_corr

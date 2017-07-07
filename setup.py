@@ -14,10 +14,8 @@ from setuptools import setup, find_packages
 import sys
 import os
 import eqcorrscan
-import inspect
 import numpy as np     # @UnusedImport # NOQA
 from numpy.distutils.ccompiler import get_default_compiler
-from numpy.distutils.misc_util import Configuration
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -25,12 +23,6 @@ from distutils.extension import Extension
 import glob
 import platform
 
-SETUP_DIRECTORY = os.path.dirname(os.path.abspath(inspect.getfile(
-    inspect.currentframe())))
-UTIL_PATH = os.path.join(SETUP_DIRECTORY, "eqcorrscan", "utils")
-sys.path.insert(0, UTIL_PATH)
-from libnames import _get_lib_name  # @UnresolvedImport
-sys.path.pop(0)
 
 try:
     from pypandoc import convert
@@ -46,17 +38,6 @@ except ImportError:
 def export_symbols(*path):
     lines = open(os.path.join(*path), 'r').readlines()[2:]
     return [s.strip() for s in lines if s.strip() != '']
-
-READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
-if not READ_THE_DOCS:
-    ext = [Extension("eqcorrscan.lib.libutils",
-                     ["eqcorrscan/utils/src/norm.c"],
-                     export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"))]
-    cmd_class = {}
-else:
-    ext = []
-    cmd_class = {}
-
 # check for MSVC
 if platform.system() == "Windows" and (
         'msvc' in sys.argv or
@@ -65,6 +46,26 @@ if platform.system() == "Windows" and (
     IS_MSVC = True
 else:
     IS_MSVC = False
+
+if IS_MSVC:
+    extra_args = ['/openmp']
+else:
+    extra_args = ['-fopenmp', '-lfftw3f']
+
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+if not READ_THE_DOCS:
+    ext = [Extension("eqcorrscan.lib.libutils",
+                      ["eqcorrscan/utils/src/multi_corr.c"],
+                     export_symbols=export_symbols(
+                         "eqcorrscan/utils/src/libutils.def"),
+                     extra_compile_args=extra_args,
+                     extra_link_args=extra_args)]
+    cmd_class = {}
+else:
+    ext = []
+    cmd_class = {}
+
+
 
 
 here = path.abspath(path.dirname(__file__))

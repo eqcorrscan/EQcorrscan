@@ -154,32 +154,32 @@ int multi_normalise_loop(float *ccc, int ccc_len, float *image, float *norm_sum,
 	return 0;
 }
 
-int main(void)
-//Used for testing
-{
-	int template_len = 600;
-	int ccc_len = 8640000;
-	int n = 3;
-	float * norm_sum = (float *) calloc(n, sizeof(float));
-	float * ccc = (float *) calloc(ccc_len * n, sizeof(float));
-	float * image = (float *) calloc(ccc_len + template_len, sizeof(float));
-	int i;
-
-	for (i=0; i<ccc_len * n; ++i)
-	{
-		ccc[i] = rand() % 100;
-		ccc[i] -= 50;
-		/* printf("%f\n", ccc[i]); */
-	}
-	for (i=0; i<ccc_len + template_len; ++i)
-	{
-		image[i] = rand() % 100;
-		image[i] -= 50;
-	}
-	for (i=0; i<n; ++i)
-	{
-	    norm_sum[i] = rand() % 1;
-	}
-	multi_normalise(ccc, ccc_len, image, norm_sum, template_len, n);
-	return 0;
-}
+//int main(void)
+////Used for testing
+//{
+//	int template_len = 600;
+//	int ccc_len = 8640000;
+//	int n = 3;
+//	float * norm_sum = (float *) calloc(n, sizeof(float));
+//	float * ccc = (float *) calloc(ccc_len * n, sizeof(float));
+//	float * image = (float *) calloc(ccc_len + template_len, sizeof(float));
+//	int i;
+//
+//	for (i=0; i<ccc_len * n; ++i)
+//	{
+//		ccc[i] = rand() % 100;
+//		ccc[i] -= 50;
+//		/* printf("%f\n", ccc[i]); */
+//	}
+//	for (i=0; i<ccc_len + template_len; ++i)
+//	{
+//		image[i] = rand() % 100;
+//		image[i] -= 50;
+//	}
+//	for (i=0; i<n; ++i)
+//	{
+//	    norm_sum[i] = rand() % 1;
+//	}
+//	multi_normalise(ccc, ccc_len, image, norm_sum, template_len, n);
+//	return 0;
+//}
