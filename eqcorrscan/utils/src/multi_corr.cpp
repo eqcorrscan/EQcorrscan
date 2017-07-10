@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  multi_corr.c
+ *       Filename:  multi_corr.cpp
  *
  *        Purpose:  Routines for computing cross-correlations
  *
@@ -25,22 +25,21 @@
 #include <fftw3.h>
 
 // Prototypes
-int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len, float *ncc, int N, float *norm_sums);
+extern "C" {int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len, float *ncc, int N, float *norm_sums);}
 
-int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len, float *ncc, int N, int n_templates);
+extern "C" {int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len, float *ncc, int N, int n_templates);}
 
-int xcorr (float *signala, int a_len, float *signalb, int b_len, float *ccc);
+extern "C" {int xcorr (float *signala, int a_len, float *signalb, int b_len, float *ccc);}
 
-int multi_corr (float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc);
+extern "C" {int multi_corr (float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc);}
 
-int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n);
+extern "C" {int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n);}
 
 int center(float *a, int inlen, float *out, int outlen);
 
 
 // Functions
-
-int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
+extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
                   float *ncc, int N, float *norm_sums){
   /*
   Purpose: compute frequency domain cross-correlation of real data using fftw
@@ -119,9 +118,9 @@ int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
     free(result);
 	return 0;
 }
+}
 
-
-int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len,
+extern "C" {int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len,
                         float *ncc, int N, int n_templates){
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
     float * ccc_reshape = (float *) calloc(n_templates * (b_len - a_len + 1), sizeof(float));
@@ -147,8 +146,9 @@ int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len,
     free(ccc_reshape);
     return 0;
 }
+}
 
-int xcorr(float *signala, int a_len, float *signalb, int b_len, float *ccc){
+extern "C" {int xcorr(float *signala, int a_len, float *signalb, int b_len, float *ccc){
     int p, k;
     int steps = b_len - a_len + 1;
     float numerator, denom;
@@ -171,9 +171,9 @@ int xcorr(float *signala, int a_len, float *signalb, int b_len, float *ccc){
     }
     return 0;
 }
+}
 
-
-int multi_corr(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
+extern "C" {int multi_corr(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
     int i;
     #pragma omp parallel for
     for (i = 0; i < n_templates; ++i){
@@ -181,9 +181,9 @@ int multi_corr(float *templates, int template_len, int n_templates, float *image
     }
     return 0;
 }
+}
 
-
-int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n)
+extern "C" {int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n)
 {
 	int i, j, k;
 	float mean, std, sum=0.0, var=0.0;
@@ -253,6 +253,7 @@ int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int 
 	}
 	return 0;
 }
+}
 
 int center(float *in, int inlen, float *out, int outlen){
     int startind, i;
@@ -268,3 +269,6 @@ int center(float *in, int inlen, float *out, int outlen){
     }
     return 0;
 }
+
+
+int main(void){printf("Main\n");}

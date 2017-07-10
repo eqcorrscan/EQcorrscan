@@ -84,8 +84,8 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
     :param cores: Number of cores to loop over
     :type time_domain: bool
     :param time_domain:
-        Whether to compute in the time-domain using the compiled openMP parallel
-        cross-correlation routine.
+        Whether to compute in the time-domain using the compiled openMP
+        parallel cross-correlation routine.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
