@@ -71,7 +71,7 @@ install:
   - conda list
   # done installing dependencies
   - git version
-  - CC=gcc-4.8 CXX=g++-4.8 python setup.py install
+  - python setup.py install
 
 script:
 #  - python eqcorrscan/tests/match_filter_test.py
