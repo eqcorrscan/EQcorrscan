@@ -18,10 +18,8 @@
  * =====================================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <complex.h>
-#include <math.h>
+#include <cstdlib>
+#include <cmath>
 #include <fftw3.h>
 
 // Prototypes
@@ -89,7 +87,8 @@ extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_le
     //  Compute dot product
     for (i = 0; i < N2; ++i)
     {
-        out[i] = outa[i] * outb[i];
+        out[i][0] = outa[i][0] * outb[i][0] - outa[i][1] * outb[i][1];
+        out[i][1] = outa[i][0] * outb[i][1] - outa[i][1] * outb[i][0];
     }
     //  Compute inverse fft
 	fftwf_execute(px);
