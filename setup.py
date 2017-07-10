@@ -62,6 +62,8 @@ while not_found_lib:
 
 print("\t\tLooking for libraries here:---------->> " + lib_dir)
 
+extra_args.append('-L' + lib_dir)
+
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
     ext = [Extension(
