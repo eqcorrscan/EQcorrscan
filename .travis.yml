@@ -2,8 +2,10 @@ language: c
 
 addons:
   apt:
+    sources:
+      - ubuntu-precise
     packages:
-      - fftw
+      - fftw3-dev
 
 matrix:
   include:
@@ -21,18 +23,11 @@ matrix:
     # There isn't and openCV3 for python 3.3 on Conda
 
     - os: osx
-      osx_image: xcode8
       env:
         - PYTHON_VERSION=2.7
-        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
     - os: osx
-      osx_image: xcode8
       env:
         - PYTHON_VERSION=3.5
-        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
-
-before_install:
-  - eval "${MATRIX_EVAL}"
 
 sudo: false
 
@@ -40,8 +35,8 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
-      export CC=gcc-4.9
-      export CXX=g++-4.9
+      export CC=gcc-4.8
+      export CXX=g++-4.8
       brew install fftw
     else
       export OS="Linux";
