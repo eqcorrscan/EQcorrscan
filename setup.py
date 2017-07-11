@@ -13,6 +13,7 @@ import setuptools
 from setuptools import setup, find_packages
 import sys
 import os
+import shutil
 import eqcorrscan
 import numpy as np     # @UnusedImport # NOQA
 from numpy.distutils.ccompiler import get_default_compiler
@@ -50,26 +51,38 @@ else:
 lib_dir = np.__file__
 not_found_lib = True
 while not_found_lib:
-    if os.path.basename(lib_dir) == 'lib':
+    if os.path.basename(lib_dir) in ['lib', 'Library']:
         not_found_lib = False
     else:
         lib_dir = os.path.dirname(lib_dir)
 inc_dir = os.path.dirname(lib_dir) + os.sep + 'include'
-
+fftw_pkg = []
 if IS_MSVC:
-    extra_args = ['/openmp']
+    fftw_pkg = glob.glob(os.path.join(
+        os.path.dirname(lib_dir), 'pkgs', 'fftw-*', 'Library', 'include'))
+    extra_args = ['/openmp', '-I' + inc_dir]
+    if len(fftw_pkg) > 0:
+        extra_args.append('-I' + fftw_pkg[0])
+    extra_links = []
 else:
     extra_args = ['-fopenmp', '-I' + inc_dir, '-lm']
+    extra_links = extra_args
 print("\t\tLooking for libraries here:---------->> " + lib_dir)
-
+lib_dir = [lib_dir]
+if IS_MSVC and len(fftw_pkg) > 0:
+    lib_dir.append(os.path.dirname(fftw_pkg[0]) + os.sep + 'lib')
+    lib = glob.glob(lib_dir[-1] + os.sep + 'libfftw3f-*.lib')
+    if len(lib) > 0:
+        print('\t\tFound this library file:------------>> ' + lib[0])
+        shutil.copy(lib[0], lib_dir[-1] + os.sep + 'fftw3f.lib')
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
     ext = [Extension(
         "eqcorrscan.lib.libutils",
         sources=["eqcorrscan/utils/src/multi_corr.cpp"],
         export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"),
-        extra_compile_args=extra_args, extra_link_args=extra_args,
-        libraries=['fftw3f'], library_dirs=[lib_dir])]
+        extra_compile_args=extra_args, extra_link_args=extra_links,
+        libraries=['fftw3f'], library_dirs=lib_dir)]
     cmd_class = {}
 else:
     ext = []
