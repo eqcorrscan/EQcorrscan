@@ -269,7 +269,9 @@ def fftw_compiled_xcorr(templates, stream, pads):
     if ret != 0:
         raise MemoryError()
     if np.any(ccc > 1.001):
-        raise MatchFilterError('Normalisation error in C code')
+        print('Normalisation error in C code')
+        raise MemoryError()
+        # raise MatchFilterError('Normalisation error in C code')
     ccc[ccc > 1.0] = 1.0
     for i in range(len(pads)):
         ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]

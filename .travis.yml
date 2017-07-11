@@ -32,9 +32,12 @@ before_install:
 sudo: false
 
 install:
+  - export OMP_NUM_THREADS=4
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
+      export CC=gcc-4.9
+      export CXX=g++-4.9
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;

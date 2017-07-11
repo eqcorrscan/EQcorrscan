@@ -59,7 +59,7 @@ inc_dir = os.path.dirname(lib_dir) + os.sep + 'include'
 fftw_pkg = []
 if IS_MSVC:
     print(glob.glob(os.path.join(
-        os.path.dirname(lib_dir), 'pkgs', '*')))
+        os.path.dirname(lib_dir), '*')))
     fftw_pkg = glob.glob(os.path.join(
         os.path.dirname(lib_dir), 'pkgs', 'fftw-*', 'Library', 'include'))
     extra_args = ['/openmp', '-I' + inc_dir]
