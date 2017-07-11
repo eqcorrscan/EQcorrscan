@@ -1,5 +1,10 @@
 language: c
 
+addons:
+  apt:
+    packages:
+      - fftw
+
 matrix:
   include:
     - os: linux
@@ -37,6 +42,7 @@ install:
       export py=$PYTHON_VERSION;
       export CC=gcc-4.9
       export CXX=g++-4.9
+      brew install fftw
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;
@@ -67,7 +73,7 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck fftw
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck
   - source activate test-environment
 #  - conda install $PYFLAKES
 #  - conda install pyproj
