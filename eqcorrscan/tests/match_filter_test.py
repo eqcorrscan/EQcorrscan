@@ -683,14 +683,14 @@ class TestMatchObjects(unittest.TestCase):
         self.assertEqual(len(test_party), 5)
         test_slice = test_party[0:2]
         # Add new fam with fake det to ensure unique families aren't missed
-        new_family = Family(template=self.tribe[-1].copy(),
-                            detections=[Detection(
-                                template_name=self.tribe[-1].name,
-                                detect_time=UTCDateTime(), no_chans=5,
-                                detect_val=3.5, threshold=2.0,
-                                typeofdet='corr', threshold_type='MAD',
-                                threshold_input=8.0)],
-                            catalog=Catalog(events=[Event()]))
+        new_family = Family(
+            template=self.tribe[-1].copy(),
+            detections=[Detection(template_name=self.tribe[-1].name,
+                                  detect_time=UTCDateTime(), no_chans=5,
+                                  detect_val=3.5, threshold=2.0,
+                                  typeofdet='corr', threshold_type='MAD',
+                                  threshold_input=8.0)],
+            catalog=Catalog(events=[Event()]))
         test_slice.families.append(new_family)
         self.assertTrue(isinstance(test_slice, Party))
         self.assertEqual(len(test_slice), 4)
