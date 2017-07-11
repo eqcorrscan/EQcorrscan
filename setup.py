@@ -54,7 +54,7 @@ if IS_MSVC:
     extra_links = []
 else:
     extra_args = ['-fopenmp']
-    extra_links = ['-lm']
+    extra_links = ['-lm', '-lgomp']
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'

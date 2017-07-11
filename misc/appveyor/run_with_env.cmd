@@ -21,6 +21,7 @@
 
 SET COMMAND_TO_RUN=%*
 SET WIN_SDK_ROOT=C:\Program Files\Microsoft SDKs\Windows
+SET WIN_WDK=c:\Program Files (x86)\Windows Kits\10\Include\wdf
 
 SET MAJOR_PYTHON_VERSION="%PYTHON_VERSION:~0,1%"
 IF %MAJOR_PYTHON_VERSION% == "2" (
