@@ -40,6 +40,8 @@ install:
   # Check that we have the expected version and architecture for Python
   - "%CMD_IN_ENV% python --version"
   # Install fftw
+  - "choco install curl"
+  - "choco install 7z"
   - "%CMD_IN_ENV% ./misc/appveyor/setup_fftw_dlls.cmd"
   # Install the build and runtime dependencies of the project.
   - "conda update -q --yes conda"
