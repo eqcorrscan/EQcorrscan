@@ -58,6 +58,8 @@ while not_found_lib:
 inc_dir = os.path.dirname(lib_dir) + os.sep + 'include'
 fftw_pkg = []
 if IS_MSVC:
+    print(glob.glob(os.path.join(
+        os.path.dirname(lib_dir), 'pkgs', '*')))
     fftw_pkg = glob.glob(os.path.join(
         os.path.dirname(lib_dir), 'pkgs', 'fftw-*', 'Library', 'include'))
     extra_args = ['/openmp', '-I' + inc_dir]
@@ -69,6 +71,7 @@ else:
     extra_links = extra_args
 print("\t\tLooking for libraries here:---------->> " + lib_dir)
 lib_dir = [lib_dir]
+
 if IS_MSVC and len(fftw_pkg) > 0:
     lib_dir.append(os.path.dirname(fftw_pkg[0]) + os.sep + 'lib')
     lib = glob.glob(lib_dir[-1] + os.sep + 'libfftw3f-*.lib')
@@ -76,6 +79,7 @@ if IS_MSVC and len(fftw_pkg) > 0:
         print('\t\tFound this library file:------------>> ' + lib[0])
         shutil.copy(lib[0], lib_dir[-1] + os.sep + 'fftw3f.lib')
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+
 if not READ_THE_DOCS:
     ext = [Extension(
         "eqcorrscan.lib.libutils",
