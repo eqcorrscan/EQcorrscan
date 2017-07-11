@@ -16,9 +16,18 @@ matrix:
     # There isn't and openCV3 for python 3.3 on Conda
 
     - os: osx
-      env: PYTHON_VERSION=2.7
+      osx_image: xcode8
+      env:
+        - PYTHON_VERSION=2.7
+        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
     - os: osx
-      env: PYTHON_VERSION=3.5
+      osx_image: xcode8
+      env:
+        - PYTHON_VERSION=3.5
+        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 sudo: false
 
