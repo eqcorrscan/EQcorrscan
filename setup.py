@@ -47,11 +47,6 @@ if platform.system() == "Windows" and (
 else:
     IS_MSVC = False
 
-if IS_MSVC:
-    extra_args = ['/openmp']
-else:
-    extra_args = ['-fopenmp']
-
 lib_dir = np.__file__
 not_found_lib = True
 while not_found_lib:
@@ -59,7 +54,12 @@ while not_found_lib:
         not_found_lib = False
     else:
         lib_dir = os.path.dirname(lib_dir)
+inc_dir = os.path.dirname(lib_dir) + os.sep + 'include'
 
+if IS_MSVC:
+    extra_args = ['/openmp']
+else:
+    extra_args = ['-fopenmp', '-I' + inc_dir, '-lm']
 print("\t\tLooking for libraries here:---------->> " + lib_dir)
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
