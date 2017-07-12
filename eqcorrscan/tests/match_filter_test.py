@@ -529,7 +529,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.onehztribe = Tribe().construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len)
+            length=20.0, prepick=0.15, swin='all', process_len=process_len)
         # Download and process the day-long data
         template_stachans = []
         for template in cls.tribe.templates:
@@ -737,14 +737,14 @@ class TestMatchObjects(unittest.TestCase):
         # Aftershock sequence, with 1Hz data, lots of good correlations = high
         # MAD!
         day_party = daylong_tribe.detect(
-            stream=st, threshold=4.5, threshold_type='MAD', trig_int=6.0,
+            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=True, plotvar=False, parallel_process=False)
-        self.assertEqual(len(day_party), 31)
+        self.assertEqual(len(day_party), 4)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
         self.assertEqual(len(day_catalog), 3)
         pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 31)
+        self.assertEqual(len(pre_picked_cat), 4)
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
