@@ -11,9 +11,9 @@ import os
 import unittest
 
 import numpy as np
-from obspy import read, UTCDateTime, read_events
+from obspy import read, Stream, Trace, UTCDateTime, read_events, Catalog
 from obspy.clients.fdsn import Client
-from obspy.core.event import Pick
+from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core import template_gen, match_filter
@@ -641,10 +641,20 @@ class TestMatchObjects(unittest.TestCase):
         test_party += test_family
         self.assertEqual(len(test_party), 5)
         test_slice = test_party[0:2]
+        # Add new fam with fake det to ensure unique families aren't missed
+        new_family = Family(
+            template=self.tribe[-1].copy(),
+            detections=[Detection(template_name=self.tribe[-1].name,
+                                  detect_time=UTCDateTime(), no_chans=5,
+                                  detect_val=3.5, threshold=2.0,
+                                  typeofdet='corr', threshold_type='MAD',
+                                  threshold_input=8.0)],
+            catalog=Catalog(events=[Event()]))
+        test_slice.families.append(new_family)
         self.assertTrue(isinstance(test_slice, Party))
-        self.assertEqual(len(test_slice), 3)
+        self.assertEqual(len(test_slice), 4)
         test_party += test_slice
-        self.assertEqual(len(test_party), 8)
+        self.assertEqual(len(test_party), 9)
         with self.assertRaises(NotImplementedError):
             test_party += ['bob']
         test_party.sort()
