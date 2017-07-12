@@ -211,8 +211,8 @@ class Party(object):
         else:
             raise NotImplementedError(
                 'Ambiguous add, only allowed Party or Family additions.')
-        added = False
         for oth_fam in families:
+            added = False
             for fam in self.families:
                 if fam.template == oth_fam.template:
                     fam += oth_fam
