@@ -56,7 +56,6 @@ def multi_normxcorr(templates, stream, pads):
         fftshape)[:, 0:template_length + stream_length - 1]
     del norm
     res = res.astype(np.float32)
-    # CPU bound
     res = multi_norm(_centered(res, stream_length - template_length + 1),
                      stream, norm_sum, template_length)
     for i in range(len(pads)):
@@ -235,7 +234,7 @@ def fftw_compiled_xcorr(templates, stream, pads):
 
     utilslib = _load_cdll('libutils')
 
-    utilslib.normxcorr_fftw_loop.argtypes = [
+    utilslib.xcorr_fftw_1d.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
@@ -245,7 +244,7 @@ def fftw_compiled_xcorr(templates, stream, pads):
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
-    utilslib.normxcorr_fftw_loop.restype = ctypes.c_int
+    utilslib.xcorr_fftw_1d.restype = ctypes.c_int
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
     template_length = templates.shape[1]
@@ -255,23 +254,24 @@ def fftw_compiled_xcorr(templates, stream, pads):
     # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
-    norm = np.ascontiguousarray(norm.flatten(), np.float32)
+    norm_sum = norm.sum(axis=-1, keepdims=True)
     ccc = np.empty((n_templates, stream_length - template_length + 1),
                    np.float32)
-    ccc = np.ascontiguousarray(ccc.flatten())
-    ret = utilslib.normxcorr_fftw_loop(
-        norm, template_length, np.ascontiguousarray(stream, np.float32),
-        stream_length, ccc, fftshape, n_templates)
+    for i in range(n_templates):
+        ret = utilslib.xcorr_fftw_1d(
+            np.ascontiguousarray(norm[i], np.float32), template_length,
+            np.ascontiguousarray(stream, np.float32), stream_length,
+            np.ascontiguousarray(ccc[i], np.float32), fftshape)
     if ret:
         raise MemoryError()
     ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
+    # ccc = multi_norm(ccc, stream, norm_sum, template_length)
     ccc[np.isnan(ccc)] = 0.0
     if ret != 0:
         raise MemoryError()
     if np.any(ccc > 1.001):
         print('Normalisation error in C code')
         raise MemoryError()
-        # raise MatchFilterError('Normalisation error in C code')
     ccc[ccc > 1.0] = 1.0
     for i in range(len(pads)):
         ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]

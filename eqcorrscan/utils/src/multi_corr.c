@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  multi_corr.cpp
+ *       Filename:  multi_corr.c
  *
  *        Purpose:  Routines for computing cross-correlations
  *
@@ -18,33 +18,28 @@
  * =====================================================================================
  */
 
-#include <cstdlib>
-#include <cmath>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <fftw3.h>
 
 // Prototypes
-extern "C" {int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len, float *ncc, int N, float *norm_sums);}
+int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len, float *ncc, int N);
 
-extern "C" {int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len, float *ncc, int N, int n_templates);}
+int xcorr (float *signala, int a_len, float *signalb, int b_len, float *ccc);
 
-extern "C" {int xcorr (float *signala, int a_len, float *signalb, int b_len, float *ccc);}
+int multi_corr (float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc);
 
-extern "C" {int multi_corr (float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc);}
-
-extern "C" {int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n);}
-
-int center(float *a, int inlen, float *out, int outlen);
-
+int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n);
 
 // Functions
-extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
-                  float *ncc, int N, float *norm_sums){
+
+int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
+                  float *ncc, int N){
   /*
   Purpose: compute frequency domain cross-correlation of real data using fftw
-
   Author: Calum J. Chamberlain
   Date: 12/06/2017
-
   Args:
     signala:  Template signal
     a_len:    Length of signala
@@ -52,14 +47,13 @@ extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_le
     b_len:    Length of signalb
     ncc:      Output for cross-correlation - should be pointer to memory -
               must be b_len - a_len + 1 long
-    N:        Size for fft (and of result)
+    N:        Size for fft
   */
 	int N2 = N / 2 + 1;
-	int i;
-	float norm_sum = 0.0;
+	int i, j, startind;
+	float norm_sum = 0.0, sum = 0.0, mean, var = 0.0, stdev;
 	float * signala_ext = (float *) calloc(N, sizeof(float));
 	float * signalb_ext = (float *) calloc(N, sizeof(float));
-	float * result = (float *) calloc(b_len + a_len - 1, sizeof(float));
 	float * ccc = (float *) fftwf_malloc(sizeof(float) * N);
 	fftwf_complex * outa = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N2);
 	fftwf_complex * outb = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N2);
@@ -75,7 +69,6 @@ extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_le
 	    signala_ext[i] = signala[a_len - (i + 1)];
 	    norm_sum += signala[i];
 	}
-	norm_sums[0] = norm_sum;
 	for (i = 0; i < b_len; ++i)
 	{
 	    signalb_ext[i] = signalb[i];
@@ -88,14 +81,51 @@ extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_le
     for (i = 0; i < N2; ++i)
     {
         out[i][0] = outa[i][0] * outb[i][0] - outa[i][1] * outb[i][1];
-        out[i][1] = outa[i][0] * outb[i][1] - outa[i][1] * outb[i][0];
+        out[i][1] = outa[i][0] * outb[i][1] + outa[i][1] * outb[i][0];
     }
     //  Compute inverse fft
 	fftwf_execute(px);
 
-	for(i = 0; i < (a_len + b_len - 1); ++i){
-	    result[i] = ccc[i] / N;
+    startind = a_len - 1;
+
+    //  Procedures for normalisation
+	// Compute starting mean, will update this
+	for (i=0; i < a_len; ++i){
+	    sum += signalb[i];
 	}
+	mean = sum / a_len;
+
+	// Compute starting standard deviation
+	for (i=0; i < a_len; ++i){
+	    var += powf(signalb[i] - mean, 2);
+	}
+	stdev = sqrtf(var / (a_len));
+
+	if (stdev == 0.0){
+        ncc[0]=0;
+    }
+    else {
+        ncc[0]=((ccc[startind] / N) - norm_sum * mean) / stdev;
+    }
+    // Center and divide by length to generate scaled convolution
+	for(i = 1; i < (b_len - a_len + 1); ++i){
+		mean = mean + (signalb[i + a_len - 1] - signalb[i - 1]) / a_len;
+		// Don't know of a usefully accurate and efficient method of running std
+		var = 0.0;
+		for (j=0; j<a_len; ++j)
+		{
+			var += powf(signalb[i + j] - mean, 2);
+		}
+		stdev = sqrtf(var / a_len);
+		if (stdev == 0.0){
+		    ncc[i] = 0.0;
+		}
+		else{
+		    ncc[i] = ((ccc[i + startind] / N) - norm_sum * mean ) / stdev;
+		}
+//	    ncc[i] = ccc[i + startind] / N;
+	}
+
     //  Clean up
 	fftwf_destroy_plan(pa);
 	fftwf_destroy_plan(pb);
@@ -111,43 +141,11 @@ extern "C"{int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_le
     free(signala_ext);
 	free(signalb_ext);
 
-    // Still do do: center then normalise
-    center(&result[0], a_len + b_len -1, &ncc[0], b_len - a_len + 1);
-
-    free(result);
 	return 0;
 }
-}
 
-extern "C" {int normxcorr_fftw_loop(float *templates, int a_len, float *signalb, int b_len,
-                        float *ncc, int N, int n_templates){
-    float * norm_sums = (float *) calloc(n_templates, sizeof(float));
-    float * ccc_reshape = (float *) calloc(n_templates * (b_len - a_len + 1), sizeof(float));
-    int i, j;
-    int ccc_len = b_len - a_len + 1;
 
-    for (i=0; i<n_templates; ++i){
-        xcorr_fftw_1d(&templates[a_len * i], a_len, &signalb[0], b_len, &ncc[i * ccc_len], N, &norm_sums[i]);
-    }
-    // Need to reshape ncc before going to normalise.
-    for (i=0; i < ccc_len; ++i){
-        for (j=0; j < n_templates; ++j){
-            ccc_reshape[(i * n_templates) + j] = ncc[i + (j * ccc_len)];
-        }
-    }
-    multi_normalise(&ccc_reshape[0], b_len - a_len + 1, &signalb[0], &norm_sums[0], a_len, n_templates);
-    free(norm_sums);
-    for (i=0; i < ccc_len; ++i){
-        for (j=0; j < n_templates; ++j){
-            ncc[i + (j * ccc_len)] = ccc_reshape[(i * n_templates) + j];
-        }
-    }
-    free(ccc_reshape);
-    return 0;
-}
-}
-
-extern "C" {int xcorr(float *signala, int a_len, float *signalb, int b_len, float *ccc){
+int xcorr(float *signala, int a_len, float *signalb, int b_len, float *ccc){
     int p, k;
     int steps = b_len - a_len + 1;
     float numerator, denom;
@@ -170,9 +168,9 @@ extern "C" {int xcorr(float *signala, int a_len, float *signalb, int b_len, floa
     }
     return 0;
 }
-}
 
-extern "C" {int multi_corr(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
+
+int multi_corr(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
     int i;
     #pragma omp parallel for
     for (i = 0; i < n_templates; ++i){
@@ -180,9 +178,9 @@ extern "C" {int multi_corr(float *templates, int template_len, int n_templates, 
     }
     return 0;
 }
-}
 
-extern "C" {int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n)
+
+int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n)
 {
 	int i, j, k;
 	float mean, std, sum=0.0, var=0.0;
@@ -252,22 +250,4 @@ extern "C" {int multi_normalise(float *ccc, int ccc_len, float *image, float *no
 	}
 	return 0;
 }
-}
 
-int center(float *in, int inlen, float *out, int outlen){
-    int startind, i;
-
-    if (outlen > inlen){
-        // Can't cope with this!
-        fprintf(stderr, "Out is bigger than in, aborting\n");
-        exit(EXIT_FAILURE);
-    }
-    startind = (inlen - outlen) / 2;
-    for (i=0; i < outlen; ++i){
-        out[i] = in[i + startind];
-    }
-    return 0;
-}
-
-
-int main(void){printf("Main\n");}
