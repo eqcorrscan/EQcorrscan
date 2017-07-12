@@ -51,7 +51,7 @@ else:
 
 if IS_MSVC:
     extra_args = ['/openmp']
-    extra_links = []
+    extra_links = ['/MT']
     libs = ['libfftw3f-3']
     lib_dirs = [os.path.join(os.getcwd(), 'fftw'),
                 os.path.join(sys.prefix, 'bin')]
