@@ -61,6 +61,7 @@ else:
     extra_links = ['-lm', '-lgomp']
     libs = ['fftw3f']
     lib_dirs = []
+    inc_dirs = []
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'

@@ -72,6 +72,7 @@ install:
 build: false
 
 test_script:
+  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
   - "%CMD_IN_ENV% python setup.py develop"
   - "%CMD_IN_ENV% python eqcorrscan/tests/match_filter_test.py"
   # - "%CMD_IN_ENV% py.test --ignore=eqcorrscan/tests/tutorial_test.py"
