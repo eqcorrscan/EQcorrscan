@@ -22,7 +22,6 @@ from scipy.signal.signaltools import _centered
 from scipy.fftpack.helper import next_fast_len
 from eqcorrscan.utils.normalise import multi_norm
 from eqcorrscan.utils.libnames import _load_cdll
-from eqcorrscan.core.match_filter import MatchFilterError
 
 
 def multi_normxcorr(templates, stream, pads):
@@ -254,7 +253,6 @@ def fftw_compiled_xcorr(templates, stream, pads):
     # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
-    norm_sum = norm.sum(axis=-1, keepdims=True)
     ccc = np.empty((n_templates, stream_length - template_length + 1),
                    np.float32)
     for i in range(n_templates):
@@ -265,7 +263,6 @@ def fftw_compiled_xcorr(templates, stream, pads):
     if ret:
         raise MemoryError()
     ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
-    # ccc = multi_norm(ccc, stream, norm_sum, template_length)
     ccc[np.isnan(ccc)] = 0.0
     if ret != 0:
         raise MemoryError()

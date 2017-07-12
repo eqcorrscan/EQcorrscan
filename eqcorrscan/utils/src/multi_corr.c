@@ -52,6 +52,7 @@ int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
 	int N2 = N / 2 + 1;
 	int i, j, startind;
 	float norm_sum = 0.0, sum = 0.0, mean, var = 0.0, stdev;
+	float acceptedDiff = 0.0000001;
 	float * signala_ext = (float *) calloc(N, sizeof(float));
 	float * signalb_ext = (float *) calloc(N, sizeof(float));
 	float * ccc = (float *) fftwf_malloc(sizeof(float) * N);
@@ -101,7 +102,7 @@ int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
 	}
 	stdev = sqrtf(var / (a_len));
 
-	if (stdev == 0.0){
+	if (var < acceptedDiff){
         ncc[0]=0;
     }
     else {
@@ -117,15 +118,13 @@ int xcorr_fftw_1d(float *signala, int a_len, float *signalb, int b_len,
 			var += powf(signalb[i + j] - mean, 2);
 		}
 		stdev = sqrtf(var / a_len);
-		if (stdev == 0.0){
-		    ncc[i] = 0.0;
-		}
-		else{
+		if (var > acceptedDiff){
 		    ncc[i] = ((ccc[i + startind] / N) - norm_sum * mean ) / stdev;
 		}
-//	    ncc[i] = ccc[i + startind] / N;
+		else{
+		    ncc[i] = 0.0;
+		}
 	}
-
     //  Clean up
 	fftwf_destroy_plan(pa);
 	fftwf_destroy_plan(pb);
@@ -184,6 +183,7 @@ int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int 
 {
 	int i, j, k;
 	float mean, std, sum=0.0, var=0.0;
+	float acceptedDiff = 0.00000001;
 
 	// Compute starting mean, will update this
 	for (i=0; i < template_len; ++i)
@@ -198,7 +198,7 @@ int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int 
 		var += powf(image[i] - mean, 2);
 	}
 	std = sqrtf(var / (template_len));
-	if (std == 0.0)
+	if (std < acceptedDiff)
 	{
 		for (k=0; k<n; ++k)
 		{
@@ -227,7 +227,7 @@ int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int 
 			var += powf(image[i + j] - mean, 2);
 		}
 		std = sqrtf(var / template_len);
-		if (std == 0.0)
+		if (std < acceptedDiff)
 		{
 			for (k=0; k<n; ++k)
 			{
