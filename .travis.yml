@@ -30,8 +30,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
-      export CC=gcc-4.8;
-      export CXX=g++-4.8;
+      export CC=gcc-4.9;
+      export CXX=g++-4.9;
+#      brew install gcc48 --enable-cxx;
       brew install fftw;
     else
       export OS="Linux";
@@ -76,7 +77,8 @@ install:
   - python setup.py install
 
 script:
-   - python setup.py test
+   - python eqcorrscan/tests/match_filter_test.py
+#   - python setup.py test
 
 after_success:
   # Check how much code is actually tested and send this report to codecov

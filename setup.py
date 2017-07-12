@@ -62,7 +62,7 @@ READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
     ext = [Extension(
         "eqcorrscan.lib.libutils",
-        sources=["eqcorrscan/utils/src/multi_corr.cpp"],
+        sources=["eqcorrscan/utils/src/multi_corr.c"],
         export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"),
         extra_compile_args=extra_args, extra_link_args=extra_links,
         libraries=['fftw3f'], library_dirs=[])]
