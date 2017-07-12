@@ -50,13 +50,17 @@ else:
     IS_MSVC = False
 
 if IS_MSVC:
-    extra_args = ['\openmp']
+    extra_args = ['/openmp']
     extra_links = []
     libs = ['libfftw3f-3']
+    lib_dirs = [os.path.join(os.getcwd(), 'fftw'),
+                os.path.join(sys.prefix, 'bin')]
+    inc_dirs = [os.path.join(os.getcwd(), 'fftw')]
 else:
     extra_args = ['-fopenmp']
     extra_links = ['-lm', '-lgomp']
     libs = ['fftw3f']
+    lib_dirs = []
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
@@ -67,7 +71,7 @@ if not READ_THE_DOCS:
         sources=["eqcorrscan/utils/src/multi_corr.c"],
         export_symbols=export_symbols("eqcorrscan/utils/src/libutils.def"),
         extra_compile_args=extra_args, extra_link_args=extra_links,
-        libraries=libs, library_dirs=[])]
+        libraries=libs, library_dirs=lib_dirs, include_dirs=inc_dirs)]
     cmd_class = {}
 else:
     ext = []
