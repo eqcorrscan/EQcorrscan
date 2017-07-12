@@ -56,7 +56,9 @@ def _load_cdll(name):
     try:
         cdll = ctypes.CDLL(str(libpath))
     except Exception as e:
+        import glob
         print(libpath)
+        print(glob.glob(os.dirname(libpath) + os.sep + '*'))
         msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
         raise ImportError(msg)
     return cdll
