@@ -61,12 +61,7 @@ install:
   - echo $PYTHON_VERSION
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck
   - source activate test-environment
-#  - conda install $PYFLAKES
-#  - conda install pyproj
   - conda install h5py
-#  - pip install coveralls
-#  - pip install geographiclib
-#  - pip install https://github.com/megies/PyImgur/archive/py3.zip
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist codecov Cython
   - pip freeze
   - conda list
@@ -75,8 +70,7 @@ install:
   - python setup.py install
 
 script:
-   - python eqcorrscan/tests/match_filter_test.py
-#   - python setup.py test
+   - python setup.py test
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
