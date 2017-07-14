@@ -32,7 +32,7 @@ import shutil
 import tempfile
 import glob
 
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 from collections import Counter
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
@@ -2928,7 +2928,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     if parallel_process:
         ncores = cpu_count()
     else:
-        ncores = 1
+        ncores = None
     st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
@@ -3379,17 +3379,17 @@ def normxcorr2(template, image):
         correlation of the image with the template.
     :rtype: numpy.ndarray
     """
-    from eqcorrscan.utils.correlate import fftw_compiled_xcorr
+    from eqcorrscan.utils.correlate import fftw_xcorr
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     if len(template) > len(image):
-        ccc = fftw_compiled_xcorr(
+        ccc = fftw_xcorr(
             templates=np.array([image]).astype(np.float32),
             stream=template.astype(np.float32), pads=[0])[0][0]
     else:
-        ccc = fftw_compiled_xcorr(
+        ccc = fftw_xcorr(
             templates=np.array([template]).astype(np.float32),
             stream=image.astype(np.float32), pads=[0])[0][0]
     ccc = ccc.reshape((1, len(ccc)))
@@ -3397,7 +3397,7 @@ def normxcorr2(template, image):
 
 
 def match_filter(template_names, template_list, st, threshold,
-                 threshold_type, trig_int, plotvar, plotdir='.', cores=1,
+                 threshold_type, trig_int, plotvar, plotdir='.', cores=None,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
                  arg_check=True):

@@ -11,7 +11,7 @@ import os
 import unittest
 
 import numpy as np
-from obspy import read, Stream, Trace, UTCDateTime, read_events, Catalog
+from obspy import read, UTCDateTime, read_events, Catalog
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
@@ -25,6 +25,7 @@ from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
+from eqcorrscan.utils.correlate import fftw_xcorr, scipy_normxcorr
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -322,6 +323,19 @@ class TestNCEDCCases(unittest.TestCase):
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
 
+    def test_normxcorr(self):
+        # Test a known issue with early normalisation methods
+        template_array = np.array(
+            [t.select(station='PHOB', channel='EHZ')[0].data.astype(np.float32)
+             for t in self.templates])
+        # template_array = np.array([template_array[0]])
+        stream = self.st.select(
+            station='PHOB', channel='EHZ')[0].data.astype(np.float32)
+        pads = [0 for _ in range(len(template_array))]
+        ccc_scipy, no_chans = scipy_normxcorr(template_array, stream, pads)
+        ccc, no_chans = fftw_xcorr(template_array, stream, pads)
+        self.assertTrue(np.allclose(ccc, ccc_scipy, atol=0.03))
+
     def test_catalog_extraction(self):
         detections, det_cat, detection_streams = \
             match_filter(template_names=self.template_names,
@@ -397,11 +411,10 @@ class TestNCEDCCases(unittest.TestCase):
 
     def test_get_catalog(self):
         """Check that catalog objects are created properly."""
-        detections = match_filter(template_names=self.template_names,
-                                  template_list=self.templates, st=self.st,
-                                  threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
-                                  cores=1)
+        detections = match_filter(
+            template_names=self.template_names, template_list=self.templates,
+            st=self.st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            plotvar=False, plotdir='.', cores=1)
         cat = get_catalog(detections)
         self.assertEqual(len(cat), len(detections))
         for det in detections:
@@ -592,7 +605,7 @@ class TestMatchObjects(unittest.TestCase):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         for fam, check_fam in zip(party, self.party):
             for det, check_det in zip(fam.detections, check_fam.detections):
@@ -600,9 +613,12 @@ class TestMatchObjects(unittest.TestCase):
                     if key == 'event':
                         continue
                     if isinstance(det.__dict__[key], float):
-                        self.assertAlmostEqual(
+                        if not np.allclose(det.__dict__[key],
+                                           check_det.__dict__[key], atol=0.1):
+                            print(key)
+                        self.assertTrue(np.allclose(
                             det.__dict__[key], check_det.__dict__[key],
-                            places=2)
+                            atol=0.2))
                     else:
                         self.assertEqual(
                             det.__dict__[key], check_det.__dict__[key])
