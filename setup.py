@@ -51,17 +51,32 @@ else:
 
 if IS_MSVC:
     extra_args = ['/openmp']
-    extra_links = ['/MT']
+    extra_links = []
     libs = ['libfftw3-3']
     lib_dirs = [os.path.join(os.getcwd(), 'fftw'),
                 os.path.join(sys.prefix, 'bin')]
     inc_dirs = [os.path.join(os.getcwd(), 'fftw')]
 else:
-    extra_args = ['-fopenmp']
+    extra_args = ['-fopenmp', '-ftree-vectorize', '-msse2']
     extra_links = ['-lm', '-lgomp']
     libs = ['fftw3']
     lib_dirs = []
     inc_dirs = []
+
+static_fftw_path = os.environ.get('STATIC_FFTW_DIR', None)
+link_static_fftw = static_fftw_path is not None
+if link_static_fftw:
+    from pkg_resources import get_build_platform
+    if get_build_platform() in ('win32', 'win-amd64'):
+        lib_pre = ''
+        lib_ext = '.lib'
+    else:
+        lib_pre = 'lib'
+        lib_ext = '.a'
+    extra_link_args = []
+    for lib in libs:
+        extra_link_args.append(
+            os.path.join(static_fftw_path, lib_pre + lib + lib_ext))
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
