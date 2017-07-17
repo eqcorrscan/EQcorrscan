@@ -48,17 +48,20 @@ def _load_cdll(name):
     :param name: Name of the library to load (e.g. 'mseed').
     :rtype: :class:`ctypes.CDLL`
     """
+    from pkg_resources import get_build_platform
     # our custom defined part of the extension file name
     libname = _get_lib_name(name)
-    libdir = os.path.join(os.path.dirname(__file__), os.pardir,
-                          'lib')
+    libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
+    try:
+        fftw = ctypes.CDLL(str(os.path.join(libdir, 'libfftw3-3.dll')))
+    except Exception as e:
+        print('Failed to import statis fftw')
+        pass
     try:
         cdll = ctypes.CDLL(str(libpath))
     except Exception as e:
         import glob
-        print(libpath)
-        print(glob.glob(os.path.dirname(libpath) + os.sep + '*'))
         msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
         raise ImportError(msg)
     return cdll

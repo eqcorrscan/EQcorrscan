@@ -1,0 +1,8 @@
+LIBRARY libutils.pyd
+EXPORTS
+    normxcorr_fftw_1d
+    xcorr_fftw_1d
+    run_std_mean
+    xcorr
+    multi_corr
+    multi_normalise
