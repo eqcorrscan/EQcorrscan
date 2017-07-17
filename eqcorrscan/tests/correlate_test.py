@@ -12,7 +12,7 @@ class CorrelateTests(unittest.TestCase):
         templates = np.random.randn(5, 200)
         stream = np.random.randn(10000)
         pads = [0, 0, 0, 0, 0]
-        scipy_ccc, no_chans= scipy_normxcorr(templates, stream, pads)
+        scipy_ccc, no_chans = scipy_normxcorr(templates, stream, pads)
         fftw_ccc, no_chans = fftw_xcorr(templates, stream, pads)
         time_ccc, no_chans = time_multi_normxcorr(templates, stream, pads)
         self.assertTrue(np.allclose(scipy_ccc, fftw_ccc, atol=0.5))
