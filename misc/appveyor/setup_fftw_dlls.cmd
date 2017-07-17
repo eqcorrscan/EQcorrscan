@@ -13,10 +13,9 @@ IF %PYTHON_ARCH% == 64 (
     SET FFTW_DLL_FILENAME=fftw-3.3.5-dll32.zip
 )
 ECHO Extracting DLLs from %FFTW_DLL_FILENAME%
-call 7z.exe e %FFTW_DLL_FILENAME% -offtw *.dll
-call 7z.exe e %FFTW_DLL_FILENAME% -offtw *.def
-call 7z.exe e %FFTW_DLL_FILENAME% -offtw *.h
+call 7z.exe e %FFTW_DLL_FILENAME% -oeqcorrscan\lib *.dll
+call 7z.exe e %FFTW_DLL_FILENAME% -oeqcorrscan\lib *.def
 ECHO Generating def files
-call lib /machine:%MACHINE% /def:fftw\libfftw3-3.def
-call lib /machine:%MACHINE% /def:fftw\libfftw3f-3.def
-call lib /machine:%MACHINE% /def:fftw\libfftw3l-3.def
+call lib /machine:%MACHINE% /def:eqcorrscan\lib\libfftw3-3.def
+call lib /machine:%MACHINE% /def:eqcorrscan\lib\libfftw3f-3.def
+call lib /machine:%MACHINE% /def:eqcorrscan\lib\libfftw3l-3.def
