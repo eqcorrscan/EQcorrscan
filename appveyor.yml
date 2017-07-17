@@ -67,13 +67,14 @@ install:
   - "pip install pytest pytest-pep8 pytest-cov pytest-xdist codecov"
   # list package versions
   - "conda list"
+  # Copy the windows fftw header file
+  - "cp misc/appveyor/fftw3.h eqcorrscan/lib/fftw3.h"
 
 # Not a .NET project
 build: false
 
 test_script:
-  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
-  - "%CMD_IN_ENV% python setup.py develop"
+  - "%CMD_IN_ENV% python setup.py install"
   - "%CMD_IN_ENV% python eqcorrscan/tests/match_filter_test.py"
 
 after_test:
