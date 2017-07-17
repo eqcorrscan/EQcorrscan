@@ -17,7 +17,22 @@ import eqcorrscan
 
 VERSION = eqcorrscan.__version__
 
-if os.environ.get("READTHEDOCS") == "True":
+# Check if we are on RTD and don't build extensions if we are.
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+
+long_description = '''
+EQcorrscan: repeating and near-repeating earthquake detection and analysis 
+in Python.  Open-source routines for: systematic template
+creation, matched-filter detection, subspace detection, brightness detection,
+clustering of seismic events, magnitude calculation by singular value 
+decomposition, and more!
+'''
+
+# Get a list of all the scripts not to be installed
+scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
+scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
+
+if READ_THE_DOCS:
     try:
         environ = os.environb
     except AttributeError:
@@ -29,6 +44,10 @@ if os.environ.get("READTHEDOCS") == "True":
 
 
 def get_package_data():
+    """
+    Get the library files for appveyor - this shouldn't make any difference
+    for install with system libraries.
+    """
     from pkg_resources import get_build_platform
 
     package_data = {}
@@ -39,6 +58,7 @@ def get_package_data():
         
     return package_data
 
+
 def get_package_dir():
     from pkg_resources import get_build_platform
 
@@ -47,6 +67,7 @@ def get_package_dir():
         package_dir['eqcorrscan.lib'] = os.path.join('eqcorrscan', 'lib')
 
     return package_dir
+
 
 def get_include_dirs():
     import numpy
@@ -62,6 +83,7 @@ def get_include_dirs():
 
     return include_dirs
 
+
 def get_library_dirs():
     from pkg_resources import get_build_platform
 
@@ -76,6 +98,7 @@ def get_library_dirs():
 
     return library_dirs
 
+
 def get_libraries():
     from pkg_resources import get_build_platform
 
@@ -88,14 +111,21 @@ def get_libraries():
 
     return libraries
 
+
 def export_symbols(*path):
+    """
+    Required for windows systems - functions defined in libutils.def.
+    """
     lines = open(os.path.join(*path), 'r').readlines()[2:]
     return [s.strip() for s in lines if s.strip() != '']
+
 
 def get_extensions():
     from distutils.extension import Extension
     from pkg_resources import get_build_platform
 
+    if READ_THE_DOCS:
+        return []
     # will use static linking if STATIC_FFTW_DIR defined
     static_fftw_path = os.environ.get('STATIC_FFTW_DIR', None)
     link_static_fftw = static_fftw_path is not None
@@ -145,15 +175,8 @@ def get_extensions():
                   **common_extension_args)]
     return ext_modules
 
-long_description = '''
-EQcorrscan: matched-filter earthquake detection and 
-analysis in Python.  Open-source routines for: systematic template
-creation, multi-parallel matched-filter detection, clustering of
-events, integration with SEISAN, SAC, QuakeML and NonLinLoc,
-magnitude calculation by singular value decomposition, and more!
-'''
 
-class custom_build_ext(build_ext):
+class CustomBuildExt(build_ext):
     def finalize_options(self):
 
         build_ext.finalize_options(self)
@@ -209,73 +232,6 @@ class custom_build_ext(build_ext):
 
             self.libraries = _libraries
 
-class CreateChangelogCommand(Command):
-    '''Depends on the ruby program github_changelog_generator. Install with
-    gem install gihub_changelog_generator.
-    '''
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import subprocess
-        github_token_file = 'github_changelog_generator_token'
-
-        with open(github_token_file) as f:
-            github_token = f.readline().strip()
-
-        subprocess.call(['github_changelog_generator', '-t', github_token])
-
-class TestCommand(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import subprocess
-        errno = subprocess.call([sys.executable, '-m',
-            'unittest', 'discover'])
-        raise SystemExit(errno)
-
-
-# borrowed from scipy via pyNFFT
-def git_version():
-
-    import subprocess
-
-    def _minimal_ext_cmd(cmd):
-        # construct minimal environment
-        env = {}
-        for k in ['SYSTEMROOT', 'PATH']:
-            v = os.environ.get(k)
-            if v is not None:
-                env[k] = v
-        # LANGUAGE is used on win32
-        env['LANGUAGE'] = 'C'
-        env['LANG'] = 'C'
-        env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=env).communicate()[0]
-        return out
-
-    try:
-        out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
-        GIT_REVISION = out.strip().decode('ascii')
-    except OSError:
-        GIT_REVISION = "Unknown"
-
-    return GIT_REVISION
-
-# Get a list of all the scripts not to be installed
-scriptfiles = glob.glob('eqcorrscan/tutorials/*.py')
-scriptfiles += glob.glob('eqcorrscan/scripts/*.py')
 
 def setup_package():
 
@@ -286,7 +242,12 @@ def setup_package():
     except ImportError:
         build_requires = ['numpy>=1.6, <2.0']
 
-    install_requires = []
+    if not READ_THE_DOCS:
+        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+                            'bottleneck', 'obspy>=1.0.3']
+    else:
+        install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
+                            'mock']
     install_requires.extend(build_requires)
 
     setup_args = {
@@ -305,8 +266,9 @@ def setup_package():
             'License :: OSI Approved :: GNU Library or Lesser General Public ' +
             'License (LGPL)',
             'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
         ],
         'keywords': 'earthquake correlation detection match-filter',
         'scripts': scriptfiles,
@@ -314,7 +276,7 @@ def setup_package():
         'setup_requires': ['pytest-runner'],
         'tests_require': ['pytest', 'pytest-cov', 'pytest-pep8',
                           'pytest-xdist'],
-        'cmdclass': {'build_ext': custom_build_ext}
+        'cmdclass': {'build_ext': CustomBuildExt}
     }
 
     if using_setuptools:

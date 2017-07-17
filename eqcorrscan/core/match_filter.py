@@ -3355,16 +3355,7 @@ def extract_from_stream(stream, detections, pad=5.0, length=30.0):
 
 def normxcorr2(template, image):
     """
-    Thin wrapper on openCV match_template function.
-
-    Base function to call the correlation routine from the
-    openCV image processing suite.  Requires you to have installed the
-    openCV python bindings.
-
-    Here we use the :func:`cv2.TM_CCOEFF_NORMED` method within openCV to
-    give the normalized cross-correlation.  Documentation on this function
-    can be found here: `cv2.matchTemplate
-    <http://docs.opencv.org/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#cv2.matchTemplate>`_
+    Thin wrapper to eqcorrscan.utils.correlate functions.
 
     :type template: numpy.ndarray
     :param template: Template array

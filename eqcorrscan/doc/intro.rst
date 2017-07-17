@@ -2,20 +2,22 @@ Introduction to the EQcorrscan package
 ======================================
 
 This document is designed to give you an overview of the capabilities and
-implementation of the EQcorrscan Python module.
+implementation of the EQcorrscan Python package.
 
 Why EQcorrscan?
 ---------------
 EQcorrscan is designed to compute detections of earthquakes, or any seismic signal
-(explosions work *really* well) by comparing templates with continuous data.
+(explosions work *really* well) using more advanced routines than standard
+amplitude-ratio methods.
+
+This package was originally based around a matched-filter detection routine
+which works by comparing templates with continuous data.
 The main benefit of EQcorrscan's matched-filter routine is the level of parallel
-processing that can be achieved.  By exploiting the fact that each template
-does not rely on any other template, detections from a single template through
-a day of seismic data can be computed in parallel.  By computing these in parallel
-rather than a single template through multiple days we reduce IO load.  At a low
-level, each time-step is computed in parallel by using the openCV matchTemplate
-function.  The net result is that these functions are *very* scalable, we have
-obtained a speed-up from 2 months to 10 hours by migrating from a small cluster
+processing that can be achieved.  EQcorrscan will run on anything from a 1GB RAM
+single-board computer to a multi-hundred-GB RAM, thousand CPU high-performance
+computer.  Because the internals of EQcorrscan's matched-filter routine scale
+reasonably well, the developers have observed speed-ups of 150x (from 2 months
+to 10 hours) by migrating from a small cluster
 to a large one (for a 6.5 year long continuous dataset and 800 templates).
 
 The authors of EQcorrscan foresee this project as an open repository for the
@@ -28,50 +30,55 @@ get involved the best place to start, and the most valuable thing for your
 understanding, and for the health of this package would be to contribute tests and
 documentation.
 
-Installation
-------------
+Installation - Updated for version 0.2.0
+----------------------------------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
-for this the |virtualenvwrapper| package is handy.
+|conda| will simplify your install greatly - we recommend creating a conda
+environment with the following:
 
-Within a virtual environment, a fresh install should be as simple as:
+.. code-block:: bash
 
-**pip install eqcorrscan**
+    conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
+    source activate eqcorrscan
 
-In version 0.2.0 we added the dependency **pyASDF** which is not yet listed on pypi.
-Documentation for pyASDF is online here: |pyasdf|.  Because this isn't on pypi,
-you need to install this yourself by following the install instructions on their
-site.  As of 08/11/16 this was:
+Prior to installing the python routines you will need to install the fftw
+library.  On linux use apt (or your default package manager - note you may need
+sudo access):
 
-git clone https://github.com/SeismicData/pyasdf.git
-cd pyasdf
-pip install -v -e .
+.. code-block:: bash
 
-After installing the dependencies.  It is worth having a look at their docs to check
-this install.  EQcorrscan does not (as of 0.2.0) use the parallel io that pyASDF
-can provide.
+    apt-get install libfftw3-dev
 
-Most codes should work without any effort on your part.  However you will need to
-install the openCV-python package yourself.  We recommend installing openCV version
-3, and we recommend installing it from source - it is available via anaconda, but
-it will run faster if you compile it yourself, and it will give more consistent
-results.  See |pyimagesearch| for details for install on all operating systems
-(including raspberry pi, which EQcorrscan runs on too :) ).
+For OS-X systems use either homebrew or macports (if you have these installed),
+or follow the driections on the |fftw-install| page:
 
-On Linux with Python 2.7:
+.. code-block:: bash
 
-**apt-get install python-opencv**
+    brew install fftw
 
-On OSX with Python 2.7:
+For Windows systems you should follow the instructions on the |fftw-windows|
+page and use the pre-compiled dynamic libraries. These should be installed
+somewhere on your system path, or the install location added to your path.
 
-**port install py27-numpy**
-**port install opencv +python27**
-or
-**brew install opencv**
+Once you have installed fftw the EQcorrscan install should be as simple as:
 
-You can also install from source; for Python 3 this is a must as you will have
-to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
-|cv3_ubuntu|.
+.. code-block:: bash
+
+    pip install eqcorrscan
+
+.. |conda| raw:: html
+
+    <a href="https://conda.io/docs/" target="_blank">conda</a>
+
+
+.. |fftw-install| raw:: html
+
+    <a href="http://www.fftw.org/fftw3_doc/Installation-on-Unix.html#Installation-on-Unix" target="_blank">fftw installation</a>
+
+.. |fftw-windows| raw:: html
+
+    <a href="http://www.fftw.org/install/windows.html" target="_blank">fftw-windows install</a>
 
 .. |pyasdf| raw:: html
 
@@ -89,11 +96,6 @@ to install openCV 3.  |pyimagesearch| has lots of lovely tutorials like this
 
    <a href="http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/" target="_blank">install cv3 on ubuntu</a>
 
-On Windows you can follow nice instructions |windows_opencv|.
-
-.. |windows_opencv| raw:: html
-
-   <a href="http://docs.opencv.org/3.1.0/d5/de5/tutorial_py_setup_in_windows.html#gsc.tab=0" target="_blank">here</a>
 
 Note you may have issues with these installs if you don't have numpy installed: but if
 you don't have numpy installed then you have bigger issues...
