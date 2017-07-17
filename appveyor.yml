@@ -50,7 +50,7 @@ install:
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes=0.9.0 cython h5py pyproj"
+  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes=0.9.0 cython h5py pyproj bottleneck"
   # additional dependecies
   - "pip install pyimgur"
 
@@ -75,7 +75,8 @@ build: false
 
 test_script:
   - "%CMD_IN_ENV% python setup.py install"
-  - "%CMD_IN_ENV% python eqcorrscan/tests/match_filter_test.py"
+  - "%CMD_IN_ENV% python eqcorrscan/tests/match_filter_test.py TestCoreMethods"
+  - "%CMD_IN_ENV% python eqcorrscan/tests/correlate_test.py"
 
 after_test:
   #  - "coverage combine"
