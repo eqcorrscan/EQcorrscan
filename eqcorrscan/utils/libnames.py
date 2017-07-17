@@ -54,15 +54,12 @@ def _load_cdll(name):
     libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
     try:
-        fftw = ctypes.CDLL(str(os.path.join(libdir, 'libfftw3-3.dll')))
-    except Exception as e:
-        print('Failed to import static fftw')
-        print(e)
-        pass
-    try:
         cdll = ctypes.CDLL(str(libpath))
     except Exception as e:
-        import glob
-        msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
-        raise ImportError(msg)
+        try:
+            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + libdir
+            cdll = ctypes.CDLL(str(libpath))
+        except:
+            msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
+            raise ImportError(msg)
     return cdll
