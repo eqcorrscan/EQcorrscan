@@ -54,12 +54,12 @@ def _load_cdll(name):
     libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
     try:
+        fftw_lib = ctypes.CDLL(str(os.path.join(libpath, 'libfftw3-3.dll')))
+    except:
+        pass
+    try:
         cdll = ctypes.CDLL(str(libpath))
     except Exception as e:
-        try:
-            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + libdir
-            cdll = ctypes.CDLL(str(libpath))
-        except:
-            msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
-            raise ImportError(msg)
+        msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
+        raise ImportError(msg)
     return cdll
