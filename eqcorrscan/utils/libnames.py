@@ -53,9 +53,15 @@ def _load_cdll(name):
     libname = _get_lib_name(name)
     libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
+    static_fftw = os.path.join(libdir, 'libfftw3-3.dll')
     try:
-        fftw_lib = ctypes.CDLL(str(os.path.join(libdir, 'libfftw3-3.dll')))
+        fftw_lib = ctypes.CDLL(str(static_fftw))
+        print('Loaded static fftw')
     except:
+        print('Failed to load static fftw')
+        import glob
+        for f in glob.glob(libdir, '*'):
+            print(f)
         pass
     try:
         cdll = ctypes.CDLL(str(libpath))

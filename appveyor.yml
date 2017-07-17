@@ -74,6 +74,7 @@ install:
 build: false
 
 test_script:
+  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
   - "%CMD_IN_ENV% python setup.py install"
   - "%CMD_IN_ENV% py.test -n4"
 
