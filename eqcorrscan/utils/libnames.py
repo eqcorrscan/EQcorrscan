@@ -54,7 +54,7 @@ def _load_cdll(name):
     libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
     try:
-        fftw_lib = ctypes.CDLL(str(os.path.join(libpath, 'libfftw3-3.dll')))
+        fftw_lib = ctypes.CDLL(str(os.path.join(libdir, 'libfftw3-3.dll')))
     except:
         pass
     try:
@@ -63,3 +63,7 @@ def _load_cdll(name):
         msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
         raise ImportError(msg)
     return cdll
+
+
+if __name__ == '__main__':
+    cdll = _load_cdll('libutils')
