@@ -142,7 +142,7 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
                     templates=template_array[seed_id],
                     stream=stream_array[seed_id], pads=pad_array[seed_id])
             else:
-                tr_xcorrs, tr_chans = fftw_xcorr(
+                tr_xcorrs, tr_chans = fftw_xcorr_2d(
                     templates=template_array[seed_id],
                     stream=stream_array[seed_id], pads=pad_array[seed_id])
             cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
@@ -158,7 +158,7 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
                 template_array[seed_id], stream_array[seed_id],
                 pad_array[seed_id])) for seed_id in seed_ids]
         else:
-            results = [pool.apply_async(fftw_xcorr, (
+            results = [pool.apply_async(fftw_xcorr_2d, (
                 template_array[seed_id], stream_array[seed_id],
                 pad_array[seed_id])) for seed_id in seed_ids]
         pool.close()
@@ -218,6 +218,82 @@ def time_multi_normxcorr(templates, stream, pads):
                         ccc)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
+    for i in range(len(pads)):
+        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
+    return ccc, used_chans
+
+
+def fftw_xcorr_2d(templates, stream, pads):
+    """
+    Normalised cross-correlation using the fftw library.
+
+    Internally this function used double precision numbers, which is definitely
+    required for seismic data. Cross-correlations are computed as the
+    inverse fft of the dot product of the ffts of the stream and the reversed,
+    normalised, templates.  The cross-correlation is then normalised using the
+    running mean and standard deviation (not using the N-1 correction) of the
+    stream and the sums of the normalised templates.
+
+    This python fucntion wraps the C-library written by C. Chamberlain for this
+    purpose.
+
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
+    """
+    from future.utils import native_str
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.normxcorr_fftw_2d.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
+    utilslib.normxcorr_fftw_2d.restype = ctypes.c_int
+    # Generate a template mask
+    used_chans = ~np.isnan(templates).any(axis=1)
+    template_length = templates.shape[1]
+    stream_length = len(stream)
+    n_templates = templates.shape[0]
+    fftshape = next_fast_len(template_length + stream_length - 1)
+    # # Normalize and flip the templates
+    norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
+        templates.std(axis=-1, keepdims=True) * template_length))
+
+    ccc = np.empty((n_templates, stream_length - template_length + 1),
+                   np.float32).flatten(order='C')
+    ret = utilslib.normxcorr_fftw_2d(
+        np.ascontiguousarray(norm.flatten(order='C'), np.float32),
+        template_length, n_templates,
+        np.ascontiguousarray(stream, np.float32), stream_length,
+        np.ascontiguousarray(ccc, np.float32), fftshape)
+    if ret != 0:
+        print(ret)
+        raise MemoryError()
+    ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
+    for i in range(n_templates):
+        if np.all(np.isnan(norm[i])):
+            ccc[i] = np.zeros(stream_length - template_length + 1)
+    ccc[np.isnan(ccc)] = 0.0
+    if np.any(np.abs(ccc) > 1.01):
+        print('Normalisation error in C code')
+        print(ccc.max())
+        print(ccc.min())
+        raise MemoryError()
+    ccc[ccc > 1.0] = 1.0
+    ccc[ccc < -1.0] = -1.0
     for i in range(len(pads)):
         ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
     return ccc, used_chans

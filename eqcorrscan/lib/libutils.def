@@ -1,6 +1,7 @@
 LIBRARY libutils.pyd
 EXPORTS
     normxcorr_fftw_1d
+    normxcorr_fftw_2d
     xcorr_fftw_1d
     run_std_mean
     xcorr
