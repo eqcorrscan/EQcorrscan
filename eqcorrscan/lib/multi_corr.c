@@ -103,6 +103,7 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	n_threads = omp_get_max_threads();
 	fftw_plan_with_nthreads(n_threads);
 	// Plan
+
 	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
 	fftw_plan pb = fftw_plan_dft_r2c_1d(fft_len, image_ext, outb, FFTW_ESTIMATE);
 	fftw_plan px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out, ccc, FFTW_ESTIMATE);

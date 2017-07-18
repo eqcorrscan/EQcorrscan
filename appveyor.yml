@@ -17,6 +17,7 @@ environment:
     - PYTHON: "C:\\Miniconda-x64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
+      image: "Visual Studio 2015"
 
 matrix:
     allow_failures:
