@@ -37,7 +37,13 @@ install:
   - "conda create -q --yes -n test python=%PYTHON_VERSION%"
   - "activate test"
   # Install default dependencies
-  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes=0.9.0 cython h5py pyproj bottleneck"
+  #  - |
+  #      if [[ "${py:0:1}" == "3" ]]; then
+  #        PYFLAKES="pyflakes=1.0.0"
+  #      else
+  #        PYFLAKES="pyflakes=0.9.0"
+  #      fi
+  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck"
   # additional dependecies
   - "pip install pyimgur"
 
