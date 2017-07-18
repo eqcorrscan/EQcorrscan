@@ -25,26 +25,24 @@
 #if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
     #include <omp.h>
     #define N_THREADS omp_get_max_threads()
-#else
-    #define N_THREADS 1
 #endif
 
 // Prototypes
-int normxcorr_fftw_1d(float *template, int template_len, float *image, int image_len, float *ncc, int fft_len);
+int normxcorr_fftw_1d(float*, int, float*, int, float*, int);
 
-int xcorr_fftw_1d(float *template, int template_len, float *image, int image_len, float *ncc, int fft_len);
+int xcorr_fftw_1d(float*, int, float*, int, float*, int);
 
-int normxcorr_fftw_2d(float *templates, int template_len, int n_templates, float *image, int image_len, float *ncc, int fft_len);
+int normxcorr_fftw_2d(float*, int, int, float*, int, float*, int);
 
-int multi_fftw_normxcorr(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ccc, int fft_len);
+int multi_fftw_normxcorr(float*, int, int, int, float*, int, float*, int);
 
-int run_std_mean(int template_len, float *image, int image_len, float *run_std, float *run_mean);
+int run_std_mean(int, float*, int, float*, float*);
 
-int xcorr (float *template, int template_len, float *image, int image_len, float *ccc);
+int xcorr (float*, int, float*, int, float*);
 
-int multi_corr (float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc);
+int multi_corr (float*, int, int, float*, int, float*);
 
-int multi_normalise(float *ccc, int ccc_len, float *image, float *norm_sum, int template_len, int n);
+int multi_normalise(float*, int, float*, float*, int, int);
 
 // Functions
 int run_std_mean(int template_len, float *image, int image_len, float *run_std, float *run_mean){
@@ -104,9 +102,10 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fftw_complex * outb = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2);
 	fftw_complex * out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
 	// Initialize threads
-	fftw_init_threads();
-	printf("Running the correlation routine with %i threads\n", N_THREADS);
-	fftw_plan_with_nthreads(N_THREADS);
+	#ifdef N_THREADS
+    	fftw_init_threads();
+	    fftw_plan_with_nthreads(N_THREADS);
+	#endif
 	// Plan
 
 	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
@@ -206,7 +205,7 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 
 
 int normxcorr_fftw_1d(float *template, int template_len, float *image, int image_len,
-				  float *ncc, int fft_len){
+				      float *ncc, int fft_len){
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
