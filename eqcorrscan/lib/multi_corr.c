@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fftw3.h>
+#include <omp.h>
 
 // Prototypes
 int normxcorr_fftw_1d(float *template, int template_len, float *image, int image_len, float *ncc, int fft_len);
@@ -29,6 +30,8 @@ int normxcorr_fftw_1d(float *template, int template_len, float *image, int image
 int xcorr_fftw_1d(float *template, int template_len, float *image, int image_len, float *ncc, int fft_len);
 
 int normxcorr_fftw_2d(float *templates, int template_len, int n_templates, float *image, int image_len, float *ncc, int fft_len);
+
+int multi_fftw_normxcorr(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ccc, int fft_len);
 
 int run_std_mean(int template_len, float *image, int image_len, float *run_std, float *run_mean);
 
@@ -86,12 +89,18 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fft_len:        Size for fft (n1)
   */
 	int N2 = fft_len / 2 + 1;
-	int i, t, startind;
+	int i, t, startind, n_threads;
 	double mean, stdev, old_mean, new_samp, old_samp, c, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
 	double * norm_sums = (double *) calloc(n_templates, sizeof(double));
 	double * template_ext = (double *) calloc(fft_len * n_templates, sizeof(double));
 	double * image_ext = (double *) calloc(fft_len, sizeof(double));
 	double * ccc = (double *) fftw_malloc(sizeof(double) * fft_len * n_templates);
+
+	// Initialize threads
+	fftw_init_threads();
+	n_threads = omp_get_max_threads();
+	fftw_plan_with_nthreads(n_threads);
+
 	fftw_complex * outa = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
 	fftw_complex * outb = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2);
 	fftw_complex * out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
@@ -113,8 +122,12 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 		image_ext[i] = (double) image[i];
 	}
 	//  Compute ffts of template and image
-	fftw_execute(pa);
-	fftw_execute(pb);
+	#pragma omp parallel sections
+	{
+	    {fftw_execute(pa); }
+	    #pragma omp section
+	    {fftw_execute(pb); }
+	}
 	//  Compute dot product
 	for (t = 0; t < n_templates; ++t){
     	for (i = 0; i < N2; ++i)
@@ -179,6 +192,7 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fftw_free(ccc);
 
 	fftw_cleanup();
+	fftw_cleanup_threads();
 
 	free(template_ext);
 	free(image_ext);
@@ -404,10 +418,18 @@ int xcorr(float *template, int template_len, float *image, int image_len, float 
 	return 0;
 }
 
+int multi_fftw_normxcorr(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ccc, int fft_len){
+    int i, r=0;
+    for (i = 0; i < n_channels; ++i){
+        r = normxcorr_fftw_2d(&templates[n_templates * template_len * i], template_len,
+                              n_templates, &image[image_len * i], image_len,
+                              &ccc[(image_len - template_len + 1) * n_templates * i], fft_len);
+    }
+    return r;
+}
 
 int multi_corr(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
 	int i;
-	#pragma omp parallel for
 	for (i = 0; i < n_templates; ++i){
 		xcorr(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i]);
 	}

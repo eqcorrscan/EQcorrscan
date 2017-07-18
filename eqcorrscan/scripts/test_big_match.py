@@ -15,7 +15,7 @@ from eqcorrscan.core.match_filter import match_filter
 def test_synth_large():
     print('\tGenerating Synthetic data\n\n')
     templates, data, seeds = synth_seis.generate_synth_data(
-        nsta=10, ntemplates=2, nseeds=5, samp_rate=100, t_length=6,
+        nsta=10, ntemplates=20, nseeds=5, samp_rate=100, t_length=6,
         max_amp=5, max_lag=5, debug=0)
     print('\tRunning the parallel detections\n\n')
     with Timer() as t:

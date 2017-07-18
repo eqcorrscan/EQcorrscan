@@ -272,6 +272,7 @@ def fftw_xcorr_2d(templates, stream, pads):
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
 
+    norm = np.nan_to_num(norm)
     ccc = np.empty((n_templates, stream_length - template_length + 1),
                    np.float32).flatten(order='C')
     ret = utilslib.normxcorr_fftw_2d(
@@ -284,7 +285,7 @@ def fftw_xcorr_2d(templates, stream, pads):
         raise MemoryError()
     ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
     for i in range(n_templates):
-        if np.all(np.isnan(norm[i])):
+        if not used_chans[i]:
             ccc[i] = np.zeros(stream_length - template_length + 1)
     ccc[np.isnan(ccc)] = 0.0
     if np.any(np.abs(ccc) > 1.01):

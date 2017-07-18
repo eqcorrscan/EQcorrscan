@@ -139,14 +139,14 @@ def get_extensions():
     exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
-        # extra_link_args = ['-lm', '-lgomp']
-        # extra_compile_args = ['-fopenmp', '-ftree-vectorize', '-msse2']
-        extra_link_args = ['-lm']
-        extra_compile_args = ['-ftree-vectorize', '-msse2']
+        extra_link_args = ['-lm', '-lgomp']
+        extra_compile_args = ['-fopenmp', '-ftree-vectorize', '-msse2']
+        # extra_link_args = ['-lm']
+        # extra_compile_args = ['-ftree-vectorize', '-msse2']
     else:
         extra_link_args = []
-        # extra_compile_args = ['/openmp']
-        extra_compile_args = []
+        extra_compile_args = ['/openmp']
+        # extra_compile_args = []
 
     libraries = get_libraries()
     if link_static_fftw:
