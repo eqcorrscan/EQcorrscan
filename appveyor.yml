@@ -1,6 +1,8 @@
 
 
 # AppVeyor.com is a Continuous Integration service to build and run tests under Windows
+image:
+  - Visual Studio 2015
 
 environment:
   global:
@@ -15,14 +17,8 @@ environment:
 
   matrix:
     - PYTHON: "C:\\Miniconda-x64"
-      PYTHON_VERSION: "2.7"
+      PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "64"
-      image: "Visual Studio 2015"
-
-matrix:
-    allow_failures:
-      - PYTHON_VERSION: "3.5"
-    fast_finish: true
 
 install:
   - '.\\misc\\appveyor\\trim_path.bat'
