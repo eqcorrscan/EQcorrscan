@@ -145,7 +145,7 @@ def get_extensions():
         # extra_compile_args = ['-ftree-vectorize', '-msse2']
     else:
         extra_link_args = []
-        extra_compile_args = ['/openmp']
+        extra_compile_args = ['/openmp', '/TP']
         # extra_compile_args = []
 
     libraries = get_libraries()
