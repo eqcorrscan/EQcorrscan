@@ -22,7 +22,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fftw3.h>
-#include <omp.h>
+#if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+    #include <omp.h>
+    #define N_THREADS omp_get_max_threads()
+#else
+    #define N_THREADS 1
+#endif
 
 // Prototypes
 int normxcorr_fftw_1d(float *template, int template_len, float *image, int image_len, float *ncc, int fft_len);
@@ -89,7 +94,7 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fft_len:        Size for fft (n1)
   */
 	int N2 = fft_len / 2 + 1;
-	int i, t, startind, n_threads;
+	int i, t, startind;
 	double mean, stdev, old_mean, new_samp, old_samp, c, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
 	double * norm_sums = (double *) calloc(n_templates, sizeof(double));
 	double * template_ext = (double *) calloc(fft_len * n_templates, sizeof(double));
@@ -100,8 +105,8 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fftw_complex * out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
 	// Initialize threads
 	fftw_init_threads();
-	n_threads = omp_get_max_threads();
-	fftw_plan_with_nthreads(n_threads);
+	printf("Running the correlation routine with %i threads\n", N_THREADS);
+	fftw_plan_with_nthreads(N_THREADS);
 	// Plan
 
 	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
