@@ -1,9 +1,6 @@
 
 
 # AppVeyor.com is a Continuous Integration service to build and run tests under Windows
-image:
-  - Visual Studio 2015
-
 environment:
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
