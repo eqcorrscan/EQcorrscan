@@ -13,7 +13,7 @@ from eqcorrscan.utils.correlate import scipy_normxcorr, fftw_xcorr_2d, \
 class CorrelateTests(unittest.TestCase):
     def test_same_various_methods(self):
         templates = np.random.randn(200, 200)
-        stream = np.random.randn(1000000)
+        stream = np.random.randn(10000)
         stream *= stream ** 10
         pads = np.zeros(templates.shape[0], dtype=int)
         tic = time.time()
