@@ -60,6 +60,11 @@ or follow the driections on the |fftw-install| page:
 For Windows systems you should follow the instructions on the |fftw-windows|
 page and use the pre-compiled dynamic libraries. These should be installed
 somewhere on your system path, or the install location added to your path.
+The correlation routines use openMP for parallel workflows, however, some aspects
+of this run into issues with version of MSVC < 10.0 (due to old C standards being
+used), as such, by default, the correlation routines are compiled as serial
+workflows on windows.  If you have a need for this threading in windows please
+get in touch with the developers.
 
 Once you have installed fftw the EQcorrscan install should be as simple as:
 

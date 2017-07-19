@@ -13,6 +13,7 @@ correlate
        :nosignatures:
 
        fftw_xcorr
+       fftw_xcorr_2d
        multichannel_xcorr
        scipy_normxcorr
        time_multi_normxcorr
