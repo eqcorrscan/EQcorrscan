@@ -8,7 +8,7 @@
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.59976.svg)](http://dx.doi.org/10.5281/zenodo.59976)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
-[![Stories in Ready](https://badge.waffle.io/calum-chamberlain/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/calum-chamberlain/EQcorrscan)
+[![Stories in Ready](https://badge.waffle.io/eqcorrscan/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/eqcorrscan/EQcorrscan)
 <!--[![DOI](https://zenodo.org/badge/18852/eqcorrscan/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/eqcorrscan/EQcorrscan)-->
 
 # Installation
