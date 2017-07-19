@@ -17,7 +17,7 @@ from __future__ import unicode_literals
 import numpy as np
 import ctypes
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from scipy.fftpack.helper import next_fast_len
 from eqcorrscan.utils.libnames import _load_cdll
 
@@ -158,7 +158,7 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
                 template_array[seed_id], stream_array[seed_id],
                 pad_array[seed_id])) for seed_id in seed_ids]
         else:
-            results = [pool.apply_async(fftw_xcorr_2d, (
+            results = [pool.apply_async(fftw_xcorr, (
                 template_array[seed_id], stream_array[seed_id],
                 pad_array[seed_id])) for seed_id in seed_ids]
         pool.close()

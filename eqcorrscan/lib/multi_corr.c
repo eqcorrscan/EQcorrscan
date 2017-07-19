@@ -103,7 +103,7 @@ int normxcorr_fftw_2d(float *templates, int template_len, int n_templates,
 	fftw_complex * out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
 	// Initialize threads
 	#ifdef N_THREADS
-    	fftw_init_threads();
+        fftw_init_threads();
 	    fftw_plan_with_nthreads(N_THREADS);
 	#endif
 	// Plan
