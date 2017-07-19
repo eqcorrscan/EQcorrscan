@@ -17,8 +17,9 @@ Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
 Note that, although we support Windows, EQcorrscan is optimized for
 linux style distributions.
 
-Instructions for installing EQcorrscan and the required dependency, openCV
-are linked from the [docs](http://eqcorrscan.readthedocs.io/en/latest/intro.html#installation)
+Instructions for installing EQcorrscan and the required dependencies, openCV
+and pyASDF are linked from the 
+[docs](http://eqcorrscan.readthedocs.io/en/latest/intro.html#installation)
 
 *A note on correlation precision*
 OpenCV computes cross-correlations in the frequency-domain for normal seismic

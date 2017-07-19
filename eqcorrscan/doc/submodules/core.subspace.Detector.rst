@@ -13,6 +13,7 @@ eqcorrscan.core.subspace.Detector
       detect
       energy_capture
       partition
+      plot
       read
       write
 
@@ -22,6 +23,7 @@ eqcorrscan.core.subspace.Detector
    .. automethod:: detect
    .. automethod:: energy_capture
    .. automethod:: partition
+   .. automethod:: plot
    .. automethod:: read
    .. automethod:: write
 

@@ -10,7 +10,6 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 import sys
 import os
 import eqcorrscan
@@ -19,8 +18,6 @@ from codecs import open
 from os import path
 import warnings
 import glob
-from distutils.extension import Extension
-import numpy as np
 try:
     from pypandoc import convert
     read_md = lambda f: convert(f, 'rst')
@@ -32,21 +29,21 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
-if not READ_THE_DOCS:
-    from Cython.Distutils import build_ext
-    ext = [Extension("eqcorrscan.core.subspace_statistic",
-                     ["eqcorrscan/core/subspace_statistic.pyx"],
-                     include_dirs=[np.get_include()])]
-    cmd_class = {'build_ext': build_ext}
-else:
-    ext = []
-    cmd_class = {}
+ext = []
+cmd_class = {}
 
 try:
     import cv2  # NOQA
 except ImportError:
     print(sys.path)
     msg = '##### No cv2 module, openCV, you need to install this yourself'
+    warnings.warn(msg)
+
+try:
+    import pyasdf  # NOQA
+except ImportError:
+    print(sys.path)
+    msg = '##### No pyasdf module, you need to install this yourself'
     warnings.warn(msg)
 
 here = path.abspath(path.dirname(__file__))
@@ -67,7 +64,7 @@ if sys.version_info.major == 2:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
                             'scipy>=0.14', 'multiprocessing',
-                            'LatLon', 'h5py', 'cython']
+                            'LatLon', 'h5py', 'cython', 'bottleneck']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=1.0.0',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
@@ -77,7 +74,8 @@ else:
     if not READ_THE_DOCS:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
-                            'scipy>=0.14', 'LatLon', 'h5py', 'cython']
+                            'scipy>=0.14', 'LatLon', 'h5py', 'cython',
+                            'bottleneck']
     else:
         install_requires = ['numpy>=1.8.0', 'obspy>=0.10.2',
                             'matplotlib>=1.3.0', 'joblib>=0.8.4',
@@ -134,7 +132,7 @@ setup(
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['docs', 'tests', 'test_data',
                                     'grid', 'detections', 'templates',
-                                    'stack_templates', 'par']),
+                                    'stack_templates', 'par', '.git']),
 
     scripts=scriptfiles,
 
@@ -146,7 +144,7 @@ setup(
 
     # Test requirements for using pytest
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'],
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8', 'pytest-xdist'],
 
     # Build our extension for subspace detection
     cmdclass=cmd_class,

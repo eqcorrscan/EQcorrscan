@@ -9,10 +9,11 @@ from __future__ import unicode_literals
 import unittest
 import glob
 import os
-import obspy
 import numpy as np
 import warnings
 import shutil
+import inspect
+import copy
 
 from obspy import read, UTCDateTime, read_events, Stream
 from obspy.clients.fdsn.header import FDSNException
@@ -22,6 +23,8 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
 from eqcorrscan.core.template_gen import from_meta_file, from_client
 from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
+from eqcorrscan.core.template_gen import template_gen, extract_from_stack
+from eqcorrscan.core.template_gen import from_sfile, TemplateGenError
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -39,35 +42,25 @@ class TestTemplateGeneration(unittest.TestCase):
             test_files = os.path.join(os.path.abspath(os.path.
                                                       dirname(__file__)),
                                       'test_data', 'SAC', event, '*')
-            sac_files = glob.glob(test_files)
-
-            # We currently do not support SAC template generation below version
-            # 1.0.0 as before this, SACIO did not fill the reference time,
-            # which is needed for defining pick times.  This is usually the
-            # trace start time, but isn't always...
-            if int(obspy.__version__.split('.')[0]) >= 1:
+            # Test with various input types
+            filelist = glob.glob(test_files)
+            streamlist = [read(f) for f in glob.glob(test_files)]
+            stream = read(test_files)
+            for sac_files in [filelist, streamlist, stream]:
                 template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
                                     samp_rate=samp_rate, filt_order=4,
-                                    length=length,
-                                    swin='all', prepick=0.1, debug=0,
-                                    plot=False)
+                                    length=length, swin='all', prepick=0.1,
+                                    debug=0, plot=False)
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
-            else:
-                with self.assertRaises(NotImplementedError):
-                    template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
-                                        samp_rate=samp_rate, filt_order=4,
-                                        length=length,
-                                        swin='all', prepick=0.1, debug=0,
-                                        plot=False)
 
     def test_tutorial_template_gen(self):
         """Test template generation from tutorial, uses from_client method.
 
         Checks that the tutorial generates the templates we expect it to!
         """
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
         try:
             mktemplates(plot=False)
         except FDSNException:
@@ -75,14 +68,11 @@ class TestTemplateGeneration(unittest.TestCase):
             return
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
-            expected_template = read(os.path.join(testing_path,
-                                                  'tutorial_template_' +
-                                                  str(template_no) + '.ms'))
+            expected_template = read(os.path.join(
+                testing_path, 'tutorial_template_' + str(template_no) + '.ms'))
             for tr in template:
-                expected_tr = expected_template.select(station=tr.stats.
-                                                       station,
-                                                       channel=tr.stats.
-                                                       channel)[0]
+                expected_tr = expected_template.select(
+                    station=tr.stats.station, channel=tr.stats.channel)[0]
                 self.assertTrue((expected_tr.data.astype(np.float32) ==
                                  tr.data.astype(np.float32)).all())
             del(template)
@@ -162,8 +152,10 @@ class TestTemplateGeneration(unittest.TestCase):
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
-        from future import standard_library
-        with standard_library.hooks():
+        import sys
+        if sys.version_info.major == 2:
+            from future.backports.urllib.request import URLError
+        else:
             from urllib.request import URLError
         t = UTCDateTime(2009, 9, 3)
         test_cat = Catalog()
@@ -173,37 +165,37 @@ class TestTemplateGeneration(unittest.TestCase):
         test_cat[0].origins[0].latitude = 45
         test_cat[0].origins[0].longitude = 45
         test_cat[0].origins[0].depth = 5000
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHZ',
-                                                           network_code='BW'),
-                              phase_hint='PG', time=t + 2000))
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHN',
-                                                           network_code='BW'),
-                              phase_hint='SG', time=t + 2005))
-        test_cat[0].\
-            picks.append(Pick(waveform_id=WaveformStreamID(station_code='MANZ',
-                                                           channel_code='EHE',
-                                                           network_code='BW'),
-                              phase_hint='SG', time=t + 2005.5))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHZ', network_code='BW'),
+            phase_hint='PG', time=t + 2000))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHN', network_code='BW'),
+            phase_hint='SG', time=t + 2005))
+        test_cat[0].picks.append(Pick(
+            waveform_id=WaveformStreamID(
+                station_code='MANZ', channel_code='EHE', network_code='BW'),
+            phase_hint='SG', time=t + 2005.5))
 
-        test_url = 'http://teide.geophysik.uni-muenchen.de:8080'
+        test_url = "http://teide.geophysik.uni-muenchen.de:8080"
 
-        try:
-            template = from_seishub(test_cat, url=test_url, lowcut=1.0,
-                                    highcut=5.0, samp_rate=20, filt_order=4,
-                                    length=3, prepick=0.5, swin='all',
-                                    process_len=300)
-        except URLError:
-            warnings.warn('Timed out connection to seishub')
+        if sys.version_info.major == 3:
+            try:
+                template = from_seishub(
+                    test_cat, url=test_url, lowcut=1.0, highcut=5.0,
+                    samp_rate=20, filt_order=4, length=3, prepick=0.5,
+                    swin='all', process_len=300)
+            except URLError:
+                warnings.warn('Timed out connection to seishub')
+        else:
+            warnings.warn('URLError would not be caught on py2.')
         if 'template' in locals():
             self.assertEqual(len(template), 3)
 
     def test_catalog_grouping(self):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_', '*')
+                                    'test_data', 'REA', 'TEST_', '*.S??????')
         catalog = Catalog()
         sfiles = glob.glob(testing_path)
         for sfile in sfiles:
@@ -239,6 +231,105 @@ class TestTemplateGeneration(unittest.TestCase):
                                    length=2, prepick=0.1, swin='S')
         self.assertEqual(len(templates), 1)
 
+    def test_from_sfile(self):
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '15-0931-08L.S201309')
+        event = read_event(sfile=testing_path)
+        template = from_sfile(sfile=testing_path, lowcut=2, highcut=8,
+                              samp_rate=20, filt_order=4, length=10,
+                              swin='all', prepick=0.2, debug=3)
+        self.assertEqual(len(template), len(event.picks))
+
+    def test_upsample_error(self):
+        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'test_data', 'REA', 'TEST_',
+                                    '15-0931-08L.S201309')
+        with self.assertRaises(TemplateGenError):
+            from_sfile(sfile=testing_path, lowcut=2, highcut=8, samp_rate=200,
+                       filt_order=4, length=10, swin='all', prepick=0.2)
+
+
+class TestEdgeGen(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe())))
+        cls.st = read(os.path.join(cls.testing_path, 'test_data',
+                                   'WAV', 'TEST_',
+                                   '2013-09-15-0930-28.DFDPC_027_00'))
+        for tr in cls.st:
+            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+        event = read_event(os.path.join(cls.testing_path, 'test_data',
+                                        'REA', 'TEST_',
+                                        '15-0931-08L.S201309'))
+        cls.picks = event.picks
+
+    def test_undefined_phase_type(self):
+        with self.assertRaises(IOError):
+            template_gen(
+                picks=self.picks, st=self.st.copy(), length=2, swin='bob')
+
+    def test_warn_zeros(self):
+        st = self.st.copy()
+        template = template_gen(self.picks, st.copy(), 10)
+        self.assertTrue('LABE' in [tr.stats.station for tr in template])
+        st.select(station='LABE', channel='SN')[0].data = np.zeros(10000)
+        template = template_gen(self.picks, st, 10)
+        self.assertFalse('LABE' in [tr.stats.station for tr in template])
+
+    def test_missing_data(self):
+        picks = copy.deepcopy(self.picks)
+        picks.append(picks[-1])
+        picks[-1].waveform_id.station_code = 'DUMMY'
+        template = template_gen(picks, self.st.copy(), 10)
+        self.assertFalse('DUMMY' in [tr.stats.station for tr in template])
+
+    def test_no_matched_picks(self):
+        picks = [copy.deepcopy(self.picks[0])]
+        picks[0].waveform_id.station_code = 'DUMMY'
+        template = template_gen(picks, self.st.copy(), 10)
+        self.assertFalse(template)
+
+    def test_debug_levels(self):
+        template = template_gen(self.picks, self.st.copy(), 10, debug=3)
+        self.assertEqual(len(template), len(self.picks))
+
+    def test_extract_from_stack(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45)
+        self.assertEqual(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
+
+    def test_extract_from_stack_and_process(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45,
+                                       pre_processed=False, samp_rate=20,
+                                       lowcut=2, highcut=8)
+        self.assertEqual(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
+
+    def test_extract_from_stack_including_z(self):
+        length = 3
+        stack = self.st.copy()
+        template = template_gen(self.picks, self.st.copy(), 2)
+        extracted = extract_from_stack(stack, template, length=length,
+                                       pre_pick=0.3, pre_pad=45,
+                                       Z_include=True)
+        self.assertLess(len(template), len(extracted))
+        for tr in extracted:
+            self.assertEqual(tr.stats.endtime - tr.stats.starttime,
+                             length)
 
 if __name__ == '__main__':
     unittest.main()

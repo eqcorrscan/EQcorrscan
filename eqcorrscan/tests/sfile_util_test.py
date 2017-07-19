@@ -5,11 +5,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+
+import unittest
+
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
 from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor, nordpick
 from eqcorrscan.utils.sfile_util import _int_conv, _float_conv, _str_conv
 from eqcorrscan.utils.sfile_util import read_event, read_select, blanksfile
-import unittest
 
 
 class TestSfileMethods(unittest.TestCase):
@@ -33,7 +35,7 @@ class TestSfileMethods(unittest.TestCase):
 
         event_list = [('GEONET', '2016p008122'),
                       ('NCEDC', '72572665'),
-                      ('USGS', 'nc72597260')]
+                      ('https://earthquake.usgs.gov', 'nc72597260')]
         for event_info in event_list:
             try:
                 client = Client(event_info[0])
@@ -330,9 +332,9 @@ class TestSfileMethods(unittest.TestCase):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         test_event = readpicks(os.path.join(testing_path, 'Sfile_no_header'))
-        self.assertTrue(np.isnan(test_event.origins[0].latitude))
-        self.assertTrue(np.isnan(test_event.origins[0].longitude))
-        self.assertTrue(np.isnan(test_event.origins[0].depth))
+        self.assertTrue(test_event.origins[0].latitude is None)
+        self.assertTrue(test_event.origins[0].longitude is None)
+        self.assertTrue(test_event.origins[0].depth is None)
 
     def test_read_extra_header(self):
         import os

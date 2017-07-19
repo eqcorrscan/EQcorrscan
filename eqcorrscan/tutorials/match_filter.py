@@ -5,23 +5,19 @@ tutorial and uses those templates.  If you haven't run that tutorial script
 then you will need to before you can run this script.
 """
 
+import glob
+
+from multiprocessing import cpu_count
+from obspy.clients.fdsn import Client
+from obspy import UTCDateTime, Stream, read
+
+from eqcorrscan.utils import pre_processing
+from eqcorrscan.utils import plotting
+from eqcorrscan.core import match_filter
+
+
 def run_tutorial(plot=False):
     """Main function to run the tutorial dataset."""
-
-    from eqcorrscan.utils import pre_processing
-    from eqcorrscan.utils import plotting
-    from eqcorrscan.core import match_filter
-    import glob
-    from multiprocessing import cpu_count
-
-    # This import section copes with namespace changes between obspy versions
-    import obspy
-    if int(obspy.__version__.split('.')[0]) >= 1:
-        from obspy.clients.fdsn import Client
-    else:
-        from obspy.fdsn import Client
-    from obspy import UTCDateTime, Stream, read
-
     # First we want to load our templates
     template_names = glob.glob('tutorial_template_*.ms')
 
@@ -80,21 +76,22 @@ def run_tutorial(plot=False):
         # Merge the stream, it will be downloaded in chunks
         st.merge(fill_value='interpolate')
 
-        # Set how many cores we want to parallel across, we will set this to four
-        # as this is the number of templates, if your machine has fewer than four
-        # cores/CPUs the multiprocessing will wait until there is a free core.
+        # Set how many cores we want to parallel across, we will set this
+        # to four as this is the number of templates, if your machine has
+        # fewer than four cores/CPUs the multiprocessing will wait until there
+        # is a free core.
         # Setting this to be higher than the number of templates will have no
-        # increase in speed as only detections for each template are computed in
-        # parallel.  It may also slow your processing by using more memory than
-        # needed, to the extent that swap may be filled.
+        # increase in speed as only detections for each template are computed
+        # in parallel.  It may also slow your processing by using more memory
+        # than needed, to the extent that swap may be filled.
         if cpu_count() < 4:
             ncores = cpu_count()
         else:
             ncores = 4
 
         # Pre-process the data to set frequency band and sampling rate
-        # Note that this is, and MUST BE the same as the parameters used for the
-        # template creation.
+        # Note that this is, and MUST BE the same as the parameters used for
+        # the template creation.
         print('Processing the seismic data')
         st = pre_processing.shortproc(st, lowcut=2.0, highcut=9.0,
                                       filt_order=4, samp_rate=20.0,
@@ -104,13 +101,11 @@ def run_tutorial(plot=False):
         st = Stream(st)
 
         # Now we can conduct the matched-filter detection
-        detections += match_filter.match_filter(template_names=template_names,
-                                                template_list=templates,
-                                                st=st, threshold=8.0,
-                                                threshold_type='MAD',
-                                                trig_int=6.0, plotvar=plot,
-                                                plotdir='.', cores=ncores,
-                                                debug=1, plot_format='jpg')
+        detections += match_filter.match_filter(
+            template_names=template_names, template_list=templates,
+            st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            plotvar=plot, plotdir='.', cores=ncores, debug=1,
+            plot_format='jpg')
 
     # Now lets try and work out how many unique events we have just to compare
     # with the GeoNet catalog of 20 events on this day in this sequence
@@ -123,6 +118,10 @@ def run_tutorial(plot=False):
                 # was the 'best' match, strongest detection
                 if not master.detect_val > slave.detect_val:
                     keep = False
+                    print('Removed detection at %s with cccsum %s'
+                          % (master.detect_time, master.detect_val))
+                    print('Keeping detection at %s with cccsum %s'
+                          % (slave.detect_time, slave.detect_val))
                     break
         if keep:
             unique_detections.append(master)
