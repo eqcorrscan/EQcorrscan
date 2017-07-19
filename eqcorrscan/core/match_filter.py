@@ -3538,6 +3538,7 @@ def match_filter(template_names, template_list, st, threshold,
         0.1 seconds early. We are working on a solution that will involve
         saving templates alongside associated metadata.
     """
+    _spike_test(st)
     import matplotlib
     matplotlib.use('Agg')
     from eqcorrscan.utils.plotting import _match_filter_plot
