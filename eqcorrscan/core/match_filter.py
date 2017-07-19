@@ -2447,7 +2447,8 @@ class Tribe(object):
                     parallel_process=parallel_process,
                     ignore_length=ignore_length, group_size=group_size,
                     debug=debug)
-                stream += st
+                if return_stream:
+                    stream += st
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
