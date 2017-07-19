@@ -24,7 +24,9 @@
 #include <fftw3.h>
 #if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
     #include <omp.h>
-    #define N_THREADS omp_get_max_threads()
+    #ifndef N_THREADS
+        #define N_THREADS omp_get_max_threads()
+    #endif
 #endif
 
 // Prototypes
@@ -398,25 +400,26 @@ int xcorr_fftw_1d(float *template, int template_len, float *image, int image_len
 
 
 int xcorr(float *template, int template_len, float *image, int image_len, float *ccc){
+    // Time domain cross-correlation
 	int p, k;
 	int steps = image_len - template_len + 1;
-	float numerator, denom;
-	float auto_a = 0.0, auto_b = 0.0;
+	double numerator, denom;
+	double auto_a = 0.0, auto_b = 0.0;
 
 	for(p = 0; p < template_len; ++p){
-		auto_a += template[p] * template[p];
+		auto_a += (double) template[p] * (double) template[p];
 	}
 	for(k = 0; k < steps; ++k){
 		numerator = 0.0;
 		auto_b = 0.0;
 		for(p = 0; p < template_len; ++p){
-			numerator += template[p] * image[p + k];
+			numerator += (double) template[p] * (double) image[p + k];
 		}
 		for(p = 0; p < template_len; ++p){
-			auto_b += image[p + k] * image[p + k];
+			auto_b += (double) image[p + k] * (double) image[p + k];
 		}
-		denom = sqrtf(auto_a * auto_b);
-		ccc[k] = numerator / denom;
+		denom = sqrt(auto_a * auto_b);
+		ccc[k] = (float) (numerator / denom);
 	}
 	return 0;
 }
