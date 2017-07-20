@@ -385,7 +385,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         image_len, cccs, fft_len)
     if ret != 0:
         raise MemoryError()
-    cccs = cccs.reshape((n_channels, n_templates, image_len - template_len + 1))
+    cccs = cccs.reshape((n_channels, n_templates,
+                         image_len - template_len + 1))
     for j in range(n_channels):
         for i in range(n_templates):
             if not used_chans[j][i]:
