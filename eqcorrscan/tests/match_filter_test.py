@@ -25,7 +25,7 @@ from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
-from eqcorrscan.utils.correlate import fftw_xcorr, scipy_normxcorr
+from eqcorrscan.utils.correlate import fftw_normxcorr, scipy_normxcorr
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -333,7 +333,7 @@ class TestNCEDCCases(unittest.TestCase):
             station='PHOB', channel='EHZ')[0].data.astype(np.float32)
         pads = [0 for _ in range(len(template_array))]
         ccc_scipy, no_chans = scipy_normxcorr(template_array, stream, pads)
-        ccc, no_chans = fftw_xcorr(template_array, stream, pads)
+        ccc, no_chans = fftw_normxcorr(template_array, stream, pads)
         self.assertTrue(np.allclose(ccc, ccc_scipy, atol=0.03))
 
     def test_catalog_extraction(self):

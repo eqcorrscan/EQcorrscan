@@ -3370,17 +3370,17 @@ def normxcorr2(template, image):
         correlation of the image with the template.
     :rtype: numpy.ndarray
     """
-    from eqcorrscan.utils.correlate import fftw_xcorr
+    from eqcorrscan.utils.correlate import fftw_normxcorr
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     if len(template) > len(image):
-        ccc = fftw_xcorr(
+        ccc = fftw_normxcorr(
             templates=np.array([image]).astype(np.float32),
             stream=template.astype(np.float32), pads=[0])[0][0]
     else:
-        ccc = fftw_xcorr(
+        ccc = fftw_normxcorr(
             templates=np.array([template]).astype(np.float32),
             stream=image.astype(np.float32), pads=[0])[0][0]
     ccc = ccc.reshape((1, len(ccc)))
