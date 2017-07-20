@@ -12,10 +12,10 @@ correlate
        :toctree: autogen
        :nosignatures:
 
-       fftw_xcorr
-       fftw_xcorr_2d
-       multichannel_xcorr
-       scipy_normxcorr
+       fftw_multi_normxcorr
+       fftw_normxcorr
+       multichannel_normxcorr
+       numpy_normxcorr
        time_multi_normxcorr
 
     .. comment to end block

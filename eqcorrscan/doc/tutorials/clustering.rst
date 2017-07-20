@@ -53,6 +53,7 @@ with the euclidean distance metric.
 .. |clust_link| raw:: html
 
     <a href="http://docs.scipy.org/doc/scipy-0.16.0/reference/cluster.hierarchy.html" target="_blank">hierachical clustering routines</a>
+
 Cluster in time and space
 -------------------------
 

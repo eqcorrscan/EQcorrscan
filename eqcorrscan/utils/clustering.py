@@ -90,7 +90,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
     :type stream_list: list
     :param stream_list:
-        List of the :class:`obspy.core.stream.Stream`s to compute the distance
+        List of the :class:`obspy.core.stream.Stream` to compute the distance
         matrix for
     :type allow_shift: bool
     :param allow_shift: To allow templates to shift or not?
@@ -171,19 +171,21 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :type shift_len: int
     :param shift_len: How many samples to allow the templates to shift in time
     :type save_corrmat: bool
-    :param save_corrmat: If True will save the distance matrix to \
-        dist_mat.npy in the local directory.
+    :param save_corrmat:
+        If True will save the distance matrix to dist_mat.npy in the local
+        directory.
     :type cores: int
-    :param cores: number of cores to use when computing the distance matrix, \
-        defaults to 'all' which will work out how many cpus are available \
-        and hog them.
+    :param cores:
+        number of cores to use when computing the distance matrix, defaults to
+        'all' which will work out how many cpus are available and hog them.
     :type debug: int
-    :param debug: Level of debugging from 1-5, higher is more output, \
+    :param debug:
+        Level of debugging from 1-5, higher is more output,
         currently only level 1 implemented.
 
     :returns:
         List of groups. Each group is a list of
-        :class:`obspy.core.stream.Stream`s making up that group.
+        :class:`obspy.core.stream.Stream` making up that group.
     """
     if cores == 'all':
         num_cores = cpu_count()
@@ -417,10 +419,9 @@ def empirical_svd(stream_list, linear=True):
     """
     Empirical subspace detector generation function.
 
-    Takes a list of \
-    templates and computes the stack as the first order subspace detector, \
-    and the differential of this as the second order subspace detector \
-    following the empirical subspace method of
+    Takes a list of templates and computes the stack as the first order
+    subspace detector, and the differential of this as the second order
+    subspace detector following the empirical subspace method of
     `Barrett & Beroza, 2014 - SRL
     <http://srl.geoscienceworld.org/content/85/3/594.extract>`_.
 
@@ -524,7 +525,7 @@ def corr_cluster(trace_list, thresh=0.9):
 
     :type trace_list: list
     :param trace_list:
-        List of :class:`obspy.core.stream.Trace`s to compute similarity between
+        List of :class:`obspy.core.stream.Trace` to compute similarity between
     :type thresh: float
     :param thresh: Correlation threshold between -1-1
 

@@ -1,6 +1,16 @@
 """
 Correlation functions for multi-channel cross-correlation of seismic data.
 
+Various routines used mostly for testing, including links to a compiled
+routine using FFTW, a Numpy fft routine which uses bottleneck for normalisation
+and a compiled time-domain routine. These have varying levels of efficiency,
+both in terms of overall speed, and in memory usage.  The time-domain is the
+most memory efficient but slowest routine (although fastest for small cases of
+less than a few hundred correlations), the Numpy routine is fast, but memory
+inefficient due to a need to store large double-precision arrays for
+normalisation.  The fftw compiled routine is fastest and more memory efficient
+than the Numpy routine.
+
 :copyright:
     EQcorrscan developers.
 
@@ -23,7 +33,7 @@ from scipy.fftpack.helper import next_fast_len
 from eqcorrscan.utils.libnames import _load_cdll
 
 
-def scipy_normxcorr(templates, stream, pads):
+def numpy_normxcorr(templates, stream, pads):
     """
     Compute the normalized cross-correlation of multiple templates with data.
 
