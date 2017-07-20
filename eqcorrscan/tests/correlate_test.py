@@ -8,7 +8,7 @@ import time
 
 from obspy import Trace, Stream
 
-from eqcorrscan.utils.correlate import scipy_normxcorr, fftw_normxcorr, \
+from eqcorrscan.utils.correlate import numpy_normxcorr, fftw_normxcorr, \
     time_multi_normxcorr, multichannel_normxcorr
 
 
@@ -19,7 +19,7 @@ class CorrelateTests(unittest.TestCase):
         stream *= stream ** 5
         pads = np.zeros(templates.shape[0], dtype=int)
         tic = time.time()
-        scipy_ccc, no_chans = scipy_normxcorr(templates, stream, pads)
+        numpy_ccc, no_chans = numpy_normxcorr(templates, stream, pads)
         toc = time.time()
         print('Scipy took: %f seconds' % (toc-tic))
         tic = time.time()
@@ -36,9 +36,9 @@ class CorrelateTests(unittest.TestCase):
         time_ccc, no_chans = time_multi_normxcorr(templates, stream, pads)
         toc = time.time()
         print('Time-domain took: %f seconds' % (toc-tic))
-        self.assertTrue(np.allclose(scipy_ccc, fftw_ccc, atol=0.001))
-        self.assertTrue(np.allclose(scipy_ccc, fftw_ccc_2d, atol=0.001))
-        self.assertTrue(np.allclose(scipy_ccc, time_ccc, atol=0.12))
+        self.assertTrue(np.allclose(numpy_ccc, fftw_ccc, atol=0.001))
+        self.assertTrue(np.allclose(numpy_ccc, fftw_ccc_2d, atol=0.001))
+        self.assertTrue(np.allclose(numpy_ccc, time_ccc, atol=0.12))
         self.assertTrue(np.allclose(fftw_ccc, time_ccc, atol=0.12))
 
     def test_multi_channel_xcorr(self):
