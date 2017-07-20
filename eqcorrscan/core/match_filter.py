@@ -2446,6 +2446,8 @@ class Tribe(object):
                     chan_id += ('*', )
                 template_channel_ids.append(chan_id)
         template_channel_ids = list(set(template_channel_ids))
+        if return_stream:
+            stream = Stream()
         for i in range(int(download_groups + 1)):
             bulk_info = []
             for chan_id in template_channel_ids:
@@ -2465,6 +2467,8 @@ class Tribe(object):
                     parallel_process=parallel_process,
                     ignore_length=ignore_length, group_size=group_size,
                     debug=debug)
+                if return_stream:
+                    stream += st
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
@@ -2473,7 +2477,7 @@ class Tribe(object):
             family.detections = family._uniq().detections
             family.catalog = get_catalog(family.detections)
         if return_stream:
-            return party, st
+            return party, stream
         else:
             return party
 
