@@ -3542,7 +3542,7 @@ def match_filter(template_names, template_list, st, threshold,
     import matplotlib
     matplotlib.use('Agg')
     from eqcorrscan.utils.plotting import _match_filter_plot
-    from eqcorrscan.utils.correlate import multichannel_xcorr
+    from eqcorrscan.utils.correlate import multichannel_normxcorr
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
@@ -3719,7 +3719,7 @@ def match_filter(template_names, template_list, st, threshold,
         for template in templates:
             print(template)
         print(stream)
-    [cccsums, no_chans, chans] = multichannel_xcorr(
+    [cccsums, no_chans, chans] = multichannel_normxcorr(
         templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')

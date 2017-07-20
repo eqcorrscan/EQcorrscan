@@ -52,7 +52,7 @@ the gh-pages branch.
 
 This package contains routines to enable the user to conduct matched-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
-and writing seismic data, as well as subspace detection, brightness source-scanning
+and writing seismic data, as well as subspace detection, brightness source-scanning,
 relative moment calculation using singular-value decomposition,
 and correlation pick-adjustment for similar events.
 

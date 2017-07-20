@@ -1,10 +1,7 @@
 LIBRARY libutils.pyd
 EXPORTS
-    normxcorr_fftw_1d
-    normxcorr_fftw_2d
-    multi_fftw_normxcorr
-    xcorr_fftw_1d
-    run_std_mean
-    xcorr
-    multi_corr
-    multi_normalise
+    normxcorr_fftw
+    normxcorr_fftw_threaded
+    normxcorr_time
+    multi_normxcorr_fftw
+    multi_normxcorr_time

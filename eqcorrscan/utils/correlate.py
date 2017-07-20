@@ -16,8 +16,9 @@ from __future__ import unicode_literals
 
 import numpy as np
 import ctypes
+from future.utils import native_str
 
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from scipy.fftpack.helper import next_fast_len
 from eqcorrscan.utils.libnames import _load_cdll
 
@@ -69,7 +70,8 @@ def scipy_normxcorr(templates, stream, pads):
     return res.astype(np.float32), used_chans
 
 
-def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
+def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
+                           openmp=False):
     """
     Cross-correlate multiple channels either in parallel or not
 
@@ -83,14 +85,16 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
         A single Stream object to be correlated with the templates.
     :type cores: int
     :param cores:
-        Number of processed to use, if set to None, and dask==False, no
-        multiprocessing will be done.
+        Number of processes to use, if set to None, no Python multiprocessing
+        will be done.
     :type cores: int
     :param cores: Number of cores to loop over
     :type time_domain: bool
     :param time_domain:
         Whether to compute in the time-domain using the compiled openMP
         parallel cross-correlation routine.
+    :type openmp: bool
+    :param openmp: Whether to use the openmp, compiled threaded loop or not.
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -133,7 +137,7 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
                       (template[i].stats.starttime - t_starts[j])))
             for j, template in zip(range(len(templates)), templates)]
         pad_array.update({seed_id: pad_list})
-    if cores is None:
+    if cores is None and not openmp:
         cccsums = np.zeros([len(templates),
                             len(stream[0]) - len(templates[0][0]) + 1])
         for seed_id in seed_ids:
@@ -142,25 +146,26 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
                     templates=template_array[seed_id],
                     stream=stream_array[seed_id], pads=pad_array[seed_id])
             else:
-                tr_xcorrs, tr_chans = fftw_xcorr_2d(
+                tr_xcorrs, tr_chans = fftw_normxcorr(
                     templates=template_array[seed_id],
-                    stream=stream_array[seed_id], pads=pad_array[seed_id])
+                    stream=stream_array[seed_id], pads=pad_array[seed_id],
+                    threaded=True)
             cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
                     chan.append((seed_id.split('.')[1],
                                  seed_id.split('.')[-1].split('_')[0]))
-    else:
+    elif not openmp:
         pool = Pool(processes=cores)
         if time_domain:
             results = [pool.apply_async(time_multi_normxcorr, (
                 template_array[seed_id], stream_array[seed_id],
                 pad_array[seed_id])) for seed_id in seed_ids]
         else:
-            results = [pool.apply_async(fftw_xcorr, (
+            results = [pool.apply_async(fftw_normxcorr, (
                 template_array[seed_id], stream_array[seed_id],
-                pad_array[seed_id])) for seed_id in seed_ids]
+                pad_array[seed_id], False)) for seed_id in seed_ids]
         pool.close()
         results = [p.get() for p in results]
         xcorrs = [p[0] for p in results]
@@ -168,6 +173,17 @@ def multichannel_xcorr(templates, stream, cores=1, time_domain=False):
         pool.join()
         cccsums = np.sum(xcorrs, axis=0)
         no_chans = np.sum(tr_chans.astype(np.int), axis=0)
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
+    else:
+        xcorrs, tr_chans = fftw_multi_normxcorr(
+            template_array=template_array, stream_array=stream_array,
+            pad_array=pad_array, seed_ids=seed_ids)
+        cccsums = np.sum(xcorrs, axis=0)
+        no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
         for seed_id, tr_chan in zip(seed_ids, tr_chans):
             for chan, state in zip(chans, tr_chan):
                 if state:
@@ -190,13 +206,11 @@ def time_multi_normxcorr(templates, stream, pads):
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
-    from future.utils import native_str
-
     used_chans = ~np.isnan(templates).any(axis=1)
 
     utilslib = _load_cdll('libutils')
 
-    utilslib.multi_corr.argtypes = [
+    utilslib.multi_normxcorr_time.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
@@ -205,7 +219,7 @@ def time_multi_normxcorr(templates, stream, pads):
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS'))]
-    utilslib.multi_corr.restype = ctypes.c_int
+    utilslib.multi_normxcorr_time.restype = ctypes.c_int
 
     template_len = templates.shape[1]
     n_templates = templates.shape[0]
@@ -213,9 +227,9 @@ def time_multi_normxcorr(templates, stream, pads):
     ccc = np.ascontiguousarray(
         np.empty((image_len - template_len + 1) * n_templates), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
-    utilslib.multi_corr(t_array, template_len, n_templates,
-                        np.ascontiguousarray(stream, np.float32), image_len,
-                        ccc)
+    utilslib.multi_normxcorr_time(
+        t_array, template_len, n_templates,
+        np.ascontiguousarray(stream, np.float32), image_len, ccc)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
     for i in range(len(pads)):
@@ -223,7 +237,7 @@ def time_multi_normxcorr(templates, stream, pads):
     return ccc, used_chans
 
 
-def fftw_xcorr_2d(templates, stream, pads):
+def fftw_normxcorr(templates, stream, pads, threaded=True):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -243,15 +257,17 @@ def fftw_xcorr_2d(templates, stream, pads):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param threaded:
+        Whether to use the threaded routine or not - note openMP and python
+        multiprocessing don't seem to play nice for this.
+    :type threaded: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
-    from future.utils import native_str
-
     utilslib = _load_cdll('libutils')
 
-    utilslib.normxcorr_fftw_2d.argtypes = [
+    argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
@@ -261,7 +277,13 @@ def fftw_xcorr_2d(templates, stream, pads):
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
-    utilslib.normxcorr_fftw_2d.restype = ctypes.c_int
+    restype = ctypes.c_int
+    if threaded:
+        func = utilslib.normxcorr_fftw_threaded
+    else:
+        func = utilslib.normxcorr_fftw
+    func.argtypes = argtypes
+    func.restype = restype
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
     template_length = templates.shape[1]
@@ -275,7 +297,7 @@ def fftw_xcorr_2d(templates, stream, pads):
     norm = np.nan_to_num(norm)
     ccc = np.empty((n_templates, stream_length - template_length + 1),
                    np.float32).flatten(order='C')
-    ret = utilslib.normxcorr_fftw_2d(
+    ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
@@ -300,79 +322,89 @@ def fftw_xcorr_2d(templates, stream, pads):
     return ccc, used_chans
 
 
-def fftw_xcorr(templates, stream, pads):
+def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     """
-    Normalised cross-correlation using the fftw library.
+    Use a C loop rather than a Python loop - in some cases this will be fast.
 
-    Internally this function used double precision numbers, which is definitely
-    required for seismic data. Cross-correlations are computed as the
-    inverse fft of the dot product of the ffts of the stream and the reversed,
-    normalised, templates.  The cross-correlation is then normalised using the
-    running mean and standard deviation (not using the N-1 correction) of the
-    stream and the sums of the normalised templates.
+    :type template_array: dict
+    :param template_array:
+    :type stream_array: dict
+    :param stream_array:
+    :type pad_array: dict
+    :param pad_array:
+    :type seed_ids: list
+    :param seed_ids:
 
-    This python fucntion wraps the C-library written by C. Chamberlain for this
-    purpose.
-
-    :param templates: 2D Array of templates
-    :type templates: np.ndarray
-    :param stream: 1D array of continuous data
-    :type stream: np.ndarray
-    :param pads: List of ints of pad lengths in the same order as templates
-    :type pads: list
-
-    :return: np.ndarray of cross-correlations
-    :return: np.ndarray channels used
+    rtype: np.ndarray, list
+    :return: 3D Array of cross-correlations and list of used channels.
     """
-    from future.utils import native_str
-
     utilslib = _load_cdll('libutils')
 
-    utilslib.normxcorr_fftw_1d.argtypes = [
+    utilslib.multi_normxcorr_fftw.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_int, ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
-    utilslib.normxcorr_fftw_1d.restype = ctypes.c_int
-    # Generate a template mask
-    used_chans = ~np.isnan(templates).any(axis=1)
-    template_length = templates.shape[1]
-    stream_length = len(stream)
-    n_templates = templates.shape[0]
-    fftshape = next_fast_len(template_length + stream_length - 1)
-    # # Normalize and flip the templates
-    norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
-        templates.std(axis=-1, keepdims=True) * template_length))
-
-    ccc = np.empty((n_templates, stream_length - template_length + 1),
-                   np.float32)
-    for i in range(n_templates):
-        if np.all(np.isnan(norm[i])):
-            ccc[i] = np.zeros(stream_length - template_length + 1)
-        else:
-            ret = utilslib.normxcorr_fftw_1d(
-                np.ascontiguousarray(norm[i], np.float32), template_length,
-                np.ascontiguousarray(stream, np.float32), stream_length,
-                np.ascontiguousarray(ccc[i], np.float32), fftshape)
-            if ret != 0:
-                raise MemoryError()
-    ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
-    ccc[np.isnan(ccc)] = 0.0
-    if np.any(np.abs(ccc) > 1.01):
-        print('Normalisation error in C code')
-        print(ccc.max())
-        print(ccc.min())
+    utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
+    '''
+    Arguments are:
+        templates (stacked [ch_1-t_1, ch_1-t_2, ..., ch_2-t_1, ch_2-t_2, ...])
+        number of templates
+        template length
+        number of channels
+        image (stacked [ch_1, ch_2, ..., ch_n])
+        image length
+        cross-correlations (stacked as per image)
+        fft-length
+    '''
+    used_chans = []
+    template_len = template_array[seed_ids[0]].shape[1]
+    for seed_id in seed_ids:
+        used_chans.append(~np.isnan(template_array[seed_id]).any(axis=1))
+        template_array[seed_id] = (
+            (template_array[seed_id] -
+             template_array[seed_id].mean(axis=-1, keepdims=True)) / (
+                template_array[seed_id].std(axis=-1, keepdims=True) *
+                template_len))
+        template_array[seed_id] = np.nan_to_num(template_array[seed_id])
+    n_channels = len(seed_ids)
+    n_templates = template_array[seed_ids[0]].shape[0]
+    image_len = stream_array[seed_ids[0]].shape[0]
+    fft_len = next_fast_len(template_len + image_len - 1)
+    template_array = np.array(list(template_array.values())).flatten(order='C')
+    stream_array = np.array(list(stream_array.values())).flatten(order='C')
+    cccs = np.empty((n_channels, n_templates, image_len - template_len + 1),
+                    np.float32).flatten(order='C')
+    ret = utilslib.multi_normxcorr_fftw(
+        template_array, n_templates, template_len, n_channels, stream_array,
+        image_len, cccs, fft_len)
+    if ret != 0:
         raise MemoryError()
-    ccc[ccc > 1.0] = 1.0
-    ccc[ccc < -1.0] = -1.0
-    for i in range(len(pads)):
-        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
-    return ccc, used_chans
+    cccs = cccs.reshape((n_channels, n_templates, image_len - template_len + 1))
+    for j in range(n_channels):
+        for i in range(n_templates):
+            if not used_chans[j][i]:
+                cccs[j][i] = np.zeros(image_len - template_len + 1)
+    cccs[np.isnan(cccs)] = 0.0
+    if np.any(np.abs(cccs) > 1.01):
+        print('Normalisation error in C code')
+        print(cccs.max())
+        print(cccs.min())
+        raise MemoryError()
+    cccs[cccs > 1.0] = 1.0
+    cccs[cccs < -1.0] = -1.0
+    for j, seed_id in enumerate(seed_ids):
+        for i in range(len(pad_array[seed_id])):
+            cccs[j][i] = np.append(
+                cccs[j][i],
+                np.zeros(pad_array[seed_id][i]))[pad_array[seed_id][i]:]
+    cccs = cccs.reshape(n_channels, n_templates, image_len - template_len + 1)
+    return cccs, used_chans
 
 
 if __name__ == '__main__':
