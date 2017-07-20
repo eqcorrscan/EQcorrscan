@@ -142,21 +142,13 @@ class TestMethods(unittest.TestCase):
             self.assertTrue(picked_stachan in matched_traces)
 
     def test_interp_normal(self):
-        synth_template = np.sin(np.arange(0, 2, 0.001))
-        synth_detection = synth_template[100:]
-        synth_template = synth_template[0:-10]
-        ccc = normxcorr2(synth_detection, synth_template)
+        synth_template = np.sin(np.arange(0, 4, 0.01))
+        image = np.zeros(1000)
+        image[200] = 1
+        image = np.convolve(image, synth_template)
+        ccc = normxcorr2(synth_template, image)
         shift, coeff = _xcorr_interp(ccc, 0.01)
-        self.assertEqual(shift.round(), 1.0)
-        self.assertEqual(coeff.round(), 1.0)
-
-    def test_interp_few_samples(self):
-        synth_template = np.sin(np.arange(0, 2, 0.001))
-        synth_detection = synth_template[13:]
-        synth_template = synth_template[0:-10]
-        ccc = normxcorr2(synth_detection, synth_template)
-        shift, coeff = _xcorr_interp(ccc, 0.01)
-        self.assertEqual(shift.round(), 0.0)
+        self.assertEqual(shift.round(), 2.0)
         self.assertEqual(coeff.round(), 1.0)
 
     def test_interp_not_enough_samples(self):

@@ -9,16 +9,15 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
-import warnings
 
 import numpy as np
-from obspy import read, Stream, Trace, UTCDateTime, read_events
+from obspy import read, UTCDateTime, read_events, Catalog
 from obspy.clients.fdsn import Client
-from obspy.core.event import Pick
+from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core import template_gen, match_filter
-from eqcorrscan.core.match_filter import _template_loop, MatchFilterError
+from eqcorrscan.core.match_filter import MatchFilterError
 from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
 from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
@@ -26,6 +25,7 @@ from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
+from eqcorrscan.utils.correlate import fftw_normxcorr, scipy_normxcorr
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -78,56 +78,11 @@ class TestCoreMethods(unittest.TestCase):
         image = image[0].data.astype(np.float32)
         ccc = normxcorr2(template, image)[0]
         expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
-        # We know that conda installs of openCV give a different results
-        # to source built - allow this and allow it to pass.
-        self.assertTrue((np.gradient(expected_ccc).round(2) ==
-                         np.gradient(ccc).round(2)).all())
-        if not (ccc == expected_ccc).all():
-            warnings.warn('The expected result was not achieved, ' +
-                          'but it has the same shape')
-
-    def test_perfect_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.random.randn(100).astype(np.float32)))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000).astype(np.float32)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertEqual(ccc.astype(np.float16).max(), 1.0)
-
-    def test_false_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.array([np.nan] * 100)))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertTrue(np.all(ccc == 0))
-
-    def test_normal_template_loop(self):
-        """
-        Check that perfect correlations are carried through.
-        """
-        template = Stream(Trace(np.random.randn(100) * 10.0))
-        template[0].stats.station = 'test'
-        template[0].stats.channel = 'SZ'
-        image = np.zeros(1000)
-        image[200] = 1.0
-        image = np.convolve(image, template[0].data)
-        image += np.random.randn(1099)  # Add random noise
-        chan = image
-        i, ccc = _template_loop(template=template, chan=chan, stream_ind=0)
-        self.assertNotEqual(ccc.max(), 1.0)
+        # We know that conda installs give a slightly different result
+        self.assertTrue(np.allclose(expected_ccc, ccc, atol=0.003))
+        # Differences occur for low correlation values, peak should be the same
+        self.assertTrue(expected_ccc.max(), ccc.max())
+        self.assertTrue(expected_ccc.argmax(), ccc.argmax())
 
     def test_failed_normxcorr(self):
         """Send it the wrong type."""
@@ -341,7 +296,7 @@ class TestNCEDCCases(unittest.TestCase):
                     (tr.stats.network, tr.stats.station, tr.stats.channel))
         template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      t1, t1 + process_len)
+                      t1, t1 + process_len + 1)
                      for stachan in template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous data')
@@ -367,6 +322,19 @@ class TestNCEDCCases(unittest.TestCase):
                          cores=1, extract_detections=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
+
+    def test_normxcorr(self):
+        # Test a known issue with early normalisation methods
+        template_array = np.array(
+            [t.select(station='PHOB', channel='EHZ')[0].data.astype(np.float32)
+             for t in self.templates])
+        # template_array = np.array([template_array[0]])
+        stream = self.st.select(
+            station='PHOB', channel='EHZ')[0].data.astype(np.float32)
+        pads = [0 for _ in range(len(template_array))]
+        ccc_scipy, no_chans = scipy_normxcorr(template_array, stream, pads)
+        ccc, no_chans = fftw_normxcorr(template_array, stream, pads)
+        self.assertTrue(np.allclose(ccc, ccc_scipy, atol=0.03))
 
     def test_catalog_extraction(self):
         detections, det_cat, detection_streams = \
@@ -443,11 +411,10 @@ class TestNCEDCCases(unittest.TestCase):
 
     def test_get_catalog(self):
         """Check that catalog objects are created properly."""
-        detections = match_filter(template_names=self.template_names,
-                                  template_list=self.templates, st=self.st,
-                                  threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
-                                  cores=1)
+        detections = match_filter(
+            template_names=self.template_names, template_list=self.templates,
+            st=self.st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            plotvar=False, plotdir='.', cores=1)
         cat = get_catalog(detections)
         self.assertEqual(len(cat), len(detections))
         for det in detections:
@@ -575,7 +542,7 @@ class TestMatchObjects(unittest.TestCase):
         cls.onehztribe = Tribe().construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len)
+            length=20.0, prepick=0.15, swin='all', process_len=process_len)
         # Download and process the day-long data
         template_stachans = []
         for template in cls.tribe.templates:
@@ -638,15 +605,23 @@ class TestMatchObjects(unittest.TestCase):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         for fam, check_fam in zip(party, self.party):
             for det, check_det in zip(fam.detections, check_fam.detections):
                 for key in det.__dict__.keys():
                     if key == 'event':
                         continue
-                    self.assertEqual(det.__dict__[key],
-                                     check_det.__dict__[key])
+                    if isinstance(det.__dict__[key], float):
+                        if not np.allclose(det.__dict__[key],
+                                           check_det.__dict__[key], atol=0.1):
+                            print(key)
+                        self.assertTrue(np.allclose(
+                            det.__dict__[key], check_det.__dict__[key],
+                            atol=0.2))
+                    else:
+                        self.assertEqual(
+                            det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
     def test_client_detect(self):
@@ -682,10 +657,20 @@ class TestMatchObjects(unittest.TestCase):
         test_party += test_family
         self.assertEqual(len(test_party), 5)
         test_slice = test_party[0:2]
+        # Add new fam with fake det to ensure unique families aren't missed
+        new_family = Family(
+            template=self.tribe[-1].copy(),
+            detections=[Detection(template_name=self.tribe[-1].name,
+                                  detect_time=UTCDateTime(), no_chans=5,
+                                  detect_val=3.5, threshold=2.0,
+                                  typeofdet='corr', threshold_type='MAD',
+                                  threshold_input=8.0)],
+            catalog=Catalog(events=[Event()]))
+        test_slice.families.append(new_family)
         self.assertTrue(isinstance(test_slice, Party))
-        self.assertEqual(len(test_slice), 3)
+        self.assertEqual(len(test_slice), 4)
         test_party += test_slice
-        self.assertEqual(len(test_party), 8)
+        self.assertEqual(len(test_party), 9)
         with self.assertRaises(NotImplementedError):
             test_party += ['bob']
         test_party.sort()
@@ -778,14 +763,14 @@ class TestMatchObjects(unittest.TestCase):
         # Aftershock sequence, with 1Hz data, lots of good correlations = high
         # MAD!
         day_party = daylong_tribe.detect(
-            stream=st, threshold=4.5, threshold_type='MAD', trig_int=6.0,
+            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=True, plotvar=False, parallel_process=False)
-        self.assertEqual(len(day_party), 31)
+        self.assertEqual(len(day_party), 4)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
         self.assertEqual(len(day_catalog), 3)
         pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 31)
+        self.assertEqual(len(pre_picked_cat), 4)
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
@@ -921,9 +906,9 @@ class TestMatchObjects(unittest.TestCase):
                 length=3.0, prepick=0.15, swin='all', process_len=6)
 
 
-def test_match_filter(debug=0, plotvar=False, extract_detections=False,
-                      threshold_type='MAD', threshold=10,
-                      template_excess=False, stream_excess=False):
+def test_match_filter(
+        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
+        threshold=10, template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.

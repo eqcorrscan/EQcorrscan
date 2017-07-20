@@ -73,7 +73,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
     if kchan:
         cccoh /= kchan
-        return cccoh, i
+        return np.round(cccoh, 6), i
     else:
         warnings.warn('No matching channels')
         return 0, i

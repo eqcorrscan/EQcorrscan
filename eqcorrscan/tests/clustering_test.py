@@ -25,7 +25,7 @@ from eqcorrscan.utils.clustering import corr_cluster, dist_mat_km
 from eqcorrscan.utils.clustering import space_cluster, space_time_cluster
 
 
-class ClusteringTestMethods(unittest.TestCase):
+class ClusteringTests(unittest.TestCase):
     """Main testing routines"""
     @classmethod
     def setUpClass(cls):
@@ -33,7 +33,7 @@ class ClusteringTestMethods(unittest.TestCase):
         cls.st2 = cls.st1.copy()
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
-        warnings.simplefilter("always")
+        warnings.simplefilter("ignore")
         client = Client("https://earthquake.usgs.gov")
         starttime = UTCDateTime("2002-01-01")
         endtime = UTCDateTime("2002-01-02")
@@ -53,25 +53,6 @@ class ClusteringTestMethods(unittest.TestCase):
                                         st2=self.st2.copy(), allow_shift=True)
         self.assertEqual(round(cccoh, 6), 1)
         self.assertEqual(i, 0)
-
-    def test_cross_chan_coherence_non_matching(self):
-        """Initial test to ensure cross_chan_coherence runs."""
-        st2 = self.st2.copy()
-        for tr in st2:
-            tr.stats.station += 'A'
-        with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
-            self.assertEqual(len(w), 1)
-            self.assertTrue('No matching channels' in str(w[0].message))
-
-    def test_cross_chan_coherence_non_matching_sampling_rates(self):
-        """Initial test to ensure cross_chan_coherence runs."""
-        st2 = self.st2.copy()
-        for tr in st2:
-            tr.stats.sampling_rate += 20
-        with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
-            self.assertTrue('Sampling rates do not match' in str(w[0].message))
 
     def test_inverted_coherence(self):
         """Reverse channels and ensure we get -1"""
@@ -136,6 +117,79 @@ class ClusteringTestMethods(unittest.TestCase):
         groups = cluster(template_list=stream_list, show=False,
                          corr_thresh=0.3)
         self.assertEqual(len(groups), 9)  # They should cluster reasonably
+
+    def test_corr_cluster(self):
+        """Test the corr_cluster function."""
+        samp_rate = 40
+        testing_path = os.path.join(self.testing_path, 'similar_events')
+        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for stream in stream_list:
+            for tr in stream:
+                if not (tr.stats.station == 'GCSZ' and
+                        tr.stats.channel == 'EHZ'):
+                    stream.remove(tr)
+                    continue
+                tr.detrend('simple')
+                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
+                tr.resample(sampling_rate=samp_rate)
+                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
+        trace_list = [stream[0] for stream in stream_list]
+        output = corr_cluster(trace_list=trace_list, thresh=0.7)
+        self.assertFalse(output.all())
+
+    def test_dist_mat_km(self):
+        """Test spacial clustering."""
+        dist_mat = dist_mat_km(self.cat)
+        self.assertEqual(len(dist_mat), len(self.cat))
+
+    def test_space_cluster(self):
+        """Test the wrapper around dist_mat_km."""
+        groups = space_cluster(catalog=self.cat, d_thresh=1000, show=False)
+        self.assertEqual(len([ev for group in groups for ev in group]),
+                         len(self.cat))
+
+    def test_space_time_cluster(self):
+        """Test clustering in space and time."""
+        groups = space_time_cluster(catalog=self.cat, t_thresh=86400,
+                                    d_thresh=1000)
+        self.assertEqual(len([ev for group in groups for ev in group]),
+                         len(self.cat))
+
+
+class ClusteringTestWarnings(unittest.TestCase):
+    """Main testing routines"""
+    @classmethod
+    def setUpClass(cls):
+        cls.st1 = read()
+        cls.st2 = cls.st1.copy()
+        cls.testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        warnings.simplefilter("always")
+        client = Client("https://earthquake.usgs.gov")
+        starttime = UTCDateTime("2002-01-01")
+        endtime = UTCDateTime("2002-01-02")
+        cls.cat = client.get_events(starttime=starttime, endtime=endtime,
+                                    minmagnitude=6)
+
+    def test_cross_chan_coherence_non_matching(self):
+        """Initial test to ensure cross_chan_coherence runs."""
+        st2 = self.st2.copy()
+        for tr in st2:
+            tr.stats.station += 'A'
+        with warnings.catch_warnings(record=True) as w:
+            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
+            self.assertEqual(len(w), 1)
+            self.assertTrue('No matching channels' in str(w[0].message))
+
+    def test_cross_chan_coherence_non_matching_sampling_rates(self):
+        """Initial test to ensure cross_chan_coherence runs."""
+        st2 = self.st2.copy()
+        for tr in st2:
+            tr.stats.sampling_rate += 20
+        with warnings.catch_warnings(record=True) as w:
+            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
+            self.assertTrue('Sampling rates do not match' in str(w[0].message))
 
     def test_delay_grouping(self):
         """Test grouping by delays"""
@@ -236,26 +290,6 @@ class ClusteringTestMethods(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertTrue('Depreciated' in str(w[0].message))
 
-    def test_corr_cluster(self):
-        """Test the corr_cluster function."""
-        samp_rate = 40
-        testing_path = os.path.join(self.testing_path, 'similar_events')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))
-        stream_list = [read(stream_file) for stream_file in stream_files]
-        for stream in stream_list:
-            for tr in stream:
-                if not (tr.stats.station == 'GCSZ' and
-                        tr.stats.channel == 'EHZ'):
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
-                tr.resample(sampling_rate=samp_rate)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-        trace_list = [stream[0] for stream in stream_list]
-        output = corr_cluster(trace_list=trace_list, thresh=0.7)
-        self.assertFalse(output.all())
-
     def test_corr_unclustered(self):
         """Test the corr_cluster function."""
         samp_rate = 40
@@ -278,24 +312,6 @@ class ClusteringTestMethods(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertTrue('Nothing made it past the first 0.6 threshold'
                             in str(w[0].message))
-
-    def test_dist_mat_km(self):
-        """Test spacial clustering."""
-        dist_mat = dist_mat_km(self.cat)
-        self.assertEqual(len(dist_mat), len(self.cat))
-
-    def test_space_cluster(self):
-        """Test the wrapper around dist_mat_km."""
-        groups = space_cluster(catalog=self.cat, d_thresh=1000, show=False)
-        self.assertEqual(len([ev for group in groups for ev in group]),
-                         len(self.cat))
-
-    def test_space_time_cluster(self):
-        """Test clustering in space and time."""
-        groups = space_time_cluster(catalog=self.cat, t_thresh=86400,
-                                    d_thresh=1000)
-        self.assertEqual(len([ev for group in groups for ev in group]),
-                         len(self.cat))
 
 
 if __name__ == '__main__':
