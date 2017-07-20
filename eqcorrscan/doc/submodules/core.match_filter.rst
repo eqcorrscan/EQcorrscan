@@ -41,8 +41,6 @@ match_filter
        :toctree: autogen
        :nosignatures:
 
-       _channel_loop
-       _template_loop
        _group_process
        _group_detect
        _write_family

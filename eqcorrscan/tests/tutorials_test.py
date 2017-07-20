@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 
 import unittest
 import os
+import pytest
 
 from obspy import read
 
@@ -17,12 +18,19 @@ from eqcorrscan.tutorials import match_filter, lag_calc, subspace
 from eqcorrscan.core.match_filter import read_detections
 
 
+slow = pytest.mark.skipif(
+    not pytest.config.getoption("--runslow"),
+    reason="need --runslow option to run"
+)
+
+
 class TestTutorialScripts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
 
+    @slow
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
         mktemplates(plot=False)
@@ -65,6 +73,7 @@ class TestTutorialScripts(unittest.TestCase):
                               str(template_no) + '.ms'):
                 os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    @slow
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
@@ -92,6 +101,7 @@ class TestTutorialScripts(unittest.TestCase):
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
+    @slow
     def test_subspace(self):
         """Test the subspace tutorial."""
         detections = subspace.run_tutorial(plot=False)

@@ -196,8 +196,8 @@ def template_remove(tr, template, cc_thresh, windowlength,
     if isinstance(template, Trace):
         template = template.data
     with Timer() as t:
-        cc = normxcorr2(tr.data.astype(np.float32),
-                        template.astype(np.float32))
+        cc = normxcorr2(image=tr.data.astype(np.float32),
+                        template=template.astype(np.float32))
         if debug > 3:
             plt.plot(cc.flatten(), 'k', label='cross-correlation')
             plt.legend()

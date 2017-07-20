@@ -56,7 +56,17 @@ will not be used.
 * Stop enforcing two-channel template channel names.
 * Fix bug in detection_multiplot which didn't allow streams with
 fewer traces than template;
-
+* Update internals to custom C fftw-based correlation rather than openCV (Major change);
+    * OpenCV has been removed as a dependancy;
+    * eqcorrscan.core.match_filter.normxcorr2 now calls a compiled C routine;
+    * Parallel workflows handled by openMP rather than Python Multiprocessing
+    for matched-filter operations to allow better memory handling.
+        * It is worth noting that we tried re-writing using SciPy internals
+        which led to a significant speed-up, but with high memory costs,
+        we ended up going with this option, which was the more difficult
+        option, because it allows effective use on SLURM managed systems
+        where python multiprocessing results in un-real memory spikes
+        (issue #88).
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
