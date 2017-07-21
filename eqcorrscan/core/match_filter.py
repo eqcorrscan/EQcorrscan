@@ -2450,7 +2450,11 @@ class Tribe(object):
         template_channel_ids = list(set(template_channel_ids))
         if return_stream:
             stream = Stream()
-        for i in range(int(download_groups + 1)):
+        if int(download_groups) < download_groups:
+            download_groups = int(download_groups) + 1
+        else:
+            download_groups = int(download_groups)
+        for i in range(download_groups):
             bulk_info = []
             for chan_id in template_channel_ids:
                 bulk_info.append((
@@ -3003,7 +3007,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
 
 def _group_process(template_group, parallel, debug, cores, stream):
     """
-    Process data into chunks based on template procesing length.
+    Process data into chunks based on template processing length.
 
     Templates in template_group must all have the same processing parameters.
 
@@ -3029,9 +3033,18 @@ def _group_process(template_group, parallel, debug, cores, stream):
         'parallel': parallel, 'num_cores': cores}
     if master.process_length == 86400:
         func = dayproc
+        # Check that data all start on the same day, otherwise strange
+        # things will happen...
+        starttimes = [tr.stats.starttime.date for tr in stream]
+        if not len(list(set(starttimes))) == 1:
+            warnings.warn('Data start on different days, setting to last day')
+            starttime = UTCDateTime(
+                stream.sort(['starttime'])[-1].stats.starttime.date)
+        else:
+            starttime = stream.sort(['starttime'])[0].stats.starttime
     else:
         func = shortproc
-    starttime = stream.sort(['starttime'])[0].stats.starttime
+        starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
     n_chunks = int((endtime - starttime + 1) / master.process_length)
     if n_chunks == 0:
@@ -3039,13 +3052,15 @@ def _group_process(template_group, parallel, debug, cores, stream):
               'not computing detections')
     for i in range(n_chunks):
         kwargs.update(
-            {'starttime': stream[0].stats.starttime +
-             (i * master.process_length)})
+            {'starttime': starttime + (i * master.process_length)})
         if master.process_length != 86400:
             kwargs.update(
-                {'endtime': kwargs['starttime'] +
-                 master.process_length})
-        processed_streams.append(func(st=stream.copy(), **kwargs))
+                {'endtime': kwargs['starttime'] + master.process_length})
+            chunk_stream = stream.trim(starttime=kwargs['starttime'],
+                                       endtime=kwargs['endtime']).copy()
+        else:
+            chunk_stream = stream.copy()
+        processed_streams.append(func(st=chunk_stream, **kwargs))
     return processed_streams
 
 
@@ -3383,11 +3398,12 @@ def normxcorr2(template, image):
     if len(template) > len(image):
         ccc = fftw_normxcorr(
             templates=np.array([image]).astype(np.float32),
-            stream=template.astype(np.float32), pads=[0])[0][0]
+            stream=template.astype(np.float32), pads=[0],
+            threaded=False)[0][0]
     else:
         ccc = fftw_normxcorr(
             templates=np.array([template]).astype(np.float32),
-            stream=image.astype(np.float32), pads=[0])[0][0]
+            stream=image.astype(np.float32), pads=[0], threaded=False)[0][0]
     ccc = ccc.reshape((1, len(ccc)))
     return ccc
 
