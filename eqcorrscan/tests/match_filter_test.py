@@ -631,7 +631,7 @@ class TestMatchObjects(unittest.TestCase):
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
-        self.assertEqual(len(party), 5)
+        self.assertEqual(len(party), 4)
 
     def test_party_io(self):
         """Test reading and writing party objects."""
