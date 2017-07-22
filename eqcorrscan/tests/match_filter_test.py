@@ -9,7 +9,6 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
-import pytest
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog
@@ -157,7 +156,6 @@ class TestSynthData(unittest.TestCase):
 
 class TestGeoNetCase(unittest.TestCase):
     @classmethod
-    @pytest.mark.xfail(raises=TimeoutError)
     def setUpClass(cls):
         client = Client('GEONET')
         cls.t1 = UTCDateTime(2016, 9, 4)
@@ -250,7 +248,6 @@ class TestGeoNetCase(unittest.TestCase):
                 threshold_type='MAD', trig_int=6.0, plotvar=False,
                 plotdir='.', cores=1)
 
-    @pytest.mark.xfail(raises=TimeoutError)
     def test_geonet_tribe_detect(self):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
@@ -266,7 +263,6 @@ class TestGeoNetCase(unittest.TestCase):
 
 class TestNCEDCCases(unittest.TestCase):
     @classmethod
-    @pytest.mark.xfail(raises=TimeoutError)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -522,7 +518,6 @@ class TestMatchCopy(unittest.TestCase):
 
 class TestMatchObjects(unittest.TestCase):
     @classmethod
-    @pytest.mark.xfail(raises=TimeoutError)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -629,7 +624,6 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
-    @pytest.mark.xfail(raises=TimeoutError)
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
