@@ -56,6 +56,13 @@ or follow the driections on the |fftw-install| page:
 .. code-block:: bash
 
     brew install fftw
+    
+On OSX you will have to ensure that the gcc used for install is an actual gcc,
+not clang. To do this you should also install gcc into your conda environment:
+
+.. code-block:: bash
+
+    conda install gcc
 
 For Windows systems you should follow the instructions on the |fftw-windows|
 page and use the pre-compiled dynamic libraries. These should be installed
