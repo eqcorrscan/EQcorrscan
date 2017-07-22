@@ -627,7 +627,7 @@ class TestMatchObjects(unittest.TestCase):
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
-        party = self.tribe.client_detect(
+        party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
