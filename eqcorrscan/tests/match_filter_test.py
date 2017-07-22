@@ -11,7 +11,7 @@ import os
 import unittest
 
 import numpy as np
-from obspy import read, UTCDateTime, read_events, Catalog
+from obspy import read, UTCDateTime, read_events, Catalog, Stream
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
@@ -119,23 +119,6 @@ class TestSynthData(unittest.TestCase):
             os.remove('cccsum_1.npy')
         if os.path.isfile('peaks_1970-01-01.pdf'):
             os.remove('peaks_1970-01-01.pdf')
-
-    # def test_debug_level_three(self):
-    #     debug = 3
-    #     print('Testing for debug level=%s' % debug)
-    #     kfalse, ktrue = test_match_filter(debug=debug)
-    #     if ktrue > 0:
-    #         self.assertTrue(kfalse / ktrue < 0.25)
-    #     else:
-    #         # Randomised data occasionally yields 0 detections
-    #         kfalse, ktrue = test_match_filter(debug=debug)
-    #         self.assertTrue(kfalse / ktrue < 0.25)
-    #     if os.path.isfile('cccsum_0.npy'):
-    #         os.remove('cccsum_0.npy')
-    #     if os.path.isfile('cccsum_1.npy'):
-    #         os.remove('cccsum_1.npy')
-    #     if os.path.isfile('peaks_1970-01-01.pdf'):
-    #         os.remove('peaks_1970-01-01.pdf')
 
     def test_threshold_methods(self):
         # Test other threshold methods
@@ -252,8 +235,11 @@ class TestGeoNetCase(unittest.TestCase):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
         # data
-        for template in self.tribe.templates:
+        tribe = self.tribe.copy()
+        for template in tribe.templates:
             template.process_length = 86400
+            template.st = Stream(template.st[0])
+            # Only run one channel templates
         party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
