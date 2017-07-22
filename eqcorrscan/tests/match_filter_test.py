@@ -11,12 +11,11 @@ import os
 import unittest
 
 import numpy as np
-from obspy import read, UTCDateTime, read_events, Catalog
+from obspy import read, UTCDateTime, read_events, Catalog, Stream
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
-from eqcorrscan.core import template_gen, match_filter
 from eqcorrscan.core.match_filter import MatchFilterError
 from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
 from eqcorrscan.core.match_filter import read_detections, get_catalog
@@ -25,7 +24,7 @@ from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
-from eqcorrscan.utils.correlate import fftw_normxcorr, scipy_normxcorr
+from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -121,23 +120,6 @@ class TestSynthData(unittest.TestCase):
         if os.path.isfile('peaks_1970-01-01.pdf'):
             os.remove('peaks_1970-01-01.pdf')
 
-    # def test_debug_level_three(self):
-    #     debug = 3
-    #     print('Testing for debug level=%s' % debug)
-    #     kfalse, ktrue = test_match_filter(debug=debug)
-    #     if ktrue > 0:
-    #         self.assertTrue(kfalse / ktrue < 0.25)
-    #     else:
-    #         # Randomised data occasionally yields 0 detections
-    #         kfalse, ktrue = test_match_filter(debug=debug)
-    #         self.assertTrue(kfalse / ktrue < 0.25)
-    #     if os.path.isfile('cccsum_0.npy'):
-    #         os.remove('cccsum_0.npy')
-    #     if os.path.isfile('cccsum_1.npy'):
-    #         os.remove('cccsum_1.npy')
-    #     if os.path.isfile('peaks_1970-01-01.pdf'):
-    #         os.remove('peaks_1970-01-01.pdf')
-
     def test_threshold_methods(self):
         # Test other threshold methods
         for threshold_type, threshold in [('absolute', 2),
@@ -159,10 +141,10 @@ class TestGeoNetCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         client = Client('GEONET')
-        t1 = UTCDateTime(2016, 9, 4)
-        t2 = t1 + 86400
+        cls.t1 = UTCDateTime(2016, 9, 4)
+        cls.t2 = cls.t1 + 86400
         catalog = get_geonet_events(
-            startdate=t1, enddate=t2, minmag=4, minlat=-49, maxlat=-35,
+            startdate=cls.t1, enddate=cls.t2, minmag=4, minlat=-49, maxlat=-35,
             minlon=175.0, maxlon=185.0)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
@@ -172,25 +154,28 @@ class TestGeoNetCase(unittest.TestCase):
             extra_pick.time = event.picks[0].time + 10
             extra_pick.waveform_id = event.picks[0].waveform_id
             event.picks.append(extra_pick)
-        cls.templates = template_gen.from_client(
-            catalog=catalog, client_id='GEONET', lowcut=2.0, highcut=9.0,
-            samp_rate=50.0, filt_order=4, length=3.0, prepick=0.15, swin='all',
-            process_len=3600)
+        cls.tribe = Tribe()
+        cls.tribe.construct(
+            method='from_client', catalog=catalog, client_id='GEONET',
+            lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
+            length=3.0, prepick=0.15, swin='all', process_len=3600)
+        cls.templates = [t.st for t in cls.tribe.templates]
         # Download and process the day-long data
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
-                      tr.stats.channel, t1 + (4 * 3600), t1 + (5 * 3600))
+                      tr.stats.channel, cls.t1 + (4 * 3600),
+                      cls.t1 + (5 * 3600))
                      for tr in cls.templates[0]]
         # Just downloading an hour of data
         print('Downloading data')
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
-        st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
+        st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         # This is slow?
         print('Processing continuous data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             debug=0, num_cores=1)
-        cls.st.trim(t1 + (4 * 3600), t1 + (5 * 3600)).sort()
+        cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
 
@@ -240,25 +225,26 @@ class TestGeoNetCase(unittest.TestCase):
         for tr, staname in zip(st, ['a', 'b', 'c', 'd', 'e']):
             tr.stats.station = staname
         with self.assertRaises(IndexError):
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=st,
-                         threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+            match_filter(
+                template_names=self.template_names,
+                template_list=self.templates, st=st, threshold=8.0,
+                threshold_type='MAD', trig_int=6.0, plotvar=False,
+                plotdir='.', cores=1)
 
-    # Can't run this on CI.
-    # def test_plot(self):
-    #     try:
-    #         detections = match_filter(template_names=self.template_names,
-    #                                   template_list=self.templates,
-    #                                   st=self.st,
-    #                                   threshold=8.0, threshold_type='MAD',
-    #                                   trig_int=6.0, plotvar=True,
-    #                                   plotdir='.',
-    #                                   cores=1)
-    #         self.assertEqual(len(detections), 1)
-    #         self.assertEqual(detections[0].no_chans, 6)
-    #     except RuntimeError:
-    #         print('Could not test plotting')
+    def test_geonet_tribe_detect(self):
+        client = Client('GEONET')
+        # Try to force issues with starting samples on wrong day for geonet
+        # data
+        tribe = self.tribe.copy()
+        for template in tribe.templates:
+            template.process_length = 86400
+            template.st = Stream(template.st[0])
+            # Only run one channel templates
+        party = self.tribe.copy().client_detect(
+            client=client, starttime=self.t1, endtime=self.t2,
+            threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            daylong=False, plotvar=False)
+        self.assertEqual(len(party), 16)
 
 
 class TestNCEDCCases(unittest.TestCase):
@@ -332,9 +318,9 @@ class TestNCEDCCases(unittest.TestCase):
         stream = self.st.select(
             station='PHOB', channel='EHZ')[0].data.astype(np.float32)
         pads = [0 for _ in range(len(template_array))]
-        ccc_scipy, no_chans = scipy_normxcorr(template_array, stream, pads)
+        ccc_numpy, no_chans = numpy_normxcorr(template_array, stream, pads)
         ccc, no_chans = fftw_normxcorr(template_array, stream, pads)
-        self.assertTrue(np.allclose(ccc, ccc_scipy, atol=0.03))
+        self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.03))
 
     def test_catalog_extraction(self):
         detections, det_cat, detection_streams = \
@@ -631,7 +617,7 @@ class TestMatchObjects(unittest.TestCase):
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
-        self.assertEqual(len(party), 5)
+        self.assertEqual(len(party), 4)
 
     def test_party_io(self):
         """Test reading and writing party objects."""

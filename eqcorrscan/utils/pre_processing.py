@@ -318,6 +318,24 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
+    # Set the start-time to a day start - cope with
+    if starttime is None:
+        startdates = []
+        for tr in st:
+            if abs(tr.stats.starttime - (UTCDateTime(
+                    tr.stats.starttime.date) + 86400)) < tr.stats.delta:
+                # If the trace starts within 1 sample of the next day, use the
+                # next day as the startdate
+                startdates.append((tr.stats.starttime + 86400).date)
+                warnings.warn('%s starts within 1 sample of the next day, '
+                              'using this time %s' %
+                              (tr.id, (tr.stats.starttime + 86400).date))
+            else:
+                startdates.append(tr.stats.starttime.date)
+        # Check that all traces start on the same date...
+        if not len(set(startdates)) == 1:
+            raise NotImplementedError('Traces start on different days')
+        starttime = UTCDateTime(startdates[0])
     if parallel:
         if not num_cores:
             num_cores = cpu_count()

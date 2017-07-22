@@ -290,7 +290,7 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 
 
 int normxcorr_time(float *template, int template_len, float *image, int image_len, float *ccc){
-    // Time domain cross-correlation
+    // Time domain cross-correlation - requires zero-mean template and image
 	int p, k;
 	int steps = image_len - template_len + 1;
 	double numerator = 0.0, denom;

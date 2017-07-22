@@ -231,6 +231,11 @@ def time_multi_normxcorr(templates, stream, pads):
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.multi_normxcorr_time.restype = ctypes.c_int
 
+    # Need to de-mean everything
+    templates_means = templates.mean(axis=1).astype(np.float32)[:, np.newaxis]
+    stream_mean = stream.mean().astype(np.float32)
+    templates = templates.astype(np.float32) - templates_means
+    stream = stream.astype(np.float32) - stream_mean
     template_len = templates.shape[1]
     n_templates = templates.shape[0]
     image_len = stream.shape[0]
@@ -244,6 +249,8 @@ def time_multi_normxcorr(templates, stream, pads):
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
     for i in range(len(pads)):
         ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
+    templates += templates_means
+    stream += stream_mean
     return ccc, used_chans
 
 

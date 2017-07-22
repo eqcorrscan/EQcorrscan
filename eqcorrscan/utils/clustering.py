@@ -24,8 +24,8 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from obspy.signal.cross_correlation import xcorr
 from obspy import Stream, Catalog, UTCDateTime, Trace
 
-from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.correlate import time_multi_normxcorr
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 
@@ -60,16 +60,20 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     for tr in st1:
         tr2 = st2.select(station=tr.stats.station,
                          channel=tr.stats.channel)
-        if tr2 and tr.stats.sampling_rate != tr2[0].stats.sampling_rate:
+        if len(tr2) > 0 and tr.stats.sampling_rate != \
+                tr2[0].stats.sampling_rate:
             warnings.warn('Sampling rates do not match, not using: %s.%s'
                           % (tr.stats.station, tr.stats.channel))
-        if tr2 and allow_shift:
+        if len(tr2) > 0 and allow_shift:
             index, corval = xcorr(tr, tr2[0],
                                   int(shift_len * tr.stats.sampling_rate))
             cccoh += corval
             kchan += 1
-        elif tr2:
-            cccoh += normxcorr2(tr.data, tr2[0].data)[0][0]
+        elif len(tr2) > 0:
+            min_len = min(len(tr.data), len(tr2[0].data))
+            cccoh += time_multi_normxcorr(
+                np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
+                [0])[0][0][0]
             kchan += 1
     if kchan:
         cccoh /= kchan
@@ -114,11 +118,9 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         # Start a parallel processing pool
         pool = Pool(processes=cores)
         # Parallel processing
-        results = [pool.apply_async(cross_chan_coherence, args=(master,
-                                                                stream_list[j],
-                                                                allow_shift,
-                                                                shift_len,
-                                                                j))
+        results = [pool.apply_async(cross_chan_coherence,
+                                    args=(master, stream_list[j], allow_shift,
+                                          shift_len, j))
                    for j in range(len(stream_list))]
         pool.close()
         # Extract the results when they are done
@@ -141,8 +143,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
 
 def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
-            shift_len=0, save_corrmat=False,
-            cores='all', debug=1):
+            shift_len=0, save_corrmat=False, cores='all', debug=1):
     """
     Cluster template waveforms based on average correlations.
 
@@ -203,8 +204,6 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
         if debug >= 1:
             print('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    # plt.matshow(dist_mat, aspect='auto', origin='lower',
-    #             cmap=pylab.cm.YlGnBu)
     if debug >= 1:
         print('Computing linkage')
     Z = linkage(dist_vec)
@@ -544,7 +543,8 @@ def corr_cluster(trace_list, thresh=0.9):
     output = np.array([False] * len(trace_list))
     group1 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr2(tr.data, stack.data)[0][0] > 0.6:
+        if time_multi_normxcorr(
+                np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
             output[i] = True
             group1.append(tr)
     if not group1:
@@ -553,7 +553,8 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr2(tr.data, stack.data)[0][0] > thresh:
+        if time_multi_normxcorr(
+                np.array([tr.data]), stack.data, [0])[0][0][0] > thresh:
             group2.append(tr)
             output[i] = True
         else:
