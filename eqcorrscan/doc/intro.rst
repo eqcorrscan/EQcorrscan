@@ -50,12 +50,11 @@ sudo access):
 
     apt-get install libfftw3-dev
 
-For OS-X systems use either homebrew or macports (if you have these installed),
-or follow the driections on the |fftw-install| page:
+For OS-X systems install fftw from conda, available via the menpo channel:
 
 .. code-block:: bash
 
-    brew install fftw
+    conda install -c menpo fftw
     
 On OSX you will have to ensure that the gcc used for install is an actual gcc,
 not clang. To do this you should also install gcc into your conda environment:
