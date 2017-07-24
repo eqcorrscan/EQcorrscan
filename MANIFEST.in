@@ -11,6 +11,8 @@ recursive-include eqcorrscan/tutorials *.py
 recursive-include eqcorrscan/doc *
 recursive-include eqcorrscan/core *.py
 recursive-include eqcorrscan/tests *.py
+include eqcorrscan/lib/libutils.def
+include eqcorrscan/lib/multi_corr.c
 
 # exclude rules
 # global-exclude *.pyc *.ms *.tgz
