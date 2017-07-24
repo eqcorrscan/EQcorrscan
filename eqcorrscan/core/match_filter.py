@@ -306,6 +306,8 @@ class Party(object):
         >>> party[1:]
         Party of 2 Families.
         """
+        if len(self.families) == 0:
+            return None
         if isinstance(index, slice):
             return self.__class__(families=self.families.__getitem__(index))
         else:
@@ -752,7 +754,8 @@ class Party(object):
             if not pre_processed:
                 processed_streams = _group_process(
                     template_group=group, cores=cores, parallel=parallel,
-                    stream=stream.copy(), debug=debug)
+                    stream=stream.copy(), debug=debug, daylong=False,
+                    ignore_length=False, overlap=0.0)
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
@@ -763,12 +766,11 @@ class Party(object):
             temp_cat = lag_calc(
                 detections=det_group, detect_data=processed_stream,
                 template_names=[t.name for t in group],
-                templates=[t.st for t in group],
-                shift_len=shift_len, min_cc=min_cc,
-                horizontal_chans=horizontal_chans,
+                templates=[t.st for t in group],  shift_len=shift_len,
+                min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, cores=cores,
-                interpolate=interpolate, plot=plot,
-                parallel=parallel, debug=debug)
+                interpolate=interpolate, plot=plot, parallel=parallel,
+                debug=debug)
             for event in temp_cat:
                 det = [d for d in det_group
                        if str(d.id) == str(event.resource_id)][0]
@@ -1648,7 +1650,7 @@ class Template(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                pre_processed=False, daylong=False, parallel_process=True,
-               ignore_length=False, debug=0):
+               ignore_length=False, overlap="calculate", debug=0):
         """
         Detect using a single template within a continuous stream.
 
@@ -1691,6 +1693,13 @@ class Template(object):
             are there for at least 80% of the day, if you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
+        :type overlap: float
+        :param overlap:
+            Either None, "calculate" or a float of number of seconds to
+            overlap detection streams by.  This is to counter the effects of
+            the delay-and-stack in calcualting cross-correlation sums. Setting
+            overlap = "calculate" will work out the appropriate overlap based
+            on the maximum lags within templates.
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
@@ -1760,7 +1769,7 @@ class Template(object):
                 threshold_type=threshold_type, trig_int=trig_int,
                 plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
                 parallel_process=parallel_process,
-                ignore_length=ignore_length, debug=debug)
+                ignore_length=ignore_length, overlap=overlap, debug=debug)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -2175,7 +2184,7 @@ class Tribe(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, ignore_length=False,
-               group_size=None, debug=0):
+               group_size=None, overlap="calculate", debug=0):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2215,6 +2224,13 @@ class Tribe(object):
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
             consumption, if unset will use all templates.
+        :type overlap: float
+        :param overlap:
+            Either None, "calculate" or a float of number of seconds to
+            overlap detection streams by.  This is to counter the effects of
+            the delay-and-stack in calcualting cross-correlation sums. Setting
+            overlap = "calculate" will work out the appropriate overlap based
+            on the maximum lags within templates.
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
@@ -2250,9 +2266,19 @@ class Tribe(object):
             To work around this, if you are conducting matched-filter
             detections through long-duration continuous data, we suggest
             using some overlap (a few seconds, on the order of the maximum
-            offset in the templates) in the continous data.  You will then
+            offset in the templates) in the continuous data.  You will then
             need to post-process the detections (which should be done anyway
-            to remove duplicates).
+            to remove duplicates).  See below note for how `overlap` argument
+            affects data internally if `stream` is longer than the processing
+            length.
+
+        .. Note::
+            If `stream` is long then processing length, this routine will
+            ensure that data overlap between loops, which will lead to no
+            missed detections at data start-stop points (see above note).
+            This will result in end-time not being strictly
+            honoured, so detections may occur after the end-time set.  This is
+            because data must be run in the correct process-length.
 
         .. note::
             **Thresholding:**
@@ -2304,8 +2330,12 @@ class Tribe(object):
                 threshold_type=threshold_type, trig_int=trig_int,
                 plotvar=plotvar, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
-                ignore_length=ignore_length, debug=debug)
+                ignore_length=ignore_length, overlap=overlap, debug=debug)
             party += group_party
+        for family in party:
+            if family is not None:
+                family.detections = family._uniq().detections
+                family.catalog = family._uniq().catalog
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -2355,6 +2385,7 @@ class Tribe(object):
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
             consumption, if unset will use all templates.
+
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
@@ -2363,7 +2394,6 @@ class Tribe(object):
         :param return_stream:
             Whether to also output the stream downloaded, useful if you plan
             to use the stream for something else, e.g. lag_calc.
-
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
             detections.
@@ -2371,7 +2401,7 @@ class Tribe(object):
         .. Note::
             Ensures that data overlap between loops, which will lead to no
             missed detections at data start-stop points (see note for
-            :meth:`eqcorrscan.core.match_filter.Family.detect` method).
+            :meth:`eqcorrscan.core.match_filter.Tribe.detect` method).
             This will result in end-time not being strictly
             honoured, so detections may occur after the end-time set.  This is
             because data must be run in the correct process-length.
@@ -2472,7 +2502,7 @@ class Tribe(object):
                     plotvar=plotvar, daylong=daylong,
                     parallel_process=parallel_process,
                     ignore_length=ignore_length, group_size=group_size,
-                    debug=debug)
+                    overlap=None, debug=debug)
                 if return_stream:
                     stream += st
             except Exception as e:
@@ -2480,8 +2510,9 @@ class Tribe(object):
                 print('Error: %s' % str(e))
                 return party
         for family in party:
-            family.detections = family._uniq().detections
-            family.catalog = get_catalog(family.detections)
+            if family is not None:
+                family.detections = family._uniq().detections
+                family.catalog = family._uniq().catalog
         if return_stream:
             return party, stream
         else:
@@ -2875,7 +2906,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
 
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
-                  parallel_process=True, ignore_length=False, debug=0):
+                  parallel_process=True, ignore_length=False,
+                  overlap="calculate", debug=0):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -2927,6 +2959,13 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         are there for at least 80% of the day, if you don't want this check
         (which will raise an error if too much data are missing) then set
         ignore_length=True.  This is not recommended!
+    :type overlap: float
+    :param overlap:
+        Either None, "calculate" or a float of number of seconds to
+        overlap detection streams by.  This is to counter the effects of
+        the delay-and-stack in calcualting cross-correlation sums. Setting
+        overlap = "calculate" will work out the appropriate overlap based
+        on the maximum lags within templates.
     :type debug: int
     :param debug:
         Debug level from 0-5 where five is more output, for debug levels
@@ -2939,28 +2978,28 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         ncores = cpu_count()
     else:
         ncores = None
-    st = [Stream()]
     master = templates[0]
     # Check that they are all processed the same.
+    lap = 0.0
     for template in templates:
+        starts = [t.stats.starttime for t in template.st.sort(['starttime'])]
+        if starts[-1] - starts[0] > lap:
+            lap = starts[-1] - starts[0]
         if not template.same_processing(master):
             raise MatchFilterError('Templates must be processed the same.')
-    if not pre_processed and daylong:
-        if not master.process_length == 86400:
-            warnings.warn('Processing day-long data, but template was cut '
-                          'from %i s long data, will reduce correlations'
-                          % master.process_length)
-        kwargs = {'st': stream, 'lowcut': master.lowcut,
-                  'highcut': master.highcut, 'filt_order': master.filt_order,
-                  'samp_rate': master.samp_rate, 'starttime': None,
-                  'debug': debug, 'parallel': parallel_process,
-                  'num_cores': False, 'ignore_length': ignore_length}
-        st = [dayproc(**kwargs)]
-    elif not pre_processed and not daylong:
+    if overlap is None:
+        overlap = 0.0
+    elif not isinstance(overlap, float) and str(overlap) == str("calculate"):
+        overlap = lap
+    elif not isinstance(overlap, float):
+        raise NotImplementedError(
+            "%s is not a recognised overlap type" % str(overlap))
+    if not pre_processed:
         st = _group_process(
             template_group=templates, parallel=parallel_process, debug=debug,
-            cores=False, stream=stream)
-    elif pre_processed:
+            cores=False, stream=stream, daylong=daylong,
+            ignore_length=ignore_length, overlap=overlap)
+    else:
         warnings.warn('Not performing any processing on the '
                       'continuous data.')
         st = [stream]
@@ -3005,7 +3044,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     return party
 
 
-def _group_process(template_group, parallel, debug, cores, stream):
+def _group_process(template_group, parallel, debug, cores, stream, daylong,
+                   ignore_length, overlap):
     """
     Process data into chunks based on template processing length.
 
@@ -3021,6 +3061,16 @@ def _group_process(template_group, parallel, debug, cores, stream):
     :param cores: Number of cores to use, can be False to use all available.
     :type stream: :class:`obspy.core.stream.Stream`
     :param stream: Stream to process, will be left intact.
+    :type daylong: bool
+    :param daylong: Whether to enforce day-length files or not.
+    :type ignore_length: bool
+    :param ignore_length:
+        If using daylong=True, then dayproc will try check that the data
+        are there for at least 80% of the day, if you don't want this check
+        (which will raise an error if too much data are missing) then set
+        ignore_length=True.  This is not recommended!
+    :type overlap: float
+    :param overlap: Number of seconds to overlap chunks by.
 
     :return: list of processed streams.
     """
@@ -3031,8 +3081,13 @@ def _group_process(template_group, parallel, debug, cores, stream):
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
-    if master.process_length == 86400:
+    if daylong:
+        if not master.process_length == 86400:
+            warnings.warn(
+                'Processing day-long data, but template was cut from %i s long'
+                ' data, will reduce correlations' % master.process_length)
         func = dayproc
+        kwargs.update({'ignore_length': ignore_length})
         # Check that data all start on the same day, otherwise strange
         # things will happen...
         starttimes = [tr.stats.starttime.date for tr in stream]
@@ -3043,17 +3098,19 @@ def _group_process(template_group, parallel, debug, cores, stream):
         else:
             starttime = stream.sort(['starttime'])[0].stats.starttime
     else:
+        # We want to use shortproc to allow overlaps
         func = shortproc
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
-    n_chunks = int((endtime - starttime + 1) / master.process_length)
+    n_chunks = int((endtime - starttime + 1) / (master.process_length -
+                                                overlap))
     if n_chunks == 0:
-        print('Data must be process_length or longer, '
-              'not computing detections')
+        print(
+            'Data must be process_length or longer, not computing detections')
     for i in range(n_chunks):
         kwargs.update(
-            {'starttime': starttime + (i * master.process_length)})
-        if master.process_length != 86400:
+            {'starttime': starttime + (i * (master.process_length - overlap))})
+        if not daylong:
             kwargs.update(
                 {'endtime': kwargs['starttime'] + master.process_length})
             chunk_stream = stream.trim(starttime=kwargs['starttime'],
