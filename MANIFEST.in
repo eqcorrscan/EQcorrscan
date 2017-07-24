@@ -2,6 +2,9 @@
 # in pypi's archive of the package, we need to include it here...
 
 include README.md
+include LICENCE.txt
+include CHANGES.md
+include CONTRIBUTORS.md
 # include eqcorrscan/test_data/tutorial_data.tgz
 # include eqcorrscan/tutorial.py
 recursive-include eqcorrscan/utils *.py
