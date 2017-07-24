@@ -870,7 +870,7 @@ class TestMatchObjects(unittest.TestCase):
         test_template = self.family.template.copy()
         party_t = test_template.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False)
+            trig_int=6.0, daylong=False, plotvar=False, overlap=None)
         self.assertEqual(len(party_t), 1)
 
     def test_template_construct(self):
