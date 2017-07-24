@@ -44,9 +44,10 @@ def seis_sim(sp, amp_ratio=1.5, flength=False, phaseout='all'):
     :type flength: int
     :param flength: Fixed length in samples, defaults to False
     :type phaseout: str
-    :param phaseout: Either 'P', 'S' or 'all', controls which phases to cut \
-        around, defaults to 'all'. Can only be used with 'P' or 'S' options \
-        if flength is set.
+    :param phaseout:
+        Either 'P', 'S' or 'all', controls which phases to cut around, defaults
+        to 'all'. Can only be used with 'P' or 'S' options if flength
+        is set.
 
     :returns: Simulated data.
     :rtype: :class:`numpy.ndarray`
@@ -132,8 +133,8 @@ def SVD_sim(sp, lowcut, highcut, samp_rate,
             tr.filter('bandpass', freqmin=lowcut, freqmax=highcut)
     # We have a list of obspy Trace objects, we can pass this to EQcorrscan's
     # SVD functions
-    V, s, U, stachans = clustering.SVD(synthetics)
-    return V, s, U, stachans
+    U, s, V, stachans = clustering.svd(synthetics)
+    return U, s, V, stachans
 
 
 def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
@@ -202,8 +203,6 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                     tr.stats.starttime += tt
                 else:
                     tr.stats.starttime += tt - SP_time
-            else:
-                raise IOError('Input grid is not P or S')
             # Set start-time of trace to be travel-time for P-wave
             # Check that the template length is long enough to include the SP
             if flength and SP_time * samp_rate < flength - 11 \
@@ -300,7 +299,6 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     if debug > 2:
         for template in templates:
             print(template)
-            template.plot(size=(800, 600), equal_scale=False)
     # Now we want to create a day of synthetic data
     seeds = []
     data = templates[0].copy()  # Copy a template to get the correct length
@@ -333,18 +331,10 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
             # Convolve this with the template trace to give the daylong seeds
             data[j].data += np.convolve(tr_impulses,
                                         template_tr.data)[0:len(impulses)]
-        if debug > 2:
-            data.plot(starttime=UTCDateTime(0) +
-                      impulse_times[0] / samp_rate - 3,
-                      endtime=UTCDateTime(0) +
-                      impulse_times[0] / samp_rate + 15)
     # Add the noise
     for tr in data:
         noise = np.random.randn(86400 * int(samp_rate))
         tr.data += noise / max(noise)
-        if debug > 2:
-            tr.plot()
-
     return templates, data, seeds
 
 

@@ -11,7 +11,11 @@ match_filter
     .. toctree::
         :maxdepth: 1
 
-        core.match_filter.DETECTION
+        core.match_filter.Detection
+        core.match_filter.Family
+        core.match_filter.Party
+        core.match_filter.Template
+        core.match_filter.Tribe
 
     Functions
     ---------
@@ -24,6 +28,10 @@ match_filter
        match_filter
        normxcorr2
        read_detections
+       read_tribe
+       read_party
+       read_template
+       write_catalog
 
     .. comment to end block
 
@@ -33,5 +41,9 @@ match_filter
        :toctree: autogen
        :nosignatures:
 
-       _channel_loop
-       _template_loop
+       _group_process
+       _group_detect
+       _write_family
+       _read_family
+       _total_microsec
+       _test_event_similarity

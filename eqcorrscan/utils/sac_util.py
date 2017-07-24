@@ -50,7 +50,7 @@ def sactoevent(st, debug=0):
     .. note::
         This functionality is not supported for obspy versions below 1.0.0 as
         reference times are not read in by SACIO, which are needed for defining
-         pick times.
+        pick times.
 
     .. note::
         Takes the event origin information from the first trace in the

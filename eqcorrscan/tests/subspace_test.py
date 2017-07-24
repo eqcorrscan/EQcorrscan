@@ -14,7 +14,7 @@ import copy
 
 from obspy import Stream, read
 
-from eqcorrscan.core import subspace, subspace_statistic
+from eqcorrscan.core import subspace
 
 
 class SimpleSubspaceMethods(unittest.TestCase):
@@ -44,6 +44,23 @@ class SimpleSubspaceMethods(unittest.TestCase):
         _detector.read(path)
         self.assertEqual(detector, _detector)
 
+    def test_energy_capture(self):
+        """Check that the energy capture calc works okay"""
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'test_data', 'Test_detector.h5')
+        detector = subspace.read_detector(path)
+        energy = detector.energy_capture()
+        self.assertTrue(0 < energy < 100)
+        self.assertEqual(round(energy), 60)
+
+    def test_partition_fail(self):
+        """Check that partition fails with the expected error."""
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'test_data', 'Test_detector.h5')
+        detector = subspace.read_detector(path)
+        with self.assertRaises(IndexError):
+            detector.partition(dimension=40)
+
     def test_align(self):
         """Check that alignment does as expected."""
         test_stream = Stream(read()[0])
@@ -67,13 +84,16 @@ class SimpleSubspaceMethods(unittest.TestCase):
         detector.read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace',
                                    'stat_test_detector.h5'))
+        detector.partition(2)
         stream = read(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    'test_data', 'subspace', 'test_trace.ms'))
-        tr_data = stream[0].data
-        stat = subspace_statistic.det_statistic(detector.data[0].
-                                                astype(np.float32),
-                                                tr_data.astype(np.float32))
-        self.assertEqual((stat.max().round(6) - 0.252336).round(6), 0)
+        st = [stream]
+        fft_vars = subspace._do_ffts(detector, st, len(detector.stachans))
+        stat = subspace._det_stat_freq(fft_vars[0][0], fft_vars[1][0],
+                                       fft_vars[2][0], fft_vars[3],
+                                       len(detector.stachans), fft_vars[4],
+                                       fft_vars[5])
+        self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
 class SubspaceTestingMethods(unittest.TestCase):
@@ -116,9 +136,8 @@ class SubspaceTestingMethods(unittest.TestCase):
                            name=str('Tester'), align=False, shift_len=0)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
-            self.assertTrue(np.allclose(identity,
-                                        np.diag(np.ones(len(identity),
-                                                        dtype=np.float16))))
+            self.assertTrue(np.allclose(
+                identity, np.diag(np.ones(len(identity), dtype=np.float16))))
         comparison_detector = \
             subspace.read_detector(os.path.
                                    join(os.path.
@@ -132,15 +151,15 @@ class SubspaceTestingMethods(unittest.TestCase):
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
         for key in ['data', 'u', 'v', 'sigma']:
-            # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -155,16 +174,12 @@ class SubspaceTestingMethods(unittest.TestCase):
                            name=str('Tester'), align=False, shift_len=0)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
-            self.assertTrue(np.allclose(identity,
-                                        np.diag(np.ones(len(identity),
-                                                        dtype=np.float16))))
-        comparison_detector = \
-            subspace.read_detector(os.path.
-                                   join(os.path.
-                                        abspath(os.path.
-                                                dirname(__file__)),
-                                        'test_data', 'subspace',
-                                        'master_detector_unaligned.h5'))
+            self.assertTrue(np.allclose(
+                identity, np.diag(np.ones(len(identity), dtype=np.float16))))
+        comparison_detector = subspace.read_detector(
+            os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                'test_data', 'subspace', 'master_detector_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -176,10 +191,11 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -189,22 +205,18 @@ class SubspaceTestingMethods(unittest.TestCase):
         templates = [template.select(station='TMWZ') for template in templates]
         # Test a multiplexed version
         detector = subspace.Detector()
-        detector.construct(streams=templates, lowcut=2, highcut=9,
-                           filt_order=4, sampling_rate=20, multiplex=True,
-                           name=str('Tester'), align=True, shift_len=3.0,
-                           reject=0.2)
+        detector.construct(
+            streams=templates, lowcut=2, highcut=9, filt_order=4,
+            sampling_rate=20, multiplex=True, name=str('Tester'), align=True,
+            shift_len=3.0, reject=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
-            self.assertTrue(np.allclose(identity,
-                                        np.diag(np.ones(len(identity),
-                                                        dtype=np.float16))))
-        comparison_detector = \
-            subspace.read_detector(os.path.
-                                   join(os.path.
-                                        abspath(os.path.
-                                                dirname(__file__)),
-                                        'test_data', 'subspace',
-                                        'master_detector_multi.h5'))
+            self.assertTrue(np.allclose(
+                identity, np.diag(np.ones(len(identity), dtype=np.float16))))
+        comparison_detector = subspace.read_detector(
+            os.path.join(os.path.abspath(
+                os.path.dirname(__file__)), 'test_data', 'subspace',
+                'master_detector_multi.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -216,10 +228,11 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item))
+                self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
+                                            atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
         self.assertEqual(detector, comparison_detector)
 
@@ -235,15 +248,11 @@ class SubspaceTestingMethods(unittest.TestCase):
                            reject=0.2)
         for u in detector.data:
             identity = np.dot(u.T, u).astype(np.float16)
-            self.assertTrue(np.allclose(identity,
-                                        np.diag(np.ones(len(identity),
-                                                        dtype=np.float16))))
-        comparison_detector = \
-            subspace.read_detector(os.path.join(os.path.
-                                                abspath(os.path.
-                                                        dirname(__file__)),
-                                                'test_data', 'subspace',
-                                                'master_detector.h5'))
+            self.assertTrue(np.allclose(
+                identity, np.diag(np.ones(len(identity), dtype=np.float16))))
+        comparison_detector = subspace.read_detector(
+            os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                         'test_data', 'subspace', 'master_detector.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -254,18 +263,15 @@ class SubspaceTestingMethods(unittest.TestCase):
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
-            # for item, other_item in zip(list_item, other_list):
-            #     print(item.shape)
-            #     print(other_item.shape)
-            #     print('Next')
             for item, other_item in zip(list_item, other_list):
                 self.assertEqual(item.shape, other_item.shape)
-                if not np.allclose(item, other_item):
+                if not np.allclose(np.abs(item),
+                                   np.abs(other_item)):
+                    print(key)
                     print(item)
                     print(other_item)
-                self.assertTrue(np.allclose(item, other_item))
-        # Finally check that the __eq__ method works if all the above passes.
-        self.assertEqual(detector, comparison_detector)
+                self.assertTrue(
+                    np.allclose(np.abs(item), np.abs(other_item), atol=0.005))
 
     def test_refactor(self):
         """Test subspace refactoring, checks that np.dot(U.T, U) is\
@@ -276,14 +282,13 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=False, shift_len=None)
-        for dim in range(2, len(detector.u[0])):
+        for dim in range(2, len(detector.v[0])):
             detector.partition(dim)
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
-                self.assertTrue(np.allclose(identity,
-                                            np.diag(np.
-                                                    ones(len(identity),
-                                                         dtype=np.float16))))
+                self.assertTrue(np.allclose(
+                    identity, np.diag(np.ones(len(identity),
+                                              dtype=np.float16))))
         # Test a non-multiplexed version
         detector = subspace.Detector()
         templates = copy.deepcopy(self.templates)
@@ -291,14 +296,13 @@ class SubspaceTestingMethods(unittest.TestCase):
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True, shift_len=0.2,
                            reject=0.0)
-        for dim in range(2, len(detector.u[0])):
+        for dim in range(2, len(detector.v[0])):
             detector.partition(dim)
             for u in detector.data:
                 identity = np.dot(u.T, u).astype(np.float16)
-                self.assertTrue(np.allclose(identity,
-                                            np.diag(np.
-                                                    ones(len(identity),
-                                                         dtype=np.float16))))
+                self.assertTrue(np.allclose(
+                    identity, np.diag(np.ones(len(identity),
+                                              dtype=np.float16))))
 
     def test_detect(self):
         """Test standard detection with known result."""
@@ -308,11 +312,12 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=True,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(9)
+                           shift_len=4, reject=0.3,
+                           no_missed=False).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.009, trig_int=2,
+        detections = detector.detect(st=st, threshold=0.2, trig_int=4,
                                      debug=1)
-        self.assertEqual(len(detections), 2)
+        self.assertEqual(len(detections), 34)
 
     def test_not_multiplexed(self):
         """Test that a non-multiplexed detector gets the same result."""
@@ -321,11 +326,11 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector.construct(streams=templates, lowcut=2, highcut=9,
                            filt_order=4, sampling_rate=20, multiplex=False,
                            name=str('Tester'), align=True,
-                           shift_len=6, reject=0.2).partition(9)
+                           shift_len=4, reject=0.3).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.05, trig_int=4,
-                                     debug=0, moveout=2, min_trig=5)
-        self.assertEqual(len(detections), 1)
+        detections = detector.detect(st=st, threshold=0.5, trig_int=4,
+                                     debug=1, moveout=2, min_trig=5)
+        self.assertEqual(len(detections), 16)
 
     def test_multi_detectors(self):
         """Test the efficient looping in subspace."""
@@ -334,27 +339,27 @@ class SubspaceTestingMethods(unittest.TestCase):
         detector1.construct(streams=templates, lowcut=2, highcut=9,
                             filt_order=4, sampling_rate=20, multiplex=False,
                             name=str('Tester1'), align=True,
-                            shift_len=6, reject=0.2).partition(9)
+                            shift_len=6, reject=0.2).partition(4)
         templates = copy.deepcopy(self.templates)
         detector2 = subspace.Detector()
         detector2.construct(streams=templates[0:20], lowcut=2, highcut=9,
                             filt_order=4, sampling_rate=20, multiplex=False,
                             name=str('Tester2'), align=True,
-                            shift_len=6, reject=0.2).partition(9)
+                            shift_len=6, reject=0.2).partition(4)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
-                                              threshold=0.05,
+                                              threshold=0.7,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=False, num_cores=2)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 6)
         detections = subspace.subspace_detect(detectors=[detector1, detector2],
                                               stream=self.st.copy(),
-                                              threshold=0.05,
+                                              threshold=0.7,
                                               trig_int=10, moveout=5,
                                               min_trig=5,
                                               parallel=True, num_cores=2)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 6)
 
     def partition_fail(self):
         templates = copy.deepcopy(self.templates)
