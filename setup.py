@@ -103,11 +103,9 @@ def get_libraries():
     from pkg_resources import get_build_platform
 
     if get_build_platform() in ('win32', 'win-amd64'):
-        libraries = ['libfftw3-3', 'libfftw3f-3', 'libfftw3l-3']
-
+        libraries = ['libfftw3-3']
     else:
-        libraries = ['fftw3', 'fftw3f', 'fftw3l', 'fftw3_threads',
-                     'fftw3f_threads', 'fftw3l_threads']
+        libraries = ['fftw3', 'fftw3_threads']
 
     return libraries
 
@@ -141,12 +139,9 @@ def get_extensions():
     if get_build_platform() not in ('win32', 'win-amd64'):
         extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp', '-ftree-vectorize', '-msse2']
-        # extra_link_args = ['-lm']
-        # extra_compile_args = ['-ftree-vectorize', '-msse2']
     else:
         extra_link_args = []
         extra_compile_args = ['/openmp', '/TP']
-        # extra_compile_args = []
 
     libraries = get_libraries()
     if link_static_fftw:
