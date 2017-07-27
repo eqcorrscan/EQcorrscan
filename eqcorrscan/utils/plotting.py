@@ -411,9 +411,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
-        color = colors.next()
+        color = next(colors)
         if color == 'blue':
-            linestyle = linestyles.next()
+            linestyle = next(linestyles)
         counts = np.arange(-1, len(template_dates))
         if rate:
             if not plot_grouped:
@@ -426,7 +426,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         else:
             ax1.plot(plot_dates, counts, linestyle,
                      color=color, label=template_names[k],
-                     linewidth=2.0, drawstyle='step')
+                     linewidth=2.0, drawstyle='steps')
             ax1.set_ylabel('Cumulative detections')
             plt.title('Cumulative detections for all templates')
     ax1.set_xlabel('Date')
