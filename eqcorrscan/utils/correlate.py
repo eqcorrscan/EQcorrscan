@@ -24,18 +24,92 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 import ctypes
-from future.utils import native_str
-
 from multiprocessing import Pool
+
+import numpy as np
+from future.utils import native_str
 from scipy.fftpack.helper import next_fast_len
+
 from eqcorrscan.utils.libnames import _load_cdll
 
+XCOR_FUNCS = {}  # cache of functions for doing cross correlations
 
-def numpy_normxcorr(templates, stream, pads):
+
+def normxcorr(templates, stream, pads, *args, **kwargs):
     """
-    Compute the normalized cross-correlation of multiple templates with data.
+    Compute the normalized cross-correlation using the default method.
+
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+    :param threaded:
+        Whether to use the threaded routine or not - note openMP and python
+        multiprocessing don't seem to play nice for this.
+    :type threaded: bool
+    
+    :Keyword Arguments:
+
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
+    
+    .. Note::
+        In order to control which xcor function is used you can pass the
+        keyword argument "xcor_func" a name of a registered xcor function or 
+        a callable that has the same signature as normxcorr.
+    """
+    xcor_func = kwargs.get('xcor_func', 'default')
+    if callable(xcor_func):  # a callable was passed
+        func = xcor_func
+    else:
+        func = XCOR_FUNCS[xcor_func]
+    return func(templates, stream, pads, *args, **kwargs)
+
+
+def register_normxcorr(name, func=None, is_default=False):
+    """
+    Decorator for registering different correlation functions. 
+
+    Each function must have the same interface as numpy_normxcorr, which is:
+    f(templates, stream, pads, **kwargs) any number of specific kwargs can
+    be used. 
+    
+    Register_normxcorr can be used as a decorator or callable.
+    
+    :param name: The name of the function for quick access
+    :type name: str
+    
+    :return: callable
+    """
+
+    def wrapper(func, func_name=None):
+        # register the functions in the XCOR
+        fname = func_name or name.__name__ if callable(name) else str(name)
+        XCOR_FUNCS[fname] = func
+        if is_default:
+            assert 'default' not in XCOR_FUNCS, 'default xcorr is already set'
+            XCOR_FUNCS['default'] = func
+        return func
+
+    # used as a decorator
+    if callable(name):
+        return wrapper(name)
+
+    # used as a normal function (called and passed a function)
+    if callable(func):
+        return wrapper(func, name)
+
+    # called, then used as a decorator
+    return wrapper
+
+
+@register_normxcorr('numpy')
+def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
+    """
+    Compute the normalized cross-correlation using numpy and bottleneck.
 
     :param templates: 2D Array of templates
     :type templates: np.ndarray
@@ -64,6 +138,8 @@ def numpy_normxcorr(templates, stream, pads):
         stream, template_length)[template_length - 1:]
     stream_std_array = bottleneck.move_std(
         stream, template_length)[template_length - 1:]
+    # because stream_std_array is in denominator or res, nan all 0s
+    stream_std_array[stream_std_array == 0] = np.nan
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
@@ -75,8 +151,9 @@ def numpy_normxcorr(templates, stream, pads):
     res = ((_centered(res, stream_length - template_length + 1)) -
            norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
-    for i in range(len(pads)):
-        res[i] = np.append(res[i], np.zeros(pads[i]))[pads[i]:]
+    # res[np.isinf(res)] = 0.0
+    for i, pad in enumerate(pads):  # range(len(pads)):
+        res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
 
 
@@ -135,6 +212,7 @@ def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
     template_array = {}
     stream_array = {}
     pad_array = {}
+
     for i, seed_id in enumerate(seed_ids):
         t_ar = np.array([template[i].data
                          for template in templates]).astype(np.float32)
@@ -202,7 +280,8 @@ def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
     return cccsums, no_chans, chans
 
 
-def time_multi_normxcorr(templates, stream, pads):
+@register_normxcorr('time_domain')
+def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
 
@@ -254,7 +333,8 @@ def time_multi_normxcorr(templates, stream, pads):
     return ccc, used_chans
 
 
-def fftw_normxcorr(templates, stream, pads, threaded=True):
+@register_normxcorr('fftw', is_default=True)
+def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -295,6 +375,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=True):
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
     restype = ctypes.c_int
+
     if threaded:
         func = utilslib.normxcorr_fftw_threaded
     else:
@@ -427,4 +508,5 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
 
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod()

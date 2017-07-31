@@ -3325,7 +3325,7 @@ def read_detections(fname):
             continue  # Skip any repeated headers
         detection = line.rstrip().split('; ')
         detection[1] = UTCDateTime(detection[1])
-        detection[2] = int(detection[2])
+        detection[2] = int(float(detection[2]))
         detection[3] = ast.literal_eval(detection[3])
         detection[4] = float(detection[4])
         detection[5] = float(detection[5])
@@ -3447,18 +3447,18 @@ def normxcorr2(template, image):
         correlation of the image with the template.
     :rtype: numpy.ndarray
     """
-    from eqcorrscan.utils.correlate import fftw_normxcorr
+    from eqcorrscan.utils.correlate import normxcorr
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     if len(template) > len(image):
-        ccc = fftw_normxcorr(
+        ccc = normxcorr(
             templates=np.array([image]).astype(np.float32),
             stream=template.astype(np.float32), pads=[0],
             threaded=False)[0][0]
     else:
-        ccc = fftw_normxcorr(
+        ccc = normxcorr(
             templates=np.array([template]).astype(np.float32),
             stream=image.astype(np.float32), pads=[0], threaded=False)[0][0]
     ccc = ccc.reshape((1, len(ccc)))

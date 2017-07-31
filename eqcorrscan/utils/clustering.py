@@ -13,21 +13,21 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-import warnings
-import matplotlib.pyplot as plt
 import os
-
+import warnings
 from multiprocessing import Pool, cpu_count
-from scipy.spatial.distance import squareform
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from obspy.signal.cross_correlation import xcorr
-from obspy import Stream, Catalog, UTCDateTime, Trace
 
-from eqcorrscan.utils.mag_calc import dist_calc
-from eqcorrscan.utils.correlate import time_multi_normxcorr
+import matplotlib.pyplot as plt
+import numpy as np
+from obspy import Stream, Catalog, UTCDateTime, Trace
+from obspy.signal.cross_correlation import xcorr
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+from scipy.spatial.distance import squareform
+
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
+from eqcorrscan.utils.correlate import normxcorr
+from eqcorrscan.utils.mag_calc import dist_calc
 
 
 def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
@@ -71,7 +71,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
         elif len(tr2) > 0:
             min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += time_multi_normxcorr(
+            cccoh += normxcorr(
                 np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
                 [0])[0][0][0]
             kchan += 1
@@ -297,7 +297,7 @@ def group_delays(stream_list):
                     if chan in group_chans[j]:
                         shared_chans.append(chan)
                         shared_delays_slave.append(delays[k])
-                        shared_delays_master.\
+                        shared_delays_master. \
                             append(group_delays[j][group_chans[j].index(chan)])
                 # Normalize master and slave delay times
                 shared_delays_slave = [delay - min(shared_delays_slave)
@@ -382,7 +382,7 @@ def svd(stream_list, full=False):
                                  channel=stachan[1])
             if chan:
                 if len(chan[0].data) > min_length:
-                    if abs(len(chan[0].data) - min_length) > 0.1 *\
+                    if abs(len(chan[0].data) - min_length) > 0.1 * \
                             chan[0].stats.sampling_rate:
                         raise IndexError('More than 0.1 s length '
                                          'difference, align and fix')
@@ -402,7 +402,7 @@ def svd(stream_list, full=False):
         svalues.append(s)
         svectors.append(v)
         uvectors.append(u)
-        del(chan_mat)
+        del (chan_mat)
     return uvectors, svalues, svectors, stachans
 
 
@@ -449,9 +449,9 @@ def empirical_svd(stream_list, linear=True):
                            channel=stachan[1])[0]
             if len(tr.data) > min_length:
                 if abs(len(tr.data) - min_length) > (0.1 *
-                                                     tr.stats.sampling_rate):
-                        raise IndexError('More than 0.1 s length '
-                                         'difference, align and fix')
+                                                         tr.stats.sampling_rate):
+                    raise IndexError('More than 0.1 s length '
+                                     'difference, align and fix')
                 warnings.warn(str(tr) + ' is not the same length as others, ' +
                               'trimming the end')
                 tr.data = tr.data[0:min_length]
@@ -463,7 +463,7 @@ def empirical_svd(stream_list, linear=True):
     for i in range(len(second_subspace)):
         second_subspace[i].data = np.diff(second_subspace[i].data)
         second_subspace[i].stats.starttime += 0.5 * \
-            second_subspace[i].stats.delta
+                                              second_subspace[i].stats.delta
     return [first_subspace, second_subspace]
 
 
@@ -543,7 +543,7 @@ def corr_cluster(trace_list, thresh=0.9):
     output = np.array([False] * len(trace_list))
     group1 = []
     for i, tr in enumerate(trace_list):
-        if time_multi_normxcorr(
+        if normxcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
             output[i] = True
             group1.append(tr)
@@ -553,7 +553,7 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if time_multi_normxcorr(
+        if normxcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > thresh:
             group2.append(tr)
             output[i] = True
@@ -751,9 +751,9 @@ def extract_detections(detections, templates, archive, arc_type,
             detect_wav = st.copy()
             for tr in detect_wav:
                 tr.trim(starttime=UTCDateTime(detection.detect_time) -
-                        extract_len / 2,
+                                  extract_len / 2,
                         endtime=UTCDateTime(detection.detect_time) +
-                        extract_len / 2)
+                                extract_len / 2)
             if outdir:
                 if not os.path.isdir(os.path.join(outdir,
                                                   detection.template_name)):
@@ -766,7 +766,7 @@ def extract_detections(detections, templates, archive, arc_type,
                 print('Written file: %s' %
                       '/'.join([outdir, detection.template_name,
                                 detection.detect_time.
-                                strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
+                               strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -932,7 +932,7 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
         for master in group:
             for event in group:
                 if abs(event.preferred_origin().time -
-                       master.preferred_origin().time) > t_thresh:
+                               master.preferred_origin().time) > t_thresh:
                     # If greater then just put event in on it's own
                     groups.append([event])
                     group.remove(event)
@@ -987,9 +987,9 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     detections_out = 0
     for detection in old_detections:
         detections_in += 1
-        if abs(detection.detect_val) >=\
-           (new_thresh / old_thresh) * detection.threshold and\
-           detection.no_chans >= chan_thresh:
+        if abs(detection.detect_val) >= \
+                        (new_thresh / old_thresh) * detection.threshold and \
+                        detection.no_chans >= chan_thresh:
             detections_out += 1
             detections.append(detection)
     print('Read in %i detections' % detections_in)
@@ -999,4 +999,5 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
