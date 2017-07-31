@@ -1,4 +1,4 @@
-r"""This module contains functions relevant to executing subspace detection \
+"""This module contains functions relevant to executing subspace detection \
 for earthquake catalogs.
 
 We recommend that you read Harris' detailed report on subspace detection \

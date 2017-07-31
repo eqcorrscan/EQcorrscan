@@ -26,7 +26,7 @@ if not READ_THE_DOCS:
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['cv2']
+MOCK_MODULES = ['cv2', 'h5py']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 # If extensions (or modules to document with autodoc) are in another directory,
