@@ -4,12 +4,12 @@ source = eqcorrscan
 omit =
   eqcorrscan/__init__.py
   eqcorrscan/*/__init__.py
-  eqcorrscan/core/match_filter_internal.py
   eqcorrscan/tests/*
-  eqcorrscan/utils/gui/*
   eqcorrscan/utils/timer.py
   eqcorrscan/utils/plotting.py
   eqcorrscan/utils/sfile_util.py
+  eqcorrscan/utils/src/*
+  eqcorrscan/lib/*
 [report]
 exclude_lines =
     pragma: no cover

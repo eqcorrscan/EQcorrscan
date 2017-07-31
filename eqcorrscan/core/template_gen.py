@@ -598,12 +598,12 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     """
     Generate multiplexed template from SeisHub database.
 
-    Function to generate templates from a SeisHub database. Must be given \
-    an obspy.Catalog class and the SeisHub url as input. The function returns \
-    a list of obspy.Stream classes containting steams for each desired \
+    Function to generate templates from a SeisHub database. Must be given
+    an obspy.Catalog class and the SeisHub url as input. The function returns
+    a list of obspy.Stream classes containting steams for each desired
     template.
 
-    :type catalog: obspy.core.event.Catalog
+    :type catalog: :class:`obspy.core.event.Catalog`
     :param catalog: Catalog class containing desired template events
     :type url: str
     :param url: url of SeisHub database instance
@@ -623,16 +623,18 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :param swin: Either 'all', 'P' or 'S', to select which phases to output.
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
-    :param data_pad: Length of data (in seconds) required before and after \
-        any event for processing, use to reduce edge-effects of filtering on \
-        the templates.
+    :param data_pad:
+        Length of data (in seconds) required before and after any event for
+        processing, use to reduce edge-effects of filtering on the templates.
     :type data_pad: int
     :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
+    :param all_horiz:
+        To use both horizontal channels even if there is only a pick on one
+        of them.  Defaults to False.
     :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
+    :param delayed:
+        If True, each channel will begin relative to it's own pick-time, if
+        set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: Plot templates or not.
     :type debug: int
@@ -646,7 +648,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         the maximum amplitude in the template window to the rms amplitude in
         the whole window given.
 
-    :returns: List of :class:`obspy.core.stream.Stream of newly cut templates
+    :returns: List of :class:`obspy.core.stream.Stream` of newly cut templates
     :rtype: list
 
     .. note::

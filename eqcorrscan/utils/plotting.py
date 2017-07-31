@@ -843,6 +843,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+    ...     # Hack around seisan 2-letter channel naming
+    ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     >>> template = template_gen.template_gen(event.picks, st, 2)
     >>> times = [min([pk.time -0.05 for pk in event.picks])]
     >>> detection_multiplot(stream=st, template=template,
@@ -865,6 +867,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         template = template_gen.template_gen(event.picks, st, 2)
         times = [min([pk.time -0.05 for pk in event.picks])]
         detection_multiplot(stream=st, template=template,
@@ -1273,6 +1276,8 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+    ...     # Hack around seisan 2-letter channel naming
+    ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     >>> template = template_gen.template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
     ...                      picks=event.picks) # doctest: +SKIP
@@ -1294,6 +1299,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
+            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         template = template_gen.template_gen(event.picks, st, 2)
         pretty_template_plot(template, background=st,
                              picks=event.picks)
@@ -1671,7 +1677,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     >>> from obspy import read
     >>> import glob
     >>> from eqcorrscan.utils.plotting import SVD_plot
-    >>> from eqcorrscan.utils.clustering import svd, SVD_2_stream
+    >>> from eqcorrscan.utils.clustering import svd, svd_to_stream
     >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
     >>> streams = [read(w) for w in wavefiles[1:10]]
     >>> stream_list = []
@@ -1682,8 +1688,8 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
     ...                                                    freqmax=8)
     ...     stream_list.append(tr)
     >>> uvec, sval, svec, stachans = svd(stream_list=stream_list)
-    >>> SVstreams = SVD_2_stream(uvectors=uvec, stachans=stachans, k=3,
-    ...                          sampling_rate=100)
+    >>> SVstreams = svd_to_stream(uvectors=uvec, stachans=stachans, k=3,
+    ...                           sampling_rate=100)
     >>> SVD_plot(SVStreams=SVstreams, SValues=sval,
     ...          stachans=stachans) # doctest: +SKIP
 
@@ -1703,7 +1709,7 @@ def SVD_plot(SVStreams, SValues, stachans, title=False, save=False,
                                                       freqmax=40)
             stream_list.append(tr)
         svec, sval, uvec, stachans = svd(stream_list=stream_list)
-        SVstreams = SVD_2_stream(SVectors=svec, stachans=stachans, k=3,
+        SVstreams = SVD_2_stream(uvectors=uvec, stachans=stachans, k=3,
                                  sampling_rate=100)
         SVD_plot(SVStreams=SVstreams, SValues=sval,
                  stachans=stachans)

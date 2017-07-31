@@ -24,8 +24,8 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from obspy.signal.cross_correlation import xcorr
 from obspy import Stream, Catalog, UTCDateTime, Trace
 
-from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.correlate import time_multi_normxcorr
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 
@@ -60,20 +60,24 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     for tr in st1:
         tr2 = st2.select(station=tr.stats.station,
                          channel=tr.stats.channel)
-        if tr2 and tr.stats.sampling_rate != tr2[0].stats.sampling_rate:
+        if len(tr2) > 0 and tr.stats.sampling_rate != \
+                tr2[0].stats.sampling_rate:
             warnings.warn('Sampling rates do not match, not using: %s.%s'
                           % (tr.stats.station, tr.stats.channel))
-        if tr2 and allow_shift:
+        if len(tr2) > 0 and allow_shift:
             index, corval = xcorr(tr, tr2[0],
                                   int(shift_len * tr.stats.sampling_rate))
             cccoh += corval
             kchan += 1
-        elif tr2:
-            cccoh += normxcorr2(tr.data, tr2[0].data)[0][0]
+        elif len(tr2) > 0:
+            min_len = min(len(tr.data), len(tr2[0].data))
+            cccoh += time_multi_normxcorr(
+                np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
+                [0])[0][0][0]
             kchan += 1
     if kchan:
         cccoh /= kchan
-        return cccoh, i
+        return np.round(cccoh, 6), i
     else:
         warnings.warn('No matching channels')
         return 0, i
@@ -90,7 +94,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
     :type stream_list: list
     :param stream_list:
-        List of the :class:`obspy.core.stream.Stream`s to compute the distance
+        List of the :class:`obspy.core.stream.Stream` to compute the distance
         matrix for
     :type allow_shift: bool
     :param allow_shift: To allow templates to shift or not?
@@ -114,11 +118,9 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         # Start a parallel processing pool
         pool = Pool(processes=cores)
         # Parallel processing
-        results = [pool.apply_async(cross_chan_coherence, args=(master,
-                                                                stream_list[j],
-                                                                allow_shift,
-                                                                shift_len,
-                                                                j))
+        results = [pool.apply_async(cross_chan_coherence,
+                                    args=(master, stream_list[j], allow_shift,
+                                          shift_len, j))
                    for j in range(len(stream_list))]
         pool.close()
         # Extract the results when they are done
@@ -141,8 +143,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
 
 def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
-            shift_len=0, save_corrmat=False,
-            cores='all', debug=1):
+            shift_len=0, save_corrmat=False, cores='all', debug=1):
     """
     Cluster template waveforms based on average correlations.
 
@@ -171,19 +172,21 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :type shift_len: int
     :param shift_len: How many samples to allow the templates to shift in time
     :type save_corrmat: bool
-    :param save_corrmat: If True will save the distance matrix to \
-        dist_mat.npy in the local directory.
+    :param save_corrmat:
+        If True will save the distance matrix to dist_mat.npy in the local
+        directory.
     :type cores: int
-    :param cores: number of cores to use when computing the distance matrix, \
-        defaults to 'all' which will work out how many cpus are available \
-        and hog them.
+    :param cores:
+        number of cores to use when computing the distance matrix, defaults to
+        'all' which will work out how many cpus are available and hog them.
     :type debug: int
-    :param debug: Level of debugging from 1-5, higher is more output, \
+    :param debug:
+        Level of debugging from 1-5, higher is more output,
         currently only level 1 implemented.
 
     :returns:
         List of groups. Each group is a list of
-        :class:`obspy.core.stream.Stream`s making up that group.
+        :class:`obspy.core.stream.Stream` making up that group.
     """
     if cores == 'all':
         num_cores = cpu_count()
@@ -201,8 +204,6 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
         if debug >= 1:
             print('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    # plt.matshow(dist_mat, aspect='auto', origin='lower',
-    #             cmap=pylab.cm.YlGnBu)
     if debug >= 1:
         print('Computing linkage')
     Z = linkage(dist_vec)
@@ -417,10 +418,9 @@ def empirical_svd(stream_list, linear=True):
     """
     Empirical subspace detector generation function.
 
-    Takes a list of \
-    templates and computes the stack as the first order subspace detector, \
-    and the differential of this as the second order subspace detector \
-    following the empirical subspace method of
+    Takes a list of templates and computes the stack as the first order
+    subspace detector, and the differential of this as the second order
+    subspace detector following the empirical subspace method of
     `Barrett & Beroza, 2014 - SRL
     <http://srl.geoscienceworld.org/content/85/3/594.extract>`_.
 
@@ -524,7 +524,7 @@ def corr_cluster(trace_list, thresh=0.9):
 
     :type trace_list: list
     :param trace_list:
-        List of :class:`obspy.core.stream.Trace`s to compute similarity between
+        List of :class:`obspy.core.stream.Trace` to compute similarity between
     :type thresh: float
     :param thresh: Correlation threshold between -1-1
 
@@ -543,7 +543,8 @@ def corr_cluster(trace_list, thresh=0.9):
     output = np.array([False] * len(trace_list))
     group1 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr2(tr.data, stack.data)[0][0] > 0.6:
+        if time_multi_normxcorr(
+                np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
             output[i] = True
             group1.append(tr)
     if not group1:
@@ -552,7 +553,8 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr2(tr.data, stack.data)[0][0] > thresh:
+        if time_multi_normxcorr(
+                np.array([tr.data]), stack.data, [0])[0][0][0] > thresh:
             group2.append(tr)
             output[i] = True
         else:

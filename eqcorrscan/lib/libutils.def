@@ -1,0 +1,7 @@
+LIBRARY libutils.pyd
+EXPORTS
+    normxcorr_fftw
+    normxcorr_fftw_threaded
+    normxcorr_time
+    multi_normxcorr_fftw
+    multi_normxcorr_time

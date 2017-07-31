@@ -1,43 +1,33 @@
 # EQcorrscan
-## A python package for the detection and anlysis of repeating and near-repeating earthquakes.
+## A python package for the detection and analysis of repeating and near-repeating earthquakes.
 
 [![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
 [![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
 [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.59976.svg)](http://dx.doi.org/10.5281/zenodo.59976)
+[![DOI](https://zenodo.org/badge/35918157.svg)](https://zenodo.org/badge/latestdoi/35918157)
 [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
-<!--[![DOI](https://zenodo.org/badge/18852/eqcorrscan/EQcorrscan.svg)](https://zenodo.org/badge/latestdoi/18852/eqcorrscan/EQcorrscan)-->
+[![Stories in Ready](https://badge.waffle.io/eqcorrscan/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/eqcorrscan/EQcorrscan)
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and
-Windows systems.  We support Python versions 2.7, 3.4 and 3.5.
+Windows systems.  We support Python versions 2.7, 3.4, 3.5 and 3.6.
 Note that, although we support Windows, EQcorrscan is optimized for
-linux style distributions.
+linux style distributions, and the developers are not extensive Windows
+users.
 
-Instructions for installing EQcorrscan and the required dependencies, openCV
-and pyASDF are linked from the 
+Instructions for installing EQcorrscan and the required dependency, fftw
+are linked from the
 [docs](http://eqcorrscan.readthedocs.io/en/latest/intro.html#installation)
 
 *A note on correlation precision*
-OpenCV computes cross-correlations in the frequency-domain for normal seismic
-datasets (if the dataset is very small then the cross-correlation will be
-computed in the time-domain, but this is rare for seismic data).  In testing we
-have found that different methods of installing openCV provide different results
-for cross-correlations at the very low-end of cross-correlations.  We think this
-comes down to how the ffts are computed.  However, for moderate to high cross-correlations
-(above 0.05 normalised cross-correlation), all methods provide the same result.
-
-The outcome of this is that for very low thresholds, you may see changes in
-your results, however for standard operations this is not an issue.  We have found
-that differences are, on average, 0.0024 - which shifts the mean of a single
-channel cross-correlation from very close to zero, to 0.0024, and alters the
-median.  However we have found that this results in no change in the median
-absolute deviation of the data, so thresholds based on this will be the same,
-although the cross-correlations themselves will be shifted.  You would have to be
-running a very low threshold to see the result of this (0.5 * MAD, rather than
-commonly used values around 8 * MAD).
+*EQcorrscan* computes normalised cross-correlations in the frequency-domain using the
+[fftw](www.fftw.org) (Fastest Fourier Transform in the West).  Internally
+the C routines enforce double-precision (64-Bit floating point numbers)
+for all aspects of the cross-correlations (despite requiring 32-Bit float
+input and output). Results in testing are accurate to within ~0.0001 of
+time-domain cross-correlation results.
 
 ## Updates
 
@@ -61,30 +51,29 @@ the gh-pages branch.
 
 This package contains routines to enable the user to conduct matched-filter earthquake
 detections using [obspy](https://github.com/obspy/obspy/wiki) bindings when reading
-and writing seismic data, and the correlation routine in [openCV](http://opencv.org/).
-The OpenCV package is not installed by this software, due to a need to build from
-source.  The user should follow the instructions above for OpenCV install.
-
-We have also added subspace detection and correlation derived pick adjustment.
+and writing seismic data, as well as subspace detection, brightness source-scanning,
+relative moment calculation using singular-value decomposition,
+and correlation pick-adjustment for similar events.
 
 Also within this package are:
 * Clustering routines for seismic data;
 * Peak finding algorithm (basic, but appropriate for noisy data);
 * Automatic amplitude picker for local magnitude scale;
-* [Seisan](http://seisan.info/) S-file integration for database management and routine earthquake location;
 * Obspy.core.event integration, which opens up lots of other functions (Seishub, hypoDDpy etc.);
 * Stacking routines including phase-weighted stacking based on Thurber at al. (2014);
 * Brightness based template creation based on the work of Frank et al. (2014);
 * Singular Value Decomposition derived magnitude calculations based on Rubinstein & Ellsworth (2010).
 
-We are currently hovering around 15,000 lines of code (including doc-strings) - it is probably worth
-having a look at the docs to check what functions we have.  We are writing a series of tutorials
-included on the EQcorrscan API to highlight key functions.
+The code-base has grown to be quite large - it is probably worth
+having a look at the docs to check what functions we have.
+We are writing a series of tutorials included on the EQcorrscan API
+to highlight key functions.
 
 # Licence
 
-This package is written by Calum Chamberlain and Chet Hopp of Victoria University of Wellington, and
-is distributed under the LGPL GNU License, Copyright Calum Chamberlain and Chet Hopp 2015, 2016.
+This package was initially written by Calum Chamberlain and Chet Hopp
+of Victoria University of Wellington, and is distributed under the
+LGPL GNU License, Copyright EQcorrscan developers 2015, 2016, 2017.
 
 
 # Contributing
