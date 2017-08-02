@@ -84,16 +84,14 @@ def calc_max_curv(magnitudes, plotvar=False):
 
     .. rubric:: Example
 
-    >>> from obspy.clients.fdsn import Client
-    >>> from obspy import UTCDateTime
-    >>> from eqcorrscan.utils.mag_calc import calc_max_curv
-    >>> client = Client('IRIS')
-    >>> t1 = UTCDateTime('2012-03-26T00:00:00')
-    >>> t2 = t1 + (3 * 86400)
-    >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
-    >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
-    >>> calc_max_curv(magnitudes, plotvar=False)
-    3.1000000000000001
+    >>> import numpy as np
+    >>> mags = []
+    >>> for mag in np.arange(2.5,3, 0.1):
+    ...     mags.extend([mag] * int(20000 - 10 * mag))
+    >>> for mag in np.arange(3,7, 0.1):
+    ...     mags.extend([mag] * int(10 ** (7 - 1 * mag)))
+    >>> calc_max_curv(mags, plotvar=False)
+    3.0
     """
     counts = Counter(magnitudes)
     df = np.zeros(len(counts))
