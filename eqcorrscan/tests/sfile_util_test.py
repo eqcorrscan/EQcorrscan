@@ -33,13 +33,13 @@ class TestSfileMethods(unittest.TestCase):
             from obspy.fdsn.header import FDSNException
         import warnings
 
-        event_list = [('GEONET', '2016p008122'),
+        event_list = [('http://beta-service.geonet.org.nz', '2016p008122'),
                       ('NCEDC', '72572665'),
                       ('https://earthquake.usgs.gov', 'nc72597260')]
         for event_info in event_list:
             try:
                 client = Client(event_info[0])
-                if event_info[0] == 'GEONET':
+                if event_info[0] == 'http://beta-service.geonet.org.nz':
                     data_stream = client.\
                         _download('http://quakeml.geonet.org.nz/' +
                                   'quakeml/1.2/' + event_info[1])
