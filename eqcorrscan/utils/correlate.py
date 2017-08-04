@@ -61,11 +61,11 @@ def normxcorr(templates, stream, pads, *args, **kwargs):
         keyword argument "xcor_func" a name of a registered xcor function or 
         a callable that has the same signature as normxcorr.
     """
-    xcor_func = kwargs.get('xcor_func', 'default')
-    if callable(xcor_func):  # a callable was passed
-        func = xcor_func
+    xcorr_func = kwargs.get('xcorr_func', 'default')
+    if callable(xcorr_func):  # a callable was passed
+        func = xcorr_func
     else:
-        func = XCOR_FUNCS[xcor_func]
+        func = XCOR_FUNCS[xcorr_func]
     return func(templates, stream, pads, *args, **kwargs)
 
 
@@ -89,8 +89,8 @@ def register_normxcorr(name, func=None, is_default=False):
         # register the functions in the XCOR
         fname = func_name or name.__name__ if callable(name) else str(name)
         XCOR_FUNCS[fname] = func
+        # set function as default
         if is_default:
-            assert 'default' not in XCOR_FUNCS, 'default xcorr is already set'
             XCOR_FUNCS['default'] = func
         return func
 
@@ -100,7 +100,7 @@ def register_normxcorr(name, func=None, is_default=False):
 
     # used as a normal function (called and passed a function)
     if callable(func):
-        return wrapper(func, name)
+        return wrapper(func, func_name=name)
 
     # called, then used as a decorator
     return wrapper
