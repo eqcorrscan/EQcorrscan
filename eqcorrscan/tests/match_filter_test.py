@@ -145,7 +145,7 @@ class TestGeoNetCase(unittest.TestCase):
         # catalog = get_geonet_events(
         catalog = client.get_events(
             starttime=cls.t1, endtime=cls.t2, minmagnitude=4, minlatitude=-49,
-            maxlatitude=-35, minlongitude=175.0, maxlongitude=185.0)
+            maxlatitude=-35, minlongitude=175.0, maxlongitude=180.0)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         for event in catalog:
