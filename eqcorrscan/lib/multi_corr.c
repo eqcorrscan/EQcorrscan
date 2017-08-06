@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <fftw3.h>
 #if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
@@ -31,6 +32,9 @@
 
 // Prototypes
 int normxcorr_fftw(float*, int, int, float*, int, float*, int);
+
+int normxcorr_fftw_main(float*, int, int, float*, int, float*, int, double*, double*, double*,
+        fftw_complex*, fftw_complex*, fftw_complex*, fftw_plan, fftw_plan, fftw_plan);
 
 int normxcorr_fftw_threaded(float*, int, int, float*, int, float*, int);
 
@@ -185,22 +189,82 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 	ncc:            Output for cross-correlation - should be pointer to memory -
 					must be n_templates x image_len - template_len + 1
 	fft_len:        Size for fft (n1)
+  Notes:
+    This is a wrapper around `normxcorr_fftw_main`, allocating required memory and plans
+    for that function. We have taken this outside the main function because creating plans
+    is not thread-safe and we want to call the main function from within an OpenMP loop.
+  */
+	int status = 0;
+	int N2 = fft_len / 2 + 1;
+	// All memory allocated with `fftw_malloc` to ensure 16-byte aligned
+	double * template_ext = fftw_alloc_real(fft_len * n_templates);
+	memset(template_ext, 0, fft_len * n_templates * sizeof(double));
+	double * image_ext = fftw_alloc_real(fft_len);
+	memset(image_ext, 0, fft_len * sizeof(double));
+	double * ccc = fftw_alloc_real(fft_len * n_templates);
+	fftw_complex * outa = fftw_alloc_complex(N2 * n_templates);
+	fftw_complex * outb = fftw_alloc_complex(N2);
+	fftw_complex * out = fftw_alloc_complex(N2 * n_templates);
+
+	// Plan
+	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
+	fftw_plan pb = fftw_plan_dft_r2c_1d(fft_len, image_ext, outb, FFTW_ESTIMATE);
+	fftw_plan px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out, ccc, FFTW_ESTIMATE);
+
+	// Call the function to do the work
+	status = normxcorr_fftw_main(templates, template_len, n_templates, image, image_len,
+			ncc, fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px);
+
+	// free memory and plans
+	fftw_destroy_plan(pa);
+	fftw_destroy_plan(pb);
+	fftw_destroy_plan(px);
+
+	fftw_free(out);
+	fftw_free(outa);
+	fftw_free(outb);
+	fftw_free(ccc);
+	fftw_free(template_ext);
+	fftw_free(image_ext);
+
+	fftw_cleanup();
+	fftw_cleanup_threads();
+
+	return status;
+}
+
+int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
+                        float *image, int image_len, float *ncc, int fft_len,
+                        double *template_ext, double *image_ext, double *ccc,
+                        fftw_complex *outa, fftw_complex *outb, fftw_complex *out,
+                        fftw_plan pa, fftw_plan pb, fftw_plan px) {
+  /*
+  Purpose: compute frequency domain normalised cross-correlation of real data using fftw
+  Author: Calum J. Chamberlain
+  Date: 12/06/2017
+  Args:
+    templates:      Template signals
+    template_len:   Length of template
+    n_templates:    Number of templates (n0)
+    image:          Image signal (to scan through)
+    image_len:      Length of image
+    ncc:            Output for cross-correlation - should be pointer to memory -
+                    must be n_templates x image_len - template_len + 1
+    fft_len:        Size for fft (n1)
+    template_ext:   Input FFTW array for template transform (must be allocated)
+    image_ext:      Input FFTW array for image transform (must be allocated)
+    ccc:            Output FFTW array for reverse transform (must be allocated)
+    outa:           Output FFTW array for template transform (must be allocatd)
+    outb:           Output FFTW array for image transform (must be allocated)
+    out:            Input array for reverse transform (must be allocated)
+    pa:             Forward plan for templates
+    pb:             Forward plan for image
+    px:             Reverse plan
   */
 	int N2 = fft_len / 2 + 1;
 	int i, t, startind;
 	double mean, stdev, old_mean, new_samp, old_samp, c, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
 	double * norm_sums = (double *) calloc(n_templates, sizeof(double));
-	double * template_ext = (double *) calloc(fft_len * n_templates, sizeof(double));
-	double * image_ext = (double *) calloc(fft_len, sizeof(double));
-	double * ccc = (double *) fftw_malloc(sizeof(double) * fft_len * n_templates);
-	fftw_complex * outa = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
-	fftw_complex * outb = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2);
-	fftw_complex * out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * N2 * n_templates);
-	// Plan
-
-	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
-	fftw_plan pb = fftw_plan_dft_r2c_1d(fft_len, image_ext, outb, FFTW_ESTIMATE);
-	fftw_plan px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out, ccc, FFTW_ESTIMATE);
 
 	// zero padding - and flip template
 	for (t = 0; t < n_templates; ++t){
@@ -215,8 +279,8 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 		image_ext[i] = (double) image[i];
 	}
 	//  Compute ffts of template and image
-	fftw_execute(pa);
-	fftw_execute(pb);
+	fftw_execute_dft_r2c(pa, template_ext, outa);
+	fftw_execute_dft_r2c(pb, image_ext, outb);
 
 	//  Compute dot product
 	for (t = 0; t < n_templates; ++t){
@@ -227,7 +291,8 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
     	}
     }
 	//  Compute inverse fft
-	fftw_execute(px);
+	fftw_execute_dft_c2r(px, out, ccc);
+
 	//  Procedures for normalisation
 	// Compute starting mean, will update this
 	for (i=0; i < template_len; ++i){
@@ -272,19 +337,8 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 		}
 	}
 	//  Clean up
-	fftw_destroy_plan(pa);
-	fftw_destroy_plan(pb);
-	fftw_destroy_plan(px);
+	free(norm_sums);
 
-	fftw_free(out);
-	fftw_free(outa);
-	fftw_free(outb);
-	fftw_free(ccc);
-
-	fftw_cleanup();
-	fftw_cleanup_threads();
-
-	free(template_ext); free(image_ext); free(norm_sums);
 	return 0;
 }
 
@@ -316,13 +370,65 @@ int normxcorr_time(float *template, int template_len, float *image, int image_le
 	return 0;
 }
 
-int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ccc, int fft_len){
+int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ncc, int fft_len){
     int i, r=0;
+    int N2 = fft_len / 2 + 1;
+    double *dummyr = NULL;
+    fftw_complex *dummyc = NULL;
+    fftw_plan pa, pb, px;
+
+    // We create the plans here since they are not thread safe.
+    // All memory allocated with `fftw_malloc` to ensure 16-byte aligned.
+    // Dummy arrays used here as they are required to create a plan, the real
+    // arrays are created later, local to each thread.
+    dummyr = fftw_alloc_real(fft_len * n_templates);
+    dummyc = fftw_alloc_complex(N2 * n_templates);
+    pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, dummyr, dummyc, FFTW_ESTIMATE);
+    px = fftw_plan_dft_c2r_2d(n_templates, fft_len, dummyc, dummyr, FFTW_ESTIMATE);
+    pb = fftw_plan_dft_r2c_1d(fft_len, dummyr, dummyc, FFTW_ESTIMATE);
+    fftw_free(dummyr);
+    fftw_free(dummyc);
+
+//    dummyr = fftw_alloc_real(fft_len);
+//    dummyc = fftw_alloc_complex(N2);
+//    pb = fftw_plan_dft_r2c_1d(fft_len, dummyr, dummyc, FFTW_ESTIMATE);
+//    fftw_free(dummyr);
+//    fftw_free(dummyc);
+
+    /* loop over the channels */
+    #pragma omp parallel for reduction(+:r)
     for (i = 0; i < n_channels; ++i){
-        r = normxcorr_fftw_threaded(&templates[n_templates * template_len * i], template_len,
-                                    n_templates, &image[image_len * i], image_len,
-                                    &ccc[(image_len - template_len + 1) * n_templates * i], fft_len);
+        /* allocate memory here */
+        double * template_ext = fftw_alloc_real(fft_len * n_templates);
+        memset(template_ext, 0, fft_len * n_templates * sizeof(double));
+        double * image_ext = fftw_alloc_real(fft_len);
+        memset(image_ext, 0, fft_len * sizeof(double));
+        double * ccc = fftw_alloc_real(fft_len * n_templates);
+        fftw_complex * outa = fftw_alloc_complex(N2 * n_templates);
+        fftw_complex * outb = fftw_alloc_complex(N2);
+        fftw_complex * out = fftw_alloc_complex(N2 * n_templates);
+
+        /* call the routine */
+        r = normxcorr_fftw_main(&templates[n_templates * template_len * i], template_len,
+                                n_templates, &image[image_len * i], image_len,
+                                &ncc[(image_len - template_len + 1) * n_templates * i], fft_len,
+                                template_ext, image_ext, ccc, outa, outb, out, pa, pb, px);
+
+        /* free memory */
+        fftw_free(template_ext);
+        fftw_free(image_ext);
+        fftw_free(ccc);
+        fftw_free(outa);
+        fftw_free(outb);
+        fftw_free(out);
     }
+
+    /* free fftw memory */
+    fftw_destroy_plan(pa);
+    fftw_destroy_plan(pb);
+    fftw_destroy_plan(px);
+    fftw_cleanup();
+
     return r;
 }
 
