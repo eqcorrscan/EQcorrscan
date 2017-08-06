@@ -198,18 +198,19 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 	int N2 = fft_len / 2 + 1;
 	// All memory allocated with `fftw_malloc` to ensure 16-byte aligned
 	double * template_ext = fftw_alloc_real(fft_len * n_templates);
-	memset(template_ext, 0, fft_len * n_templates * sizeof(double));
 	double * image_ext = fftw_alloc_real(fft_len);
-	memset(image_ext, 0, fft_len * sizeof(double));
 	double * ccc = fftw_alloc_real(fft_len * n_templates);
 	fftw_complex * outa = fftw_alloc_complex(N2 * n_templates);
 	fftw_complex * outb = fftw_alloc_complex(N2);
 	fftw_complex * out = fftw_alloc_complex(N2 * n_templates);
-
 	// Plan
 	fftw_plan pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
 	fftw_plan pb = fftw_plan_dft_r2c_1d(fft_len, image_ext, outb, FFTW_ESTIMATE);
 	fftw_plan px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out, ccc, FFTW_ESTIMATE);
+
+	// Initialise to zero
+	memset(template_ext, 0, fft_len * n_templates * sizeof(double));
+	memset(image_ext, 0, fft_len * sizeof(double));
 
 	// Call the function to do the work
 	status = normxcorr_fftw_main(templates, template_len, n_templates, image, image_len,
@@ -400,13 +401,15 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     for (i = 0; i < n_channels; ++i){
         /* allocate memory here */
         double * template_ext = fftw_alloc_real(fft_len * n_templates);
-        memset(template_ext, 0, fft_len * n_templates * sizeof(double));
         double * image_ext = fftw_alloc_real(fft_len);
-        memset(image_ext, 0, fft_len * sizeof(double));
         double * ccc = fftw_alloc_real(fft_len * n_templates);
         fftw_complex * outa = fftw_alloc_complex(N2 * n_templates);
         fftw_complex * outb = fftw_alloc_complex(N2);
         fftw_complex * out = fftw_alloc_complex(N2 * n_templates);
+
+        /* initialise memory to zero */
+        memset(template_ext, 0, fft_len * n_templates * sizeof(double));
+        memset(image_ext, 0, fft_len * sizeof(double));
 
         /* call the routine */
         r = normxcorr_fftw_main(&templates[n_templates * template_len * i], template_len,
