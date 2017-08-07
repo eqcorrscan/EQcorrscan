@@ -3113,8 +3113,8 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         if not daylong:
             kwargs.update(
                 {'endtime': kwargs['starttime'] + master.process_length})
-            chunk_stream = stream.trim(starttime=kwargs['starttime'],
-                                       endtime=kwargs['endtime']).copy()
+            chunk_stream = stream.slice(starttime=kwargs['starttime'],
+                                        endtime=kwargs['endtime']).copy()
         else:
             chunk_stream = stream.copy()
         processed_streams.append(func(st=chunk_stream, **kwargs))
