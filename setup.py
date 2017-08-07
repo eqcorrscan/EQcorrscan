@@ -238,7 +238,7 @@ def setup_package():
 
     if not READ_THE_DOCS:
         install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
-                            'bottleneck', 'obspy>=1.0.3']
+                            'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12']
     else:
         install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
                             'mock']
