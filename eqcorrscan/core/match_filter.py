@@ -647,7 +647,7 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 debug=0):
+                 overlap='calculate', debug=0):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -686,6 +686,13 @@ class Party(object):
             To generate a plot for every detection or not, defaults to False
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
+        :type overlap: float
+        :param overlap:
+            Either None, "calculate" or a float of number of seconds to
+            overlap detection streams by.  This is to counter the effects of
+            the delay-and-stack in calcualting cross-correlation sums. Setting
+            overlap = "calculate" will work out the appropriate overlap based
+            on the maximum lags within templates.
         :type debug: int
         :param debug: Debug output level, 0-5 with 5 being the most output.
 
@@ -751,18 +758,28 @@ class Party(object):
                 detection_groups.remove(det_group)
         # Process the data for each group and time-chunk
         for group, det_group in zip(template_groups, detection_groups):
+            lap = 0.0
+            for template in group:
+                starts = [t.stats.starttime for t in
+                          template.st.sort(['starttime'])]
+                if starts[-1] - starts[0] > lap:
+                    lap = starts[-1] - starts[0]
+            if overlap is None:
+                lap = 0.0
+            elif isinstance(overlap, float):
+                lap = overlap
             if not pre_processed:
                 processed_streams = _group_process(
                     template_group=group, cores=cores, parallel=parallel,
                     stream=stream.copy(), debug=debug, daylong=False,
-                    ignore_length=False, overlap=0.0)
+                    ignore_length=False, overlap=lap)
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
                 processed_stream.merge()
             else:
                 processed_stream = stream
-            print(stream)
+            print(processed_stream)
             temp_cat = lag_calc(
                 detections=det_group, detect_data=processed_stream,
                 template_names=[t.name for t in group],
@@ -3105,16 +3122,15 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
     n_chunks = int((endtime - starttime + 1) / (master.process_length -
                                                 overlap))
     if n_chunks == 0:
-        print(
-            'Data must be process_length or longer, not computing detections')
+        print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):
         kwargs.update(
             {'starttime': starttime + (i * (master.process_length - overlap))})
         if not daylong:
             kwargs.update(
                 {'endtime': kwargs['starttime'] + master.process_length})
-            chunk_stream = stream.trim(starttime=kwargs['starttime'],
-                                       endtime=kwargs['endtime']).copy()
+            chunk_stream = stream.slice(starttime=kwargs['starttime'],
+                                        endtime=kwargs['endtime']).copy()
         else:
             chunk_stream = stream.copy()
         processed_streams.append(func(st=chunk_stream, **kwargs))

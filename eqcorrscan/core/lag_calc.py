@@ -173,8 +173,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 print('Template is %i long' % len(tr.data))
                 continue
             try:
-                shift, cc_max = _xcorr_interp(ccc=ccc,
-                                              dt=image[0].stats.delta)
+                shift, cc_max = _xcorr_interp(ccc=ccc, dt=image[0].stats.delta)
             except IndexError:
                 print('Could not interpolate ccc, not smooth')
                 ccc = normxcorr2(tr.data, image[0].data)
@@ -192,8 +191,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 print('Template is %i long' % len(tr.data))
                 continue
             cc_max = np.amax(ccc)
-            picktime = image[0].stats.starttime + (np.argmax(ccc) *
-                                                   image[0].stats.delta)
+            picktime = image[0].stats.starttime + (
+                np.argmax(ccc) * image[0].stats.delta)
         if debug > 3:
             print('Maximum cross-corr=%s' % cc_max)
         checksum += cc_max
@@ -235,9 +234,10 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     ccc_str = ("detect_val=%s" % cccsum)
     event.comments.append(Comment(text=ccc_str))
     if used_chans == detect_chans:
-        if pre_lag_ccsum is not None and checksum - pre_lag_ccsum < -0.05:
+        if pre_lag_ccsum is not None and\
+           checksum - pre_lag_ccsum < -(0.30 * pre_lag_ccsum):
             msg = ('lag-calc has decreased cccsum from %f to %f - '
-                   'report this error' % (pre_lag_ccsum, checksum))
+                   % (pre_lag_ccsum, checksum))
             # warnings.warn(msg)
             raise LagCalcError(msg)
     else:
@@ -288,6 +288,8 @@ def _day_loop(detection_streams, template, min_cc, detections,
         this template.
     :rtype: :class:`obspy.core.event.Catalog`
     """
+    if len(detection_streams) == 0:
+        return Catalog()
     if not cores:
         num_cores = cpu_count()
     else:
@@ -413,6 +415,12 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                        % (tr.stats.station, tr.stats.channel))
                 warnings.warn(msg)
                 detect_stream.remove(tr)
+            elif len(tr.split()) > 1:
+                msg = ("Masked data found for %s.%s, will not use."
+                       % (tr.stats.station, tr.stats.channel))
+                warnings.warn(msg)
+                detect_stream.remove(tr)
+
         # Check for duplicate traces
         stachans = [(tr.stats.station, tr.stats.channel)
                     for tr in detect_stream]
@@ -434,6 +442,8 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                 times=[detection.detect_time - shift_len],
                 title='Detection Extracted')
         if not len(detect_stream) == 0:
+            detect_stream = Stream(detect_stream).split()
+            # Make sure there are no masks left over.
             # Create tuple of (template name, data stream)
             detect_streams.append((detection.template_name,
                                    Stream(detect_stream)))
@@ -586,20 +596,18 @@ def lag_calc(detections, detect_data, template_names, templates,
                                if detection.template_name == template[0]]
         if debug > 2:
             print('There are %i detections' % len(template_detections))
-        detect_streams = _prepare_data(detect_data=detect_data,
-                                       detections=template_detections,
-                                       zipped_templates=zipped_templates,
-                                       delays=delays, shift_len=shift_len,
-                                       plot=prep_plot)
+        detect_streams = _prepare_data(
+            detect_data=detect_data, detections=template_detections,
+            zipped_templates=zipped_templates, delays=delays,
+            shift_len=shift_len, plot=prep_plot)
         detect_streams = [detect_stream[1] for detect_stream in detect_streams]
         if len(template_detections) > 0:
-            template_cat = _day_loop(detection_streams=detect_streams,
-                                     template=template[1], min_cc=min_cc,
-                                     detections=template_detections,
-                                     horizontal_chans=horizontal_chans,
-                                     vertical_chans=vertical_chans,
-                                     interpolate=interpolate, cores=cores,
-                                     parallel=parallel, debug=debug)
+            template_cat = _day_loop(
+                detection_streams=detect_streams, template=template[1],
+                min_cc=min_cc, detections=template_detections,
+                horizontal_chans=horizontal_chans,
+                vertical_chans=vertical_chans, interpolate=interpolate,
+                cores=cores, parallel=parallel, debug=debug)
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):
