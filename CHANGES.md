@@ -1,4 +1,8 @@
-## Develop
+## Current
+* Fix bug with \_group_process
+* Force NumPy version
+
+## 0.2.4
 * Increase test coverage (edge-cases) in template_gen;
 * Fix bug in template_gen.extract_from_stack for duplicate channels in
 template;
