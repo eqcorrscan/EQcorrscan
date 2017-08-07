@@ -25,6 +25,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import ctypes
+import functools
 from multiprocessing import Pool
 
 import numpy as np
@@ -34,6 +35,117 @@ from scipy.fftpack.helper import next_fast_len
 from eqcorrscan.utils.libnames import _load_cdll
 
 XCOR_FUNCS = {}  # cache of functions for doing cross correlations
+
+
+
+# ---------------------- generic concurrency functions
+
+def _general_multithread(func):
+    """ return the general multithreading function using func """
+
+    def multithread(templates, stream, *args, **kwargs):
+        a = func
+        pass
+
+    return  multithread
+
+
+def _general_multiprocess(func):
+
+    def multiproc(templates, stream, *args, **kwargs):
+        pass
+
+    return multiproc
+
+
+def _general_concurrent(func):
+
+    def concurrent(templates, stream, *args, **kwargs):
+        pass
+
+    return concurrent
+
+
+def _general_serial(func):
+
+    def serial(templates, stream, *args, **kwargs):
+        pass
+
+    return serial
+
+
+def register_normxcorr(name, func=None, is_default=False):
+    """
+    Decorator for registering different correlation functions.
+
+    Each function must have the same interface as numpy_normxcorr, which is:
+    f(templates, stream, pads, *args, **kwargs) any number of specific kwargs
+    can be used.
+
+    Register_normxcorr can be used as a decorator with or without arguments
+    or as a callable.
+
+    :param name: The name of the function for quick access, or the callable
+        that will be wrapped when used as a decorator.
+    :type name: str, callable
+
+    :return: callable
+    """
+    register_values = 'multithread multiprocess concurrent serial'.split()
+    cache = {}
+
+    def register(register_str):
+        """
+        Register a function as an implementation. 
+        
+        :param register_str: The registration designation
+        :type register_str: str
+        """
+        if not register_str in register_values:
+            msg = 'register_name must be in %s' % register_values
+            raise ValueError(msg)
+
+        def _register(func):
+            cache[register_str] = func
+            setattr(cache['func'], register_str, func)
+            return func
+
+        return _register
+
+
+    def wrapper(func, func_name=None):
+        # register the functions in the XCOR
+        fname = func_name or name.__name__ if callable(name) else str(name)
+        XCOR_FUNCS[fname] = func
+        if is_default:  # set function as default
+            XCOR_FUNCS['default'] = func
+        # attach some attrs, this is a bit of a hack to avoid pickle problems
+        func.register = register
+        cache['func'] = func
+        func.multithread = _general_multithread(func)
+        func.multiprocess = _general_multithread(func)
+        func.concurrent = _general_multithread(func)
+        func.serial = _general_serial(func)
+        return func
+
+    # used as a decorator
+    if callable(name):
+        return wrapper(name)
+
+    # used as a normal function (called and passed a function)
+    if callable(func):
+        return wrapper(func, func_name=name)
+
+    # called, then used as a decorator
+    return wrapper
+
+
+def get_normxcorr(name_or_func):
+    """
+
+    :param name_or_func:
+    :return:
+    """
 
 
 def normxcorr(templates, stream, pads, *args, **kwargs):
@@ -67,43 +179,6 @@ def normxcorr(templates, stream, pads, *args, **kwargs):
     else:
         func = XCOR_FUNCS[xcorr_func]
     return func(templates, stream, pads, *args, **kwargs)
-
-
-def register_normxcorr(name, func=None, is_default=False):
-    """
-    Decorator for registering different correlation functions. 
-
-    Each function must have the same interface as numpy_normxcorr, which is:
-    f(templates, stream, pads, **kwargs) any number of specific kwargs can
-    be used. 
-    
-    Register_normxcorr can be used as a decorator or callable.
-    
-    :param name: The name of the function for quick access
-    :type name: str
-    
-    :return: callable
-    """
-
-    def wrapper(func, func_name=None):
-        # register the functions in the XCOR
-        fname = func_name or name.__name__ if callable(name) else str(name)
-        XCOR_FUNCS[fname] = func
-        # set function as default
-        if is_default:
-            XCOR_FUNCS['default'] = func
-        return func
-
-    # used as a decorator
-    if callable(name):
-        return wrapper(name)
-
-    # used as a normal function (called and passed a function)
-    if callable(func):
-        return wrapper(func, func_name=name)
-
-    # called, then used as a decorator
-    return wrapper
 
 
 @register_normxcorr('numpy')
@@ -155,129 +230,6 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     for i, pad in enumerate(pads):  # range(len(pads)):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
-
-
-def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
-                           openmp=False):
-    """
-    Cross-correlate multiple channels either in parallel or not
-
-    :type templates: list
-    :param templates:
-        A list of templates, where each one should be an obspy.Stream object
-        containing multiple traces of seismic data and the relevant header
-        information.
-    :type stream: obspy.core.stream.Stream
-    :param stream:
-        A single Stream object to be correlated with the templates.
-    :type cores: int
-    :param cores:
-        Number of processes to use, if set to None, no Python multiprocessing
-        will be done.
-    :type cores: int
-    :param cores: Number of cores to loop over
-    :type time_domain: bool
-    :param time_domain:
-        Whether to compute in the time-domain using the compiled openMP
-        parallel cross-correlation routine.
-    :type openmp: bool
-    :param openmp: Whether to use the openmp, compiled threaded loop or not.
-
-    :returns:
-        New list of :class:`numpy.ndarray` objects.  These will contain
-        the correlation sums for each template for this day of data.
-    :rtype: list
-    :returns:
-        list of ints as number of channels used for each cross-correlation.
-    :rtype: list
-    :returns:
-        list of list of tuples of station, channel for all cross-correlations.
-    :rtype: list
-
-    .. Note::
-        Each template must contain the same channels as every other template,
-        the stream must also contain the same channels (note that if there
-        are duplicate channels in the template you do not need duplicate
-        channels in the stream).
-    """
-    no_chans = np.zeros(len(templates))
-    chans = [[] for _i in range(len(templates))]
-    # Do some reshaping
-    stream.sort(['network', 'station', 'location', 'channel'])
-    t_starts = []
-    for template in templates:
-        template.sort(['network', 'station', 'location', 'channel'])
-        t_starts.append(min([tr.stats.starttime for tr in template]))
-    seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
-    template_array = {}
-    stream_array = {}
-    pad_array = {}
-
-    for i, seed_id in enumerate(seed_ids):
-        t_ar = np.array([template[i].data
-                         for template in templates]).astype(np.float32)
-        template_array.update({seed_id: t_ar})
-        stream_array.update(
-            {seed_id: stream.select(
-                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
-        pad_list = [
-            int(round(template[i].stats.sampling_rate *
-                      (template[i].stats.starttime - t_starts[j])))
-            for j, template in zip(range(len(templates)), templates)]
-        pad_array.update({seed_id: pad_list})
-    if cores is None and not openmp:
-        cccsums = np.zeros([len(templates),
-                            len(stream[0]) - len(templates[0][0]) + 1])
-        for seed_id in seed_ids:
-            if time_domain:
-                tr_xcorrs, tr_chans = time_multi_normxcorr(
-                    templates=template_array[seed_id],
-                    stream=stream_array[seed_id], pads=pad_array[seed_id])
-            else:
-                tr_xcorrs, tr_chans = fftw_normxcorr(
-                    templates=template_array[seed_id],
-                    stream=stream_array[seed_id], pads=pad_array[seed_id],
-                    threaded=True)
-            cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
-            no_chans += tr_chans.astype(np.int)
-            for chan, state in zip(chans, tr_chans):
-                if state:
-                    chan.append((seed_id.split('.')[1],
-                                 seed_id.split('.')[-1].split('_')[0]))
-    elif not openmp:
-        pool = Pool(processes=cores)
-        if time_domain:
-            results = [pool.apply_async(time_multi_normxcorr, (
-                template_array[seed_id], stream_array[seed_id],
-                pad_array[seed_id])) for seed_id in seed_ids]
-        else:
-            results = [pool.apply_async(fftw_normxcorr, (
-                template_array[seed_id], stream_array[seed_id],
-                pad_array[seed_id], False)) for seed_id in seed_ids]
-        pool.close()
-        results = [p.get() for p in results]
-        xcorrs = [p[0] for p in results]
-        tr_chans = np.array([p[1] for p in results])
-        pool.join()
-        cccsums = np.sum(xcorrs, axis=0)
-        no_chans = np.sum(tr_chans.astype(np.int), axis=0)
-        for seed_id, tr_chan in zip(seed_ids, tr_chans):
-            for chan, state in zip(chans, tr_chan):
-                if state:
-                    chan.append((seed_id.split('.')[1],
-                                 seed_id.split('.')[-1].split('_')[0]))
-    else:
-        xcorrs, tr_chans = fftw_multi_normxcorr(
-            template_array=template_array, stream_array=stream_array,
-            pad_array=pad_array, seed_ids=seed_ids)
-        cccsums = np.sum(xcorrs, axis=0)
-        no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
-        for seed_id, tr_chan in zip(seed_ids, tr_chans):
-            for chan, state in zip(chans, tr_chan):
-                if state:
-                    chan.append((seed_id.split('.')[1],
-                                 seed_id.split('.')[-1].split('_')[0]))
-    return cccsums, no_chans, chans
 
 
 @register_normxcorr('time_domain')
@@ -506,13 +458,133 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     return cccs, used_chans
 
 
-from functools import singledispatch
+# --------------------------- stream prep functions
+
+
+def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
+                           openmp=False):
+    """
+    Cross-correlate multiple channels either in parallel or not
+
+    :type templates: list
+    :param templates:
+        A list of templates, where each one should be an obspy.Stream object
+        containing multiple traces of seismic data and the relevant header
+        information.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+        A single Stream object to be correlated with the templates.
+    :type cores: int
+    :param cores:
+        Number of processes to use, if set to None, no Python multiprocessing
+        will be done.
+    :type cores: int
+    :param cores: Number of cores to loop over
+    :type time_domain: bool
+    :param time_domain:
+        Whether to compute in the time-domain using the compiled openMP
+        parallel cross-correlation routine.
+    :type openmp: bool
+    :param openmp: Whether to use the openmp, compiled threaded loop or not.
+
+    :returns:
+        New list of :class:`numpy.ndarray` objects.  These will contain
+        the correlation sums for each template for this day of data.
+    :rtype: list
+    :returns:
+        list of ints as number of channels used for each cross-correlation.
+    :rtype: list
+    :returns:
+        list of list of tuples of station, channel for all cross-correlations.
+    :rtype: list
+
+    .. Note::
+        Each template must contain the same channels as every other template,
+        the stream must also contain the same channels (note that if there
+        are duplicate channels in the template you do not need duplicate
+        channels in the stream).
+    """
+    no_chans = np.zeros(len(templates))
+    chans = [[] for _i in range(len(templates))]
+    # Do some reshaping
+    stream.sort(['network', 'station', 'location', 'channel'])
+    t_starts = []
+    for template in templates:
+        template.sort(['network', 'station', 'location', 'channel'])
+        t_starts.append(min([tr.stats.starttime for tr in template]))
+    seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
+    template_array = {}
+    stream_array = {}
+    pad_array = {}
+
+    for i, seed_id in enumerate(seed_ids):
+        t_ar = np.array([template[i].data
+                         for template in templates]).astype(np.float32)
+        template_array.update({seed_id: t_ar})
+        stream_array.update(
+            {seed_id: stream.select(
+                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
+        pad_list = [
+            int(round(template[i].stats.sampling_rate *
+                      (template[i].stats.starttime - t_starts[j])))
+            for j, template in zip(range(len(templates)), templates)]
+        pad_array.update({seed_id: pad_list})
+    if cores is None and not openmp:
+        cccsums = np.zeros([len(templates),
+                            len(stream[0]) - len(templates[0][0]) + 1])
+        for seed_id in seed_ids:
+            if time_domain:
+                tr_xcorrs, tr_chans = time_multi_normxcorr(
+                    templates=template_array[seed_id],
+                    stream=stream_array[seed_id], pads=pad_array[seed_id])
+            else:
+                tr_xcorrs, tr_chans = fftw_normxcorr(
+                    templates=template_array[seed_id],
+                    stream=stream_array[seed_id], pads=pad_array[seed_id],
+                    threaded=True)
+            cccsums = np.sum([cccsums, tr_xcorrs], axis=0)
+            no_chans += tr_chans.astype(np.int)
+            for chan, state in zip(chans, tr_chans):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
+    elif not openmp:
+        pool = Pool(processes=cores)
+        if time_domain:
+            results = [pool.apply_async(time_multi_normxcorr, (
+                template_array[seed_id], stream_array[seed_id],
+                pad_array[seed_id])) for seed_id in seed_ids]
+        else:
+            results = [pool.apply_async(fftw_normxcorr, (
+                template_array[seed_id], stream_array[seed_id],
+                pad_array[seed_id], False)) for seed_id in seed_ids]
+        pool.close()
+        results = [p.get() for p in results]
+        xcorrs = [p[0] for p in results]
+        tr_chans = np.array([p[1] for p in results])
+        pool.join()
+        cccsums = np.sum(xcorrs, axis=0)
+        no_chans = np.sum(tr_chans.astype(np.int), axis=0)
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
+    else:
+        xcorrs, tr_chans = fftw_multi_normxcorr(
+            template_array=template_array, stream_array=stream_array,
+            pad_array=pad_array, seed_ids=seed_ids)
+        cccsums = np.sum(xcorrs, axis=0)
+        no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append((seed_id.split('.')[1],
+                                 seed_id.split('.')[-1].split('_')[0]))
+    return cccsums, no_chans, chans
+
 
 if __name__ == '__main__':
     import doctest
 
     doctest.testmod()
-
-
-
-

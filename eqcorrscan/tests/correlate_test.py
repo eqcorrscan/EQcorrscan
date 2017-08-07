@@ -15,14 +15,27 @@ import pytest
 from obspy import Trace, Stream
 
 import eqcorrscan.utils.correlate
+from eqcorrscan import register_normxcorr
 from eqcorrscan.utils.correlate import numpy_normxcorr, fftw_normxcorr, \
     time_multi_normxcorr, multichannel_normxcorr, normxcorr
+
 
 # set seed state for consistent arrays
 random = np.random.RandomState(13)
 
 
-# helper functions for test suite
+# -------------------------- helper functions
+
+
+def gen_xcorr_func(name):
+    """ return an xcorr function with desired name """
+
+    def func(templates, stream, pads, *args, **kwargs):
+        pass
+
+    func.__name__ = name
+    return func
+
 
 def time_func(func, name, *args, **kwargs):
     """ call a func with args and kwargs, print name of func and how 
@@ -35,88 +48,128 @@ def time_func(func, name, *args, **kwargs):
     return out
 
 
-# module fixtures
+def measure_counts(self, func):
+    """ decorator for counter how often func get called """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        self.counter[func.__name__] += 1
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+# ----------------------------- module fixtures
+
+
+# auto run fixtures
+
+@pytest.fixture(scope='class', autouse=True)
+def swap_registery():
+    """ copy the current registry, restore it when tests finish. This will
+     run after every class test suite """
+    current = copy.deepcopy(eqcorrscan.utils.correlate.XCOR_FUNCS)
+    yield
+    eqcorrscan.utils.correlate.XCOR_FUNCS = current
+
+# array fixtures
+
+starting_index = 500
 
 @pytest.fixture(scope='module')
-def templates():
+def array_template():
     """ 
     return a set of templates, generated with randomn, for correlation tests.
     """
-    # setup search space and templates
     return random.randn(200, 200)
 
 
 @pytest.fixture(scope='module')
-def stream():
+def array_stream(array_template):
     """
     Return a stream genearted with randomn for testing normxcorr functions
     """
-    return random.randn(10000) * 5
+    stream = random.randn(10000) * 5
+    # insert a template into the stream so cc == 1 at some place
+    ar = array_template[0]
+    stream[starting_index: starting_index + len(ar)] = ar
+    return stream
 
 
 @pytest.fixture(scope='module')
-def pads(templates):
+def pads(array_template):
     """
     return an array of zeros for padding, matching templates len.
-    :return: 
     """
-    return np.zeros(templates.shape[0], dtype=int)
+    return np.zeros(array_template.shape[0], dtype=int)
 
 
-class TestCorrelate:
-    # contants for setup
-    chans = ['EHZ', 'EHN', 'EHE']
-    stas = ['COVA', 'FOZ', 'LARB', 'GOVA', 'MTFO', 'MTBA']
-    n_templates = 20
-    stream_len = 100000
-    template_len = 200
+@pytest.fixture(scope='module')
+def array_ccs(array_template, array_stream, pads):
+    """  use each function stored in the normcorr cache to correlate the 
+     templates and arrays, return a dict with keys as func names and values
+     as the cc calculated by said function"""
+    out = {}
+    for name, func in eqcorrscan.utils.correlate.XCOR_FUNCS.items():
+        cc, _ = time_func(func, name, array_template, array_stream, pads)
+        out[name] = cc
+    return out
 
-    # fixtures
-    @pytest.fixture
-    def multichannel_stream(self):
-        """ create a multichannel stream for tests """
-        stream = Stream()
-        for station in self.stas:
-            for channel in self.chans:
-                stream += Trace(data=random.randn(self.stream_len))
-                stream[-1].stats.channel = channel
-                stream[-1].stats.station = station
-        return stream
+# stream fixtures
 
-    @pytest.fixture
-    def multichannel_templates(self):
-        """ create multichannel templates """
-        templates = []
-        for i in range(self.n_templates):
-            template = Stream()
-            for station in self.stas:
-                for channel in self.chans:
-                    template += Trace(data=random.randn(self.template_len))
-                    template[-1].stats.channel = channel
-                    template[-1].stats.station = station
-            templates.append(template)
-        return templates
+chans = ['EHZ', 'EHN', 'EHE']
+stas = ['COVA', 'FOZ', 'LARB', 'GOVA', 'MTFO', 'MTBA']
+n_templates = 20
+stream_len = 100000
+template_len = 200
+
+
+@pytest.fixture
+def multichannel_stream():
+    """ create a multichannel stream for tests """
+    stream = Stream()
+    for station in stas:
+        for channel in chans:
+            stream += Trace(data=random.randn(stream_len))
+            stream[-1].stats.channel = channel
+            stream[-1].stats.station = station
+    return stream
+
+@pytest.fixture
+def multichannel_templates():
+    """ create multichannel templates """
+    templates = []
+    for i in range(n_templates):
+        template = Stream()
+        for station in stas:
+            for channel in chans:
+                template += Trace(data=random.randn(template_len))
+                template[-1].stats.channel = channel
+                template[-1].stats.station = station
+        templates.append(template)
+    return templates
+
+
+# ----------------------------------- tests
+
+
+class TestCorrelateFunctionsReturnSame:
+    """ these tests ensure the various implementations of normxcorr return 
+    approximately the same answers """
 
     # tests
-    def test_same_various_methods(self, templates, stream, pads):
-        """ basic test case for each of the correlation methods """
-        # functions to test
-        cc_funcs = dict(
-            scipy=numpy_normxcorr,
-            fftw=partial(fftw_normxcorr, threaded=False),
-            fftw_threaded=partial(fftw_normxcorr, threaded=True),
-            time_domain=time_multi_normxcorr,
-        )
-
-        # loop over cc funcs and store results in cc_list
-        cc_list = []
-        for name, func in cc_funcs.items():
-            cc, _ = time_func(func, name, templates, stream, pads)
-            cc_list.append(cc)
-
-        # compare each cc against other ccs
+    def test_single_channel_similar(self, array_ccs):
+        """ ensure each of the correlation methods return similar answers 
+        given the same input data """
+        cc_list = list(array_ccs.values())
         for cc1, cc2 in itertools.combinations(cc_list, 2):
             assert np.allclose(cc1, cc2, atol=0.05)
+
+    def test_test_autocorrelation(self, array_ccs):
+        """ ensure an auto correlationoccurred in each of ccs where it is 
+        expected, defined by starting_index variable """
+        for name, cc in array_ccs.items():
+            assert np.isclose(cc[0, starting_index], 1., atol=.01)
 
     def test_multi_channel_xcorr(self, multichannel_templates,
                                  multichannel_stream):
@@ -151,48 +204,39 @@ class TestGenericNormxcorr:
 
     counter = defaultdict(lambda: 0)  # a simple counter
 
-    # helper functions
-    def measure_counts(self, func):
-        """ decorator for counter how often func get called """
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            self.counter[func.__name__] += 1
-            return func(*args, **kwargs)
-
-        return wrapper
-
     # fixtures
     @pytest.fixture
-    def instrumented_default_normxcorr(self, monkeypatch, templates, stream,
-                                       pads):
+    def instrumented_default_normxcorr(self, monkeypatch, array_template,
+                                       array_stream, pads):
         """ instrument the default xcor """
         default = eqcorrscan.utils.correlate.XCOR_FUNCS['default']
         func_name = default.__name__
         monkeypatch.setitem(eqcorrscan.utils.correlate.XCOR_FUNCS,
-                            'default', self.measure_counts(default))
-        _ = normxcorr(templates, stream, pads)
+                            'default', measure_counts(self, default))
+        _ = normxcorr(array_template, array_stream, pads)
         yield func_name
         self.__class__.counter = defaultdict(lambda: 0)  # reset counter
 
     @pytest.fixture
-    def swapped_normxcorr(self, monkeypatch, templates, stream, pads):
+    def swapped_normxcorr(self, monkeypatch, array_template, array_stream,
+                          pads):
         """ ensure the default normxcorr can be changed  """
-        new_func = self.measure_counts(time_multi_normxcorr)
+        new_func = measure_counts(self, time_multi_normxcorr)
         monkeypatch.setitem(eqcorrscan.utils.correlate.XCOR_FUNCS,
                             'time_domain', new_func)
-        _ = normxcorr(templates, stream, pads, xcorr_func='time_domain')
+        _ = normxcorr(array_template, array_stream, pads,
+                      xcorr_func='time_domain')
         yield new_func.__name__
         self.__class__.counter = defaultdict(lambda: 0)  # reset counter
 
     @pytest.fixture
-    def callable_normxcorr(self, templates, stream, pads):
+    def callable_normxcorr(self, array_template, array_stream, pads):
         def customfunc(templates, stream, pads, *args, **kwargs):
             pass
 
-        func = self.measure_counts(customfunc)
+        func = measure_counts(self, customfunc)
 
-        _ = normxcorr(templates, stream, pads, xcorr_func=func)
+        _ = normxcorr(array_template, array_stream, pads, xcorr_func=func)
         return func.__name__
 
     # tests
@@ -220,28 +264,11 @@ class TestRegisterNormXcorrs:
         name = func_name.__name__ if callable(func_name) else func_name
         return name in eqcorrscan.utils.correlate.XCOR_FUNCS
 
-    def gen_xcorr_func(self, name):
-        """ return an xcorr function with desired name """
-
-        def func(templates, stream, pads, *args, **kwargs):
-            pass
-
-        func.__name__ = name
-        return func
-
-    # fixtures
-    @pytest.fixture(scope='class', autouse=True)
-    def swap_registery(self):
-        """ get a copy of the current registry, restore it when test finish """
-        current = copy.deepcopy(eqcorrscan.utils.correlate.XCOR_FUNCS)
-        yield
-        eqcorrscan.utils.correlate.XCOR_FUNCS = current
-
     # tests
     def test_register_as_decorator_no_args(self):
         """ ensure register_normxcorr works as a decorator with no args """
 
-        @eqcorrscan.utils.correlate.register_normxcorr
+        @register_normxcorr
         def func1(templates, stream, pads, *args, **kwargs):
             pass
 
@@ -250,7 +277,7 @@ class TestRegisterNormXcorrs:
     def test_register_as_decorator_with_args(self):
         """ ensure register can be used as a decorator with args """
 
-        @eqcorrscan.utils.correlate.register_normxcorr(name='func2')
+        @register_normxcorr(name='func2')
         def func(templates, stream, pads, *args, **kwargs):
             pass
 
@@ -259,16 +286,52 @@ class TestRegisterNormXcorrs:
     def test_register_as_callable(self):
         """ ensure register can be used as a callable to take a name
         and a normxcorr func """
-        func = self.gen_xcorr_func('funky')
-
-        eqcorrscan.utils.correlate.register_normxcorr(name='func3', func=func)
+        func = gen_xcorr_func('funky')
+        register_normxcorr(name='func3', func=func)
         assert self.name_func_is_registered('func3')
 
     def test_set_default(self):
         """ ensure the default can be overwritten """
-        func = self.gen_xcorr_func('funky')
+        func = gen_xcorr_func('funky')
         eqcorrscan.utils.correlate.register_normxcorr(func, is_default=True)
         assert eqcorrscan.utils.correlate.XCOR_FUNCS['default'] is func
+
+
+class TestAlternativeConcurrency:
+    """ Tests for registering alternative concurrency functions """
+    counter = defaultdict(lambda: 0)
+
+    # helper functions
+    def new_multi(self, template_dict, stream_dict, pad_dict, seed_ids):
+        pass
+
+    # fixtures
+    @pytest.fixture
+    def r_normxcorr(self):
+        """ return a registered normxcorr function """
+        return register_normxcorr(gen_xcorr_func('normxcorr'))
+
+    @pytest.fixture
+    def normxcorr_new_multithread(self, r_normxcorr):
+        """ register the new multithread method """
+        func = measure_counts(self, self.new_multi)
+        r_normxcorr.register('multithread')(func)
+        r_normxcorr.multithread(None, None, None, None)
+        yield func.__name__
+        self.counter.pop(func.__name__)
+
+    # @pytest.fixture(scope='class')
+    # def
+
+    # tests
+    def test_new_method_was_called(self, normxcorr_new_multithread):
+        """ ensure the new method was called """
+        assert self.counter[normxcorr_new_multithread]
+
+
+
+
+
 
 
 if __name__ == '__main__':

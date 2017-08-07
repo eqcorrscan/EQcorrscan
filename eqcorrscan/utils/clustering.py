@@ -118,12 +118,6 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         # Start a parallel processing pool
         pool = Pool(processes=cores)
         # Parallel processing
-        #
-        # out = []
-        # for j in range(len(stream_list)):
-        #     out.append(cross_chan_coherence(master, stream_list[j], allow_shift,
-        #                                     shift_len, j))
-        # dist_list = out
         results = [pool.apply_async(cross_chan_coherence,
                                     args=(master, stream_list[j], allow_shift,
                                           shift_len, j))

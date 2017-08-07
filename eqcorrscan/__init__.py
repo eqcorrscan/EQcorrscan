@@ -11,6 +11,10 @@ import sys
 import importlib
 import warnings
 
+# "shortcut" imports
+from eqcorrscan.utils.correlate import register_normxcorr
+
+
 __all__ = ['core', 'utils', 'tutorials']
 
 
