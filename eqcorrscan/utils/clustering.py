@@ -26,7 +26,7 @@ from scipy.spatial.distance import squareform
 
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
-from eqcorrscan.utils.correlate import normxcorr, fftw_normxcorr
+from eqcorrscan.utils.correlate import normxcorr, time_multi_normxcorr, fftw_normxcorr
 from eqcorrscan.utils.mag_calc import dist_calc
 
 
@@ -71,7 +71,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
         elif len(tr2) > 0:
             min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += normxcorr(
+            cccoh += fftw_normxcorr(
                 np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
                 [0])[0][0][0]
             kchan += 1
@@ -119,20 +119,20 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         pool = Pool(processes=cores)
         # Parallel processing
         #
-        out = []
-        for j in range(len(stream_list)):
-            out.append(cross_chan_coherence(master, stream_list[j], allow_shift,
-                                            shift_len, j))
-        dist_list = out
-        # results = [pool.apply_async(cross_chan_coherence,
-        #                             args=(master, stream_list[j], allow_shift,
-        #                                   shift_len, j))
-        #            for j in range(len(stream_list))]
-        # pool.close()
-        # # Extract the results when they are done
-        # dist_list = [p.get() for p in results]
-        # # Close and join all the processes back to the master process
-        # pool.join()
+        # out = []
+        # for j in range(len(stream_list)):
+        #     out.append(cross_chan_coherence(master, stream_list[j], allow_shift,
+        #                                     shift_len, j))
+        # dist_list = out
+        results = [pool.apply_async(cross_chan_coherence,
+                                    args=(master, stream_list[j], allow_shift,
+                                          shift_len, j))
+                   for j in range(len(stream_list))]
+        pool.close()
+        # Extract the results when they are done
+        dist_list = [p.get() for p in results]
+        # Close and join all the processes back to the master process
+        pool.join()
         # Sort the results by the input j
         dist_list.sort(key=lambda tup: tup[1])
         # Sort the list into the dist_mat structure

@@ -506,7 +506,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     return cccs, used_chans
 
 
+from functools import singledispatch
+
 if __name__ == '__main__':
     import doctest
 
     doctest.testmod()
+
+
+
+
