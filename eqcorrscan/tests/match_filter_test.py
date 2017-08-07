@@ -22,7 +22,6 @@ from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
 from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 
@@ -140,12 +139,13 @@ class TestSynthData(unittest.TestCase):
 class TestGeoNetCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        client = Client('GEONET')
+        client = Client('http://beta-service.geonet.org.nz')
         cls.t1 = UTCDateTime(2016, 9, 4)
         cls.t2 = cls.t1 + 86400
-        catalog = get_geonet_events(
-            startdate=cls.t1, enddate=cls.t2, minmag=4, minlat=-49, maxlat=-35,
-            minlon=175.0, maxlon=185.0)
+        # catalog = get_geonet_events(
+        catalog = client.get_events(
+            starttime=cls.t1, endtime=cls.t2, minmagnitude=4, minlatitude=-49,
+            maxlatitude=-35, minlongitude=175.0, maxlongitude=180.0)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         for event in catalog:
@@ -156,7 +156,8 @@ class TestGeoNetCase(unittest.TestCase):
             event.picks.append(extra_pick)
         cls.tribe = Tribe()
         cls.tribe.construct(
-            method='from_client', catalog=catalog, client_id='GEONET',
+            method='from_client', catalog=catalog,
+            client_id='http://beta-service.geonet.org.nz',
             lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=3600)
         cls.templates = [t.st for t in cls.tribe.templates]
@@ -232,7 +233,7 @@ class TestGeoNetCase(unittest.TestCase):
                 plotdir='.', cores=1)
 
     def test_geonet_tribe_detect(self):
-        client = Client('GEONET')
+        client = Client('http://beta-service.geonet.org.nz')
         # Try to force issues with starting samples on wrong day for geonet
         # data
         tribe = self.tribe.copy()

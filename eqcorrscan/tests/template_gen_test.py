@@ -26,7 +26,6 @@ from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
 from eqcorrscan.core.template_gen import template_gen, extract_from_stack
 from eqcorrscan.core.template_gen import from_sfile, TemplateGenError
 from eqcorrscan.tutorials.template_creation import mktemplates
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sfile_util import eventtosfile, read_event
 
@@ -81,12 +80,18 @@ class TestTemplateGeneration(unittest.TestCase):
     def test_not_delayed(self):
         """Test the method of template_gen without applying delays to
         channels."""
-        cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                                maxlon=175.5,
-                                startdate=UTCDateTime(2016, 5, 1),
-                                enddate=UTCDateTime(2016, 5, 2))
+        client = Client('http://beta-service.geonet.org.nz')
+        cat = client.get_events(
+            minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+            maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
+            endtime=UTCDateTime(2016, 5, 2))
+        # cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
+        #                         maxlon=175.5,
+        #                         startdate=UTCDateTime(2016, 5, 1),
+        #                         enddate=UTCDateTime(2016, 5, 2))
         cat = filter_picks(catalog=cat, top_n_picks=5)
-        template = from_client(catalog=cat, client_id='GEONET',
+        template = from_client(catalog=cat,
+                               client_id='http://beta-service.geonet.org.nz',
                                lowcut=None, highcut=None, samp_rate=100.0,
                                filt_order=4, length=10.0, prepick=0.5,
                                swin='all', process_len=3600,
@@ -106,7 +111,7 @@ class TestTemplateGeneration(unittest.TestCase):
         Will download data from server and store in various databases,
         then create templates using the various methods.
         """
-        client = Client('GEONET')
+        client = Client('http://beta-service.geonet.org.nz')
         # get the events
         catalog = Catalog()
         data_stream = client._download('http://quakeml.geonet.org.nz/' +
