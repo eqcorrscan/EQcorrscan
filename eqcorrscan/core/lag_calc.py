@@ -414,7 +414,7 @@ def _prepare_data(detect_data, detections, template, delays,
             background = detect_data.slice(
                 starttime=detection.detect_time - (shift_len + 5),
                 endtime=detection.detect_time +
-                        shift_len + max_delay + 7).copy()
+                shift_len + max_delay + 7).copy()
             for tr in background:
                 if len(tr.data) == 0:
                     background.remove(tr)
