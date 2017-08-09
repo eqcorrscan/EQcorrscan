@@ -776,10 +776,10 @@ class Party(object):
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
-                processed_stream.merge()
+                processed_stream.merge(method=1)
+                print(processed_stream)
             else:
                 processed_stream = stream
-            print(processed_stream)
             temp_cat = lag_calc(
                 detections=det_group, detect_data=processed_stream,
                 template_names=[t.name for t in group],

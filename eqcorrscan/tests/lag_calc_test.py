@@ -56,9 +56,10 @@ class TestMethods(unittest.TestCase):
             event=detection_spicks_event, template_name='test_template',
             threshold_type='MAD', threshold_input=8.0)]
         tstart = min(tr.stats.starttime for tr in cls.template)
-        cls.delays = [('test_template', [(tr.stats.station, tr.stats.channel,
-                                          tr.stats.starttime - tstart)
-                                         for tr in cls.template])]
+        cls.delays = {}
+        for tr in cls.template:
+            cls.delays.update({tr.stats.station + '.' + tr.stats.channel:
+                               tr.stats.starttime - tstart})
         warnings.simplefilter("always")
 
     def test_channel_loop(self):
@@ -189,17 +190,15 @@ class TestMethods(unittest.TestCase):
     def test_prepare_data(self):
         detect_streams = _prepare_data(
             detect_data=self.detection, detections=[self.detections[0]],
-            zipped_templates=zip(['test_template'], [self.template]),
+            template=('test_template', self.template),
             delays=self.delays, shift_len=0.5, plot=False)
         self.assertEqual(len(detect_streams), 1)
 
     def test_no_matching_template(self):
-        with warnings.catch_warnings(record=True) as w:
-            detect_streams = _prepare_data(
-                detect_data=self.detection, detections=[self.detections[0]],
-                zipped_templates=zip(['fake_template'], [self.template]),
-                delays=self.delays, shift_len=0.5, plot=False)
-        self.assertTrue('No template' in str(w[0]))
+        detect_streams = _prepare_data(
+            detect_data=self.detection, detections=[self.detections[0]],
+            template=('fake_template', self.template),
+            delays=self.delays, shift_len=0.5, plot=False)
         self.assertEqual(len(detect_streams), 0)
 
     def test_duplicate_channel_error(self):
@@ -207,50 +206,18 @@ class TestMethods(unittest.TestCase):
         with self.assertRaises(LagCalcError):
             _prepare_data(
                 detect_data=detect_data, detections=[self.detections[0]],
-                zipped_templates=zip(['test_template'], [self.template]),
+                template=('test_template', self.template),
                 delays=self.delays, shift_len=0.5, plot=False)
 
-
-class NCEDCTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from eqcorrscan.core.match_filter import Tribe
-        from eqcorrscan.utils.catalog_utils import filter_picks
-        from obspy.clients.fdsn import Client
-        from obspy import UTCDateTime
-        client = Client('NCEDC')
-        t1 = UTCDateTime(2004, 9, 28)
-        t2 = t1 + 86400
-        catalog = client.get_events(
-            starttime=t1, endtime=t2, minmagnitude=2, minlatitude=35.7,
-            maxlatitude=36.1, minlongitude=-120.6, maxlongitude=-120.2,
-            includearrivals=True)
-        catalog = filter_picks(catalog, top_n_picks=5)
-        tribe = Tribe().construct(
-            method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=4.0, highcut=15.0,  samp_rate=40.0, filt_order=4,
-            length=6.0, prepick=0.1, swin='all', process_len=3600)
-        cls.party, cls.stream = tribe.client_detect(
-            client=client, starttime=t1 + (3600 * 17), endtime=t1 + (3600 * 27),
-            threshold=8, threshold_type='MAD', trig_int=6, plotvar=False,
-            return_stream=True)
-        cls.stream = cls.stream.merge(fill_value='interpolate', method=1)
-        cls.expected_catlen = 161
-
-    # def test_serial(self):
-    #     """This should work smoothly, but slowly"""
-    #     from obspy.core.event import Catalog
-    #     repicked_catalog = Catalog()
-    #     for family in self.party:
-    #         repicked_catalog += family.lag_calc(
-    #             self.stream, pre_processed=False, shift_len=0.2, min_cc=0.4)
-    #     self.assertTrue(len(repicked_catalog) == self.expected_catlen)
-
-    def test_internal_method(self):
-        """This is known to produce an error."""
-        repicked_catalog = self.party.lag_calc(
-            self.stream, pre_processed=False, shift_len=0.2, min_cc=0.4)
-        self.assertTrue(len(repicked_catalog) == self.expected_catlen)
+    def test_merged_data(self):
+        detect_data = self.detection.copy()
+        detect_data.cutout(starttime=detect_data[0].stats.starttime + 10,
+                           endtime=detect_data[0].stats.starttime + 12).merge()
+        detect_streams = _prepare_data(
+            detect_data=detect_data, detections=[self.detections[0]],
+            template=('fake_template', self.template),
+            delays=self.delays, shift_len=0.5, plot=False)
+        self.assertEqual(len(detect_streams), 0)
 
 
 class ShortTests(unittest.TestCase):

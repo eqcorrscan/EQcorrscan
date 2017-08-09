@@ -1,6 +1,10 @@
 ## Current
 * Fix bug with \_group_process
 * Force NumPy version
+* Add tests for lag-calc issue with preparing data
+* Change internals of *eqcorrscan.core.lag_calc._prepare_data* to use a
+  dictionary for delays, and to work correctly! Issues arose from not checking
+  for masked data properly and not checking length properly.
 
 ## 0.2.4
 * Increase test coverage (edge-cases) in template_gen;

@@ -325,14 +325,13 @@ def _day_loop(detection_streams, template, min_cc, detections,
                 pre_lag_ccsum=detections[i].detect_val,
                 detect_chans=detections[i].no_chans,
                 horizontal_chans=horizontal_chans,
-                vertical_chans=vertical_chans,
-                debug=debug))
+                vertical_chans=vertical_chans, debug=debug))
     temp_catalog = Catalog()
     temp_catalog.events = [event_tup[1] for event_tup in events_list]
     return temp_catalog
 
 
-def _prepare_data(detect_data, detections, zipped_templates, delays,
+def _prepare_data(detect_data, detections, template, delays,
                   shift_len, plot):
     """
     Prepare data for lag_calc - reduce memory here.
@@ -343,12 +342,11 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     :param detections:
         List of :class:`eqcorrscan.core.match_filter.Detection` to get
         data for.
-    :type zipped_templates: zip
-    :param zipped_templates: Zipped list of (template_name, template)
+    :type template: tuple
+    :param template: tuple of (template_name, template)
     :type delays: list
     :param delays:
-        List of lists of the delays for each template in the form:
-        [(template_name, [(station, channel, delay)])]
+        Dictionary of delay times in seconds keyed by sta.channel.
     :type shift_len: float
     :param shift_len: Shift length in seconds allowed for picking.
     :type plot: bool
@@ -360,49 +358,31 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
     """
     detect_streams = []
     for detection in detections:
+        if detection.template_name != template[0]:
+            continue
         # Stream to be saved for new detection
         detect_stream = []
         max_delay = 0
-        template_st = [t for t in zipped_templates
-                       if str(t[0]) == str(detection.template_name)]
-        if len(template_st) > 0:
-            template_st = template_st[0]
-        else:
-            warnings.warn('No template with name: %s' %
-                          detection.template_name)
-            for t in zipped_templates:
-                print(t)
-            continue
         for tr in detect_data:
-            tr_copy = tr.copy()
-            # Right now, copying each trace hundreds of times...
-            template = template_st[1].select(station=tr.stats.station,
-                                             channel=tr.stats.channel)
-            if template:
+            template_tr = template[1].select(
+                station=tr.stats.station, channel=tr.stats.channel)
+            if len(template_tr) >= 1:
                 # Save template trace length in seconds
-                template_len = len(template[0]) / \
-                    template[0].stats.sampling_rate
+                template_len = (
+                    len(template_tr[0]) / template_tr[0].stats.sampling_rate)
             else:
                 continue
                 # If there is no template-data match then skip the rest
                 # of the trace loop.
             # Grab the delays for the desired template: [(sta, chan, delay)]
-            delay = []
-            for d in delays:
-                if d[0] == detection.template_name:
-                    delay.append(d)
-            delay = delay[0][1]
             # Now grab the delay for the desired trace for this template
-            delay = [d for d in delay if d[0] == tr.stats.station and
-                     d[1] == tr.stats.channel][0][2]
+            delay = delays[tr.stats.station + '.' + tr.stats.channel]
             if delay > max_delay:
                 max_delay = delay
-            detect_stream.append(tr_copy.trim(starttime=detection.detect_time -
-                                              shift_len + delay,
-                                              endtime=detection.detect_time +
-                                              delay + shift_len +
-                                              template_len))
-            del tr_copy
+            detect_stream.append(tr.slice(
+                starttime=detection.detect_time - shift_len + delay,
+                endtime=detection.detect_time + delay + shift_len +
+                template_len).copy())
         for tr in detect_stream:
             if len(tr.data) == 0:
                 msg = ('No data in %s.%s for detection at time %s' %
@@ -410,17 +390,17 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                         detection.detect_time))
                 warnings.warn(msg)
                 detect_stream.remove(tr)
-            elif tr.stats.endtime - tr.stats.starttime < template_len:
+            elif tr.stats.endtime - tr.stats.starttime < (
+                        2 * shift_len) + template_len:
                 msg = ("Insufficient data for %s.%s will not use."
                        % (tr.stats.station, tr.stats.channel))
                 warnings.warn(msg)
                 detect_stream.remove(tr)
-            elif len(tr.split()) > 1:
+            elif np.ma.is_masked(tr.data):
                 msg = ("Masked data found for %s.%s, will not use."
                        % (tr.stats.station, tr.stats.channel))
                 warnings.warn(msg)
                 detect_stream.remove(tr)
-
         # Check for duplicate traces
         stachans = [(tr.stats.station, tr.stats.channel)
                     for tr in detect_stream]
@@ -431,9 +411,10 @@ def _prepare_data(detect_data, detections, zipped_templates, delays,
                        % (key[0], key[1]))
                 raise LagCalcError(msg)
         if plot:
-            background = detect_data.copy().trim(
+            background = detect_data.slice(
                 starttime=detection.detect_time - (shift_len + 5),
-                endtime=detection.detect_time + shift_len + max_delay + 7)
+                endtime=detection.detect_time +
+                        shift_len + max_delay + 7).copy()
             for tr in background:
                 if len(tr.data) == 0:
                     background.remove(tr)
@@ -576,16 +557,17 @@ def lag_calc(detections, detect_data, template_names, templates,
     detect_stachans = [(tr.stats.station, tr.stats.channel)
                        for tr in detect_data]
     for template in zipped_templates:
-        temp_delays = []
+        temp_delays = {}
         # Remove channels not present in continuous data
         _template = template[1].copy()
         for tr in _template:
             if (tr.stats.station, tr.stats.channel) not in detect_stachans:
                 _template.remove(tr)
         for tr in _template:
-            temp_delays.append((tr.stats.station, tr.stats.channel,
-                                tr.stats.starttime - _template.
-                                sort(['starttime'])[0].stats.starttime))
+            temp_delays.update(
+                {tr.stats.station + '.' + tr.stats.channel:
+                 tr.stats.starttime -
+                 _template.sort(['starttime'])[0].stats.starttime})
         delays.append((template[0], temp_delays))
         del _template
     # Segregate detections by template, then feed to day_loop
@@ -594,12 +576,13 @@ def lag_calc(detections, detect_data, template_names, templates,
         print('Running lag-calc for template %s' % template[0])
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
+        t_delays = [d for d in delays if d[0] == template[0]][0][1]
         if debug > 2:
             print('There are %i detections' % len(template_detections))
         detect_streams = _prepare_data(
             detect_data=detect_data, detections=template_detections,
-            zipped_templates=zipped_templates, delays=delays,
-            shift_len=shift_len, plot=prep_plot)
+            template=template, delays=t_delays, shift_len=shift_len,
+            plot=prep_plot)
         detect_streams = [detect_stream[1] for detect_stream in detect_streams]
         if len(template_detections) > 0:
             template_cat = _day_loop(
