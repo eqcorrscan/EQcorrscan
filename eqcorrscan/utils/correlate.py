@@ -25,17 +25,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import ctypes
-import functools
 from multiprocessing import Pool
 
 import numpy as np
+from eqcorrscan.utils.libnames import _load_cdll
 from future.utils import native_str
 from scipy.fftpack.helper import next_fast_len
 
-from eqcorrscan.utils.libnames import _load_cdll
-
 XCOR_FUNCS = {}  # cache of functions for doing cross correlations
-
 
 
 # ---------------------- generic concurrency functions
@@ -44,14 +41,12 @@ def _general_multithread(func):
     """ return the general multithreading function using func """
 
     def multithread(templates, stream, *args, **kwargs):
-        a = func
         pass
 
-    return  multithread
+    return multithread
 
 
 def _general_multiprocess(func):
-
     def multiproc(templates, stream, *args, **kwargs):
         pass
 
@@ -59,7 +54,6 @@ def _general_multiprocess(func):
 
 
 def _general_concurrent(func):
-
     def concurrent(templates, stream, *args, **kwargs):
         pass
 
@@ -67,9 +61,11 @@ def _general_concurrent(func):
 
 
 def _general_serial(func):
-
     def serial(templates, stream, *args, **kwargs):
-        pass
+        seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
+        stream_dict, template_dict, pad_dict = _get_arrays(templates, stream)
+
+        return np.array([])
 
     return serial
 
@@ -88,6 +84,11 @@ def register_normxcorr(name, func=None, is_default=False):
     :param name: The name of the function for quick access, or the callable
         that will be wrapped when used as a decorator.
     :type name: str, callable
+    :param func: The function to register
+    :type func: callable, optional
+    :param is_default: True if this function should be marked as default
+        normxcorr
+    :type is_default: bool
 
     :return: callable
     """
@@ -111,7 +112,6 @@ def register_normxcorr(name, func=None, is_default=False):
             return func
 
         return _register
-
 
     def wrapper(func, func_name=None):
         # register the functions in the XCOR
@@ -459,6 +459,33 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
 
 
 # --------------------------- stream prep functions
+
+def _get_arrays(templates, stream):
+    # Do some reshaping
+    stream.sort(['network', 'station', 'location', 'channel'])
+    t_starts = []
+    for template in templates:
+        template.sort(['network', 'station', 'location', 'channel'])
+        t_starts.append(min([tr.stats.starttime for tr in template]))
+    seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
+    template_array = {}
+    stream_array = {}
+    pad_array = {}
+
+    for i, seed_id in enumerate(seed_ids):
+        t_ar = np.array([template[i].data
+                         for template in templates]).astype(np.float32)
+        template_array.update({seed_id: t_ar})
+        stream_array.update(
+            {seed_id: stream.select(
+                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
+        pad_list = [
+            int(round(template[i].stats.sampling_rate *
+                      (template[i].stats.starttime - t_starts[j])))
+            for j, template in zip(range(len(templates)), templates)]
+        pad_array.update({seed_id: pad_list})
+
+    return stream_array, template_array, pad_array
 
 
 def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,

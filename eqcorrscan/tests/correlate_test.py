@@ -76,6 +76,7 @@ def swap_registery():
 
 starting_index = 500
 
+
 @pytest.fixture(scope='module')
 def array_template():
     """ 
@@ -124,18 +125,7 @@ stream_len = 100000
 template_len = 200
 
 
-@pytest.fixture
-def multichannel_stream():
-    """ create a multichannel stream for tests """
-    stream = Stream()
-    for station in stas:
-        for channel in chans:
-            stream += Trace(data=random.randn(stream_len))
-            stream[-1].stats.channel = channel
-            stream[-1].stats.station = station
-    return stream
-
-@pytest.fixture
+@pytest.fixture(scope='module')
 def multichannel_templates():
     """ create multichannel templates """
     templates = []
@@ -148,6 +138,18 @@ def multichannel_templates():
                 template[-1].stats.station = station
         templates.append(template)
     return templates
+
+
+@pytest.fixture(scope='module')
+def multichannel_stream():
+    """ create a multichannel stream for tests """
+    stream = Stream()
+    for station in stas:
+        for channel in chans:
+            stream += Trace(data=random.randn(stream_len))
+            stream[-1].stats.channel = channel
+            stream[-1].stats.station = station
+    return stream
 
 
 # ----------------------------------- tests
@@ -297,7 +299,7 @@ class TestRegisterNormXcorrs:
         assert eqcorrscan.utils.correlate.XCOR_FUNCS['default'] is func
 
 
-class TestAlternativeConcurrency:
+class TestRegisterAlternativeConcurrency:
     """ Tests for registering alternative concurrency functions """
     counter = defaultdict(lambda: 0)
 
@@ -320,17 +322,37 @@ class TestAlternativeConcurrency:
         yield func.__name__
         self.counter.pop(func.__name__)
 
-    # @pytest.fixture(scope='class')
-    # def
-
     # tests
     def test_new_method_was_called(self, normxcorr_new_multithread):
         """ ensure the new method was called """
         assert self.counter[normxcorr_new_multithread]
 
 
+class TestAlternativeConcurrency:
+    """ tests for alternative concurrency functions """
 
+    # fixtures
+    @pytest.fixture(scope='class')
+    def multichan_normxcorr(self, multichannel_templates,
+                            multichannel_stream):
+        """ return the result given by default multichannel normxcorr """
+        cc, _, _ = multichannel_normxcorr(multichannel_templates,
+                                          multichannel_stream)
+        return cc
 
+    @pytest.fixture(scope='class')
+    def numpy_serial(self, multichannel_templates, multichannel_stream):
+        """ return the output of the numpy functions serial interface """
+        cc = numpy_normxcorr.serial(multichannel_templates,
+                                    multichannel_stream)
+        return cc
+
+    # tests
+    def test_numpy_serial_is_similar(self, multichan_normxcorr,
+                                     numpy_serial):
+        """ delete when passes """
+        assert multichan_normxcorr.shape == numpy_serial.shape
+        assert np.allclose(numpy_serial, multichan_normxcorr)
 
 
 

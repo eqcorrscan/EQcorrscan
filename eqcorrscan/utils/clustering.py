@@ -71,7 +71,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
         elif len(tr2) > 0:
             min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += fftw_normxcorr(
+            cccoh += time_multi_normxcorr(
                 np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
                 [0])[0][0][0]
             kchan += 1

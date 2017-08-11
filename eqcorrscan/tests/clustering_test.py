@@ -78,7 +78,6 @@ class ClusteringTests(unittest.TestCase):
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
         stream_list = [read(stream_file) for stream_file in stream_files]
-        import pdb; pdb.set_trace()
         dist_mat = distance_matrix(stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
         self.assertEqual(dist_mat.shape[1], len(stream_list))

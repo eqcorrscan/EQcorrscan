@@ -16,8 +16,9 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def clean_up_doctests():
-    """ cleanup the file droppings produced by doc tests """
+def clean_up_doctests_files():
+    """ cleanup the file droppings produced by doc tests.
+     This fixture will run after all other tests have finished """
     files_to_kill = [
         'test_csv_write.csv',
         'test_family.tgz',
@@ -27,10 +28,9 @@ def clean_up_doctests():
         'test_template_read.tgz',
         'test_tribe.tgz',
         'test_waveforms.ms',
+        'mag_calc.out',
     ]
-    directories_to_kill = [
 
-    ]
     yield
 
     # remove files
@@ -38,10 +38,6 @@ def clean_up_doctests():
         if os.path.isfile(fi):
             os.remove(fi)
 
-    # remove directories
-    for directory in directories_to_kill:
-        if os.path.isdir(directory):
-            shutil.rmtree(directory)
 
 # Over-ride the -n auto in travis as this goes of the wall
 # import sys
