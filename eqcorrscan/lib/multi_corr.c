@@ -293,22 +293,28 @@ int normxcorr_time(float *template, int template_len, float *image, int image_le
     // Time domain cross-correlation - requires zero-mean template and image
 	int p, k;
 	int steps = image_len - template_len + 1;
-	double numerator = 0.0, denom;
+	double numerator = 0.0, denom, mean = 0.0;
 	double auto_a = 0.0, auto_b = 0.0;
+
+    for (k=0; k < template_len; ++k){
+		mean += image[k];
+	}
+	mean = mean / template_len;
 
 	for(p = 0; p < template_len; ++p){
 		auto_a += (double) template[p] * (double) template[p];
-		numerator += (double) template[p] * (double) image[p];
-		auto_b += (double) image[p] * (double) image[p];
+		numerator += (double) template[p] * ((double) image[p] - mean);
+		auto_b += ((double) image[p] - mean) * ((double) image[p] - mean);
 	}
 	denom = sqrt(auto_a * auto_b);
 	ccc[0] = (float) (numerator / denom);
 	for(k = 1; k < steps; ++k){
+		mean = mean + (image[k + template_len - 1] - image[k - 1]) / template_len;
 	    numerator = 0.0;
 	    auto_b = 0.0;
 		for(p = 0; p < template_len; ++p){
-			numerator += (double) template[p] * (double) image[p + k];
-			auto_b += (double) image[p + k] * (double) image[p + k];
+			numerator += (double) template[p] * ((double) image[p + k] - mean);
+			auto_b += ((double) image[p + k] - mean) * ((double) image[p + k] - mean);
 		}
 		denom = sqrt(auto_a * auto_b);
 		ccc[k] = (float) (numerator / denom);
