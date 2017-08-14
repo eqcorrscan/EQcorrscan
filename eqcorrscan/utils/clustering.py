@@ -26,11 +26,12 @@ from scipy.spatial.distance import squareform
 
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
-from eqcorrscan.utils.correlate import normxcorr, time_multi_normxcorr, fftw_normxcorr
+from eqcorrscan.utils.correlate import get_array_xcorr
 from eqcorrscan.utils.mag_calc import dist_calc
 
 
-def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
+def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
+                         xcorr_func='time_domain'):
     """
     Calculate cross-channel coherency.
 
@@ -49,6 +50,11 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     :param shift_len: Samples to shift, only used if `allow_shift=True`
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
+    :type xcorr_func: str, callable
+    :param xcorr_func: 
+        The method for performing correlations. Accepts either a string or 
+         callabe. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+         for more details
 
     :returns:
         cross channel coherence, float - normalized by number of channels,
@@ -57,6 +63,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     cccoh = 0.0
     kchan = 0
+    array_xcorr = get_array_xcorr('time_domain')  #
     for tr in st1:
         tr2 = st2.select(station=tr.stats.station,
                          channel=tr.stats.channel)
@@ -71,7 +78,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
         elif len(tr2) > 0:
             min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += time_multi_normxcorr(
+            cccoh += array_xcorr(
                 np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
                 [0])[0][0][0]
             kchan += 1
@@ -542,8 +549,9 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in trace_list])[0]
     output = np.array([False] * len(trace_list))
     group1 = []
+    array_xcorr = get_array_xcorr()
     for i, tr in enumerate(trace_list):
-        if normxcorr(
+        if array_xcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
             output[i] = True
             group1.append(tr)
@@ -553,7 +561,7 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if normxcorr(
+        if array_xcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > thresh:
             group2.append(tr)
             output[i] = True

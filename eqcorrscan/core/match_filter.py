@@ -18,32 +18,33 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-
-import warnings
 import ast
-import os
-import time
 import copy
 import getpass
-import re
-import tarfile
-import shutil
-import tempfile
 import glob
-
-from multiprocessing import cpu_count
+import os
+import re
+import shutil
+import tarfile
+import tempfile
+import time
+import warnings
 from collections import Counter
-from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
-from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
-from obspy.core.event import Comment, WaveformStreamID
+from multiprocessing import cpu_count
+from os.path import join
 
+import numpy as np
+from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
+from obspy.core.event import Comment, WaveformStreamID
+from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
+
+from eqcorrscan.core import template_gen
+from eqcorrscan.core.lag_calc import lag_calc
+from eqcorrscan.utils.catalog_utils import _get_origin
+from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
-from eqcorrscan.utils.catalog_utils import _get_origin
-from eqcorrscan.core import template_gen
-from eqcorrscan.core.lag_calc import lag_calc
 
 
 def _spike_test(stream, percent=0.99, multiplier=1e6):
@@ -75,6 +76,7 @@ class MatchFilterError(Exception):
     """
     Default error for match-filter errors.
     """
+
     def __init__(self, value):
         """
         Raise error.
@@ -111,6 +113,7 @@ class Party(object):
     """
     Container for multiple Family objects.
     """
+
     def __init__(self, families=None):
         """Instantiate the Party object."""
         self.families = []
@@ -495,7 +498,7 @@ class Party(object):
         detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
                        for d in detect_info]
         peaks_out, inds_out = decluster(
-            peaks=detect_info, trig_int=trig_int * 10**6, return_ind=True)
+            peaks=detect_info, trig_int=trig_int * 10 ** 6, return_ind=True)
         # Trig_int must be converted from seconds to micro-seconds
         declustered_detections = [all_detections[ind] for ind in inds_out]
         # Convert this list into families
@@ -589,9 +592,9 @@ class Party(object):
                               format='QUAKEML')
             for i, family in enumerate(self.families):
                 print('Writing family %i' % i)
-                _write_family(
-                    family=family, filename=filename + os.sep +
-                    family.template.name + '_detections.csv')
+                filename = join(filename,
+                                family.template.name + '_detections.csv')
+                _write_family(family=family, filename=filename)
             with tarfile.open(filename + '.tgz', "w:gz") as tar:
                 tar.add(filename, arcname=os.path.basename(filename))
             shutil.rmtree(filename)
@@ -633,7 +636,7 @@ class Party(object):
         for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
             template = [t for t in tribe
                         if t.name == family_file.split(os.sep)[-1].
-                        split('_detections.csv')[0]]
+                            split('_detections.csv')[0]]
             if len(template) == 0:
                 raise MatchFilterError(
                     'Missing template for detection file: ' + family_file)
@@ -731,7 +734,7 @@ class Party(object):
                 new_group = [master.template.copy()]
                 new_det_group = copy.deepcopy(master.detections)
                 for slave in self.families:
-                    if master.template.same_processing(slave.template) and\
+                    if master.template.same_processing(slave.template) and \
                                     master.template != slave.template:
                         slave_chans = [
                             (tr.stats.station,
@@ -766,7 +769,7 @@ class Party(object):
             temp_cat = lag_calc(
                 detections=det_group, detect_data=processed_stream,
                 template_names=[t.name for t in group],
-                templates=[t.st for t in group],  shift_len=shift_len,
+                templates=[t.st for t in group], shift_len=shift_len,
                 min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, cores=cores,
                 interpolate=interpolate, plot=plot, parallel=parallel,
@@ -841,6 +844,7 @@ class Family(object):
     :param catalog:
         Catalog of detections, with information for the individual detections.
     """
+
     def __init__(self, template, detections=None, catalog=None):
         """Instantiation of Family object."""
         self.template = template
@@ -1364,6 +1368,7 @@ class Template(object):
     Template object holder. Contains waveform data and metadata parameters
     used to generate the template.
     """
+
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,
                  samp_rate=None, filt_order=None, process_length=None,
                  prepick=None, event=None):
@@ -1390,11 +1395,11 @@ class Template(object):
         self.prepick = prepick
         if event is not None:
             if "eqcorrscan_template_" + temp_name not in \
-               [c.text for c in event.comments]:
+                    [c.text for c in event.comments]:
                 event.comments.append(Comment(
-                        text="eqcorrscan_template_" + temp_name,
-                        creation_info=CreationInfo(agency='eqcorrscan',
-                                                   author=getpass.getuser())))
+                    text="eqcorrscan_template_" + temp_name,
+                    creation_info=CreationInfo(agency='eqcorrscan',
+                                               author=getpass.getuser())))
         self.event = event
 
     def __repr__(self):
@@ -1484,7 +1489,7 @@ class Template(object):
         for key in self.__dict__.keys():
             if key == 'st':
                 if isinstance(self.st, Stream) and \
-                   isinstance(other.st, Stream):
+                        isinstance(other.st, Stream):
                     for tr, oth_tr in zip(self.st.sort(),
                                           other.st.sort()):
                         if not np.array_equal(tr.data, oth_tr.data):
@@ -1509,7 +1514,7 @@ class Template(object):
                         return False
                 elif isinstance(
                         self.event, Event) and not isinstance(
-                        other.event, Event):
+                    other.event, Event):
                     return False
                 elif not isinstance(
                         self.event, Event) and isinstance(other.event, Event):
@@ -1765,11 +1770,11 @@ class Template(object):
             See tutorials for example.
         """
         party = _group_detect(
-                templates=[self], stream=stream.copy(), threshold=threshold,
-                threshold_type=threshold_type, trig_int=trig_int,
-                plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
-                parallel_process=parallel_process,
-                ignore_length=ignore_length, overlap=overlap, debug=debug)
+            templates=[self], stream=stream.copy(), threshold=threshold,
+            threshold_type=threshold_type, trig_int=trig_int,
+            plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
+            parallel_process=parallel_process,
+            ignore_length=ignore_length, overlap=overlap, debug=debug)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -1864,6 +1869,7 @@ class Template(object):
 
 class Tribe(object):
     """Holder for multiple templates."""
+
     def __init__(self, templates=None):
         self.templates = []
         if isinstance(templates, Template):
@@ -2090,7 +2096,7 @@ class Tribe(object):
         :param dirname: Directory to write the parameter file to.
         """
         with open(dirname + '/' +
-                  'template_parameters.csv', 'w') as parfile:
+                          'template_parameters.csv', 'w') as parfile:
             for template in self.templates:
                 for key in template.__dict__.keys():
                     if key not in ['st', 'event']:
@@ -2457,25 +2463,25 @@ class Tribe(object):
         for template in self.templates:
             for tr in template.st:
                 if tr.stats.network not in [None, '']:
-                    chan_id = (tr.stats.network, )
+                    chan_id = (tr.stats.network,)
                 else:
-                    chan_id = ('*', )
+                    chan_id = ('*',)
                 if tr.stats.station not in [None, '']:
-                    chan_id += (tr.stats.station, )
+                    chan_id += (tr.stats.station,)
                 else:
-                    chan_id += ('*', )
+                    chan_id += ('*',)
                 if tr.stats.location not in [None, '']:
-                    chan_id += (tr.stats.location, )
+                    chan_id += (tr.stats.location,)
                 else:
-                    chan_id += ('*', )
+                    chan_id += ('*',)
                 if tr.stats.channel not in [None, '']:
                     if len(tr.stats.channel) == 2:
                         chan_id += (tr.stats.channel[0] + '?' +
-                                    tr.stats.channel[-1], )
+                                    tr.stats.channel[-1],)
                     else:
-                        chan_id += (tr.stats.channel, )
+                        chan_id += (tr.stats.channel,)
                 else:
-                    chan_id += ('*', )
+                    chan_id += ('*',)
                 template_channel_ids.append(chan_id)
         template_channel_ids = list(set(template_channel_ids))
         if return_stream:
@@ -2567,7 +2573,7 @@ class Tribe(object):
                 print('Empty Template')
                 continue
             t.st = template
-            t.name = template.sort(['starttime'])[0].\
+            t.name = template.sort(['starttime'])[0]. \
                 stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
             t.lowcut = lowcut
             t.highcut = highcut
@@ -2671,17 +2677,17 @@ class Detection(object):
         for key in self.__dict__.keys():
             if key == 'event':
                 if isinstance(self.event, Event) and \
-                   isinstance(other.event, Event):
+                        isinstance(other.event, Event):
                     if not _test_event_similarity(
                             self.event, other.event, verbose=False):
                         return False
                 elif isinstance(
                         self.event, Event) and not isinstance(
-                        other.event, Event):
+                    other.event, Event):
                     return False
                 elif not isinstance(
                         self.event, Event) and isinstance(
-                        other.event, Event):
+                    other.event, Event):
                     return False
             elif self.__dict__[key] != other.__dict__[key]:
                 return False
@@ -2770,7 +2776,7 @@ def _total_microsec(t1, t2):
     -31536000000000
     """
     td = t1 - t2
-    return (td.seconds + td.days * 24 * 3600) * 10**6 + td.microseconds
+    return (td.seconds + td.days * 24 * 3600) * 10 ** 6 + td.microseconds
 
 
 def _test_event_similarity(event_1, event_2, verbose=False):
@@ -2820,11 +2826,11 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                                 return False
                     if arr_1["distance"] and round(
                             arr_1["distance"]) != round(arr_2["distance"]):
-                            if verbose:
-                                print('%s does not match %s for key %s' %
-                                      (arr_1[arr_key], arr_2[arr_key],
-                                       arr_key))
-                            return False
+                        if verbose:
+                            print('%s does not match %s for key %s' %
+                                  (arr_1[arr_key], arr_2[arr_key],
+                                   arr_key))
+                        return False
     # Check picks
     if len(event_1.picks) != len(event_2.picks):
         if verbose:
@@ -2868,8 +2874,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                     if verbose:
                         print('Channel codes do not match')
                     return False
-                if pick_1[key].channel_code[-1] !=\
-                   pick_2[key].channel_code[-1]:
+                if pick_1[key].channel_code[-1] != \
+                        pick_2[key].channel_code[-1]:
                     if verbose:
                         print('Channel codes do not match')
                     return False
@@ -2896,8 +2902,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                     if verbose:
                         print('Channel codes do not match')
                     return False
-                if pick_1[key].channel_code[-1] !=\
-                   pick_2[key].channel_code[-1]:
+                if pick_1[key].channel_code[-1] != \
+                        pick_2[key].channel_code[-1]:
                     if verbose:
                         print('Channel codes do not match')
                     return False
@@ -3255,7 +3261,7 @@ def _read_family(fname, all_cat):
                     det_dict.update(
                         {'event': [e for e in all_cat
                                    if str(e.resource_id).
-                                   split('/')[-1] == value][0]})
+                                       split('/')[-1] == value][0]})
                 elif key == 'detect_time':
                     det_dict.update(
                         {'detect_time': UTCDateTime(value)})
@@ -3447,18 +3453,18 @@ def normxcorr2(template, image):
         correlation of the image with the template.
     :rtype: numpy.ndarray
     """
-    from eqcorrscan.utils.correlate import normxcorr
+    array_xcorr = get_array_xcorr()
     # Check that we have been passed numpy arrays
     if type(template) != np.ndarray or type(image) != np.ndarray:
         print('You have not provided numpy arrays, I will not convert them')
         return 'NaN'
     if len(template) > len(image):
-        ccc = normxcorr(
+        ccc = array_xcorr(
             templates=np.array([image]).astype(np.float32),
             stream=template.astype(np.float32), pads=[0],
             threaded=False)[0][0]
     else:
-        ccc = normxcorr(
+        ccc = array_xcorr(
             templates=np.array([template]).astype(np.float32),
             stream=image.astype(np.float32), pads=[0], threaded=False)[0][0]
     ccc = ccc.reshape((1, len(ccc)))
@@ -3466,7 +3472,8 @@ def normxcorr2(template, image):
 
 
 def match_filter(template_names, template_list, st, threshold,
-                 threshold_type, trig_int, plotvar, plotdir='.', cores=None,
+                 threshold_type, trig_int, plotvar, plotdir='.',
+                 xcorr_func=None, concurrency=None, cores=None,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
                  arg_check=True):
@@ -3507,6 +3514,16 @@ def match_filter(template_names, template_list, st, threshold,
     :param plotdir:
         Path to plotting folder, plots will be output here, defaults to run
         location.
+    :type xcorr_func: str or callable
+    :param xcorr_func: 
+        A str of a registered xcorr function or a callable for implementing
+        a custom xcorr function. For more information check out:
+        :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+    :type concurrency: str
+    :param concurrency: 
+        The type of concurrency to apply to the xcorr function. Options are
+        'multithread', 'multiprocess', 'concurrent'. For more details see
+        :func:`eqcorrscan.utils.correlate.get_stream_xcorr` 
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
@@ -3631,7 +3648,6 @@ def match_filter(template_names, template_list, st, threshold,
     import matplotlib
     matplotlib.use('Agg')
     from eqcorrscan.utils.plotting import _match_filter_plot
-    from eqcorrscan.utils.correlate import multichannel_normxcorr
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
@@ -3643,7 +3659,7 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError('Not the same number of templates as names')
         for template in template_list:
             if not type(template) == Stream:
-                msg = 'template in template_list must be of type: ' +\
+                msg = 'template in template_list must be of type: ' + \
                       'obspy.core.stream.Stream'
                 raise MatchFilterError(msg)
         if not type(st) == Stream:
@@ -3724,10 +3740,10 @@ def match_filter(template_names, template_list, st, threshold,
         for stachan in stachans_in_template.keys():
             if stachan not in template_stachan.keys():
                 template_stachan.update({stachan:
-                                         stachans_in_template[stachan]})
+                                             stachans_in_template[stachan]})
             elif stachans_in_template[stachan] > template_stachan[stachan]:
                 template_stachan.update({stachan:
-                                         stachans_in_template[stachan]})
+                                             stachans_in_template[stachan]})
     # Remove un-matched channels from templates.
     _template_stachan = copy.deepcopy(template_stachan)
     for stachan in template_stachan.keys():
@@ -3781,7 +3797,7 @@ def match_filter(template_names, template_list, st, threshold,
                 network=stachan[0], station=stachan[1], location=stachan[2],
                 channel=stachan[3]))
             if number_of_channels < template_stachan[stachan]:
-                missed_channels = template_stachan[stachan] -\
+                missed_channels = template_stachan[stachan] - \
                                   number_of_channels
                 nulltrace = Trace()
                 nulltrace.stats.update(
@@ -3808,6 +3824,7 @@ def match_filter(template_names, template_list, st, threshold,
         for template in templates:
             print(template)
         print(stream)
+    multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, chans] = multichannel_normxcorr(
         templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:
@@ -3867,8 +3884,8 @@ def match_filter(template_names, template_list, st, threshold,
             print(' '.join(['Finding peaks took:', str(toc - tic), 's']))
         if peaks:
             for peak in peaks:
-                detecttime = stream[0].stats.starttime +\
-                    peak[1] / stream[0].stats.sampling_rate
+                detecttime = stream[0].stats.starttime + \
+                             peak[1] / stream[0].stats.sampling_rate
                 # Detect time must be valid QuakeML uri within resource_id.
                 # This will write a formatted string which is still
                 # readable by UTCDateTime
@@ -3877,7 +3894,7 @@ def match_filter(template_names, template_list, st, threshold,
                 else:
                     ev = Event(resource_id=ResourceIdentifier(
                         id=_template_names[i] + '_' +
-                        str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                           str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
                         prefix='smi:local'))
                     ev.creation_info = CreationInfo(
                         author='EQcorrscan', creation_time=UTCDateTime())
@@ -3892,7 +3909,7 @@ def match_filter(template_names, template_list, st, threshold,
                         [tr.stats.starttime for tr in template])
                     for tr in template:
                         if (tr.stats.station, tr.stats.channel) \
-                           not in chans[i]:
+                                not in chans[i]:
                             continue
                         else:
                             pick_tm = detecttime + (tr.stats.starttime -
@@ -3930,6 +3947,7 @@ def match_filter(template_names, template_list, st, threshold,
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
     # List files to be removed after doctest
     cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.ml',

@@ -12,7 +12,7 @@ import importlib
 import warnings
 
 # "shortcut" imports
-from eqcorrscan.utils.correlate import register_normxcorr
+from eqcorrscan.utils.correlate import register_array_xcorr
 
 
 __all__ = ['core', 'utils', 'tutorials']
