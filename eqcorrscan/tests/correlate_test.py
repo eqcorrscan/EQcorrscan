@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import itertools
 import time
 import unittest
@@ -35,7 +36,7 @@ def gen_xcorr_func(name):
 
 
 def time_func(func, name, *args, **kwargs):
-    """ call a func with args and kwargs, print name of func and how 
+    """ call a func with args and kwargs, print name of func and how
     long it took. """
     tic = time.time()
     out = func(*args, **kwargs)
@@ -120,7 +121,7 @@ starting_index = 500
 
 @pytest.fixture(scope='module')
 def array_template():
-    """ 
+    """
     return a set of templates, generated with randomn, for correlation tests.
     """
     return random.randn(200, 200)
@@ -148,7 +149,7 @@ def pads(array_template):
 
 @pytest.fixture(scope='module')
 def array_ccs(array_template, array_stream, pads):
-    """  use each function stored in the normcorr cache to correlate the 
+    """  use each function stored in the normcorr cache to correlate the
      templates and arrays, return a dict with keys as func names and values
      as the cc calculated by said function"""
     out = {}
@@ -181,8 +182,6 @@ stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
                 for mname in corr.XCORR_STREAM_METHODS
                 if fname != 'default'}
 
-import copy
-
 
 @pytest.fixture(scope='module')
 def stream_cc_output_dict(multichannel_templates, multichannel_stream):
@@ -206,19 +205,19 @@ def stream_cc_dict(stream_cc_output_dict):
 
 
 class TestArrayCorrelateFunctions:
-    """ these tests ensure the various implementations of normxcorr return 
+    """ these tests ensure the various implementations of normxcorr return
     approximately the same answers """
 
     # tests
     def test_single_channel_similar(self, array_ccs):
-        """ ensure each of the correlation methods return similar answers 
+        """ ensure each of the correlation methods return similar answers
         given the same input data """
         cc_list = list(array_ccs.values())
         for cc1, cc2 in itertools.combinations(cc_list, 2):
             assert np.allclose(cc1, cc2, atol=0.05)
 
     def test_test_autocorrelation(self, array_ccs):
-        """ ensure an auto correlationoccurred in each of ccs where it is 
+        """ ensure an auto correlationoccurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=.01)
@@ -301,13 +300,13 @@ class TestGenericStreamXcorr:
         assert 'name' in small_count
 
     def test_bad_concurrency_raises(self):
-        """ ensure passing an invalid concurrency argument raises a 
+        """ ensure passing an invalid concurrency argument raises a
         ValueError"""
         with pytest.raises(ValueError):
             corr.get_stream_xcorr(concurrency='node.js')
 
     def test_loading_unregistered_function_registers(self):
-        """ ensure if a function in cache hasn't been decoratored it gets 
+        """ ensure if a function in cache hasn't been decoratored it gets
         decorated when returned """
 
         def func(templates, streams, pads):

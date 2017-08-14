@@ -38,7 +38,7 @@ def clean_up_test_files():
         'test_tribe.tgz',
         'test_waveforms.ms',
         'mag_calc.out',
-        'station.data',
+        'station.dat',
         'test_waveform.ms',
     ]
 
@@ -56,7 +56,10 @@ def clean_up_test_directories():
      This fixture will run after all other tests have finished """
     directories_to_kill = [
         'temp1',
-        'temp2'
+        'temp2',
+        'test_family',
+        'test_party_out',
+        'test_tar_write'
     ]
 
     yield

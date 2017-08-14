@@ -578,7 +578,7 @@ class Party(object):
                 for detection in family.detections:
                     detection.write(fname=filename, append=True)
         elif format.lower() == 'tar':
-            if os.path.isdir(filename) or os.path.isfile(filename):
+            if os.path.exists(filename):
                 raise IOError('Will not overwrite existing file: %s'
                               % filename)
             os.makedirs(filename)
@@ -592,12 +592,15 @@ class Party(object):
                               format='QUAKEML')
             for i, family in enumerate(self.families):
                 print('Writing family %i' % i)
-                filename = join(filename,
-                                family.template.name + '_detections.csv')
-                _write_family(family=family, filename=filename)
+                name = family.template.name + '_detections.csv'
+                name_to_write = join(filename, name)
+                _write_family(family=family, filename=name_to_write)
             with tarfile.open(filename + '.tgz', "w:gz") as tar:
                 tar.add(filename, arcname=os.path.basename(filename))
-            shutil.rmtree(filename)
+            if os.path.isdir(filename):
+                shutil.rmtree(filename)
+            elif os.path.isfile(filename):
+                os.remove(filename)
         else:
             warnings.warn('Writing only the catalog component, metadata '
                           'will not be preserved')
@@ -633,10 +636,8 @@ class Party(object):
             all_cat = read_events(party_dir + os.sep + 'catalog.xml')
         else:
             all_cat = Catalog()
-        for family_file in glob.glob(party_dir + os.sep + '*_detections.csv'):
-            template = [t for t in tribe
-                        if t.name == family_file.split(os.sep)[-1].
-                            split('_detections.csv')[0]]
+        for family_file in glob.glob(join(party_dir, '*_detections.csv')):
+            template = [t for t in tribe if _templates_match(t, family_file)]
             if len(template) == 0:
                 raise MatchFilterError(
                     'Missing template for detection file: ' + family_file)
@@ -1488,8 +1489,9 @@ class Template(object):
         """
         for key in self.__dict__.keys():
             if key == 'st':
-                if isinstance(self.st, Stream) and \
-                        isinstance(other.st, Stream):
+                self_is_stream = isinstance(self.st, Stream)
+                other_is_stream = isinstance(other.st, Stream)
+                if self_is_stream and other_is_stream:
                     for tr, oth_tr in zip(self.st.sort(),
                                           other.st.sort()):
                         if not np.array_equal(tr.data, oth_tr.data):
@@ -1500,24 +1502,20 @@ class Template(object):
                                       'calib']:
                             if tr.stats[trkey] != oth_tr.stats[trkey]:
                                 return False
-                elif isinstance(
-                        self.st, Stream) and not isinstance(other.st, Stream):
+                elif self_is_stream and not other_is_stream:
                     return False
-                elif not isinstance(
-                        self.st, Stream) and isinstance(other.st, Stream):
+                elif not self_is_stream and other_is_stream:
                     return False
             elif key == 'event':
-                if isinstance(
-                        self.event, Event) and isinstance(other.event, Event):
+                self_is_event = isinstance(self.event, Event)
+                other_is_event = isinstance(other.event, Event)
+                if self_is_event and other_is_event:
                     if not _test_event_similarity(
                             self.event, other.event, verbose=False):
                         return False
-                elif isinstance(
-                        self.event, Event) and not isinstance(
-                    other.event, Event):
+                elif self_is_event and not other_is_event:
                     return False
-                elif not isinstance(
-                        self.event, Event) and isinstance(other.event, Event):
+                elif not self_is_event and other_is_event:
                     return False
             elif not self.__dict__[key] == other.__dict__[key]:
                 return False
@@ -2095,8 +2093,8 @@ class Tribe(object):
         :type dirname: str
         :param dirname: Directory to write the parameter file to.
         """
-        with open(dirname + '/' +
-                          'template_parameters.csv', 'w') as parfile:
+        filename = dirname + '/' + 'template_parameters.csv'
+        with open(filename, 'w') as parfile:
             for template in self.templates:
                 for key in template.__dict__.keys():
                     if key not in ['st', 'event']:
@@ -2675,19 +2673,16 @@ class Detection(object):
 
     def __eq__(self, other):
         for key in self.__dict__.keys():
+            self_is_event = isinstance(self.event, Event)
+            other_is_event = isinstance(other.event, Event)
             if key == 'event':
-                if isinstance(self.event, Event) and \
-                        isinstance(other.event, Event):
+                if self_is_event and other_is_event:
                     if not _test_event_similarity(
                             self.event, other.event, verbose=False):
                         return False
-                elif isinstance(
-                        self.event, Event) and not isinstance(
-                    other.event, Event):
+                elif self_is_event and not other_is_event:
                     return False
-                elif not isinstance(
-                        self.event, Event) and isinstance(
-                    other.event, Event):
+                elif not self_is_event and other_is_event:
                     return False
             elif self.__dict__[key] != other.__dict__[key]:
                 return False
@@ -2777,6 +2772,17 @@ def _total_microsec(t1, t2):
     """
     td = t1 - t2
     return (td.seconds + td.days * 24 * 3600) * 10 ** 6 + td.microseconds
+
+
+def _templates_match(t, family_file):
+    """
+    Return True if a tribe matches a family file path.
+
+    :type t: Tribe
+    :type family_file: str
+    :return: bool
+    """
+    return t.name == family_file.split(os.sep)[-1].split('_detections.csv')[0]
 
 
 def _test_event_similarity(event_1, event_2, verbose=False):
@@ -3258,10 +3264,9 @@ def _read_family(fname, all_cat):
                 if key == 'event':
                     if len(all_cat) == 0:
                         continue
-                    det_dict.update(
-                        {'event': [e for e in all_cat
-                                   if str(e.resource_id).
-                                       split('/')[-1] == value][0]})
+                    el = [e for e in all_cat
+                          if str(e.resource_id).split('/')[-1] == value][0]
+                    det_dict.update({'event': el})
                 elif key == 'detect_time':
                     det_dict.update(
                         {'detect_time': UTCDateTime(value)})
@@ -3515,15 +3520,15 @@ def match_filter(template_names, template_list, st, threshold,
         Path to plotting folder, plots will be output here, defaults to run
         location.
     :type xcorr_func: str or callable
-    :param xcorr_func: 
+    :param xcorr_func:
         A str of a registered xcorr function or a callable for implementing
         a custom xcorr function. For more information check out:
         :func:`eqcorrscan.utils.correlate.register_array_xcorr`
     :type concurrency: str
-    :param concurrency: 
+    :param concurrency:
         The type of concurrency to apply to the xcorr function. Options are
         'multithread', 'multiprocess', 'concurrent'. For more details see
-        :func:`eqcorrscan.utils.correlate.get_stream_xcorr` 
+        :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
     :type cores: int
     :param cores: Number of cores to use
     :type debug: int
@@ -3738,12 +3743,11 @@ def match_filter(template_names, template_list, st, threshold,
                                          tr.stats.location, tr.stats.channel))
         stachans_in_template = dict(Counter(stachans_in_template))
         for stachan in stachans_in_template.keys():
+            stachans = stachans_in_template[stachan]
             if stachan not in template_stachan.keys():
-                template_stachan.update({stachan:
-                                             stachans_in_template[stachan]})
+                template_stachan.update({stachan: stachans})
             elif stachans_in_template[stachan] > template_stachan[stachan]:
-                template_stachan.update({stachan:
-                                             stachans_in_template[stachan]})
+                template_stachan.update({stachan: stachans})
     # Remove un-matched channels from templates.
     _template_stachan = copy.deepcopy(template_stachan)
     for stachan in template_stachan.keys():
@@ -3873,7 +3877,8 @@ def match_filter(template_names, template_list, st, threshold,
         if max(cccsum) > rawthresh:
             peaks = find_peaks2_short(
                 arr=cccsum, thresh=rawthresh,
-                trig_int=trig_int * stream[0].stats.sampling_rate, debug=debug,
+                trig_int=trig_int * stream[0].stats.sampling_rate,
+                debug=debug,
                 starttime=stream[0].stats.starttime,
                 samp_rate=stream[0].stats.sampling_rate)
         else:
@@ -3892,9 +3897,9 @@ def match_filter(template_names, template_list, st, threshold,
                 if not output_event and not output_cat:
                     det_ev = None
                 else:
+                    det_time = str(detecttime.strftime('%Y%m%dT%H%M%S.%f'))
                     ev = Event(resource_id=ResourceIdentifier(
-                        id=_template_names[i] + '_' +
-                           str(detecttime.strftime('%Y%m%dT%H%M%S.%f')),
+                        id=_template_names[i] + '_' + det_time,
                         prefix='smi:local'))
                     ev.creation_info = CreationInfo(
                         author='EQcorrscan', creation_time=UTCDateTime())

@@ -51,8 +51,8 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
     :type xcorr_func: str, callable
-    :param xcorr_func: 
-        The method for performing correlations. Accepts either a string or 
+    :param xcorr_func:
+        The method for performing correlations. Accepts either a string or
          callabe. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
          for more details
 
@@ -63,7 +63,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
     """
     cccoh = 0.0
     kchan = 0
-    array_xcorr = get_array_xcorr('time_domain')  #
+    array_xcorr = get_array_xcorr(xcorr_func)
     for tr in st1:
         tr2 = st2.select(station=tr.stats.station,
                          channel=tr.stats.channel)
@@ -455,12 +455,12 @@ def empirical_svd(stream_list, linear=True):
             tr = st.select(station=stachan[0],
                            channel=stachan[1])[0]
             if len(tr.data) > min_length:
-                if abs(len(tr.data) - min_length) > (0.1 *
-                                                         tr.stats.sampling_rate):
-                    raise IndexError('More than 0.1 s length '
-                                     'difference, align and fix')
-                warnings.warn(str(tr) + ' is not the same length as others, ' +
-                              'trimming the end')
+                sr = tr.stats.sampling_rate
+                if abs(len(tr.data) - min_length) > (0.1 * sr):
+                    msg = 'More than 0.1 s length difference, align and fix'
+                    raise IndexError(msg)
+                msg = ' is not the same length as others, trimming the end'
+                warnings.warn(str(tr) + msg)
                 tr.data = tr.data[0:min_length]
     if linear:
         first_subspace = stacking.linstack(stream_list)
@@ -469,8 +469,9 @@ def empirical_svd(stream_list, linear=True):
     second_subspace = first_subspace.copy()
     for i in range(len(second_subspace)):
         second_subspace[i].data = np.diff(second_subspace[i].data)
-        second_subspace[i].stats.starttime += 0.5 * \
-                                              second_subspace[i].stats.delta
+        delta = second_subspace[i].stats.delta
+        second_subspace[i].stats.starttime += 0.5 * delta
+
     return [first_subspace, second_subspace]
 
 
@@ -758,10 +759,9 @@ def extract_detections(detections, templates, archive, arc_type,
                   detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
-                tr.trim(starttime=UTCDateTime(detection.detect_time) -
-                                  extract_len / 2,
-                        endtime=UTCDateTime(detection.detect_time) +
-                                extract_len / 2)
+                t1 = UTCDateTime(detection.detect_time) - extract_len / 2
+                t2 = UTCDateTime(detection.detect_time) + extract_len / 2
+                tr.trim(starttime=t1, endtime=t2)
             if outdir:
                 if not os.path.isdir(os.path.join(outdir,
                                                   detection.template_name)):
@@ -940,7 +940,7 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
         for master in group:
             for event in group:
                 if abs(event.preferred_origin().time -
-                               master.preferred_origin().time) > t_thresh:
+                       master.preferred_origin().time) > t_thresh:
                     # If greater then just put event in on it's own
                     groups.append([event])
                     group.remove(event)
@@ -995,9 +995,9 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     detections_out = 0
     for detection in old_detections:
         detections_in += 1
-        if abs(detection.detect_val) >= \
-                        (new_thresh / old_thresh) * detection.threshold and \
-                        detection.no_chans >= chan_thresh:
+        con1 = (new_thresh / old_thresh) * detection.threshold
+        con2 = detection.no_chans >= chan_thresh
+        if abs(detection.detect_val) and con1 and con2:
             detections_out += 1
             detections.append(detection)
     print('Read in %i detections' % detections_in)

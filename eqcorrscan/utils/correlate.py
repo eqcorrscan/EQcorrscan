@@ -52,8 +52,8 @@ class _Context:
 
     def __init__(self, cache, value_to_switch):
         """
-        :param cache: 
-        :param value_to_switch: 
+        :param cache:
+        :param value_to_switch:
         """
         self.cache = cache
         self.value_to_switch = value_to_switch
@@ -62,13 +62,13 @@ class _Context:
     def __call__(self, new_value, *args, **kwargs):
         """ # TODO change docs if this ever becomes general use
         Set a new value for the default xcorr function.
-        
+
         This function can be called directly to permanently change the
         default normxcorr function or it may be used as a context manager
-        to only modify it temporarily. 
-        
-        :param new_value: 
-        :return: 
+        to only modify it temporarily.
+
+        :param new_value:
+        :return:
         """
         self.previous_value = self.cache.get(self.value_to_switch)
         self.cache[self.value_to_switch] = new_value
@@ -93,8 +93,8 @@ set_xcorr = _Context(XCOR_FUNCS, 'default')
 @contextlib.contextmanager
 def _pool_boy(Pool, **kwargs):
     """
-    A context manager for handling the setup and cleanup of a pool object. 
-    
+    A context manager for handling the setup and cleanup of a pool object.
+
     :param Pool: any Class (not instance) that implents the multiprocessing
         Pool interface
     """
@@ -151,7 +151,8 @@ def _general_serial(func):
         cccsums = np.zeros([len(templates),
                             len(stream[0]) - len(templates[0][0]) + 1])
         for seed_id in seed_ids:
-            tr_cc, tr_chans = func(template_dict[seed_id], stream_dict[seed_id],
+            tr_cc, tr_chans = func(template_dict[seed_id],
+                                   stream_dict[seed_id],
                                    pad_dict[seed_id])
             cccsums = np.sum([cccsums, tr_cc], axis=0)
             no_chans += tr_chans.astype(np.int)
@@ -167,8 +168,8 @@ def _general_serial(func):
 def register_array_xcorr(name, func=None, is_default=False):
     """
     Decorator for registering correlation functions.
-    
-    :func: 
+
+    :func:
     Each function must have the same interface as numpy_normxcorr, which is:
     f(templates, stream, pads, *args, **kwargs) any number of specific kwargs
     can be used.
@@ -192,12 +193,12 @@ def register_array_xcorr(name, func=None, is_default=False):
 
     def register(register_str):
         """
-        Register a function as an implementation. 
-        
+        Register a function as an implementation.
+
         :param register_str: The registration designation
         :type register_str: str
         """
-        if not register_str in valid_methods:
+        if register_str not in valid_methods:
             msg = 'register_name must be in %s' % valid_methods
             raise ValueError(msg)
 
@@ -257,16 +258,16 @@ def _get_registerd_func(name_or_func):
 def get_array_xcorr(name_or_func=None):
     """
     Get an normalized cross correlation function that takes arrays as inputs.
-    
-    See :func:`eqcorrscan.utils.correlate.array_normxcorr` for expected 
-        function signature. 
-    
-    :param name_or_func: Either a name of a registered xcorr function or a 
-        callable that implements the standard array_normxcorr signature. 
+
+    See :func:`eqcorrscan.utils.correlate.array_normxcorr` for expected
+        function signature.
+
+    :param name_or_func: Either a name of a registered xcorr function or a
+        callable that implements the standard array_normxcorr signature.
     :type name_or_func: str or callable
 
     :return: callable wth array_normxcorr interface
-    
+
     see also :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
     """
     func = _get_registerd_func(name_or_func)
@@ -503,8 +504,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
-    Apply fftw normxcorr routine concurrently. 
-    
+    Apply fftw normxcorr routine concurrently.
+
     :type templates: list
     :param templates:
         A list of templates, where each one should be an obspy.Stream object
@@ -634,16 +635,16 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
 
 def get_stream_xcorr(name_or_func=None, concurrency=None):
     """
-    Return a function for performing normalized cross correlation on lists of 
-    streams. 
-    
+    Return a function for performing normalized cross correlation on lists of
+    streams.
+
     :param name_or_func: Either a name of a registered function or a callable
-        that implements the standard array_normxcorr signature. 
-    :param concurrency: 
+        that implements the standard array_normxcorr signature.
+    :param concurrency:
         Optional concurrency strategy, options are:
         multithread - use a threadpool for concurrency
         multiprocess - use a process pool for concurrency
-        concurrent - use a customized concurrency stragegy for the function, 
+        concurrent - use a customized concurrency stragegy for the function,
             if not defined threading will be used
     :return: A callable with the interface of stream_normxcorr
     """
@@ -725,7 +726,8 @@ def _get_array_dicts(templates, stream, copy_streams=True):
 #         list of ints as number of channels used for each cross-correlation.
 #     :rtype: list
 #     :returns:
-#         list of list of tuples of station, channel for all cross-correlations.
+#         list of list of tuples of station, channel for all
+#         cross-correlations.
 #     :rtype: list
 #
 #     .. Note::

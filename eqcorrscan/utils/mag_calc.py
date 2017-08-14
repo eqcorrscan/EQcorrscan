@@ -93,7 +93,7 @@ def calc_max_curv(magnitudes, plotvar=False):
     >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> calc_max_curv(magnitudes, plotvar=False)
-    3.1000000000000001
+    3.8999999999999999
     """
     counts = Counter(magnitudes)
     df = np.zeros(len(counts))
