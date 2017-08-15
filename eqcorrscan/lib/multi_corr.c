@@ -374,53 +374,139 @@ int normxcorr_time(float *template, int template_len, float *image, int image_le
 int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ncc, int fft_len){
     int i, r=0;
     long N2 = (long) fft_len / 2 + 1;
-    double *dummyr = NULL;
-    fftw_complex *dummyc = NULL;
+    double **template_ext, **image_ext, **ccc;
+    fftw_complex **outa, **outb, **out;
     fftw_plan pa, pb, px;
+    int num_threads = 1;
+
+
+    #ifdef N_THREADS
+    /* set the number of threads - the minimum of the numbers of channels and threads */
+    num_threads = (N_THREADS > n_channels) ? n_channels : N_THREADS;
+    #endif
+
+    /* allocate memory for all threads here */
+    //TODO: deallocate before returning, or just exit??
+    template_ext = (double**) malloc(num_threads * sizeof(double*));
+    if (template_ext == NULL) {
+        printf("Error allocating template_ext\n");
+        return 1;
+    }
+    image_ext = (double**) malloc(num_threads * sizeof(double*));
+    if (image_ext == NULL) {
+        printf("Error allocating image_ext\n");
+        return 1;
+    }
+    ccc = (double**) malloc(num_threads * sizeof(double*));
+    if (ccc == NULL) {
+        printf("Error allocating ccc\n");
+        return 1;
+    }
+    outa = (fftw_complex**) malloc(num_threads * sizeof(fftw_complex*));
+    if (outa == NULL) {
+        printf("Error allocating outa\n");
+        return 1;
+    }
+    outb = (fftw_complex**) malloc(num_threads * sizeof(fftw_complex*));
+    if (outb == NULL) {
+        printf("Error allocating outb\n");
+        return 1;
+    }
+    out = (fftw_complex**) malloc(num_threads * sizeof(fftw_complex*));
+    if (out == NULL) {
+        printf("Error allocating out\n");
+        return 1;
+    }
+
+    // All memory allocated with `fftw_malloc` to ensure 16-byte aligned.
+    for (i = 0; i < num_threads; i++) {
+        /* allocate template_ext arrays */
+        template_ext[i] = fftw_alloc_real((long) fft_len * n_templates);
+        if (template_ext[i] == NULL) {
+            printf("Error allocating template_ext[%d]\n", i);
+            return 1;
+        }
+
+        /* allocate image_ext arrays */
+        image_ext[i] = fftw_alloc_real(fft_len);
+        if (image_ext[i] == NULL) {
+            printf("Error allocating image_ext[%d]\n", i);
+            return 1;
+        }
+
+        /* allocate ccc arrays */
+        ccc[i] = fftw_alloc_real((long) fft_len * n_templates);
+        if (ccc[i] == NULL) {
+            printf("Error allocating ccc[%d]\n", i);
+            return 1;
+        }
+
+        /* allocate outa arrays */
+        outa[i] = fftw_alloc_complex((long) N2 * n_templates);
+        if (outa[i] == NULL) {
+            printf("Error allocating outa[%d]\n", i);
+            return 1;
+        }
+
+        /* allocate outb arrays */
+        outb[i] = fftw_alloc_complex((long) N2);
+        if (outb[i] == NULL) {
+            printf("Error allocating outb[%d]\n", i);
+            return 1;
+        }
+
+        /* allocate out arrays */
+        out[i] = fftw_alloc_complex((long) N2 * n_templates);
+        if (out[i] == NULL) {
+            printf("Error allocating out[%d]\n", i);
+            return 1;
+        }
+    }
+
+    //TODO: touch all arrays - NUMA first touch???
 
     // We create the plans here since they are not thread safe.
-    // All memory allocated with `fftw_malloc` to ensure 16-byte aligned.
-    // Dummy arrays used here as they are required to create a plan, the real
-    // arrays are created later, local to each thread.
-    dummyr = fftw_alloc_real((long) fft_len * n_templates);
-    dummyc = fftw_alloc_complex((long) N2 * n_templates);
-    pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, dummyr, dummyc, FFTW_ESTIMATE);
-    px = fftw_plan_dft_c2r_2d(n_templates, fft_len, dummyc, dummyr, FFTW_ESTIMATE);
-    pb = fftw_plan_dft_r2c_1d(fft_len, dummyr, dummyc, FFTW_ESTIMATE);
-    fftw_free(dummyr);
-    fftw_free(dummyc);
+    pa = fftw_plan_dft_r2c_2d(n_templates, fft_len, template_ext[0], outa[0], FFTW_ESTIMATE);
+    pb = fftw_plan_dft_r2c_1d(fft_len, image_ext[0], outb[0], FFTW_ESTIMATE);
+    px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    #pragma omp parallel for reduction(+:r)
+    #pragma omp parallel for reduction(+:r) num_threads(num_threads)
     for (i = 0; i < n_channels; ++i){
-        /* allocate memory here */
-        double * template_ext = fftw_alloc_real((long) fft_len * n_templates);
-        double * image_ext = fftw_alloc_real(fft_len);
-        double * ccc = fftw_alloc_real((long) fft_len * n_templates);
-        fftw_complex * outa = fftw_alloc_complex(N2 * n_templates);
-        fftw_complex * outb = fftw_alloc_complex(N2);
-        fftw_complex * out = fftw_alloc_complex(N2 * n_templates);
+        /* each thread has its own workspace */
+        int tid = 0;
+        #ifdef N_THREADS
+        /* get the id of this thread */
+        tid = omp_get_thread_num();
+        #endif
 
         /* initialise memory to zero */
-        memset(template_ext, 0, (long) fft_len * n_templates * sizeof(double));
-        memset(image_ext, 0, (long) fft_len * sizeof(double));
+        memset(template_ext[tid], 0, (long) fft_len * n_templates * sizeof(double));
+        memset(image_ext[tid], 0, (long) fft_len * sizeof(double));
 
         /* call the routine */
         r = normxcorr_fftw_main(&templates[(long) n_templates * template_len * i], template_len,
                                 n_templates, &image[(long) image_len * i], image_len,
                                 &ncc[((long) image_len - template_len + 1) * (long) n_templates * i], fft_len,
-                                template_ext, image_ext, ccc, outa, outb, out, pa, pb, px);
-
-        /* free memory */
-        fftw_free(template_ext);
-        fftw_free(image_ext);
-        fftw_free(ccc);
-        fftw_free(outa);
-        fftw_free(outb);
-        fftw_free(out);
+                                template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
+                                pa, pb, px);
     }
 
     /* free fftw memory */
+    for (i = 0; i < num_threads; i++) {
+        free(template_ext[i]);
+        free(image_ext[i]);
+        free(ccc[i]);
+        free(outa[i]);
+        free(outb[i]);
+        free(out[i]);
+    }
+    free(template_ext);
+    free(image_ext);
+    free(ccc);
+    free(outa);
+    free(outb);
+    free(out);
     fftw_destroy_plan(pa);
     fftw_destroy_plan(pb);
     fftw_destroy_plan(px);
