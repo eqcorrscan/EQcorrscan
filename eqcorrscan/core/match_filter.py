@@ -2525,7 +2525,10 @@ class Tribe(object):
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
-                return party
+                if return_stream:
+                    return party, stream
+                else:
+                    return party
         for family in party:
             if family is not None:
                 family.detections = family._uniq().detections
@@ -3708,6 +3711,7 @@ def match_filter(template_names, template_list, st, threshold,
     max_end_time = max([tr.stats.endtime for tr in stream])
     longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
                                                             min_start_time)
+    longest_trace_length += 1
     for tr in stream:
         if not tr.stats.npts == longest_trace_length:
             msg = 'Data are not equal length, padding short traces'
@@ -3819,7 +3823,7 @@ def match_filter(template_names, template_list, st, threshold,
     templates = _templates
     _template_names = used_template_names
     if debug >= 2:
-        print('Starting the correlation run for this day')
+        print('Starting the correlation run for these data')
     if debug >= 3:
         for template in templates:
             print(template)

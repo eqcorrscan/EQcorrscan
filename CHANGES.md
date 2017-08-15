@@ -5,6 +5,8 @@
 * Change internals of *eqcorrscan.core.lag_calc._prepare_data* to use a
   dictionary for delays, and to work correctly! Issues arose from not checking
   for masked data properly and not checking length properly.
+* Fix bug in match_filter.match_filter when checking for equal length traces,
+  length count was one sample too short.
 
 ## 0.2.4
 * Increase test coverage (edge-cases) in template_gen;
