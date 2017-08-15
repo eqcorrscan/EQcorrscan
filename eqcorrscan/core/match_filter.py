@@ -284,7 +284,7 @@ class Party(object):
         """
         Get families from the Party. Can accept either an index or slice.
 
-        :param index: Family number or slice.
+        :param index: Family number or name, or slice.
         :return: Party (if a slice is given) or a single Family
 
         .. rubric:: Example
@@ -305,13 +305,29 @@ class Party(object):
         ...                         Family(template=Template(name='c'))])
         >>> party[1:]
         Party of 2 Families.
+
+        Extract a single family by template name:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party['b']
+        Family of 0 detections from template b
         """
         if len(self.families) == 0:
             return None
         if isinstance(index, slice):
             return self.__class__(families=self.families.__getitem__(index))
-        else:
+        elif isinstance(index, int):
             return self.families.__getitem__(index)
+        else:
+            _index = [i for i, family in enumerate(self.families)
+                      if family.template.name == index]
+            try:
+                return self.families.__getitem__(_index[0])
+            except IndexError:
+                warnings.warn('Family: %s not in party' % index)
+                return []
 
     def __len__(self):
         """
@@ -2007,8 +2023,16 @@ class Tribe(object):
         """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
-        else:
+        elif isinstance(index, int):
             return self.templates.__getitem__(index)
+        else:
+            _index = [i for i, t in enumerate(self.templates)
+                      if t.name == index]
+            try:
+                return self.templates.__getitem__(_index[0])
+            except IndexError:
+                warnings.warn('Template: %s not in tribe' % index)
+                return []
 
     def sort(self):
         """

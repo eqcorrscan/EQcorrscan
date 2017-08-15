@@ -1,6 +1,7 @@
 ## Current
 * Fix bug with \_group_process that resulted in stalled processes.
 * Force NumPy version
+* Support indexing of Tribe and Party objects by template-name.
 * Add tests for lag-calc issue with preparing data
 * Change internals of *eqcorrscan.core.lag_calc._prepare_data* to use a
   dictionary for delays, and to work correctly! Issues arose from not checking
