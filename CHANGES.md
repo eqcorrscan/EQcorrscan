@@ -1,6 +1,7 @@
 ## Current
 * Fix bug with \_group_process
 * Force NumPy version
+* Support indexing of Tribe and Party objects by template-name.
 
 ## 0.2.4
 * Increase test coverage (edge-cases) in template_gen;

@@ -891,6 +891,12 @@ class TestMatchObjects(unittest.TestCase):
                 lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
                 length=3.0, prepick=0.15, swin='all', process_len=6)
 
+    def test_slicing_by_name(self):
+        """Check that slicing by template name works as expected"""
+        t_name = self.tribe[2].name
+        self.assertTrue(self.tribe[2] == self.tribe[t_name])
+        self.assertTrue(self.party[2] == self.party[t_name])
+
 
 def test_match_filter(
         debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
