@@ -11,7 +11,7 @@ import os
 import unittest
 
 import numpy as np
-from obspy import read, UTCDateTime, read_events, Catalog, Stream
+from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
@@ -135,6 +135,25 @@ class TestSynthData(unittest.TestCase):
     def test_extra_templates(self):
         # Test case where there are non-matching streams in the data
         test_match_filter(template_excess=True)
+
+    def test_onesamp_diff(self):
+        """Tests to check that traces in stream are set to same length."""
+        stream = Stream(traces=[
+            Trace(data=np.random.randn(100)),
+            Trace(data=np.random.randn(101))])
+        stream[0].stats.sampling_rate = 40
+        stream[0].stats.station = 'A'
+        stream[1].stats.sampling_rate = 40
+        stream[1].stats.station = 'B'
+        templates = [Stream(traces=[Trace(data=np.random.randn(20)),
+                                    Trace(data=np.random.randn(20))])]
+        templates[0][0].stats.sampling_rate = 40
+        templates[0][0].stats.station = 'A'
+        templates[0][1].stats.sampling_rate = 40
+        templates[0][1].stats.station = 'B'
+        match_filter(template_names=['1'], template_list=templates, st=stream,
+                     threshold=8, threshold_type='MAD', trig_int=1,
+                     plotvar=False)
 
 
 class TestGeoNetCase(unittest.TestCase):
