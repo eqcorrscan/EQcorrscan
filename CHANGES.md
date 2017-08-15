@@ -1,5 +1,5 @@
 ## Current
-* Fix bug with \_group_process
+* Fix bug with \_group_process that resulted in stalled processes.
 * Force NumPy version
 * Add tests for lag-calc issue with preparing data
 * Change internals of *eqcorrscan.core.lag_calc._prepare_data* to use a
