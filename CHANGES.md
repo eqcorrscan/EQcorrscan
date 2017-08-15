@@ -1,4 +1,4 @@
-## Current
+## 0.2.5
 * Fix bug with \_group_process that resulted in stalled processes.
 * Force NumPy version
 * Support indexing of Tribe and Party objects by template-name.
