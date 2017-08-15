@@ -38,8 +38,8 @@ class CorrelateTests(unittest.TestCase):
         print('Time-domain took: %f seconds' % (toc-tic))
         self.assertTrue(np.allclose(numpy_ccc, fftw_ccc, atol=0.001))
         self.assertTrue(np.allclose(numpy_ccc, fftw_ccc_2d, atol=0.001))
-        self.assertTrue(np.allclose(numpy_ccc, time_ccc, atol=0.12))
-        self.assertTrue(np.allclose(fftw_ccc, time_ccc, atol=0.12))
+        self.assertTrue(np.allclose(numpy_ccc, time_ccc, atol=0.001))
+        self.assertTrue(np.allclose(fftw_ccc, time_ccc, atol=0.001))
 
     def test_multi_channel_xcorr(self):
         chans = ['EHZ', 'EHN', 'EHE']
@@ -97,13 +97,13 @@ class CorrelateTests(unittest.TestCase):
         # self.assertTrue(np.allclose(cccsums_t_s, cccsums_t_p, atol=0.00001))
         self.assertTrue(np.allclose(cccsums_f_s, cccsums_f_p, atol=0.00001))
         self.assertTrue(np.allclose(cccsums_f_s, cccsums_f_op, atol=0.00001))
-        if not np.allclose(cccsums_t_p, cccsums_f_s, atol=0.7):
+        if not np.allclose(cccsums_t_p, cccsums_f_s, atol=0.00001):
             import matplotlib.pyplot as plt
             plt.plot(cccsums_t_p[0], 'k', label='Time')
             plt.plot(cccsums_f_s[0], 'r', label='Frequency')
             plt.legend()
             plt.show()
-        self.assertTrue(np.allclose(cccsums_t_p, cccsums_f_s, atol=0.7))
+        self.assertTrue(np.allclose(cccsums_t_p, cccsums_f_s, atol=0.00001))
 
 
 if __name__ == '__main__':
