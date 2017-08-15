@@ -318,7 +318,9 @@ class Party(object):
             return None
         if isinstance(index, slice):
             return self.__class__(families=self.families.__getitem__(index))
-        elif isinstance(index, str):
+        elif isinstance(index, int):
+            return self.families.__getitem__(index)
+        else:
             _index = [i for i, family in enumerate(self.families)
                       if family.template.name == index]
             try:
@@ -326,8 +328,6 @@ class Party(object):
             except IndexError:
                 warnings.warn('Family: %s not in party' % index)
                 return []
-        else:
-            return self.families.__getitem__(index)
 
     def __len__(self):
         """
@@ -2006,7 +2006,9 @@ class Tribe(object):
         """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
-        elif isinstance(index, str):
+        elif isinstance(index, int):
+            return self.templates.__getitem__(index)
+        else:
             _index = [i for i, t in enumerate(self.templates)
                       if t.name == index]
             try:
@@ -2014,8 +2016,6 @@ class Tribe(object):
             except IndexError:
                 warnings.warn('Template: %s not in tribe' % index)
                 return []
-        else:
-            return self.templates.__getitem__(index)
 
     def sort(self):
         """
