@@ -26,7 +26,7 @@ if not READ_THE_DOCS:
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libutils', 'utils.libutils', 'libutils']
+MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libnames']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
