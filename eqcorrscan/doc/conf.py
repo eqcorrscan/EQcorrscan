@@ -17,6 +17,7 @@ import os
 import shlex
 sys.path.insert(0, os.path.abspath('../..'))
 import matplotlib
+import eqcorrscan
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
@@ -25,10 +26,10 @@ if not READ_THE_DOCS:
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libutils']
+MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libutils', 'utils.libutils', 'libutils']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
-import eqcorrscan
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
