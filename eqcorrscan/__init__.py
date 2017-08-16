@@ -14,7 +14,7 @@ import warnings
 __all__ = ['core', 'utils', 'tutorials']
 
 
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 
 
 # Cope with changes to name-space to remove most of the camel-case

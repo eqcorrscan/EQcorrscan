@@ -56,9 +56,10 @@ class TestMethods(unittest.TestCase):
             event=detection_spicks_event, template_name='test_template',
             threshold_type='MAD', threshold_input=8.0)]
         tstart = min(tr.stats.starttime for tr in cls.template)
-        cls.delays = [('test_template', [(tr.stats.station, tr.stats.channel,
-                                          tr.stats.starttime - tstart)
-                                         for tr in cls.template])]
+        cls.delays = {}
+        for tr in cls.template:
+            cls.delays.update({tr.stats.station + '.' + tr.stats.channel:
+                               tr.stats.starttime - tstart})
         warnings.simplefilter("always")
 
     def test_channel_loop(self):
@@ -189,17 +190,15 @@ class TestMethods(unittest.TestCase):
     def test_prepare_data(self):
         detect_streams = _prepare_data(
             detect_data=self.detection, detections=[self.detections[0]],
-            zipped_templates=zip(['test_template'], [self.template]),
+            template=('test_template', self.template),
             delays=self.delays, shift_len=0.5, plot=False)
         self.assertEqual(len(detect_streams), 1)
 
     def test_no_matching_template(self):
-        with warnings.catch_warnings(record=True) as w:
-            detect_streams = _prepare_data(
-                detect_data=self.detection, detections=[self.detections[0]],
-                zipped_templates=zip(['fake_template'], [self.template]),
-                delays=self.delays, shift_len=0.5, plot=False)
-        self.assertTrue('No template' in str(w[0]))
+        detect_streams = _prepare_data(
+            detect_data=self.detection, detections=[self.detections[0]],
+            template=('fake_template', self.template),
+            delays=self.delays, shift_len=0.5, plot=False)
         self.assertEqual(len(detect_streams), 0)
 
     def test_duplicate_channel_error(self):
@@ -207,8 +206,18 @@ class TestMethods(unittest.TestCase):
         with self.assertRaises(LagCalcError):
             _prepare_data(
                 detect_data=detect_data, detections=[self.detections[0]],
-                zipped_templates=zip(['test_template'], [self.template]),
+                template=('test_template', self.template),
                 delays=self.delays, shift_len=0.5, plot=False)
+
+    def test_merged_data(self):
+        detect_data = self.detection.copy()
+        detect_data.cutout(starttime=detect_data[0].stats.starttime + 10,
+                           endtime=detect_data[0].stats.starttime + 12).merge()
+        detect_streams = _prepare_data(
+            detect_data=detect_data, detections=[self.detections[0]],
+            template=('fake_template', self.template),
+            delays=self.delays, shift_len=0.5, plot=False)
+        self.assertEqual(len(detect_streams), 0)
 
 
 class ShortTests(unittest.TestCase):
