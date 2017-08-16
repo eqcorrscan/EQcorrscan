@@ -17,7 +17,6 @@ import os
 import shlex
 sys.path.insert(0, os.path.abspath('../..'))
 import matplotlib
-import eqcorrscan
 
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 if not READ_THE_DOCS:
