@@ -284,7 +284,7 @@ class Party(object):
         """
         Get families from the Party. Can accept either an index or slice.
 
-        :param index: Family number or slice.
+        :param index: Family number or name, or slice.
         :return: Party (if a slice is given) or a single Family
 
         .. rubric:: Example
@@ -305,13 +305,29 @@ class Party(object):
         ...                         Family(template=Template(name='c'))])
         >>> party[1:]
         Party of 2 Families.
+
+        Extract a single family by template name:
+
+        >>> party = Party(families=[Family(template=Template(name='a')),
+        ...                         Family(template=Template(name='b')),
+        ...                         Family(template=Template(name='c'))])
+        >>> party['b']
+        Family of 0 detections from template b
         """
         if len(self.families) == 0:
             return None
         if isinstance(index, slice):
             return self.__class__(families=self.families.__getitem__(index))
-        else:
+        elif isinstance(index, int):
             return self.families.__getitem__(index)
+        else:
+            _index = [i for i, family in enumerate(self.families)
+                      if family.template.name == index]
+            try:
+                return self.families.__getitem__(_index[0])
+            except IndexError:
+                warnings.warn('Family: %s not in party' % index)
+                return []
 
     def __len__(self):
         """
@@ -662,7 +678,7 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 debug=0):
+                 overlap='calculate', debug=0):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -701,6 +717,13 @@ class Party(object):
             To generate a plot for every detection or not, defaults to False
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
+        :type overlap: float
+        :param overlap:
+            Either None, "calculate" or a float of number of seconds to
+            overlap detection streams by.  This is to counter the effects of
+            the delay-and-stack in calcualting cross-correlation sums. Setting
+            overlap = "calculate" will work out the appropriate overlap based
+            on the maximum lags within templates.
         :type debug: int
         :param debug: Debug output level, 0-5 with 5 being the most output.
 
@@ -766,18 +789,28 @@ class Party(object):
                 detection_groups.remove(det_group)
         # Process the data for each group and time-chunk
         for group, det_group in zip(template_groups, detection_groups):
+            lap = 0.0
+            for template in group:
+                starts = [t.stats.starttime for t in
+                          template.st.sort(['starttime'])]
+                if starts[-1] - starts[0] > lap:
+                    lap = starts[-1] - starts[0]
+            if overlap is None:
+                lap = 0.0
+            elif isinstance(overlap, float):
+                lap = overlap
             if not pre_processed:
                 processed_streams = _group_process(
                     template_group=group, cores=cores, parallel=parallel,
                     stream=stream.copy(), debug=debug, daylong=False,
-                    ignore_length=False, overlap=0.0)
+                    ignore_length=False, overlap=lap)
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
-                processed_stream.merge()
+                processed_stream.merge(method=1)
+                print(processed_stream)
             else:
                 processed_stream = stream
-            print(stream)
             temp_cat = lag_calc(
                 detections=det_group, detect_data=processed_stream,
                 template_names=[t.name for t in group],
@@ -2005,8 +2038,16 @@ class Tribe(object):
         """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
-        else:
+        elif isinstance(index, int):
             return self.templates.__getitem__(index)
+        else:
+            _index = [i for i, t in enumerate(self.templates)
+                      if t.name == index]
+            try:
+                return self.templates.__getitem__(_index[0])
+            except IndexError:
+                warnings.warn('Template: %s not in tribe' % index)
+                return []
 
     def sort(self):
         """
@@ -2523,7 +2564,10 @@ class Tribe(object):
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
-                return party
+                if return_stream:
+                    return party, stream
+                else:
+                    return party
         for family in party:
             if family is not None:
                 family.detections = family._uniq().detections
@@ -3120,16 +3164,15 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
     n_chunks = int((endtime - starttime + 1) / (master.process_length -
                                                 overlap))
     if n_chunks == 0:
-        print(
-            'Data must be process_length or longer, not computing detections')
+        print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):
         kwargs.update(
             {'starttime': starttime + (i * (master.process_length - overlap))})
         if not daylong:
             kwargs.update(
                 {'endtime': kwargs['starttime'] + master.process_length})
-            chunk_stream = stream.trim(starttime=kwargs['starttime'],
-                                       endtime=kwargs['endtime']).copy()
+            chunk_stream = stream.slice(starttime=kwargs['starttime'],
+                                        endtime=kwargs['endtime']).copy()
         else:
             chunk_stream = stream.copy()
         processed_streams.append(func(st=chunk_stream, **kwargs))
@@ -3707,6 +3750,7 @@ def match_filter(template_names, template_list, st, threshold,
     max_end_time = max([tr.stats.endtime for tr in stream])
     longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
                                                             min_start_time)
+    longest_trace_length += 1
     for tr in stream:
         if not tr.stats.npts == longest_trace_length:
             msg = 'Data are not equal length, padding short traces'
@@ -3818,7 +3862,7 @@ def match_filter(template_names, template_list, st, threshold,
     templates = _templates
     _template_names = used_template_names
     if debug >= 2:
-        print('Starting the correlation run for this day')
+        print('Starting the correlation run for these data')
     if debug >= 3:
         for template in templates:
             print(template)

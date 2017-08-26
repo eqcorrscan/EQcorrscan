@@ -26,13 +26,13 @@ if not READ_THE_DOCS:
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
-MOCK_MODULES = ['cv2']
+MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libnames']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../par'))
 sys.path.insert(0, os.path.abspath('../core'))
 sys.path.insert(0, os.path.abspath('../utils'))
 
@@ -86,7 +86,7 @@ author = u'EQcorrscan developers'
 # built documents.
 #
 # The short X.Y version.
-version = '0.1'
+version = '0.2'
 # The full version, including alpha/beta/rc tags.
 release = eqcorrscan.__version__
 
