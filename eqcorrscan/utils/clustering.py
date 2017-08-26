@@ -13,24 +13,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-import warnings
-import matplotlib.pyplot as plt
 import os
-
+import warnings
 from multiprocessing import Pool, cpu_count
-from scipy.spatial.distance import squareform
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from obspy.signal.cross_correlation import xcorr
-from obspy import Stream, Catalog, UTCDateTime, Trace
 
-from eqcorrscan.utils.mag_calc import dist_calc
-from eqcorrscan.utils.correlate import time_multi_normxcorr
+import matplotlib.pyplot as plt
+import numpy as np
+from obspy import Stream, Catalog, UTCDateTime, Trace
+from obspy.signal.cross_correlation import xcorr
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+from scipy.spatial.distance import squareform
+
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
+from eqcorrscan.utils.correlate import get_array_xcorr
+from eqcorrscan.utils.mag_calc import dist_calc
 
 
-def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
+def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
+                         xcorr_func='time_domain'):
     """
     Calculate cross-channel coherency.
 
@@ -49,6 +50,11 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     :param shift_len: Samples to shift, only used if `allow_shift=True`
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
+    :type xcorr_func: str, callable
+    :param xcorr_func:
+        The method for performing correlations. Accepts either a string or
+         callabe. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+         for more details
 
     :returns:
         cross channel coherence, float - normalized by number of channels,
@@ -57,6 +63,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
     """
     cccoh = 0.0
     kchan = 0
+    array_xcorr = get_array_xcorr(xcorr_func)
     for tr in st1:
         tr2 = st2.select(station=tr.stats.station,
                          channel=tr.stats.channel)
@@ -71,7 +78,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0):
             kchan += 1
         elif len(tr2) > 0:
             min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += time_multi_normxcorr(
+            cccoh += array_xcorr(
                 np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
                 [0])[0][0][0]
             kchan += 1
@@ -297,7 +304,7 @@ def group_delays(stream_list):
                     if chan in group_chans[j]:
                         shared_chans.append(chan)
                         shared_delays_slave.append(delays[k])
-                        shared_delays_master.\
+                        shared_delays_master. \
                             append(group_delays[j][group_chans[j].index(chan)])
                 # Normalize master and slave delay times
                 shared_delays_slave = [delay - min(shared_delays_slave)
@@ -382,7 +389,7 @@ def svd(stream_list, full=False):
                                  channel=stachan[1])
             if chan:
                 if len(chan[0].data) > min_length:
-                    if abs(len(chan[0].data) - min_length) > 0.1 *\
+                    if abs(len(chan[0].data) - min_length) > 0.1 * \
                             chan[0].stats.sampling_rate:
                         raise IndexError('More than 0.1 s length '
                                          'difference, align and fix')
@@ -402,7 +409,7 @@ def svd(stream_list, full=False):
         svalues.append(s)
         svectors.append(v)
         uvectors.append(u)
-        del(chan_mat)
+        del (chan_mat)
     return uvectors, svalues, svectors, stachans
 
 
@@ -448,12 +455,12 @@ def empirical_svd(stream_list, linear=True):
             tr = st.select(station=stachan[0],
                            channel=stachan[1])[0]
             if len(tr.data) > min_length:
-                if abs(len(tr.data) - min_length) > (0.1 *
-                                                     tr.stats.sampling_rate):
-                        raise IndexError('More than 0.1 s length '
-                                         'difference, align and fix')
-                warnings.warn(str(tr) + ' is not the same length as others, ' +
-                              'trimming the end')
+                sr = tr.stats.sampling_rate
+                if abs(len(tr.data) - min_length) > (0.1 * sr):
+                    msg = 'More than 0.1 s length difference, align and fix'
+                    raise IndexError(msg)
+                msg = ' is not the same length as others, trimming the end'
+                warnings.warn(str(tr) + msg)
                 tr.data = tr.data[0:min_length]
     if linear:
         first_subspace = stacking.linstack(stream_list)
@@ -462,8 +469,9 @@ def empirical_svd(stream_list, linear=True):
     second_subspace = first_subspace.copy()
     for i in range(len(second_subspace)):
         second_subspace[i].data = np.diff(second_subspace[i].data)
-        second_subspace[i].stats.starttime += 0.5 * \
-            second_subspace[i].stats.delta
+        delta = second_subspace[i].stats.delta
+        second_subspace[i].stats.starttime += 0.5 * delta
+
     return [first_subspace, second_subspace]
 
 
@@ -542,8 +550,9 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in trace_list])[0]
     output = np.array([False] * len(trace_list))
     group1 = []
+    array_xcorr = get_array_xcorr()
     for i, tr in enumerate(trace_list):
-        if time_multi_normxcorr(
+        if array_xcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
             output[i] = True
             group1.append(tr)
@@ -553,7 +562,7 @@ def corr_cluster(trace_list, thresh=0.9):
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
     for i, tr in enumerate(trace_list):
-        if time_multi_normxcorr(
+        if array_xcorr(
                 np.array([tr.data]), stack.data, [0])[0][0][0] > thresh:
             group2.append(tr)
             output[i] = True
@@ -750,10 +759,9 @@ def extract_detections(detections, templates, archive, arc_type,
                   detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
-                tr.trim(starttime=UTCDateTime(detection.detect_time) -
-                        extract_len / 2,
-                        endtime=UTCDateTime(detection.detect_time) +
-                        extract_len / 2)
+                t1 = UTCDateTime(detection.detect_time) - extract_len / 2
+                t2 = UTCDateTime(detection.detect_time) + extract_len / 2
+                tr.trim(starttime=t1, endtime=t2)
             if outdir:
                 if not os.path.isdir(os.path.join(outdir,
                                                   detection.template_name)):
@@ -766,7 +774,7 @@ def extract_detections(detections, templates, archive, arc_type,
                 print('Written file: %s' %
                       '/'.join([outdir, detection.template_name,
                                 detection.detect_time.
-                                strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
+                               strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -987,9 +995,11 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     detections_out = 0
     for detection in old_detections:
         detections_in += 1
-        if abs(detection.detect_val) >=\
-           (new_thresh / old_thresh) * detection.threshold and\
-           detection.no_chans >= chan_thresh:
+        con1 = (new_thresh / old_thresh) * detection.threshold
+        con2 = detection.no_chans >= chan_thresh
+        requirted_thresh = (new_thresh / old_thresh) * detection.threshold
+        con3 = abs(detection.detect_val) >= requirted_thresh
+        if all([con1, con2, con3]):
             detections_out += 1
             detections.append(detection)
     print('Read in %i detections' % detections_in)
@@ -999,4 +1009,5 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
