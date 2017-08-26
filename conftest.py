@@ -99,6 +99,10 @@ def pytest_namespace():
              }
     return odict
 
+def pytest_addoption(parser):
+    parser.addoption("--runslow", action="store_true",
+                     help="run slow tests")
+
 # Over-ride the -n auto in travis as this goes of the wall
 # import sys
 # import os
