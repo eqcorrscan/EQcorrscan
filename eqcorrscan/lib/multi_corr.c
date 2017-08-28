@@ -42,7 +42,7 @@ int normxcorr_time(float*, int, float*, int, float*);
 
 void free_fftw_arrays(int, double**, double**, double**, fftw_complex**, fftw_complex**, fftw_complex**);
 
-int multi_normxcorr_fftw(float*, int, int, int, float*, int, float*, int);
+int multi_normxcorr_fftw(float*, int, int, int, float*, int, float*, int, int*, int*);
 
 int multi_normxcorr_time(float*, int, int, float*, int, float*);
 
@@ -402,8 +402,9 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 }
 
 
-int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels, float *image, int image_len, float *ncc, int fft_len){
-    int i, r = 0;
+int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels,
+        float *image, int image_len, float *ncc, int fft_len, int *used_chans, int *pad_array){
+    int i, r = 0, s = 0, status = 0;
     long N2 = (long) fft_len / 2 + 1;
     double **template_ext = NULL;
     double **image_ext = NULL;
@@ -525,10 +526,12 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    #pragma omp parallel for reduction(+:r) num_threads(num_threads)
+    #pragma omp parallel for reduction(+:r,s) num_threads(num_threads)
     for (i = 0; i < n_channels; ++i){
-        /* each thread has its own workspace */
-        int tid = 0;
+        int j;
+        long ncc_offset = ((long) image_len - template_len + 1) * (long) n_templates * i;
+        int tid = 0; /* each thread has its own workspace */
+
         #ifdef N_THREADS
         /* get the id of this thread */
         tid = omp_get_thread_num();
@@ -541,9 +544,57 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         /* call the routine */
         r = normxcorr_fftw_main(&templates[(long) n_templates * template_len * i], template_len,
                                 n_templates, &image[(long) image_len * i], image_len,
-                                &ncc[((long) image_len - template_len + 1) * (long) n_templates * i], fft_len,
+                                &ncc[ncc_offset], fft_len,
                                 template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                 pa, pb, px);
+
+        /* post processing
+         * shape of ncc is:
+         *   (n_channels, n_templates, image_len - template_len + 1)
+         */
+        for (j = 0; j < n_templates; j++) {
+            long k;
+            long size = (long) image_len - template_len + 1;
+
+            if (!used_chans[i * n_channels + j]) {
+                for (k = 0; k < size; k++) {
+                    ncc[ncc_offset + j * size + k] = 0.0;
+                }
+            }
+            else {
+                for (k = 0; k < size; k++) {
+                    long index = ncc_offset + j * size + k;
+
+                    /* set all nans to zero */
+                    if (isnan(ncc[index])) {
+                        ncc[index] = 0.0;
+                    }
+                    /* check for normalisation errors */
+                    else if (fabsf(ncc[index]) > 1.01) {
+                        s = 1;
+                    }
+                    /* deal with points outside [-1,1] but within tolerance */
+                    else if (ncc[index] > 1.0) {
+                        ncc[index] = 1.0;
+                    }
+                    else if (ncc[index] < -1.0) {
+                        ncc[index] = -1.0;
+                    }
+                }
+            }
+
+            if (s == 0) {
+                long m;
+
+                /* apply pad_array */
+                for (k = pad_array[i * n_templates + j], m = 0; k < size; k++, m++) {
+                    ncc[ncc_offset + j * size + m] = ncc[ncc_offset + j * size + k];
+                }
+                for (k = m; k < size; k++) {
+                    ncc[ncc_offset + j * size + k] = 0.0;
+                }
+            }
+        }
     }
 
     /* free fftw memory */
@@ -553,7 +604,18 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     fftw_destroy_plan(px);
     fftw_cleanup();
 
-    return r;
+    /* 
+     * if something failed in the main routine we return a positive number;
+     * if something failed during normalisation we return negative
+     */
+    if (r != 0) {
+        status = r;
+    }
+    else if (s != 0) {
+        status = -1;
+    }
+
+    return status;
 }
 
 int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
