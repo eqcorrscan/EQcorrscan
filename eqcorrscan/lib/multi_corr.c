@@ -566,7 +566,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
                     long index = ncc_offset + j * size + k;
 
                     /* set all nans to zero */
-                    if (isnan(ncc[index])) {
+                    if (isnanf(ncc[index])) {
                         ncc[index] = 0.0;
                     }
                     /* check for normalisation errors */

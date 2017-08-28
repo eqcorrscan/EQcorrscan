@@ -383,6 +383,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         cross-correlations (stacked as per image)
         fft-length
         used channels (stacked as per templates)
+        pad array (stacked as per templates)
     '''
     # pre processing
     used_chans = []
@@ -406,7 +407,6 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     cccs = np.empty((n_channels, n_templates, image_len - template_len + 1),
                     np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
-    #TODO: is pad_array always the same shape (n_channels, n_templates)??
     pad_array_np = np.ascontiguousarray([pad_array[seed_id]
                                          for seed_id in seed_ids],
                                         dtype=np.intc)
