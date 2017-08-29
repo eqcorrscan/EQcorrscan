@@ -30,7 +30,7 @@ def gen_xcorr_func(name):
     def func(templates, stream, pads, *args, **kwargs):
         pass
 
-    func.__name__ = name
+    func.__name__ = str(name)
     return func
 
 

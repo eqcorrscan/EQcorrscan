@@ -598,8 +598,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
     fft_len = next_fast_len(template_len + image_len - 1)
-    template_array = np.array(list(template_array.values())).flatten(order='C')
-    stream_array = np.array(list(stream_array.values())).flatten(order='C')
+    template_list = [template_array[x] for x in seed_ids]
+    stream_list = [stream_array[x] for x in seed_ids]
+    template_array = np.array(template_list).flatten(order='C')
+    stream_array = np.array(stream_list).flatten(order='C')
     cccs = np.empty((n_channels, n_templates, image_len - template_len + 1),
                     np.float32).flatten(order='C')
     ret = utilslib.multi_normxcorr_fftw(

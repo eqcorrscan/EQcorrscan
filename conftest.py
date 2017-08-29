@@ -59,7 +59,8 @@ def clean_up_test_directories():
         'temp2',
         'test_family',
         'test_party_out',
-        'test_tar_write'
+        'test_tar_write',
+        'tmp1',
     ]
 
     yield
@@ -98,10 +99,6 @@ def pytest_namespace():
              'append_name': append_name,
              }
     return odict
-
-def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true",
-                     help="run slow tests")
 
 # Over-ride the -n auto in travis as this goes of the wall
 # import sys
