@@ -560,7 +560,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
             long k;
             long size = (long) image_len - template_len + 1;
 
-            if (!used_chans[i * n_channels + j]) {
+            if (!used_chans[i * n_templates + j]) {
                 for (k = 0; k < size; k++) {
                     ncc[ncc_offset + j * size + k] = 0.0;
                 }
