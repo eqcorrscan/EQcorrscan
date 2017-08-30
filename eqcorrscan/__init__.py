@@ -7,19 +7,13 @@
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-import sys
 import importlib
+import sys
 import warnings
-
-# "shortcut" imports
-from eqcorrscan.utils.correlate import register_array_xcorr
-
 
 __all__ = ['core', 'utils', 'tutorials']
 
-
 __version__ = '0.2.5'
-
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {
@@ -39,6 +33,7 @@ class EQcorrscanRestructureAndLoad(object):
     """
     Path finder and module loader for transitioning
     """
+
     def find_module(self, fullname, path=None):
         # Compatibility with namespace paths.
         if hasattr(path, "_path"):
@@ -91,4 +86,5 @@ sys.meta_path.append(EQcorrscanRestructureAndLoad())
 
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod(exclude_empty=True)
