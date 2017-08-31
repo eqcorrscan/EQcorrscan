@@ -6,16 +6,15 @@ from __future__ import unicode_literals
 import copy
 import itertools
 import time
-import unittest
 from collections import defaultdict
 from functools import wraps
 
-import eqcorrscan.utils.correlate
-import eqcorrscan.utils.correlate as corr
 import numpy as np
 import pytest
-from eqcorrscan import register_array_xcorr
 from obspy import Trace, Stream
+
+import eqcorrscan.utils.correlate as corr
+from eqcorrscan.utils.correlate import register_array_xcorr
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
@@ -96,9 +95,9 @@ def generate_multichannel_templates():
 def swap_registery():
     """ copy the current registry, restore it when tests finish. This will
      run after every class test suite """
-    current = copy.deepcopy(eqcorrscan.utils.correlate.XCOR_FUNCS)
+    current = copy.deepcopy(corr.XCOR_FUNCS)
     yield
-    eqcorrscan.utils.correlate.XCOR_FUNCS = current
+    corr.XCOR_FUNCS = current
 
 
 @pytest.fixture(scope='class', autouse=True)
@@ -153,7 +152,7 @@ def array_ccs(array_template, array_stream, pads):
      as the cc calculated by said function"""
     out = {}
 
-    for name in list(eqcorrscan.utils.correlate.XCOR_FUNCS.keys()):
+    for name in list(corr.XCOR_FUNCS.keys()):
         func = corr.get_array_xcorr(name)
         cc, _ = time_func(func, name, array_template, array_stream, pads)
         out[name] = cc
@@ -324,7 +323,7 @@ class TestRegisterNormXcorrs:
     def name_func_is_registered(self, func_name):
         """ return True if func is registered as a normxcorr func """
         name = func_name.__name__ if callable(func_name) else func_name
-        return name in eqcorrscan.utils.correlate.XCOR_FUNCS
+        return name in corr.XCOR_FUNCS
 
     # tests
     def test_register_as_decorator_no_args(self):
@@ -395,10 +394,3 @@ class TestRegisterAlternativeConcurrency:
     def test_new_method_was_called(self, normxcorr_new_multithread):
         """ ensure the new method was called """
         assert self.counter[normxcorr_new_multithread]
-
-
-if __name__ == '__main__':
-    """
-    Run core tests
-    """
-    unittest.main()
