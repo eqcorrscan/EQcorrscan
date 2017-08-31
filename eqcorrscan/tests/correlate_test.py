@@ -294,7 +294,7 @@ class TestGenericStreamXcorr:
                                         pad_array)
 
         func = corr.get_stream_xcorr(some_callable)
-        _ = func(multichannel_templates, multichannel_stream)
+        func(multichannel_templates, multichannel_stream)
         assert 'name' in small_count
 
     def test_bad_concurrency_raises(self):
@@ -311,7 +311,7 @@ class TestGenericStreamXcorr:
             pass
 
         corr.XCOR_FUNCS['func_test'] = func
-        _ = corr.get_stream_xcorr('func_test')
+        corr.get_stream_xcorr('func_test')
         assert hasattr(corr.XCOR_FUNCS['func_test'], 'registered')
 
 
