@@ -19,6 +19,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import ast
+import contextlib
 import copy
 import getpass
 import glob
@@ -45,6 +46,16 @@ from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
+
+
+@contextlib.contextmanager
+def temporary_directory():
+    """ make a temporary directory, yeild its name, cleanup on exit """
+    dir_name = tempfile.mkdtemp()
+    yield dir_name
+    if os.path.exists(dir_name):
+        shutil.rmtree(dir_name)
+
 
 
 def _spike_test(stream, percent=0.99, multiplier=1e6):
@@ -597,26 +608,23 @@ class Party(object):
             if os.path.exists(filename):
                 raise IOError('Will not overwrite existing file: %s'
                               % filename)
-            os.makedirs(filename)
-            Tribe([f.template for f in self.families]).write(
-                filename=filename, compress=False)
-            all_cat = Catalog()
-            for family in self.families:
-                all_cat += family.catalog
-            if not len(all_cat) == 0:
-                all_cat.write(filename + os.sep + 'catalog.xml',
-                              format='QUAKEML')
-            for i, family in enumerate(self.families):
-                print('Writing family %i' % i)
-                name = family.template.name + '_detections.csv'
-                name_to_write = join(filename, name)
-                _write_family(family=family, filename=name_to_write)
-            with tarfile.open(filename + '.tgz', "w:gz") as tar:
-                tar.add(filename, arcname=os.path.basename(filename))
-            if os.path.isdir(filename):
-                shutil.rmtree(filename)
-            elif os.path.isfile(filename):
-                os.remove(filename)
+            # os.makedirs(filename)
+            with temporary_directory() as temp_dir:
+                Tribe([f.template for f in self.families]).write(
+                    filename=temp_dir, compress=False)
+                all_cat = Catalog()
+                for family in self.families:
+                    all_cat += family.catalog
+                if not len(all_cat) == 0:
+                    all_cat.write(join(temp_dir, 'catalog.xml'),
+                                  format='QUAKEML')
+                for i, family in enumerate(self.families):
+                    print('Writing family %i' % i)
+                    name = family.template.name + '_detections.csv'
+                    name_to_write = join(temp_dir, name)
+                    _write_family(family=family, filename=name_to_write)
+                with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                    tar.add(temp_dir, arcname=os.path.basename(filename))
         else:
             warnings.warn('Writing only the catalog component, metadata '
                           'will not be preserved')
