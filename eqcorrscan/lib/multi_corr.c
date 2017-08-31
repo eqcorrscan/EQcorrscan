@@ -546,11 +546,11 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         memset(image_ext[tid], 0, (long) fft_len * sizeof(double));
 
         /* call the routine */
-        r = normxcorr_fftw_main(&templates[(long) n_templates * template_len * i], template_len,
-                                n_templates, &image[(long) image_len * i], image_len,
-                                &ncc[ncc_offset], fft_len,
-                                template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
-                                pa, pb, px);
+        r += normxcorr_fftw_main(&templates[(long) n_templates * template_len * i], template_len,
+                                 n_templates, &image[(long) image_len * i], image_len,
+                                 &ncc[ncc_offset], fft_len,
+                                 template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
+                                 pa, pb, px);
 
         /* post processing
          * shape of ncc is:
@@ -575,7 +575,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
                     }
                     /* check for normalisation errors */
                     else if (fabsf(ncc[index]) > 1.01) {
-                        s = 1;
+                        s++;
                     }
                     /* deal with points outside [-1,1] but within tolerance */
                     else if (ncc[index] > 1.0) {
