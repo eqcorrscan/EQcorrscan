@@ -408,8 +408,9 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels,
         float *image, int image_len, float *ncc, int fft_len, int *used_chans, int *pad_array){
-    int i, r = 0, s = 0, status = 0;
-    long N2 = (long) fft_len / 2 + 1;
+    size_t i;
+    int r = 0, s = 0, status = 0;
+    size_t N2 = (size_t) fft_len / 2 + 1;
     double **template_ext = NULL;
     double **image_ext = NULL;
     double **ccc = NULL;
@@ -464,7 +465,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     }
 
     // All memory allocated with `fftw_malloc` to ensure 16-byte aligned.
-    for (i = 0; i < num_threads; i++) {
+    for (i = 0; i < (size_t) num_threads; i++) {
         /* initialise all to NULL so that freeing on error works */
         template_ext[i] = NULL;
         image_ext[i] = NULL;
@@ -474,9 +475,9 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         out[i] = NULL;
 
         /* allocate template_ext arrays */
-        template_ext[i] = fftw_alloc_real((long) fft_len * n_templates);
+        template_ext[i] = fftw_alloc_real((size_t) fft_len * n_templates);
         if (template_ext[i] == NULL) {
-            printf("Error allocating template_ext[%d]\n", i);
+            printf("Error allocating template_ext[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
@@ -484,39 +485,39 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         /* allocate image_ext arrays */
         image_ext[i] = fftw_alloc_real(fft_len);
         if (image_ext[i] == NULL) {
-            printf("Error allocating image_ext[%d]\n", i);
+            printf("Error allocating image_ext[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
 
         /* allocate ccc arrays */
-        ccc[i] = fftw_alloc_real((long) fft_len * n_templates);
+        ccc[i] = fftw_alloc_real((size_t) fft_len * n_templates);
         if (ccc[i] == NULL) {
-            printf("Error allocating ccc[%d]\n", i);
+            printf("Error allocating ccc[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
 
         /* allocate outa arrays */
-        outa[i] = fftw_alloc_complex((long) N2 * n_templates);
+        outa[i] = fftw_alloc_complex((size_t) N2 * n_templates);
         if (outa[i] == NULL) {
-            printf("Error allocating outa[%d]\n", i);
+            printf("Error allocating outa[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
 
         /* allocate outb arrays */
-        outb[i] = fftw_alloc_complex((long) N2);
+        outb[i] = fftw_alloc_complex((size_t) N2);
         if (outb[i] == NULL) {
-            printf("Error allocating outb[%d]\n", i);
+            printf("Error allocating outb[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
 
         /* allocate out arrays */
-        out[i] = fftw_alloc_complex((long) N2 * n_templates);
+        out[i] = fftw_alloc_complex((size_t) N2 * n_templates);
         if (out[i] == NULL) {
-            printf("Error allocating out[%d]\n", i);
+            printf("Error allocating out[%ld]\n", i);
             free_fftw_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
             return 1;
         }
@@ -531,9 +532,9 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
 
     /* loop over the channels */
     #pragma omp parallel for reduction(+:r,s) num_threads(num_threads)
-    for (i = 0; i < n_channels; ++i){
-        int j;
-        long ncc_offset = ((long) image_len - template_len + 1) * (long) n_templates * i;
+    for (i = 0; i < (size_t) n_channels; ++i){
+        size_t j;
+        size_t ncc_offset = ((size_t) image_len - template_len + 1) * (size_t) n_templates * i;
         int tid = 0; /* each thread has its own workspace */
 
         #ifdef N_THREADS
@@ -542,12 +543,12 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         #endif
 
         /* initialise memory to zero */
-        memset(template_ext[tid], 0, (long) fft_len * n_templates * sizeof(double));
-        memset(image_ext[tid], 0, (long) fft_len * sizeof(double));
+        memset(template_ext[tid], 0, (size_t) fft_len * n_templates * sizeof(double));
+        memset(image_ext[tid], 0, (size_t) fft_len * sizeof(double));
 
         /* call the routine */
-        r += normxcorr_fftw_main(&templates[(long) n_templates * template_len * i], template_len,
-                                 n_templates, &image[(long) image_len * i], image_len,
+        r += normxcorr_fftw_main(&templates[(size_t) n_templates * template_len * i], template_len,
+                                 n_templates, &image[(size_t) image_len * i], image_len,
                                  &ncc[ncc_offset], fft_len,
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px);
@@ -556,9 +557,9 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
          * shape of ncc is:
          *   (n_channels, n_templates, image_len - template_len + 1)
          */
-        for (j = 0; j < n_templates; j++) {
-            long k;
-            long size = (long) image_len - template_len + 1;
+        for (j = 0; j < (size_t) n_templates; j++) {
+            size_t k;
+            size_t size = (size_t) image_len - template_len + 1;
 
             if (!used_chans[i * n_templates + j]) {
                 for (k = 0; k < size; k++) {
@@ -567,7 +568,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
             }
             else {
                 for (k = 0; k < size; k++) {
-                    long index = ncc_offset + j * size + k;
+                    size_t index = ncc_offset + j * size + k;
 
                     /* set all nans to zero */
                     if (isnanf(ncc[index])) {
@@ -588,7 +589,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
             }
 
             if (s == 0) {
-                long m;
+                size_t m;
 
                 /* apply pad_array */
                 for (k = pad_array[i * n_templates + j], m = 0; k < size; k++, m++) {
