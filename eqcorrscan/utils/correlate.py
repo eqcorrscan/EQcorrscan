@@ -282,7 +282,6 @@ def get_array_xcorr(name_or_func=None):
     return func.array_xcorr
 
 
-
 # ----------------------- registered array_xcorr functions
 
 
@@ -678,4 +677,5 @@ def _get_array_dicts(templates, stream, copy_streams=True):
 
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod()
