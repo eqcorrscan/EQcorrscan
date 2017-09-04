@@ -52,8 +52,11 @@ class _Context:
 
     def __init__(self, cache, value_to_switch):
         """
-        :param cache:
-        :param value_to_switch:
+        :type cache: dict
+        :param cache: A dict to store values in
+        :type value_to_switch: str
+        :param value_to_switch: 
+            The key in cache to switch based on different contexts 
         """
         self.cache = cache
         self.value_to_switch = value_to_switch
@@ -71,18 +74,23 @@ class _Context:
         :return:
         """
         self.previous_value = self.cache.get(self.value_to_switch)
-        self.cache[self.value_to_switch] = new_value
+        self.cache[self.value_to_switch] = get_array_xcorr(new_value)
         return self
 
     def __enter__(self):
         pass
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cache[self.value_to_switch] = self.previous_value
+        self.revert()
 
     def __repr__(self):
         """ this hides the fact _Context instance are returned after calls """
         return None
+
+    def revert(self):
+        """ revert the default xcorr function to previous value """
+        new_value = self.previous_value
+        self(new_value)
 
 
 set_xcorr = _Context(XCOR_FUNCS, 'default')
@@ -273,32 +281,6 @@ def get_array_xcorr(name_or_func=None):
     func = _get_registerd_func(name_or_func)
     return func.array_xcorr
 
-
-# def array_xcorr(templates, stream, pads, *args, **kwargs):
-#     """
-#     Compute the normalized cross-correlation using the default method.
-#
-#     :param templates: 2D Array of templates
-#     :type templates: np.ndarray
-#     :param stream: 1D array of continuous data
-#     :type stream: np.ndarray
-#     :param pads: List of ints of pad lengths in the same order as templates
-#     :type pads: list
-#
-#     :Keyword Arguments:
-#         - `xcorr_func` (str or callable) - controlls which xcorr func is used
-#
-#
-#     :return: np.ndarray of cross-correlations
-#     :return: np.ndarray channels used
-#
-#     .. Note::
-#         In order to control which xcor function is used you can pass the
-#         keyword argument "xcorr_func" a name of a registered xcor function or
-#         a callable that has the same signature as array_normxcorr.
-#     """
-#     func = get_array_xcorr(kwargs.get('xcorr_func'))
-#     return func(templates, stream, pads, *args, **kwargs)
 
 
 # ----------------------- registered array_xcorr functions
@@ -696,5 +678,4 @@ def _get_array_dicts(templates, stream, copy_streams=True):
 
 if __name__ == '__main__':
     import doctest
-
     doctest.testmod()

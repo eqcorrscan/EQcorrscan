@@ -92,15 +92,6 @@ def generate_multichannel_templates():
 # auto run fixtures
 
 @pytest.fixture(scope='class', autouse=True)
-def swap_registery():
-    """ copy the current registry, restore it when tests finish. This will
-     run after every class test suite """
-    current = copy.deepcopy(corr.XCOR_FUNCS)
-    yield
-    corr.XCOR_FUNCS = current
-
-
-@pytest.fixture(scope='class', autouse=True)
 def print_class_name(request):
     """ prints the class name before a class test suite starts """
     try:
@@ -205,6 +196,7 @@ def stream_cc_dict(stream_cc_output_dict):
 class TestArrayCorrelateFunctions:
     """ these tests ensure the various implementations of normxcorr return
     approximately the same answers """
+    atol = .00001  # how close correlations have to be
 
     # tests
     def test_single_channel_similar(self, array_ccs):
@@ -212,17 +204,18 @@ class TestArrayCorrelateFunctions:
         given the same input data """
         cc_list = list(array_ccs.values())
         for cc1, cc2 in itertools.combinations(cc_list, 2):
-            assert np.allclose(cc1, cc2, atol=0.05)
+            assert np.allclose(cc1, cc2, atol=self.atol)
 
     def test_test_autocorrelation(self, array_ccs):
         """ ensure an auto correlationoccurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
-            assert np.isclose(cc[0, starting_index], 1., atol=.01)
+            assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
 
 
 class TestStreamCorrelateFunctions:
     """ same thing as TestArrayCorrelateFunction but for stream interface """
+    atol = TestArrayCorrelateFunctions.atol
 
     def test_multi_channel_xcorr(self, stream_cc_dict):
         """ test various correlation methods with multiple channels """
@@ -234,7 +227,7 @@ class TestStreamCorrelateFunctions:
         # this will ensure all cc are "close enough"
         # TODO lower atol  when issues 121 gets resolved
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
-            assert np.allclose(cc_1, cc, atol=0.05)
+            assert np.allclose(cc_1, cc, atol=self.atol)
 
 
 class TestXcorrContextManager:
@@ -267,10 +260,16 @@ class TestXcorrContextManager:
         """ ensure the context manager reverts changes """
         context = corr._Context(cache, 'default')
         old_default = cache['default']
-        new_val = 'bob'
+        new_val = corr.numpy_normxcorr
         with context(new_val):
             assert cache['default'] == new_val
         assert old_default
+
+    def test_str_accepted(self):
+        """ ensure a str of the xcorr function can be passed as well """
+        with corr.set_xcorr('numpy'):
+            func = corr.get_array_xcorr()
+            assert func is corr.numpy_normxcorr
 
 
 class TestGenericStreamXcorr:
@@ -314,6 +313,18 @@ class TestGenericStreamXcorr:
         corr.get_stream_xcorr('func_test')
         assert hasattr(corr.XCOR_FUNCS['func_test'], 'registered')
 
+    def test_using_custom_function_doesnt_change_default(self):
+        """ ensure a custom function will not change the default """
+
+        def func(templates, streams, pads):
+            pass
+
+        default = corr.get_array_xcorr(None)
+
+        corr.get_array_xcorr(func)
+
+        assert corr.get_array_xcorr(None) is default
+
 
 class TestRegisterNormXcorrs:
     """ Tests for register_normxcorr function, which holds global context
@@ -322,8 +333,17 @@ class TestRegisterNormXcorrs:
     # helper functions
     def name_func_is_registered(self, func_name):
         """ return True if func is registered as a normxcorr func """
+        # Note: don not remove this fixture or bad things will happen
         name = func_name.__name__ if callable(func_name) else func_name
         return name in corr.XCOR_FUNCS
+
+    # fixtures
+    @pytest.fixture(scope='class', autouse=True)
+    def swap_registery(self):
+        """ copy the current registry, restore it when tests finish"""
+        current = copy.deepcopy(corr.XCOR_FUNCS)
+        yield
+        corr.XCOR_FUNCS = current
 
     # tests
     def test_register_as_decorator_no_args(self):
