@@ -48,8 +48,8 @@ You can switch between correlation functions using the `xcorr_func` paramater
 included in:
 
 :func:`eqcorrscan.core.match_filter.match_filter`,
-:meth:`eqcorrscan.core.Tribe.detect`,
-:meth:`eqcorrscan.core.Template.detect`
+:meth:`eqcorrscan.core.match_filter.Tribe.detect`,
+:meth:`eqcorrscan.core.match_filter.Template.detect`
 
 by
 
@@ -80,7 +80,7 @@ for example:
 
     # do correlation using numpy rather than fftw
     match_filter(['1'], [template], stream, .5, 'absolute', 1, False,
-                 xcorr_func='numpy)
+                 xcorr_func='numpy')
 
 
     # do correlation using a custom function
@@ -96,19 +96,18 @@ for example:
 
 
 You can also use the set_xcorr object (eqcorrscan.utils.correlate.set_xcorr)
-to change which correlation function is used:
+to change which correlation function is used. This can be done permanently
+or within the scope of a context manager:
 
 .. code-block:: python
 
-    # this can also be done using the set_xcorr function / context manager
-    # to change the default xcorr function for all functions that use it
+    # change the default xcorr function for all code in the with block
     with set_xcorr(custom_normxcorr):
         match_filter(['1'], [template], stream, .5, 'absolute', 1, False)
         #  prints "calling custom xcorr function"
 
-    # you can also permanently change the xcorr function (until your python
-    # kernel is restarted) by calling set_xcorr
+    # permanently change the xcorr function (until the python kernel restarts)
     set_xcorr(custom_normxcorr)
     match_filter(['1'], [template], stream, .5, 'absolute', 1, False)
     # prints "calling custom xcorr function
-    set_xcorr.revert()  # change it back
+    set_xcorr.revert()  # change it back to the previous state

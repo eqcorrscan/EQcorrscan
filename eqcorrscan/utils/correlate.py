@@ -55,8 +55,8 @@ class _Context:
         :type cache: dict
         :param cache: A dict to store values in
         :type value_to_switch: str
-        :param value_to_switch: 
-            The key in cache to switch based on different contexts 
+        :param value_to_switch:
+            The key in cache to switch based on different contexts
         """
         self.cache = cache
         self.value_to_switch = value_to_switch

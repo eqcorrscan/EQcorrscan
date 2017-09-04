@@ -57,7 +57,6 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
-
 def _spike_test(stream, percent=0.99, multiplier=1e6):
     """
     Check for very large spikes in data and raise an error if found.
@@ -3738,17 +3737,19 @@ def match_filter(template_names, template_list, st, threshold,
         0.1 seconds early. We are working on a solution that will involve
         saving templates alongside associated metadata.
 
-    .. Note:: xcorr_func Custom xcorr functions can be used according to the following:
-    
+    .. Note:: xcorr_func can be used as follows:
+
     .. rubric:: Example
-    >>> import obspy  
+    >>> import obspy
+    >>> import numpy as np
+    >>> from eqcorrscan.core.match_filter import match_filter
     >>> from eqcorrscan.utils.correlate import time_multi_normxcorr
     >>> # define a custom xcorr function
     >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
-    ...     # Just to keep example short call other xcorr function 
+    ...     # Just to keep example short call other xcorr function
     ...     # in practice you would define your own function here
     ...     print('calling custom xcorr function')
-    ...     return time_multi_normxcorr(templates, stream, pads, *args, **kwargs) 
+    ...     return time_multi_normxcorr(templates, stream, pads)
     >>> # generate some toy templates and stream
     >>> random = np.random.RandomState(42)
     >>> template = obspy.read()
@@ -3757,11 +3758,11 @@ def match_filter(template_names, template_list, st, threshold,
     ...     data = tr.data
     ...     tr.data = random.randn(6000) * 5
     ...     tr.data[100: 100 + len(data)] = data
-    >>> # call match_filter ane ensure the custom function is used 
-    >>> match_filter(['1'], [template], stream, .5, 'absolute', 1, False, 
-    ...              xcorr_func=custom_normxcorr)  # doctest: +SKIP
-
-    calling custom xcorr function ... # doctest: +SKIP
+    >>> # call match_filter ane ensure the custom function is used
+    >>> detections = match_filter(
+    ...     ['1'], [template], stream, .5, 'absolute', 1, False,
+    ...      xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
+    calling custom xcorr function...
     """
     _spike_test(st)
     import matplotlib
