@@ -143,7 +143,7 @@ def array_ccs(array_template, array_stream, pads):
      as the cc calculated by said function"""
     out = {}
 
-    for name in list(corr.XCOR_FUNCS.keys()):
+    for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
         cc, _ = time_func(func, name, array_template, array_stream, pads)
         out[name] = cc
@@ -167,7 +167,7 @@ def multichannel_stream():
 
 # a dict of all registered stream functions (this is a bit long)
 stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
-                for fname in corr.XCOR_FUNCS.keys()
+                for fname in corr.XCORR_FUNCS_ORIGINAL.keys()
                 for mname in corr.XCORR_STREAM_METHODS
                 if fname != 'default'}
 

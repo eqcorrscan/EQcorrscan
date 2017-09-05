@@ -25,6 +25,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import contextlib
+import copy
 import ctypes
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
@@ -673,6 +674,10 @@ def _get_array_dicts(templates, stream, copy_streams=True):
         pad_dict.update({seed_id: pad_list})
 
     return stream_dict, template_dict, pad_dict, seed_ids
+
+
+# a dict of built in xcorr functions, used to distinguish from user-defined
+XCORR_FUNCS_ORIGINAL = copy.copy(XCOR_FUNCS)
 
 
 if __name__ == '__main__':
