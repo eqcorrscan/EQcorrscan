@@ -990,11 +990,11 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
+    >>> remove_list = [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]
     >>> for i, stream in enumerate(stream_list):
     ...     st_list = []
     ...     for tr in stream:
-    ...         if (tr.stats.station, tr.stats.channel) not in
-    ...           [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
+    ...         if (tr.stats.station, tr.stats.channel) not in remove_list:
     ...             stream.remove(tr)
     ...             continue
     ...         tr.detrend('simple')

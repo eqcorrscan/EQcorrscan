@@ -339,5 +339,6 @@ class TestAmpPickEvent(unittest.TestCase):
                                       var_wintype=False, pre_filt=False)
         self.assertEqual(len(picked_event.amplitudes), 1)
 
+
 if __name__ == '__main__':
     unittest.main()
