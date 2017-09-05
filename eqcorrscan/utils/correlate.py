@@ -189,10 +189,10 @@ def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
                     chan.append((seed_id.split('.')[1],
                                  seed_id.split('.')[-1].split('_')[0]))
     else:
-        xcorrs, tr_chans = fftw_multi_normxcorr(
+        cccsums, tr_chans = fftw_multi_normxcorr(
             template_array=template_array, stream_array=stream_array,
             pad_array=pad_array, seed_ids=seed_ids)
-        cccsums = np.sum(xcorrs, axis=0)
+        tr_chans_tmp = np.array(tr_chans).astype(np.int)
         no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
         for seed_id, tr_chan in zip(seed_ids, tr_chans):
             for chan, state in zip(chans, tr_chan):
@@ -423,6 +423,9 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         print(cccs.max())
         print(cccs.min())
         raise MemoryError()
+
+    # resize the cccs array here (accumulation over channels was done in C)
+    cccs.resize(cccs.shape[1:])
 
     return cccs, used_chans
 

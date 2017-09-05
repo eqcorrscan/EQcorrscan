@@ -612,12 +612,30 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     /* 
      * if something failed in the main routine we return a positive number;
      * if something failed during normalisation we return negative
+     * otherwise we sum over all channels
      */
     if (r != 0) {
         status = r;
     }
     else if (s != 0) {
         status = -1;
+    }
+    else {
+        /* we don't need the data for individual channels so we accumulate here and resize in Python */
+        size_t dimz = (size_t) image_len - (size_t) template_len + 1;
+        size_t offset = (size_t) n_templates * (size_t) dimz;
+        #pragma omp parallel for
+        for (i = 0; i < (size_t) n_templates; i++) {
+            size_t j;
+            for (j = 0; j < dimz; j++) {
+                size_t k;
+                size_t accum = i * dimz + j;
+                for (k = 1; k < (size_t) n_channels; k++) {
+                    size_t index = accum + k * offset;
+                    ncc[accum] += ncc[index];
+                }
+            }
+        }
     }
 
     return status;
