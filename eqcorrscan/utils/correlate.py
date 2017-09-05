@@ -192,7 +192,6 @@ def multichannel_normxcorr(templates, stream, cores=1, time_domain=False,
         cccsums, tr_chans = fftw_multi_normxcorr(
             template_array=template_array, stream_array=stream_array,
             pad_array=pad_array, seed_ids=seed_ids)
-        tr_chans_tmp = np.array(tr_chans).astype(np.int)
         no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
         for seed_id, tr_chan in zip(seed_ids, tr_chans):
             for chan, state in zip(chans, tr_chan):
