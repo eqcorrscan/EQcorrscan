@@ -22,9 +22,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#if (defined(_MSC_VER) && _MSC_VER < 1800)
-    #include <float.h>
-    #define isnanf(x) _isnanf(x)
+#if (defined(_MSC_VER))
+    #if (_MSC_VER < 1800)
+        #include <float.h>
+        #define isnanf(x) _isnanf(x)
+    #endif
+    #define inline __inline
 #endif
 #include <fftw3.h>
 #if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
@@ -37,7 +40,7 @@
 // Prototypes
 int normxcorr_fftw(float*, int, int, float*, int, float*, int, int*, int*);
 
-inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc);
+static inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc);
 
 int normxcorr_fftw_main(float*, int, int, float*, int, float*, int, double*, double*, double*,
         fftw_complex*, fftw_complex*, fftw_complex*, fftw_plan, fftw_plan, fftw_plan, int*, int*);
@@ -355,7 +358,7 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 }
 
 
-inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc) {
+static inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc) {
     int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
