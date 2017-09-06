@@ -5,7 +5,7 @@ Various routines used mostly for testing, including links to a compiled
 routine using FFTW, a Numpy fft routine which uses bottleneck for normalisation
 and a compiled time-domain routine. These have varying levels of efficiency,
 both in terms of overall speed, and in memory usage.  The time-domain is the
-most memory efficient but slowest routine (although fastest for small cases of
+most memory efficient but slowest routine (although fast for small cases of
 less than a few hundred correlations), the Numpy routine is fast, but memory
 inefficient due to a need to store large double-precision arrays for
 normalisation.  The fftw compiled routine is fastest and more memory efficient
@@ -27,14 +27,24 @@ from __future__ import unicode_literals
 import contextlib
 import copy
 import ctypes
+import os
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from future.utils import native_str
-from scipy.fftpack.helper import next_fast_len
 
 from eqcorrscan.utils.libnames import _load_cdll
+
+# This is for building docs on readthedocs, which has an old version of
+# scipy - without this, this module cannot be imported, which breaks the docs
+# Instead we define a dummy function that returns what it is given.
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+if not READ_THE_DOCS:
+    from scipy.fftpack.helper import next_fast_len
+else:
+    def next_fast_len(a):
+        return a
 
 XCOR_FUNCS = {}  # cache of functions for doing cross correlations
 
