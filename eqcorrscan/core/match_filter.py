@@ -2628,6 +2628,11 @@ class Tribe(object):
         .. Note::
             Methods: `from_contbase`, `from_sfile` and `from_sac` are not
             supported by Tribe.construct and must use Template.construct.
+            
+        .. Note::
+            The Method `multi_template_gen` is not supported because the
+            processing parameters for the stream are not known. Use
+            `from_meta_file` instead.
 
         .. Note:: Templates will be named according to their start-time.
         """
