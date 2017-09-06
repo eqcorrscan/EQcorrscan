@@ -26,6 +26,7 @@ from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
+from eqcorrscan.utils.debug_log import debug_print
 
 
 class LagCalcError(Exception):
@@ -158,8 +159,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        if debug > 3:
-            print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
+        debug_print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan),
+                    3, debug)
         image = detection.select(station=temp_sta, channel=temp_chan)
         if len(image) == 0:
             print('No match in image.')
@@ -193,13 +194,11 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             cc_max = np.amax(ccc)
             picktime = image[0].stats.starttime + (
                 np.argmax(ccc) * image[0].stats.delta)
-        if debug > 3:
-            print('Maximum cross-corr=%s' % cc_max)
+        debug_print('Maximum cross-corr=%s' % cc_max, 3, debug)
         checksum += cc_max
         used_chans += 1
         if cc_max < min_cc:
-            if debug > 3:
-                print('Correlation below threshold, not used')
+            debug_print('Correlation below threshold, not used', 3, debug)
             continue
         cccsum += cc_max
         # Perhaps weight each pick by the cc val or cc val^2?
@@ -209,9 +208,8 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         # Only take the S-pick with the best correlation
         elif temp_chan[-1] in horizontal_chans:
             phase = 'S'
-            if debug > 4:
-                print('Making S-pick on: %s.%s.%s' %
-                      (temp_net, temp_sta, temp_chan))
+            debug_print('Making S-pick on: %s.%s.%s' %
+                        (temp_net, temp_sta, temp_chan), 4, debug)
             if temp_sta not in s_stachans.keys():
                 s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
                                          picktime))
@@ -298,8 +296,7 @@ def _day_loop(detection_streams, template, min_cc, detections,
         num_cores = len(detection_streams)
     if parallel:
         pool = Pool(processes=num_cores)
-        if debug > 4:
-            print('Made pool of %i workers' % num_cores)
+        debug_print('Made pool of %i workers' % num_cores, 4, debug)
         # Parallel generation of events for each detection:
         # results will be a list of (i, event class)
         results = [pool.apply_async(
@@ -577,8 +574,8 @@ def lag_calc(detections, detect_data, template_names, templates,
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
         t_delays = [d for d in delays if d[0] == template[0]][0][1]
-        if debug > 2:
-            print('There are %i detections' % len(template_detections))
+        debug_print(
+            'There are %i detections' % len(template_detections), 2, debug)
         detect_streams = _prepare_data(
             detect_data=detect_data, detections=template_detections,
             template=template, delays=t_delays, shift_len=shift_len,
