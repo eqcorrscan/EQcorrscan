@@ -12,6 +12,7 @@ from distutils.ccompiler import get_default_compiler
 
 import os
 import sys
+import shutil
 import glob
 import eqcorrscan
 
@@ -290,6 +291,8 @@ def setup_package():
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
+    if os.path.isdir("build"):
+        shutil.rmtree("build")
     setup(**setup_args)
 
 if __name__ == '__main__':
