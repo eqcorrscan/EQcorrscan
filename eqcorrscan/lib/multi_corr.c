@@ -339,8 +339,8 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 		mean = mean + (new_samp - old_samp) / template_len;
 		var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
 		stdev = sqrt(var);
-        if (var > acceptedDiff){
-            for (t=0; t < n_templates; ++t){
+        if (var > acceptedDiff) { // TODO: above is '>=', should they be the same?
+            for (t = 0; t < n_templates; ++t){
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
 			}
@@ -354,7 +354,7 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 
 
 inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc) {
-    int errors = 0;
+    int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
         size_t ncc_index = t * (image_len - template_len + 1) + i - pad_array[t];
@@ -365,7 +365,7 @@ inline int set_ncc(int t, int i, int template_len, int image_len, float value, i
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-            errors = 1;
+            status = 1;
         }
         else if (value > 1.0) {
             value = 1.0;
@@ -374,10 +374,11 @@ inline int set_ncc(int t, int i, int template_len, int image_len, float value, i
             value = -1.0;
         }
 
+        #pragma omp atomic
         ncc[ncc_index] += value;
     }
 
-    return errors;
+    return status;
 }
 
 
@@ -564,7 +565,6 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     /* loop over the channels */
     #pragma omp parallel for reduction(+:r) num_threads(num_threads)
     for (i = 0; i < n_channels; ++i){
-        size_t ncc_offset = ((size_t) image_len - template_len + 1) * (size_t) n_templates * i;
         int tid = 0; /* each thread has its own workspace */
 
         #ifdef N_THREADS
@@ -578,10 +578,10 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
 
         /* call the routine */
         r += normxcorr_fftw_main(&templates[(size_t) n_templates * template_len * i], template_len,
-                                 n_templates, &image[(size_t) image_len * i], image_len,
-                                 &ncc[ncc_offset], fft_len,
+                                 n_templates, &image[(size_t) image_len * i], image_len, ncc, fft_len,
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
-                                 pa, pb, px, &used_chans[(size_t) i * n_templates], &pad_array[(size_t) i * n_templates]);
+                                 pa, pb, px, &used_chans[(size_t) i * n_templates],
+                                 &pad_array[(size_t) i * n_templates]);
     }
 
     /* free fftw memory */
@@ -590,29 +590,6 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     fftw_destroy_plan(pb);
     fftw_destroy_plan(px);
     fftw_cleanup();
-
-    /* 
-     * if something failed in the main routine we return a positive number;
-     * if something failed during normalisation we return negative
-     * otherwise we sum over all channels
-     */
-    if (r == 0) {
-        /* we don't need the data for individual channels so we accumulate here and resize in Python */
-        size_t dimz = (size_t) image_len - (size_t) template_len + 1;
-        size_t offset = (size_t) n_templates * (size_t) dimz;
-        #pragma omp parallel for
-        for (i = 0; i < n_templates; i++) {
-            size_t j;
-            for (j = 0; j < dimz; j++) {
-                size_t k;
-                size_t accum = i * dimz + j;
-                for (k = 1; k < (size_t) n_channels; k++) {
-                    size_t index = accum + k * offset;
-                    ncc[accum] += ncc[index];
-                }
-            }
-        }
-    }
 
     return r;
 }

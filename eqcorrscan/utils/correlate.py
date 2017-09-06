@@ -329,19 +329,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=True):
     if ret != 0:
         print(ret)
         raise MemoryError()
-#    for i in range(n_templates):
-#        if not used_chans[i]:
-#            ccc[i] = np.zeros(stream_length - template_length + 1)
-#    ccc[np.isnan(ccc)] = 0.0
-#    if np.any(np.abs(ccc) > 1.01):
-#        print('Normalisation error in C code')
-#        print(ccc.max())
-#        print(ccc.min())
-#        raise MemoryError()
-#    ccc[ccc > 1.0] = 1.0
-#    ccc[ccc < -1.0] = -1.0
-#    for i in range(len(pads)):
-#        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
+
     return ccc, used_chans
 
 
@@ -411,7 +399,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
                                           dtype=np.float32)
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
-    cccs = np.zeros((n_channels, n_templates, image_len - template_len + 1),
+    cccs = np.zeros((n_templates, image_len - template_len + 1),
                     np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray([pad_array[seed_id]
@@ -429,9 +417,6 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         print(cccs.max())
         print(cccs.min())
         raise MemoryError()
-
-    # resize the cccs array here (accumulation over channels was done in C)
-    cccs.resize(cccs.shape[1:])
 
     return cccs, used_chans
 
