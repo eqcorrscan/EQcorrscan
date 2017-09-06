@@ -2421,7 +2421,8 @@ class Tribe(object):
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plotvar, daylong=False,
-                      parallel_process=True, ignore_length=False,
+                      parallel_process=True, xcorr_func=None, 
+                      concurrency=None,ignore_length=False,
                       group_size=None, debug=0, return_stream=False):
         """
         Detect using a Tribe of templates within a continuous stream.
@@ -2456,6 +2457,16 @@ class Tribe(object):
             over other methods.
         :type parallel_process: bool
         :param parallel_process:
+        :type xcorr_func: str or callable
+        :param xcorr_func:
+            A str of a registered xcorr function or a callable for implementing
+            a custom xcorr function. For more information see:
+            :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+        :type concurrency: str
+        :param concurrency:
+            The type of concurrency to apply to the xcorr function. Options are
+            'multithread', 'multiprocess', 'concurrent'. For more details see
+            :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -2581,7 +2592,8 @@ class Tribe(object):
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
                     plotvar=plotvar, daylong=daylong,
-                    parallel_process=parallel_process,
+                    parallel_process=parallel_process, 
+                    xcorr_func=xcorr_func, concurrency=concurrency,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug)
                 if return_stream:
