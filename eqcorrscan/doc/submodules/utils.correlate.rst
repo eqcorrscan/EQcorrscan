@@ -23,6 +23,36 @@ correlate
 
     .. comment to end block
 
+All functions within this module (and therefore all correlation functions used
+in EQcorrscan) are normalised cross-correlations, which follow the definition
+that Matlab uses for |normxcorr2|.
+
+In the time-domain this is as follows
+    .. math::
+        c(t) = \frac{\sum_{y}(a_{y} - \overline{a})(b_{t+y} - \overline{b_t})}{\sqrt{\sum_{y}(a_{y} - \overline{a})(a_{y} - \overline{a})\sum_{y}(b_{t+y} - \overline{b_t})(b_{t+y} - \overline{b_t})}}
+
+where :math:`c(t)` is the normalised cross-correlation at at time :math:`t`,
+:math:`a` is the template window which has length :math:`y`, :math:`b` is the
+continuous data, and :math:`\overline{a}` is the mean of the template and
+:math:`\overline{b_t}` is the local mean of the continuous data.
+
+In practice the correlations only remove the mean of the template once, but we do
+remove the mean from the continuous data at every time-step.  Without doing this
+(just removing the global mean), correlations are affected by jumps in average
+amplitude, which is most noticeable during aftershock sequences, or when using
+short templates.
+
+In the frequency domain (functions :func:`eqcorrscan.utils.correlate.numpy_normxcorr`,
+:func:`eqcorrscan.utils.correlate.fftw_normxcorr`, :func:`fftw_multi_normxcorr`),
+correlations are computed using an equivalent method.  All methods are tested
+against one-another to check for internal consistency, and checked against results
+computed using Matlab's |normxcorr2| function. These routines also give the same
+(within 0.00001) of openCV cross-correlations.
+
+.. |normxcorr2| raw:: html
+
+    <a href="https://au.mathworks.com/help/images/ref/normxcorr2.html?s_tid=gn_loc_drop" target="_blank">normxcorr2</a>
+
 Selecting a correlation function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,7 +61,7 @@ correlation values, however, you may want to change how correlations are
 caclulated to be more advantageous to your specific needs.
 
 
-There are currently 3 different correlations functions currently included in EQcorrscanq:
+There are currently 3 different correlations functions currently included in EQcorrscan:
 
     1. :func:`eqcorrscan.utils.correlate.numpy_normxcorr` known as "numpy"
 
@@ -44,19 +74,15 @@ Number 3 is the default.
 Switching which correlation function is used
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can switch between correlation functions using the `xcorr_func` paramater
+You can switch between correlation functions using the `xcorr_func` parameter
 included in:
+- :func:`eqcorrscan.core.match_filter.match_filter`,
+- :meth:`eqcorrscan.core.match_filter.Tribe.detect`,
+- :meth:`eqcorrscan.core.match_filter.Template.detect`
 
-:func:`eqcorrscan.core.match_filter.match_filter`,
-:meth:`eqcorrscan.core.match_filter.Tribe.detect`,
-:meth:`eqcorrscan.core.match_filter.Template.detect`
+by:
 
-by
-
-1. passing a string (eg "numpy", "time_domain", or "fftw")
-
-or
-
+1. passing a string (eg "numpy", "time_domain", or "fftw") or;
 2. passing a function
 
 for example:

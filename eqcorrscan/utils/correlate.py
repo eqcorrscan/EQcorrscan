@@ -178,9 +178,8 @@ def register_array_xcorr(name, func=None, is_default=False):
     """
     Decorator for registering correlation functions.
 
-    :func:
-    Each function must have the same interface as numpy_normxcorr, which is:
-    f(templates, stream, pads, *args, **kwargs) any number of specific kwargs
+    Each function must have the same interface as numpy_normxcorr, which is
+    *f(templates, stream, pads, *args, **kwargs)* any number of specific kwargs
     can be used.
 
     Register_normxcorr can be used as a decorator (with or without arguments)
@@ -269,7 +268,7 @@ def get_array_xcorr(name_or_func=None):
     Get an normalized cross correlation function that takes arrays as inputs.
 
     See :func:`eqcorrscan.utils.correlate.array_normxcorr` for expected
-        function signature.
+    function signature.
 
     :param name_or_func: Either a name of a registered xcorr function or a
         callable that implements the standard array_normxcorr signature.
@@ -622,15 +621,19 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
     Return a function for performing normalized cross correlation on lists of
     streams.
 
-    :param name_or_func: Either a name of a registered function or a callable
-        that implements the standard array_normxcorr signature.
+    :param name_or_func:
+        Either a name of a registered function or a callable that implements
+        the standard array_normxcorr signature.
     :param concurrency:
-        Optional concurrency strategy, options are:
-        multithread - use a threadpool for concurrency
-        multiprocess - use a process pool for concurrency
-        concurrent - use a customized concurrency stragegy for the function,
-            if not defined threading will be used
+        Optional concurrency strategy, options are below.
+
     :return: A callable with the interface of stream_normxcorr
+
+    :Concurrency options:
+        - multithread - use a threadpool for concurrency;
+        - multiprocess - use a process pool for concurrency;
+        - concurrent - use a customized concurrency strategy for the function,
+          if not defined threading will be used.
     """
     func = _get_registerd_func(name_or_func)
 
