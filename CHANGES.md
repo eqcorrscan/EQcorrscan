@@ -15,6 +15,7 @@
     multiprocess- for multiprocess execution
     concurrent - allows functions to describe their own preferred currency
     methods, defaults to multithread
+* Change debug printing output, it should be a little quieter
 
 
 ## 0.2.5
