@@ -35,12 +35,12 @@
 #endif
 
 // Prototypes
-int normxcorr_fftw(float*, int, int, float*, int, float*, int);
+int normxcorr_fftw(float*, int, int, float*, int, float*, int, int*, int*);
 
 inline int set_ncc(int t, int i, int template_len, int image_len, float value, int *used_chans, int *pad_array, float *ncc);
 
 int normxcorr_fftw_main(float*, int, int, float*, int, float*, int, double*, double*, double*,
-        fftw_complex*, fftw_complex*, fftw_complex*, fftw_plan, fftw_plan, fftw_plan);
+        fftw_complex*, fftw_complex*, fftw_complex*, fftw_plan, fftw_plan, fftw_plan, int*, int*);
 
 int normxcorr_fftw_threaded(float*, int, int, float*, int, float*, int);
 
@@ -183,7 +183,8 @@ int normxcorr_fftw_threaded(float *templates, int template_len, int n_templates,
 
 
 int normxcorr_fftw(float *templates, int template_len, int n_templates,
-                   float *image, int image_len, float *ncc, int fft_len){
+                   float *image, int image_len, float *ncc, int fft_len,
+                   int *used_chans, int *pad_array){
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -222,7 +223,8 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 
 	// Call the function to do the work
 	status = normxcorr_fftw_main(templates, template_len, n_templates, image, image_len,
-			ncc, fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px);
+			ncc, fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
+            used_chans, pad_array);
 
 	// free memory and plans
 	fftw_destroy_plan(pa);
@@ -242,122 +244,13 @@ int normxcorr_fftw(float *templates, int template_len, int n_templates,
 	return status;
 }
 
+
 int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
                         float *image, int image_len, float *ncc, int fft_len,
                         double *template_ext, double *image_ext, double *ccc,
                         fftw_complex *outa, fftw_complex *outb, fftw_complex *out,
-                        fftw_plan pa, fftw_plan pb, fftw_plan px) {
-  /*
-  Purpose: compute frequency domain normalised cross-correlation of real data using fftw
-  Author: Calum J. Chamberlain
-  Date: 12/06/2017
-  Args:
-    templates:      Template signals
-    template_len:   Length of template
-    n_templates:    Number of templates (n0)
-    image:          Image signal (to scan through)
-    image_len:      Length of image
-    ncc:            Output for cross-correlation - should be pointer to memory -
-                    must be n_templates x image_len - template_len + 1
-    fft_len:        Size for fft (n1)
-    template_ext:   Input FFTW array for template transform (must be allocated)
-    image_ext:      Input FFTW array for image transform (must be allocated)
-    ccc:            Output FFTW array for reverse transform (must be allocated)
-    outa:           Output FFTW array for template transform (must be allocatd)
-    outb:           Output FFTW array for image transform (must be allocated)
-    out:            Input array for reverse transform (must be allocated)
-    pa:             Forward plan for templates
-    pb:             Forward plan for image
-    px:             Reverse plan
-  */
-	int N2 = fft_len / 2 + 1;
-	int i, t, startind;
-	double mean, stdev, old_mean, new_samp, old_samp, c, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
-	double * norm_sums = (double *) calloc(n_templates, sizeof(double));
-
-	// zero padding - and flip template
-	for (t = 0; t < n_templates; ++t){
-		for (i = 0; i < template_len; ++i)
-		{
-			template_ext[(t * fft_len) + i] = (double) templates[((t + 1) * template_len) - (i + 1)];
-			norm_sums[t] += templates[(t * template_len) + i];
-		}
-	}
-	for (i = 0; i < image_len; ++i)
-	{
-		image_ext[i] = (double) image[i];
-	}
-	//  Compute ffts of template and image
-	fftw_execute_dft_r2c(pa, template_ext, outa);
-	fftw_execute_dft_r2c(pb, image_ext, outb);
-
-	//  Compute dot product
-	for (t = 0; t < n_templates; ++t){
-    	for (i = 0; i < N2; ++i)
-	    {
-		    out[(t * N2) + i][0] = outa[(t * N2) + i][0] * outb[i][0] - outa[(t * N2) + i][1] * outb[i][1];
-    		out[(t * N2) + i][1] = outa[(t * N2) + i][0] * outb[i][1] + outa[(t * N2) + i][1] * outb[i][0];
-    	}
-    }
-	//  Compute inverse fft
-	fftw_execute_dft_c2r(px, out, ccc);
-
-	//  Procedures for normalisation
-	// Compute starting mean, will update this
-	for (i=0; i < template_len; ++i){
-		sum += image[i];
-	}
-	mean = sum / template_len;
-
-	// Compute starting standard deviation
-	for (i=0; i < template_len; ++i){
-		var += pow(image[i] - mean, 2) / (template_len);
-	}
-	stdev = sqrt(var);
-    // Used for centering - taking only the valid part of the cross-correlation
-	startind = template_len - 1;
-	for (t = 0; t < n_templates; ++t){
-    	if (var < acceptedDiff){
-	    	ncc[t * (image_len - template_len + 1)] = 0;
-    	}
-	    else {
-		    c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
-    		ncc[t * (image_len - template_len + 1)] = (float) c;
-	    }
-	}
-	// Center and divide by length to generate scaled convolution
-	for(i = 1; i < (image_len - template_len + 1); ++i){
-		// Need to cast to double otherwise we end up with annoying floating
-		// point errors when the variance is massive - collecting fp errors.
-		new_samp = image[i + template_len - 1];
-		old_samp = image[i - 1];
-		old_mean = mean;
-		mean = mean + (new_samp - old_samp) / template_len;
-		var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
-		stdev = sqrt(var);
-		for (t=0; t < n_templates; ++t){
-			if (var > acceptedDiff){
-				c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
-				ncc[(t * (image_len - template_len + 1)) + i] = (float) c;
-			}
-			else{
-				ncc[(t * (image_len - template_len + 1)) + i] = 0.0;
-			}
-		}
-	}
-	//  Clean up
-	free(norm_sums);
-
-	return 0;
-}
-
-
-int normxcorr_fftw_main2(float *templates, int template_len, int n_templates,
-                         float *image, int image_len, float *ncc, int fft_len,
-                         double *template_ext, double *image_ext, double *ccc,
-                         fftw_complex *outa, fftw_complex *outb, fftw_complex *out,
-                         fftw_plan pa, fftw_plan pb, fftw_plan px, int *used_chans,
-                         int *pad_array) {
+                        fftw_plan pa, fftw_plan pb, fftw_plan px, int *used_chans,
+                        int *pad_array) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -547,7 +440,7 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, int n_channels,
         float *image, int image_len, float *ncc, int fft_len, int *used_chans, int *pad_array){
     int i;
-    int r = 0, s = 0, status = 0;
+    int r = 0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     double **template_ext = NULL;
     double **image_ext = NULL;
@@ -669,9 +562,8 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     px = fftw_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    #pragma omp parallel for reduction(+:r,s) num_threads(num_threads)
+    #pragma omp parallel for reduction(+:r) num_threads(num_threads)
     for (i = 0; i < n_channels; ++i){
-//        size_t j;
         size_t ncc_offset = ((size_t) image_len - template_len + 1) * (size_t) n_templates * i;
         int tid = 0; /* each thread has its own workspace */
 
@@ -685,59 +577,11 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         memset(image_ext[tid], 0, (size_t) fft_len * sizeof(double));
 
         /* call the routine */
-        r += normxcorr_fftw_main2(&templates[(size_t) n_templates * template_len * i], template_len,
-                                  n_templates, &image[(size_t) image_len * i], image_len,
-                                  &ncc[ncc_offset], fft_len,
-                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
-                                  pa, pb, px, &used_chans[(size_t) i * n_templates], &pad_array[(size_t) i * n_templates]);
-
-        /* post processing
-         * shape of ncc is:
-         *   (n_channels, n_templates, image_len - template_len + 1)
-         */
-//        for (j = 0; j < (size_t) n_templates; j++) {
-//            size_t k;
-//            size_t size = (size_t) image_len - template_len + 1;
-//
-//            if (!used_chans[i * n_templates + j]) {
-//                for (k = 0; k < size; k++) {
-//                    ncc[ncc_offset + j * size + k] = 0.0;
-//                }
-//            }
-//            else {
-//                for (k = 0; k < size; k++) {
-//                    size_t index = ncc_offset + j * size + k;
-//
-//                    /* set all nans to zero */
-//                    if (isnanf(ncc[index])) {
-//                        ncc[index] = 0.0;
-//                    }
-//                    /* check for normalisation errors */
-//                    else if (fabsf(ncc[index]) > 1.01) {
-//                        s++;
-//                    }
-//                    /* deal with points outside [-1,1] but within tolerance */
-//                    else if (ncc[index] > 1.0) {
-//                        ncc[index] = 1.0;
-//                    }
-//                    else if (ncc[index] < -1.0) {
-//                        ncc[index] = -1.0;
-//                    }
-//                }
-//            }
-//
-//            if (s == 0) {
-//                size_t m;
-//
-//                /* apply pad_array */
-//                for (k = pad_array[i * n_templates + j], m = 0; k < size; k++, m++) {
-//                    ncc[ncc_offset + j * size + m] = ncc[ncc_offset + j * size + k];
-//                }
-//                for (k = m; k < size; k++) {
-//                    ncc[ncc_offset + j * size + k] = 0.0;
-//                }
-//            }
-//        }
+        r += normxcorr_fftw_main(&templates[(size_t) n_templates * template_len * i], template_len,
+                                 n_templates, &image[(size_t) image_len * i], image_len,
+                                 &ncc[ncc_offset], fft_len,
+                                 template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
+                                 pa, pb, px, &used_chans[(size_t) i * n_templates], &pad_array[(size_t) i * n_templates]);
     }
 
     /* free fftw memory */
@@ -752,10 +596,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
      * if something failed during normalisation we return negative
      * otherwise we sum over all channels
      */
-    if (r != 0) {
-        status = r;
-    }
-    else {
+    if (r == 0) {
         /* we don't need the data for individual channels so we accumulate here and resize in Python */
         size_t dimz = (size_t) image_len - (size_t) template_len + 1;
         size_t offset = (size_t) n_templates * (size_t) dimz;
@@ -773,7 +614,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
         }
     }
 
-    return status;
+    return r;
 }
 
 int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){

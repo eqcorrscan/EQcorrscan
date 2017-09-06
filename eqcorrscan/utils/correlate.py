@@ -290,11 +290,15 @@ def fftw_normxcorr(templates, stream, pads, threaded=True):
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+        np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
-    if threaded:
+    if threaded and False:  # Forcing non-threaded for now...
         func = utilslib.normxcorr_fftw_threaded
     else:
         func = utilslib.normxcorr_fftw
@@ -311,30 +315,33 @@ def fftw_normxcorr(templates, stream, pads, threaded=True):
         templates.std(axis=-1, keepdims=True) * template_length))
 
     norm = np.nan_to_num(norm)
-    ccc = np.empty((n_templates, stream_length - template_length + 1),
-                   np.float32).flatten(order='C')
+    ccc = np.zeros((n_templates, stream_length - template_length + 1),
+                   np.float32)
+    used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
+    pads_np = np.ascontiguousarray(pads, dtype=np.intc)
+
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
-        np.ascontiguousarray(ccc, np.float32), fftshape)
+        np.ascontiguousarray(ccc, np.float32), fftshape,
+        used_chans_np, pads_np)
     if ret != 0:
         print(ret)
         raise MemoryError()
-    ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
-    for i in range(n_templates):
-        if not used_chans[i]:
-            ccc[i] = np.zeros(stream_length - template_length + 1)
-    ccc[np.isnan(ccc)] = 0.0
-    if np.any(np.abs(ccc) > 1.01):
-        print('Normalisation error in C code')
-        print(ccc.max())
-        print(ccc.min())
-        raise MemoryError()
-    ccc[ccc > 1.0] = 1.0
-    ccc[ccc < -1.0] = -1.0
-    for i in range(len(pads)):
-        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
+#    for i in range(n_templates):
+#        if not used_chans[i]:
+#            ccc[i] = np.zeros(stream_length - template_length + 1)
+#    ccc[np.isnan(ccc)] = 0.0
+#    if np.any(np.abs(ccc) > 1.01):
+#        print('Normalisation error in C code')
+#        print(ccc.max())
+#        print(ccc.min())
+#        raise MemoryError()
+#    ccc[ccc > 1.0] = 1.0
+#    ccc[ccc < -1.0] = -1.0
+#    for i in range(len(pads)):
+#        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
     return ccc, used_chans
 
 
