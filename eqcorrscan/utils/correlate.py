@@ -404,7 +404,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
                                           dtype=np.float32)
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
-    cccs = np.empty((n_channels, n_templates, image_len - template_len + 1),
+    cccs = np.zeros((n_channels, n_templates, image_len - template_len + 1),
                     np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray([pad_array[seed_id]
@@ -415,10 +415,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np)
-    if ret > 0:
+    if ret < 0:
         raise MemoryError()
-    elif ret < 0:
-        print('Normalisation error in C code')
+    elif ret > 0:
+        print('Error in C dode (possible normalisation error)')
         print(cccs.max())
         print(cccs.min())
         raise MemoryError()
