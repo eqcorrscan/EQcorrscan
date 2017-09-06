@@ -263,6 +263,8 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
     image_len:      Length of image
     ncc:            Output for cross-correlation - should be pointer to memory -
                     must be n_templates x image_len - template_len + 1
+                    It is assumed that ncc will be initialised to zero before
+                    passing into this function
     fft_len:        Size for fft (n1)
     template_ext:   Input FFTW array for template transform (must be allocated)
     image_ext:      Input FFTW array for image transform (must be allocated)
