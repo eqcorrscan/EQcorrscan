@@ -34,6 +34,7 @@ def debug_print(string, debug_level, print_level):
     if print_level > debug_level:
         print(string)
 
+
 if __name__ == '__main__':
     import doctest
 
