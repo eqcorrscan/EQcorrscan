@@ -2426,8 +2426,8 @@ class Tribe(object):
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plotvar, daylong=False,
-                      parallel_process=True, xcorr_func=None, 
-                      concurrency=None,ignore_length=False,
+                      parallel_process=True, xcorr_func=None,
+                      concurrency=None, ignore_length=False,
                       group_size=None, debug=0, return_stream=False):
         """
         Detect using a Tribe of templates within a continuous stream.
@@ -2601,7 +2601,7 @@ class Tribe(object):
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
                     plotvar=plotvar, daylong=daylong,
-                    parallel_process=parallel_process, 
+                    parallel_process=parallel_process,
                     xcorr_func=xcorr_func, concurrency=concurrency,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug)
