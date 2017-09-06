@@ -24,7 +24,7 @@ correlate
     .. comment to end block
 
 Selecting a correlation function
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 EQcorrscan strives to use sensible default algorithms for calculating
 correlation values, however, you may want to change how correlations are
@@ -42,7 +42,7 @@ There are currently 3 different correlations functions currently included in EQc
 Number 3 is the default.
 
 Switching which correlation function is used
---------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can switch between correlation functions using the `xcorr_func` paramater
 included in:
