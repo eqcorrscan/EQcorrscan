@@ -179,14 +179,14 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
     out = {}
     for name, func in stream_funcs.items():
         cc_out = time_func(func, name, multichannel_templates,
-                           multichannel_stream)
+                           multichannel_stream, cores=1)
         out[name] = cc_out
     return out
 
 
 @pytest.fixture(scope='module')
 def stream_cc_dict(stream_cc_output_dict):
-    """ return just the cc arrays fro mthe stream_cc functions """
+    """ return just the cc arrays from the stream_cc functions """
     return {name: result[0] for name, result in stream_cc_output_dict.items()}
 
 
@@ -225,7 +225,6 @@ class TestStreamCorrelateFunctions:
         cc_1 = cc_list[0]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
-        # TODO lower atol  when issues 121 gets resolved
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             assert np.allclose(cc_1, cc, atol=self.atol)
 
