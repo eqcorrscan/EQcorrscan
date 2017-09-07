@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
+import pytest
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
@@ -96,6 +97,7 @@ class TestCoreMethods(unittest.TestCase):
             _spike_test(stream)
 
 
+@pytest.mark.serial
 class TestSynthData(unittest.TestCase):
     def test_debug_range(self):
         """Test range of debug outputs"""

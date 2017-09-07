@@ -66,7 +66,8 @@ build: false
 test_script:
   - "%CMD_IN_ENV% python setup.py build_ext --inplace"
   - "%CMD_IN_ENV% python setup.py install"
-  - "%CMD_IN_ENV% py.test -n4"
+  - "%CMD_IN_ENV% py.test -n4 -m 'not serial'"
+  - "%CMD_IN_ENV% py.test -m 'serial' --cov-append"
 
 after_test:
   #  - "coverage combine"

@@ -213,6 +213,7 @@ class TestArrayCorrelateFunctions:
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
 
 
+@pytest.mark.serial
 class TestStreamCorrelateFunctions:
     """ same thing as TestArrayCorrelateFunction but for stream interface """
     atol = TestArrayCorrelateFunctions.atol
