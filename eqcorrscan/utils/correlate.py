@@ -114,7 +114,7 @@ def _pool_boy(Pool, **kwargs):
     """
     A context manager for handling the setup and cleanup of a pool object.
 
-    :param Pool: any Class (not instance) that implents the multiprocessing
+    :param Pool: any Class (not instance) that implements the multiprocessing
         Pool interface
     """
     pool = Pool(kwargs.get('cores', cpu_count()))
@@ -347,7 +347,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
 
 
 @register_array_xcorr('time_domain')
-def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
+def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
+                         **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
 
@@ -357,6 +358,8 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param threaded: Whether to use the threaded routine or not
+    :type threaded: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
@@ -365,7 +368,7 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
 
     utilslib = _load_cdll('libutils')
 
-    utilslib.multi_normxcorr_time.argtypes = [
+    argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
@@ -374,8 +377,14 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS'))]
-    utilslib.multi_normxcorr_time.restype = ctypes.c_int
-
+    restype = ctypes.c_int
+    if threaded:
+        func = utilslib.multi_normxcorr_time_threaded
+        argtypes.append(ctypes.c_int)
+    else:
+        func = utilslib.multi_normxcorr_time
+    func.argtypes = argtypes
+    func.restype = restype
     # Need to de-mean everything
     templates_means = templates.mean(axis=1).astype(np.float32)[:, np.newaxis]
     stream_mean = stream.mean().astype(np.float32)
@@ -387,9 +396,11 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
     ccc = np.ascontiguousarray(
         np.empty((image_len - template_len + 1) * n_templates), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
-    utilslib.multi_normxcorr_time(
-        t_array, template_len, n_templates,
-        np.ascontiguousarray(stream, np.float32), image_len, ccc)
+    time_args = [t_array, template_len, n_templates,
+                 np.ascontiguousarray(stream, np.float32), image_len, ccc]
+    if threaded:
+        time_args.append(kwargs.get('cores', cpu_count()))
+    func(*time_args)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
     for i in range(len(pads)):
@@ -400,7 +411,7 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
 
 
 @register_array_xcorr('fftw', is_default=True)
-def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
+def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -486,12 +497,55 @@ def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
     return ccc, used_chans
 
 
-# fftw_normxcorr cannot be fun using standard multiprocess/stream functions
-# register all of them to point to this function
+# The time-domain routine can be sped up massively on large machines (many
+# threads) using the openMP threaded functions.
 
-@fftw_normxcorr.register('multiprocess')
-@fftw_normxcorr.register('stream_xcorr')
-@fftw_normxcorr.register('multithread')
+@time_multi_normxcorr.register('concurrent')
+def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
+    """
+    Use the threaded time-domain routine for concurrency
+
+    :type templates: list
+    :param templates:
+        A list of templates, where each one should be an obspy.Stream object
+        containing multiple traces of seismic data and the relevant header
+        information.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+        A single Stream object to be correlated with the templates.
+
+    :returns:
+        New list of :class:`numpy.ndarray` objects.  These will contain
+        the correlation sums for each template for this day of data.
+    :rtype: list
+    :returns:
+        list of ints as number of channels used for each cross-correlation.
+    :rtype: list
+    :returns:
+        list of list of tuples of station, channel for all cross-correlations.
+    :rtype: list
+    """
+    no_chans = np.zeros(len(templates))
+    chans = [[] for _ in range(len(templates))]
+    array_dict_tuple = _get_array_dicts(templates, stream)
+    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    cccsums = np.zeros([len(templates),
+                        len(stream[0]) - len(templates[0][0]) + 1])
+    for seed_id in seed_ids:
+        tr_cc, tr_chans = time_multi_normxcorr(
+            template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
+            True)
+        cccsums = np.sum([cccsums, tr_cc], axis=0)
+        no_chans += tr_chans.astype(np.int)
+        for chan, state in zip(chans, tr_chans):
+            if state:
+                chan.append((seed_id.split('.')[1],
+                             seed_id.split('.')[-1].split('_')[0]))
+    return cccsums, no_chans, chans
+
+
+# TODO: This should be turned back on when openMP loop is merged
+# @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
