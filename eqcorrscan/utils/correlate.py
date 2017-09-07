@@ -5,7 +5,7 @@ Various routines used mostly for testing, including links to a compiled
 routine using FFTW, a Numpy fft routine which uses bottleneck for normalisation
 and a compiled time-domain routine. These have varying levels of efficiency,
 both in terms of overall speed, and in memory usage.  The time-domain is the
-most memory efficient but slowest routine (although fastest for small cases of
+most memory efficient but slowest routine (although fast for small cases of
 less than a few hundred correlations), the Numpy routine is fast, but memory
 inefficient due to a need to store large double-precision arrays for
 normalisation.  The fftw compiled routine is fastest and more memory efficient
@@ -27,14 +27,24 @@ from __future__ import unicode_literals
 import contextlib
 import copy
 import ctypes
+import os
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from future.utils import native_str
-from scipy.fftpack.helper import next_fast_len
 
 from eqcorrscan.utils.libnames import _load_cdll
+
+# This is for building docs on readthedocs, which has an old version of
+# scipy - without this, this module cannot be imported, which breaks the docs
+# Instead we define a dummy function that returns what it is given.
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
+if not READ_THE_DOCS:
+    from scipy.fftpack.helper import next_fast_len
+else:
+    def next_fast_len(a):
+        return a
 
 XCOR_FUNCS = {}  # cache of functions for doing cross correlations
 
@@ -104,7 +114,7 @@ def _pool_boy(Pool, **kwargs):
     """
     A context manager for handling the setup and cleanup of a pool object.
 
-    :param Pool: any Class (not instance) that implents the multiprocessing
+    :param Pool: any Class (not instance) that implements the multiprocessing
         Pool interface
     """
     pool = Pool(kwargs.get('cores', cpu_count()))
@@ -178,9 +188,8 @@ def register_array_xcorr(name, func=None, is_default=False):
     """
     Decorator for registering correlation functions.
 
-    :func:
-    Each function must have the same interface as numpy_normxcorr, which is:
-    f(templates, stream, pads, *args, **kwargs) any number of specific kwargs
+    Each function must have the same interface as numpy_normxcorr, which is
+    *f(templates, stream, pads, *args, **kwargs)* any number of specific kwargs
     can be used.
 
     Register_normxcorr can be used as a decorator (with or without arguments)
@@ -269,7 +278,7 @@ def get_array_xcorr(name_or_func=None):
     Get an normalized cross correlation function that takes arrays as inputs.
 
     See :func:`eqcorrscan.utils.correlate.array_normxcorr` for expected
-        function signature.
+    function signature.
 
     :param name_or_func: Either a name of a registered xcorr function or a
         callable that implements the standard array_normxcorr signature.
@@ -338,7 +347,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
 
 
 @register_array_xcorr('time_domain')
-def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
+def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
+                         **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
 
@@ -348,6 +358,8 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param threaded: Whether to use the threaded routine or not
+    :type threaded: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
@@ -356,7 +368,7 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
 
     utilslib = _load_cdll('libutils')
 
-    utilslib.multi_normxcorr_time.argtypes = [
+    argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
@@ -365,8 +377,14 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS'))]
-    utilslib.multi_normxcorr_time.restype = ctypes.c_int
-
+    restype = ctypes.c_int
+    if threaded:
+        func = utilslib.multi_normxcorr_time_threaded
+        argtypes.append(ctypes.c_int)
+    else:
+        func = utilslib.multi_normxcorr_time
+    func.argtypes = argtypes
+    func.restype = restype
     # Need to de-mean everything
     templates_means = templates.mean(axis=1).astype(np.float32)[:, np.newaxis]
     stream_mean = stream.mean().astype(np.float32)
@@ -378,9 +396,11 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
     ccc = np.ascontiguousarray(
         np.empty((image_len - template_len + 1) * n_templates), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
-    utilslib.multi_normxcorr_time(
-        t_array, template_len, n_templates,
-        np.ascontiguousarray(stream, np.float32), image_len, ccc)
+    time_args = [t_array, template_len, n_templates,
+                 np.ascontiguousarray(stream, np.float32), image_len, ccc]
+    if threaded:
+        time_args.append(kwargs.get('cores', cpu_count()))
+    func(*time_args)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
     for i in range(len(pads)):
@@ -391,7 +411,7 @@ def time_multi_normxcorr(templates, stream, pads, *args, **kwargs):
 
 
 @register_array_xcorr('fftw', is_default=True)
-def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
+def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -477,12 +497,55 @@ def fftw_normxcorr(templates, stream, pads, threaded=True, *args, **kwargs):
     return ccc, used_chans
 
 
-# fftw_normxcorr cannot be fun using standard multiprocess/stream functions
-# register all of them to point to this function
+# The time-domain routine can be sped up massively on large machines (many
+# threads) using the openMP threaded functions.
 
-@fftw_normxcorr.register('multiprocess')
-@fftw_normxcorr.register('stream_xcorr')
-@fftw_normxcorr.register('multithread')
+@time_multi_normxcorr.register('concurrent')
+def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
+    """
+    Use the threaded time-domain routine for concurrency
+
+    :type templates: list
+    :param templates:
+        A list of templates, where each one should be an obspy.Stream object
+        containing multiple traces of seismic data and the relevant header
+        information.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+        A single Stream object to be correlated with the templates.
+
+    :returns:
+        New list of :class:`numpy.ndarray` objects.  These will contain
+        the correlation sums for each template for this day of data.
+    :rtype: list
+    :returns:
+        list of ints as number of channels used for each cross-correlation.
+    :rtype: list
+    :returns:
+        list of list of tuples of station, channel for all cross-correlations.
+    :rtype: list
+    """
+    no_chans = np.zeros(len(templates))
+    chans = [[] for _ in range(len(templates))]
+    array_dict_tuple = _get_array_dicts(templates, stream)
+    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    cccsums = np.zeros([len(templates),
+                        len(stream[0]) - len(templates[0][0]) + 1])
+    for seed_id in seed_ids:
+        tr_cc, tr_chans = time_multi_normxcorr(
+            template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
+            True)
+        cccsums = np.sum([cccsums, tr_cc], axis=0)
+        no_chans += tr_chans.astype(np.int)
+        for chan, state in zip(chans, tr_chans):
+            if state:
+                chan.append((seed_id.split('.')[1],
+                             seed_id.split('.')[-1].split('_')[0]))
+    return cccsums, no_chans, chans
+
+
+# TODO: This should be turned back on when openMP loop is merged
+# @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
@@ -622,15 +685,19 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
     Return a function for performing normalized cross correlation on lists of
     streams.
 
-    :param name_or_func: Either a name of a registered function or a callable
-        that implements the standard array_normxcorr signature.
+    :param name_or_func:
+        Either a name of a registered function or a callable that implements
+        the standard array_normxcorr signature.
     :param concurrency:
-        Optional concurrency strategy, options are:
-        multithread - use a threadpool for concurrency
-        multiprocess - use a process pool for concurrency
-        concurrent - use a customized concurrency stragegy for the function,
-            if not defined threading will be used
+        Optional concurrency strategy, options are below.
+
     :return: A callable with the interface of stream_normxcorr
+
+    :Concurrency options:
+        - multithread - use a threadpool for concurrency;
+        - multiprocess - use a process pool for concurrency;
+        - concurrent - use a customized concurrency strategy for the function,
+          if not defined threading will be used.
     """
     func = _get_registerd_func(name_or_func)
 

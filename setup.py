@@ -12,6 +12,7 @@ from distutils.ccompiler import get_default_compiler
 
 import os
 import sys
+import shutil
 import glob
 import eqcorrscan
 
@@ -132,7 +133,8 @@ def get_extensions():
         'include_dirs': get_include_dirs(),
         'library_dirs': get_library_dirs()}
 
-    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c')]
+    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
+               os.path.join('eqcorrscan', 'lib', 'time_corr.c')]
     exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
@@ -290,6 +292,8 @@ def setup_package():
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
+    if os.path.isdir("build"):
+        shutil.rmtree("build")
     setup(**setup_args)
 
 if __name__ == '__main__':
