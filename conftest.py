@@ -40,6 +40,14 @@ def clean_up_test_files():
         'mag_calc.out',
         'station.dat',
         'test_waveform.ms',
+        '01-0410-35L.S201309',
+        '04-0007-55R.S201601',
+        '04-0045-52L.S201601',
+        'dt.cc',
+        'dt.cc2',
+        'dt.ct',
+        'dt.ct2',
+        'phase.dat'
     ]
 
     yield
