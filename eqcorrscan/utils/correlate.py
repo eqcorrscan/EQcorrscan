@@ -110,14 +110,21 @@ set_xcorr = _Context(XCOR_FUNCS, 'default')
 # ---------------------- generic concurrency functions
 
 @contextlib.contextmanager
-def _pool_boy(Pool, **kwargs):
+def _pool_boy(Pool, traces, **kwargs):
     """
     A context manager for handling the setup and cleanup of a pool object.
 
     :param Pool: any Class (not instance) that implements the multiprocessing
         Pool interface
+    :param traces: The number of traces to process
+    :type traces: int
     """
-    pool = Pool(kwargs.get('cores', cpu_count()))
+    # All parallel processing happens on a per-trace basis, we shouldn't create
+    # more workers than there are traces
+    n_cores = kwargs.get('cores', cpu_count())
+    if n_cores > traces:
+        n_cores = traces
+    pool = Pool(n_cores)
     yield pool
     pool.close()
     pool.join()
@@ -147,7 +154,7 @@ def _general_multithread(func):
     """ return the general multithreading function using func """
 
     def multithread(templates, stream, *args, **kwargs):
-        with _pool_boy(ThreadPool, **kwargs) as pool:
+        with _pool_boy(ThreadPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multithread
@@ -155,7 +162,7 @@ def _general_multithread(func):
 
 def _general_multiprocess(func):
     def multiproc(templates, stream, *args, **kwargs):
-        with _pool_boy(ProcessPool, **kwargs) as pool:
+        with _pool_boy(ProcessPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multiproc
