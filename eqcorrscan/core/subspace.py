@@ -32,6 +32,7 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
 
 from eqcorrscan.utils.clustering import svd
+from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
 from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
@@ -477,8 +478,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     detections = []
     # First process the stream
     if process:
-        if debug > 0:
-            print('Processing Stream')
+        debug_print('Processing Stream', 0, debug)
         stream, stachans = _subspace_process(
             streams=[st.copy()], lowcut=detector.lowcut,
             highcut=detector.highcut, filt_order=detector.filt_order,
@@ -500,10 +500,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         Nc = 1
     # Here do all ffts
     fft_vars = _do_ffts(detector, stream, Nc)
-    if debug > 0:
-        print('Computing detection statistics')
-    if debug > 0:
-        print('Preallocating stats matrix')
+    debug_print('Computing detection statistics', 0, debug)
+    debug_print('Preallocating stats matrix', 0, debug)
     stats = np.zeros((len(stream[0]),
                       (len(stream[0][0]) // Nc) - (fft_vars[4] // Nc) + 1))
     for det_freq, data_freq_sq, data_freq, i in zip(fft_vars[0], fft_vars[1],
@@ -512,8 +510,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         # Calculate det_statistic in frequency domain
         stats[i] = _det_stat_freq(det_freq, data_freq_sq, data_freq,
                                   fft_vars[3], Nc, fft_vars[4], fft_vars[5])
-        if debug >= 1:
-            print('Stats matrix is shape %s' % str(stats[i].shape))
+        debug_print('Stats matrix is shape %s' % str(stats[i].shape), 0, debug)
         if debug >= 3:
             fig, ax = plt.subplots()
             t = np.arange(len(stats[i]))
@@ -526,8 +523,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             plt.title('%s' % str(stream[0][i].stats.station))
             plt.show()
     trig_int_samples = detector.sampling_rate * trig_int
-    if debug > 0:
-        print('Finding peaks')
+    debug_print('Finding peaks', 0, debug)
     peaks = []
     for i in range(len(stream[0])):
         peaks.append(findpeaks.find_peaks2_short(
