@@ -1694,8 +1694,8 @@ class Template(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                pre_processed=False, daylong=False, parallel_process=True,
-               xcorr_func=None, concurrency=None, ignore_length=False,
-               overlap="calculate", debug=0):
+               xcorr_func=None, concurrency=None, cores=None,
+               ignore_length=False, overlap="calculate", debug=0):
         """
         Detect using a single template within a continuous stream.
 
@@ -1738,15 +1738,12 @@ class Template(object):
             a custom xcorr function. For more details see
             :func:`eqcorrscan.utils.correlate.register_array_xcorr`.
         :type concurrency: str
-            The type of concurrency to apply to the xcorr function. Options are
-            'multithread', 'multiprocess', 'concurrent'. For more details see
-            :func:`eqcorrscan.utils.correlate.get_stream_xcorr`.
-        'multithread', 'multiprocess', 'concurrent'. For more details see
-        :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :param concurrency:
             The type of concurrency to apply to the xcorr function. Options are
             'multithread', 'multiprocess', 'concurrent'. For more details see
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`.
+        :type cores: int
+        :param cores: Number of workers for processing and detection.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -1829,7 +1826,7 @@ class Template(object):
             threshold_type=threshold_type, trig_int=trig_int,
             plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
-            concurrency=concurrency, ignore_length=ignore_length,
+            concurrency=concurrency, cores=cores, ignore_length=ignore_length,
             overlap=overlap, debug=debug)
         return party[0]
 
@@ -2254,8 +2251,8 @@ class Tribe(object):
 
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, xcorr_func=None,
-               concurrency=None, ignore_length=False, group_size=None,
-               overlap="calculate", debug=0):
+               concurrency=None, cores=None, ignore_length=False,
+               group_size=None, overlap="calculate", debug=0):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2295,6 +2292,8 @@ class Tribe(object):
             The type of concurrency to apply to the xcorr function. Options are
             'multithread', 'multiprocess', 'concurrent'. For more details see
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
+        :type cores: int
+        :param cores: Number of workers for procesisng and detection.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -2415,7 +2414,7 @@ class Tribe(object):
                 threshold_type=threshold_type, trig_int=trig_int,
                 plotvar=plotvar, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
-                xcorr_func=xcorr_func, concurrency=concurrency,
+                xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap, debug=debug)
             party += group_party
         for family in party:
@@ -2426,7 +2425,8 @@ class Tribe(object):
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plotvar, daylong=False,
-                      parallel_process=True, ignore_length=False,
+                      parallel_process=True, xcorr_func=None,
+                      concurrency=None, cores=None, ignore_length=False,
                       group_size=None, debug=0, return_stream=False):
         """
         Detect using a Tribe of templates within a continuous stream.
@@ -2461,6 +2461,18 @@ class Tribe(object):
             over other methods.
         :type parallel_process: bool
         :param parallel_process:
+        :type xcorr_func: str or callable
+        :param xcorr_func:
+            A str of a registered xcorr function or a callable for implementing
+            a custom xcorr function. For more information see:
+            :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+        :type concurrency: str
+        :param concurrency:
+            The type of concurrency to apply to the xcorr function. Options are
+            'multithread', 'multiprocess', 'concurrent'. For more details see
+            :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
+        :type cores: int
+        :param cores: Number of workers for processing and detection.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -2590,7 +2602,8 @@ class Tribe(object):
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
                     plotvar=plotvar, daylong=daylong,
-                    parallel_process=parallel_process,
+                    parallel_process=parallel_process, xcorr_func=xcorr_func,
+                    concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug)
                 if return_stream:
@@ -3013,7 +3026,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
-                  ignore_length=False, overlap="calculate", debug=0):
+                  cores=None, ignore_length=False, overlap="calculate",
+                  debug=0):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -3065,9 +3079,12 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         a custom xcorr function. For more details see:
         :func:`eqcorrscan.utils.correlate.register_array_xcorr`
     :type concurrency: str
+    :param concurrency:
         The type of concurrency to apply to the xcorr function. Options are
         'multithread', 'multiprocess', 'concurrent'. For more details see
         :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
+    :type cores: int
+    :param cores: Number of workers for processing and correlation.
     :type ignore_length: bool
     :param ignore_length:
         If using daylong=True, then dayproc will try check that the data
@@ -3089,10 +3106,6 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
-    if parallel_process:
-        ncores = cpu_count()
-    else:
-        ncores = None
     master = templates[0]
     # Check that they are all processed the same.
     lap = 0.0
@@ -3112,7 +3125,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     if not pre_processed:
         st = _group_process(
             template_group=templates, parallel=parallel_process, debug=debug,
-            cores=False, stream=stream, daylong=daylong,
+            cores=cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
         warnings.warn('Not performing any processing on the '
@@ -3150,7 +3163,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_list=[t.st for t in template_group], st=st_chunk,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=ncores)
+                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
