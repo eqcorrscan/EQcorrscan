@@ -6,13 +6,11 @@ general:
   branches:
     ignore:
       - gh-pages
-
+dependencies:
+  pre:
+    - sudo apt-get update; sudo apt-get install libfftw3-dev
 version: 2
 jobs:
-  dependencies:
-    pre:
-      - sudo apt-get update; sudo apt-get install libfftw3-dev
-
   build:
     docker:
       # specify the version you desire here
