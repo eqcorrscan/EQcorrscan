@@ -19,11 +19,11 @@ class Timer(object):
     >>> from time import sleep
     >>> with Timer() as t:
     ...     sleep(0.1)
-    >>> print("%.1f" % t.secs)
+    >>> print("%.1f" % t.secs) # doctest:+SKIP
     0.1
     >>> with Timer(verbose=True) as t:
-    ...     sleep(0.1)
-    elapsed time: 100 ms
+    ...     sleep(0.1)  # doctest:+ELLIPSIS
+    elapsed time: ...
     """
 
     def __init__(self, verbose=False):
