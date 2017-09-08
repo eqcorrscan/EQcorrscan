@@ -9,6 +9,9 @@ general:
 
 version: 2
 jobs:
+  dependencies:
+    pre:
+      - sudo apt-get update; sudo apt-get install libfftw3-dev
 
   build:
     docker:
@@ -24,14 +27,10 @@ jobs:
     working_directory: ~/repo
 
     steps:
-      dependencies:
-        pre:
-          - sudo apt-get update; sudo apt-get install libfftw3-dev
-
+      - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
 
-      - checkout
       - run:
           name: install dependencies
           command: |
