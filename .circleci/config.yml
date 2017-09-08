@@ -60,7 +60,7 @@ jobs:
           name: Upload to codecov
           command: |
             . venv/bin/activate
-            coverage combine
+            ls -a
             codecov
 
       - store_artifacts:
