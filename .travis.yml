@@ -68,7 +68,7 @@ install:
 script:
    - py.test --runslow -m "not serial and not network" -n 2
    - py.test -m "serial and not network" --cov-append
-   - py.test -m "network" --cov-append -n 2
+#   - py.test -m "network" --cov-append -n 2
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
