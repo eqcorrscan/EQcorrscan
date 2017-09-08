@@ -464,8 +464,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
                                flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
 
-    # TODO: convert threaded routine to do post processing in C too - forcing non-threaded for now...
-    if threaded and False:
+    if threaded:
         func = utilslib.normxcorr_fftw_threaded
     else:
         func = utilslib.normxcorr_fftw
