@@ -11,7 +11,20 @@ import time
 
 
 class Timer(object):
-    """Simple wrapper for timing objects, used for debug."""
+    """
+    Simple wrapper for timing objects, used for debug.
+
+    .. rubric:: Example
+
+    >>> from time import sleep
+    >>> with Timer() as t:
+    ...     sleep(0.1)
+    >>> print("%.1f" % t.secs) # doctest:+SKIP
+    0.1
+    >>> with Timer(verbose=True) as t:
+    ...     sleep(0.1)  # doctest:+ELLIPSIS
+    elapsed time: ...
+    """
 
     def __init__(self, verbose=False):
         """Create timer object."""
@@ -28,7 +41,7 @@ class Timer(object):
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
-            print('elapsed time: %f ms' % self.msecs)
+            print('elapsed time: %.0f ms' % self.msecs)
 
 
 if __name__ == "__main__":

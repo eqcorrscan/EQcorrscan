@@ -135,8 +135,10 @@ class TestSynthData(unittest.TestCase):
                      plotvar=False)
 
 
+@pytest.mark.network
 class TestGeoNetCase(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         client = Client('GEONET')
         cls.t1 = UTCDateTime(2016, 9, 4)
@@ -229,6 +231,7 @@ class TestGeoNetCase(unittest.TestCase):
                 threshold_type='MAD', trig_int=6.0, plotvar=False,
                 plotdir='.', cores=1)
 
+    @pytest.mark.flaky(reruns=2)
     def test_geonet_tribe_detect(self):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
@@ -245,8 +248,10 @@ class TestGeoNetCase(unittest.TestCase):
         self.assertEqual(len(party), 16)
 
 
+@pytest.mark.network
 class TestNCEDCCases(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -500,8 +505,10 @@ class TestMatchCopy(unittest.TestCase):
         self.assertEqual(tribe, copied)
 
 
+@pytest.mark.network
 class TestMatchObjects(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -608,6 +615,7 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
+    @pytest.mark.flaky(reruns=2)
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')

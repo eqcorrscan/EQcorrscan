@@ -3,19 +3,26 @@
   methods through the parameter xcorr_func of match_filter, Template.detect
   and Tribe.detect, or using the set_xcorr context manager in
   the utils.correlate module. Supported options are:
-    numpy
-    fftw
-    time-domain
-  or passing a function that implements the xcorr interface.
+    * numpy
+    * fftw
+    * time-domain
+    * or passing a function that implements the xcorr interface.
 * Added the ability to change the concurrency strategy of xcorr functions
   using the paramter concurrency of match_filter, Template.detect
   and Tribe.detect. Supported options are:
-    None - for single-threaded execution in a single process
-    multithread - for multi-threaded execution
-    multiprocess- for multiprocess execution
-    concurrent - allows functions to describe their own preferred currency
+    * None - for single-threaded execution in a single process
+    * multithread - for multi-threaded execution
+    * multiprocess- for multiprocess execution
+    * concurrent - allows functions to describe their own preferred currency
     methods, defaults to multithread
-* Change debug printing output, it should be a little quieter
+* Change debug printing output, it should be a little quieter;
+* Speed-up time-domain using a threaded C-routine - separate from frequency
+  domain C-routines;
+* Expose useful parallel options for all correlation routines;
+* Expose cores argument for match-filter objects to allow limits to be placed
+  on how much of your machine is used;
+* Limit number of workers created during pre-processing to never be more than
+  the number of traces in the stream being processed.
 
 
 ## 0.2.5

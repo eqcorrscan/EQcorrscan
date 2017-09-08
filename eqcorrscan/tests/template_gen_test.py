@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import pytest
 import glob
 import os
 import numpy as np
@@ -16,7 +17,6 @@ import inspect
 import copy
 
 from obspy import read, UTCDateTime, read_events, Stream
-from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
@@ -54,6 +54,8 @@ class TestTemplateGeneration(unittest.TestCase):
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
 
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_tutorial_template_gen(self):
         """Test template generation from tutorial, uses from_client method.
 
@@ -61,11 +63,7 @@ class TestTemplateGeneration(unittest.TestCase):
         """
         testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
-        try:
-            mktemplates(plot=False)
-        except FDSNException:
-            warnings.warn('FDSN error, is server down?')
-            return
+        mktemplates(plot=False)
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
             expected_template = read(os.path.join(
@@ -78,19 +76,20 @@ class TestTemplateGeneration(unittest.TestCase):
             del(template)
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_not_delayed(self):
         """Test the method of template_gen without applying delays to
         channels."""
-        cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                                maxlon=175.5,
-                                startdate=UTCDateTime(2016, 5, 1),
-                                enddate=UTCDateTime(2016, 5, 2))
+        cat = get_geonet_events(
+            minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
+            startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 2))
         cat = filter_picks(catalog=cat, top_n_picks=5)
-        template = from_client(catalog=cat, client_id='GEONET',
-                               lowcut=None, highcut=None, samp_rate=100.0,
-                               filt_order=4, length=10.0, prepick=0.5,
-                               swin='all', process_len=3600,
-                               debug=0, plot=False, delayed=False)[0]
+        template = from_client(
+            catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
+            samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
+            swin='all', process_len=3600, debug=0, plot=False,
+            delayed=False)[0]
         for tr in template:
             tr.stats.starttime.precision = 6
         starttime = template[0].stats.starttime
@@ -101,6 +100,8 @@ class TestTemplateGeneration(unittest.TestCase):
                             tr.stats.delta)
             self.assertEqual(tr.stats.npts, length)
 
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_download_various_methods(self):
         """
         Will download data from server and store in various databases,
@@ -109,8 +110,8 @@ class TestTemplateGeneration(unittest.TestCase):
         client = Client('GEONET')
         # get the events
         catalog = Catalog()
-        data_stream = client._download('http://quakeml.geonet.org.nz/' +
-                                       'quakeml/1.2/2016p008194')
+        data_stream = client._download(
+            'http://quakeml.geonet.org.nz/quakeml/1.2/2016p008194')
         data_stream.seek(0, 0)
         catalog += read_events(data_stream, format="quakeml")
         data_stream.close()
@@ -253,16 +254,16 @@ class TestTemplateGeneration(unittest.TestCase):
 class TestEdgeGen(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.testing_path = os.path.dirname(os.path.abspath(inspect.getfile(
-            inspect.currentframe())))
-        cls.st = read(os.path.join(cls.testing_path, 'test_data',
-                                   'WAV', 'TEST_',
-                                   '2013-09-15-0930-28.DFDPC_027_00'))
+        cls.testing_path = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        cls.st = read(os.path.join(
+            cls.testing_path, 'test_data', 'WAV', 'TEST_',
+            '2013-09-15-0930-28.DFDPC_027_00'))
         for tr in cls.st:
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        event = read_event(os.path.join(cls.testing_path, 'test_data',
-                                        'REA', 'TEST_',
-                                        '15-0931-08L.S201309'))
+        event = read_event(os.path.join(
+            cls.testing_path, 'test_data', 'REA', 'TEST_',
+            '15-0931-08L.S201309'))
         cls.picks = event.picks
 
     def test_undefined_phase_type(self):
@@ -310,10 +311,9 @@ class TestEdgeGen(unittest.TestCase):
         length = 3
         stack = self.st.copy()
         template = template_gen(self.picks, self.st.copy(), 2)
-        extracted = extract_from_stack(stack, template, length=length,
-                                       pre_pick=0.3, pre_pad=45,
-                                       pre_processed=False, samp_rate=20,
-                                       lowcut=2, highcut=8)
+        extracted = extract_from_stack(
+            stack, template, length=length, pre_pick=0.3, pre_pad=45,
+            pre_processed=False, samp_rate=20, lowcut=2, highcut=8)
         self.assertEqual(len(template), len(extracted))
         for tr in extracted:
             self.assertEqual(tr.stats.endtime - tr.stats.starttime,
@@ -323,9 +323,9 @@ class TestEdgeGen(unittest.TestCase):
         length = 3
         stack = self.st.copy()
         template = template_gen(self.picks, self.st.copy(), 2)
-        extracted = extract_from_stack(stack, template, length=length,
-                                       pre_pick=0.3, pre_pad=45,
-                                       Z_include=True)
+        extracted = extract_from_stack(
+            stack, template, length=length, pre_pick=0.3, pre_pad=45,
+            Z_include=True)
         self.assertLess(len(template), len(extracted))
         for tr in extracted:
             self.assertEqual(tr.stats.endtime - tr.stats.starttime,

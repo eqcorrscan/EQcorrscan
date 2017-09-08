@@ -5,6 +5,7 @@ include README.md
 include LICENCE.txt
 include CHANGES.md
 include CONTRIBUTORS.md
+include requirements.txt
 # include eqcorrscan/test_data/tutorial_data.tgz
 # include eqcorrscan/tutorial.py
 recursive-include eqcorrscan/utils *.py
@@ -16,6 +17,7 @@ recursive-include eqcorrscan/core *.py
 recursive-include eqcorrscan/tests *.py
 include eqcorrscan/lib/libutils.def
 include eqcorrscan/lib/multi_corr.c
+include eqcorrscan/lib/time_corr.c
 
 # exclude rules
 # global-exclude *.pyc *.ms *.tgz

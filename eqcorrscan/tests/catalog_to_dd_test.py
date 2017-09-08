@@ -268,16 +268,6 @@ class FullTestCases(unittest.TestCase):
                       max_sep=cls.maximum_separation,
                       min_link=cls.minimum_links)
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     os.remove('phase.dat')
-    #     os.remove('dt.ct')
-    #     if os.path.isfile('dt.ct2'):
-    #         os.remove('dt.ct2')
-    #     os.remove('dt.cc')
-    #     if os.path.isfile('dt.cc2'):
-    #         os.remove('dt.cc2')
-
     def test_write_catalog(self):
         """
         Simple testing function for the write_catalogue function in \
