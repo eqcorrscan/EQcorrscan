@@ -6,11 +6,10 @@ general:
   branches:
     ignore:
       - gh-pages
-dependencies:
-  pre:
-    - sudo apt-get update; sudo apt-get install libfftw3-dev
+
 version: 2
 jobs:
+
   build:
     docker:
       # specify the version you desire here
@@ -23,6 +22,10 @@ jobs:
       # - image: circleci/postgres:9.4
 
     working_directory: ~/repo
+
+    dependencies:
+      pre:
+        - sudo apt-get update; sudo apt-get install libfftw3-dev
 
     steps:
       - checkout
