@@ -12,6 +12,7 @@ from distutils.ccompiler import get_default_compiler
 
 import os
 import sys
+import shutil
 import glob
 import eqcorrscan
 
@@ -55,7 +56,7 @@ def get_package_data():
     if get_build_platform() in ('win32', 'win-amd64'):
         package_data['eqcorrscan.lib'] = [
             'libfftw3-3.dll', 'libfftw3f-3.dll', 'libfftw3l-3.dll']
-        
+
     return package_data
 
 
@@ -132,7 +133,8 @@ def get_extensions():
         'include_dirs': get_include_dirs(),
         'library_dirs': get_library_dirs()}
 
-    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c')]
+    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
+               os.path.join('eqcorrscan', 'lib', 'time_corr.c')]
     exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
@@ -257,7 +259,7 @@ def setup_package():
             'Development Status :: 4 - Beta',
             'Intended Audience :: Science/Research',
             'Topic :: Scientific/Engineering',
-            'License :: OSI Approved :: GNU Library or Lesser General Public ' +
+            'License :: OSI Approved :: GNU Library or Lesser General Public '
             'License (LGPL)',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3.4',
@@ -268,7 +270,7 @@ def setup_package():
         'scripts': scriptfiles,
         'install_requires': install_requires,
         'setup_requires': ['pytest-runner'],
-        'tests_require': ['pytest', 'pytest-cov', 'pytest-pep8',
+        'tests_require': ['pytest>=2.0.0', 'pytest-cov', 'pytest-pep8',
                           'pytest-xdist'],
         'cmdclass': {'build_ext': CustomBuildExt}
     }
@@ -290,6 +292,8 @@ def setup_package():
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
+    if os.path.isdir("build"):
+        shutil.rmtree("build")
     setup(**setup_args)
 
 if __name__ == '__main__':

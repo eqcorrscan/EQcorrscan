@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
+import pytest
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
@@ -96,30 +97,8 @@ class TestCoreMethods(unittest.TestCase):
             _spike_test(stream)
 
 
+@pytest.mark.serial
 class TestSynthData(unittest.TestCase):
-    def test_debug_range(self):
-        """Test range of debug outputs"""
-        # debug == 3 fails on travis due to plotting restrictions.
-        for debug in range(0, 3):
-            print('Testing for debug level=%s' % debug)
-            try:
-                kfalse, ktrue = test_match_filter(debug=debug)
-            except RuntimeError:
-                print('Error plotting, missing test')
-                continue
-            if ktrue > 0:
-                self.assertTrue(kfalse / ktrue < 0.25)
-            else:
-                # Randomised data occasionally yields 0 detections
-                kfalse, ktrue = test_match_filter(debug=debug)
-                self.assertTrue(kfalse / ktrue < 0.25)
-        if os.path.isfile('cccsum_0.npy'):
-            os.remove('cccsum_0.npy')
-        if os.path.isfile('cccsum_1.npy'):
-            os.remove('cccsum_1.npy')
-        if os.path.isfile('peaks_1970-01-01.pdf'):
-            os.remove('peaks_1970-01-01.pdf')
-
     def test_threshold_methods(self):
         # Test other threshold methods
         for threshold_type, threshold in [('absolute', 2),

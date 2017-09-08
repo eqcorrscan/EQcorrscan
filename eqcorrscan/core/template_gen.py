@@ -49,6 +49,7 @@ import glob
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 
+from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing, sfile_util
 
@@ -276,9 +277,8 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
     # Read in waveform file
     st = Stream()
     for wavefile in wavefiles:
-        if debug > 0:
-            print(''.join(["I am going to read waveform data from: ", wavpath,
-                           wavefile]))
+        debug_print(''.join(["I am going to read waveform data from: ",
+                             wavpath, wavefile]), 0, debug)
         if os.path.isfile(wavpath + wavefile):
             # Read from a given directory
             st += read(wavpath + wavefile)
@@ -551,25 +551,22 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
         # Check that the event is within the data
         for pick in event.picks:
             if not data_start < pick.time < data_end:
-                if debug > 0:
-                    print('Pick outside of data span:')
-                    print('Pick time: ' + str(pick.time))
-                    print('Start time: ' + str(data_start))
-                    print('End time: ' + str(data_end))
+                debug_print("Pick outside of data span:\nPick time %s\n"
+                            "Start time %s\nEnd time: %s" %
+                            (str(pick.time), str(data_start), str(data_end)),
+                            0, debug)
                 use_event = False
         if not use_event:
             warnings.warn('Event is not within data time-span')
             continue
         # Read in pick info
-        if debug > 0:
-            print("I have found the following picks")
+        debug_print("I have found the following picks", 0, debug)
         for pick in event.picks:
             if not pick.waveform_id:
                 print('Pick not associated with waveforms, will not use.')
                 print(pick)
                 continue
-            if debug > 0:
-                print(pick)
+            debug_print(pick, 0, debug)
             stations.append(pick.waveform_id.station_code)
             channels.append(pick.waveform_id.channel_code)
         # Check to see if all picks have a corresponding waveform
@@ -698,11 +695,10 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
             endtime = starttime + process_len
             if not endtime > sub_catalog[-1].origins[0].time + data_pad:
                 raise IOError('Events do not fit in processing window')
-            if debug > 0:
-                print('start-time: ' + str(starttime))
-                print('end-time: ' + str(endtime))
-                print('pick-time: ' + str(pick.time))
-            print('.'.join([net, sta, loc, chan]))
+            debug_print('start-time: %s\nend-time: %s\npick-time: %s' %
+                        (str(starttime), str(endtime), str(pick.time)),
+                        0, debug)
+            debug_print('.'.join([net, sta, loc, chan]), 0, debug)
             if sta in client.waveform.get_station_ids(network=net):
                 if 'st' not in locals():
                     st = client.waveform.get_waveform(net, sta, loc, chan,
@@ -817,8 +813,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     ...                         filt_order=4, length=3.0, prepick=0.15,
     ...                         swin='all', process_len=300,
     ...                         all_horiz=True)
-    BG.CLV..DPZ
-    BK.BKS.00.HHZ
     Pre-processing data
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
@@ -860,12 +854,11 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             if not endtime > sub_catalog[-1].origins[0].time + data_pad:
                 raise TemplateGenError('Events do not fit in '
                                        'processing window')
-            if debug > 0:
-                print('start-time: ' + str(starttime))
-                print('end-time: ' + str(endtime))
-                print('pick-time: ' + str(pick.time))
-                print('pick phase: ' + pick.phase_hint)
-            print('.'.join([net, sta, loc, chan]))
+            debug_print('start-time: %s\nend-time: %s\npick-time: %s\n'
+                        'pick phase: %s' %
+                        (str(starttime), str(endtime), str(pick.time),
+                         pick.phase_hint), 0, debug)
+            debug_print('.'.join([net, sta, loc, chan]), 0, debug)
             try:
                 st += client.get_waveforms(net, sta, loc, chan,
                                            starttime, endtime)
@@ -1054,6 +1047,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
     """
+    from eqcorrscan.utils.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.core.bright_lights import _rms
     stations = []
@@ -1147,9 +1141,8 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                         swin in pick.phase_hint.upper():
                     starttime = pick.time - prepick
             if starttime is not None:
-                if debug > 0:
-                    print("Cutting " + tr.stats.station + '.' +
-                          tr.stats.channel)
+                debug_print("Cutting " + tr.stats.station + '.' +
+                            tr.stats.channel, 0, debug)
                 if not delayed:
                     starttime = event_start_time
                 tr_cut = tr.copy().trim(starttime=starttime,
@@ -1163,9 +1156,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                 if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
                                         length) + 1:
                     tr_cut.data = tr_cut.data[0:-1]
-                if debug > 0:
-                    print('Cut starttime = ' + str(tr_cut.stats.starttime))
-                    print('Cut endtime = ' + str(tr_cut.stats.endtime))
+                debug_print('Cut starttime = %s\nCut endtime %s' %
+                            (str(tr_cut.stats.starttime),
+                             str(tr_cut.stats.endtime)), 0, debug)
                 if min_snr is not None and \
                    max(tr_cut.data) / noise_amp < min_snr:
                     print('Signal-to-noise ratio below threshold for %s.%s' %
@@ -1173,8 +1166,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 st1 += tr_cut
                 used_tr = True
-        if debug > 0 and not used_tr:
-            print('No pick for ' + tr.stats.station + '.' + tr.stats.channel)
+        if not used_tr:
+            debug_print('No pick for ' + tr.stats.station + '.' +
+                        tr.stats.channel, 0, debug)
     if plot:
         background = stplot.trim(
             st1.sort(['starttime'])[0].stats.starttime - 10,

@@ -1,3 +1,23 @@
+## Current
+* Added the ability to change the correlation functions used in detection
+  methods through the parameter xcorr_func of match_filter, Template.detect
+  and Tribe.detect, or using the set_xcorr context manager in
+  the utils.correlate module. Supported options are:
+    numpy
+    fftw
+    time-domain
+  or passing a function that implements the xcorr interface.
+* Added the ability to change the concurrency strategy of xcorr functions
+  using the paramter concurrency of match_filter, Template.detect
+  and Tribe.detect. Supported options are:
+    None - for single-threaded execution in a single process
+    multithread - for multi-threaded execution
+    multiprocess- for multiprocess execution
+    concurrent - allows functions to describe their own preferred currency
+    methods, defaults to multithread
+* Change debug printing output, it should be a little quieter
+
+
 ## 0.2.5
 * Fix bug with \_group_process that resulted in stalled processes.
 * Force NumPy version
@@ -17,19 +37,19 @@ template;
 option (previously only used for debugging in development);
 * Increase test coverage in lag_calc;
 * Speed-up tests for brightness;
-* Increase test coverage for match_filter including testing io of 
+* Increase test coverage for match_filter including testing io of
 detections;
 * Increase subspace test coverage for edge cases;
 * Speed-up catalog_to_dd_tests;
 * Lag-calc will pick S-picks on channels ending E, N, 1 and 2, change
 from only picking on E and N before; warning added to docs;
 * Add full tests for pre-processing;
-* Run tests in parallel on ci, speed-up tests dramatically; 
-* Rename singular-value decomposition functions (with depreciation 
+* Run tests in parallel on ci, speed-up tests dramatically;
+* Rename singular-value decomposition functions (with depreciation
 warnings);
 * Rename SVD_moments to lower-case and add depreciation warning;
 * Increase test coverage in utils.mag_calc;
-* Add Template, Tribe, Family, Party objects and rename DETECTION to 
+* Add Template, Tribe, Family, Party objects and rename DETECTION to
 Detection;
     * Template objects maintain meta-data associated with their creation
     to stream-line processing of data (e.g. reduce chance of using the
@@ -45,10 +65,10 @@ Detection;
     * The Party object is a container for many Family objects.
     * Family objects are containers for detections from the same
     Template.
-    * Family and Party objects have a lag_calc method which computes 
+    * Family and Party objects have a lag_calc method which computes
     the cross-correlation pick-refinements.
     * The upshot of this is that it is possible to, in one line,
-    generate a Tribe of templates, compute their matched-filter 
+    generate a Tribe of templates, compute their matched-filter
     detections, and generate cross-correlation pick refinements, which
     output Event objects, which can be written to a catalog:
         Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
@@ -81,33 +101,33 @@ fewer traces than template;
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping
-through multiple templates did not correctly match image and template 
+through multiple templates did not correctly match image and template
 data: 0.1.5 fix did not work;
 * Bug-fix in catalog_to_dd for events without magnitudes;
 * Amend match-filter to not edit the list of template names in place.
-Previously, if a template was not used (due to no matching continuous 
-data) then the name of the template was removed: this now copies the 
+Previously, if a template was not used (due to no matching continuous
+data) then the name of the template was removed: this now copies the
 list of template_names internally and does not change the external list.
 
 ## 0.1.5
 * Migrate coverage to codecov;
 * Fix bug introduced in version 0.1.5 for match_filter where looping
-through multiple templates did not correctly match image and template 
+through multiple templates did not correctly match image and template
 data.
 
 ## 0.1.4
 * Bug-fix in plot_repicked removed where data were not normalized
 properly;
-* Bug-fix in lag_calc where data were missing in the continuous data 
+* Bug-fix in lag_calc where data were missing in the continuous data
 fixed (this led to incorrect picks, **major bug!**);
 * Output cross-channel correlation sum in lag-calc output;
 * Add id to DETECTION objects, which is consistent with the events
 within DETECTION objects and catalog output, and used in lag_calc to
 allow linking of detections to catalog events;
-* Add lots of logging and error messages to lag-calc to ensure user 
+* Add lots of logging and error messages to lag-calc to ensure user
 understands limits;
 * Add error to day-proc to ensure user is aware of risks of padding;
-* Change utils.pre_processing.process to accept different length of 
+* Change utils.pre_processing.process to accept different length of
 data enforcement, not just full day (allow for overlap in processing,
 which might be useful for reducing day start and end effects);
 * Bug-fix in mag_calc.amp_pick_event, broke loop if data were missing;

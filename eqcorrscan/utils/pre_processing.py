@@ -171,6 +171,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
+        if num_cores > len(st):
+            num_cores = len(st)
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
@@ -183,10 +185,10 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         st = Stream(stream_list)
     else:
         for tr in st:
-            process(tr=tr, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=False, clip=False,
-                    seisan_chan_names=seisan_chan_names)
+            process(
+                tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+                samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
+                seisan_chan_names=seisan_chan_names)
     if tracein:
         st.merge()
         return st[0]
@@ -339,6 +341,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
+        if num_cores > len(st):
+            num_cores = len(st)
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
@@ -352,11 +356,11 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         st = Stream(stream_list)
     else:
         for tr in st:
-            process(tr=tr, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    starttime=starttime, clip=True, length=86400,
-                    ignore_length=ignore_length,
-                    seisan_chan_names=seisan_chan_names)
+            process(
+                tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+                samp_rate=samp_rate, debug=debug, starttime=starttime,
+                clip=True, length=86400, ignore_length=ignore_length,
+                seisan_chan_names=seisan_chan_names)
     if tracein:
         st.merge()
         return st[0]
