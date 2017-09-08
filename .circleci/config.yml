@@ -48,7 +48,7 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py install
-            python setup.py build_ext --inpace
+            python setup.py build_ext --inplace
       # run tests!
       - run:
           name: run tests
