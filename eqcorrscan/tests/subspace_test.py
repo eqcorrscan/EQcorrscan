@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 import unittest
+import pytest
 import os
 import copy
 
@@ -96,11 +97,13 @@ class SimpleSubspaceMethods(unittest.TestCase):
         self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
+@pytest.mark.network
 class SubspaceTestingMethods(unittest.TestCase):
     """
     Main tests for the subspace module.
     """
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         """Set up the test templates."""
         cls.templates, cls.st = get_test_data()

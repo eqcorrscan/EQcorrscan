@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import pytest
 
 from eqcorrscan.utils.sfile_util import eventtosfile, readwavename, readpicks
 from eqcorrscan.utils.sfile_util import _nortoevmag, _evmagtonor, nordpick
@@ -15,6 +16,8 @@ from eqcorrscan.utils.sfile_util import read_event, read_select, blanksfile
 
 
 class TestSfileMethods(unittest.TestCase):
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_download_write(self):
         """
         Function to download quakeML files from a range of datacenters and \
@@ -328,7 +331,6 @@ class TestSfileMethods(unittest.TestCase):
         by Dominic Evanzia.
         """
         import os
-        import numpy as np
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data')
         test_event = readpicks(os.path.join(testing_path, 'Sfile_no_header'))
@@ -391,6 +393,8 @@ class TestSfileMethods(unittest.TestCase):
         wavefiles = readwavename(testing_path)
         self.assertEqual(len(wavefiles), 1)
 
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_station_to_seisan(self):
         from obspy.clients.fdsn import Client
         from obspy import UTCDateTime
