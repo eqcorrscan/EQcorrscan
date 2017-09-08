@@ -23,15 +23,15 @@ jobs:
 
     working_directory: ~/repo
 
-    dependencies:
-      pre:
-        - sudo apt-get update; sudo apt-get install libfftw3-dev
-
     steps:
-      - checkout
+      dependencies:
+        pre:
+          - sudo apt-get update; sudo apt-get install libfftw3-dev
+
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
 
+      - checkout
       - run:
           name: install dependencies
           command: |
