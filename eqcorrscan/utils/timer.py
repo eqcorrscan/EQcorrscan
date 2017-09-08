@@ -19,8 +19,8 @@ class Timer(object):
     >>> from time import sleep
     >>> with Timer() as t:
     ...     sleep(0.1)
-    >>> print("%.2f" % t.secs)
-    0.10
+    >>> print("%.1f" % t.secs)
+    0.1
     >>> with Timer(verbose=True) as t:
     ...     sleep(0.1)
     elapsed time: 100 ms
