@@ -246,7 +246,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         warn any-time it has to pad data - if you see strange artifacts in your
         detections, check whether the data have gaps.
 
-    .. rubric:: Example, bandpass
+    .. rubric:: Example
 
     >>> import obspy
     >>> if int(obspy.__version__.split('.')[0]) >= 1:
@@ -255,60 +255,30 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     ...     from obspy.fdsn import Client
     >>> from obspy import UTCDateTime
     >>> from eqcorrscan.utils.pre_processing import dayproc
-    >>> client = Client('GEONET')
+    >>> client = Client('NCEDC')
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
-    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
+    >>> bulk_info = [('BP', 'JCNB', '40', 'SP1', t1, t2)]
     >>> st = client.get_waveforms_bulk(bulk_info)
+    >>> st_keep = st.copy()  # Copy the stream for later examples
+    >>> # Example of bandpass filtering
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
-948393Z | 20.0 Hz, 1728000 samples
-
-
-    .. rubric:: Example, low-pass
-
-    >>> import obspy
-    >>> if int(obspy.__version__.split('.')[0]) >= 1:
-    ...     from obspy.clients.fdsn import Client
-    ... else:
-    ...     from obspy.fdsn import Client
-    >>> from obspy import UTCDateTime
-    >>> from eqcorrscan.utils.pre_processing import dayproc
-    >>> client = Client('GEONET')
-    >>> t1 = UTCDateTime(2012, 3, 26)
-    >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
-    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
-    >>> st = client.get_waveforms_bulk(bulk_info)
+    BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
+950000Z | 20.0 Hz, 1728000 samples
+    >>> # Example of lowpass filtering
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
-948393Z | 20.0 Hz, 1728000 samples
-
-    .. rubric:: Example, high-pass
-
-    >>> import obspy
-    >>> if int(obspy.__version__.split('.')[0]) >= 1:
-    ...     from obspy.clients.fdsn import Client
-    ... else:
-    ...     from obspy.fdsn import Client
-    >>> from obspy import UTCDateTime
-    >>> from eqcorrscan.utils.pre_processing import dayproc
-    >>> client = Client('GEONET')
-    >>> t1 = UTCDateTime(2012, 3, 26)
-    >>> t2 = t1 + 86400
-    >>> bulk_info = [('NZ', 'FOZ', '10', 'HHE', t1, t2),
-    ...              ('NZ', 'FOZ', '10', 'HHE', t1, t2)]
-    >>> st = client.get_waveforms_bulk(bulk_info)
+    BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
+950000Z | 20.0 Hz, 1728000 samples
+    >>> # Example of highpass filtering
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
     ...              starttime=t1, debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
-    NZ.FOZ.10.HHE | 2012-03-25T23:59:59.998393Z - 2012-03-26T23:59:59.\
-948393Z | 20.0 Hz, 1728000 samples
+    BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
+950000Z | 20.0 Hz, 1728000 samples
     """
     # Add sanity check for filter
     if isinstance(st, Trace):

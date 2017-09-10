@@ -31,6 +31,7 @@ class TestTutorialScripts(unittest.TestCase):
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
 
     @slow
+    @pytest.mark.flaky(reruns=2)
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
         mktemplates(plot=False)
@@ -74,6 +75,7 @@ class TestTutorialScripts(unittest.TestCase):
                 os.remove('tutorial_template_' + str(template_no) + '.ms')
 
     @slow
+    @pytest.mark.flaky(reruns=2)
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
@@ -102,6 +104,7 @@ class TestTutorialScripts(unittest.TestCase):
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
     @slow
+    @pytest.mark.flaky(reruns=2)
     def test_subspace(self):
         """Test the subspace tutorial."""
         detections = subspace.run_tutorial(plot=False)

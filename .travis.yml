@@ -57,7 +57,7 @@ install:
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
-  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist codecov Cython
+  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
   - pip freeze
   - conda list
   # done installing dependencies
@@ -66,8 +66,9 @@ install:
   - python setup.py build_ext --inplace
 
 script:
-   - py.test --runslow -m "not serial" -n 2
-   - py.test -m "serial" --cov-append
+   - py.test --runslow -m "not serial and not network" -n 2
+   - py.test -m "serial and not network" --cov-append
+#   - py.test -m "network" --cov-append -n 2
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
