@@ -29,6 +29,9 @@
     #endif
     #define inline __inline
 #endif
+#if (defined(__APPLE__) && !isnanf)
+    #define isnanf isnan
+#endif
 #include <fftw3.h>
 #if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
     #include <omp.h>
