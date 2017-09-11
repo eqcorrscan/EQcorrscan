@@ -673,7 +673,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     if ret < 0:
         raise MemoryError()
     elif ret > 0:
-        print('Error in C dode (possible normalisation error)')
+        print('Error in C code (possible normalisation error)')
         print(cccs.max())
         print(cccs.min())
         raise MemoryError()
