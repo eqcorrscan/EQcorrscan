@@ -17,6 +17,9 @@ Note that, although we support Windows, EQcorrscan is optimized for
 linux style distributions, and the developers are not extensive Windows
 users.
 
+*OSX with gcc-4.9 doesn't appear to compile properly, all other gcc versions
+ seem to work*
+
 Instructions for installing EQcorrscan and the required dependency, fftw
 are linked from the
 [docs](http://eqcorrscan.readthedocs.io/en/latest/intro.html#installation)
