@@ -30,7 +30,7 @@ get involved the best place to start, and the most valuable thing for your
 understanding, and for the health of this package would be to contribute tests and
 documentation.
 
-Installation - Updated for version 0.2.0
+Installation - Updated for version 0.2.x
 ----------------------------------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
@@ -42,6 +42,9 @@ environment with the following:
     conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
     source activate eqcorrscan
 
+Non-Python dependancies: Ubuntu:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Prior to installing the python routines you will need to install the fftw
 library.  On linux use apt (or your default package manager - note you may need
 sudo access):
@@ -49,6 +52,9 @@ sudo access):
 .. code-block:: bash
 
     apt-get install libfftw3-dev
+
+Non-Python dependancies: OSX:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For OS-X systems install fftw from conda, available via the menpo channel:
 
@@ -62,6 +68,13 @@ not clang. To do this you should also install gcc into your conda environment:
 .. code-block:: bash
 
     conda install gcc
+    
+Note that you can install fftw and gcc from other sources, however, we know there
+is an issue with homebrew gcc-4.9 (but not with macports gcc-4.9) - other
+gcc versions tested do work however.
+
+Non-Python dependancies: Windows:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For Windows systems you should follow the instructions on the |fftw-windows|
 page and use the pre-compiled dynamic libraries. These should be installed
@@ -71,6 +84,9 @@ of this run into issues with version of MSVC < 10.0 (due to old C standards bein
 used), as such, by default, the correlation routines are compiled as serial
 workflows on windows.  If you have a need for this threading in windows please
 get in touch with the developers.
+
+Final EQcorrscan install:
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once you have installed fftw the EQcorrscan install should be as simple as:
 
