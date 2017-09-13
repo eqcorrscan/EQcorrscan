@@ -455,52 +455,50 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+        np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
 
     if threaded:
         func = utilslib.normxcorr_fftw_threaded
     else:
         func = utilslib.normxcorr_fftw
+
     func.argtypes = argtypes
     func.restype = restype
+
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
     template_length = templates.shape[1]
     stream_length = len(stream)
     n_templates = templates.shape[0]
     fftshape = next_fast_len(template_length + stream_length - 1)
+
     # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
 
     norm = np.nan_to_num(norm)
-    ccc = np.empty((n_templates, stream_length - template_length + 1),
-                   np.float32).flatten(order='C')
+    ccc = np.zeros((n_templates, stream_length - template_length + 1),
+                   np.float32)
+    used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
+    pads_np = np.ascontiguousarray(pads, dtype=np.intc)
+
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
-        np.ascontiguousarray(ccc, np.float32), fftshape)
+        np.ascontiguousarray(ccc, np.float32), fftshape,
+        used_chans_np, pads_np)
     if ret != 0:
         print(ret)
         raise MemoryError()
-    ccc = ccc.reshape((n_templates, stream_length - template_length + 1))
-    for i in range(n_templates):
-        if not used_chans[i]:
-            ccc[i] = np.zeros(stream_length - template_length + 1)
-    ccc[np.isnan(ccc)] = 0.0
-    if np.any(np.abs(ccc) > 1.01):
-        print('Normalisation error in C code')
-        print(ccc.max())
-        print(ccc.min())
-        raise MemoryError()
-    ccc[ccc > 1.0] = 1.0
-    ccc[ccc < -1.0] = -1.0
-    for i in range(len(pads)):
-        ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
+
     return ccc, used_chans
 
 
@@ -583,10 +581,9 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     array_dict_tuple = _get_array_dicts(templates, stream)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
-    xcorrs, tr_chans = fftw_multi_normxcorr(
+    cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids)
-    cccsums = np.sum(xcorrs, axis=0)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -615,15 +612,19 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     utilslib = _load_cdll('libutils')
 
     utilslib.multi_normxcorr_fftw.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+        np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+        np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
+        np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS'))]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -635,7 +636,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         image length
         cross-correlations (stacked as per image)
         fft-length
+        used channels (stacked as per templates)
+        pad array (stacked as per templates)
     '''
+    # pre processing
     used_chans = []
     template_len = template_array[seed_ids[0]].shape[1]
     for seed_id in seed_ids:
@@ -650,37 +654,30 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
     fft_len = next_fast_len(template_len + image_len - 1)
-    template_list = [template_array[x] for x in seed_ids]
-    stream_list = [stream_array[x] for x in seed_ids]
-    template_array = np.array(template_list).flatten(order='C')
-    stream_array = np.array(stream_list).flatten(order='C')
-    cccs = np.empty((n_channels, n_templates, image_len - template_len + 1),
-                    np.float32).flatten(order='C')
+    template_array = np.ascontiguousarray([template_array[x]
+                                           for x in seed_ids],
+                                          dtype=np.float32)
+    stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
+                                        dtype=np.float32)
+    cccs = np.zeros((n_templates, image_len - template_len + 1),
+                    np.float32)
+    used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
+    pad_array_np = np.ascontiguousarray([pad_array[seed_id]
+                                         for seed_id in seed_ids],
+                                        dtype=np.intc)
+
+    # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
-        image_len, cccs, fft_len)
-    if ret != 0:
+        image_len, cccs, fft_len, used_chans_np, pad_array_np)
+    if ret < 0:
         raise MemoryError()
-    cccs = cccs.reshape((n_channels, n_templates,
-                         image_len - template_len + 1))
-    for j in range(n_channels):
-        for i in range(n_templates):
-            if not used_chans[j][i]:
-                cccs[j][i] = np.zeros(image_len - template_len + 1)
-    cccs[np.isnan(cccs)] = 0.0
-    if np.any(np.abs(cccs) > 1.01):
-        print('Normalisation error in C code')
+    elif ret > 0:
+        print('Error in C code (possible normalisation error)')
         print(cccs.max())
         print(cccs.min())
         raise MemoryError()
-    cccs[cccs > 1.0] = 1.0
-    cccs[cccs < -1.0] = -1.0
-    for j, seed_id in enumerate(seed_ids):
-        for i in range(len(pad_array[seed_id])):
-            cccs[j][i] = np.append(
-                cccs[j][i],
-                np.zeros(pad_array[seed_id][i]))[pad_array[seed_id][i]:]
-    cccs = cccs.reshape(n_channels, n_templates, image_len - template_len + 1)
+
     return cccs, used_chans
 
 
