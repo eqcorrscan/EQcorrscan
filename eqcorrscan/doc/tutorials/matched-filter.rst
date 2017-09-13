@@ -64,14 +64,14 @@ event:
 
 .. code-block:: python
 
-     import glob
-     from eqcorrscan.core.match_filter import Template
-     sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252')
-     # sac_files is now a list of all the SAC files for event id:2014p611252
-     template = Template().construct(
-          method='from_sac', name='test', lowcut=2.0, highcut=8.0,
-          samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
-          length=2.0, sac_files=sac_files)
+     >>> import glob
+     >>> from eqcorrscan.core.match_filter import Template
+     >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+     >>> # sac_files is now a list of all the SAC files for event id:2014p611252
+     >>> template = Template().construct(
+     ...      method='from_sac', name='test', lowcut=2.0, highcut=8.0,
+     ...      samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
+     ...      length=2.0, sac_files=sac_files)
 
 
 Tribe creation
@@ -84,19 +84,20 @@ to their start-time, but you can rename them later if you wish:
 
 .. code-block:: python
 
-     from eqcorrscan.core.match_filter import Tribe
-     from obspy.clients.fdsn import Client
+     >>> from eqcorrscan.core.match_filter import Tribe
+     >>> from obspy.clients.fdsn import Client
 
-     client = Client('NCEDC')
-     catalog = client.get_events(eventid='72572665', includearrivals=True)
-     # To speed the example we have a catalog of one event, but you can have
-     # more, we are also only using the first five picks, again to speed the
-     # example.
-     catalog[0].picks = catalog[0].picks[0:5]
-     tribe = Tribe().construct(
-          method='from_client', catalog=catalog, client_id='NCEDC', lowcut=2.0,
-          highcut=8.0,  samp_rate=20.0, filt_order=4, length=6.0, prepick=0.1,
-          swin='all', process_len=3600, all_horiz=True)
+     >>> client = Client('NCEDC')
+     >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
+     >>> # To speed the example we have a catalog of one event, but you can have
+     >>> # more, we are also only using the first five picks, again to speed the
+     >>> # example.
+     >>> catalog[0].picks = catalog[0].picks[0:5]
+     >>> tribe = Tribe().construct(
+     ...      method='from_client', catalog=catalog, client_id='NCEDC', lowcut=2.0,
+     ...      highcut=8.0,  samp_rate=20.0, filt_order=4, length=6.0, prepick=0.1,
+     ...      swin='all', process_len=3600, all_horiz=True)
+     Pre-processing data
 
 Matched-filter detection using a Tribe
 --------------------------------------
@@ -115,12 +116,12 @@ data by running the following:
 
 .. code-block:: python
 
-     from obspy import UTCDateTime
+     >>> from obspy import UTCDateTime
 
-     party, stream = tribe.client_detect(
-          client=client, starttime=UTCDateTime(2016, 1, 2),
-          endtime=UTCDateTime(2016, 1, 3), threshold=8, threshold_type='MAD',
-          trig_int=6, plotvar=False, return_stream=True)
+     >>> party, stream = tribe.client_detect(
+     ...      client=client, starttime=UTCDateTime(2016, 1, 2),
+     ...      endtime=UTCDateTime(2016, 1, 3), threshold=8, threshold_type='MAD',
+     ...      trig_int=6, plotvar=False, return_stream=True)
 
 Lag-calc using a Party
 ----------------------
@@ -130,8 +131,10 @@ generate re-picked catalogues using lag-calc:
 
 .. code-block:: python
 
-     repicked_catalog = party.lag_calc(
-          stream, pre_processed=False, shift_len=0.2, min_cc=0.4)
+     >>> stream = stream.merge().sort(['station'])
+     >>> repicked_catalog = party.lag_calc(stream, pre_processed=False,
+     ...                                   shift_len=0.2, min_cc=0.4) # doctest:+ELLIPSIS
+     5 Trace(s) in Stream:...
 
 By using the above examples you can go from a standard catalog available from
 data centers, to a matched-filter detected and cross-correlation repicked

@@ -89,36 +89,35 @@ for example:
 
 .. code-block:: python
 
-    import obspy
-    from eqcorrscan.utils.correlate import numpy_normxcorr, set_xcorr
-    from eqcorrscan.core.match_filter import match_filter
+    >>> import obspy
+    >>> import numpy as np
+    >>> from eqcorrscan.utils.correlate import numpy_normxcorr, set_xcorr
+    >>> from eqcorrscan.core.match_filter import match_filter
 
 
-    # generate some toy templates and stream
-    random = np.random.RandomState(42)
-    template = obspy.read()
-    stream = obspy.read()
-    for num, tr in enumerate(stream):  # iter stream and embed templates
-        data = tr.data
-        tr.data = random.randn(6000) * 5
-        tr.data[100: 100 + len(data)] = data
+    >>> # generate some toy templates and stream
+    >>> random = np.random.RandomState(42)
+    >>> template = obspy.read()
+    >>> stream = obspy.read()
+    >>> for num, tr in enumerate(stream):  # iter stream and embed templates
+    ...     data = tr.data
+    ...     tr.data = random.randn(6000) * 5
+    ...     tr.data[100: 100 + len(data)] = data
 
+    >>> # do correlation using numpy rather than fftw
+    >>> detections = match_filter(['1'], [template], stream, .5, 'absolute',
+    ...                           1, False, xcorr_func='numpy')
 
-    # do correlation using numpy rather than fftw
-    match_filter(['1'], [template], stream, .5, 'absolute', 1, False,
-                 xcorr_func='numpy')
+    >>> # do correlation using a custom function
+    >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
+    ...     # Just to keep example short call other xcorr function
+    ...     print('calling custom xcorr function')
+    ...     return numpy_normxcorr(templates, stream, pads, *args, **kwargs)
 
-
-    # do correlation using a custom function
-    def custom_normxcorr(templates, stream, pads, *args, **kwargs):
-        # Just to keep example short call other xcorr function
-        print('calling custom xcorr function')
-        return numpy_normxcorr(templates, stream, pads, *args, **kwargs)
-
-
-    match_filter(['1'], [template], stream, .5, 'absolute', 1, False,
-                 xcorr_func=custom_normxcorr)
-    # prints "calling custom xcorr function
+    >>> detections = match_filter(
+    ...     ['1'], [template], stream, .5, 'absolute', 1, False,
+    ...     xcorr_func=custom_normxcorr) # doctest:+ELLIPSIS
+    calling custom xcorr function...
 
 
 You can also use the set_xcorr object (eqcorrscan.utils.correlate.set_xcorr)
@@ -127,13 +126,15 @@ or within the scope of a context manager:
 
 .. code-block:: python
 
-    # change the default xcorr function for all code in the with block
-    with set_xcorr(custom_normxcorr):
-        match_filter(['1'], [template], stream, .5, 'absolute', 1, False)
-        #  prints "calling custom xcorr function"
+    >>> # change the default xcorr function for all code in the with block
+    >>> with set_xcorr(custom_normxcorr):
+    ...     detections = match_filter(['1'], [template], stream, .5,
+    ...                               'absolute', 1, False) # doctest:+ELLIPSIS
+    calling custom xcorr function...
 
-    # permanently change the xcorr function (until the python kernel restarts)
-    set_xcorr(custom_normxcorr)
-    match_filter(['1'], [template], stream, .5, 'absolute', 1, False)
-    # prints "calling custom xcorr function
-    set_xcorr.revert()  # change it back to the previous state
+    >>> # permanently set the xcorr function (until the python kernel restarts)
+    >>> set_xcorr(custom_normxcorr)
+    >>> detections = match_filter(['1'], [template], stream, .5, 'absolute',
+    ...                           1, False) # doctest:+ELLIPSIS
+    calling custom xcorr function...
+    >>> set_xcorr.revert()  # change it back to the previous state

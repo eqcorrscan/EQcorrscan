@@ -18,30 +18,26 @@ threshold to 1,000km
 
 .. code-block:: python
 
-    from eqcorrscan.utils.clustering import space_cluster
-    from obspy.clients.fdsn import Client
-    from obspy import UTCDateTime
-    client = Client("IRIS")
-    starttime = UTCDateTime("2002-01-01")
-    endtime = UTCDateTime("2002-02-01")
-    cat = client.get_events(starttime=starttime, endtime=endtime,
-                            minmagnitude=6, catalog="ISC")
-    groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
+    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+
+    >>> client = Client("IRIS")
+    >>> starttime = UTCDateTime("2002-01-01")
+    >>> endtime = UTCDateTime("2002-02-01")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                         minmagnitude=6, catalog="ISC")
+    >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
 
 Download a local catalog of earthquakes and cluster much finer (distance
 threshold of 2km).
 
 .. code-block:: python
 
-    from eqcorrscan.utils.clustering import space_cluster
-    from obspy.clients.fdsn import Client
-    from obspy import UTCDateTime
-    client = Client("NCEDC")
-    starttime = UTCDateTime("2002-01-01")
-    endtime = UTCDateTime("2002-02-01")
-    cat = client.get_events(starttime=starttime, endtime=endtime,
-                            minmagnitude=2)
-    groups = space_cluster(catalog=cat, d_thresh=2, show=False)
+    >>> client = Client("NCEDC")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                         minmagnitude=2)
+    >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
 
 
 Setting show to true will plot the dendrogram for grouping with individual
@@ -66,15 +62,11 @@ distance threshold and a one-day temporal limit.
 
 .. code-block:: python
 
-    from eqcorrscan.utils.clustering import space_time_cluster
-    from obspy.clients.fdsn import Client
-    from obspy import UTCDateTime
-    client = Client("IRIS")
-    starttime = UTCDateTime("2002-01-01")
-    endtime = UTCDateTime("2002-02-01")
-    cat = client.get_events(starttime=starttime, endtime=endtime,
-                            minmagnitude=6, catalog="ISC")
-    groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
+    >>> from eqcorrscan.utils.clustering import space_time_cluster
+    >>> client = Client("IRIS")
+    >>> cat = client.get_events(starttime=starttime, endtime=endtime,
+    ...                         minmagnitude=6, catalog="ISC")
+    >>> groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
 
 
 Cluster according to cross-correlation values
@@ -91,25 +83,32 @@ in the tests directory.
 
 .. code-block:: python
 
-    from obspy import read
-    import glob
-    import os
-    from eqcorrscan.utils.clustering import cluster
-    # You will need to edit this line to the location of your eqcorrscan repo.
-    testing_path = 'eqcorrscan/tests/test_data/similar_events'
-    stream_files = glob.glob(os.path.join(testing_path, '*'))
-    stream_list = [(read(stream_file), i)
-                   for i, stream_file in enumerate(stream_files)]
-    for stream in stream_list:
-        for tr in stream[0]:
-            if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                stream[0].remove(tr)
-                continue
-            tr.detrend('simple')
-            tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-            tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-    groups = cluster(template_list=stream_list, show=False,
-                     corr_thresh=0.3)
+    >>> from obspy import read
+    >>> import glob
+    >>> import os
+    >>> from eqcorrscan.utils.clustering import cluster
+    >>> # You will need to edit this line to the location of your eqcorrscan repo.
+    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
+    >>> stream_list = [(read(stream_file), i)
+    ...                for i, stream_file in enumerate(stream_files)]
+    >>> for stream in stream_list:
+    ...     for tr in stream[0]:
+    ...         if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
+    ...             stream[0].remove(tr) # doctest:+ELLIPSIS
+    ...             continue
+    ...         tr = tr.detrend('simple')
+    ...         tr = tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
+    ...         tr = tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
+    <obspy.core.stream.Stream object at ...>
+    >>> groups = cluster(template_list=stream_list, show=False,
+    ...                  corr_thresh=0.3, cores=2)
+    Computing the distance matrix using 2 cores
+    Computing linkage
+    Clustering
+    Found 9 groups
+    Extracting and grouping
+
 
 Stack waveforms (linear)
 ------------------------
@@ -122,30 +121,12 @@ The following examples use the test data in the eqcorrscan github repository.
 
 .. code-block:: python
 
-    from obspy import read
-    import glob
-    import os
-    from eqcorrscan.utils.clustering import cluster
-    from eqcorrscan.utils.stacking import linstack
-    # You will need to edit this line to the location of your eqcorrscan repo.
-    testing_path = 'eqcorrscan/tests/test_data/similar_events'
-    stream_files = glob.glob(os.path.join(testing_path, '*'))
-    stream_list = [(read(stream_file), i)
-                   for i, stream_file in enumerate(stream_files)]
-    for stream in stream_list:
-        for tr in stream[0]:
-            if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                stream[0].remove(tr)
-                continue
-            tr.detrend('simple')
-            tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-            tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-    groups = cluster(template_list=stream_list, show=False,
-                     corr_thresh=0.3)
-    # groups[0] should contain 3 streams, which we can now stack
-    # Groups are returned as lists of tuples, of the stream and event index
-    group_streams = [st_tuple[0] for st_tuple in groups[0]]
-    stack = linstack(streams=group_streams)
+    >>> from eqcorrscan.utils.stacking import linstack
+
+    >>> # groups[0] should contain 3 streams, which we can now stack
+    >>> # Groups are returned as lists of tuples, of the stream and event index
+    >>> group_streams = [st_tuple[0] for st_tuple in groups[0]]
+    >>> stack = linstack(streams=group_streams)
 
 
 
@@ -162,27 +143,10 @@ of the instantaneous phase.  In this manor coherent signals are amplified.
 
 .. code-block:: python
 
-    from obspy import read
-    import glob
-    import os
-    from eqcorrscan.utils.clustering import cluster
-    from eqcorrscan.utils.stacking import PWS_stack
-    # You will need to edit this line to the location of your eqcorrscan repo.
-    testing_path = 'eqcorrscan/tests/test_data/similar_events'
-    stream_files = glob.glob(os.path.join(testing_path, '*'))
-    stream_list = [(read(stream_file), i)
-                   for i, stream_file in enumerate(stream_files)]
-    for stream in stream_list:
-        for tr in stream[0]:
-            if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                stream[0].remove(tr)
-                continue
-            tr.detrend('simple')
-            tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-            tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-    groups = cluster(template_list=stream_list, show=False,
-                     corr_thresh=0.3)
-    # groups[0] should contain 3 streams, which we can now stack
-    # Groups are returned as lists of tuples, of the stream and event index
-    group_streams = [st_tuple[0] for st_tuple in groups[0]]
-    stack = PWS_stack(streams=group_streams)
+    >>> from eqcorrscan.utils.stacking import PWS_stack
+
+    >>> # groups[0] should contain 3 streams, which we can now stack
+    >>> # Groups are returned as lists of tuples, of the stream and event index
+    >>> stack = PWS_stack(streams=group_streams)
+    Computing instantaneous phase
+    Computing the phase stack
