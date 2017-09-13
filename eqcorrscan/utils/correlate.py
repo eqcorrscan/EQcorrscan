@@ -96,7 +96,11 @@ class _Context:
 
     def __repr__(self):
         """ this hides the fact _Context instance are returned after calls """
-        return None
+        name = self.cache[self.value_to_switch].__str__()
+        if hasattr(self.cache[self.value_to_switch], '__name__'):
+            name = self.cache[self.value_to_switch].__name__
+        out_str = ("%s changed to %s" % (self.value_to_switch, name))
+        return out_str
 
     def revert(self):
         """ revert the default xcorr function to previous value """

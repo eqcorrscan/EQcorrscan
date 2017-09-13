@@ -134,6 +134,7 @@ or within the scope of a context manager:
 
     >>> # permanently set the xcorr function (until the python kernel restarts)
     >>> set_xcorr(custom_normxcorr)
+    default changed to custom_normxcorr
     >>> detections = match_filter(['1'], [template], stream, .5, 'absolute',
     ...                           1, False) # doctest:+ELLIPSIS
     calling custom xcorr function...
