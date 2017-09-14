@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import copy
 import os
 import unittest
+import pytest
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
@@ -96,30 +97,8 @@ class TestCoreMethods(unittest.TestCase):
             _spike_test(stream)
 
 
+@pytest.mark.serial
 class TestSynthData(unittest.TestCase):
-    def test_debug_range(self):
-        """Test range of debug outputs"""
-        # debug == 3 fails on travis due to plotting restrictions.
-        for debug in range(0, 3):
-            print('Testing for debug level=%s' % debug)
-            try:
-                kfalse, ktrue = test_match_filter(debug=debug)
-            except RuntimeError:
-                print('Error plotting, missing test')
-                continue
-            if ktrue > 0:
-                self.assertTrue(kfalse / ktrue < 0.25)
-            else:
-                # Randomised data occasionally yields 0 detections
-                kfalse, ktrue = test_match_filter(debug=debug)
-                self.assertTrue(kfalse / ktrue < 0.25)
-        if os.path.isfile('cccsum_0.npy'):
-            os.remove('cccsum_0.npy')
-        if os.path.isfile('cccsum_1.npy'):
-            os.remove('cccsum_1.npy')
-        if os.path.isfile('peaks_1970-01-01.pdf'):
-            os.remove('peaks_1970-01-01.pdf')
-
     def test_threshold_methods(self):
         # Test other threshold methods
         for threshold_type, threshold in [('absolute', 2),
@@ -156,8 +135,10 @@ class TestSynthData(unittest.TestCase):
                      plotvar=False)
 
 
+@pytest.mark.network
 class TestGeoNetCase(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         client = Client('GEONET')
         cls.t1 = UTCDateTime(2016, 9, 4)
@@ -250,6 +231,7 @@ class TestGeoNetCase(unittest.TestCase):
                 threshold_type='MAD', trig_int=6.0, plotvar=False,
                 plotdir='.', cores=1)
 
+    @pytest.mark.flaky(reruns=2)
     def test_geonet_tribe_detect(self):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
@@ -266,8 +248,10 @@ class TestGeoNetCase(unittest.TestCase):
         self.assertEqual(len(party), 16)
 
 
+@pytest.mark.network
 class TestNCEDCCases(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -521,8 +505,10 @@ class TestMatchCopy(unittest.TestCase):
         self.assertEqual(tribe, copied)
 
 
+@pytest.mark.network
 class TestMatchObjects(unittest.TestCase):
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         print('\t\t\t Downloading data')
         client = Client('NCEDC')
@@ -629,6 +615,7 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
+    @pytest.mark.flaky(reruns=2)
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')

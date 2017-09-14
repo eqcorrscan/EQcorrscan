@@ -12,8 +12,8 @@ import warnings
 
 
 __all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils', 'clustering',
-           'correlate', 'despike', 'findpeaks', 'mag_calc', 'normalise',
-           'parameters', 'picker', 'plotting', 'pre_processing',
+           'correlate', 'debug_log', 'despike', 'findpeaks', 'mag_calc',
+           'normalise', 'parameters', 'picker', 'plotting', 'pre_processing',
            'sac_util', 'seismo_logs', 'sfile_util', 'stacking',
            'synth_seis', 'timer', 'trigger']
 

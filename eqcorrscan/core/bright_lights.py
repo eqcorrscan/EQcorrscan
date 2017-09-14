@@ -631,6 +631,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         import matplotlib.pyplot as plt
         plt.ioff()
     from eqcorrscan.utils import plotting
+    from eqcorrscan.utils.debug_log import debug_print
     # Check that we actually have the correct stations
     realstations = []
     for station in stations:
@@ -750,9 +751,8 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         # Generate a catalog of detections
         # detections_cat = Catalog()
         for j, detection in enumerate(detections):
-            if debug > 3:
-                print('Converting for detection ' + str(j) + ' of ' +
-                      str(len(detections)))
+            debug_print('Converting for detection %i of %i'
+                        % (j, len(detections)), 3, debug)
             # Create an event for each detection
             event = Event()
             # Set up some header info for the event
@@ -791,8 +791,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                             time=tr.stats.starttime + detect_lag +
                             detection.detect_time + pre_pick,
                             onset='emergent', evalutation_mode='automatic'))
-            if debug > 0:
-                print('Generating template for detection: ' + str(j))
+            debug_print('Generating template for detection: %i' % j, 0, debug)
             template = template_gen(
                 picks=event.picks, st=copy_of_stream, length=template_length,
                 swin='all')
@@ -811,17 +810,15 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 print('---------------------------------coherence LEVEL: ' +
                       str(temp_coher))
                 coherent = True
-            elif debug > 0:
-                print('Template was incoherent, coherence level: ' +
-                      str(temp_coher))
+                debug_print('Template was incoherent, coherence level: ' +
+                            str(temp_coher), 0, debug)
                 coherent = False
             del copy_of_stream, tr, template
             if coherent:
                 templates.append(obsread(template_name))
                 nodesout += [node]
                 good_detections.append(detection)
-            elif debug > 0:
-                print('No template for you')
+            debug_print('No template for you', 0, debug)
             # detections_cat += event
     if plotvar:
         good_detections = [(cum_net_trace[-1].stats.starttime +
