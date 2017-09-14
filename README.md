@@ -15,7 +15,7 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 |---------------|-------|
 | OSX & Linux | [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
 | Windows | [![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
-| Code style | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
+| Code coverage | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
 | Documentation | [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
 | Dependency status | [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
 | Network tests | [![CircleCI](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master.svg?style=svg)](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master)
