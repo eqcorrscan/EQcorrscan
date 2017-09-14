@@ -1106,7 +1106,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     K_width = len(K[0])
     # Add an extra row to K, so average moment = 1
     K.append(np.ones(K_width) * (1. / K_width))
-    print("\nCreated Kernel matrix: ")
+    print("Created Kernel matrix: ")
     del row
     print('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
           for item in row]) for row in K]))

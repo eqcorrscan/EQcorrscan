@@ -14,6 +14,5 @@ findpeaks
 
        coin_trig
        find_peaks2_short
-       find_peaks_dep
 
     .. comment to end block
