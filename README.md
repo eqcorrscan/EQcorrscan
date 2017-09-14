@@ -10,6 +10,7 @@ If you want to you should also cite the version number: [![DOI](https://zenodo.o
 
 # Test status
 Note that tests for travis and appveyor are run daily on master as cron jobs, and may reflect time-out issues.
+
 | Service tests | Badge |
 |---------------|-------|
 | OSX & Linux | [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
