@@ -9,13 +9,13 @@ environment:
     PR_URL: "--pr-url https://github.com/%APPVEYOR_REPO_NAME%/pull/%APPVEYOR_PULL_REQUEST_NUMBER%"
 
   matrix:
-    - PYTHON: "C:\\Miniconda-x64"
+    - PYTHON: "C:\\Miniconda35-x64"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "64"
-    - PYTHON: "C:\\Miniconda-x86"
+    - PYTHON: "C:\\Miniconda35"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "86"
-    - PYTHON: "C:\\Miniconda-x64"
+    - PYTHON: "C:\\Miniconda27-x64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
       # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
