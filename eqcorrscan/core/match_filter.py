@@ -31,7 +31,6 @@ import tempfile
 import time
 import warnings
 from collections import Counter
-from multiprocessing import cpu_count
 from os.path import join
 
 import numpy as np
@@ -2650,7 +2649,7 @@ class Tribe(object):
         .. Note::
             Methods: `from_contbase`, `from_sfile` and `from_sac` are not
             supported by Tribe.construct and must use Template.construct.
-            
+
         .. Note::
             The Method `multi_template_gen` is not supported because the
             processing parameters for the stream are not known. Use
