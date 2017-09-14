@@ -22,7 +22,15 @@
 * Expose cores argument for match-filter objects to allow limits to be placed
   on how much of your machine is used;
 * Limit number of workers created during pre-processing to never be more than
-  the number of traces in the stream being processed.
+  the number of traces in the stream being processed;
+* Implement openMP parallelisation of cross-correlation sum routines - memory
+  consumption reduced by using shared memory, and by computing the
+  cross-correlation sums rather than individual channel cross-correlations.
+  This also leads to a speed-up.  This routine is the default concurrent
+  correlation routine;
+* Test examples in rst doc files to ensure they are up-to-date;
+* Tests that were prone to timeout issues have been migrated to run on circleci
+  to allow quick re-starting of fails not due to code errors
 
 
 ## 0.2.5
