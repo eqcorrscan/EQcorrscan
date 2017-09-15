@@ -15,7 +15,7 @@ environment:
     - PYTHON: "C:\\Miniconda35"
       PYTHON_VERSION: "3.5"
       PYTHON_ARCH: "86"
-    - PYTHON: "C:\\Miniconda27-x64"
+    - PYTHON: "C:\\Miniconda-x64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
       # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
