@@ -145,6 +145,7 @@ def array_ccs(array_template, array_stream, pads):
 
     for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
+        print("Running %s" % name)
         cc, _ = time_func(func, name, array_template, array_stream, pads)
         out[name] = cc
     return out

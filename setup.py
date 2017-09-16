@@ -104,9 +104,9 @@ def get_libraries():
     from pkg_resources import get_build_platform
 
     if get_build_platform() in ('win32', 'win-amd64'):
-        libraries = ['libfftw3-3']
+        libraries = ['libfftw3-3', 'libfftw3f-3']
     else:
-        libraries = ['fftw3', 'fftw3_threads']
+        libraries = ['fftw3', 'fftw3_threads', 'fftw3f']
 
     return libraries
 
