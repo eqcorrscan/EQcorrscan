@@ -55,8 +55,8 @@ def _load_cdll(name):
     static_fftw = os.path.join(libdir, 'libfftw3-3.dll')
     static_fftwf = os.path.join(libdir, 'libfftw3f-3.dll')
     try:
-        fftw_lib = ctypes.CDLL(str(static_fftw))
-        fftw_lib = ctypes.CDLL(str(static_fftwf))
+        fftw_lib = ctypes.CDLL(str(static_fftw))  # noqa: F841
+        fftwf_lib = ctypes.CDLL(str(static_fftwf))  # noqa: F841
     except:
         pass
     try:
