@@ -1,4 +1,8 @@
-## Current
+## 0.2.7
+* Patch multi_corr.c to work with more versions of MSVC
+
+
+## 0.2.6
 * Added the ability to change the correlation functions used in detection
   methods through the parameter xcorr_func of match_filter, Template.detect
   and Tribe.detect, or using the set_xcorr context manager in
