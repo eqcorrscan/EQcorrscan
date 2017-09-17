@@ -23,10 +23,8 @@
 #include <string.h>
 #include <math.h>
 #if (defined(_MSC_VER))
-    #if (_MSC_VER < 1800)
-        #include <float.h>
-        #define isnanf(x) _isnanf(x)
-    #endif
+    #include <float.h>
+    #define isnanf(x) _isnan(x)
     #define inline __inline
 #endif
 #if (defined(__APPLE__) && !isnanf)
