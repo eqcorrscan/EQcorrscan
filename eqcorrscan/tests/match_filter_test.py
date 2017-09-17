@@ -352,7 +352,7 @@ class TestNCEDCCases(unittest.TestCase):
         for detection in individual_detections:
             individual_dict.append({'template_name': detection.template_name,
                                     'time': detection.detect_time,
-                                    'cccsum': detection.detect_val})
+                                    'cccsum': detection.detect_val.round(6)})
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
@@ -362,7 +362,7 @@ class TestNCEDCCases(unittest.TestCase):
         for detection in detections:
             detection_dict = {'template_name': detection.template_name,
                               'time': detection.detect_time,
-                              'cccsum': detection.detect_val}
+                              'cccsum': detection.detect_val.round(6)}
             self.assertTrue(detection_dict in individual_dict)
 
     def test_read_write_detections(self):

@@ -1,5 +1,5 @@
 """
-Helpers to get library names. Editted for our use from obspy.core.util.libnames
+Helpers to get library names. Edited for our use from obspy.core.util.libnames
 
 :copyright:
     EQcorrscan developers.
@@ -41,21 +41,22 @@ def _get_lib_name(lib):
 
 def _load_cdll(name):
     """
-    Helper function to load a shared library built during ObsPy installation
+    Helper function to load a shared library built during installation
     with ctypes.
 
     :type name: str
     :param name: Name of the library to load (e.g. 'mseed').
     :rtype: :class:`ctypes.CDLL`
     """
-    from pkg_resources import get_build_platform
     # our custom defined part of the extension file name
     libname = _get_lib_name(name)
     libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
     libpath = os.path.join(libdir, libname)
     static_fftw = os.path.join(libdir, 'libfftw3-3.dll')
+    static_fftwf = os.path.join(libdir, 'libfftw3f-3.dll')
     try:
-        fftw_lib = ctypes.CDLL(str(static_fftw))
+        fftw_lib = ctypes.CDLL(str(static_fftw))  # noqa: F841
+        fftwf_lib = ctypes.CDLL(str(static_fftwf))  # noqa: F841
     except:
         pass
     try:
