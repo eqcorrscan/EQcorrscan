@@ -1,5 +1,7 @@
 ## 0.2.7
-* Patch multi_corr.c to work with more versions of MSVC
+* Patch multi_corr.c to work with more versions of MSVC;
+* Revert to using single-precision floats for correlations (as in previous,
+  < 0.2.x versions) for memory efficiency.
 
 
 ## 0.2.6
