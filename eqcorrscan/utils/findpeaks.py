@@ -54,6 +54,7 @@ def is_prime(number):
         return False
 
 
+# TODO: Try a C-loop for this?
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       samp_rate=1.0):
     """
@@ -126,6 +127,35 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     else:
         print('No peaks for you!')
         return peaks
+
+
+# TODO: Write test for this and write different concurrency options
+def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
+                     samp_rate=1.0):
+    """
+    Wrapper for find-peaks for multiple arrays.
+
+    :type arr: numpy.ndarray
+    :param arr: 2-D numpy array is required
+    :type thresh: list
+    :param thresh:
+        The threshold below which will be considered noise and peaks will not
+        be found in. One threshold per array.
+    :type trig_int: int
+    :param trig_int: The minimum difference in samples between triggers,\
+        if multiple peaks within this window this code will find the highest.
+    :type debug: int
+    :param debug: Optional, debug level 0-5
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
+    :param starttime: Starttime for plotting, only used if debug > 2.
+    :type samp_rate: float
+    :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
+    """
+    peaks = []
+    for sub_arr, arr_thresh in zip(arr, thresh):
+        peaks.append(find_peaks2_short(sub_arr, arr_thresh, trig_int, debug,
+                                       starttime, samp_rate))
+    return peaks
 
 
 def decluster(peaks, trig_int, return_ind=False, debug=0):

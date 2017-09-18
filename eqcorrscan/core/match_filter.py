@@ -3982,6 +3982,7 @@ def match_filter(template_names, template_list, st, threshold,
     detections = []
     if output_cat:
         det_cat = Catalog()
+    # TODO: Use a concurrent find-peaks over multiple cccsum vectors
     for i, cccsum in enumerate(cccsums):
         template = templates[i]
         if str(threshold_type) == str('MAD'):
@@ -4026,6 +4027,7 @@ def match_filter(template_names, template_list, st, threshold,
         debug_print('Finding peaks took: %f s' % (toc - tic), 0, debug)
         if peaks:
             for peak in peaks:
+                # TODO: This should be abstracted out into a peak_to_det func
                 detecttime = stream[0].stats.starttime + \
                              peak[1] / stream[0].stats.sampling_rate
                 # Detect time must be valid QuakeML uri within resource_id.

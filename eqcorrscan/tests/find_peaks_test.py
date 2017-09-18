@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import unittest
 
 
+#TODO: Write a test for multi-peak finding and time the functions!
 class TestPeakFinding(unittest.TestCase):
     def test_main_find_peaks(self):
         """Test find_peaks2_short"""
