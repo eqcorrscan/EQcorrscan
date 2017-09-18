@@ -30,7 +30,7 @@ get involved the best place to start, and the most valuable thing for your
 understanding, and for the health of this package would be to contribute tests and
 documentation.
 
-Installation - Updated for version 0.2.x
+Installation - Updated for version 0.2.7
 ----------------------------------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
@@ -41,9 +41,17 @@ environment with the following:
 
     conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
     source activate eqcorrscan
+    
+To then install EQcorrscan you can simply run:
 
-Non-Python dependancies: Ubuntu:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+    conda install -c conda-forge eqcorrscan
+
+And you are done! Otherwise, if you want to install via pip then the following applies:
+
+Non-Python dependancies (without conda): Ubuntu:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Prior to installing the python routines you will need to install the fftw
 library.  On linux use apt (or your default package manager - note you may need
@@ -85,8 +93,8 @@ used), as such, by default, the correlation routines are compiled as serial
 workflows on windows.  If you have a need for this threading in windows please
 get in touch with the developers.
 
-Final EQcorrscan install:
-~~~~~~~~~~~~~~~~~~~~~~~~~
+EQcorrscan install via pip:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once you have installed fftw the EQcorrscan install should be as simple as:
 
