@@ -134,8 +134,7 @@ def get_extensions():
         'library_dirs': get_library_dirs()}
 
     sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'find_peaks.c')]
+               os.path.join('eqcorrscan', 'lib', 'time_corr.c')]
     exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
