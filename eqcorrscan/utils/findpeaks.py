@@ -56,7 +56,7 @@ def is_prime(number):
 
 # TODO: Try a C-loop for this?
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0):
+                      samp_rate=1.0, compiled=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -110,17 +110,24 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     for peak_slice in peak_slices:
         # print('Width of peak='+str(peak_slice[0].stop-peak_slice[0].start)
         window = arr[peak_slice[0].start: peak_slice[0].stop]
-        initial_peaks.append((max(window),
-                              int(peak_slice[0].start + np.argmax(window))))
+        max_ind = np.argmax(abs(window))
+        initial_peaks.append(
+            (window[max_ind], int(peak_slice[0].start + max_ind)))
+    if compiled:
+        _decluster = decluster_compiled
+    else:
+        _decluster = decluster
     if initial_peaks:
-        peaks = decluster(peaks=initial_peaks, trig_int=trig_int, debug=debug)
+        peaks = _decluster(
+            peaks=initial_peaks, trig_int=trig_int, debug=debug)
         if debug >= 3:
             from eqcorrscan.utils import plotting
             _fname = ''.join(['peaks_',
                               starttime.datetime.strftime('%Y-%m-%d'),
                               '.pdf'])
             plotting.peaks_plot(data=image, starttime=starttime,
-                                samp_rate=samp_rate, save=True,
+                                # samp_rate=samp_rate, save=True,
+                                samp_rate=samp_rate, save=False,
                                 peaks=peaks, savefile=_fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
@@ -158,6 +165,57 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     return peaks
 
 
+def decluster_compiled(peaks, trig_int, return_ind=False, debug=0):
+    """
+    Decluster peaks based on an enforced minimum separation.
+
+    :type peaks: list
+    :param peaks: list of tuples of (value, sample)
+    :type trig_int: int
+    :param trig_int: Minimum trigger interval in samples
+    :type return_ind: bool
+    :param return_ind:
+        Whether to also return the indices of the original peaks or not.
+
+    :return: list of tuples of (value, sample)
+    """
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+    from future.utils import native_str
+    from itertools import compress
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.find_peaks.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.long,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long, ctypes.c_float, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.int32,
+                               flags=native_str('C_CONTIGUOUS'))]
+    utilslib.find_peaks.restype = ctypes.c_int
+    peaks_sort = sorted(zip(peaks, np.arange(len(peaks))),
+                        key=lambda amplitude: abs(amplitude[0][0]),
+                        reverse=True)
+    peaks_sort, input_inds = zip(*peaks_sort)
+    arr, inds = zip(*peaks_sort)
+    arr = np.ascontiguousarray(arr, dtype=np.float32)
+    inds = np.ascontiguousarray(inds, dtype=np.long)
+    out = np.zeros(len(arr), dtype=np.int32)
+    ret = utilslib.find_peaks(arr, inds, np.long(len(arr)),
+                              0, trig_int, out)
+    if ret != 0:
+        raise MemoryError("Issue with c-routine")
+    peaks_out = list(compress(peaks_sort, out))
+    ind_out = list(compress(inds, out))
+    if return_ind:
+        return peaks_out, ind_out
+    else:
+        return peaks_out
+
+
+# TODO: This is the slow bit I think.
 def decluster(peaks, trig_int, return_ind=False, debug=0):
     """
     Decluster peaks based on an enforced minimum separation.
@@ -173,7 +231,7 @@ def decluster(peaks, trig_int, return_ind=False, debug=0):
     :return: list of tuples of (value, sample)
     """
     peaks_sort = sorted(zip(peaks, np.arange(len(peaks))),
-                        key=lambda amplitude: amplitude[0][0],
+                        key=lambda amplitude: abs(amplitude[0][0]),
                         reverse=True)
     peaks_sort, inds = zip(*peaks_sort)
     # Debugging
