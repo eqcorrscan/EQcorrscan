@@ -24,6 +24,8 @@
 int find_peaks(float*, long*, long, float, long, int*);
 
 // Functions
+// Longs could be unsigned ints...
+// There is a memory issue somewhere!!!!
 int find_peaks(float *arr, long *indexes, long len, float thresh, long trig_int,
                int *out){
     // Takes a sorted array an the indexes

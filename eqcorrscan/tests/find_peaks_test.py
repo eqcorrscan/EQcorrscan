@@ -77,7 +77,7 @@ class TestStandardPeakFinding:
         """Test finding all the peaks."""
         for peak in expected_peak_array[0]:
             assert peak in np.array(full_peak_array)
-        assert len(full_peak_array) == 287
+        assert len(full_peak_array) == 315
 
 
 class TestCoincidenceTrigger:
