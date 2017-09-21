@@ -17,7 +17,7 @@ import numpy as np
 
 from obspy import UTCDateTime
 from scipy import ndimage
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 from eqcorrscan.utils.correlate import _pool_boy
 
