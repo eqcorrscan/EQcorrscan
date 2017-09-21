@@ -35,15 +35,16 @@ from os.path import join
 
 import numpy as np
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
-from obspy.core.event import Comment, WaveformStreamID
-from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
+from obspy.core.event import (
+    Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier)
 
 from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.debug_log import debug_print
-from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
+from eqcorrscan.utils.findpeaks import (
+    find_peaks2_short, decluster, multi_find_peaks)
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
 
@@ -3828,6 +3829,10 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
+    if cores is not None:
+        parallel = True
+    else:
+        parallel = False
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -3904,10 +3909,9 @@ def match_filter(template_names, template_list, st, threshold,
             for template in templates:
                 if template.select(network=stachan[0], station=stachan[1],
                                    location=stachan[2], channel=stachan[3]):
-                    for tr in template.select(network=stachan[0],
-                                              station=stachan[1],
-                                              location=stachan[2],
-                                              channel=stachan[3]):
+                    for tr in template.select(
+                            network=stachan[0], station=stachan[1],
+                            location=stachan[2], channel=stachan[3]):
                         template.remove(tr)
                         print('Removing template channel %s.%s.%s.%s due to'
                               ' no matches in continuous data' %
@@ -3986,28 +3990,26 @@ def match_filter(template_names, template_list, st, threshold,
     detections = []
     if output_cat:
         det_cat = Catalog()
-    # TODO: Use a concurrent find-peaks over multiple cccsum vectors
+    if str(threshold_type) == str("absolute"):
+        thresholds = [threshold for _ in range(cccsums)]
+    elif str(threshold_type) == str('MAD'):
+        thresholds = [threshold * np.median(np.abs(cccsum))
+                      for cccsum in cccsums]
+    else:
+        thresholds = [threshold * no_chans[i] for i in range(cccsums)]
+    all_peaks = multi_find_peaks(
+        arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
+        trig_int=int(trig_int * stream[0].stats.sampling_rate))
     for i, cccsum in enumerate(cccsums):
-        template = templates[i]
-        if str(threshold_type) == str('MAD'):
-            rawthresh = threshold * np.median(np.abs(cccsum))
-        elif str(threshold_type) == str('absolute'):
-            rawthresh = threshold
-        elif str(threshold_type) == str('av_chan_corr'):
-            rawthresh = threshold * no_chans[i]
-        # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
-        debug_print("Threshold is set at: %f\nMax of data is %f\nMean of "
-                    "data is %f" % (rawthresh, max(cccsum), np.mean(cccsum)),
-                    0, debug)
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintains timing
         if plotvar:
-            _match_filter_plot(stream=stream, cccsum=cccsum,
-                               template_names=_template_names,
-                               rawthresh=rawthresh, plotdir=plotdir,
-                               plot_format=plot_format, i=i)
+            _match_filter_plot(
+                stream=stream, cccsum=cccsum, template_names=_template_names,
+                rawthresh=thresholds[i], plotdir=plotdir,
+                plot_format=plot_format, i=i)
         if debug >= 4:
             np.save(_template_names[i] +
                     stream[0].stats.starttime.datetime.strftime('%Y%j'),
@@ -4016,21 +4018,8 @@ def match_filter(template_names, template_list, st, threshold,
             ' '.join(['Saved the cccsum to:', _template_names[i],
                       stream[0].stats.starttime.datetime.strftime('%Y%j')]),
             4, debug)
-        tic = time.clock()
-        if max(cccsum) > rawthresh:
-            peaks = find_peaks2_short(
-                arr=cccsum, thresh=rawthresh,
-                trig_int=trig_int * stream[0].stats.sampling_rate,
-                debug=debug,
-                starttime=stream[0].stats.starttime,
-                samp_rate=stream[0].stats.sampling_rate)
-        else:
-            debug_print('No peaks found above threshold', 0, debug)
-            peaks = False
-        toc = time.clock()
-        debug_print('Finding peaks took: %f s' % (toc - tic), 0, debug)
-        if peaks:
-            for peak in peaks:
+        if all_peaks[i]:
+            for peak in all_peaks[i]:
                 # TODO: This should be abstracted out into a peak_to_det func
                 detecttime = stream[0].stats.starttime + \
                              peak[1] / stream[0].stats.sampling_rate
@@ -4047,7 +4036,7 @@ def match_filter(template_names, template_list, st, threshold,
                     ev.creation_info = CreationInfo(
                         author='EQcorrscan', creation_time=UTCDateTime())
                     ev.comments.append(
-                        Comment(text='threshold=' + str(rawthresh)))
+                        Comment(text='threshold=' + str(thresholds[i])))
                     ev.comments.append(
                         Comment(text='detect_val=' + str(peak[0])))
                     ev.comments.append(Comment(
@@ -4075,7 +4064,7 @@ def match_filter(template_names, template_list, st, threshold,
                 detections.append(Detection(
                     template_name=_template_names[i], detect_time=detecttime,
                     no_chans=no_chans[i], detect_val=peak[0],
-                    threshold=rawthresh, typeofdet='corr', chans=chans[i],
+                    threshold=thresholds[i], typeofdet='corr', chans=chans[i],
                     event=det_ev, threshold_type=threshold_type,
                     threshold_input=threshold))
                 if output_cat:

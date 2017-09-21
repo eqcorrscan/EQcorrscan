@@ -17,6 +17,9 @@ import numpy as np
 
 from obspy import UTCDateTime
 from scipy import ndimage
+from multiprocessing import Pool, cpu_count
+
+from eqcorrscan.utils.correlate import _pool_boy
 
 
 def is_prime(number):
@@ -54,7 +57,6 @@ def is_prime(number):
         return False
 
 
-# TODO: Streamline decluster - use the numpy variant from Derrick.
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       samp_rate=1.0, full_peaks=False):
     """
@@ -136,9 +138,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         return []
 
 
-# TODO: Write test for this and write different concurrency options
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0):
+                     samp_rate=1.0, parallel=True):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -157,11 +158,26 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
+    :type parallel: bool
+    :param parallel:
+        Whether to compute in parallel or not - will use multiprocessing
+
+    :returns:
+        List of list of tuples of (peak, index) in same order as input arrays
     """
     peaks = []
-    for sub_arr, arr_thresh in zip(arr, thresh):
-        peaks.append(find_peaks2_short(sub_arr, arr_thresh, trig_int, debug,
-                                       starttime, samp_rate))
+    if not parallel:
+        for sub_arr, arr_thresh in zip(arr, thresh):
+            peaks.append(find_peaks2_short(
+                arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
+                starttime=starttime, samp_rate=samp_rate, full_peaks=False))
+    else:
+        with _pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
+            params = ((sub_arr, arr_thresh, trig_int)
+                      for sub_arr, arr_thresh in zip(arr, thresh))
+            results = [pool.apply_async(find_peaks2_short, param)
+                       for param in params]
+            peaks = [res.get() for res in results]
     return peaks
 
 

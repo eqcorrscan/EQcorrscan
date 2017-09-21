@@ -5,7 +5,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-import unittest
 
 from os.path import join
 
@@ -13,7 +12,8 @@ import numpy as np
 import pytest
 
 from eqcorrscan.utils.timer import time_func
-from eqcorrscan.utils.findpeaks import find_peaks2_short, coin_trig
+from eqcorrscan.utils.findpeaks import (
+    find_peaks2_short, coin_trig, multi_find_peaks)
 
 
 class TestStandardPeakFinding:
@@ -117,13 +117,37 @@ class TestPeakFindSpeeds:
             datasets['clustered'][spike_loc] *= 1000
         return datasets
 
-    def test_python_speed(self, datasets):
-        print("Running Python declustering")
+    @pytest.fixture
+    def thresholds(self, datasets):
+        thresholds = {}
         for key in datasets.keys():
+            thresholds.update({key: 10 * np.median(np.abs(datasets[key]))})
+        return thresholds
+
+    @pytest.fixture
+    def keys(self, datasets):
+        keys = sorted(list(datasets.keys()))
+        return keys
+
+    def test_python_speed(self, datasets, thresholds, keys):
+        print("Running Python declustering")
+        for key in keys:
             print("\tRunning timings for %s dataset" % key)
-            mad_thresh = 10 * np.median(np.abs(datasets[key]))
             peaks = time_func(
                 find_peaks2_short, "find_peaks2_short", arr=datasets[key],
-                thresh=mad_thresh, trig_int=600, debug=0, starttime=False,
+                thresh=thresholds[key], trig_int=600, debug=0, starttime=False,
                 samp_rate=100)
             print('Found %i peaks' % len(peaks))
+
+    def test_looping(self, datasets, thresholds, keys):
+        arr = np.array([datasets[key] for key in keys])
+        threshold = [thresholds[key] for key in keys]
+        print("Running serial loop")
+        serial_peaks = time_func(
+            multi_find_peaks, name="serial", arr=arr, thresh=threshold,
+            trig_int=600, parallel=False)
+        print("Running parallel loop")
+        parallel_peaks = time_func(
+            multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
+            trig_int=600, parallel=True)
+        assert serial_peaks == parallel_peaks
