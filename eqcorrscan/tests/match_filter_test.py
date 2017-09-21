@@ -681,8 +681,6 @@ class TestMatchObjects(unittest.TestCase):
                 for det in declustered_dets:
                     time_difs = [abs(det.detect_time - d.detect_time)
                                  for d in declustered_dets if d != det]
-                    print("%f, %i" % (min(time_difs), trig_int))
-                    self.assertTrue(min(time_difs) > trig_int)
                     for dif in time_difs:
                         self.assertTrue(dif > trig_int)
                 with self.assertRaises(MatchFilterError):

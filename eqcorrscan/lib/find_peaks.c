@@ -40,8 +40,6 @@ int find_peaks(float *arr, long *indexes, long len, float thresh, long trig_int,
         for (j = 0; j < len; ++j){
             step = indexes[i] - indexes[j];
             if (step < 0){step *= -1;}
-            printf("step: %li\n", step);
-            printf("trig_int: %li\n", trig_int);
             if (i != j && trig_int > step && out[j] == 1){
                 keep = 0;
                 break;
