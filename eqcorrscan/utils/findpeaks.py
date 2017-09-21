@@ -91,7 +91,25 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     >>> find_peaks2_short(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
 
-    # TODO: Document limitations raised in issues #159 for closely spaced peaks
+    .. note::
+        peak-finding is optimised for zero-mean cross-correlation data where
+        fluctuations are frequent.  Because of this, in certain cases some
+        peaks may be missed if the trig_int is short and the threshold is low.
+        Consider the following case:
+
+        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
+        >>> find_peaks2_short(arr, thresh=.2, trig_int=3)
+        [(1.0, 0)]
+
+        Whereas you would expect the following:
+
+        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
+        >>> find_peaks2_short(arr, thresh=.2, trig_int=3, full_peaks=True)
+        [(1.0, 0), (1.0, 5), (1.0, 10)]
+
+        This is rare and unlikely to happen for correlation cases, where
+        trigger intervals are usually large and thresholds high.
+
     """
     if not starttime:
         starttime = UTCDateTime(0)
