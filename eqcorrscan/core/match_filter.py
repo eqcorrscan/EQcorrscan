@@ -521,12 +521,16 @@ class Party(object):
         else:
             raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
-        detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
-                       for d in detect_info]
-        peaks_out, inds_out = decluster(
-            peaks=detect_info, trig_int=trig_int * 10 ** 6, return_ind=True)
+        detect_vals = np.array([d[1] for d in detect_info])
+        detect_times = np.array([
+            _total_microsec(d[0].datetime, min_det.datetime)
+            for d in detect_info])
+        peaks_out = decluster(
+            peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
         # Trig_int must be converted from seconds to micro-seconds
-        declustered_detections = [all_detections[ind] for ind in inds_out]
+        declustered_detections = [
+            all_detections[np.where(detect_times == ind[1])[0][0]]
+            for ind in peaks_out]
         # Convert this list into families
         template_names = list(set([d.template_name
                                    for d in declustered_detections]))
