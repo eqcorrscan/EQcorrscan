@@ -224,7 +224,7 @@ def decluster(peaks, index, trig_int):
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.long,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_long, ctypes.c_float, ctypes.c_int,
+        ctypes.c_long, ctypes.c_float, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.int32,
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.find_peaks.restype = ctypes.c_int
@@ -236,7 +236,7 @@ def decluster(peaks, index, trig_int):
     inds = np.ascontiguousarray(inds, dtype=np.long)
     out = np.zeros(len(arr), dtype=np.int32)
     ret = utilslib.find_peaks(
-        arr, inds, np.long(len(arr)), 0, trig_int, out)
+        arr, inds, np.long(len(arr)), 0, np.long(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine")
     peaks_out = list(compress(peaks_sort, out))
