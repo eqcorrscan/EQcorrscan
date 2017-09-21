@@ -1,4 +1,4 @@
-r"""Functions to find peaks in data above a certain threshold.
+"""Functions to find peaks in data above a certain threshold.
 
 :copyright:
     EQcorrscan developers.
@@ -219,13 +219,14 @@ def decluster(peaks, index, trig_int):
 
     utilslib = _load_cdll('libutils')
 
+    length = np.uint32(len(peaks))
     utilslib.find_peaks.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float32,
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.long,
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_long, ctypes.c_float, ctypes.c_long,
-        np.ctypeslib.ndpointer(dtype=np.int32,
+        ctypes.c_uint, ctypes.c_float, ctypes.c_float,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.find_peaks.restype = ctypes.c_int
     peaks_sort = sorted(zip(peaks, index),
@@ -233,10 +234,11 @@ def decluster(peaks, index, trig_int):
                         reverse=True)
     arr, inds = zip(*peaks_sort)
     arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.ascontiguousarray(inds, dtype=np.long)
-    out = np.zeros(len(arr), dtype=np.int32)
+    inds = np.array(inds, dtype=np.float32) / trig_int
+    inds = np.ascontiguousarray(inds, dtype=np.float32)
+    out = np.zeros(len(arr), dtype=np.uint32)
     ret = utilslib.find_peaks(
-        arr, inds, np.long(len(arr)), 0, np.long(trig_int), out)
+        arr, inds, length, 0, np.float32(1), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine")
     peaks_out = list(compress(peaks_sort, out))

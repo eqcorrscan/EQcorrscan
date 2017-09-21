@@ -19,18 +19,19 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 
  // Prototypes
-int find_peaks(float*, long*, long, float, long, int*);
+int find_peaks(float*, float*, unsigned int, float, float, unsigned int*);
 
 // Functions
 // Longs could be unsigned ints...
-// There is a memory issue somewhere!!!!
-int find_peaks(float *arr, long *indexes, long len, float thresh, long trig_int,
-               int *out){
+int find_peaks(float *arr, float *indexes,
+	       unsigned int len, float thresh, float trig_int,
+               unsigned int *out){
     // Takes a sorted array an the indexes
-    long i, j, step;
-    int keep;
+    int i, j, keep;
+    float step;
     // Take first (highest) peak
     out[0] = 1;
     for (i = 1; i < len; ++i){
