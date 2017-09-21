@@ -58,7 +58,7 @@ def is_prime(number):
 
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0, full_peaks=False):
+                      samp_rate=1.0, full_peaks=False, compiled=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -120,9 +120,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
             peaks = [(window[np.argmax(abs(window))],
                       int(peak_slice[0].start + np.argmax(abs(window))))]
         initial_peaks.extend(peaks)
-    peaks = decluster(peaks=np.array(list(zip(*initial_peaks))[0]),
-                      index=np.array(list(zip(*initial_peaks))[1]),
-                      trig_int=trig_int)
+    if not compiled:
+        func = decluster
+    else:
+        func = decluster_compiled
+    peaks = func(peaks=np.array(list(zip(*initial_peaks))[0]),
+                 index=np.array(list(zip(*initial_peaks))[1]),
+                 trig_int=trig_int)
     if initial_peaks:
         if debug >= 3:
             from eqcorrscan.utils import plotting
@@ -139,7 +143,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True):
+                     samp_rate=1.0, parallel=True, compiled=False):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -170,10 +174,12 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         for sub_arr, arr_thresh in zip(arr, thresh):
             peaks.append(find_peaks2_short(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
-                starttime=starttime, samp_rate=samp_rate, full_peaks=False))
+                starttime=starttime, samp_rate=samp_rate, full_peaks=False,
+                compiled=compiled))
     else:
         with _pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
-            params = ((sub_arr, arr_thresh, trig_int)
+            params = ((sub_arr, arr_thresh, trig_int, debug,
+                       False, 1.0, False, compiled)
                       for sub_arr, arr_thresh in zip(arr, thresh))
             results = [pool.apply_async(find_peaks2_short, param)
                        for param in params]
@@ -210,6 +216,49 @@ def decluster(peaks, index, trig_int):
             valid_ind[pnum] = False
     # form a list of tuples with [(peak_value, peak_index), ...]
     return [(peaks[x], index[x]) for x in np.sort(peak_ind_list)]
+
+
+def decluster_compiled(peaks, index, trig_int):
+    """
+    Decluster peaks based on an enforced minimum separation.
+    :type peaks: np.array
+    :param peaks: array of peak values
+    :type index: np.ndarray
+    :param index: locations of peaks
+    :type trig_int: int
+    :param trig_int: Minimum trigger interval in samples
+
+    :return: list of tuples of (value, sample)
+    """
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+    from future.utils import native_str
+    from itertools import compress
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.find_peaks.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.long,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long, ctypes.c_float, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.int32,
+                               flags=native_str('C_CONTIGUOUS'))]
+    utilslib.find_peaks.restype = ctypes.c_int
+    peaks_sort = sorted(zip(peaks, index),
+                        key=lambda amplitude: abs(amplitude[0]),
+                        reverse=True)
+    arr, inds = zip(*peaks_sort)
+    arr = np.ascontiguousarray(arr, dtype=np.float32)
+    inds = np.ascontiguousarray(inds, dtype=np.long)
+    out = np.zeros(len(arr), dtype=np.int32)
+    ret = utilslib.find_peaks(
+        arr, inds, np.long(len(arr)), 0, trig_int, out)
+    if ret != 0:
+        raise MemoryError("Issue with c-routine")
+    peaks_out = list(compress(peaks_sort, out))
+    return peaks_out
 
 
 def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
