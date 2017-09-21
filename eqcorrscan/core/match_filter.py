@@ -3990,12 +3990,12 @@ def match_filter(template_names, template_list, st, threshold,
     if output_cat:
         det_cat = Catalog()
     if str(threshold_type) == str("absolute"):
-        thresholds = [threshold for _ in range(cccsums)]
+        thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
         thresholds = [threshold * np.median(np.abs(cccsum))
                       for cccsum in cccsums]
     else:
-        thresholds = [threshold * no_chans[i] for i in range(cccsums)]
+        thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate))
