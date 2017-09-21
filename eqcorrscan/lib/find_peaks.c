@@ -22,12 +22,11 @@
 #include <stdint.h>
 
  // Prototypes
-int find_peaks(float*, float*, unsigned int, float, float, unsigned int*);
+int find_peaks(float*, float*, int, float, float, unsigned int*);
 
 // Functions
 // Longs could be unsigned ints...
-int find_peaks(float *arr, float *indexes,
-	       unsigned int len, float thresh, float trig_int,
+int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int,
                unsigned int *out){
     // Takes a sorted array an the indexes
     int i, j, keep;

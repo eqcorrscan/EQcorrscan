@@ -219,13 +219,13 @@ def decluster(peaks, index, trig_int):
 
     utilslib = _load_cdll('libutils')
 
-    length = np.uint32(len(peaks))
+    length = np.int32(len(peaks))
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_uint, ctypes.c_float, ctypes.c_float,
+        ctypes.c_int, ctypes.c_float, ctypes.c_float,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.find_peaks.restype = ctypes.c_int
