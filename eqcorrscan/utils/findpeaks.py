@@ -58,7 +58,7 @@ def is_prime(number):
 
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0, full_peaks=False, compiled=False):
+                      samp_rate=1.0, full_peaks=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -120,13 +120,9 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
             peaks = [(window[np.argmax(abs(window))],
                       int(peak_slice[0].start + np.argmax(abs(window))))]
         initial_peaks.extend(peaks)
-    if not compiled:
-        func = decluster
-    else:
-        func = decluster_compiled
-    peaks = func(peaks=np.array(list(zip(*initial_peaks))[0]),
-                 index=np.array(list(zip(*initial_peaks))[1]),
-                 trig_int=trig_int)
+    peaks = decluster(peaks=np.array(list(zip(*initial_peaks))[0]),
+                      index=np.array(list(zip(*initial_peaks))[1]),
+                      trig_int=trig_int)
     if initial_peaks:
         if debug >= 3:
             from eqcorrscan.utils import plotting
@@ -143,7 +139,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True, compiled=False):
+                     samp_rate=1.0, parallel=True):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -174,12 +170,11 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         for sub_arr, arr_thresh in zip(arr, thresh):
             peaks.append(find_peaks2_short(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
-                starttime=starttime, samp_rate=samp_rate, full_peaks=False,
-                compiled=compiled))
+                starttime=starttime, samp_rate=samp_rate, full_peaks=False))
     else:
         with _pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
-                       False, 1.0, False, compiled)
+                       False, 1.0, False)
                       for sub_arr, arr_thresh in zip(arr, thresh))
             results = [pool.apply_async(find_peaks2_short, param)
                        for param in params]
@@ -188,37 +183,6 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def decluster(peaks, index, trig_int):
-    """
-    Decluster peaks based on an enforced minimum separation.
-
-    :type peaks: np.array
-    :param peaks: array of peak values
-    :type index: np.ndarray
-    :param index: locations of peaks
-    :type trig_int: int
-    :param trig_int: Minimum trigger interval in samples
-
-    :return: list of tuples of (value, sample)
-    """
-    # sort peaks highest to lowest
-    peak_ind_list = []  # a list of indices that should be kept
-    valid_ind = np.ones(len(peaks), dtype=bool)
-    # get a sorted list of indices of the reduced arrays
-    new_inds = np.argsort(-np.abs(peaks))
-    # get a sorted list of the original indicies
-    sorted_peak_inds = index[new_inds]
-    # iterate, if no peak with a high value occurs within trig int save
-    for pnum, ind in enumerate(sorted_peak_inds):
-        inds_bigger = np.abs(sorted_peak_inds[: pnum] - ind) < (trig_int + 1)
-        if not np.any(inds_bigger & valid_ind[: pnum]):
-            peak_ind_list.append(new_inds[pnum])
-        else:
-            valid_ind[pnum] = False
-    # form a list of tuples with [(peak_value, peak_index), ...]
-    return [(peaks[x], index[x]) for x in np.sort(peak_ind_list)]
-
-
-def decluster_compiled(peaks, index, trig_int):
     """
     Decluster peaks based on an enforced minimum separation.
     :type peaks: np.array

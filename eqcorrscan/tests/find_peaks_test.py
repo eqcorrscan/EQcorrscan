@@ -40,14 +40,6 @@ class TestStandardPeakFinding:
         return peaks
 
     @pytest.fixture
-    def c_peak_array(self, cc_array):
-        """ run find_peaks2_short on cc_array and return results """
-        peaks = find_peaks2_short(
-            arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            debug=0, starttime=None, samp_rate=200.0, compiled=True)
-        return peaks
-
-    @pytest.fixture
     def full_peak_array(self, cc_array):
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
@@ -80,14 +72,6 @@ class TestStandardPeakFinding:
         assert len(peak_array) == len(expected_peak_array), (
             'Peaks are not the same length, has ccc been updated?')
         assert (np.array(peak_array) == expected_peak_array).all()
-
-    def test_c_find_peaks(self, c_peak_array, expected_peak_array):
-        """Test find_peaks2_short returns expected peaks """
-
-        # Check length first as this will be a more obvious issue
-        assert len(c_peak_array) == len(expected_peak_array), (
-            'Peaks are not the same length, has ccc been updated?')
-        assert (np.array(c_peak_array) == expected_peak_array).all()
 
     def test_find_all_peaks(self, full_peak_array, expected_peak_array):
         """Test finding all the peaks."""
@@ -146,23 +130,13 @@ class TestPeakFindSpeeds:
         return keys
 
     def test_python_speed(self, datasets, thresholds, keys):
-        print("Running Python declustering")
+        print("Running declustering")
         for key in keys:
             print("\tRunning timings for %s dataset" % key)
             peaks = time_func(
                 find_peaks2_short, "find_peaks2_short", arr=datasets[key],
                 thresh=thresholds[key], trig_int=600, debug=0, starttime=False,
                 samp_rate=100)
-            print('Found %i peaks' % len(peaks))
-
-    def test_c_speed(self, datasets, thresholds, keys):
-        print("Running C declustering")
-        for key in keys:
-            print("\tRunning timings for %s dataset" % key)
-            peaks = time_func(
-                find_peaks2_short, "find_peaks2_short", arr=datasets[key],
-                thresh=thresholds[key], trig_int=600, debug=0, starttime=False,
-                samp_rate=100, compiled=True)
             print('Found %i peaks' % len(peaks))
 
     def test_looping(self, datasets, thresholds, keys):
@@ -176,9 +150,4 @@ class TestPeakFindSpeeds:
         parallel_peaks = time_func(
             multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
             trig_int=600, parallel=True)
-        print("Running parallel compiled loop")
-        p_c_peaks = time_func(
-            multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
-            trig_int=600, parallel=True, compiled=True)
         assert serial_peaks == parallel_peaks
-        assert p_c_peaks == serial_peaks
