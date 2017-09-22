@@ -19,7 +19,7 @@ from obspy import UTCDateTime
 from scipy import ndimage
 from multiprocessing import Pool
 
-from eqcorrscan.utils.correlate import _pool_boy
+from eqcorrscan.utils.correlate import pool_boy
 
 
 def is_prime(number):
@@ -190,7 +190,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
                 starttime=starttime, samp_rate=samp_rate, full_peaks=False))
     else:
-        with _pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
+        with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
                        False, 1.0, False)
                       for sub_arr, arr_thresh in zip(arr, thresh))
