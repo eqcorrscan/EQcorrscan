@@ -11,9 +11,9 @@ from os.path import join
 import numpy as np
 import pytest
 
-from eqcorrscan.utils.timer import time_func
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks)
+from eqcorrscan.utils.timer import time_func
 
 
 class TestStandardPeakFinding:
@@ -48,23 +48,6 @@ class TestStandardPeakFinding:
         return peaks
 
     # tests
-    # def test_max_values(self, old_peak_array, cc_array):
-    #     """
-    #     ensure the values in the peak array are max values in
-    #     the expected window.
-    #
-    #     This doesn't really work - for the case where peak a is at position
-    #     0 and peak b is at position 11, with trig_int = 10, there may be
-    #     values higher than peak b in positions 1-10, but these are ruled out
-    #     by peak a... Hence test fails.
-    #     """
-    #     abs_array = np.abs(cc_array)
-    #     for val, ind in old_peak_array:
-    #         assert val == cc_array[ind]
-    #         start, stop = ind - self.trig_index, ind + self.trig_index + 1
-    #         window = abs_array[start: stop]
-    #         assert np.max(window) == np.abs(val)
-
     def test_main_find_peaks(self, peak_array, expected_peak_array):
         """Test find_peaks2_short returns expected peaks """
 
@@ -99,49 +82,88 @@ class TestCoincidenceTrigger:
 
 
 class TestPeakFindSpeeds:
-    @pytest.fixture
-    def datasets(self):
-        data_len = 1000000
-        datasets = {'random': np.random.randn(data_len),
-                    'noisy': np.random.randn(data_len) ** 5,
-                    'spiky': np.random.randn(data_len),
-                    'clustered': np.random.randn(data_len)}
-        spike_locs = np.random.randint(0, data_len, size=500)
+    """ test findpeaks on various themes of arrays """
+    datasets_1d = []
+    datasets_2d = []
+    data_len = 1000000
+
+    # fixtures that create 1D datasets
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_1d)
+    def random(self):
+        """ simple random array """
+        return np.random.randn(self.data_len)
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_1d)
+    def noisy(self):
+        """ noisy array """
+        return np.random.randn(self.data_len) ** 5
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_1d)
+    def spiky(self):
+        """ array with large spikes """
+        arr = np.random.randn(self.data_len) ** 5
+        spike_locs = np.random.randint(0, self.data_len, size=500)
         for spike_loc in spike_locs:
-            datasets['spiky'][spike_loc] *= 1000
-        spike_locs = np.random.randint(0, data_len / 10, size=200)
+            arr[spike_loc] *= 1000
+        return arr
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_1d)
+    def clustered(self):
+        arr = np.random.randn(self.data_len)
+        spike_locs = np.random.randint(0, self.data_len / 10, size=200)
         spike_locs = np.append(
             spike_locs, np.random.randint(
-                2 * (data_len / 10), 4 * (data_len / 10), size=400))
+                2 * (self.data_len / 10), 4 * (self.data_len / 10), size=400))
         for spike_loc in spike_locs:
-            datasets['clustered'][spike_loc] *= 1000
-        return datasets
+            arr[spike_loc] *= 1000
+        return arr
 
-    @pytest.fixture
-    def thresholds(self, datasets):
-        thresholds = {}
-        for key in datasets.keys():
-            thresholds.update({key: 10 * np.median(np.abs(datasets[key]))})
-        return thresholds
+    @pytest.fixture(scope='class', params=datasets_1d)
+    def dataset_1d(self, request):
+        """ parametrize the 1d datasets """
+        return request.getfuncargvalue(request.param)
 
-    @pytest.fixture
-    def keys(self, datasets):
-        keys = sorted(list(datasets.keys()))
-        return keys
+    # fixtures that create 2D datasets
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_2d)
+    def aggregated_1d_datasets(self, request):
+        """ create a 2d numpy array of all the datasets """
+        return np.array([request.getfuncargvalue(x)
+                         for x in self.datasets_1d])
 
-    def test_python_speed(self, datasets, thresholds, keys):
-        print("Running declustering")
-        for key in keys:
-            print("\tRunning timings for %s dataset" % key)
-            peaks = time_func(
-                find_peaks2_short, "find_peaks2_short", arr=datasets[key],
-                thresh=thresholds[key], trig_int=600, debug=0, starttime=False,
-                samp_rate=100)
-            print('Found %i peaks' % len(peaks))
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_2d)
+    def noisy_multi_array(self):
+        """ a noisy 2d array """
+        return np.random.randn(4, self.data_len) ** 5
 
-    def test_looping(self, datasets, thresholds, keys):
-        arr = np.array([datasets[key] for key in keys])
-        threshold = [thresholds[key] for key in keys]
+    @pytest.fixture(scope='class', params=datasets_2d)
+    def dataset_2d(self, request):
+        """ parametrize the 2d datasets """
+        return request.getfuncargvalue(request.param)
+
+    # tests
+    def test_python_speed(self, dataset_1d, request):
+        """ test that findpeaks works on each of the arrays and print the
+        time it took to run. Tests passes if no error is raised"""
+        print('starting find_peak profiling on: ' + request.node.name)
+        threshold = np.median(dataset_1d)  # get threshold
+        peaks = time_func(
+            find_peaks2_short, "find_peaks2_short", arr=dataset_1d,
+            thresh=threshold, trig_int=600, debug=0, starttime=False,
+            samp_rate=100)
+        print('Found %i peaks' % len(peaks))
+
+    def test_multi_find_peaks(self, dataset_2d, request):
+        """ ensure the same results are returned for serial and parallel
+        in multi_find_peaks """
+        print('starting find_peak profiling on: ' + request.node.name)
+        arr = dataset_2d
+        threshold = [10 * np.median(np.abs(x)) for x in dataset_2d]
         print("Running serial loop")
         serial_peaks = time_func(
             multi_find_peaks, name="serial", arr=arr, thresh=threshold,
