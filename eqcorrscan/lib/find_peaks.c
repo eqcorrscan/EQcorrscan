@@ -19,26 +19,27 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
  // Prototypes
-int find_peaks(float*, long*, long, float, long, int*);
+int find_peaks(float*, float*, int, float, float, unsigned int*);
 
 // Functions
 // Longs could be unsigned ints...
-// There is a memory issue somewhere!!!!
-int find_peaks(float *arr, long *indexes, long len, float thresh, long trig_int,
-               int *out){
+int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int,
+               unsigned int *out){
     // Takes a sorted array an the indexes
-    long i, j, step;
-    int keep;
+    int i, j, keep;
+    float step;
     // Take first (highest) peak
     out[0] = 1;
     for (i = 1; i < len; ++i){
         keep = 1;
         // Threshold is for absolute values
-        if (-1 * thresh < arr[i] && arr[i] < thresh){
-            break;
-        }
+//        if (-1 * thresh < arr[i] && arr[i] < thresh){
+//            break;
+//        }
         for (j = 0; j < len; ++j){
             step = indexes[i] - indexes[j];
             if (step < 0){step *= -1;}

@@ -81,6 +81,7 @@ class TestCoincidenceTrigger:
         assert triggers, [(0.45, 100)]
 
 
+@pytest.mark.serial
 class TestPeakFindSpeeds:
     """ test findpeaks on various themes of arrays """
     datasets_1d = []
@@ -172,4 +173,16 @@ class TestPeakFindSpeeds:
         parallel_peaks = time_func(
             multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
             trig_int=600, parallel=True)
+        assert serial_peaks == parallel_peaks
+
+    def test_noisy_timings(self, noisy_multi_array):
+        threshold = [np.median(np.abs(d)) for d in noisy_multi_array]
+        print("Running serial loop")
+        serial_peaks = time_func(
+            multi_find_peaks, name="serial", arr=noisy_multi_array,
+            thresh=threshold, trig_int=600, parallel=False)
+        print("Running parallel loop")
+        parallel_peaks = time_func(
+            multi_find_peaks, name="parallel", arr=noisy_multi_array,
+            thresh=threshold, trig_int=600, parallel=True)
         assert serial_peaks == parallel_peaks
