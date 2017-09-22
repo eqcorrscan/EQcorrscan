@@ -98,6 +98,7 @@ class TestCoincidenceTrigger:
         assert triggers, [(0.45, 100)]
 
 
+@pytest.mark.serial
 class TestPeakFindSpeeds:
     @pytest.fixture
     def datasets(self):
@@ -129,6 +130,11 @@ class TestPeakFindSpeeds:
         keys = sorted(list(datasets.keys()))
         return keys
 
+    @pytest.fixture
+    def noisy_multi_array(self):
+        noisy_multi_array = np.random.randn(4, 1000000) ** 5
+        return noisy_multi_array
+
     def test_python_speed(self, datasets, thresholds, keys):
         print("Running declustering")
         for key in keys:
@@ -150,4 +156,16 @@ class TestPeakFindSpeeds:
         parallel_peaks = time_func(
             multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
             trig_int=600, parallel=True)
+        assert serial_peaks == parallel_peaks
+
+    def test_noisy_timings(self, noisy_multi_array):
+        threshold = [np.median(np.abs(d)) for d in noisy_multi_array]
+        print("Running serial loop")
+        serial_peaks = time_func(
+            multi_find_peaks, name="serial", arr=noisy_multi_array,
+            thresh=threshold, trig_int=600, parallel=False)
+        print("Running parallel loop")
+        parallel_peaks = time_func(
+            multi_find_peaks, name="parallel", arr=noisy_multi_array,
+            thresh=threshold, trig_int=600, parallel=True)
         assert serial_peaks == parallel_peaks

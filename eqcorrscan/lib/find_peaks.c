@@ -19,7 +19,8 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include <math.h>
 
  // Prototypes
 int find_peaks(float*, float*, int, float, float, unsigned int*);
@@ -36,9 +37,9 @@ int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int
     for (i = 1; i < len; ++i){
         keep = 1;
         // Threshold is for absolute values
-        if (-1 * thresh < arr[i] && arr[i] < thresh){
-            break;
-        }
+//        if (-1 * thresh < arr[i] && arr[i] < thresh){
+//            break;
+//        }
         for (j = 0; j < len; ++j){
             step = indexes[i] - indexes[j];
             if (step < 0){step *= -1;}
