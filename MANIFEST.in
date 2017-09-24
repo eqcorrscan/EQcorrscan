@@ -18,6 +18,7 @@ recursive-include eqcorrscan/tests *.py
 include eqcorrscan/lib/libutils.def
 include eqcorrscan/lib/multi_corr.c
 include eqcorrscan/lib/time_corr.c
+include eqcorrscan/lib/find_peaks.c
 
 # exclude rules
 # global-exclude *.pyc *.ms *.tgz

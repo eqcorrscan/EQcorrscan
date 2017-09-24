@@ -114,7 +114,7 @@ set_xcorr = _Context(XCOR_FUNCS, 'default')
 # ---------------------- generic concurrency functions
 
 @contextlib.contextmanager
-def _pool_boy(Pool, traces, **kwargs):
+def pool_boy(Pool, traces, **kwargs):
     """
     A context manager for handling the setup and cleanup of a pool object.
 
@@ -158,7 +158,7 @@ def _general_multithread(func):
     """ return the general multithreading function using func """
 
     def multithread(templates, stream, *args, **kwargs):
-        with _pool_boy(ThreadPool, len(stream), **kwargs) as pool:
+        with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multithread
@@ -166,7 +166,7 @@ def _general_multithread(func):
 
 def _general_multiprocess(func):
     def multiproc(templates, stream, *args, **kwargs):
-        with _pool_boy(ProcessPool, len(stream), **kwargs) as pool:
+        with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multiproc

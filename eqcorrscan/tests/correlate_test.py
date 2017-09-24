@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import copy
 import itertools
-import time
 from collections import defaultdict
 from functools import wraps
 
@@ -15,6 +14,7 @@ from obspy import Trace, Stream
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
+from eqcorrscan.utils.timer import time_func
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
@@ -31,16 +31,6 @@ def gen_xcorr_func(name):
 
     func.__name__ = str(name)
     return func
-
-
-def time_func(func, name, *args, **kwargs):
-    """ call a func with args and kwargs, print name of func and how
-    long it took. """
-    tic = time.time()
-    out = func(*args, **kwargs)
-    toc = time.time()
-    print('%s took %0.2f seconds' % (name, toc - tic))
-    return out
 
 
 def measure_counts(self, func):

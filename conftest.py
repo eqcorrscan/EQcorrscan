@@ -86,6 +86,9 @@ def append_name(list_like):
     """
     Decorator to append a function name to an object with an append method.
 
+    Useful for making meta-fixtures using the following recipe:
+    https://github.com/pytest-dev/pytest/issues/349#issuecomment-189370273
+
     :param list_like:  Any object with append method
     :return: func
     """

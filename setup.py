@@ -22,10 +22,10 @@ VERSION = eqcorrscan.__version__
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 
 long_description = '''
-EQcorrscan: repeating and near-repeating earthquake detection and analysis 
+EQcorrscan: repeating and near-repeating earthquake detection and analysis
 in Python.  Open-source routines for: systematic template
 creation, matched-filter detection, subspace detection, brightness detection,
-clustering of seismic events, magnitude calculation by singular value 
+clustering of seismic events, magnitude calculation by singular value
 decomposition, and more!
 '''
 
@@ -134,12 +134,15 @@ def get_extensions():
         'library_dirs': get_library_dirs()}
 
     sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'time_corr.c')]
+               os.path.join('eqcorrscan', 'lib', 'time_corr.c'),
+               os.path.join('eqcorrscan', 'lib', 'find_peaks.c')]
     exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
         extra_link_args = ['-lm', '-lgomp']
-        extra_compile_args = ['-fopenmp', '-ftree-vectorize', '-msse2']
+        extra_compile_args = ['-fopenmp']
+        if 'arm' not in get_build_platform():
+            extra_compile_args.extend(['-msse2', '-ftree-vectorize'])
     else:
         extra_link_args = []
         extra_compile_args = ['/openmp', '/TP']
