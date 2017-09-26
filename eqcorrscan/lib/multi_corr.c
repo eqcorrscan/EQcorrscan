@@ -38,6 +38,8 @@
     #endif
 #endif
 
+#define TIMINGS
+
 // Prototypes
 int normxcorr_fftw(float*, int, int, float*, int, float*, int, int*, int*);
 
@@ -278,10 +280,12 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 	int i, t, startind, status = 0;
 	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
+#ifdef TIMINGS
     double tmpt;
 
-	// zero padding - and flip template
     tmpt = omp_get_wtime();
+#endif
+	// zero padding - and flip template
 	for (t = 0; t < n_templates; ++t){
 		for (i = 0; i < template_len; ++i)
 		{
@@ -289,28 +293,38 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 			norm_sums[t] += templates[(t * template_len) + i];
 		}
 	}
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[0] += omp_get_wtime() - tmpt;
 
     tmpt = omp_get_wtime();
-	for (i = 0; i < image_len; ++i)
+#endif
+    for (i = 0; i < image_len; ++i)
 	{
 		image_ext[i] = image[i];
 	}
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[1] += omp_get_wtime() - tmpt;
-	//  Compute ffts of template and image
+    
     tmpt = omp_get_wtime();
+#endif
+	//  Compute fft of template
 	fftwf_execute_dft_r2c(pa, template_ext, outa);
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[2] += omp_get_wtime() - tmpt;
     tmpt = omp_get_wtime();
-	fftwf_execute_dft_r2c(pb, image_ext, outb);
+#endif
+    // Compute fft of image
+    fftwf_execute_dft_r2c(pb, image_ext, outb);
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[3] += omp_get_wtime() - tmpt;
 
-	//  Compute dot product
     tmpt = omp_get_wtime();
+#endif
+	//  Compute dot product
     #pragma omp parallel for collapse(2) num_threads(num_threads)
 	for (t = 0; t < n_templates; ++t){
     	for (i = 0; i < N2; ++i)
@@ -319,48 +333,57 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
     		out[(t * N2) + i][1] = outa[(t * N2) + i][0] * outb[i][1] + outa[(t * N2) + i][1] * outb[i][0];
     	}
     }
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[4] += omp_get_wtime() - tmpt;
-	//  Compute inverse fft
     tmpt = omp_get_wtime();
+#endif
+	//  Compute inverse fft
 	fftwf_execute_dft_c2r(px, out, ccc);
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[5] += omp_get_wtime() - tmpt;
 
+    tmpt = omp_get_wtime();
+#endif
 	//  Procedures for normalisation
 	// Compute starting mean, will update this
-    tmpt = omp_get_wtime();
 	for (i=0; i < template_len; ++i){
 		sum += (double) image[i];
 	}
+	mean = sum / template_len;
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[6] += omp_get_wtime() - tmpt;
-	mean = sum / template_len;
 
-	// Compute starting standard deviation
     tmpt = omp_get_wtime();
+#endif
+	// Compute starting standard deviation
 	for (i=0; i < template_len; ++i){
 		var += pow((double) image[i] - mean, 2) / (template_len);
 	}
+	stdev = sqrt(var);
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[7] += omp_get_wtime() - tmpt;
-	stdev = sqrt(var);
 
-
+    tmpt = omp_get_wtime();
+#endif
     // Used for centering - taking only the valid part of the cross-correlation
 	startind = template_len - 1;
-    tmpt = omp_get_wtime();
     if (var >= acceptedDiff) {
         for (t = 0; t < n_templates; ++t){
             float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
     }
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[8] += omp_get_wtime() - tmpt;
 
-	// Center and divide by length to generate scaled convolution
     tmpt = omp_get_wtime();
+#endif
+	// Center and divide by length to generate scaled convolution
 	for(i = 1; i < (image_len - template_len + 1); ++i){
 		// Need to cast to double otherwise we end up with annoying floating
 		// point errors when the variance is massive - collecting fp errors.
@@ -377,8 +400,10 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 			}
 		}
 	}
+#ifdef TIMINGS
     #pragma omp atomic
     dbgt[9] += omp_get_wtime() - tmpt;
+#endif
 	//  Clean up
 	free(norm_sums);
 
@@ -471,6 +496,7 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     fftwf_plan pa, pb, px;
     int num_threads = 1;
     int num_threads_inner = 1;
+    double debugt[10] = {0};
 
 
     #ifdef N_THREADS
@@ -588,7 +614,6 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     px = fftwf_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    double debugt[10] = {0};
     #pragma omp parallel for reduction(+:r) num_threads(num_threads)
     for (i = 0; i < n_channels; ++i){
         int tid = 0; /* each thread has its own workspace */
@@ -618,10 +643,12 @@ int multi_normxcorr_fftw(float *templates, int n_templates, int template_len, in
     fftwf_cleanup_threads();
     fftwf_cleanup();
 
+#ifdef TIMINGS
     printf("DEBUG TIMES:\n");
     for (i = 0; i < 10; i++) {
         printf("  SECTION %d: %f s\n", i, debugt[i]);
     }
+#endif
 
     return r;
 }

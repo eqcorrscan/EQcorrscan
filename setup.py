@@ -106,7 +106,8 @@ def get_libraries():
     if get_build_platform() in ('win32', 'win-amd64'):
         libraries = ['libfftw3-3', 'libfftw3f-3']
     else:
-        libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
+#        libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
+        libraries = ['fftw3xf_gnu_pic', 'mkl_rt']
 
     return libraries
 
