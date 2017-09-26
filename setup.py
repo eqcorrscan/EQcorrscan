@@ -107,7 +107,7 @@ def get_libraries():
         libraries = ['libfftw3-3', 'libfftw3f-3']
     else:
 #        libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
-        libraries = ['fftw3xf_gnu_pic', 'mkl_rt']
+        libraries = ['fftw3xf_gnu_pic', 'mkl_rt'] # TODO: need to detect this somehow
 
     return libraries
 
