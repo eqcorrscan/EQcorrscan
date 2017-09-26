@@ -527,7 +527,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **outb = NULL;
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
-    int num_threads = 1;
+    int num_threads_outer = 1;
     int num_threads_inner = 1;
     double debugt[10] = {0};
 
@@ -537,43 +537,43 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_init_threads();
     fftwf_plan_with_nthreads(num_threads_inner);
     /* set the number of threads - the minimum of the numbers of channels and threads */
-//    num_threads = (N_THREADS > n_channels) ? n_channels : N_THREADS;
-    printf("NUM_THREADS_OUTER: %d\n", num_threads);
+//    num_threads_outer = (N_THREADS > n_channels) ? n_channels : N_THREADS;
+    printf("NUM_THREADS_OUTER: %d\n", num_threads_outer);
     printf("NUM_THREADS_INNER: %d\n", num_threads_inner);
     #endif
 
     /* allocate memory for all threads here */
-    template_ext = (float**) malloc(num_threads * sizeof(float*));
+    template_ext = (float**) malloc(num_threads_outer * sizeof(float*));
     if (template_ext == NULL) {
         printf("Error allocating template_ext\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
         return -1;
     }
-    image_ext = (float**) malloc(num_threads * sizeof(float*));
+    image_ext = (float**) malloc(num_threads_outer * sizeof(float*));
     if (image_ext == NULL) {
         printf("Error allocating image_ext\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
         return -1;
     }
-    ccc = (float**) malloc(num_threads * sizeof(float*));
+    ccc = (float**) malloc(num_threads_outer * sizeof(float*));
     if (ccc == NULL) {
         printf("Error allocating ccc\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
         return -1;
     }
-    outa = (fftwf_complex**) malloc(num_threads * sizeof(fftwf_complex*));
+    outa = (fftwf_complex**) malloc(num_threads_outer * sizeof(fftwf_complex*));
     if (outa == NULL) {
         printf("Error allocating outa\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
         return -1;
     }
-    outb = (fftwf_complex**) malloc(num_threads * sizeof(fftwf_complex*));
+    outb = (fftwf_complex**) malloc(num_threads_outer * sizeof(fftwf_complex*));
     if (outb == NULL) {
         printf("Error allocating outb\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
         return -1;
     }
-    out = (fftwf_complex**) malloc(num_threads * sizeof(fftwf_complex*));
+    out = (fftwf_complex**) malloc(num_threads_outer * sizeof(fftwf_complex*));
     if (out == NULL) {
         printf("Error allocating out\n");
         free_fftwf_arrays(0, template_ext, image_ext, ccc, outa, outb, out);
@@ -581,7 +581,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     }
 
     // All memory allocated with `fftw_malloc` to ensure 16-byte aligned.
-    for (i = 0; i < num_threads; i++) {
+    for (i = 0; i < num_threads_outer; i++) {
         /* initialise all to NULL so that freeing on error works */
         template_ext[i] = NULL;
         image_ext[i] = NULL;
@@ -647,7 +647,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     px = fftwf_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    #pragma omp parallel for reduction(+:r) num_threads(num_threads)
+    #pragma omp parallel for reduction(+:r) num_threads(num_threads_outer)
     for (i = 0; i < n_channels; ++i){
         int tid = 0; /* each thread has its own workspace */
 
@@ -669,7 +669,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     }
 
     /* free fftw memory */
-    free_fftwf_arrays(num_threads, template_ext, image_ext, ccc, outa, outb, out);
+    free_fftwf_arrays(num_threads_outer, template_ext, image_ext, ccc, outa, outb, out);
     fftwf_destroy_plan(pa);
     fftwf_destroy_plan(pb);
     fftwf_destroy_plan(px);
