@@ -278,11 +278,18 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
   */
 	int N2 = fft_len / 2 + 1;
 	int i, t, startind, status = 0;
-	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
+	double *mean, new_samp, old_samp, *var, sum=0.0, acceptedDiff = 0.0000001;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 #ifdef TIMINGS
     double tmpt;
+#endif
 
+    if (norm_sums == NULL) {
+        printf("Error allocating norm_sums in normxcorr_fftw_main\n");
+        return 1;
+    }
+
+#ifdef TIMINGS
     tmpt = omp_get_wtime();
 #endif
 	// zero padding - and flip template
@@ -346,12 +353,29 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 
     tmpt = omp_get_wtime();
 #endif
+    // Allocate mean and var arrays
+    mean = (double*) malloc((image_len - template_len + 1) * sizeof(double));
+    if (mean == NULL) {
+        printf("Error allocating mean in normxcorr_fftw_main\n");
+        free(norm_sums);
+        return 1;
+    }
+    var = (double*) malloc((image_len - template_len + 1) * sizeof(double));
+    if (var == NULL) {
+        printf("Error allocating var in normxcorr_fftw_main\n");
+        free(norm_sums);
+        free(mean);
+        return 1;
+    }
+    // TODO: check allocation was successful
+    
 	//  Procedures for normalisation
 	// Compute starting mean, will update this
+    sum = 0.0;
 	for (i=0; i < template_len; ++i){
 		sum += (double) image[i];
 	}
-	mean = sum / template_len;
+	mean[0] = sum / template_len;
 #ifdef TIMINGS
     #pragma omp atomic
     dbgt[6] += omp_get_wtime() - tmpt;
@@ -359,10 +383,11 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
     tmpt = omp_get_wtime();
 #endif
 	// Compute starting standard deviation
+    sum = 0.0;
 	for (i=0; i < template_len; ++i){
-		var += pow((double) image[i] - mean, 2) / (template_len);
+		sum += pow((double) image[i] - mean[0], 2) / (template_len);
 	}
-	stdev = sqrt(var);
+    var[0] = sum;
 #ifdef TIMINGS
     #pragma omp atomic
     dbgt[7] += omp_get_wtime() - tmpt;
@@ -371,9 +396,10 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 #endif
     // Used for centering - taking only the valid part of the cross-correlation
 	startind = template_len - 1;
-    if (var >= acceptedDiff) {
+    if (var[0] >= acceptedDiff) {
+        double stdev = sqrt(var[0]);
         for (t = 0; t < n_templates; ++t){
-            float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
+            float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]) / stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
     }
@@ -389,13 +415,16 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 		// point errors when the variance is massive - collecting fp errors.
 		new_samp = (double) image[i + template_len - 1];
 		old_samp = (double) image[i - 1];
-		old_mean = mean;
-		mean = mean + (new_samp - old_samp) / template_len;
-		var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
-		stdev = sqrt(var);
-        if (var >= acceptedDiff) {
+		mean[i] = mean[i - 1] + (new_samp - old_samp) / template_len;
+		var[i] = var[i - 1] + (new_samp - old_samp) * (new_samp - mean[i] + old_samp - mean[i - 1]) / (template_len);
+    }
+
+    #pragma omp parallel for reduction(+:status) num_threads(num_threads) private(t)
+	for(i = 1; i < (image_len - template_len + 1); ++i){
+        if (var[i] >= acceptedDiff) {
+            double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
-                float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
+                float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
 			}
 		}
@@ -406,6 +435,8 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 #endif
 	//  Clean up
 	free(norm_sums);
+    free(mean);
+    free(var);
 
 	return status;
 }
@@ -415,7 +446,7 @@ static inline int set_ncc(int t, int i, int template_len, int image_len, float v
     int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
-        size_t ncc_index = t * (image_len - template_len + 1) + i - pad_array[t];
+        size_t ncc_index = t * ((size_t) image_len - template_len + 1) + i - pad_array[t];
 
         if (isnanf(value)) {
             // set NaNs to zero
