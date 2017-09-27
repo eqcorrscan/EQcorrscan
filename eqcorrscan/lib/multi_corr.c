@@ -38,7 +38,7 @@
     #endif
 #endif
 
-#define TIMINGS
+//#define TIMINGS
 
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*);
@@ -206,12 +206,12 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
 	int status = 0;
 	long N2 = fft_len / 2 + 1;
 	// All memory allocated with `fftw_malloc` to ensure 16-byte aligned
-	float * template_ext = fftwf_alloc_real(fft_len * n_templates);
-	float * image_ext = fftwf_alloc_real(fft_len);
-	float * ccc = fftwf_alloc_real(fft_len * n_templates);
-	fftwf_complex * outa = fftwf_alloc_complex(N2 * n_templates);
-	fftwf_complex * outb = fftwf_alloc_complex(N2);
-	fftwf_complex * out = fftwf_alloc_complex(N2 * n_templates);
+	float * template_ext = (float*) fftwf_malloc(fft_len * n_templates * sizeof(float));
+	float * image_ext = (float*) fftwf_malloc(fft_len * sizeof(float));
+	float * ccc = (float*) fftwf_malloc(fft_len * n_templates * sizeof(float));
+	fftwf_complex * outa = (fftwf_complex*) fftwf_malloc(N2 * n_templates * sizeof(fftwf_complex));
+	fftwf_complex * outb = (fftwf_complex*) fftwf_malloc(N2 * sizeof(fftwf_complex));
+	fftwf_complex * out = (fftwf_complex*) fftwf_malloc(N2 * n_templates * sizeof(fftwf_complex));
 	// Plan
 	fftwf_plan pa = fftwf_plan_dft_r2c_2d(n_templates, fft_len, template_ext, outa, FFTW_ESTIMATE);
 	fftwf_plan pb = fftwf_plan_dft_r2c_1d(fft_len, image_ext, outb, FFTW_ESTIMATE);
@@ -591,7 +591,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         out[i] = NULL;
 
         /* allocate template_ext arrays */
-        template_ext[i] = fftwf_alloc_real((size_t) fft_len * n_templates);
+        template_ext[i] = (float*) fftwf_malloc((size_t) fft_len * n_templates * sizeof(float));
         if (template_ext[i] == NULL) {
             printf("Error allocating template_ext[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
@@ -599,7 +599,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         }
 
         /* allocate image_ext arrays */
-        image_ext[i] = fftwf_alloc_real(fft_len);
+        image_ext[i] = (float*) fftwf_malloc(fft_len * sizeof(float));
         if (image_ext[i] == NULL) {
             printf("Error allocating image_ext[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
@@ -607,7 +607,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         }
 
         /* allocate ccc arrays */
-        ccc[i] = fftwf_alloc_real((size_t) fft_len * n_templates);
+        ccc[i] = (float*) fftwf_malloc((size_t) fft_len * n_templates * sizeof(float));
         if (ccc[i] == NULL) {
             printf("Error allocating ccc[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
@@ -615,7 +615,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         }
 
         /* allocate outa arrays */
-        outa[i] = fftwf_alloc_complex((size_t) N2 * n_templates);
+        outa[i] = (fftwf_complex*) fftwf_malloc((size_t) N2 * n_templates * sizeof(fftwf_complex));
         if (outa[i] == NULL) {
             printf("Error allocating outa[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
@@ -623,7 +623,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         }
 
         /* allocate outb arrays */
-        outb[i] = fftwf_alloc_complex((size_t) N2);
+        outb[i] = (fftwf_complex*) fftwf_malloc((size_t) N2 * sizeof(fftwf_complex));
         if (outb[i] == NULL) {
             printf("Error allocating outb[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
@@ -631,7 +631,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         }
 
         /* allocate out arrays */
-        out[i] = fftwf_alloc_complex((size_t) N2 * n_templates);
+        out[i] = (fftwf_complex*) fftwf_malloc((size_t) N2 * n_templates * sizeof(fftwf_complex));
         if (out[i] == NULL) {
             printf("Error allocating out[%d]\n", i);
             free_fftwf_arrays(i + 1, template_ext, image_ext, ccc, outa, outb, out);
