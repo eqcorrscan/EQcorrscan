@@ -38,15 +38,13 @@
     #endif
 #endif
 
-//#define TIMINGS
-
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*);
 
 static inline int set_ncc(long t, long i, long template_len, long image_len, float value, int *used_chans, int *pad_array, float *ncc);
 
 int normxcorr_fftw_main(float*, long, long, float*, long, float*, long, float*, float*, float*,
-        fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan, int*, int*, double*, int);
+        fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan, int*, int*, int);
 
 int normxcorr_fftw_threaded(float*, long, long, float*, long, float*, long, int*, int*);
 
@@ -222,10 +220,10 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
 	memset(image_ext, 0, (size_t) fft_len * sizeof(float));
 
 	// Call the function to do the work
-    double dbgt[10] = {0}; // TODO: remove this
+    // Note: forcing inner threads to 1 for now (could be passed from Python)
 	status = normxcorr_fftw_main(templates, template_len, n_templates, image, image_len,
 			ncc, fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
-            used_chans, pad_array, dbgt, 1);
+            used_chans, pad_array, 1);
 
 	// free memory and plans
 	fftwf_destroy_plan(pa);
@@ -251,7 +249,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                         float *template_ext, float *image_ext, float *ccc,
                         fftwf_complex *outa, fftwf_complex *outb, fftwf_complex *out,
                         fftwf_plan pa, fftwf_plan pb, fftwf_plan px, int *used_chans,
-                        int *pad_array, double *dbgt, int num_threads) {
+                        int *pad_array, int num_threads) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -282,18 +280,12 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     int status = 0;
 	double *mean, new_samp, old_samp, *var, sum=0.0, acceptedDiff = 0.0000001;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
-#ifdef TIMINGS
-    double tmpt;
-#endif
 
     if (norm_sums == NULL) {
         printf("Error allocating norm_sums in normxcorr_fftw_main\n");
         return 1;
     }
 
-#ifdef TIMINGS
-    tmpt = omp_get_wtime();
-#endif
 	// zero padding - and flip template
 	for (t = 0; t < n_templates; ++t){
 		for (i = 0; i < template_len; ++i)
@@ -302,37 +294,17 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 			norm_sums[t] += templates[(t * template_len) + i];
 		}
 	}
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[0] += omp_get_wtime() - tmpt;
-
-    tmpt = omp_get_wtime();
-#endif
     for (i = 0; i < image_len; ++i)
 	{
 		image_ext[i] = image[i];
 	}
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[1] += omp_get_wtime() - tmpt;
-    
-    tmpt = omp_get_wtime();
-#endif
+
 	//  Compute fft of template
 	fftwf_execute_dft_r2c(pa, template_ext, outa);
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[2] += omp_get_wtime() - tmpt;
-    tmpt = omp_get_wtime();
-#endif
+    
     // Compute fft of image
     fftwf_execute_dft_r2c(pb, image_ext, outb);
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[3] += omp_get_wtime() - tmpt;
 
-    tmpt = omp_get_wtime();
-#endif
 	//  Compute dot product
     #pragma omp parallel for collapse(2) num_threads(num_threads)
 	for (t = 0; t < n_templates; ++t){
@@ -342,19 +314,10 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     		out[(t * N2) + i][1] = outa[(t * N2) + i][0] * outb[i][1] + outa[(t * N2) + i][1] * outb[i][0];
     	}
     }
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[4] += omp_get_wtime() - tmpt;
-    tmpt = omp_get_wtime();
-#endif
+
 	//  Compute inverse fft
 	fftwf_execute_dft_c2r(px, out, ccc);
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[5] += omp_get_wtime() - tmpt;
-
-    tmpt = omp_get_wtime();
-#endif
+ 
     // Allocate mean and var arrays
     mean = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     if (mean == NULL) {
@@ -369,7 +332,6 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         free(mean);
         return 1;
     }
-    // TODO: check allocation was successful
     
 	//  Procedures for normalisation
 	// Compute starting mean, will update this
@@ -378,24 +340,14 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 		sum += (double) image[i];
 	}
 	mean[0] = sum / template_len;
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[6] += omp_get_wtime() - tmpt;
 
-    tmpt = omp_get_wtime();
-#endif
 	// Compute starting standard deviation
     sum = 0.0;
 	for (i=0; i < template_len; ++i){
 		sum += pow((double) image[i] - mean[0], 2) / (template_len);
 	}
     var[0] = sum;
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[7] += omp_get_wtime() - tmpt;
 
-    tmpt = omp_get_wtime();
-#endif
     // Used for centering - taking only the valid part of the cross-correlation
 	startind = template_len - 1;
     if (var[0] >= acceptedDiff) {
@@ -405,13 +357,8 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
     }
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[8] += omp_get_wtime() - tmpt;
-
-    tmpt = omp_get_wtime();
-#endif
-	// Center and divide by length to generate scaled convolution
+ 
+    // pre-compute the mean and var so we can parallelise the calculation
 	for(i = 1; i < (image_len - template_len + 1); ++i){
 		// Need to cast to double otherwise we end up with annoying floating
 		// point errors when the variance is massive - collecting fp errors.
@@ -421,6 +368,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 		var[i] = var[i - 1] + (new_samp - old_samp) * (new_samp - mean[i] + old_samp - mean[i - 1]) / (template_len);
     }
 
+	// Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status) num_threads(num_threads) private(t)
 	for(i = 1; i < (image_len - template_len + 1); ++i){
         if (var[i] >= acceptedDiff) {
@@ -431,10 +379,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 			}
 		}
 	}
-#ifdef TIMINGS
-    #pragma omp atomic
-    dbgt[9] += omp_get_wtime() - tmpt;
-#endif
+
 	//  Clean up
 	free(norm_sums);
     free(mean);
@@ -527,17 +472,16 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **outb = NULL;
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
-    int num_threads_outer = 1;
-    int num_threads_inner = 1;
-    double debugt[10] = {0};
+    int num_threads_outer = 1; // TODO: pass in from Python?
+    int num_threads_inner = 1; // TODO: pass in from Python?
 
 
     #ifdef N_THREADS
-    num_threads_inner = N_THREADS;
+    num_threads_inner = N_THREADS; // TODO: pass in from Python?
     fftwf_init_threads();
     fftwf_plan_with_nthreads(num_threads_inner);
     /* set the number of threads - the minimum of the numbers of channels and threads */
-//    num_threads_outer = (N_THREADS > n_channels) ? n_channels : N_THREADS;
+    num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
     printf("NUM_THREADS_OUTER: %d\n", num_threads_outer);
     printf("NUM_THREADS_INNER: %d\n", num_threads_inner);
     #endif
@@ -665,7 +609,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  n_templates, &image[(size_t) image_len * i], image_len, ncc, fft_len,
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
-                                 &pad_array[(size_t) i * n_templates], debugt, num_threads_inner);
+                                 &pad_array[(size_t) i * n_templates], num_threads_inner);
     }
 
     /* free fftw memory */
@@ -675,13 +619,6 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_destroy_plan(px);
     fftwf_cleanup_threads();
     fftwf_cleanup();
-
-#ifdef TIMINGS
-    printf("DEBUG TIMES:\n");
-    for (i = 0; i < 10; i++) {
-        printf("  SECTION %d: %f s\n", i, debugt[i]);
-    }
-#endif
 
     return r;
 }
