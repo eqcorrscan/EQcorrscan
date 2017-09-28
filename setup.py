@@ -2,10 +2,12 @@ try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
     from setuptools.command.build_ext import build_ext
+    from setuptools.dist import Distribution
     using_setuptools = True
 except ImportError:
     from distutils.core import setup, Command, Extension
     from distutils.command.build_ext import build_ext
+    from distutils.dist import Distribution
     using_setuptools = False
 
 from distutils.ccompiler import get_default_compiler
@@ -103,11 +105,22 @@ def get_library_dirs():
 def get_libraries():
     from pkg_resources import get_build_platform
 
-    if get_build_platform() in ('win32', 'win-amd64'):
-        libraries = ['libfftw3-3', 'libfftw3f-3']
+    # check if libraries were defined in the setup.cfg file
+    # (see https://stackoverflow.com/a/30679041)
+    dist = Distribution()
+    dist.parse_config_files()
+    dist.parse_command_line()
+    build_opts = dist.get_option_dict('build_ext')
+
+    # if libraries were specified in setup.cfg we don't try to set them here
+    if 'libraries' in build_opts:
+        # set libraries to empty (the ones from setup.cfg will be used)
+        libraries = []
     else:
-#        libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
-        libraries = ['fftw3xf_gnu_pic', 'mkl_rt'] # TODO: need to detect this somehow
+        if get_build_platform() in ('win32', 'win-amd64'):
+            libraries = ['libfftw3-3', 'libfftw3f-3']
+        else:
+            libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
 
     return libraries
 
