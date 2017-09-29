@@ -306,7 +306,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     fftwf_execute_dft_r2c(pb, image_ext, outb);
 
 	//  Compute dot product
-    #pragma omp parallel for collapse(2) num_threads(num_threads)
+    #pragma omp parallel for num_threads(num_threads)
 	for (t = 0; t < n_templates; ++t){
     	for (i = 0; i < N2; ++i)
 	    {
