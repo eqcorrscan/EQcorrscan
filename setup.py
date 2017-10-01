@@ -1,13 +1,12 @@
+from __future__ import print_function
 try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
     from setuptools.command.build_ext import build_ext
-    from setuptools.dist import Distribution
     using_setuptools = True
 except ImportError:
     from distutils.core import setup, Command, Extension
     from distutils.command.build_ext import build_ext
-    from distutils.dist import Distribution
     using_setuptools = False
 
 from distutils.ccompiler import get_default_compiler
@@ -102,25 +101,53 @@ def get_library_dirs():
     return library_dirs
 
 
+def get_mkl():
+    from pkg_resources import get_build_platform
+
+    mkl_lib = None
+    mkl_libdir = None
+    mkl_inc = None
+    if not get_build_platform() in ('win32', 'win-amd64'):
+        # look for MKL
+        mklroot = os.getenv("MKLROOT")
+        if mklroot is not None and os.path.isdir(mklroot):
+            if os.path.isdir(os.path.join(mklroot, "mkl")):
+                mklroot = os.path.join(mklroot, "mkl")
+
+            # look for MKL lib
+            _libdir = os.path.join(mklroot, "lib")
+            if os.path.isdir(os.path.join(_libdir, "intel64")):
+                _libdir = os.path.join(_libdir, "intel64")
+            libs = glob.glob(os.path.join(_libdir, "libmkl_rt.*"))
+            if len(libs) == 1:
+                _lib = os.path.splitext(os.path.basename(libs[0]))[0][3:]
+                mkl_lib = [_lib]
+                mkl_libdir = [_libdir]
+
+            # look for include
+            if os.path.exists(os.path.join(mklroot, "include", "fftw",
+                                           "fftw3.h")):
+                mkl_inc = [os.path.join(mklroot, "include", "fftw")]
+
+    if mkl_lib is not None and mkl_libdir is not None and mkl_inc is not None:
+        print("Found MKL:")
+        print("  MKL includes:", mkl_inc)
+        print("  MKL lib dirs:", mkl_libdir)
+        print("  MKL libs:", mkl_lib)
+
+        return mkl_inc, mkl_libdir, mkl_lib
+
+    else:
+        return None
+
+
 def get_libraries():
     from pkg_resources import get_build_platform
 
-    # check if libraries were defined in the setup.cfg file
-    # (see https://stackoverflow.com/a/30679041)
-    dist = Distribution()
-    dist.parse_config_files()
-    dist.parse_command_line()
-    build_opts = dist.get_option_dict('build_ext')
-
-    # if libraries were specified in setup.cfg we don't try to set them here
-    if 'libraries' in build_opts:
-        # set libraries to empty (the ones from setup.cfg will be used)
-        libraries = []
+    if get_build_platform() in ('win32', 'win-amd64'):
+        libraries = ['libfftw3-3', 'libfftw3f-3']
     else:
-        if get_build_platform() in ('win32', 'win-amd64'):
-            libraries = ['libfftw3-3', 'libfftw3f-3']
-        else:
-            libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
+        libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
 
     return libraries
 
@@ -180,9 +207,16 @@ def get_extensions():
     else:
         # otherwise we use dynamic libraries
         common_extension_args['extra_link_args'] = extra_link_args
-        common_extension_args['libraries'] = libraries
         common_extension_args['extra_compile_args'] = extra_compile_args
         common_extension_args['export_symbols'] = exp_symbols
+        mkl = get_mkl()
+        if mkl is not None:
+            # use MKL if we have it
+            common_extension_args['include_dirs'].extend(mkl[0])
+            common_extension_args['library_dirs'].extend(mkl[1])
+            common_extension_args['libraries'] = mkl[2]
+        else:
+            common_extension_args['libraries'] = libraries
     ext_modules = [
         Extension('eqcorrscan.lib.libutils', sources=sources,
                   **common_extension_args)]
