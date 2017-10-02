@@ -364,7 +364,31 @@ class Party(object):
         self.families.sort(key=lambda x: x.template.name)
         return self
 
-    def plot(self, plot_grouped=False, dates=None, **kwargs):
+    def filter(self, dates=None, min_dets=1):
+        """
+        Return a new Party with only detections within a date range and
+        only families with a minimum number of detections.
+
+        :type dates: list of obspy.core.UTCDateTime objects
+        :param dates: A start and end date for the new Party
+        :type min_dets: int
+        :param min_dets: Minimum number of detections per family
+        :return:
+        """
+        if dates == None:
+            raise MatchFilterError('Need a list defining a date range')
+        new_party = Party()
+        for fam in self.families:
+            new_fam = Family(template=fam.template,
+                             detections=[det for det in fam
+                                         if det.detect_time < dates[1]
+                                         and det.detect_time > dates[0]])
+            if len(new_fam) >= min_dets:
+                new_party.families.append(new_fam)
+        return new_party
+
+    def plot(self, plot_grouped=False, dates=None, min_dets=1, rate=False,
+             **kwargs):
         """
         Plot the cumulative detections in time.
 
@@ -375,6 +399,9 @@ class Party(object):
         :type dates: list
         :param dates: list of obspy.core.UTCDateTime objects bounding the
             plot. The first should be the start date, the last the end date.
+        :type min_dets: int
+        :param min_dets: Plot only families with this number of detections
+            or more.
         :type rate: bool
         :param rate: Whether or not to plot the daily rate of detection as
             opposed to cumulative number. Only works with plot_grouped=True.
@@ -390,17 +417,17 @@ class Party(object):
         """
         all_dets = []
         if dates:
-            for fam in self.families:
-                all_dets.extend([det for det in fam.detections
-                                 if det.detect_time < dates[1] and
-                                 det.detect_time > dates[0]])
+            new_party = self.filter(dates=dates, min_dets=min_dets)
+            for fam in new_party.families:
+                all_dets.extend(fam.detections)
         else:
             for fam in self.families:
                 all_dets.extend(fam.detections)
-        fig = cumulative_detections(detections=all_dets,
+        ax = cumulative_detections(detections=all_dets,
                                     plot_grouped=plot_grouped,
+                                    rate=rate,
                                     **kwargs)
-        return fig.axes[0]
+        return ax
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """

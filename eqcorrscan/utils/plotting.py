@@ -307,8 +307,9 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
 
 def cumulative_detections(dates=None, template_names=None, detections=None,
-                          plot_grouped=False, rate=False, show=True,
-                          plot_legend=True, save=False, savefile=None):
+                          plot_grouped=False, group_name=None, rate=False,
+                          show=True, plot_legend=True, ax=None, save=False,
+                          savefile=None):
     """
     Plot cumulative detections in time.
 
@@ -373,7 +374,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
-    colors = cycle(['blue', 'green', 'red', 'cyan', 'magenta', 'yellow',
+    colors = cycle(['red', 'green', 'blue', 'cyan', 'magenta', 'yellow',
                     'black', 'firebrick', 'purple', 'darkgoldenrod', 'gray'])
     linestyles = cycle(['-', '-.', '--', ':'])
     # Check that dates is a list of lists
@@ -403,8 +404,14 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         for template_dates in dates:
             _dates += template_dates
         dates = [_dates]
-        template_names = ['All templates']
-    fig, ax1 = plt.subplots()
+        if group_name:
+            template_names = group_name
+        else:
+            template_names = ['All templates']
+    if ax is None:
+        ax = plt.gca()
+    # Make sure not to pad at edges
+    ax.margins(0, 0)
     min_date = min([min(_d) for _d in dates])
     max_date = max([max(_d) for _d in dates])
     for k, template_dates in enumerate(dates):
@@ -412,24 +419,31 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
         color = next(colors)
-        if color == 'blue':
+        if color == 'red':
             linestyle = next(linestyles)
         counts = np.arange(-1, len(template_dates))
         if rate:
             if not plot_grouped:
                 msg = 'Plotting rate only implemented for plot_grouped=True'
                 raise NotImplementedError(msg)
-            bins = (max_date - min_date).days
-            ax1.hist(mdates.date2num(plot_dates), bins=bins)
-            ax1.set_ylabel('Detections per day')
-            plt.title('Rate of detection for all templates')
+            if 31 < (max_date - min_date).days < 365:
+                bins = (max_date - min_date).days
+                ax.set_ylabel('Detections per day')
+            elif (max_date - min_date).days <= 31:
+                bins = (max_date - min_date).days * 4
+                ax.set_ylabel('Detections per 6 hour bin')
+            else:
+                bins = (max_date - min_date).days // 7
+                ax.set_ylabel('Detections per week')
+            ax.hist(mdates.date2num(plot_dates), bins=bins,
+                    label='Rate of detections', color='darkgrey',
+                    alpha=0.5)
         else:
-            ax1.plot(plot_dates, counts, linestyle,
-                     color=color, label=template_names[k],
-                     linewidth=2.0, drawstyle='steps')
-            ax1.set_ylabel('Cumulative detections')
-            plt.title('Cumulative detections for all templates')
-    ax1.set_xlabel('Date')
+            ax.plot(plot_dates, counts, linestyle,
+                    color=color, label=template_names[k],
+                    linewidth=2.0, drawstyle='steps')
+            ax.set_ylabel('Cumulative detections')
+    ax.set_xlabel('Date')
     # Set formatters for x-labels
     mins = mdates.MinuteLocator()
     max_date = dates[0][0]
@@ -462,27 +476,28 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     # Minor locator overruns maxticks for ~year-long datasets
     if timedif.total_seconds() < 172800:
-        ax1.xaxis.set_minor_locator(mins)
+        ax.xaxis.set_minor_locator(mins)
         hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
     else:
         hrFMT = mdates.DateFormatter('%Y/%m/%d')
-    ax1.xaxis.set_major_locator(hours)
-    ax1.xaxis.set_major_formatter(hrFMT)
+    ax.xaxis.set_major_locator(hours)
+    ax.xaxis.set_major_formatter(hrFMT)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
-    if not rate:
-        ax1.set_ylim([0, max([len(_d) for _d in dates])])
     plt.setp(labels, rotation=15)
+    if not rate:
+        ax.set_ylim([0, max([len(_d) for _d in dates])])
     if plot_legend:
-        leg = ax1.legend(loc=2, prop={'size': 8}, ncol=2)
-        leg.get_frame().set_alpha(0.5)
+        if ax.legend() is not None:
+            leg = ax.legend(loc=2, prop={'size': 8}, ncol=2)
+            leg.get_frame().set_alpha(0.5)
     if save:
-        fig.savefig(savefile)
+        plt.gcf().savefig(savefile)
         plt.close()
     else:
         if show:
             plt.show()
-    return fig
+    return ax
 
 
 def threeD_gridplot(nodes, save=False, savefile=None):
