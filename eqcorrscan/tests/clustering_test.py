@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import pytest
 import os
 import glob
 import warnings
@@ -25,9 +26,11 @@ from eqcorrscan.utils.clustering import corr_cluster, dist_mat_km
 from eqcorrscan.utils.clustering import space_cluster, space_time_cluster
 
 
+@pytest.mark.network
 class ClusteringTests(unittest.TestCase):
     """Main testing routines"""
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         cls.st1 = read()
         cls.st2 = cls.st1.copy()
@@ -157,9 +160,11 @@ class ClusteringTests(unittest.TestCase):
                          len(self.cat))
 
 
+@pytest.mark.network
 class ClusteringTestWarnings(unittest.TestCase):
     """Main testing routines"""
     @classmethod
+    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         cls.st1 = read()
         cls.st2 = cls.st1.copy()

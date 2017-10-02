@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import pytest
 import numpy as np
 import os
 import datetime as dt
@@ -44,16 +45,16 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertEqual(round(dist_calc((90, 90, 0), (90, 89, 0))), 0)
         self.assertEqual(round(dist_calc((90, 90, 0), (89, 90, 0))), 111)
 
+    @pytest.mark.network
+    @pytest.mark.flaky(reruns=2)
     def test_sim_WA(self):
         """Test feeding both PAZ and seedresp."""
         t1 = UTCDateTime("2010-09-3T16:30:00.000")
         t2 = UTCDateTime("2010-09-3T17:00:00.000")
         fdsn_client = Client('IRIS')
-        st = fdsn_client.get_waveforms(network='NZ', station='BFZ',
-                                       location='10',
-                                       channel='HHZ',
-                                       starttime=t1, endtime=t2,
-                                       attach_response=True)
+        st = fdsn_client.get_waveforms(
+            network='NZ', station='BFZ', location='10', channel='HHZ',
+            starttime=t1, endtime=t2, attach_response=True)
         tr = st[0]
         PAZ = {'poles': [-4.440 + 4.440j, -4.440 - 4.440j, -1.083 + 0.0j],
                'zeros': [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0],
@@ -75,14 +76,10 @@ class TestMagCalcMethods(unittest.TestCase):
                                  filename=respf)
             date = t1
 
-            seedresp = {'filename': respf,  # RESP filename
-                        'date': date,
-                        'network': tr.stats.network,
-                        'station': tr.stats.station,
-                        'channel': tr.stats.channel,
-                        'location': tr.stats.location,
-                        # Units to return response in ('DIS', 'VEL' or ACC)
-                        'units': 'DIS'
+            seedresp = {
+                'filename': respf, 'date': date, 'network': tr.stats.network,
+                'station': tr.stats.station, 'channel': tr.stats.channel,
+                'location': tr.stats.location, 'units': 'DIS'
                         }
             _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
 
@@ -189,10 +186,10 @@ class TestMagCalcMethods(unittest.TestCase):
                              '01-0411-15L.S201309')
         datapath = os.path.join(testing_path, 'WAV', 'TEST_')
         respdir = testing_path
-        event = amp_pick_sfile(sfile=sfile, datapath=datapath,
-                               respdir=respdir, chans=['Z'], var_wintype=True,
-                               winlen=0.9, pre_pick=0.2, pre_filt=True,
-                               lowcut=1.0, highcut=20.0, corners=4)
+        event = amp_pick_sfile(
+            sfile=sfile, datapath=datapath, respdir=respdir, chans=['Z'],
+            var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True,
+            lowcut=1.0, highcut=20.0, corners=4)
         self.assertTrue(isinstance(event, Event))
         self.assertTrue(os.path.isfile('mag_calc.out'))
         os.remove('mag_calc.out')
@@ -338,6 +335,7 @@ class TestAmpPickEvent(unittest.TestCase):
                                       respdir=self.respdir, remove_old=True,
                                       var_wintype=False, pre_filt=False)
         self.assertEqual(len(picked_event.amplitudes), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

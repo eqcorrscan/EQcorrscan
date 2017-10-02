@@ -1,6 +1,10 @@
 Template creation
 =================
 
+Note: These tutorials are for the functional workflow - for details on creating
+Template and Tribe objects see the :doc:`matched filter <matched-filter>` docs
+page.
+
 Simple example
 --------------
 
@@ -18,15 +22,16 @@ FDSN (see |obspy_fdsn| for a list of possible clients):
 
 .. code-block:: python
 
-    from obspy.clients.fdsn import Client
-    from obspy.core.event import Catalog
-    from eqcorrscan.core.template_gen import from_client
-    client = Client('NCEDC')
-    catalog = client.get_events(eventid='72572665', includearrivals=True)
-    templates = from_client(catalog=catalog, client_id='NCEDC',
-                            lowcut=2.0, highcut=9.0, samp_rate=20.0,
-                            filt_order=4, length=3.0, prepick=0.15,
-                            swin='all', process_len=200)
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy.core.event import Catalog
+    >>> from eqcorrscan.core.template_gen import from_client
+    >>> client = Client('NCEDC')
+    >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
+    >>> templates = from_client(catalog=catalog, client_id='NCEDC',
+    ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
+    ...                         filt_order=4, length=3.0, prepick=0.15,
+    ...                         swin='all', process_len=200)
+    Pre-processing data
 
 This will download data for a single event (given by eventid) from the NCEDC
 database, then use that information to download relevant waveform data.  These
@@ -77,7 +82,7 @@ which is useful for template storage.  However we do not constrain you to this.
 
 .. code-block:: python
 
-    template.write('template.ms', format="MSEED")
+    >>> templates[0].write('template.ms', format="MSEED")
 
 
 Advanced example

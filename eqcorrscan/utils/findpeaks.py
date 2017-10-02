@@ -1,4 +1,4 @@
-r"""Functions to find peaks in data above a certain threshold.
+"""Functions to find peaks in data above a certain threshold.
 
 :copyright:
     EQcorrscan developers.
@@ -17,6 +17,9 @@ import numpy as np
 
 from obspy import UTCDateTime
 from scipy import ndimage
+from multiprocessing import Pool
+
+from eqcorrscan.utils.correlate import pool_boy
 
 
 def is_prime(number):
@@ -55,7 +58,7 @@ def is_prime(number):
 
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0):
+                      samp_rate=1.0, full_peaks=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -87,6 +90,26 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     >>> arr[60] = 100
     >>> find_peaks2_short(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
+
+    .. note::
+        peak-finding is optimised for zero-mean cross-correlation data where
+        fluctuations are frequent.  Because of this, in certain cases some
+        peaks may be missed if the trig_int is short and the threshold is low.
+        Consider the following case:
+
+        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
+        >>> find_peaks2_short(arr, thresh=.2, trig_int=3)
+        [(1.0, 0)]
+
+        Whereas you would expect the following:
+
+        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
+        >>> find_peaks2_short(arr, thresh=.2, trig_int=3, full_peaks=True)
+        [(1.0, 0), (1.0, 5), (1.0, 10)]
+
+        This is rare and unlikely to happen for correlation cases, where
+        trigger intervals are usually large and thresholds high.
+
     """
     if not starttime:
         starttime = UTCDateTime(0)
@@ -102,189 +125,124 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         print(' '.join(['Found', str(len(image[image > thresh])),
                         'samples above the threshold']))
     initial_peaks = []
-    peaks = []
     # Find the peaks
     labeled_image, number_of_objects = ndimage.label(image)
     peak_slices = ndimage.find_objects(labeled_image)
     for peak_slice in peak_slices:
-        # print('Width of peak='+str(peak_slice[0].stop-peak_slice[0].start)
         window = arr[peak_slice[0].start: peak_slice[0].stop]
-        initial_peaks.append((max(window),
-                              int(peak_slice[0].start + np.argmax(window))))
+        if peak_slice[0].stop - peak_slice[0].start > trig_int and full_peaks:
+            peaks = decluster(
+                peaks=window, trig_int=trig_int,
+                index=np.arange(peak_slice[0].start, peak_slice[0].stop))
+        else:
+            peaks = [(window[np.argmax(abs(window))],
+                      int(peak_slice[0].start + np.argmax(abs(window))))]
+        initial_peaks.extend(peaks)
+    peaks = decluster(peaks=np.array(list(zip(*initial_peaks))[0]),
+                      index=np.array(list(zip(*initial_peaks))[1]),
+                      trig_int=trig_int)
     if initial_peaks:
-        peaks = decluster(peaks=initial_peaks, trig_int=trig_int, debug=debug)
         if debug >= 3:
             from eqcorrscan.utils import plotting
-            _fname = ''.join(['peaks_',
-                              starttime.datetime.strftime('%Y-%m-%d'),
-                              '.pdf'])
-            plotting.peaks_plot(data=image, starttime=starttime,
-                                samp_rate=samp_rate, save=True,
-                                peaks=peaks, savefile=_fname)
+            _fname = ''.join([
+                'peaks_', starttime.datetime.strftime('%Y-%m-%d'), '.pdf'])
+            plotting.peaks_plot(
+                data=image, starttime=starttime, samp_rate=samp_rate,
+                save=True, peaks=peaks, savefile=_fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
         print('No peaks for you!')
-        return peaks
+        return []
 
 
-def decluster(peaks, trig_int, return_ind=False, debug=0):
+def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
+                     samp_rate=1.0, parallel=True):
     """
-    Decluster peaks based on an enforced minimum separation.
-
-    :type peaks: list
-    :param peaks: list of tuples of (value, sample)
-    :type trig_int: int
-    :param trig_int: Minimum trigger interval in samples
-    :type return_ind: bool
-    :param return_ind:
-        Whether to also return the indices of the original peaks or not.
-
-    :return: list of tuples of (value, sample)
-    """
-    peaks_sort = sorted(zip(peaks, np.arange(len(peaks))),
-                        key=lambda amplitude: amplitude[0][0],
-                        reverse=True)
-    peaks_sort, inds = zip(*peaks_sort)
-    # Debugging
-    if debug >= 4:
-        for peak in peaks:
-            print(peak)
-    peaks_out = []
-    ind_out = []
-    add = False
-    ind_out.append(inds[0])
-    peaks_out.append(peaks_sort[0])  # Definitely take the biggest peak
-    if debug > 3:
-        print(' '.join(['Added the biggest peak of', str(peaks_out[0][0]),
-                        'at sample', str(peaks_out[0][1])]))
-    if len(peaks) > 1:
-        if debug > 3:
-            msg = ' '.join(['Multiple peaks found, checking',
-                            'them now to see if they overlap'])
-            print(msg)
-        for next_peak, next_ind in zip(peaks_sort, inds):
-            # i in range(1,len(peaks_sort)):
-            # Loop through the amplitude sorted peaks
-            # if the next highest amplitude peak is within trig_int of any
-            # peak already in peaks then we don't want it, else, add it
-            # next_peak=peaks_sort[i]
-            if debug > 3:
-                print(next_peak)
-            for peak in peaks_out:
-                # Use add as a switch for whether or not to append
-                # next peak to peaks, if once gone through all the peaks
-                # it is True, then we will add it, otherwise we won't!
-                if abs(next_peak[1] - peak[1]) < trig_int:
-                    if debug > 3:
-                        msg = ' '.join(['Difference in time is',
-                                        str(next_peak[1] - peak[1]), '\n',
-                                        'Which is less than',
-                                        str(trig_int)])
-                        print(msg)
-                    add = False
-                    # Need to exit the loop here if false
-                    break
-                else:
-                    add = True
-            if add:
-                if debug > 3:
-                    msg = ' '.join(['Adding peak of', str(next_peak[0]),
-                                    'at sample', str(next_peak[1])])
-                    print(msg)
-                ind_out.append(next_ind)
-                peaks_out.append(next_peak)
-            elif debug > 3:
-                msg = ' '.join(['I did not add peak of', str(next_peak[0]),
-                                'at sample', str(next_peak[1])])
-                print(msg)
-    if return_ind:
-        return peaks_out, ind_out
-    else:
-        return peaks_out
-
-
-def find_peaks_dep(arr, thresh, trig_int, debug=0, starttime=False,
-                   samp_rate=1.0):
-    """
-    Determine peaks in an array of data above a certain threshold: depreciated.
-
-    Depreciated peak-finding routine, very slow, but accurate.  If all else \
-    fails this one should work.
+    Wrapper for find-peaks for multiple arrays.
 
     :type arr: numpy.ndarray
-    :param arr: 1-D numpy array is required
-    :type thresh: float
-    :param thresh: The threshold below which will be considered noise and \
-        peaks will not be found in.
+    :param arr: 2-D numpy array is required
+    :type thresh: list
+    :param thresh:
+        The threshold below which will be considered noise and peaks will not
+        be found in. One threshold per array.
     :type trig_int: int
     :param trig_int: The minimum difference in samples between triggers,\
         if multiple peaks within this window this code will find the highest.
+    :type debug: int
+    :param debug: Optional, debug level 0-5
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
+    :type parallel: bool
+    :param parallel:
+        Whether to compute in parallel or not - will use multiprocessing
 
-    :return: peaks: Lists of tuples of peak values and locations.
-    :rtype: list
-
-    >>> import numpy as np
-    >>> arr = np.random.randn(100)
-    >>> threshold = 10
-    >>> arr[40] = 20
-    >>> arr[60] = 100
-    >>> find_peaks_dep(arr, threshold, 3)
-    [(20.0, 40), (100.0, 60)]
+    :returns:
+        List of list of tuples of (peak, index) in same order as input arrays
     """
-    if not starttime:
-        starttime = UTCDateTime(0)
-    # Perform some checks
-    if trig_int < 3:
-        msg = 'Trigger interval must be greater than 2 samples to find maxima'
-        raise IOError(msg)
-    # from joblib import Parallel, delayed
-    # Will find peaks in the absolute then transfer these to the true values
-    sig = np.abs(arr) - thresh
-    true_peaks = []
-    for i in range(int(trig_int), int(len(sig) - trig_int), int(trig_int)):
-        window = sig[i - trig_int: i + trig_int]
-        # Define a moving window containing data from +/- the trigger iterval
-        peaks = []
-        locs = []
-        for j in range(1, len(window) - 1):
-            # Find all turning points within the window
-            if window[j] > 0.0 and window[j] > window[j + 1] and\
-               window[j] > window[j - 1]:
-                peaks.append(window[j])
-                locs.append(i - trig_int + j)
-        # Find maximum peak in window
-        if peaks:
-            true_peaks.append((np.max(np.array(peaks)),
-                               locs[np.argmax(np.array(peaks))]))
-    # Get unique values
-    peaks = sorted(list(set(true_peaks)), key=lambda loc: loc[1])
-    # Find highest peak in peaks within trig_int of each other
-    for i in range(1, len(peaks) - 1):
-        if peaks[i + 1][1] - peaks[i][1] < trig_int:
-            if peaks[i][0] < peaks[i + 1][0]:
-                peaks[i] = peaks[i + 1]
-            else:
-                peaks[i + 1] = peaks[i]
-        elif peaks[i][1] - peaks[i - 1][1] < trig_int:
-            if peaks[i][0] < peaks[i - 1][0]:
-                peaks[i] = peaks[i - 1]
-            else:
-                peaks[i - 1] = peaks[i]
-    peaks = sorted(list(set(peaks)), key=lambda loc: loc[1])
-    if debug >= 3:
-        from eqcorrscan.utils import plotting
-        _fname = ''.join(['peaks_',
-                          starttime.datetime.strftime('%Y-%m-%d'),
-                          '.pdf'])
-        plotting.peaks_plot(arr, starttime, samp_rate, True, peaks,
-                            _fname)
-    peaks = [(peak[0] + thresh, peak[1]) for peak in peaks]
+    peaks = []
+    if not parallel:
+        for sub_arr, arr_thresh in zip(arr, thresh):
+            peaks.append(find_peaks2_short(
+                arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
+                starttime=starttime, samp_rate=samp_rate, full_peaks=False))
+    else:
+        with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
+            params = ((sub_arr, arr_thresh, trig_int, debug,
+                       False, 1.0, False)
+                      for sub_arr, arr_thresh in zip(arr, thresh))
+            results = [pool.apply_async(find_peaks2_short, param)
+                       for param in params]
+            peaks = [res.get() for res in results]
     return peaks
+
+
+def decluster(peaks, index, trig_int):
+    """
+    Decluster peaks based on an enforced minimum separation.
+    :type peaks: np.array
+    :param peaks: array of peak values
+    :type index: np.ndarray
+    :param index: locations of peaks
+    :type trig_int: int
+    :param trig_int: Minimum trigger interval in samples
+
+    :return: list of tuples of (value, sample)
+    """
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+    from future.utils import native_str
+    from itertools import compress
+
+    utilslib = _load_cdll('libutils')
+
+    length = np.int32(len(peaks))
+    utilslib.find_peaks.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_float, ctypes.c_float,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS'))]
+    utilslib.find_peaks.restype = ctypes.c_int
+    peaks_sort = sorted(zip(peaks, index),
+                        key=lambda amplitude: abs(amplitude[0]),
+                        reverse=True)
+    arr, inds = zip(*peaks_sort)
+    arr = np.ascontiguousarray(arr, dtype=np.float32)
+    inds = np.array(inds, dtype=np.float32) / trig_int
+    inds = np.ascontiguousarray(inds, dtype=np.float32)
+    out = np.zeros(len(arr), dtype=np.uint32)
+    ret = utilslib.find_peaks(
+        arr, inds, length, 0, np.float32(1), out)
+    if ret != 0:
+        raise MemoryError("Issue with c-routine")
+    peaks_out = list(compress(peaks_sort, out))
+    return peaks_out
 
 
 def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
