@@ -220,7 +220,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         plt.xlabel('Completeness magnitude')
         ax2 = ax1.twinx()
         ax2.set_ylabel('Number of events used in fit')
-        n_ev = ax2.scatter(zip(*b_values)[0], zip(*b_values)[3], c='g')
+        n_ev = ax2.scatter(list(zip(*b_values))[0], list(zip(*b_values))[3],
+                           c='g')
         fig.legend((b_vals, resid, n_ev),
                    ('b-values', 'residuals', 'number of events'),
                    'lower right')
