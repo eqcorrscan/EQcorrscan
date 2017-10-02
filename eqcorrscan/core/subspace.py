@@ -27,6 +27,7 @@ import copy
 import scipy
 
 import matplotlib.pyplot as plt
+from itertools import chain
 from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
@@ -35,7 +36,8 @@ from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
-from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
+from eqcorrscan.utils.plotting import subspace_detector_plot,\
+    subspace_fc_plot, plot_threshold
 
 
 class Detector(object):
@@ -79,7 +81,7 @@ class Detector(object):
     def __init__(self, name=None, sampling_rate=None, multiplex=None,
                  stachans=None, lowcut=None, highcut=None,
                  filt_order=None, data=None, u=None, sigma=None, v=None,
-                 dimension=None):
+                 dimension=None, threshold=None):
         self.name = name
         self.sampling_rate = sampling_rate
         self.multiplex = multiplex
@@ -93,6 +95,7 @@ class Detector(object):
         self.sigma = sigma
         self.v = v
         self.dimension = dimension
+        self.threshold = threshold
 
     def __repr__(self):
         if self.name:
@@ -213,6 +216,7 @@ class Detector(object):
         self.sigma = sigma
         self.data = copy.deepcopy(u)  # Set the data matrix to be full rank U.
         self.dimension = np.inf
+        self.threshold = {}
         return self
 
     def partition(self, dimension):
@@ -439,6 +443,68 @@ class Detector(object):
         return subspace_detector_plot(detector=self, stachans=stachans,
                                       size=size, show=show)
 
+    def set_threshold(self, streams, Pf, bins=401, plot=False):
+        """
+        Set the threshold for this detector given an acceptable false alarm
+        probability and a stream of random samples of noise.
+
+        :type streams: list of obspy.core.stream.Stream
+        :param st: Streams containing random samples of noise from the data \
+            in which we're looking for signals
+        :type Pf: float
+        :param Pf: Acceptable false alarm probability for detector
+        :type plot: bool
+        :param plot: Flag to plot Pd as function of SNR
+
+        .. Note::
+            The list of streams passed to this function should be chunks of
+            data containing only noise. We suggest using obspy's STA/LTA
+            functionality or something similar to check for spikes in data
+            and ensure
+        .. Note::
+            Functionality taken from 'old' Detex fas.py
+        """
+        # Process the data
+        det_stats = []
+        for i, st in enumerate(streams):
+            print('Working on stream %02d of %02d' % (i, len(streams) - 1))
+            proc_stream, proc_stchans = _subspace_process(
+                streams=[st.copy()], lowcut=self.lowcut,
+                highcut=self.highcut, filt_order=self.filt_order,
+                sampling_rate=self.sampling_rate, multiplex=self.multiplex,
+                stachans=self.stachans, parallel=True, align=False,
+                shift_len=None, reject=False, no_missed=False)
+            print(proc_stream)
+            # This is particularly inefficient as it's doing ffts for
+            # the detector for each iteration...
+            fft_vars = _do_ffts(detector=self, stream=proc_stream,
+                                Nc=len(self.stachans))
+            stat = _det_stat_freq(fft_vars[0][0], fft_vars[1][0],
+                                  fft_vars[2][0], fft_vars[3],
+                                  len(self.stachans), fft_vars[4],
+                                  fft_vars[5])
+            det_stats.append(stat)
+        # Flatten det_stats
+        stats = np.fromiter(chain.from_iterable(det_stats), dtype=np.float64)
+        # Beta distribution to data
+        beta_params = scipy.stats.beta.fit(stats, floc=0, fscale=1)
+        # Negative log likelihood function from distribution
+        neg_log_func = scipy.stats.beta.nnlf(beta_params, stats)
+        # Now assign the thresh from inverse survival function and
+        # user-defined false alarm probability
+        thresh = scipy.stats.beta.isf(Pf, beta_params[0], beta_params[1], 0, 1)
+        beta = scipy.stats.beta.pdf(np.linspace(-.01, 1, num=bins),
+                                    beta_params[0], beta_params[1])
+        self.threshold['threshold'] = thresh
+        self.threshold['beta_params'] = beta_params
+        self.threshold['nullspace'] = stats
+        self.threshold['beta'] = beta
+        self.threshold['nllf'] = neg_log_func
+        self.threshold['bins'] = np.linspace(-.01, 1, num=bins)
+        self.threshold['hist'] = np.histogram(stats, bins=bins)[0]
+        if plot:
+            plot_threshold(detector=self)
+        return
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             process=True, extract_detections=False, debug=0):

@@ -2296,6 +2296,39 @@ def subspace_fc_plot(detector, stachans, size, show):
     return fig
 
 
+def plot_threshold(detector, xlim=[-0.01, 0.5]):
+    """
+    Plotting function for a threshold calculated from a sample null
+    detection statistic
+
+    :type xlim: list
+    :param xlim: X-axis limits for the plot
+    :returns: Figure
+    :rtype: matplotlib.pyplot.Figure
+    """
+    import seaborn as sns
+    if len(detector.threshold.keys()) == 0:
+        msg = 'Threshold has not been calculated. Use Detector.set_threshold()'
+        raise ValueError(msg)
+    fig, ax = plt.subplots()
+    # bins = detector.threshold['bins']
+    bins = np.mean([detector.threshold['bins'][1:],
+                    detector.threshold['bins'][:-1]], axis=0)
+    beta = detector.threshold['beta'][:-1]
+    ax.axvline(detector.threshold['threshold'], color='g')
+    ax.plot(bins,
+             beta * (max(detector.threshold['hist']) / max(beta)), 'k')
+    ax.semilogy()
+    sns.distplot(detector.threshold['nullspace'], bins=bins, kde=False,
+                 ax=ax)
+    plt.xlabel('Detection Statistic')
+    plt.ylabel('Count')
+    plt.ylim(ymin=1)
+    plt.xlim(xlim)
+    plt.show()
+    return ax
+
+
 def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
                        plot_format, i):
     """
