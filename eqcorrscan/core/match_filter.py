@@ -375,7 +375,7 @@ class Party(object):
         :param min_dets: Minimum number of detections per family
         :return:
         """
-        if dates == None:
+        if dates is None:
             raise MatchFilterError('Need a list defining a date range')
         new_party = Party()
         for fam in self.families:
@@ -424,9 +424,9 @@ class Party(object):
             for fam in self.families:
                 all_dets.extend(fam.detections)
         ax = cumulative_detections(detections=all_dets,
-                                    plot_grouped=plot_grouped,
-                                    rate=rate,
-                                    **kwargs)
+                                   plot_grouped=plot_grouped,
+                                   rate=rate,
+                                   **kwargs)
         return ax
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
