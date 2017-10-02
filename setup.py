@@ -104,9 +104,8 @@ def get_library_dirs():
 def get_mkl():
     from pkg_resources import get_build_platform
 
-    mkl_lib = None
-    mkl_libdir = None
-    mkl_inc = None
+    mkl_found = False
+    # TODO: not sure about windows so ignoring for now
     if not get_build_platform() in ('win32', 'win-amd64'):
         # look for MKL
         mklroot = os.getenv("MKLROOT")
@@ -124,12 +123,31 @@ def get_mkl():
                 mkl_lib = [_lib]
                 mkl_libdir = [_libdir]
 
-            # look for include
-            if os.path.exists(os.path.join(mklroot, "include", "fftw",
-                                           "fftw3.h")):
-                mkl_inc = [os.path.join(mklroot, "include", "fftw")]
+                # look for include
+                if os.path.exists(os.path.join(mklroot, "include", "fftw",
+                                               "fftw3.h")):
+                    mkl_inc = [os.path.join(mklroot, "include", "fftw")]
+                    mkl_found = True
 
-    if mkl_lib is not None and mkl_libdir is not None and mkl_inc is not None:
+        # check for conda installed MKL too (doesn't set MKLROOT)
+        # this assume we are in a conda env (not root)
+        if not mkl_found:
+            conda = os.getenv("CONDA_PREFIX")
+            if conda is not None:
+                # look for MKL lib
+                libs = glob.glob(os.path.join(conda, "lib", "libmkl_rt.*"))
+                if len(libs) == 1:
+                    _lib = os.path.splitext(os.path.basename(libs[0]))[0][3:]
+                    mkl_lib = [_lib]
+                    mkl_libdir = [os.path.join(conda, "lib")]
+
+                    # look for include too
+                    if os.path.exists(os.path.join(conda, "include", "fftw",
+                                                   "fftw3.h")):
+                        mkl_inc = [os.path.join(conda, "include", "fftw")]
+                        mkl_found = True
+
+    if mkl_found:
         print("Found MKL:")
         print("  MKL includes:", mkl_inc)
         print("  MKL lib dirs:", mkl_libdir)
