@@ -1,14 +1,26 @@
 # EQcorrscan
 ## A python package for the detection and analysis of repeating and near-repeating earthquakes.
 
-[![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
-[![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
-[![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
-[![DOI](https://zenodo.org/badge/35918157.svg)](https://zenodo.org/badge/latestdoi/35918157)
-[![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
-[![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
-[![Stories in Ready](https://badge.waffle.io/eqcorrscan/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/eqcorrscan/EQcorrscan)
+# Citation:
+We have a manuscript in review, if you make use of EQcorrscan please cite the folloing paper:
+
+Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters *in review*
+
+If you want to you should also cite the version number: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.891131.svg)](https://doi.org/10.5281/zenodo.891131)
+
+# Test status
+Note that tests for travis and appveyor are run daily on master as cron jobs, and may reflect time-out issues.
+
+| Service tests | Badge |
+|---------------|-------|
+| OSX & Linux | [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
+| Windows | [![Build status](https://ci.appveyor.com/api/projects/status/b0924mp0uwwyap3d/branch/master?svg=true)](https://ci.appveyor.com/project/calum-chamberlain/eqcorrscan-jsycv/branch/master)
+| Code coverage | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
+| Documentation | [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
+| Dependency status | [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
+| Network tests | [![CircleCI](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master.svg?style=svg)](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master)
+| Issues ready | [![Stories in Ready](https://badge.waffle.io/eqcorrscan/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/eqcorrscan/EQcorrscan)
+| Chat on gitter | [![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Installation
 Installation has been tested on both OSX and Linux (Ubuntu), and
@@ -16,6 +28,9 @@ Windows systems.  We support Python versions 2.7, 3.4, 3.5 and 3.6.
 Note that, although we support Windows, EQcorrscan is optimized for
 linux style distributions, and the developers are not extensive Windows
 users.
+
+*OSX with gcc-4.9 from homebrew doesn't appear to compile properly, all other gcc versions
+ seem to work*
 
 Instructions for installing EQcorrscan and the required dependency, fftw
 are linked from the
@@ -79,9 +94,7 @@ LGPL GNU License, Copyright EQcorrscan developers 2015, 2016, 2017.
 # Contributing
 
 Please fork this project and work on it there then create a pull request to
-merge back to this main repository.  If you are working on a bug-fix then
-use the *develop* branch, otherwise, create a feature branch and work
-on your addition there.
+merge back to this main repository.  Please create a branch from *develop*.
 
 When you make changes please run the tests in the test directory to ensure
 everything merges with minimum effort.  If there is not yet a test to cope

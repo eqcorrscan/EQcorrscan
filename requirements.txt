@@ -1,0 +1,13 @@
+numpy>=1.12
+matplotlib>=1.3.0
+scipy>=0.18
+LatLon
+bottleneck
+obspy>=1.0.3
+h5py
+pytest>=2.0.0
+pytest-cov
+pytest-pep8
+pytest-xdist
+pytest-rerunfailures
+codecov

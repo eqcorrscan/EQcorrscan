@@ -19,9 +19,9 @@ from eqcorrscan.utils.pre_processing import _check_daylong
 class TestPreProcessing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'day_vols', 'Y2012',
-                                    'R086.01', '*')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            'day_vols', 'Y2012', 'R086.01', '*')
         cls.st = read(testing_path)
         cls.day_start = cls.st[0].stats.starttime.date
         cls.short_stream = cls.st.copy().trim(cls.st[0].stats.starttime,

@@ -44,8 +44,8 @@ To begin with you will need to create a **Detector**:
 
 .. code-block:: python
 
-    from eqcorrscan.core import subspace
-    detector = subspace.Detector()
+    >>> from eqcorrscan.core import subspace
+    >>> detector = subspace.Detector()
 
 This will create an empty *detector* object.  These objects have various attributes,
 including the data to be used as a detector (*detector.data*), alongside the full
@@ -62,9 +62,19 @@ aligned (see clustering submodule for alignment methods).
 
 .. code-block:: python
 
-    detector.construct(streams=streams, lowcut=2, highcut=9, filt_order=4,
-                       sampling_rate=20, multiplex=True, name='Test_1',
-                       align=True, shift_len=0.5)
+    >>> from obspy import read
+    >>> import glob
+    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/similar_events/*')
+    >>> streams = [read(w) for w in wavefiles[0:3]]
+    >>> # Channels must all be the same length
+    >>> for st in streams:
+    ...    for tr in st:
+    ...       tr.data = tr.data[int(41.5 * tr.stats.sampling_rate):
+    ...                         int(44 * tr.stats.sampling_rate)]
+    >>> detector.construct(streams=streams, lowcut=2, highcut=9, filt_order=4,
+    ...                    sampling_rate=20, multiplex=True, name='Test_1',
+    ...                    align=True, shift_len=0.5, reject=0.2)
+    Detector: Test_1
 
 This will populate all the attributes of your *detector* object, and fill the
 *detector.data* with the full input basis vector matrix.
@@ -76,7 +86,8 @@ EQcorrscan simply use the *partition* method:
 
 .. code-block:: python
 
-    detector.partition(4)
+    >>> detector.partition(2)
+    Detector: Test_1
 
 This will populate *detector.data* with the first four, left-most input basis
 vectors.  You can test to see how much of your original design set is
@@ -84,7 +95,7 @@ described by this detector by using the *energy_capture* method:
 
 .. code-block:: python
 
-    percent_capture = detector.energy_capture()
+    >>> percent_capture = detector.energy_capture()
 
 This will return a percentage capture, you can run this for multiple dimensions
 to test what dimension best suits your application.  Again, details for this
@@ -99,7 +110,12 @@ True.
 
 .. code-block:: python
 
-    detections = detector.detect(st=stream, threshold=0.5, trig_int=3)
+    >>> stream = read(wavefiles[0])
+    >>> for tr in stream:
+    ...   tr.data = tr.data[int(41.5 * tr.stats.sampling_rate):
+    ...                     int(44 * tr.stats.sampling_rate)]
+    >>> detections = detector.detect(st=stream, threshold=0.5, trig_int=3) # doctest:+ELLIPSIS
+    Detection took ...
 
 
 Advanced Example

@@ -30,7 +30,7 @@ def read_data(archive, arc_type, day, stachans, length=86400):
         client.  If arc_type is day_vols, then this is the path to the top
         directory.
     :type arc_type: str
-    :param arc_type: The type of archive, can be: seishub, FDSN, day_volves
+    :param arc_type: The type of archive, can be: seishub, FDSN, day_volumes
     :type day: datetime.date
     :param day: Date to retrieve data for
     :type stachans: list
@@ -55,27 +55,24 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     >>> from eqcorrscan.utils.archive_read import read_data
     >>> from obspy import UTCDateTime
     >>> t1 = UTCDateTime(2012, 3, 26)
-    >>> stachans = [('FOZ', 'HHZ'), ('JCZ', 'HHZ')]
-    >>> st = read_data('GEONET', 'FDSN', t1, stachans)
+    >>> stachans = [('JCNB', 'SP1')]
+    >>> st = read_data('NCEDC', 'FDSN', t1, stachans)
     >>> print(st)
-    2 Trace(s) in Stream:
-    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z \
-| 100.0 Hz, 8640368 samples
-    NZ.JCZ.10.HHZ | 2012-03-25T23:59:57.348391Z - 2012-03-27T00:00:02.958391Z \
-| 100.0 Hz, 8640562 samples
-
+    1 Trace(s) in Stream:
+    BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
+950000Z | 20.0 Hz, 1728000 samples
 
     .. rubric:: Example, missing data
 
     >>> from eqcorrscan.utils.archive_read import read_data
     >>> from obspy import UTCDateTime
     >>> t1 = UTCDateTime(2012, 3, 26)
-    >>> stachans = [('FOZ', 'HHZ'), ('GCSZ', 'HHZ')]
-    >>> st = read_data('GEONET', 'FDSN', t1, stachans)
+    >>> stachans = [('JCNB', 'SP1'), ('GCSZ', 'HHZ')]
+    >>> st = read_data('NCEDC', 'FDSN', t1, stachans)
     >>> print(st)
     1 Trace(s) in Stream:
-    NZ.FOZ.10.HHZ | 2012-03-25T23:59:57.018393Z - 2012-03-27T00:00:00.688393Z \
-| 100.0 Hz, 8640368 samples
+    BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
+950000Z | 20.0 Hz, 1728000 samples
 
 
     .. rubric:: Example, local day-volumes

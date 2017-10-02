@@ -8,13 +8,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import pytest
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime
 
 from eqcorrscan.utils.catalog_utils import filter_picks
 
 
+@pytest.mark.network
 class CatalogUtilsTests(unittest.TestCase):
+    @pytest.mark.flaky(reruns=2)  # Rerun the test in case of network timeout
     def test_filter_picks(self):
         """ Test various methods of filtering picks in a catalog."""
         client = Client(str("NCEDC"))
