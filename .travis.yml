@@ -8,16 +8,18 @@ addons:
 matrix:
   include:
     - os: linux
-      env: PYTHON_VERSION=2.7
+      env: PYTHON_VERSION=2.7 MKL=0
     - os: linux
-      env: PYTHON_VERSION=3.5
+      env: PYTHON_VERSION=3.5 MKL=0
     - os: linux
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6 MKL=0
+    - os: linux
+      env: PYTHON_VERSION=3.6 MKL=1
 
     - os: osx
       osx_image: xcode8
       env:
-        - PYTHON_VERSION=3.5
+        - PYTHON_VERSION=3.5 MKL=0
 
 sudo: false
 
@@ -59,6 +61,7 @@ install:
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
+  - if [ "$MKL" == "1" ]; then conda install -q mkl-include; fi
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
   - pip freeze
   - conda list
