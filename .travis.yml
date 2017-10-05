@@ -61,7 +61,7 @@ install:
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
-  - if [ "$MKL" == "1" ]; then conda install -q mkl-include; fi
+  - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
   - pip freeze
   - conda list
