@@ -79,7 +79,7 @@ def get_geonet_ids(minlat, maxlat, minlon, maxlon, mindepth=None,
     return event_ids
 
 
-def _get_geonet_pubids(publicids, parallel=True):
+def _get_geonet_pubids(publicids, parallel=False):
     """
     Get GeoNet events while they haven't included get_events in fdsn.
 
@@ -163,10 +163,9 @@ def get_geonet_events(minlat, maxlat, minlon, maxlon, mindepth=None,
     :returns: catalog of events
     :rtype: obspy.core.event.Catalog
     """
-    pubids = get_geonet_ids(minlat=minlat, maxlat=maxlat, minlon=minlon,
-                            maxlon=maxlon, mindepth=mindepth,
-                            maxdepth=maxdepth, minmag=minmag,
-                            maxmag=maxmag, startdate=startdate,
-                            enddate=enddate)
+    pubids = get_geonet_ids(
+        minlat=minlat, maxlat=maxlat, minlon=minlon, maxlon=maxlon,
+        mindepth=mindepth, maxdepth=maxdepth, minmag=minmag, maxmag=maxmag,
+        startdate=startdate, enddate=enddate)
     catalog = _get_geonet_pubids(pubids)
     return catalog
