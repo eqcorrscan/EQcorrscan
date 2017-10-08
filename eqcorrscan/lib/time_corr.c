@@ -67,6 +67,7 @@ int normxcorr_time_threaded(float *template, int template_len, float *image, int
 		denom = sqrt(auto_a * auto_b);
 		ccc[k] = (float) (numerator / denom);
 	}
+	free(mean);
 	return 0;
 }
 
@@ -100,6 +101,7 @@ int normxcorr_time(float *template, int template_len, float *image, int image_le
 		denom = sqrt(auto_a * auto_b);
 		ccc[k] = (float) (numerator / denom);
 	}
+	free(mean);
 	return 0;
 }
 
