@@ -580,6 +580,23 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
         list of list of tuples of station, channel for all cross-correlations.
     :rtype: list
     """
+    # number of threads:
+    #   default to using inner threads
+    #   if passed in then use that
+    #   else if OMP_NUM_THREADS set use that
+    #   otherwise use all available
+    num_cores_inner = kwargs.get('cores')
+    num_cores_outer = kwargs.get('cores_outer')
+    print("ARGS:", num_cores_outer, num_cores_inner)
+    if num_cores_inner is None and num_cores_outer is None:
+        num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+        num_cores_outer = 1
+    elif num_cores_inner is not None and num_cores_outer is None:
+        num_cores_outer = 1
+    elif num_cores_outer is not None and num_cores_inner is None:
+        num_cores_inner = 1
+    print("Num cores outer =", num_cores_outer)
+    print("Num cores inner =", num_cores_inner)
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream)
@@ -587,7 +604,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
-        pad_array=pad_dict, seed_ids=seed_ids)
+        pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
+        cores_outer=num_cores_outer)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -597,7 +615,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
+def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
+        cores_inner, cores_outer):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -628,7 +647,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -643,6 +663,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         used channels (stacked as per templates)
         pad array (stacked as per templates)
     '''
+
+
     # pre processing
     used_chans = []
     template_len = template_array[seed_ids[0]].shape[1]
@@ -673,7 +695,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
-        image_len, cccs, fft_len, used_chans_np, pad_array_np)
+        image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
+        cores_inner)
     if ret < 0:
         raise MemoryError()
     elif ret > 0:

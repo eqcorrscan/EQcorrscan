@@ -52,7 +52,7 @@ void free_fftwf_arrays(int, float**, float**, float**, fftwf_complex**, fftwf_co
 
 void free_fftw_arrays(int, double**, double**, double**, fftw_complex**, fftw_complex**, fftw_complex**);
 
-int multi_normxcorr_fftw(float*, long, long, long, float*, long, float*, long, int*, int*);
+int multi_normxcorr_fftw(float*, long, long, long, float*, long, float*, long, int*, int*, int, int);
 
 // Functions
 int normxcorr_fftw_threaded(float *templates, long template_len, long n_templates,
@@ -461,7 +461,8 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
-        float *image, long image_len, float *ncc, long fft_len, int *used_chans, int *pad_array){
+        float *image, long image_len, float *ncc, long fft_len, int *used_chans, int *pad_array,
+        int num_threads_outer, int num_threads_inner) {
     int i;
     int r = 0;
     size_t N2 = (size_t) fft_len / 2 + 1;
@@ -472,19 +473,24 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **outb = NULL;
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
-    int num_threads_outer = 1; // TODO: pass in from Python?
-    int num_threads_inner = 1; // TODO: pass in from Python?
 
 
     #ifdef N_THREADS
-    num_threads_inner = N_THREADS; // TODO: pass in from Python?
+    /* initialise FFTW threads */
     fftwf_init_threads();
     fftwf_plan_with_nthreads(num_threads_inner);
-    /* set the number of threads - the minimum of the numbers of channels and threads */
+    /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
+    #else
+    /* threading/OpenMP is disabled */
+    num_threads_outer = 1;
+    num_threads_inner = 1;
+    #endif
     printf("NUM_THREADS_OUTER: %d\n", num_threads_outer);
     printf("NUM_THREADS_INNER: %d\n", num_threads_inner);
-    #endif
+    if (num_threads_outer * num_threads_inner > N_THREADS) {
+        printf("Warning: requesting more threads than omp_get_max_threads\n");
+    }
 
     /* allocate memory for all threads here */
     template_ext = (float**) malloc(num_threads_outer * sizeof(float*));
