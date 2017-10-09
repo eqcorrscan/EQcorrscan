@@ -616,7 +616,7 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-        cores_inner, cores_outer):
+                         cores_inner, cores_outer):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
