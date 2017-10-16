@@ -141,7 +141,8 @@ def get_extensions():
     if get_build_platform() not in ('win32', 'win-amd64'):
         extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp']
-        if 'arm' not in get_build_platform():
+        if all(arch not in get_build_platform() 
+               for arch in ['arm', 'aarch']):
             extra_compile_args.extend(['-msse2', '-ftree-vectorize'])
     else:
         extra_link_args = []
