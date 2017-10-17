@@ -11,6 +11,14 @@ import importlib
 import sys
 import warnings
 
+from eqcorrscan.core.match_filter import (  # NOQA
+    match_filter, Detection, Party, Tribe, Family, Template)
+from eqcorrscan.core.subspace import Detector, read_detector  # NOQA
+from eqcorrscan.core.lag_calc import lag_calc  # NOQA
+
+from eqcorrscan.utils.correlate import (  # NOQA
+    get_stream_xcorr, get_array_xcorr)
+
 __all__ = ['core', 'utils', 'tutorials']
 
 __version__ = '0.2.7'
