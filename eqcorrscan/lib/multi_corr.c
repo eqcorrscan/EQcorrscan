@@ -479,6 +479,12 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     /* initialise FFTW threads */
     fftwf_init_threads();
     fftwf_plan_with_nthreads(num_threads_inner);
+
+    /* explicitly enable nested OpenMP loops */
+    if (num_threads_outer > 1 && num_threads_inner > 1) {
+        omp_set_nested(1);
+    }
+
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
     printf("NUM_THREADS_OUTER: %d\n", num_threads_outer);  // TODO: remove print statements eventually
