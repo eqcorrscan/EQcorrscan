@@ -274,8 +274,8 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
     px:             Reverse plan
   */
 	int N2 = fft_len / 2 + 1;
-	int i, t, startind, status = 0;
-	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
+	int i, t, startind, status = 0, unused_corr = 0;
+	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, acceptedDiff = 1e-15;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
 	// zero padding - and flip template
@@ -323,9 +323,12 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 	startind = template_len - 1;
     if (var >= acceptedDiff) {
         for (t = 0; t < n_templates; ++t){
-            float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
+            double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean);
+            c /= stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
+    } else {
+        unused_corr = 1;
     }
 
 	// Center and divide by length to generate scaled convolution
@@ -340,10 +343,20 @@ int normxcorr_fftw_main(float *templates, int template_len, int n_templates,
 		stdev = sqrt(var);
         if (var >= acceptedDiff) {
             for (t = 0; t < n_templates; ++t){
-                float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
+                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean );
+                c /= stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
 			}
+		} else {
+		    unused_corr = 1;
 		}
+	}
+	if (unused_corr == 1){
+	    if (status != 999){
+	        // Output a known error code, if status is already at this level
+	        // there are bigger problems!
+    	    status = 999;
+    	}
 	}
 	//  Clean up
 	free(norm_sums);
