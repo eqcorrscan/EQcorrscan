@@ -159,7 +159,10 @@ def _general_multithread(func):
 
     def multithread(templates, stream, *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            try:
+                return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            except Exception as e:
+                return e
 
     return multithread
 
@@ -167,7 +170,10 @@ def _general_multithread(func):
 def _general_multiprocess(func):
     def multiproc(templates, stream, *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            try:
+                return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            except Exception as e:
+                return e
 
     return multiproc
 
@@ -509,6 +515,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
 # The time-domain routine can be sped up massively on large machines (many
 # threads) using the openMP threaded functions.
 
+@time_multi_normxcorr.register('multithread')
 @time_multi_normxcorr.register('concurrent')
 def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     """
@@ -542,8 +549,8 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
                         len(stream[0]) - len(templates[0][0]) + 1])
     for seed_id in seed_ids:
         tr_cc, tr_chans = time_multi_normxcorr(
-            template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
-            True)
+            templates=template_dict[seed_id], stream=stream_dict[seed_id],
+            pads=pad_dict[seed_id], threaded=True)
         cccsums = np.sum([cccsums, tr_cc], axis=0)
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
@@ -555,6 +562,7 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
 
 # TODO: This should be turned back on when openMP loop is merged
 # @fftw_normxcorr.register('stream_xcorr')
+@fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
