@@ -1,6 +1,7 @@
 ## Current
 * Minima not correctly identified in find_peaks in previous versions - bug fixed
 * Compiled peak-finding routine written to speed-up peak-finding.
+* BUG-FIX: changed minimum variance for fftw correlation backend.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
