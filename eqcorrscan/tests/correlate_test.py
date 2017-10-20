@@ -150,6 +150,7 @@ def array_ccs(array_template, array_stream, pads):
         out[name] = cc
     return out
 
+
 @pytest.fixture(scope='module')
 def array_ccs_low_amp(array_template, array_stream, pads):
     """ Use each function stored in the normxcorr cache to correlate the
