@@ -3098,7 +3098,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param overlap:
         Either None, "calculate" or a float of number of seconds to
         overlap detection streams by.  This is to counter the effects of
-        the delay-and-stack in calcualting cross-correlation sums. Setting
+        the delay-and-stack in calculating cross-correlation sums. Setting
         overlap = "calculate" will work out the appropriate overlap based
         on the maximum lags within templates.
     :type debug: int
@@ -3131,8 +3131,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             cores=cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
-        warnings.warn('Not performing any processing on the '
-                      'continuous data.')
+        warnings.warn('Not performing any processing on the continuous data.')
         st = [stream]
     detections = []
     party = Party()
@@ -3234,8 +3233,9 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         func = shortproc
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
-    n_chunks = int((endtime - starttime + 1) / (master.process_length -
-                                                overlap))
+    data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
+    chunk_len_samps = (master.process_length - overlap) * master.samp_rate
+    n_chunks = int(data_len_samps / chunk_len_samps)
     if n_chunks == 0:
         print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):
