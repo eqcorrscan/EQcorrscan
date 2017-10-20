@@ -2312,10 +2312,7 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     plt.ioff()
     stream_plot = copy.deepcopy(stream[0])
     # Downsample for plotting
-    stream_len = stream[0].stats.npts
-    while stream_len > 10e5:
-        stream_plot.decimate(4)
-        stream_len = stream[0].stats.npts
+    stream_plot = _plotting_decimation(stream_plot, 10e5, 4)
     cccsum_plot = Trace(cccsum)
     cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
     # Resample here to maintain shape better
@@ -2333,6 +2330,35 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
                 trace=stream_plot, threshold=rawthresh, save=True,
                 savefile=plot_name)
+
+
+def _plotting_decimation(trace, max_len=10e5, decimation_step=4):
+    """
+    Decimate data until required length reached.
+
+    :type trace: obspy.core.stream.Trace
+    :param trace: Trace to decimate
+    type max_len: int
+    :param max_len: Maximum length in samples
+    :type decimation_step: int
+    :param decimation_step: Decimation factor to use for each step.
+
+    :return: obspy.core.stream.Trace
+
+    .. rubric: Example
+
+    >>> from obspy import Trace
+    >>> import numpy as np
+    >>> trace = Trace(np.random.randn(1000))
+    >>> trace = _plotting_decimation(trace, max_len=100, decimation_step=2)
+    >>> print(trace.stats.npts)
+    63
+    """
+    trace_len = trace.stats.npts
+    while trace_len > max_len:
+        trace.decimate(decimation_step)
+        trace_len = trace.stats.npts
+    return trace
 
 
 if __name__ == "__main__":
