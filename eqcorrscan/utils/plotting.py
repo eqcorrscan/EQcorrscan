@@ -2312,7 +2312,10 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     plt.ioff()
     stream_plot = copy.deepcopy(stream[0])
     # Downsample for plotting
-    stream_plot.decimate(int(stream[0].stats.sampling_rate / 10))
+    stream_len = stream[0].stats.npts
+    while stream_len > 10e5:
+        stream_plot.decimate(4)
+        stream_len = stream[0].stats.npts
     cccsum_plot = Trace(cccsum)
     cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
     # Resample here to maintain shape better
