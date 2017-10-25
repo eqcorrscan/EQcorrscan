@@ -277,7 +277,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
   */
 	long N2 = fft_len / 2 + 1;
 	long i, t, startind;
-    int status = 0, unused_corr = 0;;
+    int status = 0, unused_corr = 0;
     double *mean, *var;
 	double new_samp, old_samp, sum=0.0, acceptedDiff = 1e-15;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
