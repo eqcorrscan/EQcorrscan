@@ -28,6 +28,7 @@ import contextlib
 import copy
 import ctypes
 import os
+import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -499,9 +500,13 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
         used_chans_np, pads_np)
-    if ret != 0:
+    if ret not in [0, 999]:
         print(ret)
         raise MemoryError()
+    elif ret == 999:
+        msg = ("Some correlations not computed, are there "
+               "zeros in data? If not, consider increasing gain.")
+        warnings.warn(msg)
 
     return ccc, used_chans
 

@@ -277,8 +277,9 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
   */
 	long N2 = fft_len / 2 + 1;
 	long i, t, startind;
-    int status = 0;
-	double *mean, new_samp, old_samp, *var, sum=0.0, acceptedDiff = 0.0000001;
+    int status = 0, unused_corr = 0;;
+    double *mean, *var;
+	double new_samp, old_samp, sum=0.0, acceptedDiff = 1e-15;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
@@ -353,9 +354,12 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     if (var[0] >= acceptedDiff) {
         double stdev = sqrt(var[0]);
         for (t = 0; t < n_templates; ++t){
-            float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]) / stdev;
+            double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
+            c /= stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
+    } else {
+        unused_corr = 1;
     }
  
     // pre-compute the mean and var so we can parallelise the calculation
@@ -374,10 +378,20 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         if (var[i] >= acceptedDiff) {
             double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
-                float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] ) / stdev;
+                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
+                c /= stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
 			}
+		} else {
+		    unused_corr = 1;
 		}
+	}
+	if (unused_corr == 1){
+	    if (status != 999){
+	        // Output a known error code, if status is already at this level
+	        // there are bigger problems!
+    	    status = 999;
+    	}
 	}
 
 	//  Clean up
