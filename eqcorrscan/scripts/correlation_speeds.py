@@ -27,6 +27,7 @@ from multiprocessing import cpu_count
 from eqcorrscan.utils.correlate import (
     XCOR_FUNCS, XCORR_STREAM_METHODS, get_stream_xcorr)
 from eqcorrscan.utils import correlate
+from eqcorrscan.utils.parameters import EQcorrscanConfig, _flatten_dataset_size
 
 
 def memory_limit():
@@ -126,12 +127,24 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     """
     print("Testing correlation functions in %s" % correlate.__file__)
     MAXTHREADS = cpu_count()
+    dataset_size = {
+        'n_templates': n_templates, 'n_stations': n_stations,
+        'n_channels': n_channels, 'data_len': data_len,
+        'template_len': template_len, 'sampling_rate': sampling_rate}
+    # Check if this test has already been run
+    config = EQcorrscanConfig()
+    if 'correlation' in config.defaults.keys():
+        for key in config.defaults['correlation']:
+            if key == _flatten_dataset_size(dataset_size):
+                print("Already ran this dataset size, default set to %s" %
+                      config.defaults['correlation'][key])
     dataset = generate_dataset(
         n_templates=n_templates, n_stations=n_stations, n_channels=n_channels,
         data_len=data_len, template_len=template_len,
         sampling_rate=sampling_rate)
     times = {}
     memory_use = {}
+    best_time = {'None': np.inf}
     # Limit the memory
     memory_limit()
     for corr_func in XCOR_FUNCS.keys():
@@ -151,9 +164,16 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
                        (loops, avtime)).center(80))
                 print(("Average Max Memory: %f MB" % (mem)).center(80))
                 print('-' * 80)
+                if avtime < list(best_time.values())[0]:
+                    best_time = {'.'.join([corr_func, method]): avtime}
             except MemoryError:
                 print("Exceeded maximum memory allowed")
     plot_profiles(times, memory_use)
+    # Write config to file
+    flat_str = _flatten_dataset_size(dataset_size)
+    config = EQcorrscanConfig(defaults={
+        'correlation': {flat_str: list(best_time.keys())[0]}})
+    config.write()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,12 @@
 ## Current
 * Minima not correctly identified in find_peaks in previous versions - bug fixed
 * Compiled peak-finding routine written to speed-up peak-finding.
+* Add script to test what is the fastest correlation routine for a given dataset
+    * This script will write out to a .eqcorrscan.rc file in the users home
+      directory and utils.correlate will check this to see whether it should
+      use a different correlation routine to the standard default.
+    * .eqcorrscan.rc can have multiple different defaults for different dataset
+      sizes.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
