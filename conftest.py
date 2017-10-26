@@ -57,8 +57,9 @@ def clean_up_test_files():
         if os.path.isfile(fi):
             try:
                 os.remove(fi)
-            except FileNotFoundError:
+            except Exception as e:
                 print("File not found, assuming already cleaned")
+                print(e)
 
 
 @pytest.fixture(scope='session', autouse=True)
