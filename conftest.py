@@ -55,7 +55,11 @@ def clean_up_test_files():
     # remove files
     for fi in files_to_kill:
         if os.path.isfile(fi):
-            os.remove(fi)
+            try:
+                os.remove(fi)
+            except Exception as e:
+                print("File not found, assuming already cleaned")
+                print(e)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -76,7 +80,11 @@ def clean_up_test_directories():
     # remove files
     for directory in directories_to_kill:
         if os.path.isdir(directory):
-            shutil.rmtree(directory)
+            try:
+                shutil.rmtree(directory)
+            except Exception as e:
+                print("Could not find directory, already cleaned?")
+                print(e)
 
 
 # ------------- add objects to global pytest scope

@@ -1,6 +1,7 @@
 ## Current
 * Minima not correctly identified in find_peaks in previous versions - bug fixed
 * Compiled peak-finding routine written to speed-up peak-finding.
+* Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
 * Do not try to process when no processing needs to be done in 
   core.match_filter._group_process.
