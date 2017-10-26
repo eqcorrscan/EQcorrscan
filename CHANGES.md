@@ -3,6 +3,10 @@
 * Compiled peak-finding routine written to speed-up peak-finding.
 * Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
+* Do not try to process when no processing needs to be done in 
+  core.match_filter._group_process.
+* Length checking in core.match_filter._group_process done in samples rather
+  than time.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
