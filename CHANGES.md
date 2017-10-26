@@ -7,6 +7,7 @@
       use a different correlation routine to the standard default.
     * .eqcorrscan.rc can have multiple different defaults for different dataset
       sizes.
+* BUG-FIX: changed minimum variance for fftw correlation backend.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
