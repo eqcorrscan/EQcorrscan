@@ -17,7 +17,7 @@ from eqcorrscan.core.subspace import Detector, read_detector  # NOQA
 from eqcorrscan.core.lag_calc import lag_calc  # NOQA
 
 from eqcorrscan.utils.correlate import (  # NOQA
-    get_stream_xcorr, get_array_xcorr)
+    get_stream_xcorr, get_array_xcorr, register_array_xcorr)
 
 __all__ = ['core', 'utils', 'tutorials']
 
