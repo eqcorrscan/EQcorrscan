@@ -7,6 +7,9 @@
   core.match_filter._group_process.
 * Length checking in core.match_filter._group_process done in samples rather
   than time.
+* Fix bug where data lengths were not correct in match_filter.Tribe.detect when
+  sampling time-stamps were inconsistent between channels, which previously
+  resulted in error.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;

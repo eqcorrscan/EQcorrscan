@@ -3278,7 +3278,7 @@ def _par_read(dirname, compressed=True):
             arc.close()
             raise MatchFilterError(
                 'No template parameter file in archive')
-        parfile = arc.extractfile(member[0])
+        parfile = arc.extractfile(_parfile[0])
     else:
         parfile = open(dirname + '/' + 'template_parameters.csv', 'r')
     for line in parfile:
@@ -3872,10 +3872,23 @@ def match_filter(template_names, template_list, st, threshold,
         if not tr.stats.npts == longest_trace_length:
             msg = 'Data are not equal length, padding short traces'
             warnings.warn(msg)
-            start_pad = np.zeros(int(tr.stats.sampling_rate *
-                                     (tr.stats.starttime - min_start_time)))
-            end_pad = np.zeros(int(tr.stats.sampling_rate *
-                                   (max_end_time - tr.stats.endtime)))
+            start_pad = np.zeros(int(
+                tr.stats.sampling_rate * (tr.stats.starttime - min_start_time)))
+            end_pad = np.zeros(int(
+                tr.stats.sampling_rate * (max_end_time - tr.stats.endtime)))
+            # In some cases there will be one sample missing when sampling
+            # time-stamps are not set consistently between channels, this
+            # results in start_pad and end_pad being len==0
+            if len(start_pad) == 0 and len(end_pad) == 0:
+                debug_print("start and end pad are both zero, padding at one "
+                            "end", 3, debug)
+                if (tr.stats.starttime - min_start_time) > (
+                   max_end_time - tr.stats.endtime):
+                    start_pad = np.zeros(int(
+                        longest_trace_length - tr.stats.npts))
+                else:
+                    end_pad = np.zeros(int(
+                        longest_trace_length - tr.stats.npts))
             tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Perform check that all template lengths are internally consistent
     for i, temp in enumerate(template_list):
