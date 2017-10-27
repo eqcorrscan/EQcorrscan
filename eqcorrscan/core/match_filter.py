@@ -3873,7 +3873,8 @@ def match_filter(template_names, template_list, st, threshold,
             msg = 'Data are not equal length, padding short traces'
             warnings.warn(msg)
             start_pad = np.zeros(int(
-                tr.stats.sampling_rate * (tr.stats.starttime - min_start_time)))
+                tr.stats.sampling_rate * (
+                    tr.stats.starttime - min_start_time)))
             end_pad = np.zeros(int(
                 tr.stats.sampling_rate * (max_end_time - tr.stats.endtime)))
             # In some cases there will be one sample missing when sampling
