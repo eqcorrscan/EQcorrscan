@@ -1698,7 +1698,8 @@ class Template(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                pre_processed=False, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               ignore_length=False, overlap="calculate", debug=0):
+               ignore_length=False, overlap="calculate", debug=0,
+               full_peaks=False):
         """
         Detect using a single template within a continuous stream.
 
@@ -1764,6 +1765,8 @@ class Template(object):
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
             4 and 5, detections will not be computed in parallel.
+        :type full_peaks:
+        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
         :returns: Family of detections.
 
@@ -1830,7 +1833,7 @@ class Template(object):
             plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
-            overlap=overlap, debug=debug)
+            overlap=overlap, debug=debug, full_peaks=full_peaks)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -2255,7 +2258,8 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
-               group_size=None, overlap="calculate", debug=0):
+               group_size=None, overlap="calculate", debug=0,
+               full_peaks=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2318,6 +2322,8 @@ class Tribe(object):
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
             4 and 5, detections will not be computed in parallel.
+        :type full_peaks: bool
+        :param full_peaks: See `eqcorrscan.utils.findpeak.find_peaks2_short`
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -2418,7 +2424,8 @@ class Tribe(object):
                 plotvar=plotvar, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
-                ignore_length=ignore_length, overlap=overlap, debug=debug)
+                ignore_length=ignore_length, overlap=overlap, debug=debug,
+                full_peaks=full_peaks)
             party += group_party
         for family in party:
             if family is not None:
@@ -2430,7 +2437,8 @@ class Tribe(object):
                       threshold_type, trig_int, plotvar, daylong=False,
                       parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
-                      group_size=None, debug=0, return_stream=False):
+                      group_size=None, debug=0, return_stream=False,
+                      full_peaks=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2486,6 +2494,8 @@ class Tribe(object):
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
             consumption, if unset will use all templates.
+        :type full_peaks: bool
+        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
         :type debug: int
         :param debug:
@@ -2608,7 +2618,7 @@ class Tribe(object):
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
-                    overlap=None, debug=debug)
+                    overlap=None, debug=debug, full_peaks=full_peaks)
                 if return_stream:
                     stream += st
             except Exception as e:
@@ -3030,7 +3040,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
                   cores=None, ignore_length=False, overlap="calculate",
-                  debug=0):
+                  debug=0, full_peaks=False):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -3105,6 +3115,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param debug:
         Debug level from 0-5 where five is more output, for debug levels
         4 and 5, detections will not be computed in parallel.
+    :type full_peaks: bool
+    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
@@ -3165,7 +3177,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_list=[t.st for t in template_group], st=st_chunk,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores)
+                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores,
+                full_peaks=full_peaks)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -3606,7 +3619,7 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
-                 arg_check=True):
+                 arg_check=True, full_peaks=False):
     """
     Main matched-filter detection function.
 
@@ -3679,6 +3692,8 @@ def match_filter(template_names, template_list, st, threshold,
     :param arg_check:
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
+    :type full_peaks: bool
+    :param full:peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -4017,7 +4032,8 @@ def match_filter(template_names, template_list, st, threshold,
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
-        trig_int=int(trig_int * stream[0].stats.sampling_rate))
+        trig_int=int(trig_int * stream[0].stats.sampling_rate),
+        full_peaks=full_peaks)
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
