@@ -587,12 +587,11 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
     # number of threads:
     #   default to using inner threads
-    #   if passed in then use that
+    #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
     num_cores_inner = kwargs.get('cores')
     num_cores_outer = kwargs.get('cores_outer')
-    print("ARGS:", num_cores_outer, num_cores_inner)
     if num_cores_inner is None and num_cores_outer is None:
         num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
         num_cores_outer = 1
@@ -600,8 +599,6 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
         num_cores_outer = 1
     elif num_cores_outer is not None and num_cores_inner is None:
         num_cores_inner = 1
-    print("Num cores outer =", num_cores_outer)
-    print("Num cores inner =", num_cores_inner)
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream)

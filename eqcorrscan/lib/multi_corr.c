@@ -501,10 +501,8 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
-    printf("NUM_THREADS_OUTER: %d\n", num_threads_outer);  // TODO: remove print statements eventually
-    printf("NUM_THREADS_INNER: %d\n", num_threads_inner);
     if (num_threads_outer * num_threads_inner > N_THREADS) {
-        printf("Warning: requesting more threads than omp_get_max_threads\n");
+        printf("Warning: requesting more threads than available - this could affect performance\n");
     }
     #else
     /* threading/OpenMP is disabled */
