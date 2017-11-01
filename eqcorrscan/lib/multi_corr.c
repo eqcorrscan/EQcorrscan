@@ -490,17 +490,21 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
 
     #ifdef N_THREADS
-    /* initialise FFTW threads */
-    fftwf_init_threads();
-    fftwf_plan_with_nthreads(num_threads_inner);
-
-    /* explicitly enable nested OpenMP loops */
-    if (num_threads_outer > 1 && num_threads_inner > 1) {
-        omp_set_nested(1);
-    }
-
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
+
+    if (num_threads_inner > 1) {
+        /* initialise FFTW threads */
+        fftwf_init_threads();
+        fftwf_plan_with_nthreads(num_threads_inner);
+
+        if (num_threads_outer > 1) {
+            /* explicitly enable nested OpenMP loops */
+            omp_set_nested(1);
+        }
+    }
+
+    /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
         printf("Warning: requesting more threads than available - this could affect performance\n");
     }
@@ -641,7 +645,9 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_destroy_plan(pa);
     fftwf_destroy_plan(pb);
     fftwf_destroy_plan(px);
-    fftwf_cleanup_threads();
+    if (num_threads_inner > 1) {
+        fftwf_cleanup_threads();
+    }
     fftwf_cleanup();
 
     return r;
