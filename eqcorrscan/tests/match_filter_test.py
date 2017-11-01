@@ -615,6 +615,33 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
+    def test_tribe_detect_no_processing(self):
+        """Test that no processing is done when it isn't necessary."""
+        tribe = self.tribe.copy()
+        for template in tribe:
+            template.lowcut = None
+            template.highcut = None
+        party = tribe.detect(
+            stream=self.st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+        self.assertEqual(len(party), 4)
+        for fam, check_fam in zip(party, self.party):
+            for det, check_det in zip(fam.detections, check_fam.detections):
+                for key in det.__dict__.keys():
+                    if key == 'event':
+                        continue
+                    if isinstance(det.__dict__[key], float):
+                        if not np.allclose(det.__dict__[key],
+                                           check_det.__dict__[key], atol=0.1):
+                            print(key)
+                        self.assertTrue(np.allclose(
+                            det.__dict__[key], check_det.__dict__[key],
+                            atol=0.2))
+                    else:
+                        self.assertEqual(
+                            det.__dict__[key], check_det.__dict__[key])
+            # self.assertEqual(fam.template, check_fam.template)
+
     @pytest.mark.flaky(reruns=2)
     def test_client_detect(self):
         """Test the client_detect method."""

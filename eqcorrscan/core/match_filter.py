@@ -2311,7 +2311,7 @@ class Tribe(object):
         :param overlap:
             Either None, "calculate" or a float of number of seconds to
             overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calcualting cross-correlation sums. Setting
+            the delay-and-stack in calculating cross-correlation sums. Setting
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
         :type debug: int
@@ -3212,6 +3212,12 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
+    # Check whether any processing actually needs to be done.
+    if kwargs['highcut'] is None and kwargs['lowcut'] is None:
+        st_samp_rates = set([tr.stats.sampling_rate for tr in stream])
+        if len(st_samp_rates) == 1 and \
+           st_samp_rates.pop() == kwargs['samp_rate']:
+            return [stream]
     if daylong:
         if not master.process_length == 86400:
             warnings.warn(
