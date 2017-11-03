@@ -58,6 +58,40 @@ XCORR_STREAM_METHODS = ('multithread', 'multiprocess', 'concurrent',
 XCOR_ARRAY_METHODS = ('array_xcorr')
 
 
+class CorrelationError(Exception):
+    """ Error handling for correlation functions. """
+
+    def __init__(self, value):
+        """ Raise error.
+
+        .. rubric:: Example
+
+        >>> CorrelationError("Something happened")
+        Something happened
+        """
+        self.value = value
+
+    def __repr__(self):
+        """ Print error value.
+
+        .. rubric:: Example
+
+        >>> print(CorrelationError("Error").__repr__())
+        Error
+        """
+        return self.value
+
+    def __str__(self):
+        """ Print otherwise
+
+        .. rubric:: Example
+
+        >>> print(CorrelationError("Error"))
+        Error
+        """
+        return self.value
+
+
 # ------------------ Context manager for switching out default
 class _Context:
     """ class for permanently or temporarily changing items in a dict """
@@ -500,13 +534,17 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
         used_chans_np, pads_np)
-    if ret not in [0, 999]:
-        print(ret)
+    if ret < 0:
         raise MemoryError()
+    elif ret not in [0, 999]:
+        print('Error in C code (possible normalisation error)')
+        print(ccc.max())
+        print(ccc.min())
+        raise CorrelationError("Internal correlation error")
     elif ret == 999:
         msg = ("Some correlations not computed, are there "
                "zeros in data? If not, consider increasing gain.")
-        warnings.warn(msg)
+        print(msg)
 
     return ccc, used_chans
 
@@ -701,11 +739,15 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         cores_inner)
     if ret < 0:
         raise MemoryError()
-    elif ret > 0:
+    elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
         print(cccs.max())
         print(cccs.min())
-        raise MemoryError()
+        raise CorrelationError("Internal correlation error")
+    elif ret == 999:
+        msg = ("Some correlations not computed, are there "
+               "zeros in data? If not, consider increasing gain.")
+        print(msg)
 
     return cccs, used_chans
 

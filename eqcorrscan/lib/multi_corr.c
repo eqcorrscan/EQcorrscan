@@ -37,6 +37,8 @@
         #define N_THREADS omp_get_max_threads()
     #endif
 #endif
+// Define minimum variance to compute correlations - requires some signal
+#define ACCEPTED_DIFF 1e-15
 
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*);
@@ -75,7 +77,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 	long N2 = fft_len / 2 + 1;
 	long i, t, startind;
     int status = 0;
-	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, acceptedDiff = 0.0000001;
+	double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 	float * template_ext = (float *) calloc(fft_len * n_templates, sizeof(float));
 	float * image_ext = (float *) calloc(fft_len, sizeof(float));
@@ -137,7 +139,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 	stdev = sqrt(var);
     // Used for centering - taking only the valid part of the cross-correlation
 	startind = template_len - 1;
-    if (var >= acceptedDiff) {
+    if (var >= ACCEPTED_DIFF) {
         for (t = 0; t < n_templates; ++t){
             float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -153,7 +155,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 		mean = mean + (new_samp - old_samp) / template_len;
 		var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
 		stdev = sqrt(var);
-        if (var >= acceptedDiff) { // TODO: above is '>=', should they be the same?
+        if (var >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -279,7 +281,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 	long i, t, startind;
     int status = 0, unused_corr = 0;
     double *mean, *var;
-	double new_samp, old_samp, sum=0.0, acceptedDiff = 1e-15;
+	double new_samp, old_samp, sum=0.0;
 	float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
@@ -351,7 +353,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 
     // Used for centering - taking only the valid part of the cross-correlation
 	startind = template_len - 1;
-    if (var[0] >= acceptedDiff) {
+    if (var[0] >= ACCEPTED_DIFF) {
         double stdev = sqrt(var[0]);
         for (t = 0; t < n_templates; ++t){
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
@@ -375,7 +377,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
 	// Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
 	for(i = 1; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= acceptedDiff) {
+        if (var[i] >= ACCEPTED_DIFF) {
             double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
