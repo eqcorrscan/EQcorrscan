@@ -55,7 +55,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     bulk_info = []
     for event in cluster:
         t1 = event.origins[0].time
-        t2 = t1 + 25
+        t2 = t1 + 25.1  # Have to download extra data, otherwise GeoNet will
+        # trim wherever suits.
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
     st = client.get_waveforms_bulk(bulk=bulk_info)
