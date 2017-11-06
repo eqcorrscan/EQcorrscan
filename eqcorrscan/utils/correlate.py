@@ -161,6 +161,8 @@ def pool_boy(Pool, traces, **kwargs):
     # All parallel processing happens on a per-trace basis, we shouldn't create
     # more workers than there are traces
     n_cores = kwargs.get('cores', cpu_count())
+    if n_cores is None:
+        n_cores = cpu_count()
     if n_cores > traces:
         n_cores = traces
     pool = Pool(n_cores)
