@@ -30,22 +30,23 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # included it here, but you can find it in the tutorials directory of the
     # github repository
 
-    cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                            maxlon=175.5, startdate=UTCDateTime(2016, 5, 1),
-                            enddate=UTCDateTime(2016, 5, 20))
+    cat = get_geonet_events(
+        minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
+        startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 20))
+    print("Downloaded a catalog of %i events" % len(cat))
     # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!
     # We will generate a five station, multi-channel detector.
     cat = filter_picks(catalog=cat, top_n_picks=5)
-    stachans = list(set([(pick.waveform_id.station_code,
-                          pick.waveform_id.channel_code) for event in cat
-                         for pick in event.picks]))
+    stachans = list(set(
+        [(pick.waveform_id.station_code, pick.waveform_id.channel_code)
+         for event in cat for pick in event.picks]))
     # In this tutorial we will only work on one cluster, defined spatially.
     # You can work on multiple clusters, or try to whole set.
     clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
     # We will work on the largest cluster
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
-    # This cluster contains 32 events, we will now download a trim the
+    # This cluster contains 32 events, we will now download and trim the
     # waveforms.  Note that each chanel must start at the same time and be the
     # same length for multiplexing.  If not multiplexing EQcorrscan will
     # maintain the individual differences in time between channels and delay
@@ -57,8 +58,10 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
         t1 = event.origins[0].time
         t2 = t1 + 25.1  # Have to download extra data, otherwise GeoNet will
         # trim wherever suits.
+        t1 -= 0.1
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
+    print("Downloading data for %i events" % len(cluster))
     st = client.get_waveforms_bulk(bulk=bulk_info)
     for event in cluster:
         t1 = event.origins[0].time
@@ -67,10 +70,10 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # Construction of the detector will process the traces, then align them,
     # before multiplexing.
     detector = subspace.Detector()
-    detector.construct(streams=design_set, lowcut=2.0, highcut=9.0,
-                       filt_order=4, sampling_rate=20, multiplex=multiplex,
-                       name='Wairarapa1', align=True, reject=0.2,
-                       shift_len=6, plot=plot).partition(9)
+    detector.construct(
+        streams=design_set, lowcut=2.0, highcut=9.0, filt_order=4,
+        sampling_rate=20, multiplex=multiplex, name='Wairarapa1', align=True,
+        reject=0.2, shift_len=6, plot=plot).partition(9)
     if plot:
         detector.plot()
     # We also want the continuous stream to detect in.
@@ -86,9 +89,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # We set a very low threshold because the detector is not that great, we
     # haven't aligned it particularly well - however, at this threshold we make
     # two real detections.
-    detections, det_streams = detector.detect(st=st, threshold=0.3,
-                                              trig_int=2,
-                                              extract_detections=True)
+    detections, det_streams = detector.detect(
+        st=st, threshold=0.3, trig_int=2, extract_detections=True)
     if return_streams:
         return detections, det_streams
     else:
