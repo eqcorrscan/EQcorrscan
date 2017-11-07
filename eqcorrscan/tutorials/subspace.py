@@ -74,6 +74,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
         streams=design_set, lowcut=2.0, highcut=9.0, filt_order=4,
         sampling_rate=20, multiplex=multiplex, name='Wairarapa1', align=True,
         reject=0.2, shift_len=6, plot=plot).partition(9)
+    print("Constructed Detector")
     if plot:
         detector.plot()
     # We also want the continuous stream to detect in.
@@ -84,11 +85,13 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     bulk_info = [('NZ', stachan[0], '*',
                   stachan[1][0] + '?' + stachan[1][-1],
                   t1, t2) for stachan in detector.stachans]
+    print("Downloading continuous data")
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     # We set a very low threshold because the detector is not that great, we
     # haven't aligned it particularly well - however, at this threshold we make
     # two real detections.
+    print("Computing detections")
     detections, det_streams = detector.detect(
         st=st, threshold=0.3, trig_int=2, extract_detections=True)
     if return_streams:
