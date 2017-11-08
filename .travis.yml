@@ -8,16 +8,18 @@ addons:
 matrix:
   include:
     - os: linux
-      env: PYTHON_VERSION=2.7
+      env: PYTHON_VERSION=2.7 MKL=0
     - os: linux
-      env: PYTHON_VERSION=3.5
+      env: PYTHON_VERSION=3.5 MKL=0
     - os: linux
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6 MKL=0
+    - os: linux
+      env: PYTHON_VERSION=3.6 MKL=1
 
     - os: osx
       osx_image: xcode8
       env:
-        - PYTHON_VERSION=3.5
+        - PYTHON_VERSION=3.5 MKL=0
 
 sudo: false
 
@@ -25,10 +27,12 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
+      brew update;
       brew install gcc6;
       export CC=gcc-6;
       export CXX=g++-6;
       brew install fftw;
+      brew list;
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;
@@ -59,6 +63,7 @@ install:
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
+  - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
   - pip freeze
   - conda list
@@ -70,6 +75,7 @@ install:
 script:
    - py.test --runslow -m "not serial and not network" -n 2
    - py.test -m "serial and not network" --cov-append
+   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py::TestTutorialScripts::test_subspace --cov-append
 #   - py.test -m "network" --cov-append -n 2
 
 after_success:

@@ -2353,7 +2353,7 @@ class Tribe(object):
         :param overlap:
             Either None, "calculate" or a float of number of seconds to
             overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calcualting cross-correlation sums. Setting
+            the delay-and-stack in calculating cross-correlation sums. Setting
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
         :type debug: int
@@ -2640,9 +2640,30 @@ class Tribe(object):
                     starttime + ((i + 1) * data_length) + (pad + buff)))
             try:
                 st = client.get_waveforms_bulk(bulk_info)
+                # Get gaps and remove traces as necessary
+                gaps = st.get_gaps(
+                    min_gap=2 * self.templates[0].st[0].stats.npts /
+                    self.templates[0].st[0].stats.sampling_rate)
+                if len(gaps) > 0:
+                    print("Gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
+                                               for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            print("Removing gappy channel: %s" % str(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
                 st.merge(fill_value='interpolate')
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
+                if return_stream:
+                    stream += st
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
@@ -2651,8 +2672,6 @@ class Tribe(object):
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug)
-                if return_stream:
-                    stream += st
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
@@ -3140,7 +3159,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param overlap:
         Either None, "calculate" or a float of number of seconds to
         overlap detection streams by.  This is to counter the effects of
-        the delay-and-stack in calcualting cross-correlation sums. Setting
+        the delay-and-stack in calculating cross-correlation sums. Setting
         overlap = "calculate" will work out the appropriate overlap based
         on the maximum lags within templates.
     :type debug: int
@@ -3173,8 +3192,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             cores=cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
-        warnings.warn('Not performing any processing on the '
-                      'continuous data.')
+        warnings.warn('Not performing any processing on the continuous data.')
         st = [stream]
     detections = []
     party = Party()
@@ -3255,6 +3273,12 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
+    # Check whether any processing actually needs to be done.
+    if kwargs['highcut'] is None and kwargs['lowcut'] is None:
+        st_samp_rates = set([tr.stats.sampling_rate for tr in stream])
+        if len(st_samp_rates) == 1 and \
+           st_samp_rates.pop() == kwargs['samp_rate']:
+            return [stream]
     if daylong:
         if not master.process_length == 86400:
             warnings.warn(
@@ -3276,8 +3300,9 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         func = shortproc
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
-    n_chunks = int((endtime - starttime + 1) / (master.process_length -
-                                                overlap))
+    data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
+    chunk_len_samps = (master.process_length - overlap) * master.samp_rate
+    n_chunks = int(data_len_samps / chunk_len_samps)
     if n_chunks == 0:
         print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):

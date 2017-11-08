@@ -6,7 +6,9 @@ We have a manuscript in review, if you make use of EQcorrscan please cite the fo
 
 Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters *in review*
 
-If you want to you should also cite the version number: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.891131.svg)](https://doi.org/10.5281/zenodo.891131)
+If you want to you should also cite the version number:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.893621.svg)](https://doi.org/10.5281/zenodo.893621)
+
 
 # Test status
 Note that tests for travis and appveyor are run daily on master as cron jobs, and may reflect time-out issues.
@@ -23,6 +25,10 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 | Chat on gitter | [![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Installation
+
+The easiest way to install EQcorrscan is through anaconda:
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/eqcorrscan/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge)
+
 Installation has been tested on both OSX and Linux (Ubuntu), and
 Windows systems.  We support Python versions 2.7, 3.4, 3.5 and 3.6.
 Note that, although we support Windows, EQcorrscan is optimized for
