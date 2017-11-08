@@ -386,7 +386,13 @@ class Party(object):
         :param dates: A start and end date for the new Party
         :type min_dets: int
         :param min_dets: Minimum number of detections per family
-        :return:
+
+        .. rubric:: Example
+
+        >>> from obspy import UTCDateTime
+        >>> Party().read().filter(dates=[UTCDateTime(2016, 1, 1),
+        ...                              UTCDateTime(2017, 1, 1)],
+        ...                       min_dets=30)
         """
         if dates is None:
             raise MatchFilterError('Need a list defining a date range')
@@ -418,15 +424,27 @@ class Party(object):
         :type rate: bool
         :param rate: Whether or not to plot the daily rate of detection as
             opposed to cumulative number. Only works with plot_grouped=True.
+        :param \**kwargs: Any other arguments accepted by :func:
+            `eqcorrscan.utils.plotting.cumulative_detections`
 
-        .. Example::
+        .. rubric:: Examples
 
-        >>> Party().read().plot(plot_grouped=True)  # doctest: +SKIP
+        Plot cumulative detections for all templates individually:
+        >>> Party().read().plot()  # doctest: +SKIP
 
-        .. plot::
+        Plot cumulative detections for all templates grouped together:
+        >>> Party().read().plot(plot_grouped=True)
 
-            from eqcorrscan.core.match_filter import Party
-            Party().read().plot(plot_grouped=True)
+        Plot the rate of detection for all templates grouped together:
+        >>> Party().read().plot(plot_grouped=True, rate=True)
+
+        Plot cumulative detections for all templates with more than five
+        detections between June 1st, 2012 and July 31st, 2012:
+        >>> from obspy import UTCDateTime
+        >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
+        ...                            UTCDateTime(2012, 7, 31)],
+        ...                     min_dets=5)
+
         """
         all_dets = []
         if dates:
@@ -455,7 +473,7 @@ class Party(object):
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
 
-        .. rubric:: Example
+        .. rubric:: Examples
 
         Using the MAD threshold on detections made using the MAD threshold:
 
@@ -639,7 +657,7 @@ class Party(object):
         Party of 4 Families.
         >>> party.write('test_csv_write.csv', format='csv')
         Party of 4 Families.
-        >>> party.write('test_quakeml.ml', format='quakeml')
+        >>> party.write('test_quakeml.xml', format='quakeml')
         Party of 4 Families.
         """
         if format.lower() == 'csv':

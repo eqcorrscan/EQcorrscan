@@ -311,9 +311,10 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                           show=True, plot_legend=True, ax=None, save=False,
                           savefile=None):
     """
-    Plot cumulative detections in time.
+    Plot cumulative detections or detecton rate in time.
 
-    Simple plotting function to take a list of datetime objects and plot
+    Simple plotting function to take a list of either datetime objects or
+    :class:`eqcorrscan.core.match_filter.Detection` objects and plot
     a cumulative detections list.  Can take dates as a list of lists and will
     plot each list separately, e.g. if you have dates from more than one
     template it will overlay them in different colours.
@@ -370,6 +371,31 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
+
+    .. rubric:: Example 2: Rate plotting
+
+    >>> import datetime as dt
+    >>> import numpy as np
+    >>> from eqcorrscan.utils.plotting import cumulative_detections
+    >>> dates = []
+    >>> for i in range(3):
+    ...     dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+    ...                   for n in np.random.randn(100)])
+    >>> cumulative_detections(dates, ['a', 'b', 'c'], plot_grouped=True,
+    ...                       rate=True, show=True) # doctest: +SKIP
+
+    .. plot::
+
+        import datetime as dt
+        import numpy as np
+        from eqcorrscan.utils.plotting import cumulative_detections
+        dates = []
+        for i in range(3):
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+                          for n in np.random.randn(100)])
+        cumulative_detections(dates, ['a', 'b', 'c'], plot_grouped=True,
+                              rate=True, show=True)
+
     """
     from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
