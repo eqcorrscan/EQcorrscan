@@ -7,6 +7,7 @@
       use a different correlation routine to the standard default.
     * .eqcorrscan.rc can have multiple different defaults for different dataset
       sizes.
+* Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
 * Do not try to process when no processing needs to be done in 
   core.match_filter._group_process.
