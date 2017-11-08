@@ -2608,9 +2608,30 @@ class Tribe(object):
                     starttime + ((i + 1) * data_length) + (pad + buff)))
             try:
                 st = client.get_waveforms_bulk(bulk_info)
+                # Get gaps and remove traces as necessary
+                gaps = st.get_gaps(
+                    min_gap=2 * self.templates[0].st[0].stats.npts /
+                    self.templates[0].st[0].stats.sampling_rate)
+                if len(gaps) > 0:
+                    print("Gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
+                                               for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            print("Removing gappy channel: %s" % str(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
                 st.merge(fill_value='interpolate')
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
+                if return_stream:
+                    stream += st
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
@@ -2619,8 +2640,6 @@ class Tribe(object):
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug, full_peaks=full_peaks)
-                if return_stream:
-                    stream += st
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
