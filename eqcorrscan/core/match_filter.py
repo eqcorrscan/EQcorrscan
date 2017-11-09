@@ -4108,7 +4108,8 @@ def match_filter(template_names, template_list, st, threshold,
                             wv_id = WaveformStreamID(
                                 network_code=tr.stats.network,
                                 station_code=tr.stats.station,
-                                channel_code=tr.stats.channel)
+                                channel_code=tr.stats.channel,
+                                location_code=tr.stats.location)
                             ev.picks.append(
                                 Pick(time=pick_tm, waveform_id=wv_id))
                     if not output_event:
