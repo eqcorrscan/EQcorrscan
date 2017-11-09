@@ -1,5 +1,5 @@
 """
-Functions for testing the utils.stacking functions
+Functions for testing the core.subspace functions
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -402,7 +402,7 @@ def get_test_data():
     bulk_info = []
     for event in cluster:
         t1 = event.origins[0].time + 5
-        t2 = t1 + 15
+        t2 = t1 + 15.1
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
     st = client.get_waveforms_bulk(bulk=bulk_info)
