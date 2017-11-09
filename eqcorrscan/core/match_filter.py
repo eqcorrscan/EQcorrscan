@@ -392,7 +392,7 @@ class Party(object):
         >>> from obspy import UTCDateTime
         >>> Party().read().filter(dates=[UTCDateTime(2016, 1, 1),
         ...                              UTCDateTime(2017, 1, 1)],
-        ...                       min_dets=30)
+        ...                       min_dets=30) # doctest: +SKIP
         """
         if dates is None:
             raise MatchFilterError('Need a list defining a date range')
@@ -433,17 +433,17 @@ class Party(object):
         >>> Party().read().plot()  # doctest: +SKIP
 
         Plot cumulative detections for all templates grouped together:
-        >>> Party().read().plot(plot_grouped=True)
+        >>> Party().read().plot(plot_grouped=True) # doctest: +SKIP
 
         Plot the rate of detection for all templates grouped together:
-        >>> Party().read().plot(plot_grouped=True, rate=True)
+        >>> Party().read().plot(plot_grouped=True, rate=True) # doctest: +SKIP
 
         Plot cumulative detections for all templates with more than five
         detections between June 1st, 2012 and July 31st, 2012:
         >>> from obspy import UTCDateTime
         >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
         ...                            UTCDateTime(2012, 7, 31)],
-        ...                     min_dets=5)
+        ...                     min_dets=5) # doctest: +SKIP
 
         """
         all_dets = []
