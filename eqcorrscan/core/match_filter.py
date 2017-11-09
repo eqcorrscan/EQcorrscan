@@ -440,6 +440,7 @@ class Party(object):
         4
         """
         for family in self.families:
+            rethresh_detections = []
             for d in family.detections:
                 if new_threshold_type == 'MAD' and d.threshold_type == 'MAD':
                     new_thresh = (d.threshold /
@@ -456,8 +457,9 @@ class Party(object):
                     raise MatchFilterError(
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
-                if d.detect_val < new_thresh:
-                    family.detections.remove(d)
+                if d.detect_val >= new_thresh:
+                    rethresh_detections.append(d)
+            family.detections = rethresh_detections
             family.catalog = Catalog([d.event for d in family])
         return self
 
