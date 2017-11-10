@@ -443,7 +443,7 @@ class Party(object):
 
         Plot cumulative detections for all templates with more than five
         detections between June 1st, 2012 and July 31st, 2012:
-        
+
         >>> from obspy import UTCDateTime
         >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
         ...                            UTCDateTime(2012, 7, 31)],
