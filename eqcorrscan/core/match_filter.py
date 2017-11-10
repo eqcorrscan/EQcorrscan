@@ -430,16 +430,20 @@ class Party(object):
         .. rubric:: Examples
 
         Plot cumulative detections for all templates individually:
+
         >>> Party().read().plot()  # doctest: +SKIP
 
         Plot cumulative detections for all templates grouped together:
+
         >>> Party().read().plot(plot_grouped=True) # doctest: +SKIP
 
         Plot the rate of detection for all templates grouped together:
+
         >>> Party().read().plot(plot_grouped=True, rate=True) # doctest: +SKIP
 
         Plot cumulative detections for all templates with more than five
         detections between June 1st, 2012 and July 31st, 2012:
+        
         >>> from obspy import UTCDateTime
         >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
         ...                            UTCDateTime(2012, 7, 31)],
