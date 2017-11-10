@@ -413,6 +413,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
               ' before processing')
 
     # Sanity check to ensure files are daylong
+    padded = False
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         if debug >= 2:
             print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
@@ -424,9 +425,21 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                    (tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600))
             raise NotImplementedError(msg)
-        # Use obspy's trim function with zero padding
-        tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
-                     nearest_sample=True)
+        # trim, then calculate length of any pads required
+        tr = tr.trim(starttime, starttime + length, nearest_sample=True)
+        pre_pad_secs = tr.stats.starttime - starttime
+        post_pad_secs = (starttime + length) - tr.stats.endtime
+        if pre_pad_secs > 0 or post_pad_secs > 0:
+            padded = True
+            pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
+            post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
+            print(tr)
+            print("Padding to day long with %f s before and %f s at end" %
+                  (pre_pad_secs, post_pad_secs))
+            tr.data = np.concatenate([pre_pad, tr.data, post_pad])
+            # Use this rather than the expected pad because of rounding samples
+            tr.stats.starttime -= len(pre_pad) * tr.stats.delta
+            print(tr)
         # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
@@ -470,6 +483,20 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         warnings.warn("Time headers do not match expected date: " +
                       str(tr.stats.starttime))
 
+    if padded:
+        print("Reapplying zero pads post processing")
+        print(tr)
+        pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
+        post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
+        pre_pad_len = len(pre_pad)
+        post_pad_len = len(post_pad)
+        print("Taking only valid data between %i and %i samples" %
+              (pre_pad_len, post_pad_len))
+        # Re-apply the pads, taking only the data section that was valid
+        tr.data = np.concatenate(
+            [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
+             post_pad])
+        print(tr)
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         if debug >= 2:
