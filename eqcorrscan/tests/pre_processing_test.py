@@ -270,6 +270,21 @@ class TestPreProcessing(unittest.TestCase):
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
+    def test_masked_trace(self):
+        """Test that processing a masked array works."""
+        st = self.st
+        tr1 = st[0].copy().trim(st[0].stats.starttime,
+                                st[0].stats.starttime + 1800)
+        tr2 = st[0].copy().trim(st[0].stats.starttime + 1900,
+                                st[0].stats.starttime + 3600)
+        tr = tr1 + tr2
+        print(tr)
+        processed = process(tr=tr, lowcut=0.1, highcut=0.4,
+                            filt_order=3, samp_rate=1, debug=0,
+                            starttime=False, clip=False, length=3600,
+                            seisan_chan_names=True, ignore_length=False)
+        self.assertEqual(processed.stats.npts, 3600)
+
 
 if __name__ == '__main__':
     unittest.main()
