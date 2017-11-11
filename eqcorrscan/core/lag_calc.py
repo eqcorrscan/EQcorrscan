@@ -227,6 +227,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             waveform_id=_waveform_id, time=picktime,
             method_id=ResourceIdentifier('EQcorrscan'), phase_hint=phase,
             creation_info='eqcorrscan.core.lag_calc',
+            evaluation_mode='automatic',
             comments=[Comment(text='cc_max=%s' % cc_max)]))
         event.resource_id = detection_id
     ccc_str = ("detect_val=%s" % cccsum)
