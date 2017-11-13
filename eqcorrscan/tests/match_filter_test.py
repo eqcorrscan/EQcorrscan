@@ -763,6 +763,23 @@ class TestMatchObjects(unittest.TestCase):
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
+    def test_party_rethreshold(self):
+        """Make sure that rethresholding removes the events we want it to."""
+        party = self.party.copy()
+        # Append a load of detections to the first family
+        for i in range(200):
+            det = party[0][0].copy()
+            det.detect_time += i * 20
+            det.detect_val = det.threshold + (i * 1e-1)
+            det.id = str(i)
+            party[0].detections.append(det)
+        self.assertEqual(len(party), 204)
+        party.rethreshold(new_threshold=9)
+        for family in party:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(d.detect_val, d.threshold)
+
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
         client = Client('NCEDC')
