@@ -1,3 +1,4 @@
+from __future__ import print_function
 try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
@@ -100,6 +101,64 @@ def get_library_dirs():
     return library_dirs
 
 
+def get_mkl():
+    from pkg_resources import get_build_platform
+
+    mkl_found = False
+    # TODO: not sure about windows so ignoring for now
+    if not get_build_platform() in ('win32', 'win-amd64'):
+        # look for MKL
+        mklroot = os.getenv("MKLROOT")
+        if mklroot is not None and os.path.isdir(mklroot):
+            if os.path.isdir(os.path.join(mklroot, "mkl")):
+                mklroot = os.path.join(mklroot, "mkl")
+
+            # look for MKL lib
+            _libdir = os.path.join(mklroot, "lib")
+            if os.path.isdir(os.path.join(_libdir, "intel64")):
+                _libdir = os.path.join(_libdir, "intel64")
+            libs = glob.glob(os.path.join(_libdir, "libmkl_rt.*"))
+            if len(libs) == 1:
+                _lib = os.path.splitext(os.path.basename(libs[0]))[0][3:]
+                mkl_lib = [_lib]
+                mkl_libdir = [_libdir]
+
+                # look for include
+                if os.path.exists(os.path.join(mklroot, "include", "fftw",
+                                               "fftw3.h")):
+                    mkl_inc = [os.path.join(mklroot, "include", "fftw")]
+                    mkl_found = True
+
+        # check for conda installed MKL too (doesn't set MKLROOT)
+        # this assume we are in a conda env (not root)
+        if not mkl_found:
+            conda = os.getenv("CONDA_PREFIX")
+            if conda is not None:
+                # look for MKL lib
+                libs = glob.glob(os.path.join(conda, "lib", "libmkl_rt.*"))
+                if len(libs) == 1:
+                    _lib = os.path.splitext(os.path.basename(libs[0]))[0][3:]
+                    mkl_lib = [_lib]
+                    mkl_libdir = [os.path.join(conda, "lib")]
+
+                    # look for include too
+                    if os.path.exists(os.path.join(conda, "include", "fftw",
+                                                   "fftw3.h")):
+                        mkl_inc = [os.path.join(conda, "include", "fftw")]
+                        mkl_found = True
+
+    if mkl_found:
+        print("Found MKL:")
+        print("  MKL includes:", mkl_inc)
+        print("  MKL lib dirs:", mkl_libdir)
+        print("  MKL libs:", mkl_lib)
+
+        return mkl_inc, mkl_libdir, mkl_lib
+
+    else:
+        return None
+
+
 def get_libraries():
     from pkg_resources import get_build_platform
 
@@ -167,9 +226,16 @@ def get_extensions():
     else:
         # otherwise we use dynamic libraries
         common_extension_args['extra_link_args'] = extra_link_args
-        common_extension_args['libraries'] = libraries
         common_extension_args['extra_compile_args'] = extra_compile_args
         common_extension_args['export_symbols'] = exp_symbols
+        mkl = get_mkl()
+        if mkl is not None:
+            # use MKL if we have it
+            common_extension_args['include_dirs'].extend(mkl[0])
+            common_extension_args['library_dirs'].extend(mkl[1])
+            common_extension_args['libraries'] = mkl[2]
+        else:
+            common_extension_args['libraries'] = libraries
     ext_modules = [
         Extension('eqcorrscan.lib.libutils', sources=sources,
                   **common_extension_args)]

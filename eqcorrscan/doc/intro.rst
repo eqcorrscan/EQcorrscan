@@ -34,19 +34,24 @@ Installation - Updated for version 0.2.7
 ----------------------------------------
 
 In general we recommend users to install EQcorrscan in a virtual environment,
-|conda| will simplify your install greatly - we recommend creating a conda
+|conda| will simplify your install greatly (install instuction for anaconda 
+or miniconda are here: |conda-install|) - we recommend creating a conda
 environment with the following:
 
 .. code-block:: bash
 
+    conda config --add channels conda-forge
     conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
+    # If using bash run:
     source activate eqcorrscan
+    # If not you should get away with:
+    activate eqcorrscan
     
 To then install EQcorrscan you can simply run:
 
 .. code-block:: bash
 
-    conda install -c conda-forge eqcorrscan
+    conda install eqcorrscan
 
 And you are done! Otherwise, if you want to install via pip then the following applies:
 
@@ -106,6 +111,9 @@ Once you have installed fftw the EQcorrscan install should be as simple as:
 
     <a href="https://conda.io/docs/" target="_blank">conda</a>
 
+.. |conda-install| raw:: html
+
+    <a href="https://conda.io/docs/user-guide/install/index.html#installing-conda-on-a-system-that-has-other-python-installations-or-packages" target="_blank">conda installation</a>
 
 .. |fftw-install| raw:: html
 
