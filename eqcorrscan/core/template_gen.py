@@ -576,13 +576,12 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
             if not '.'.join([stations[i], channels[i]]) in st_stachans:
                 warnings.warn('No data provided for ' + stations[i] + '.' +
                               channels[i])
-        st1 = st.copy()
         # Cut and extract the templates
         template = template_gen(
-            event.picks, st1, length, swin, prepick=prepick, plot=plot,
+            event.picks, st, length, swin, prepick=prepick, plot=plot,
             debug=debug, all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
         templates.append(template)
-        process_lengths.append(len(st1[0].data) / samp_rate)
+        process_lengths.append(len(st[0].data) / samp_rate)
     if return_event:
         return templates, catalog, process_lengths
     return templates
@@ -719,17 +718,17 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         for tr in st:
             tr.trim(starttime, endtime)
             print(len(tr))
-        st1 = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=samp_rate, debug=debug, parallel=True)
         for event in sub_catalog:
             template = template_gen(
-                picks=event.picks, st=st1, length=length, swin=swin,
+                picks=event.picks, st=st, length=length, swin=swin,
                 prepick=prepick, all_horiz=all_horiz, plot=plot, debug=debug,
                 delayed=delayed, min_snr=min_snr)
-            process_lengths.append(len(st1[0].data) / samp_rate)
+            process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
-            del st, st1
+        del st
     if return_event:
         return temp_list, catalog, process_lengths
     return temp_list
@@ -877,19 +876,19 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
             tr.trim(starttime, endtime)
             if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
-        st1 = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=samp_rate, debug=debug, parallel=True)
         if debug > 0:
-            st1.plot()
+            st.plot()
         for event in sub_catalog:
             template = template_gen(
-                picks=event.picks, st=st1, length=length, swin=swin,
+                picks=event.picks, st=st, length=length, swin=swin,
                 prepick=prepick, plot=plot, debug=debug, all_horiz=all_horiz,
                 delayed=delayed, min_snr=min_snr)
-            process_lengths.append(len(st1[0].data) / samp_rate)
+            process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
-        del st, st1
+        del st
     if return_event:
         return temp_list, catalog, process_lengths
     return temp_list
@@ -982,11 +981,10 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
             else:
                 picks.remove(pick)
         if len(picks) > 0:
-            st_clip = st.copy()
-            template = template_gen(picks=picks, st=st_clip, length=length,
-                                    swin=swin, prepick=prepick, plot=plot,
-                                    debug=debug, all_horiz=all_horiz,
-                                    delayed=delayed, min_snr=min_snr)
+            template = template_gen(
+                picks=picks, st=st, length=length, swin=swin, prepick=prepick,
+                plot=plot, debug=debug, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr)
             process_lengths.append(st[0].stats.endtime - st[0].stats.starttime)
             templates.append(template)
     if return_event:
@@ -1145,9 +1143,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                             tr.stats.channel, 0, debug)
                 if not delayed:
                     starttime = event_start_time
-                tr_cut = tr.copy().trim(starttime=starttime,
-                                        endtime=starttime + length,
-                                        nearest_sample=False)
+                tr_cut = tr.slice(
+                    starttime=starttime, endtime=starttime + length,
+                    nearest_sample=False).copy()
                 if len(tr_cut.data) == 0:
                     print('No data provided for %s.%s starting at %s' %
                           (tr.stats.station, tr.stats.channel, str(starttime)))
@@ -1176,7 +1174,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         tplot(st1, background=background, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime))
         del stplot
-    del st
     return st1
 
 

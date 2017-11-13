@@ -3484,7 +3484,7 @@ def _read_family(fname, all_cat):
                              'threshold_type']:
                     det_dict.update({key: value})
                 elif key == 'no_chans':
-                    det_dict.update({key: int(value)})
+                    det_dict.update({key: int(float(value))})
                 elif len(key) == 0:
                     continue
                 else:
