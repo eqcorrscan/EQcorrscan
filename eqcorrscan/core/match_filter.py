@@ -458,6 +458,9 @@ class Party(object):
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
                 if d.detect_val >= new_thresh:
+                    d.threshold = new_thresh
+                    d.threshold_input = new_threshold
+                    d.threshold_type = new_threshold_type
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
             family.catalog = Catalog([d.event for d in family])
