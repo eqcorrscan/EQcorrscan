@@ -377,7 +377,37 @@ class Party(object):
         self.families.sort(key=lambda x: x.template.name)
         return self
 
-    def plot(self, plot_grouped=False):
+    def filter(self, dates=None, min_dets=1):
+        """
+        Return a new Party with only detections within a date range and
+        only families with a minimum number of detections.
+
+        :type dates: list of obspy.core.UTCDateTime objects
+        :param dates: A start and end date for the new Party
+        :type min_dets: int
+        :param min_dets: Minimum number of detections per family
+
+        .. rubric:: Example
+
+        >>> from obspy import UTCDateTime
+        >>> Party().read().filter(dates=[UTCDateTime(2016, 1, 1),
+        ...                              UTCDateTime(2017, 1, 1)],
+        ...                       min_dets=30) # doctest: +SKIP
+        """
+        if dates is None:
+            raise MatchFilterError('Need a list defining a date range')
+        new_party = Party()
+        for fam in self.families:
+            new_fam = Family(template=fam.template,
+                             detections=[det for det in fam
+                                         if det.detect_time < dates[1]
+                                         and det.detect_time > dates[0]])
+            if len(new_fam) >= min_dets:
+                new_party.families.append(new_fam)
+        return new_party
+
+    def plot(self, plot_grouped=False, dates=None, min_dets=1, rate=False,
+             **kwargs):
         """
         Plot the cumulative detections in time.
 
@@ -385,20 +415,54 @@ class Party(object):
         :param plot_grouped:
             Whether to plot all families together (plot_grouped=True), or each
             as a separate line.
+        :type dates: list
+        :param dates: list of obspy.core.UTCDateTime objects bounding the
+            plot. The first should be the start date, the last the end date.
+        :type min_dets: int
+        :param min_dets: Plot only families with this number of detections
+            or more.
+        :type rate: bool
+        :param rate: Whether or not to plot the daily rate of detection as
+            opposed to cumulative number. Only works with plot_grouped=True.
+        :param \**kwargs: Any other arguments accepted by
+            :func:`eqcorrscan.utils.plotting.cumulative_detections`
 
-        .. Example::
+        .. rubric:: Examples
 
-        >>> Party().read().plot(plot_grouped=True)  # doctest: +SKIP
+        Plot cumulative detections for all templates individually:
 
-        .. plot::
+        >>> Party().read().plot()  # doctest: +SKIP
 
-            from eqcorrscan.core.match_filter import Party
-            Party().read().plot(plot_grouped=True)
+        Plot cumulative detections for all templates grouped together:
+
+        >>> Party().read().plot(plot_grouped=True) # doctest: +SKIP
+
+        Plot the rate of detection for all templates grouped together:
+
+        >>> Party().read().plot(plot_grouped=True, rate=True) # doctest: +SKIP
+
+        Plot cumulative detections for all templates with more than five
+        detections between June 1st, 2012 and July 31st, 2012:
+
+        >>> from obspy import UTCDateTime
+        >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
+        ...                            UTCDateTime(2012, 7, 31)],
+        ...                     min_dets=5) # doctest: +SKIP
+
         """
         all_dets = []
-        for fam in self.families:
-            all_dets.extend(fam.detections)
-        cumulative_detections(detections=all_dets, plot_grouped=plot_grouped)
+        if dates:
+            new_party = self.filter(dates=dates, min_dets=min_dets)
+            for fam in new_party.families:
+                all_dets.extend(fam.detections)
+        else:
+            for fam in self.families:
+                all_dets.extend(fam.detections)
+        ax = cumulative_detections(detections=all_dets,
+                                   plot_grouped=plot_grouped,
+                                   rate=rate,
+                                   **kwargs)
+        return ax
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """
@@ -413,7 +477,7 @@ class Party(object):
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
 
-        .. rubric:: Example
+        .. rubric:: Examples
 
         Using the MAD threshold on detections made using the MAD threshold:
 
@@ -597,7 +661,7 @@ class Party(object):
         Party of 4 Families.
         >>> party.write('test_csv_write.csv', format='csv')
         Party of 4 Families.
-        >>> party.write('test_quakeml.ml', format='quakeml')
+        >>> party.write('test_quakeml.xml', format='quakeml')
         Party of 4 Families.
         """
         if format.lower() == 'csv':

@@ -212,14 +212,16 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
     if plotvar:
         fig, ax1 = plt.subplots()
-        b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
-        resid = ax1.scatter(zip(*b_values)[0],
-                            [100 - b for b in zip(*b_values)[2]], c='r')
+        b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],
+                             c='k')
+        resid = ax1.scatter(list(zip(*b_values))[0],
+                            [100 - b for b in list(zip(*b_values))[2]], c='r')
         ax1.set_ylabel('b-value and residual')
         plt.xlabel('Completeness magnitude')
         ax2 = ax1.twinx()
         ax2.set_ylabel('Number of events used in fit')
-        n_ev = ax2.scatter(zip(*b_values)[0], zip(*b_values)[3], c='g')
+        n_ev = ax2.scatter(list(zip(*b_values))[0], list(zip(*b_values))[3],
+                           c='g')
         fig.legend((b_vals, resid, n_ev),
                    ('b-values', 'residuals', 'number of events'),
                    'lower right')
