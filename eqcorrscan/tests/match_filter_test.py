@@ -134,6 +134,30 @@ class TestSynthData(unittest.TestCase):
                      threshold=8, threshold_type='MAD', trig_int=1,
                      plotvar=False)
 
+    def test_half_samp_diff(self):
+        """
+        Check that traces with different start-times by less than a sample
+        are handled as expected.
+        """
+        stream = Stream(traces=[
+            Trace(data=np.random.randn(100)),
+            Trace(data=np.random.randn(101))])
+        stream[0].stats.sampling_rate = 40
+        stream[0].stats.station = 'A'
+        stream[1].stats.sampling_rate = 40
+        stream[1].stats.station = 'B'
+        # Add some fraction of a sample to the starttime
+        stream[0].stats.starttime += 0.25 * stream[0].stats.delta
+        templates = [Stream(traces=[Trace(data=np.random.randn(20)),
+                                    Trace(data=np.random.randn(20))])]
+        templates[0][0].stats.sampling_rate = 40
+        templates[0][0].stats.station = 'A'
+        templates[0][1].stats.sampling_rate = 40
+        templates[0][1].stats.station = 'B'
+        match_filter(template_names=['1'], template_list=templates, st=stream,
+                     threshold=8, threshold_type='MAD', trig_int=1,
+                     plotvar=False, debug=3)
+
 
 @pytest.mark.network
 class TestGeoNetCase(unittest.TestCase):
@@ -777,6 +801,23 @@ class TestMatchObjects(unittest.TestCase):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
+
+    def test_party_rethreshold(self):
+        """Make sure that rethresholding removes the events we want it to."""
+        party = self.party.copy()
+        # Append a load of detections to the first family
+        for i in range(200):
+            det = party[0][0].copy()
+            det.detect_time += i * 20
+            det.detect_val = det.threshold + (i * 1e-1)
+            det.id = str(i)
+            party[0].detections.append(det)
+        self.assertEqual(len(party), 204)
+        party.rethreshold(new_threshold=9)
+        for family in party:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(d.detect_val, d.threshold)
 
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
