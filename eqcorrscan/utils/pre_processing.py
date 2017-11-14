@@ -23,6 +23,7 @@ from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
+from eqcorrscan.utils.debug_log import debug_print
 
 
 def _check_daylong(tr):
@@ -168,8 +169,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
-            print('No data for %s.%s after trim' %
-                  (tr.stats.station, tr.stats.channel))
+            debug_print('No data for %s.%s after trim' %
+                        (tr.stats.station, tr.stats.channel), 1, debug)
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -401,8 +402,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     else:
         day = tr.stats.starttime.date
 
-    if debug >= 2:
-        print('Working on: ' + tr.stats.station + '.' + tr.stats.channel)
+    debug_print('Working on: ' + tr.stats.station + '.' + tr.stats.channel,
+                2, debug)
     if debug >= 5:
         tr.plot()
     # Check if the trace is gappy and pad if it is.
@@ -419,17 +420,15 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         raise ValueError(msg)
     tr = tr.detrend('simple')
     # Detrend data before filtering
-    if debug > 0:
-        print('I have ' + str(len(tr.data)) + ' data points for ' +
-              tr.stats.station + '.' + tr.stats.channel +
-              ' before processing')
+    debug_print('I have ' + str(len(tr.data)) + ' data points for ' +
+                tr.stats.station + '.' + tr.stats.channel +
+                ' before processing', 0, debug)
 
     # Sanity check to ensure files are daylong
     padded = False
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
-        if debug >= 2:
-            print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
-                  ' are not of daylong length, will zero pad')
+        debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
+                    ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
             msg = ('Data for %s.%s is %i hours long, which is less than 0.8 '
@@ -445,13 +444,14 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             padded = True
             pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
             post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
-            print(tr)
-            print("Padding to day long with %f s before and %f s at end" %
-                  (pre_pad_secs, post_pad_secs))
+            debug_print(str(tr), 2, debug)
+            debug_print(
+                "Padding to day long with %f s before and %f s at end" %
+                (pre_pad_secs, post_pad_secs), 1, debug)
             tr.data = np.concatenate([pre_pad, tr.data, post_pad])
             # Use this rather than the expected pad because of rounding samples
             tr.stats.starttime -= len(pre_pad) * tr.stats.delta
-            print(tr)
+            debug_print(str(tr), 2, debug)
         # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
@@ -460,28 +460,24 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                 raise ValueError('Data are not daylong for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
 
-        print('I now have %i data points after enforcing length'
-              % len(tr.data))
+        debug_print('I now have %i data points after enforcing length'
+                    % len(tr.data), 0, debug)
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
-        if debug >= 2:
-            print('Resampling')
+        debug_print('Resampling', 1, debug)
         tr.resample(samp_rate)
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
-        if debug >= 2:
-            print('Bandpassing')
+        debug_print('Bandpassing', 1, debug)
         tr.data = bandpass(tr.data, lowcut, highcut,
                            tr.stats.sampling_rate, filt_order, True)
     elif highcut:
-        if debug >= 2:
-            print('Lowpassing')
+        debug_print('Lowpassing', 1, debug)
         tr.data = lowpass(tr.data, highcut, tr.stats.sampling_rate,
                           filt_order, True)
     elif lowcut:
-        if debug >= 2:
-            print('Highpassing')
+        debug_print('Highpassing', 1, debug)
         tr.data = highpass(tr.data, lowcut, tr.stats.sampling_rate,
                            filt_order, True)
     else:
@@ -496,24 +492,23 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                       str(tr.stats.starttime))
 
     if padded:
-        print("Reapplying zero pads post processing")
-        print(tr)
+        debug_print("Reapplying zero pads post processing", 1, debug)
+        debug_print(str(tr), 2, debug)
         pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
         post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
         pre_pad_len = len(pre_pad)
         post_pad_len = len(post_pad)
-        print("Taking only valid data between %i and %i samples" %
-              (pre_pad_len, len(tr.data) - post_pad_len))
+        debug_print("Taking only valid data between %i and %i samples" %
+                    (pre_pad_len, len(tr.data) - post_pad_len), 1, debug)
         # Re-apply the pads, taking only the data section that was valid
         tr.data = np.concatenate(
             [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
              post_pad])
-        print(tr)
+        debug_print(str(tr), 2, debug)
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
-        if debug >= 2:
-            print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
-                  ' is not of daylong length, will zero pad')
+        debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
+                    ' are not of daylong length, will zero pad', 1, debug)
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
                      nearest_sample=True)
