@@ -503,7 +503,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         pre_pad_len = len(pre_pad)
         post_pad_len = len(post_pad)
         print("Taking only valid data between %i and %i samples" %
-              (pre_pad_len, post_pad_len))
+              (pre_pad_len, len(tr.data) - post_pad_len))
         # Re-apply the pads, taking only the data section that was valid
         tr.data = np.concatenate(
             [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
@@ -550,7 +550,7 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
         stream = Stream()
         stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
         stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
-        tr = stream.merge()
+        tr = stream.merge()[0]
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
