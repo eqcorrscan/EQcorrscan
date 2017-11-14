@@ -58,6 +58,40 @@ XCORR_STREAM_METHODS = ('multithread', 'multiprocess', 'concurrent',
 XCOR_ARRAY_METHODS = ('array_xcorr')
 
 
+class CorrelationError(Exception):
+    """ Error handling for correlation functions. """
+
+    def __init__(self, value):
+        """ Raise error.
+
+        .. rubric:: Example
+
+        >>> CorrelationError("Something happened")
+        Something happened
+        """
+        self.value = value
+
+    def __repr__(self):
+        """ Print error value.
+
+        .. rubric:: Example
+
+        >>> print(CorrelationError("Error").__repr__())
+        Error
+        """
+        return self.value
+
+    def __str__(self):
+        """ Print otherwise
+
+        .. rubric:: Example
+
+        >>> print(CorrelationError("Error"))
+        Error
+        """
+        return self.value
+
+
 # ------------------ Context manager for switching out default
 class _Context:
     """ class for permanently or temporarily changing items in a dict """
@@ -127,6 +161,8 @@ def pool_boy(Pool, traces, **kwargs):
     # All parallel processing happens on a per-trace basis, we shouldn't create
     # more workers than there are traces
     n_cores = kwargs.get('cores', cpu_count())
+    if n_cores is None:
+        n_cores = cpu_count()
     if n_cores > traces:
         n_cores = traces
     pool = Pool(n_cores)
@@ -434,7 +470,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     running mean and standard deviation (not using the N-1 correction) of the
     stream and the sums of the normalised templates.
 
-    This python fucntion wraps the C-library written by C. Chamberlain for this
+    This python function wraps the C-library written by C. Chamberlain for this
     purpose.
 
     :param templates: 2D Array of templates
@@ -456,13 +492,13 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_long, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
@@ -500,13 +536,17 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
         used_chans_np, pads_np)
-    if ret not in [0, 999]:
-        print(ret)
+    if ret < 0:
         raise MemoryError()
+    elif ret not in [0, 999]:
+        print('Error in C code (possible normalisation error)')
+        print(ccc.max())
+        print(ccc.min())
+        raise CorrelationError("Internal correlation error")
     elif ret == 999:
         msg = ("Some correlations not computed, are there "
                "zeros in data? If not, consider increasing gain.")
-        warnings.warn(msg)
+        print(msg)
 
     return ccc, used_chans
 
@@ -585,6 +625,20 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
         list of list of tuples of station, channel for all cross-correlations.
     :rtype: list
     """
+    # number of threads:
+    #   default to using inner threads
+    #   if `cores` or `cores_outer` passed in then use that
+    #   else if OMP_NUM_THREADS set use that
+    #   otherwise use all available
+    num_cores_inner = kwargs.get('cores')
+    num_cores_outer = kwargs.get('cores_outer')
+    if num_cores_inner is None and num_cores_outer is None:
+        num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+        num_cores_outer = 1
+    elif num_cores_inner is not None and num_cores_outer is None:
+        num_cores_outer = 1
+    elif num_cores_outer is not None and num_cores_inner is None:
+        num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream)
@@ -592,7 +646,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
-        pad_array=pad_dict, seed_ids=seed_ids)
+        pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
+        cores_outer=num_cores_outer)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -602,7 +657,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
+def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
+                         cores_inner, cores_outer):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -623,17 +679,18 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     utilslib.multi_normxcorr_fftw.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.c_long, ctypes.c_long, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int, ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -648,6 +705,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
         used channels (stacked as per templates)
         pad array (stacked as per templates)
     '''
+
+
     # pre processing
     used_chans = []
     template_len = template_array[seed_ids[0]].shape[1]
@@ -678,14 +737,19 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids):
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
-        image_len, cccs, fft_len, used_chans_np, pad_array_np)
+        image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
+        cores_inner)
     if ret < 0:
         raise MemoryError()
-    elif ret > 0:
+    elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
         print(cccs.max())
         print(cccs.min())
-        raise MemoryError()
+        raise CorrelationError("Internal correlation error")
+    elif ret == 999:
+        msg = ("Some correlations not computed, are there "
+               "zeros in data? If not, consider increasing gain.")
+        print(msg)
 
     return cccs, used_chans
 
