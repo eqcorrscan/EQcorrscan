@@ -3781,7 +3781,7 @@ def match_filter(template_names, template_list, st, threshold,
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
     :type full_peaks: bool
-    :param full:peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
+    :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -3930,7 +3930,9 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError(msg)
         for tr in st:
             if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
-                raise MatchFilterError('Sampling rates are not equal')
+                raise MatchFilterError('Sampling rates are not equal %f: %f' %
+                                       (tr.stats.sampling_rate,
+                                        st[0].stats.sampling_rate))
         for template in template_list:
             for tr in template:
                 if not tr.stats.sampling_rate == st[0].stats.sampling_rate:

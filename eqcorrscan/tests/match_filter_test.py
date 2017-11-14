@@ -648,6 +648,7 @@ class TestMatchObjects(unittest.TestCase):
             stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
                      stream[0].trim(
             stream[0].stats.starttime + 1900, stream[0].stats.endtime))
+        print(stream)
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,

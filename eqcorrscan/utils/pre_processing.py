@@ -187,8 +187,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         pool.join()
         st = Stream(stream_list)
     else:
-        for tr in st:
-            process(
+        for i, tr in enumerate(st):
+            st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
                 seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
@@ -330,8 +330,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         pool.join()
         st = Stream(stream_list)
     else:
-        for tr in st:
-            process(
+        for i, tr in enumerate(st):
+            st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=starttime,
                 clip=True, length=86400, ignore_length=ignore_length,
