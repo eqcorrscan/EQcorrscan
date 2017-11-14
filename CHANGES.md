@@ -1,5 +1,4 @@
 ## Current
-* Minima not correctly identified in find_peaks in previous versions - bug fixed
 * Compiled peak-finding routine written to speed-up peak-finding.
 * Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
@@ -7,12 +6,19 @@
   core.match_filter._group_process.
 * Length checking in core.match_filter._group_process done in samples rather
   than time.
+* BUG-FIX: Fix bug where data lengths were not correct in 
+  match_filter.Tribe.detect when sampling time-stamps were inconsistent between
+  channels, which previously resulted in error.
+* BUG-FIX: Fix memory-leak in tribe.construct
+* Add plotting options for plotting rate to Party.plot
+* Add filtering detections by date as Party.filter
+* BUG-FIX: Change method for Party.rethreshold: list.remove was not reliable.
+* Add option `full_peaks` to detect methods to map to find_peaks.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
 * Revert to using single-precision floats for correlations (as in previous,
   < 0.2.x versions) for memory efficiency.
-
 
 ## 0.2.6
 * Added the ability to change the correlation functions used in detection

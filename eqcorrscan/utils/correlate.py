@@ -470,7 +470,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     running mean and standard deviation (not using the N-1 correction) of the
     stream and the sums of the normalised templates.
 
-    This python fucntion wraps the C-library written by C. Chamberlain for this
+    This python function wraps the C-library written by C. Chamberlain for this
     purpose.
 
     :param templates: 2D Array of templates
