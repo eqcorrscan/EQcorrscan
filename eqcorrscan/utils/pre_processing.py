@@ -402,8 +402,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     else:
         day = tr.stats.starttime.date
 
-    debug_print('Working on: ' + tr.stats.station + '.' + tr.stats.channel,
-                2, debug)
+    debug_print(
+        'Working on: ' + tr.stats.station + '.' + tr.stats.channel, 2, debug)
     if debug >= 5:
         tr.plot()
     # Check if the trace is gappy and pad if it is.
@@ -549,8 +549,8 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
-        tr = tr.merge(fill_value=0)
-    return tr[0]
+        tr = tr.merge(fill_value=0)[0]
+    return tr
 
 
 def _fill_gaps(tr):
