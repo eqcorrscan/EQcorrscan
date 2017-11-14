@@ -2682,7 +2682,7 @@ class Tribe(object):
                     min_gap=2 * self.templates[0].st[0].stats.npts /
                     self.templates[0].st[0].stats.sampling_rate)
                 if len(gaps) > 0:
-                    print("Gaps in downloaded data")
+                    print("Large gaps in downloaded data")
                     st.merge()
                     gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
                                                for gap in gaps]))
@@ -2696,7 +2696,7 @@ class Tribe(object):
                             _st += tr
                     st = _st
                     st.split()
-                st.merge(fill_value='interpolate')
+                st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
                 if return_stream:

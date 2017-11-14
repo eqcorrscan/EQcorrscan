@@ -56,7 +56,7 @@ def _check_daylong(tr):
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
               parallel=False, num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False):
+              seisan_chan_names=False, fill_gaps=True):
     """
     Basic function to bandpass and downsample.
 
@@ -92,6 +92,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :param seisan_chan_names:
         Whether channels are named like seisan channels (which are two letters
         rather than SEED convention of three) - defaults to True.
+    :type fill_gaps: bool
+    :param fill_gaps: Whether to pad any gaps found with zeros or not.
 
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
@@ -177,7 +179,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False, 'seisan_chan_names': seisan_chan_names})
+            'clip': False, 'seisan_chan_names': seisan_chan_names,
+            'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -188,7 +191,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
             process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
-                seisan_chan_names=seisan_chan_names)
+                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
     if tracein:
         st.merge()
         return st[0]
@@ -197,7 +200,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
 def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False):
+            seisan_chan_names=False, fill_gaps=True):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -232,6 +235,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     :param seisan_chan_names:
         Whether channels are named like seisan channels (which are two letters
         rather than SEED convention of three) - defaults to True.
+    :type fill_gaps: bool
+    :param fill_gaps: Whether to pad any gaps found with zeros or not.
 
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -318,7 +323,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
             'clip': True, 'ignore_length': ignore_length, 'length': 86400,
-            'seisan_chan_names': seisan_chan_names})
+            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -330,7 +335,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=starttime,
                 clip=True, length=86400, ignore_length=ignore_length,
-                seisan_chan_names=seisan_chan_names)
+                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
     if tracein:
         st.merge()
         return st[0]
@@ -339,12 +344,12 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             starttime=False, clip=False, length=86400,
-            seisan_chan_names=False, ignore_length=False):
+            seisan_chan_names=False, ignore_length=False, fill_gaps=True):
     """
     Basic function to process data, usually called by dayproc or shortproc.
 
     Functionally, this will bandpass, downsample and check headers and length
-    of trace to ensure files start at the start of a day and are daylong.
+    of trace to ensure files start when they should and are the correct length.
     This is a simple wrapper on obspy functions, we include it here to provide
     a system to ensure all parts of the dataset are processed in the same way.
 
@@ -376,9 +381,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         rather than SEED convention of three) - defaults to True.
     :type ignore_length: bool
     :param ignore_length: See warning in dayproc.
+    :type fill_gaps: bool
+    :param fill_gaps: Whether to pad any gaps found with zeros or not.
 
-    :return: Processed stream.
-    :type: :class:`obspy.core.stream.Stream`
+    :return: Processed trace.
+    :type: :class:`obspy.core.stream.Trace`
     """
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
@@ -398,6 +405,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         print('Working on: ' + tr.stats.station + '.' + tr.stats.channel)
     if debug >= 5:
         tr.plot()
+    # Check if the trace is gappy and pad if it is.
+    gappy = False
+    if isinstance(tr.data, np.ma.MaskedArray):
+        gappy = True
+        gaps, tr = _fill_gaps(tr)
     # Do a brute force quality check
     qual = _check_daylong(tr)
     if not qual:
@@ -512,10 +524,54 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if not tr.stats.sampling_rate * length == tr.stats.npts:
                 raise ValueError('Data are not daylong for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
+    # Replace the gaps with zeros
+    if gappy:
+        tr = _zero_pad_gaps(tr, gaps, fill_gaps=fill_gaps)
     # Final visual check for debug
     if debug > 4:
         tr.plot()
     return tr
+
+
+def _zero_pad_gaps(tr, gaps, fill_gaps=True):
+    """
+    Replace padded parts of trace with zeros.
+
+    Will cut around gaps, detrend, then pad the gaps with zeros.
+
+    :type tr: :class:`osbpy.core.stream.Trace`
+    :param tr: A trace that has had the gaps padded
+    :param gaps: List of dict of start-time and end-time as UTCDateTimes
+    :type gaps: list
+
+    :return: :class:`obspy.core.stream.Trace`
+    """
+    for gap in gaps:
+        stream = Stream()
+        stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
+        stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
+        tr = stream.merge()
+    if fill_gaps:
+        tr = tr.split()
+        tr = tr.detrend()
+        tr = tr.merge(fill_value=0)
+    return tr[0]
+
+
+def _fill_gaps(tr):
+    """
+    Interpolate through gaps and work-out where gaps are.
+
+    :param tr: Gappy trace (e.g. tr.data is np.ma.MaskedArray)
+    :type tr: `obspy.core.stream.Trace`
+
+    :return: gaps, trace, where gaps is a list of dict
+    """
+    tr = tr.split()
+    gaps = tr.get_gaps()
+    tr = tr.detrend().merge(fill_value=0)[0]
+    gaps = [{'starttime': gap[4], 'endtime': gap[5]} for gap in gaps]
+    return gaps, tr
 
 
 if __name__ == "__main__":
