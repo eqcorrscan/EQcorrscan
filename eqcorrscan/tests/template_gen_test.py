@@ -130,7 +130,6 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
-        shutil.rmtree(continuous_st[0].stats.starttime.strftime('Y%Y'))
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""

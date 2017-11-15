@@ -11,7 +11,8 @@ import os
 import numpy as np
 import warnings
 
-from obspy import read_events
+from obspy import read_events, read
+from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
 from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
@@ -26,22 +27,25 @@ class TestMethods(unittest.TestCase):
     def setUpClass(cls):
         cls.testing_path = os.path.join(os.path.abspath(
             os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
-        cls.template = from_meta_file(
-            meta_file=os.path.join(cls.testing_path, '21-1412-02L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
-            swin='all', prepick=0.05)
-        cls.detection = from_meta_file(
-            meta_file=os.path.join(cls.testing_path, '21-1759-04L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
-            swin='all', prepick=0.55)
-        cls.template_spicks = from_meta_file(
-            meta_file=os.path.join(cls.testing_path, '18-2120-53L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
-            swin='all', prepick=0.05)
-        cls.detection_spicks = from_meta_file(
-            meta_file=os.path.join(cls.testing_path, '18-2350-08L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
-            swin='all', prepick=0.55)
+        cls.wave_path = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
+        key_dict = [
+            {'name': 'template', 'sfile': '21-1412-02L.S201309'},
+            {'name': 'detection', 'sfile': '21-1759-04L.S201309'},
+            {'name': 'template_spicks', 'sfile': '18-2120-53L.S201309'},
+            {'name': 'detection_spicks', 'sfile': '18-2350-08L.S201309'}]
+        for item in key_dict:
+            st = read(os.path.join(
+                cls.wave_path, readwavename(os.path.join(
+                    cls.testing_path, item['sfile']))[0]))
+            for tr in st:
+                tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+            item.update({'st': st, 'sfile': os.path.join(
+                cls.testing_path, item['sfile'])})
+            setattr(cls, item['name'], from_meta_file(
+                meta_file=item['sfile'], lowcut=5, highcut=15, samp_rate=40,
+                filt_order=4, length=3, swin='all', prepick=0.05,
+                st=item['st'])[0])
         detection_event = read_events(os.path.join(
             cls.testing_path, '21-1759-04L.S201309'))[0]
         detection_spicks_event = read_events(
