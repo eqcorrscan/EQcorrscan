@@ -12,11 +12,11 @@ import glob
 import os
 import numpy as np
 import warnings
-import shutil
 import inspect
 import copy
 
-from obspy import read, UTCDateTime, read_events, Stream
+from obspy import read, UTCDateTime, read_events
+from obspy.io.nordic.core import readwavename
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
@@ -210,15 +210,6 @@ class TestTemplateGeneration(unittest.TestCase):
                                    highcut=9.0, samp_rate=20.0, filt_order=3,
                                    length=2, prepick=0.1, swin='S')
         self.assertEqual(len(templates), 1)
-
-    def test_upsample_error(self):
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_',
-                                    '15-0931-08L.S201309')
-        with self.assertRaises(TemplateGenError):
-            from_meta_file(meta_file=testing_path, lowcut=2, highcut=8,
-                           samp_rate=200, filt_order=4, length=10, swin='all',
-                           prepick=0.2)
 
 
 class TestEdgeGen(unittest.TestCase):
