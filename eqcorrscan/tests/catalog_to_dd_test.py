@@ -13,7 +13,7 @@ import os
 import glob
 
 from obspy import UTCDateTime, read_events
-from obspy.io.nordic.core import readheader, _read_picks
+from obspy.io.nordic.core import readheader
 
 from eqcorrscan.utils.catalog_to_dd import _cc_round, _av_weight, readSTATION0
 from eqcorrscan.utils.catalog_to_dd import sfiles_to_event, write_catalog
@@ -387,7 +387,8 @@ class FullTestCases(unittest.TestCase):
                 #     for item in sub.split():
                 #         obs.append(item)
                 observations.append({
-                    'station': obs[0], 'weight': float(obs[3]), 'phase': obs[4],
+                    'station': obs[0], 'weight': float(obs[3]),
+                    'phase': obs[4],
                     'diff_time': float(obs[1]) - float(obs[2])})
         ct.close()
         # Everything is in memory, now we need to find matching pairs

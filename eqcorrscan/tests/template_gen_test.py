@@ -16,7 +16,6 @@ import inspect
 import copy
 
 from obspy import read, UTCDateTime, read_events
-from obspy.io.nordic.core import readwavename
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
@@ -24,7 +23,6 @@ from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
 from eqcorrscan.core.template_gen import from_meta_file, from_client
 from eqcorrscan.core.template_gen import multi_template_gen
 from eqcorrscan.core.template_gen import template_gen, extract_from_stack
-from eqcorrscan.core.template_gen import TemplateGenError
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
