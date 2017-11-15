@@ -64,21 +64,32 @@ class TestMagCalcMethods(unittest.TestCase):
         # Test without PAZ or seedresp
         _sim_WA(trace=tr, PAZ=None, seedresp=None, water_level=10)
         tr = tr_safe.copy()
-        with NamedTemporaryFile() as tf:
+        with open("Temp_resp", "w") as tf:
             respf = tf.name
             old_iris_client = OldIris_Client()
             # fetch RESP information from "old" IRIS web service, see
             # obspy.fdsn for accessing the new IRIS FDSN web services
             old_iris_client.resp('NZ', 'BFZ', '10', 'HHZ', t1, t2,
                                  filename=respf)
-            date = t1
+            # Hack around unit issues
+        with open("Temp_resp", "r") as tf:
+            resp_contents = [line for line in tf]
+        corrected_contents = []
+        for line in resp_contents:
+            if "COUNT" in line:
+                line = line.replace("COUNT", "COUNTS")
+            corrected_contents.append(line)
+        with open("Temp_resp", "w") as tf:
+            for line in corrected_contents:
+                tf.write(line)
+        date = t1
 
-            seedresp = {
-                'filename': respf, 'date': date, 'network': tr.stats.network,
-                'station': tr.stats.station, 'channel': tr.stats.channel,
-                'location': tr.stats.location, 'units': 'DIS'
-                        }
-            _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
+        seedresp = {
+            'filename': respf, 'date': date, 'network': tr.stats.network,
+            'station': tr.stats.station, 'channel': tr.stats.channel,
+            'location': tr.stats.location, 'units': 'DIS'}
+        _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
+        os.remove(respf)
 
     def test_max_p2t(self):
         """Test the minding of maximum peak-to-trough."""
