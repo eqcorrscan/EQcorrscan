@@ -639,6 +639,22 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
+    def test_tribe_detect_masked_data(self):
+        """Test using masked data - possibly raises error at pre-processing.
+        Padding may also result in error at correlation stage due to poor
+        normalisation."""
+        stream = self.unproc_st.copy()
+        stream[0] = (stream[0].copy().trim(
+            stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
+                     stream[0].trim(
+            stream[0].stats.starttime + 1900, stream[0].stats.endtime))
+        print(stream)
+        party = self.tribe.detect(
+            stream=stream, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            xcorr_func='fftw', concurrency='concurrent')
+        self.assertEqual(len(party), 4)
+
     def test_tribe_detect_no_processing(self):
         """Test that no processing is done when it isn't necessary."""
         tribe = self.tribe.copy()

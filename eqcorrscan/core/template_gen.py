@@ -156,7 +156,7 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     # Make an event object...
     event = sactoevent(st, debug=debug)
     # Process the data
-    st.merge(fill_value='interpolate')
+    st.merge()
     st = pre_processing.shortproc(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, debug=debug)
@@ -302,7 +302,7 @@ def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
         for pick in picks:
             print(pick)
     # Process waveform data
-    st.merge(fill_value='interpolate')
+    st.merge()
     st = pre_processing.shortproc(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, debug=debug, seisan_chan_names=True)
@@ -417,7 +417,7 @@ def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
     for wavefile in wavefiles:
         st += read(wavefile)
     # Process waveform data
-    st.merge(fill_value='interpolate')
+    st.merge()
     st = pre_processing.dayproc(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, starttime=day, debug=debug)
@@ -517,7 +517,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     templates = []
     process_lengths = []
     # Process waveform data
-    st.merge(fill_value='interpolate')
+    st.merge()
     # Work out if the data are daylong or not...
     data_len = max([len(tr.data) / tr.stats.sampling_rate for tr in st])
     if 80000 < data_len < 90000:
@@ -712,7 +712,7 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         if debug > 0:
             st.plot()
         print('Pre-processing data for event: %s' % event.resource_id)
-        st.merge(fill_value='interpolate')
+        st.merge()
         # clients download chunks, we need to assert that the data are
         # the desired length
         for tr in st:
@@ -869,7 +869,7 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         if not st and dropped_pick_stations == len(event.picks):
             raise FDSNException('No data available, is the server down?')
         print('Pre-processing data')
-        st.merge(fill_value='interpolate')
+        st.merge()
         # clients download chunks, we need to assert that the data are
         # the desired length
         for tr in st:
@@ -1239,12 +1239,9 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 
     #  Process the data if necessary
     if not pre_processed:
-        new_template = pre_processing.shortproc(st=new_template,
-                                                lowcut=lowcut,
-                                                highcut=highcut,
-                                                filt_order=filt_order,
-                                                samp_rate=samp_rate,
-                                                debug=0)
+        new_template = pre_processing.shortproc(
+            st=new_template, lowcut=lowcut, highcut=highcut,
+            filt_order=filt_order, samp_rate=samp_rate, debug=0)
     # Loop through the stack and trim!
     out = Stream()
     for tr in new_template:

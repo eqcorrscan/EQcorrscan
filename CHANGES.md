@@ -14,6 +14,10 @@
 * Add filtering detections by date as Party.filter
 * BUG-FIX: Change method for Party.rethreshold: list.remove was not reliable.
 * Add option `full_peaks` to detect methods to map to find_peaks.
+* pre-processing (and match-filter object methods) are now gap-aware and will
+  accept gappy traces and can return gappy traces. By default gaps are filled to
+  maintain backwards compatibility. Note that the fftw correlation backend
+  requires gaps to be padded with zeros.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
@@ -128,13 +132,17 @@ fewer traces than template;
     * OpenCV has been removed as a dependancy;
     * eqcorrscan.core.match_filter.normxcorr2 now calls a compiled C routine;
     * Parallel workflows handled by openMP rather than Python Multiprocessing
-    for matched-filter operations to allow better memory handling.
+      for matched-filter operations to allow better memory handling.
         * It is worth noting that we tried re-writing using SciPy internals
         which led to a significant speed-up, but with high memory costs,
         we ended up going with this option, which was the more difficult
         option, because it allows effective use on SLURM managed systems
         where python multiprocessing results in un-real memory spikes
         (issue #88).
+        
+## 0.2.0-0.2.3
+* See 0.2.4: these versions were not fully released while trying to get
+  anaconda packages to build properly.
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

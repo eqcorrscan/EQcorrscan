@@ -631,7 +631,7 @@ class Party(object):
         """
         return copy.deepcopy(self)
 
-    def write(self, filename, format='tar'):
+    def write(self, filename, format='tar', debug=0):
         """
         Write Family out, select output format.
 
@@ -641,6 +641,8 @@ class Party(object):
             catalog output. See note below on formats
         :type filename: str
         :param filename: Path to write file to.
+        :type debug: int
+        :param debug: Whether to output progress or not.
 
         .. NOTE::
             csv format will write out detection objects, all other
@@ -658,7 +660,7 @@ class Party(object):
         .. rubric:: Example
 
         >>> party = Party().read()
-        >>> party.write('test_tar_write', format='tar')
+        >>> party.write('test_tar_write', format='tar', debug=1)
         Writing family 0
         Writing family 1
         Writing family 2
@@ -691,7 +693,7 @@ class Party(object):
                     all_cat.write(join(temp_dir, 'catalog.xml'),
                                   format='QUAKEML')
                 for i, family in enumerate(self.families):
-                    print('Writing family %i' % i)
+                    debug_print('Writing family %i' % i, 0, debug)
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
@@ -1395,7 +1397,6 @@ class Family(object):
         ...               typeofdet='corr', threshold_type='MAD',
         ...               threshold_input=8.0)])
         >>> family.write('test_family')
-        Writing family 0
         """
         Party(families=[self]).write(filename=filename, format=format)
         return
@@ -2682,7 +2683,7 @@ class Tribe(object):
                     min_gap=2 * self.templates[0].st[0].stats.npts /
                     self.templates[0].st[0].stats.sampling_rate)
                 if len(gaps) > 0:
-                    print("Gaps in downloaded data")
+                    print("Large gaps in downloaded data")
                     st.merge()
                     gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
                                                for gap in gaps]))
@@ -2696,7 +2697,7 @@ class Tribe(object):
                             _st += tr
                     st = _st
                     st.split()
-                st.merge(fill_value='interpolate')
+                st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
                 if return_stream:
@@ -3025,8 +3026,9 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                     return False
             elif key == "arrivals":
                 if len(ori_1[key]) != len(ori_2[key]):
-                    print('%i is not the same as %i for key %s' %
-                          (len(ori_1[key]), len(ori_2[key]), key))
+                    if verbose:
+                        print('%i is not the same as %i for key %s' %
+                              (len(ori_1[key]), len(ori_2[key]), key))
                     return False
                 for arr_1, arr_2 in zip(ori_1[key], ori_2[key]):
                     for arr_key in arr_1.keys():
@@ -3781,7 +3783,7 @@ def match_filter(template_names, template_list, st, threshold,
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
     :type full_peaks: bool
-    :param full:peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
+    :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -3930,7 +3932,9 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError(msg)
         for tr in st:
             if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
-                raise MatchFilterError('Sampling rates are not equal')
+                raise MatchFilterError('Sampling rates are not equal %f: %f' %
+                                       (tr.stats.sampling_rate,
+                                        st[0].stats.sampling_rate))
         for template in template_list:
             for tr in template:
                 if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
