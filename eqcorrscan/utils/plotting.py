@@ -638,15 +638,15 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     .. rubric:: Example
 
-    >>> from obspy import read, Catalog
-    >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
+    >>> from obspy import read, Catalog, read_events
+    >>> from obspy.io.nordic.core import readwavename
     >>> from eqcorrscan.utils.plotting import multi_event_singlechan
     >>> import glob
     >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*.S??????')
     >>> catalog = Catalog()
     >>> streams = []
     >>> for sfile in sfiles:
-    ...     catalog.append(read_event(sfile))
+    ...     catalog += read_events(sfile)
     ...     wavfile = readwavename(sfile)[0]
     ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' + wavfile
     ...     stream = read(stream_path)
@@ -867,18 +867,17 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import detection_multiplot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
@@ -1244,18 +1243,17 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
