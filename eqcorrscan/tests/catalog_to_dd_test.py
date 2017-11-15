@@ -13,12 +13,12 @@ import os
 import glob
 
 from obspy import UTCDateTime, read_events
+from obspy.io.nordic.core import readheader, _read_picks
 
 from eqcorrscan.utils.catalog_to_dd import _cc_round, _av_weight, readSTATION0
 from eqcorrscan.utils.catalog_to_dd import sfiles_to_event, write_catalog
 from eqcorrscan.utils.catalog_to_dd import write_correlations, read_phase
 from eqcorrscan.utils.catalog_to_dd import write_event
-from eqcorrscan.utils import sfile_util
 from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils.timer import Timer
 
@@ -175,7 +175,7 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile('event.dat'))
         with open('event.dat', 'r') as f:
             for line, event in zip(f, event_list):
-                header = sfile_util.readheader(event[1])
+                header = readheader(event[1])
                 event_id_input = event[0]
                 output_event_info = line.strip().split()
                 # Check that the event id's match
@@ -291,8 +291,8 @@ class FullTestCases(unittest.TestCase):
                     event_2_name = [event[1] for event in self.event_list
                                     if event[0] ==
                                     int(event_pair.split()[2])][0]
-                    event_1 = sfile_util.readheader(event_1_name)
-                    event_2 = sfile_util.readheader(event_2_name)
+                    event_1 = readheader(event_1_name)
+                    event_2 = readheader(event_2_name)
                     event_1_location = (event_1.origins[0].latitude,
                                         event_1.origins[0].longitude,
                                         event_1.origins[0].depth / 1000)
@@ -304,8 +304,8 @@ class FullTestCases(unittest.TestCase):
                     self.assertTrue(hypocentral_seperation <
                                     self.maximum_separation)
                     # Check that the differential times are accurate
-                    event_1_picks = sfile_util.readpicks(event_1_name).picks
-                    event_2_picks = sfile_util.readpicks(event_2_name).picks
+                    event_1_picks = _read_picks(event_1_name).picks
+                    event_2_picks = _read_picks(event_2_name).picks
                     for pick_pair in event_links:
                         station = pick_pair.split()[0]
                         event_1_travel_time_output = pick_pair.split()[1]
@@ -346,12 +346,11 @@ class FullTestCases(unittest.TestCase):
         """
         max_shift_len = 0.2
         with Timer() as t:
-            write_correlations(self.event_list, self.wavbase, extract_len=2,
-                               pre_pick=0.5, shift_len=max_shift_len,
-                               lowcut=2.0, highcut=10.0,
-                               max_sep=self.maximum_separation,
-                               min_link=self.minimum_links,
-                               cc_thresh=0.0, plotvar=False)
+            write_correlations(
+                self.event_list, self.wavbase, extract_len=2, pre_pick=0.5,
+                shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
+                max_sep=self.maximum_separation, min_link=self.minimum_links,
+                cc_thresh=0.0, plotvar=False)
         msg = 'Running ' + str(len(list(self.event_list))) + \
               ' events took %s s' % t.secs
         print(msg)
@@ -368,10 +367,9 @@ class FullTestCases(unittest.TestCase):
                 observations = []
             else:
                 obs = line.split()
-                observations.append({'station': obs[0],
-                                     'diff_time': float(obs[1]),
-                                     'weight': float(obs[2]),
-                                     'phase': obs[3]})
+                observations.append({
+                    'station': obs[0], 'diff_time': float(obs[1]),
+                    'weight': float(obs[2]), 'phase': obs[3]})
         cc.close()
         ct = open('dt.ct', 'r')
         ct_pairs = []
@@ -389,11 +387,9 @@ class FullTestCases(unittest.TestCase):
                 # for sub in line.split('-'):
                 #     for item in sub.split():
                 #         obs.append(item)
-                observations.append({'station': obs[0],
-                                     'diff_time': float(obs[1]) -
-                                     float(obs[2]),
-                                     'weight': float(obs[3]),
-                                     'phase': obs[4]})
+                observations.append({
+                    'station': obs[0], 'weight': float(obs[3]), 'phase': obs[4],
+                    'diff_time': float(obs[1]) - float(obs[2])})
         ct.close()
         # Everything is in memory, now we need to find matching pairs
         for cc_pair in cc_pairs:
