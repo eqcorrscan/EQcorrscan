@@ -197,9 +197,8 @@ class TestCatalogMethods(unittest.TestCase):
                 if header.magnitudes[0]:
                     self.assertEqual(header.magnitudes[0].mag,
                                      float(output_event_info[5]))
-                if header.origins[0].time_errors.Time_Residual_RMS:
-                    self.assertEqual(header.origins[0].time_errors.
-                                     Time_Residual_RMS,
+                if header.origins[0].quality.standard_error:
+                    self.assertEqual(header.origins[0].quality.standard_error,
                                      float(output_event_info[-2]))
         os.remove('event.dat')
 
@@ -304,8 +303,8 @@ class FullTestCases(unittest.TestCase):
                     self.assertTrue(hypocentral_seperation <
                                     self.maximum_separation)
                     # Check that the differential times are accurate
-                    event_1_picks = _read_picks(event_1_name).picks
-                    event_2_picks = _read_picks(event_2_name).picks
+                    event_1_picks = read_events(event_1_name)[0].picks
+                    event_2_picks = read_events(event_2_name)[0].picks
                     for pick_pair in event_links:
                         station = pick_pair.split()[0]
                         event_1_travel_time_output = pick_pair.split()[1]
