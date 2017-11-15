@@ -29,7 +29,6 @@ from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
 from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
-from eqcorrscan.utils.sfile_util import readheader
 
 
 def _check_save_args(save, savefile):
@@ -1004,64 +1003,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
-    """
-    Plot inter-event time versus magnitude for series of events.
-
-    Wrapper for :func:`eqcorrscan.utils.plotting.interev_mag`.
-
-    :type sfiles: list
-    :param sfiles: List of sfiles to read from
-    :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
-    :type savefile: str
-    :param savefile: Filename to save to, required for save=True
-    :type size: tuple
-    :param size: Size of figure in inches.
-
-    :returns: :class:`matplotlib.figure.Figure`
-
-    .. rubric:: Example
-
-    >>> import glob
-    >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*L.S*')
-    >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
-
-    .. plot::
-
-        import glob, os
-        from eqcorrscan.utils.plotting import interev_mag_sfiles
-        sfiles = glob.glob(
-            os.path.realpath('../../../tests/test_data/REA/TEST_/') +
-            os.sep + '*L.S*')
-        print(sfiles)
-        interev_mag_sfiles(sfiles=sfiles)
-    """
-    _check_save_args(save, savefile)
-    times = []
-    mags = []
-    for sfile in sfiles:
-        head = readheader(sfile)
-        if head.preferred_origin():
-            origin = head.preferred_origin()
-        elif len(head.origins) > 0:
-            origin = head.origins[0]
-        else:
-            origin = False
-        if head.preferred_magnitude():
-            magnitude = head.preferred_magnitude()
-        elif len(head.magnitudes) > 0:
-            magnitude = head.magnitudes[0]
-        else:
-            magnitude = False
-        if origin and magnitude:
-            times.append(origin.time)
-            mags.append(magnitude.mag)
-    fig = interev_mag(
-        times=times, mags=mags, save=save, savefile=savefile, size=size)
-    return fig
+def interev_mag_sfiles(*args, **kwargs):
+    raise ImportError("sfile support is depreciated, use obspy.io.nordic")
 
 
 def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):

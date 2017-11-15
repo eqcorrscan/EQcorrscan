@@ -44,7 +44,6 @@ import matplotlib.pyplot as plt
 from obspy.core.event import Catalog
 from obspy import read
 
-from eqcorrscan.utils import sfile_util
 from eqcorrscan.utils.mag_calc import dist_calc
 
 
@@ -192,15 +191,19 @@ def sfiles_to_event(sfile_list):
 
     :returns: List of tuples of event ID (int) and Sfile name
     """
+    try:
+        from obspy.io.nordic.core import readheader
+    except ImportError:
+        raise ImportError("Needs obspy >= 1.1.0")
     event_list = []
-    sort_list = [(sfile_util.readheader(sfile).origins[0].time, sfile)
+    sort_list = [(readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
     sort_list.sort(key=lambda tup: tup[0])
     sfile_list = [sfile[1] for sfile in sort_list]
     catalog = Catalog()
     for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
-        catalog.append(sfile_util.readheader(sfile))
+        catalog.append(readheader(sfile))
     # Hand off to sister function
     write_event(catalog)
     return event_list
@@ -275,6 +278,10 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         the :mod:`eqcorrscan.utils.sfile_util` module prior to this step.
     """
     # Cope with possibly being passed a zip in python 3.x
+    try:
+        from obspy.io.nordic.core import _read_picks as readpicks
+    except ImportError:
+        raise ImportError("Needs obspy >= 1.1.0")
     event_list = list(event_list)
     f = open('dt.ct', 'w')
     f2 = open('dt.ct2', 'w')
@@ -284,7 +291,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_event = sfile_util.readpicks(master_sfile)
+        master_event = readpicks(master_sfile)
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
@@ -331,7 +338,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                 str(slave_event_id).rjust(10) + '\n'
             event_text2 = '#' + str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10) + '\n'
-            slave_event = sfile_util.readpicks(slave_sfile)
+            slave_event = readpicks(slave_sfile)
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
