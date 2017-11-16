@@ -963,18 +963,8 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_template_construct(self):
         """Test template construction."""
-        test_template = Template()
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_',
-                                    '15-0931-08L.S201309')
-        test_template.construct(
-            method='from_sfile', name='tester', lowcut=2, highcut=8,
-            samp_rate=20, filt_order=4, length=10, swin='all', prepick=0.2,
-            debug=3, sfile=testing_path)
-        self.assertTrue(isinstance(test_template, Template))
-        self.assertEqual(test_template.name, 'tester')
         with self.assertRaises(NotImplementedError):
-            test_template.construct(
+            Template().construct(
                 method='from_client', client_id='NCEDC', name='bob',
                 lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
                 length=3.0, prepick=0.15, swin='all', process_len=6)

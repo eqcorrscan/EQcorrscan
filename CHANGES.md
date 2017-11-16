@@ -18,6 +18,16 @@
   accept gappy traces and can return gappy traces. By default gaps are filled to
   maintain backwards compatibility. Note that the fftw correlation backend
   requires gaps to be padded with zeros.
+* **Removed sfile_utils** This support for Nordic IO has been upgraded and moved
+  to obspy for obspy version 1.1.0.  All functions are there and many bugs have
+  been fixed. This also means the removal of nordic-specific functions in
+  EQcorrscan - the following functions have been removed:
+  * template_gen.from_sfile
+  * template_gen.from_contbase
+  * mag_calc.amp_pick_sfile
+  * mag_calc.pick_db
+  All removed functions will error and tell you to use obspy.io.nordic.core.
+  This now means that you can use obspy's `read_events` to read in sfiles.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;

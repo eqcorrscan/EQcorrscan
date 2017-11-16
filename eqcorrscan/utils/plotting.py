@@ -29,7 +29,6 @@ from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
 from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
-from eqcorrscan.utils.sfile_util import readheader
 
 
 def _check_save_args(save, savefile):
@@ -639,15 +638,15 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     .. rubric:: Example
 
-    >>> from obspy import read, Catalog
-    >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
+    >>> from obspy import read, Catalog, read_events
+    >>> from obspy.io.nordic.core import readwavename
     >>> from eqcorrscan.utils.plotting import multi_event_singlechan
     >>> import glob
     >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*.S??????')
     >>> catalog = Catalog()
     >>> streams = []
     >>> for sfile in sfiles:
-    ...     catalog.append(read_event(sfile))
+    ...     catalog += read_events(sfile)
     ...     wavfile = readwavename(sfile)[0]
     ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' + wavfile
     ...     stream = read(stream_path)
@@ -868,18 +867,17 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import detection_multiplot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
@@ -1004,64 +1002,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
-    """
-    Plot inter-event time versus magnitude for series of events.
-
-    Wrapper for :func:`eqcorrscan.utils.plotting.interev_mag`.
-
-    :type sfiles: list
-    :param sfiles: List of sfiles to read from
-    :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
-    :type savefile: str
-    :param savefile: Filename to save to, required for save=True
-    :type size: tuple
-    :param size: Size of figure in inches.
-
-    :returns: :class:`matplotlib.figure.Figure`
-
-    .. rubric:: Example
-
-    >>> import glob
-    >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*L.S*')
-    >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
-
-    .. plot::
-
-        import glob, os
-        from eqcorrscan.utils.plotting import interev_mag_sfiles
-        sfiles = glob.glob(
-            os.path.realpath('../../../tests/test_data/REA/TEST_/') +
-            os.sep + '*L.S*')
-        print(sfiles)
-        interev_mag_sfiles(sfiles=sfiles)
-    """
-    _check_save_args(save, savefile)
-    times = []
-    mags = []
-    for sfile in sfiles:
-        head = readheader(sfile)
-        if head.preferred_origin():
-            origin = head.preferred_origin()
-        elif len(head.origins) > 0:
-            origin = head.origins[0]
-        else:
-            origin = False
-        if head.preferred_magnitude():
-            magnitude = head.preferred_magnitude()
-        elif len(head.magnitudes) > 0:
-            magnitude = head.magnitudes[0]
-        else:
-            magnitude = False
-        if origin and magnitude:
-            times.append(origin.time)
-            mags.append(magnitude.mag)
-    fig = interev_mag(
-        times=times, mags=mags, save=save, savefile=savefile, size=size)
-    return fig
+def interev_mag_sfiles(*args, **kwargs):
+    raise ImportError("sfile support is depreciated, use obspy.io.nordic")
 
 
 def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
@@ -1301,18 +1243,17 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
