@@ -97,21 +97,21 @@ def _av_weight(W1, W2):
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
         W1 = 0
+    elif float(W1) < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W1 = 0
     else:
         W1 = 1 - (int(W1) / 4.0)
-    if W1 < 0:
-        warnings.warn('Negative weight found, setting to zero')
-        W2 = 0
 
     if str(W2) in [' ', '']:
         W2 = 1
     elif str(W2) in ['-9', '9', '9.0', '-9.0']:
         W2 = 0
-    else:
-        W2 = 1 - (int(W2) / 4.0)
-    if W2 < 0:
+    elif float(W2) < 0:
         warnings.warn('Negative weight found, setting to zero')
         W2 = 0
+    else:
+        W2 = 1 - (int(W2) / 4.0)
 
     W = (W1 + W2) / 2
     if W < 0:

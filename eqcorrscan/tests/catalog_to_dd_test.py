@@ -79,6 +79,8 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertEqual(_av_weight('4', '3'), '0.1250')
         self.assertEqual(_av_weight('4', '4'), '0.0000')
         self.assertEqual(_av_weight('4', '9'), '0.0000')
+        self.assertEqual(_av_weight('0', '-1'), '0.5000')
+        self.assertEqual(_av_weight('-1', '0'), '0.5000')
 
     def test_readSTATION0(self):
         """Simple function to test the ability to read a test STATION0.HYP \
