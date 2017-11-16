@@ -43,6 +43,10 @@ import matplotlib.pyplot as plt
 
 from obspy.core.event import Catalog
 from obspy import read
+try:
+    from obspy.io.nordic.core import read_nordic, readheader, readwavename
+except ImportError:
+    raise ImportError("Needs obspy >= 1.1.0")
 
 from eqcorrscan.utils.mag_calc import dist_calc
 
@@ -191,10 +195,6 @@ def sfiles_to_event(sfile_list):
 
     :returns: List of tuples of event ID (int) and Sfile name
     """
-    try:
-        from obspy.io.nordic.core import readheader
-    except ImportError:
-        raise ImportError("Needs obspy >= 1.1.0")
     event_list = []
     sort_list = [(readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
@@ -278,10 +278,6 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         the :mod:`eqcorrscan.utils.sfile_util` module prior to this step.
     """
     # Cope with possibly being passed a zip in python 3.x
-    try:
-        from obspy.io.nordic.core import read_nordic
-    except ImportError:
-        raise ImportError("Needs obspy >= 1.1.0")
     event_list = list(event_list)
     f = open('dt.ct', 'w')
     f2 = open('dt.ct2', 'w')
@@ -454,10 +450,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         this.  Note the :func:`obspy.Trace.taper` functions.
     """
     from obspy.signal.cross_correlation import xcorr_pick_correction
-    try:
-        from obspy.io.nordic.core import read_nordic, readwavename
-    except ImportError:
-        raise ImportError("Needs obspy >= 1.1.0")
     warnings.filterwarnings(action="ignore",
                             message="Maximum of cross correlation " +
                                     "lower than 0.8: *")
