@@ -134,6 +134,30 @@ class TestSynthData(unittest.TestCase):
                      threshold=8, threshold_type='MAD', trig_int=1,
                      plotvar=False)
 
+    def test_half_samp_diff(self):
+        """
+        Check that traces with different start-times by less than a sample
+        are handled as expected.
+        """
+        stream = Stream(traces=[
+            Trace(data=np.random.randn(100)),
+            Trace(data=np.random.randn(101))])
+        stream[0].stats.sampling_rate = 40
+        stream[0].stats.station = 'A'
+        stream[1].stats.sampling_rate = 40
+        stream[1].stats.station = 'B'
+        # Add some fraction of a sample to the starttime
+        stream[0].stats.starttime += 0.25 * stream[0].stats.delta
+        templates = [Stream(traces=[Trace(data=np.random.randn(20)),
+                                    Trace(data=np.random.randn(20))])]
+        templates[0][0].stats.sampling_rate = 40
+        templates[0][0].stats.station = 'A'
+        templates[0][1].stats.sampling_rate = 40
+        templates[0][1].stats.station = 'B'
+        match_filter(template_names=['1'], template_list=templates, st=stream,
+                     threshold=8, threshold_type='MAD', trig_int=1,
+                     plotvar=False, debug=3)
+
 
 @pytest.mark.network
 class TestGeoNetCase(unittest.TestCase):
@@ -615,6 +639,22 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key])
             # self.assertEqual(fam.template, check_fam.template)
 
+    def test_tribe_detect_masked_data(self):
+        """Test using masked data - possibly raises error at pre-processing.
+        Padding may also result in error at correlation stage due to poor
+        normalisation."""
+        stream = self.unproc_st.copy()
+        stream[0] = (stream[0].copy().trim(
+            stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
+                     stream[0].trim(
+            stream[0].stats.starttime + 1900, stream[0].stats.endtime))
+        print(stream)
+        party = self.tribe.detect(
+            stream=stream, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            xcorr_func='fftw', concurrency='concurrent')
+        self.assertEqual(len(party), 4)
+
     def test_tribe_detect_no_processing(self):
         """Test that no processing is done when it isn't necessary."""
         tribe = self.tribe.copy()
@@ -763,6 +803,23 @@ class TestMatchObjects(unittest.TestCase):
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
+    def test_party_rethreshold(self):
+        """Make sure that rethresholding removes the events we want it to."""
+        party = self.party.copy()
+        # Append a load of detections to the first family
+        for i in range(200):
+            det = party[0][0].copy()
+            det.detect_time += i * 20
+            det.detect_val = det.threshold + (i * 1e-1)
+            det.id = str(i)
+            party[0].detections.append(det)
+        self.assertEqual(len(party), 204)
+        party.rethreshold(new_threshold=9)
+        for family in party:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(d.detect_val, d.threshold)
+
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
         client = Client('NCEDC')
@@ -906,18 +963,8 @@ class TestMatchObjects(unittest.TestCase):
 
     def test_template_construct(self):
         """Test template construction."""
-        test_template = Template()
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_',
-                                    '15-0931-08L.S201309')
-        test_template.construct(
-            method='from_sfile', name='tester', lowcut=2, highcut=8,
-            samp_rate=20, filt_order=4, length=10, swin='all', prepick=0.2,
-            debug=3, sfile=testing_path)
-        self.assertTrue(isinstance(test_template, Template))
-        self.assertEqual(test_template.name, 'tester')
         with self.assertRaises(NotImplementedError):
-            test_template.construct(
+            Template().construct(
                 method='from_client', client_id='NCEDC', name='bob',
                 lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
                 length=3.0, prepick=0.15, swin='all', process_len=6)

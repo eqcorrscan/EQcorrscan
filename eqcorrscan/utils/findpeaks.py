@@ -78,6 +78,12 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
+    :type full_peaks: bool
+    :param full_peaks:
+        If True, will remove the issue eluded to below, by declustering within
+        data-sections above the threshold, rather than just taking the peak
+        within that section. This will take more time. This defaults to True
+        for match_filter.
 
     :return: peaks: Lists of tuples of peak values and locations.
     :rtype: list
@@ -157,7 +163,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True):
+                     samp_rate=1.0, parallel=True, full_peaks=False):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -179,6 +185,8 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     :type parallel: bool
     :param parallel:
         Whether to compute in parallel or not - will use multiprocessing
+    :type full_peaks: bool
+    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays
@@ -188,11 +196,12 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         for sub_arr, arr_thresh in zip(arr, thresh):
             peaks.append(find_peaks2_short(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
-                starttime=starttime, samp_rate=samp_rate, full_peaks=False))
+                starttime=starttime, samp_rate=samp_rate,
+                full_peaks=full_peaks))
     else:
         with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
-                       False, 1.0, False)
+                       False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
             results = [pool.apply_async(find_peaks2_short, param)
                        for param in params]

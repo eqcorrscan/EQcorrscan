@@ -51,7 +51,7 @@ from obspy import Stream, read, Trace, UTCDateTime, read_events
 
 from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils.sac_util import sactoevent
-from eqcorrscan.utils import pre_processing, sfile_util
+from eqcorrscan.utils import pre_processing
 
 
 class TemplateGenError(Exception):
@@ -156,7 +156,7 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     # Make an event object...
     event = sactoevent(st, debug=debug)
     # Process the data
-    st.merge(fill_value='interpolate')
+    st.merge()
     st = pre_processing.shortproc(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, debug=debug)
@@ -164,267 +164,6 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
         picks=event.picks, st=st, length=length, swin=swin, prepick=prepick,
         plot=plot, debug=debug, all_horiz=all_horiz, delayed=delayed,
         min_snr=min_snr)
-    if return_event:
-        return template, event, len(st[0].data) / samp_rate
-    return template
-
-
-def from_sfile(sfile, lowcut, highcut, samp_rate, filt_order, length, swin,
-               prepick, all_horiz=False, delayed=True, plot=False, debug=0,
-               return_event=False, min_snr=None):
-    """
-    Generate multiplexed template from a Nordic (Seisan) s-file.
-
-    Function to read in picks from sfile then generate the template from \
-    the picks within this and the wavefile found in the pick file.
-
-    :type sfile: str
-    :param sfile: sfilename must be the \
-        path to a seisan nordic type s-file containing waveform and pick \
-        information.
-    :type lowcut: float
-    :param lowcut: Low cut (Hz), if set to None will not apply a lowcut.
-    :type highcut: float
-    :param highcut: High cut (Hz), if set to None will not apply a highcut.
-    :type samp_rate: float
-    :param samp_rate: New sampling rate in Hz.
-    :type filt_order: int
-    :param filt_order: Filter level (number of corners).
-    :type length: float
-    :param length: Extract length in seconds.
-    :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
-    :type prepick: float
-    :param prepick: Length to extract prior to the pick in seconds.
-    :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
-    :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
-    :type plot: bool
-    :param plot: Turns template plotting on or off.
-    :type debug: int
-    :param debug: Debug level, higher number=more output.
-    :type return_event: bool
-    :param return_event: Whether to return the event and process length or not.
-    :type min_snr: float
-    :param min_snr:
-        Minimum signal-to-noise ratio for a channel to be included in the
-        template, where signal-to-noise ratio is calculated as the ratio of
-        the maximum amplitude in the template window to the rms amplitude in
-        the whole window given.
-
-    :returns: Newly cut template.
-    :rtype: :class:`obspy.core.stream.Stream`
-
-    .. warning:: This will use whatever data is pointed to in the s-file, if \
-        this is not the coninuous data, we recommend using other functions. \
-        Differences in processing between short files and day-long files \
-        (inherent to resampling) will produce lower cross-correlations.
-
-    .. rubric:: Example
-
-    >>> from eqcorrscan.core.template_gen import from_sfile
-    >>> import os
-    >>> sfile = os.path.join('eqcorrscan', 'tests', 'test_data',
-    ...                      'REA', 'TEST_', '01-0411-15L.S201309')
-    >>> template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
-    ...                       samp_rate=50.0, filt_order=4, swin='P',
-    ...                       prepick=0.2, length=6, all_horiz=True)
-    >>> print(len(template))
-    15
-    >>> print(template[0].stats.sampling_rate)
-    50.0
-    >>> template.plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
-
-    .. plot::
-
-        from eqcorrscan.core.template_gen import from_sfile
-        import os
-        sfile = os.path.realpath('../../..') + os.sep +\
-            os.path.join('tests', 'test_data', 'REA',
-                         'TEST_', '01-0411-15L.S201309')
-        template = from_sfile(sfile=sfile, lowcut=5.0, highcut=15.0,
-                              samp_rate=50.0, filt_order=4, swin='P',
-                              prepick=0.2, length=6)
-        template.plot(equal_scale=False, size=(800, 600))
-    """
-    wavefiles = sfile_util.readwavename(sfile)
-    pathparts = sfile.split(os.sep)[0:-1]
-    new_path_parts = []
-    for part in pathparts:
-        if part == 'REA':
-            part = 'WAV'
-        new_path_parts.append(part)
-    main_wav_parts = []
-    for part in new_path_parts:
-        main_wav_parts.append(part)
-        if part == 'WAV':
-            break
-    if len(main_wav_parts[0]) == 2 and main_wav_parts[0][-1] == ':':
-        # Replace
-        main_wav_parts[1] = main_wav_parts[0] + os.sep + main_wav_parts[1]
-        new_path_parts[1] = new_path_parts[0] + os.sep + new_path_parts[1]
-        main_wav_parts.remove(main_wav_parts[0])
-        new_path_parts.remove(new_path_parts[0])
-    mainwav = os.path.join(*main_wav_parts) + os.path.sep
-    wavpath = os.path.join(*new_path_parts) + os.path.sep
-    # In case of absolute paths (not handled with .split() --> .join())
-    if sfile[0] == os.path.sep:
-        wavpath = os.path.sep + wavpath
-        mainwav = os.path.sep + mainwav
-    # Read in waveform file
-    st = Stream()
-    for wavefile in wavefiles:
-        debug_print(''.join(["I am going to read waveform data from: ",
-                             wavpath, wavefile]), 0, debug)
-        if os.path.isfile(wavpath + wavefile):
-            # Read from a given directory
-            st += read(wavpath + wavefile)
-        elif os.path.isfile(wavefile):
-            # Read from local directory
-            st += read(wavefile)
-        else:
-            # Try to read from main waveform directory
-            st += read(mainwav + wavefile)
-    for tr in st:
-        if tr.stats.sampling_rate < samp_rate:
-            msg = ' '.join(['Will not upsample: Trace:', tr.stats.station,
-                            'sampling rate:', str(tr.stats.sampling_rate)])
-            raise TemplateGenError(msg)
-    # Read in pick info
-    event = sfile_util.readpicks(sfile)
-    # Read the list of Picks for this event
-    picks = event.picks
-    if debug > 0:
-        print("I have found the following picks")
-        for pick in picks:
-            print(pick)
-    # Process waveform data
-    st.merge(fill_value='interpolate')
-    st = pre_processing.shortproc(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, debug=debug, seisan_chan_names=True)
-    template = template_gen(
-        picks=picks, st=st, length=length, swin=swin, prepick=prepick,
-        all_horiz=all_horiz, plot=plot, debug=debug, delayed=delayed,
-        min_snr=min_snr)
-    if return_event:
-        return template, event, len(st[0].data) / samp_rate
-    return template
-
-
-def from_contbase(sfile, contbase_list, lowcut, highcut, samp_rate, filt_order,
-                  length, prepick, swin, all_horiz=False, delayed=True,
-                  plot=False, debug=0, return_event=False, min_snr=None):
-    """
-    Generate multiplexed template from a Nordic file using continuous data.
-
-    Function to read in picks from s-file then generate the template from \
-    the picks within this and the wavefiles from the continuous database of \
-    day-long files.  Included is a section to sanity check that the files are \
-    daylong and that they start at the start of the day.  You should ensure \
-    this is the case otherwise this may alter your data if your data are \
-    daylong but the headers are incorrectly set.
-
-    :type sfile: str
-    :param sfile: sfilename must be the path to a seisan nordic type s-file \
-            containing waveform and pick information, all other arguments can \
-            be numbers save for swin which must be either P, S or all \
-            (case-sensitive).
-    :type contbase_list: list
-    :param contbase_list: List of tuples of the form \
-        ('path', 'type', 'network').  Where path is the path to the \
-        continuous database, type is the directory structure, which can be \
-        either Yyyyy/Rjjj.01, which is the standard IRIS Year, julian day \
-        structure, or, yyyymmdd which is a single directory for every day.
-    :type lowcut: float
-    :param lowcut: Low cut (Hz), if set to None will not apply a lowcut.
-    :type highcut: float
-    :param highcut: High cut (Hz), if set to None will not apply a highcut.
-    :type samp_rate: float
-    :param samp_rate: New sampling rate in Hz.
-    :type filt_order: int
-    :param filt_order: Filter level (number of corners).
-    :type length: float
-    :param length: Extract length in seconds.
-    :type prepick: float
-    :param prepick: Pre-pick time in seconds
-    :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
-    :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
-    :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
-    :type plot: bool
-    :param plot: Turns template plotting on or off.
-    :type debug: int
-    :param debug: Level of debugging output, higher=more
-    :type return_event: bool
-    :param return_event: Whether to return the event and process length or not.
-    :type min_snr: float
-    :param min_snr:
-        Minimum signal-to-noise ratio for a channel to be included in the
-        template, where signal-to-noise ratio is calculated as the ratio of
-        the maximum amplitude in the template window to the rms amplitude in
-        the whole window given.
-
-    :returns: Newly cut template.
-    :rtype: :class:`obspy.core.stream.Stream`
-    """
-    # Read in pick info
-    event = sfile_util.readpicks(sfile)
-    day = event.origins[0].time
-    picks = event.picks
-    pick_chans = []
-    used_picks = []
-    wavefiles = []
-    for pick in picks:
-        if not pick.waveform_id:
-            print('Pick not associated with waveforms, will not use.')
-            print(pick)
-            continue
-        station = pick.waveform_id.station_code
-        channel = pick.waveform_id.channel_code
-        phase = pick.phase_hint
-        if station + channel not in pick_chans and phase in ['P', 'S']:
-            pick_chans.append(station + channel)
-            used_picks.append(pick)
-            for contbase in contbase_list:
-                if contbase[1] == 'yyyy/mm/dd':
-                    daydir = os.path.join(str(day.year),
-                                          str(day.month).zfill(2),
-                                          str(day.day).zfill(2))
-                elif contbase[1] == 'Yyyyy/Rjjj.01':
-                    daydir = os.path.join('Y' + str(day.year),
-                                          'R' + str(day.julday).zfill(3) +
-                                          '.01')
-                elif contbase[1] == 'yyyymmdd':
-                    daydir = day.datetime.strftime('%Y%m%d')
-                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
-                                                    '*' + station +
-                                                    '.*'))
-                wavefiles += glob.glob(os.path.join(contbase[0], daydir,
-                                                    station + '.*'))
-    picks = used_picks
-    wavefiles = sorted(list(set(wavefiles)))
-
-    # Read in waveform file
-    st = Stream()
-    for wavefile in wavefiles:
-        st += read(wavefile)
-    # Process waveform data
-    st.merge(fill_value='interpolate')
-    st = pre_processing.dayproc(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, starttime=day, debug=debug)
-    # Cut and extract the templates
-    template = template_gen(
-        picks, st, length, swin, prepick=prepick, all_horiz=all_horiz,
-        plot=plot, debug=debug, delayed=delayed, min_snr=min_snr)
     if return_event:
         return template, event, len(st[0].data) / samp_rate
     return template
@@ -517,7 +256,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     templates = []
     process_lengths = []
     # Process waveform data
-    st.merge(fill_value='interpolate')
+    st.merge()
     # Work out if the data are daylong or not...
     data_len = max([len(tr.data) / tr.stats.sampling_rate for tr in st])
     if 80000 < data_len < 90000:
@@ -576,13 +315,12 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
             if not '.'.join([stations[i], channels[i]]) in st_stachans:
                 warnings.warn('No data provided for ' + stations[i] + '.' +
                               channels[i])
-        st1 = st.copy()
         # Cut and extract the templates
         template = template_gen(
-            event.picks, st1, length, swin, prepick=prepick, plot=plot,
+            event.picks, st, length, swin, prepick=prepick, plot=plot,
             debug=debug, all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
         templates.append(template)
-        process_lengths.append(len(st1[0].data) / samp_rate)
+        process_lengths.append(len(st[0].data) / samp_rate)
     if return_event:
         return templates, catalog, process_lengths
     return templates
@@ -713,23 +451,23 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
         if debug > 0:
             st.plot()
         print('Pre-processing data for event: %s' % event.resource_id)
-        st.merge(fill_value='interpolate')
+        st.merge()
         # clients download chunks, we need to assert that the data are
         # the desired length
         for tr in st:
             tr.trim(starttime, endtime)
             print(len(tr))
-        st1 = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=samp_rate, debug=debug, parallel=True)
         for event in sub_catalog:
             template = template_gen(
-                picks=event.picks, st=st1, length=length, swin=swin,
+                picks=event.picks, st=st, length=length, swin=swin,
                 prepick=prepick, all_horiz=all_horiz, plot=plot, debug=debug,
                 delayed=delayed, min_snr=min_snr)
-            process_lengths.append(len(st1[0].data) / samp_rate)
+            process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
-            del st, st1
+        del st
     if return_event:
         return temp_list, catalog, process_lengths
     return temp_list
@@ -870,26 +608,26 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
         if not st and dropped_pick_stations == len(event.picks):
             raise FDSNException('No data available, is the server down?')
         print('Pre-processing data')
-        st.merge(fill_value='interpolate')
+        st.merge()
         # clients download chunks, we need to assert that the data are
         # the desired length
         for tr in st:
             tr.trim(starttime, endtime)
             if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
-        st1 = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=samp_rate, debug=debug, parallel=True)
         if debug > 0:
-            st1.plot()
+            st.plot()
         for event in sub_catalog:
             template = template_gen(
-                picks=event.picks, st=st1, length=length, swin=swin,
+                picks=event.picks, st=st, length=length, swin=swin,
                 prepick=prepick, plot=plot, debug=debug, all_horiz=all_horiz,
                 delayed=delayed, min_snr=min_snr)
-            process_lengths.append(len(st1[0].data) / samp_rate)
+            process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
-        del st, st1
+        del st
     if return_event:
         return temp_list, catalog, process_lengths
     return temp_list
@@ -982,11 +720,10 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
             else:
                 picks.remove(pick)
         if len(picks) > 0:
-            st_clip = st.copy()
-            template = template_gen(picks=picks, st=st_clip, length=length,
-                                    swin=swin, prepick=prepick, plot=plot,
-                                    debug=debug, all_horiz=all_horiz,
-                                    delayed=delayed, min_snr=min_snr)
+            template = template_gen(
+                picks=picks, st=st, length=length, swin=swin, prepick=prepick,
+                plot=plot, debug=debug, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr)
             process_lengths.append(st[0].stats.endtime - st[0].stats.starttime)
             templates.append(template)
     if return_event:
@@ -1145,9 +882,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                             tr.stats.channel, 0, debug)
                 if not delayed:
                     starttime = event_start_time
-                tr_cut = tr.copy().trim(starttime=starttime,
-                                        endtime=starttime + length,
-                                        nearest_sample=False)
+                tr_cut = tr.slice(
+                    starttime=starttime, endtime=starttime + length,
+                    nearest_sample=False).copy()
                 if len(tr_cut.data) == 0:
                     print('No data provided for %s.%s starting at %s' %
                           (tr.stats.station, tr.stats.channel, str(starttime)))
@@ -1176,7 +913,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         tplot(st1, background=background, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime))
         del stplot
-    del st
     return st1
 
 
@@ -1242,12 +978,9 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 
     #  Process the data if necessary
     if not pre_processed:
-        new_template = pre_processing.shortproc(st=new_template,
-                                                lowcut=lowcut,
-                                                highcut=highcut,
-                                                filt_order=filt_order,
-                                                samp_rate=samp_rate,
-                                                debug=0)
+        new_template = pre_processing.shortproc(
+            st=new_template, lowcut=lowcut, highcut=highcut,
+            filt_order=filt_order, samp_rate=samp_rate, debug=0)
     # Loop through the stack and trim!
     out = Stream()
     for tr in new_template:

@@ -23,12 +23,12 @@ import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
+from itertools import cycle
 from scipy.linalg import diagsvd
 from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
 from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
-from eqcorrscan.utils.sfile_util import readheader
 
 
 def _check_save_args(save, savefile):
@@ -306,12 +306,14 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
 
 
 def cumulative_detections(dates=None, template_names=None, detections=None,
-                          plot_grouped=False, show=True, plot_legend=True,
-                          save=False, savefile=None):
+                          plot_grouped=False, group_name=None, rate=False,
+                          show=True, plot_legend=True, ax=None, save=False,
+                          savefile=None):
     """
-    Plot cumulative detections in time.
+    Plot cumulative detections or detecton rate in time.
 
-    Simple plotting function to take a list of datetime objects and plot
+    Simple plotting function to take a list of either datetime objects or
+    :class:`eqcorrscan.core.match_filter.Detection` objects and plot
     a cumulative detections list.  Can take dates as a list of lists and will
     plot each list separately, e.g. if you have dates from more than one
     template it will overlay them in different colours.
@@ -326,6 +328,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :param plot_grouped: Plot detections for each template individually, or \
         group them all together - set to False (plot template detections \
         individually) by default.
+    :type rate: bool
+    :param rate: Whether or not to plot the rate of detection per day. Only
+        works for plot_grouped=True
     :type show: bool
     :param show: Whether or not to show the plot, defaults to True.
     :type plot_legend: bool
@@ -365,13 +370,38 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
                           for n in np.random.randn(100)])
         cumulative_detections(dates, ['a', 'b', 'c'], show=True)
+
+    .. rubric:: Example 2: Rate plotting
+
+    >>> import datetime as dt
+    >>> import numpy as np
+    >>> from eqcorrscan.utils.plotting import cumulative_detections
+    >>> dates = []
+    >>> for i in range(3):
+    ...     dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+    ...                   for n in np.random.randn(100)])
+    >>> cumulative_detections(dates, ['a', 'b', 'c'], plot_grouped=True,
+    ...                       rate=True, show=True) # doctest: +SKIP
+
+    .. plot::
+
+        import datetime as dt
+        import numpy as np
+        from eqcorrscan.utils.plotting import cumulative_detections
+        dates = []
+        for i in range(3):
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+                          for n in np.random.randn(100)])
+        cumulative_detections(dates, ['a', 'b', 'c'], plot_grouped=True,
+                              rate=True, show=True)
+
     """
     from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
-    colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black',
-              'firebrick', 'purple', 'darkgoldenrod', 'gray']
-    linestyles = ['-', '-.', '--', ':']
+    colors = cycle(['red', 'green', 'blue', 'cyan', 'magenta', 'yellow',
+                    'black', 'firebrick', 'purple', 'darkgoldenrod', 'gray'])
+    linestyles = cycle(['-', '-.', '--', ':'])
     # Check that dates is a list of lists
     if not detections:
         if type(dates[0]) != list:
@@ -399,32 +429,46 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         for template_dates in dates:
             _dates += template_dates
         dates = [_dates]
-        template_names = ['All templates']
-    i = 0
-    j = 0
-    # This is an ugly way of looping through colours and linestyles, it would
-    # be better with itertools functions...
-    fig, ax1 = plt.subplots()
+        if group_name:
+            template_names = group_name
+        else:
+            template_names = ['All templates']
+    if ax is None:
+        ax = plt.gca()
+    # Make sure not to pad at edges
+    ax.margins(0, 0)
     min_date = min([min(_d) for _d in dates])
+    max_date = max([max(_d) for _d in dates])
     for k, template_dates in enumerate(dates):
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
+        color = next(colors)
+        if color == 'red':
+            linestyle = next(linestyles)
         counts = np.arange(-1, len(template_dates))
-        ax1.step(plot_dates, counts, linestyles[j],
-                 color=colors[i], label=template_names[k],
-                 linewidth=3.0)
-        if i < len(colors) - 1:
-            i += 1
-        else:
-            i = 0
-            if j < len(linestyles) - 1:
-                j += 1
+        if rate:
+            if not plot_grouped:
+                msg = 'Plotting rate only implemented for plot_grouped=True'
+                raise NotImplementedError(msg)
+            if 31 < (max_date - min_date).days < 365:
+                bins = (max_date - min_date).days
+                ax.set_ylabel('Detections per day')
+            elif (max_date - min_date).days <= 31:
+                bins = (max_date - min_date).days * 4
+                ax.set_ylabel('Detections per 6 hour bin')
             else:
-                j = 0
-    ax1.set_xlabel('Date')
-    ax1.set_ylabel('Cumulative detections')
-    plt.title('Cumulative detections for all templates')
+                bins = (max_date - min_date).days // 7
+                ax.set_ylabel('Detections per week')
+            ax.hist(mdates.date2num(plot_dates), bins=bins,
+                    label='Rate of detections', color='darkgrey',
+                    alpha=0.5)
+        else:
+            ax.plot(plot_dates, counts, linestyle,
+                    color=color, label=template_names[k],
+                    linewidth=2.0, drawstyle='steps')
+            ax.set_ylabel('Cumulative detections')
+    ax.set_xlabel('Date')
     # Set formatters for x-labels
     mins = mdates.MinuteLocator()
     max_date = dates[0][0]
@@ -457,25 +501,28 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         hours = mdates.MinuteLocator(byminute=np.arange(0, 60, 5))
     # Minor locator overruns maxticks for ~year-long datasets
     if timedif.total_seconds() < 172800:
-        ax1.xaxis.set_minor_locator(mins)
+        ax.xaxis.set_minor_locator(mins)
         hrFMT = mdates.DateFormatter('%Y/%m/%d %H:%M:%S')
     else:
         hrFMT = mdates.DateFormatter('%Y/%m/%d')
-    ax1.xaxis.set_major_locator(hours)
-    ax1.xaxis.set_major_formatter(hrFMT)
+    ax.xaxis.set_major_locator(hours)
+    ax.xaxis.set_major_formatter(hrFMT)
     plt.gcf().autofmt_xdate()
     locs, labels = plt.xticks()
-    ax1.set_ylim([0, max([len(_d) for _d in dates])])
     plt.setp(labels, rotation=15)
+    if not rate:
+        ax.set_ylim([0, max([len(_d) for _d in dates])])
     if plot_legend:
-        ax1.legend(loc=2, prop={'size': 8}, ncol=2)
+        if ax.legend() is not None:
+            leg = ax.legend(loc=2, prop={'size': 8}, ncol=2)
+            leg.get_frame().set_alpha(0.5)
     if save:
-        fig.savefig(savefile)
+        plt.gcf().savefig(savefile)
         plt.close()
     else:
         if show:
             plt.show()
-    return fig
+    return ax
 
 
 def threeD_gridplot(nodes, save=False, savefile=None):
@@ -591,15 +638,15 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     .. rubric:: Example
 
-    >>> from obspy import read, Catalog
-    >>> from eqcorrscan.utils.sfile_util import read_event, readwavename
+    >>> from obspy import read, Catalog, read_events
+    >>> from obspy.io.nordic.core import readwavename
     >>> from eqcorrscan.utils.plotting import multi_event_singlechan
     >>> import glob
     >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*.S??????')
     >>> catalog = Catalog()
     >>> streams = []
     >>> for sfile in sfiles:
-    ...     catalog.append(read_event(sfile))
+    ...     catalog += read_events(sfile)
     ...     wavfile = readwavename(sfile)[0]
     ...     stream_path = 'eqcorrscan/tests/test_data/WAV/TEST_/' + wavfile
     ...     stream = read(stream_path)
@@ -820,18 +867,17 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import detection_multiplot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:
@@ -956,64 +1002,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag_sfiles(sfiles, save=False, savefile=None, size=(10.5, 7.5)):
-    """
-    Plot inter-event time versus magnitude for series of events.
-
-    Wrapper for :func:`eqcorrscan.utils.plotting.interev_mag`.
-
-    :type sfiles: list
-    :param sfiles: List of sfiles to read from
-    :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
-    :type savefile: str
-    :param savefile: Filename to save to, required for save=True
-    :type size: tuple
-    :param size: Size of figure in inches.
-
-    :returns: :class:`matplotlib.figure.Figure`
-
-    .. rubric:: Example
-
-    >>> import glob
-    >>> from eqcorrscan.utils.plotting import interev_mag_sfiles
-    >>> sfiles = glob.glob('eqcorrscan/tests/test_data/REA/TEST_/*L.S*')
-    >>> interev_mag_sfiles(sfiles=sfiles) # doctest: +SKIP
-
-    .. plot::
-
-        import glob, os
-        from eqcorrscan.utils.plotting import interev_mag_sfiles
-        sfiles = glob.glob(
-            os.path.realpath('../../../tests/test_data/REA/TEST_/') +
-            os.sep + '*L.S*')
-        print(sfiles)
-        interev_mag_sfiles(sfiles=sfiles)
-    """
-    _check_save_args(save, savefile)
-    times = []
-    mags = []
-    for sfile in sfiles:
-        head = readheader(sfile)
-        if head.preferred_origin():
-            origin = head.preferred_origin()
-        elif len(head.origins) > 0:
-            origin = head.origins[0]
-        else:
-            origin = False
-        if head.preferred_magnitude():
-            magnitude = head.preferred_magnitude()
-        elif len(head.magnitudes) > 0:
-            magnitude = head.magnitudes[0]
-        else:
-            magnitude = False
-        if origin and magnitude:
-            times.append(origin.time)
-            mags.append(magnitude.mag)
-    fig = interev_mag(
-        times=times, mags=mags, save=save, savefile=savefile, size=size)
-    return fig
+def interev_mag_sfiles(*args, **kwargs):
+    raise ImportError("sfile support is depreciated, use obspy.io.nordic")
 
 
 def interev_mag(times, mags, save=False, savefile=None, size=(10.5, 7.5)):
@@ -1253,18 +1243,17 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
 
     .. rubric:: Example
 
-    >>> from obspy import read
+    >>> from obspy import read, read_events
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
-    >>> from eqcorrscan.utils.sfile_util import readpicks
     >>>
     >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
-    >>> test_wavefile = os.path.join('eqcorrscan', 'tests', 'test_data', 'WAV',
-    ...                              'TEST_',
-    ...                              '2013-09-01-0410-35.DFDPC_024_00')
-    >>> event = readpicks(test_file)
+    >>> test_wavefile = os.path.join(
+    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
+    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
     >>> for tr in st:

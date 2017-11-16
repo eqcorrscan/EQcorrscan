@@ -12,23 +12,20 @@ import glob
 import os
 import numpy as np
 import warnings
-import shutil
 import inspect
 import copy
 
-from obspy import read, UTCDateTime, read_events, Stream
+from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
 from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
 from eqcorrscan.core.template_gen import from_meta_file, from_client
-from eqcorrscan.core.template_gen import multi_template_gen, from_contbase
+from eqcorrscan.core.template_gen import multi_template_gen
 from eqcorrscan.core.template_gen import template_gen, extract_from_stack
-from eqcorrscan.core.template_gen import from_sfile, TemplateGenError
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
-from eqcorrscan.utils.sfile_util import eventtosfile, read_event
 
 
 class TestTemplateGeneration(unittest.TestCase):
@@ -131,25 +128,6 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
-        # Test from contbase method
-        sfile = eventtosfile(catalog[0], 'TEST', 'L', '.', 'None',
-                             overwrite=True)
-        os.makedirs(catalog[0].origins[0].time.date.strftime('Y%Y'))
-        os.makedirs(catalog[0].origins[0].time.date.
-                    strftime('Y%Y' + os.sep + 'R%j.01'))
-        for tr in continuous_st:
-            tr.write(catalog[0].origins[0].time.date.
-                     strftime('Y%Y' + os.sep + 'R%j.01') + os.sep +
-                     tr.stats.station + '.' + tr.stats.network + '.' +
-                     tr.stats.location + '.' + tr.stats.channel +
-                     tr.stats.starttime.strftime('%Y.%j'), format='MSEED')
-        template = from_contbase(sfile,
-                                 contbase_list=[('.', 'Yyyyy/Rjjj.01', 'NZ')],
-                                 lowcut=1.0, highcut=5.0, samp_rate=20,
-                                 filt_order=4, length=3, prepick=0.5,
-                                 swin='all')
-        self.assertTrue(isinstance(template, Stream))
-        shutil.rmtree(continuous_st[0].stats.starttime.strftime('Y%Y'))
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
@@ -200,15 +178,14 @@ class TestTemplateGeneration(unittest.TestCase):
         catalog = Catalog()
         sfiles = glob.glob(testing_path)
         for sfile in sfiles:
-            catalog.append(read_event(sfile=sfile))
-        for process_len, pads in [(60, [5]),
-                                  (300, [5, 60]),
-                                  (3600, [5, 60, 300]),
-                                  (86400, [5, 60, 300])]:
+            catalog += read_events(sfile)
+        for process_len, pads in [
+           (60, [5]), (300, [5, 60]), (3600, [5, 60, 300]),
+           (86400, [5, 60, 300])]:
             for data_pad in pads:
-                sub_catalogs = _group_events(catalog=catalog,
-                                             process_len=process_len,
-                                             data_pad=data_pad)
+                sub_catalogs = _group_events(
+                    catalog=catalog, process_len=process_len,
+                    data_pad=data_pad)
                 k_events = 0
                 for sub_catalog in sub_catalogs:
                     min_time = min([event.origins[0].time
@@ -232,24 +209,6 @@ class TestTemplateGeneration(unittest.TestCase):
                                    length=2, prepick=0.1, swin='S')
         self.assertEqual(len(templates), 1)
 
-    def test_from_sfile(self):
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_',
-                                    '15-0931-08L.S201309')
-        event = read_event(sfile=testing_path)
-        template = from_sfile(sfile=testing_path, lowcut=2, highcut=8,
-                              samp_rate=20, filt_order=4, length=10,
-                              swin='all', prepick=0.2, debug=3)
-        self.assertEqual(len(template), len(event.picks))
-
-    def test_upsample_error(self):
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'REA', 'TEST_',
-                                    '15-0931-08L.S201309')
-        with self.assertRaises(TemplateGenError):
-            from_sfile(sfile=testing_path, lowcut=2, highcut=8, samp_rate=200,
-                       filt_order=4, length=10, swin='all', prepick=0.2)
-
 
 class TestEdgeGen(unittest.TestCase):
     @classmethod
@@ -261,9 +220,9 @@ class TestEdgeGen(unittest.TestCase):
             '2013-09-15-0930-28.DFDPC_027_00'))
         for tr in cls.st:
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        event = read_event(os.path.join(
+        event = read_events(os.path.join(
             cls.testing_path, 'test_data', 'REA', 'TEST_',
-            '15-0931-08L.S201309'))
+            '15-0931-08L.S201309'))[0]
         cls.picks = event.picks
 
     def test_undefined_phase_type(self):

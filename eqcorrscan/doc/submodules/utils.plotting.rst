@@ -17,7 +17,6 @@ plotting
        detection_multiplot
        freq_mag
        interev_mag
-       interev_mag_sfiles
        multi_event_singlechan
        NR_plot
        obspy_3d_plot

@@ -270,6 +270,40 @@ class TestPreProcessing(unittest.TestCase):
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
+    def test_masked_trace(self):
+        """Test that processing a masked array works."""
+        st = self.st
+        gap_starttime = st[0].stats.starttime + 1800
+        gap_endtime = st[0].stats.starttime + 1900
+        tr1 = st[0].copy().trim(st[0].stats.starttime, gap_starttime)
+        tr2 = st[0].copy().trim(gap_endtime, st[0].stats.starttime + 3600)
+        tr = tr1 + tr2
+        print(tr)
+        processed = process(tr=tr, lowcut=0.1, highcut=0.4,
+                            filt_order=3, samp_rate=1, debug=0,
+                            starttime=False, clip=False, length=3600,
+                            seisan_chan_names=True, ignore_length=False)
+        self.assertEqual(processed.stats.npts, 3601)
+        self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
+        self.assertTrue(np.all(
+            processed.trim(gap_starttime, gap_endtime).data) == 0)
+
+        processed = process(tr=tr, lowcut=0.1, highcut=0.4,
+                            filt_order=3, samp_rate=1, debug=0,
+                            starttime=False, clip=False, length=3600,
+                            seisan_chan_names=True, ignore_length=False,
+                            fill_gaps=False)
+        self.assertEqual(processed.stats.npts, 3601)
+        self.assertTrue(isinstance(processed.data, np.ma.MaskedArray))
+
+        processed = process(tr=tr, lowcut=0.1, highcut=0.2,
+                            filt_order=3, samp_rate=0.5, debug=0,
+                            starttime=False, clip=False, length=3600,
+                            seisan_chan_names=True, ignore_length=False)
+        self.assertEqual(processed.stats.npts, 1800)
+        self.assertTrue(np.all(
+            processed.trim(gap_starttime, gap_endtime).data) == 0)
+
 
 if __name__ == '__main__':
     unittest.main()
