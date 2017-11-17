@@ -98,7 +98,9 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     :type length: float
     :param length: Extract length in seconds.
     :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :param swin: 
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type prepick: float
     :param prepick: Length to extract prior to the pick in seconds.
     :type all_horiz: bool
@@ -201,7 +203,9 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     :type prepick: float
     :param prepick: Pre-pick time in seconds
     :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :param swin: 
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type all_horiz: bool
     :param all_horiz: To use both horizontal channels even if there is only \
         a pick on one of them.  Defaults to False.
@@ -355,7 +359,9 @@ def from_seishub(catalog, url, lowcut, highcut, samp_rate, filt_order,
     :type prepick: float
     :param prepick: Pre-pick time in seconds
     :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :param swin: 
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
     :param data_pad:
@@ -503,7 +509,9 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     :type prepick: float
     :param prepick: Pre-pick time in seconds
     :type swin: str
-    :param swin: Either 'all', 'P' or 'S', to select which phases to output.
+    :param swin: 
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
     :param data_pad: Length of data (in seconds) required before and after \
@@ -652,7 +660,9 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
     :type length: float
     :param length: Length of template in seconds
     :type swin: string
-    :param swin: P, S or all, defaults to all
+    :param swin: 
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type prepick: float
     :param prepick:
         Length in seconds to extract before the pick time default is
@@ -749,7 +759,9 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     :type length: float
     :param length: Length of template in seconds
     :type swin: str
-    :param swin: P, S or all, defaults to all
+    :param swin:
+        P, S, P_all, S_all or all, defaults to all: see note in
+        :func:`eqcorrscan.core.template_gen.template_gen`
     :type prepick: float
     :param prepick: Length in seconds to extract before the pick time \
             default is 0.05 seconds
@@ -780,6 +792,20 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         or not.  To this end we will **only** use Z channels if they have a \
         P-pick, and will use one or other horizontal channels **only** if \
         there is an S-pick on it.
+        
+    .. note:: swin argument: Setting to `P` will return only data for channels
+        with P picks, starting at the pick time (minus the prepick).
+        Setting to `S` will return only data for channels with
+        S picks, starting at the S-pick time (minus the prepick)
+        (except if `all_horiz=True` when all horizontal channels will
+        be returned if there is an S pick on one of them). Setting to `all`
+        will return channels with either a P or S pick (including both
+        horizontals if `all_horiz=True`) - with this option vertical channels
+        will start at the P-pick (minus the prepick) and horizontal channels
+        will start at the S-pick time (minus the prepick).
+        `P_all` will return cut traces starting at the P-pick time for all
+         channels. `S_all` will return cut traces starting at the S-pick 
+         time for all channels.
 
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
@@ -792,8 +818,8 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     st_stachans = []
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
-    if swin not in ['P', 'all', 'S']:
-        raise IOError('Phase type is not in [all, P, S]')
+    if swin not in ['P', 'all', 'S', 'P_all', 'S_all']:
+        raise IOError('Phase type is not in [all, P, S, S_all, P_all]')
     for pick in picks_copy:
         if not pick.waveform_id:
             print('Pick not associated with waveform, will not use it.')
@@ -842,67 +868,89 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     if plot:
         stplot = st.copy()
     # Get the earliest pick-time and use that if we are not using delayed.
-    event_start_time = min([pick.time for pick in picks_copy])
-    event_start_time -= prepick
+    picks_copy.sort(key=lambda p: p.time)
+    first_pick = picks_copy[0]
+    # Work out starttimes
+    starttimes = []
+    for tr in st:
+        starttime = {'station': tr.stats.station, 'channel': tr.stats.channel}
+        station_picks = [pick for pick in picks_copy
+                         if pick.waveform_id.station_code == tr.stats.station]
+        if swin == 'P_all':
+            p_pick = [pick for pick in station_picks
+                      if pick.phase_hint.upper()[0] == 'P']
+            if len(p_pick) == 0:
+                continue
+            starttime.update({'picks': p_pick})
+        if swin == 'S_all':
+            s_pick = [pick for pick in station_picks
+                      if pick.phase_hint.upper()[0] == 'S']
+            if len(s_pick) == 0:
+                continue
+            starttime.update({'picks': p_pick})
+        if swin in ['P', 'all']:
+            p_pick = [pick for pick in station_picks
+                      if pick.phase_hint.upper()[0] == 'P' and
+                      pick.waveform_id.channel_code == tr.stats.channel]
+            if len(p_pick) == 0:
+                continue
+            starttime.update({'picks': p_pick})
+        if swin in ['S', 'all']:
+            s_pick = [pick for pick in station_picks
+                      if pick.phase_hint.upper()[0] == 'S']
+            if not all_horiz:
+                s_pick = [pick for pick in s_pick
+                          if pick.waveform_id.channel_code == tr.stats.channel]
+            else:
+                if tr.stats.channel[-1] in ['Z', 'U']:
+                    continue
+            if len(s_pick) == 0:
+                continue
+            starttime.update({'picks': s_pick})
+        if not delayed:
+            starttime.update({'picks': [first_pick]})
+        starttimes.append(starttime)
+    # TODO: Use these starttimes in a loop - loop over starttimes then picks - remember to use SNR - do we have a test for SNR? - Need to allow for 'delayed=False' as well
     # Cut the data
     st1 = Stream()
-    for tr in st:
+    for starttime in starttimes:
+        tr = st.select(
+            station=starttime['station'], channel=starttime['channel'])[0]
         noise_amp = _rms(tr.data)
         used_tr = False
-        for pick in picks_copy:
-            starttime = None
-            if swin == 'all':
-                if not pick.phase_hint:
-                    msg = 'Pick for ' + pick.waveform_id.station_code + '.' +\
-                        pick.waveform_id.channel_code + ' has no phase ' +\
-                        'hint given, you should not use this template for ' +\
-                        'cross-correlation re-picking!'
-                    warnings.warn(msg)
-                    if pick.waveform_id.station_code == tr.stats.station and \
-                            pick.waveform_id.channel_code == \
-                            tr.stats.channel:
-                        starttime = pick.time - prepick
-                else:
-                    if pick.waveform_id.station_code == tr.stats.station and \
-                            pick.waveform_id.channel_code ==\
-                            tr.stats.channel:
-                        starttime = pick.time - prepick
-                    # Cope with taking all the horizontals for S-picks.
-                    elif all_horiz and pick.waveform_id.station_code ==\
-                            tr.stats.station:
-                        if tr.stats.channel[-1] not in ['Z', 'U']\
-                                and pick.phase_hint == 'S':
-                            starttime = pick.time - prepick
-            else:
-                if pick.waveform_id.station_code == tr.stats.station and\
-                        swin in pick.phase_hint.upper():
-                    starttime = pick.time - prepick
-            if starttime is not None:
-                debug_print("Cutting " + tr.stats.station + '.' +
-                            tr.stats.channel, 0, debug)
-                if not delayed:
-                    starttime = event_start_time
-                tr_cut = tr.slice(
-                    starttime=starttime, endtime=starttime + length,
-                    nearest_sample=False).copy()
-                if len(tr_cut.data) == 0:
-                    print('No data provided for %s.%s starting at %s' %
-                          (tr.stats.station, tr.stats.channel, str(starttime)))
-                    continue
-                # Ensure that the template is the correct length
-                if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
-                                        length) + 1:
-                    tr_cut.data = tr_cut.data[0:-1]
-                debug_print('Cut starttime = %s\nCut endtime %s' %
-                            (str(tr_cut.stats.starttime),
-                             str(tr_cut.stats.endtime)), 0, debug)
-                if min_snr is not None and \
-                   max(tr_cut.data) / noise_amp < min_snr:
-                    print('Signal-to-noise ratio below threshold for %s.%s' %
-                          (tr_cut.stats.station, tr_cut.stats.channel))
-                    continue
-                st1 += tr_cut
-                used_tr = True
+        for pick in starttime['picks']:
+            if not pick.phase_hint:
+                msg = ('Pick for ' + pick.waveform_id.station_code + '.' +
+                       pick.waveform_id.channel_code + ' has no phase ' +
+                       'hint given, you should not use this template for ' +
+                       'cross-correlation re-picking!')
+                warnings.warn(msg)
+            starttime = pick.time - prepick
+            debug_print(
+                "Cutting " + tr.stats.station + '.' + tr.stats.channel, 0,
+                debug)
+            tr_cut = tr.slice(
+                starttime=starttime, endtime=starttime + length,
+                nearest_sample=False).copy()
+            if len(tr_cut.data) == 0:
+                print('No data provided for %s.%s starting at %s' %
+                      (tr.stats.station, tr.stats.channel, str(starttime)))
+                continue
+            # Ensure that the template is the correct length
+            if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
+                                    length) + 1:
+                tr_cut.data = tr_cut.data[0:-1]
+            debug_print(
+                'Cut starttime = %s\nCut endtime %s' %
+                (str(tr_cut.stats.starttime), str(tr_cut.stats.endtime)), 0,
+                debug)
+            if min_snr is not None and \
+               max(tr_cut.data) / noise_amp < min_snr:
+                print('Signal-to-noise ratio below threshold for %s.%s' %
+                      (tr_cut.stats.station, tr_cut.stats.channel))
+                continue
+            st1 += tr_cut
+            used_tr = True
         if not used_tr:
             debug_print('No pick for ' + tr.stats.station + '.' +
                         tr.stats.channel, 0, debug)

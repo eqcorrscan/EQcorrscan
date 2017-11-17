@@ -128,6 +128,29 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
+        catalog.write('2016p008194.xml', format='QUAKEML')
+        templates = from_meta_file(
+            meta_file='2016p008194.xml', st=continuous_st, lowcut=2,
+            highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
+            swin='P_all')
+        self.assertEqual(len(templates), 1)
+        for tr in templates[0]:
+            pick_time = [
+                pick for pick in catalog[0]
+                if pick.waveform_id.station_code == tr.stats.station and
+                pick.phase_hint.upper() == 'P']
+            self.assertEqual(tr.stats.starttime, pick_time - 0.2)
+        templates = from_meta_file(
+            meta_file='2016p008194.xml', st=continuous_st, lowcut=2,
+            highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
+            swin='S_all')
+        self.assertEqual(len(templates), 1)
+        for tr in templates[0]:
+            pick_time = [
+                pick for pick in catalog[0]
+                if pick.waveform_id.station_code == tr.stats.station and
+                pick.phase_hint.upper() == 'S']
+            self.assertEqual(tr.stats.starttime, pick_time - 0.2)
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
