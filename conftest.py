@@ -49,8 +49,7 @@ def clean_up_test_files():
         'dt.cc2',
         'dt.ct',
         'dt.ct2',
-        'phase.dat',
-        '2016p008194.xml'
+        'phase.dat'
     ]
 
     yield

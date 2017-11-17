@@ -26,6 +26,7 @@ from eqcorrscan.core.template_gen import template_gen, extract_from_stack
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.sac_util import sactoevent
 
 
 class TestTemplateGeneration(unittest.TestCase):
@@ -36,9 +37,8 @@ class TestTemplateGeneration(unittest.TestCase):
         length = 8
 
         for event in ['2014p611252', 'No_head']:
-            test_files = os.path.join(os.path.abspath(os.path.
-                                                      dirname(__file__)),
-                                      'test_data', 'SAC', event, '*')
+            test_files = os.path.join(os.path.abspath(
+                os.path.dirname(__file__)), 'test_data', 'SAC', event, '*')
             # Test with various input types
             filelist = glob.glob(test_files)
             streamlist = [read(f) for f in glob.glob(test_files)]
@@ -48,6 +48,7 @@ class TestTemplateGeneration(unittest.TestCase):
                                     samp_rate=samp_rate, filt_order=4,
                                     length=length, swin='all', prepick=0.1,
                                     debug=0, plot=False)
+                self.assertEqual(len(template), len(sactoevent(stream).picks))
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
 
@@ -128,29 +129,51 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
-        catalog.write('2016p008194.xml', format='QUAKEML')
+
+    def test_all_phase_methods(self):
+        sfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data', 'REA', 'TEST_',
+                             '01-0411-15L.S201309')
+        catalog = read_events(sfile)
+        p_stations = list(set(
+            [pick.waveform_id.station_code
+             for pick in catalog[0].picks if pick.phase_hint == 'P']))
+        s_stations = list(set(
+            [pick.waveform_id.station_code
+             for pick in catalog[0].picks if pick.phase_hint == 'S']))
+        st = read(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'test_data', 'WAV', 'TEST_',
+                               '2013-09-01-0410-35.DFDPC_024_00'))
         templates = from_meta_file(
-            meta_file='2016p008194.xml', st=continuous_st, lowcut=2,
+            meta_file=sfile, st=st, lowcut=2,
             highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
             swin='P_all')
         self.assertEqual(len(templates), 1)
+        self.assertEqual(len(templates[0]), len(p_stations) * 3)
         for tr in templates[0]:
-            pick_time = [
-                pick for pick in catalog[0]
+            pick = [
+                pick for pick in catalog[0].picks
                 if pick.waveform_id.station_code == tr.stats.station and
-                pick.phase_hint.upper() == 'P']
-            self.assertEqual(tr.stats.starttime, pick_time - 0.2)
+                pick.phase_hint.upper() == 'P'][0]
+            print(tr)
+            print(pick)
+            self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
+                            tr.stats.delta)
         templates = from_meta_file(
-            meta_file='2016p008194.xml', st=continuous_st, lowcut=2,
+            meta_file=sfile, st=st, lowcut=2,
             highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
             swin='S_all')
         self.assertEqual(len(templates), 1)
+        self.assertEqual(len(templates[0]), len(s_stations) * 3)
         for tr in templates[0]:
-            pick_time = [
-                pick for pick in catalog[0]
+            pick = [
+                pick for pick in catalog[0].picks
                 if pick.waveform_id.station_code == tr.stats.station and
-                pick.phase_hint.upper() == 'S']
-            self.assertEqual(tr.stats.starttime, pick_time - 0.2)
+                pick.phase_hint.upper() == 'S'][0]
+            print(tr)
+            print(pick)
+            self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
+                            tr.stats.delta)
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
@@ -275,6 +298,8 @@ class TestEdgeGen(unittest.TestCase):
         self.assertFalse(template)
 
     def test_debug_levels(self):
+        print(len(self.picks))
+        print(len(self.st))
         template = template_gen(self.picks, self.st.copy(), 10, debug=3)
         self.assertEqual(len(template), len(self.picks))
 

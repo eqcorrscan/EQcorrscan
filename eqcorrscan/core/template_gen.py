@@ -813,9 +813,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     from eqcorrscan.utils.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.core.bright_lights import _rms
-    stations = []
-    channels = []
-    st_stachans = []
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
     if swin not in ['P', 'all', 'S', 'P_all', 'S_all']:
@@ -836,21 +833,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
             print(pick)
             picks_copy.remove(pick)
             continue
-        # Check to see that we are only taking the appropriate picks
-        if swin == 'all':
-            # Annoying comparability with seisan two channel codes
-            stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code[0] +
-                            pick.waveform_id.channel_code[-1])
-        elif swin == 'P' and 'P' in pick.phase_hint.upper():
-            # Use the 'in' statement to cope with phase names like 'PN' etc.
-            stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code[0] +
-                            pick.waveform_id.channel_code[-1])
-        elif swin == 'S' and 'S' in pick.phase_hint.upper():
-            stations.append(pick.waveform_id.station_code)
-            channels.append(pick.waveform_id.channel_code[0] +
-                            pick.waveform_id.channel_code[-1])
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
@@ -859,12 +841,6 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                           'either gain or check. Not using in template.')
             print(tr)
             st.remove(tr)
-        else:
-            st_stachans.append('.'.join([tr.stats.station, tr.stats.channel]))
-    for i, station in enumerate(stations):
-        if '.'.join([station, channels[i]]) not in st_stachans and debug > 0:
-            warnings.warn('No data provided for ' + station + '.' +
-                          channels[i])
     if plot:
         stplot = st.copy()
     # Get the earliest pick-time and use that if we are not using delayed.
@@ -873,7 +849,8 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     # Work out starttimes
     starttimes = []
     for tr in st:
-        starttime = {'station': tr.stats.station, 'channel': tr.stats.channel}
+        starttime = {'station': tr.stats.station, 'channel': tr.stats.channel,
+                     'picks': []}
         station_picks = [pick for pick in picks_copy
                          if pick.waveform_id.station_code == tr.stats.station]
         if swin == 'P_all':
@@ -887,15 +864,22 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                       if pick.phase_hint.upper()[0] == 'S']
             if len(s_pick) == 0:
                 continue
-            starttime.update({'picks': p_pick})
-        if swin in ['P', 'all']:
+            starttime.update({'picks': s_pick})
+        if swin == 'all':
+            channel_pick = [
+                pick for pick in station_picks
+                if pick.waveform_id.channel_code == tr.stats.channel]
+            if len(channel_pick) == 0:
+                continue
+            starttime.update({'picks': channel_pick})
+        if swin == 'P':
             p_pick = [pick for pick in station_picks
                       if pick.phase_hint.upper()[0] == 'P' and
                       pick.waveform_id.channel_code == tr.stats.channel]
             if len(p_pick) == 0:
                 continue
             starttime.update({'picks': p_pick})
-        if swin in ['S', 'all']:
+        if swin == 'S':
             s_pick = [pick for pick in station_picks
                       if pick.phase_hint.upper()[0] == 'S']
             if not all_horiz:
@@ -904,16 +888,16 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
             else:
                 if tr.stats.channel[-1] in ['Z', 'U']:
                     continue
-            if len(s_pick) == 0:
-                continue
             starttime.update({'picks': s_pick})
+            if len(starttime['picks']) == 0:
+                continue
         if not delayed:
             starttime.update({'picks': [first_pick]})
         starttimes.append(starttime)
-    # TODO: Use these starttimes in a loop - loop over starttimes then picks - remember to use SNR - do we have a test for SNR? - Need to allow for 'delayed=False' as well
     # Cut the data
     st1 = Stream()
     for starttime in starttimes:
+        print(starttime)
         tr = st.select(
             station=starttime['station'], channel=starttime['channel'])[0]
         noise_amp = _rms(tr.data)
