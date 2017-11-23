@@ -10,6 +10,8 @@ match_filter.Party
    .. autosummary::
 
       copy
+      filter
+      plot
       decluster
       get_catalog
       lag_calc
@@ -21,6 +23,8 @@ match_filter.Party
 
    .. automethod:: __init__
    .. automethod:: copy
+   .. automethod:: filter
+   .. automethod:: plot
    .. automethod:: decluster
    .. automethod:: get_catalog
    .. automethod:: lag_calc

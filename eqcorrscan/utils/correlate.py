@@ -470,7 +470,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     running mean and standard deviation (not using the N-1 correction) of the
     stream and the sums of the normalised templates.
 
-    This python fucntion wraps the C-library written by C. Chamberlain for this
+    This python function wraps the C-library written by C. Chamberlain for this
     purpose.
 
     :param templates: 2D Array of templates
@@ -540,8 +540,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         raise MemoryError()
     elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
-        print(ccc.max())
-        print(ccc.min())
+        print('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
+        print('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
         msg = ("Some correlations not computed, are there "
@@ -706,7 +706,6 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         pad array (stacked as per templates)
     '''
 
-
     # pre processing
     used_chans = []
     template_len = template_array[seed_ids[0]].shape[1]
@@ -743,8 +742,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         raise MemoryError()
     elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
-        print(cccs.max())
-        print(cccs.min())
+        print('Maximum cccs %f at %s' %
+              (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
+        print('Minimum cccs %f at %s' %
+              (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
         msg = ("Some correlations not computed, are there "

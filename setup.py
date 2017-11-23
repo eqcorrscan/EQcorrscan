@@ -342,7 +342,8 @@ def setup_package():
         'install_requires': install_requires,
         'setup_requires': ['pytest-runner'],
         'tests_require': ['pytest>=2.0.0', 'pytest-cov', 'pytest-pep8',
-                          'pytest-xdist', 'pytest-rerunfailures'],
+                          'pytest-xdist', 'pytest-rerunfailures',
+                          'obspy>=1.1.0'],
         'cmdclass': {'build_ext': CustomBuildExt}
     }
 
