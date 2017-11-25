@@ -55,9 +55,14 @@ Also within this package are:
 
   <a href="http://seisan.info/" target="_blank">Seisan</a>
 
-This package is written by Calum Chamberlain and Chet Hopp of Victoria
-University of Wellington, New Zealand, and is distributed under the LGPL GNU
-Licence, Copyright Calum Chamberlain & Chet Hopp 2015 & 2016.
+This package is written by the EQcorrscan developers, and is 
+distributed under the LGPL GNU Licence, Copyright EQcorrscan
+developers 2017.
+
+Citation
+--------
+If you use this package in your work, please cite the following paper:
+Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters, `Accepted`
 
 References
 ----------
