@@ -162,7 +162,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         debug_print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan),
                     3, debug)
         image = detection.select(station=temp_sta, channel=temp_chan)
-        if len(image) == 0:
+        if len(image) == 0 or sum(image[0].data) == 0:
             print('No match in image.')
             continue
         if interpolate:
