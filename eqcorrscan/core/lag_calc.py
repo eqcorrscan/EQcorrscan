@@ -162,7 +162,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         debug_print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan),
                     3, debug)
         image = detection.select(station=temp_sta, channel=temp_chan)
-        if len(image) == 0:
+        if len(image) == 0 or sum(image[0].data) == 0:
             print('No match in image.')
             continue
         if interpolate:
@@ -181,7 +181,11 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 cc_max = np.amax(ccc)
                 shift = np.argmax(ccc) * image[0].stats.delta
             # Convert the maximum cross-correlation time to an actual time
-            picktime = image[0].stats.starttime + shift
+            if math.isnan(shift) or math.isnan(cc_max):
+                print('Problematic trace, no cross correlation possible')
+                continue
+            else:
+                picktime = image[0].stats.starttime + shift
         else:
             # Convert the maximum cross-correlation time to an actual time
             try:
@@ -192,8 +196,12 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 print('Template is %i long' % len(tr.data))
                 continue
             cc_max = np.amax(ccc)
-            picktime = image[0].stats.starttime + (
-                np.argmax(ccc) * image[0].stats.delta)
+            if math.isnan(shift) or math.isnan(cc_max):
+                print('Problematic trace, no cross correlation possible')
+                continue
+            else:
+                picktime = image[0].stats.starttime + (
+                    np.argmax(ccc) * image[0].stats.delta)
         debug_print('Maximum cross-corr=%s' % cc_max, 3, debug)
         checksum += cc_max
         used_chans += 1
