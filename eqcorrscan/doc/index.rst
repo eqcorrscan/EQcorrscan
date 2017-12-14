@@ -78,6 +78,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   installation
    updates
    tutorial
    core
