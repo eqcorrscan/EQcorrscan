@@ -605,8 +605,7 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-# TODO: This should be turned back on when openMP loop is merged
-# @fftw_normxcorr.register('stream_xcorr')
+@fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):

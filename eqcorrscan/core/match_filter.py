@@ -41,16 +41,18 @@ from obspy.core.event import (
 from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
-from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
+from eqcorrscan.utils.correlate import (
+    get_array_xcorr, get_stream_xcorr, set_xcorr)
 from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
+from eqcorrscan.utils.parameters import get_default_xcorr
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
 
 
 @contextlib.contextmanager
 def temporary_directory():
-    """ make a temporary directory, yeild its name, cleanup on exit """
+    """ make a temporary directory, yield its name, cleanup on exit """
     dir_name = tempfile.mkdtemp()
     yield dir_name
     if os.path.exists(dir_name):
@@ -3912,20 +3914,8 @@ def match_filter(template_names, template_list, st, threshold,
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
-        if not type(template_names) == list:
-            raise MatchFilterError('template_names must be of type: list')
-        if not type(template_list) == list:
-            raise MatchFilterError('templates must be of type: list')
         if not len(template_list) == len(template_names):
             raise MatchFilterError('Not the same number of templates as names')
-        for template in template_list:
-            if not type(template) == Stream:
-                msg = 'template in template_list must be of type: ' + \
-                      'obspy.core.stream.Stream'
-                raise MatchFilterError(msg)
-        if not type(st) == Stream:
-            msg = 'st must be of type: obspy.core.stream.Stream'
-            raise MatchFilterError(msg)
         if str(threshold_type) not in [str('MAD'), str('absolute'),
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
@@ -4100,7 +4090,17 @@ def match_filter(template_names, template_list, st, threshold,
     for template in templates:
         debug_print(template.__str__(), 3, debug)
     debug_print(stream.__str__(), 3, debug)
-    multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+    ##################### ACTUALLY DO THE MATCH-FILTERING ###################
+    if xcorr_func is None:
+        n_stations = len(set([tr.stats.station for tr in stream]))
+        n_channels = len(set([tr.stats.channel for tr in stream]))
+        multichannel_normxcorr = get_default_xcorr(
+            n_stations=n_stations, n_channels=n_channels,
+            data_len=len(stream[0]), n_templates=len(templates),
+            template_len=len(templates[0][0]),
+            sampling_rate=stream[0].stats.sampling_rate)
+    else:
+        multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, chans] = multichannel_normxcorr(
         templates=templates, stream=stream, cores=cores)
     if len(cccsums[0]) == 0:

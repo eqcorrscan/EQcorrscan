@@ -9,7 +9,8 @@ import unittest
 import os
 
 from eqcorrscan.utils.parameters import (
-    _flatten_dataset_size, _inflate_dataset_size, EQcorrscanConfig)
+    _flatten_dataset_size, _inflate_dataset_size, EQcorrscanConfig,
+    CorrelationDefaults)
 
 
 class TestDictFlatten(unittest.TestCase):
@@ -44,37 +45,29 @@ class TestDictFlatten(unittest.TestCase):
 
 class TestConfigIO(unittest.TestCase):
     def test_write_correlate_params(self):
-        dataset_size = {
-            'data_len': 86400.0, 'n_channels': 3, 'n_stations': 10,
-            'n_templates': 5, 'sampling_rate': 200.0, 'template_len': 2.0}
-        flat_str = _flatten_dataset_size(dataset_size=dataset_size)
-        input_defaults = {'correlation': {flat_str: 'fftw'}}
+        input_defaults = [CorrelationDefaults(
+            data_len=86400.0, n_channels=3, n_stations=10, n_templates=5,
+            sampling_rate=200.0, template_len=2.0, corr_func='fftw')]
         config = EQcorrscanConfig(defaults=input_defaults)
         self.assertEqual(config.defaults, input_defaults)
         config.write()
-        self.assertTrue(os.path.isfile(os.path.join(os.path.expanduser("~"),
-                                                    ".eqcorrscan.rc")))
+        self.assertTrue(os.path.isfile(
+            os.path.join(os.path.expanduser("~"), ".eqcorrscan.rc")))
         config_back = EQcorrscanConfig()
         self.assertEqual(config.defaults, config_back.defaults)
 
     def test_append_correlate_params(self):
-        dataset_size = {
-            'data_len': 86400.0, 'n_channels': 3, 'n_stations': 10,
-            'n_templates': 5, 'sampling_rate': 200.0, 'template_len': 2.0}
-        flat_str = _flatten_dataset_size(dataset_size=dataset_size)
-        input_defaults = {'correlation': {flat_str: 'fftw'}}
+        input_defaults = [CorrelationDefaults(
+            data_len=86400.0, n_channels=3, n_stations=10, n_templates=5,
+            sampling_rate=200.0, template_len=2.0, corr_func='fftw')]
         config = EQcorrscanConfig(defaults=input_defaults)
         config.write()
         # Add a second case
-        dataset_size = {
-            'data_len': 3600.0, 'n_channels': 3, 'n_stations': 10,
-            'n_templates': 5, 'sampling_rate': 100.0, 'template_len': 2.0}
-        flat_str2 = _flatten_dataset_size(dataset_size=dataset_size)
-        input_defaults = {'correlation': {flat_str2: 'time-domain'}}
+        input_defaults = [CorrelationDefaults(
+            data_len=3600.0, n_channels=3, n_stations=10, n_templates=5,
+            sampling_rate=100.0, template_len=2.0, corr_func='time-domain')]
         config2 = EQcorrscanConfig(defaults=input_defaults)
-        self.assertEqual(config.defaults['correlation'][flat_str],
-                         config2.defaults['correlation'][flat_str])
-        self.assertTrue(len(config2.defaults['correlation'].keys()) == 2)
+        self.assertTrue(len(config2.defaults) == 2)
 
     def tearDown(self):
         if os.path.isfile(
@@ -82,6 +75,8 @@ class TestConfigIO(unittest.TestCase):
             os.remove(
                 os.path.join(os.path.expanduser("~"), ".eqcorrscan.rc"))
 
+
+#TODO: get_default_corr tests and testing the correlation_speeds checker.
 
 if __name__ == '__main__':
     unittest.main()

@@ -27,12 +27,13 @@ from multiprocessing import cpu_count
 from eqcorrscan.utils.correlate import (
     XCOR_FUNCS, XCORR_STREAM_METHODS, get_stream_xcorr)
 from eqcorrscan.utils import correlate
-from eqcorrscan.utils.parameters import EQcorrscanConfig, _flatten_dataset_size
+from eqcorrscan.utils.parameters import EQcorrscanConfig, CorrelationDefaults
 
-
+#TODO: Need to find a cross-platform way to limit memory
 def memory_limit():
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (get_memory() * 1024, hard))
+    # resource is Unix specific
 
 
 def get_memory():
@@ -133,11 +134,11 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
         'template_len': template_len, 'sampling_rate': sampling_rate}
     # Check if this test has already been run
     config = EQcorrscanConfig()
-    if 'correlation' in config.defaults.keys():
-        for key in config.defaults['correlation']:
-            if key == _flatten_dataset_size(dataset_size):
+    if config.get("correlation") is not None:
+        for default in config.get("correlation"):
+            if default.dataset_size == dataset_size:
                 print("Already ran this dataset size, default set to %s" %
-                      config.defaults['correlation'][key])
+                      default.corr_func)
     dataset = generate_dataset(
         n_templates=n_templates, n_stations=n_stations, n_channels=n_channels,
         data_len=data_len, template_len=template_len,
@@ -170,13 +171,14 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
                 print("Exceeded maximum memory allowed")
     plot_profiles(times, memory_use)
     # Write config to file
-    flat_str = _flatten_dataset_size(dataset_size)
-    config = EQcorrscanConfig(defaults={
-        'correlation': {flat_str: list(best_time.keys())[0]}})
+    best_correlation = CorrelationDefaults(corr_func=list(best_time.keys())[0])
+    best_correlation.__dict__.update(dataset_size)
+    config.defaults.append(best_correlation)
     config.write()
 
 
 if __name__ == '__main__':
+    #TODO: Use something nicer for getting args and giving feedback/help
     # Get arguments / print help
     help_msg = ("Profile correlation functions. Needs an ordered list of "
                 "arguments as follows:\n"
