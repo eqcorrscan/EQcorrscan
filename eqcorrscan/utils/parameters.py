@@ -14,6 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
+from collections import Counter
 import numpy as np
 
 from eqcorrscan.utils.correlate import get_stream_xcorr
@@ -98,7 +99,13 @@ class CorrelationDefaults(object):
         return False
 
     def __ne__(self, other):
-        return not self.__eq__(self, other)
+        return not self.__eq__(other)
+
+    def _isempty(self):
+        for value in self.__dict__.values():
+            if value is not None:
+                return False
+        return True
 
     def dataset_size(self):
         d_size = self.__dict__.copy()
@@ -206,6 +213,7 @@ class EQcorrscanConfig(object):
             if default not in uniq_parameters:
                 uniq_parameters.append(default)
         self.defaults = uniq_parameters
+        return self
 
 
 def _flatten_dataset_size(dataset_size):
@@ -257,28 +265,50 @@ def _scalar_size(dataset_size):
 
 def get_default_xcorr(fname=None, n_stations=None, n_channels=None,
                       data_len=None, n_templates=None, template_len=None,
-                      sampling_rate=None, scalar_gap=1000):
+                      sampling_rate=None, scalar_gap=1000000):
+    default_xcorr = get_stream_xcorr()
     config = EQcorrscanConfig(filename=fname)
     config = config.get("CorrelationDefaults")
     lookup_dataset = CorrelationDefaults(
         n_stations=n_stations, n_channels=n_channels, data_len=data_len,
         n_templates=n_templates, template_len=template_len,
         sampling_rate=sampling_rate)
-    for default in config:
-        if default.dataset_size() == lookup_dataset.dataset_size():
-            return get_stream_xcorr(
-                name_or_func=default.corr_func.split('.')[0],
-                concurrency=default.corr_func.split('.')[1])
-    # If we are here then there is no match, find the closest scalar size
-    scalar_gaps = [
-        abs(_scalar_size(lookup_dataset.dataset_size()) -
-            _scalar_size(default.dataset_size())) for default in config]
-    min_gap = scalar_gaps.index(min(scalar_gaps))
-    if scalar_gaps[min_gap] < scalar_gap:
-        return get_stream_xcorr(
-            name_or_func=config[min_gap].corr_func.split('.')[0],
-            concurrency=config[min_gap].corr_func.split('.')[1])
-    return get_stream_xcorr()
+    # If all are None, we should give the most common "best" option
+    if lookup_dataset._isempty():
+        methods = Counter([default.corr_func for default in config])
+        most_common = methods.most_common(1)[0][0]
+        try:
+            default_xcorr = get_stream_xcorr(
+                name_or_func=most_common.split('.')[0],
+                concurrency=most_common.split('.')[1])
+        except (ValueError, KeyError):
+            pass
+    else:
+        # Otherwise, look for exact matches
+        for default in config:
+            if default.dataset_size() == lookup_dataset.dataset_size():
+                try:
+                    default_xcorr = get_stream_xcorr(
+                        name_or_func=default.corr_func.split('.')[0],
+                        concurrency=default.corr_func.split('.')[1])
+                    break
+                except (ValueError, KeyError):
+                    pass
+        else:
+            # If there is no match, find the closest scalar size
+            scalar_gaps = [
+                abs(_scalar_size(lookup_dataset.dataset_size()) -
+                    _scalar_size(default.dataset_size()))
+                for default in config]
+            min_gap = scalar_gaps.index(min(scalar_gaps))
+            if scalar_gaps[min_gap] < scalar_gap:
+                try:
+                    default_xcorr = get_stream_xcorr(
+                        name_or_func=config[min_gap].corr_func.split('.')[0],
+                        concurrency=config[min_gap].corr_func.split('.')[1])
+                except (ValueError, KeyError):
+                    pass
+    return default_xcorr
 
 
 if __name__ == '__main__':
