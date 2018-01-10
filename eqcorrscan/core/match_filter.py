@@ -4090,7 +4090,9 @@ def match_filter(template_names, template_list, st, threshold,
     for template in templates:
         debug_print(template.__str__(), 3, debug)
     debug_print(stream.__str__(), 3, debug)
-    ##################### ACTUALLY DO THE MATCH-FILTERING ###################
+    # ------------------ ACTUALLY DO THE MATCH-FILTERING -----------------------
+    # TODO: Is this the best place to do it - will do it a lot...
+    # Could do it in the objects as-well and set xcorr_func there?
     if xcorr_func is None:
         n_stations = len(set([tr.stats.station for tr in stream]))
         n_channels = len(set([tr.stats.channel for tr in stream]))

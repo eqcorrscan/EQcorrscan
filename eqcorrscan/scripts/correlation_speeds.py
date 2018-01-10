@@ -29,7 +29,8 @@ from eqcorrscan.utils.correlate import (
 from eqcorrscan.utils import correlate
 from eqcorrscan.utils.parameters import EQcorrscanConfig, CorrelationDefaults
 
-#TODO: Need to find a cross-platform way to limit memory
+
+# TODO: Need to find a cross-platform way to limit memory
 def memory_limit():
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (get_memory() * 1024, hard))
@@ -46,6 +47,7 @@ def get_memory():
     return free_memory
 
 
+# TODO: consider whether randn is good approx of data for timing purposes
 def generate_dataset(n_templates, n_stations, n_channels, data_len,
                      template_len, sampling_rate):
     """
@@ -126,7 +128,7 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     :param sampling_rate:
     :return:
     """
-    print("Testing correlation functions in %s" % correlate.__file__)
+    print("Found EQcorrscan correlation functions in %s" % correlate.__file__)
     MAXTHREADS = cpu_count()
     dataset_size = {
         'n_templates': n_templates, 'n_stations': n_stations,
@@ -151,6 +153,7 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     for corr_func in XCOR_FUNCS.keys():
         if corr_func == 'default':
             continue
+        # TODO: Use a helper function for printing - logging helper?
         print("=" * 80)
         print(("Running %s" % corr_func).center(80))
         print("=" * 80)
@@ -178,7 +181,7 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
 
 
 if __name__ == '__main__':
-    #TODO: Use something nicer for getting args and giving feedback/help
+    # TODO: Use something nicer for getting args and giving feedback/help
     # Get arguments / print help
     help_msg = ("Profile correlation functions. Needs an ordered list of "
                 "arguments as follows:\n"
