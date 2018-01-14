@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 from multiprocessing import Pool, cpu_count
 
-from eqcorrscan.utils.timer import Timer
+from eqcorrscan.helpers.timer import Timer
 
 
 def median_filter(tr, multiplier=10, windowlength=0.5,
@@ -183,7 +183,7 @@ def template_remove(tr, template, cc_thresh, windowlength,
     from eqcorrscan.core.match_filter import normxcorr2
     from eqcorrscan.utils.findpeaks import find_peaks2_short
     from obspy import Trace
-    from eqcorrscan.utils.timer import Timer
+    from eqcorrscan.helpers.timer import Timer
     import matplotlib.pyplot as plt
     import warnings
 

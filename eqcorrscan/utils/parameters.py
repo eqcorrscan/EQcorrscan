@@ -32,7 +32,7 @@ class ParameterError(Exception):
 
         .. rubric:: Example
 
-        >>> ParamemterError("Something happened")
+        >>> ParameterError("Something happened")
         Something happened
         """
         self.value = value
@@ -269,6 +269,8 @@ def get_default_xcorr(fname=None, n_stations=None, n_channels=None,
     default_xcorr = get_stream_xcorr()
     config = EQcorrscanConfig(filename=fname)
     config = config.get("CorrelationDefaults")
+    if len(config) == 0:
+        return default_xcorr
     lookup_dataset = CorrelationDefaults(
         n_stations=n_stations, n_channels=n_channels, data_len=data_len,
         n_templates=n_templates, template_len=template_len,

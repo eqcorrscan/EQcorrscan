@@ -13,7 +13,7 @@ import pytest
 
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks)
-from eqcorrscan.utils.timer import time_func
+from eqcorrscan.helpers.timer import time_func
 
 
 class TestStandardPeakFinding:

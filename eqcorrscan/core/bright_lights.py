@@ -631,7 +631,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         import matplotlib.pyplot as plt
         plt.ioff()
     from eqcorrscan.utils import plotting
-    from eqcorrscan.utils.debug_log import debug_print
+    from eqcorrscan.helpers.debug_log import debug_print
     # Check that we actually have the correct stations
     realstations = []
     for station in stations:

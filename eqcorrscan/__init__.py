@@ -19,7 +19,7 @@ from eqcorrscan.core.lag_calc import lag_calc  # NOQA
 from eqcorrscan.utils.correlate import (  # NOQA
     get_stream_xcorr, get_array_xcorr, register_array_xcorr)
 
-__all__ = ['core', 'utils', 'tutorials']
+__all__ = ['core', 'utils', 'tutorials', 'helpers']
 
 __version__ = '0.2.7-dev'
 

@@ -23,7 +23,7 @@ from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.helpers.debug_log import debug_print
 
 
 def _check_daylong(tr):

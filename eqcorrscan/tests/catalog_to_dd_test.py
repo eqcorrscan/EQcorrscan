@@ -20,7 +20,7 @@ from eqcorrscan.utils.catalog_to_dd import sfiles_to_event, write_catalog
 from eqcorrscan.utils.catalog_to_dd import write_correlations, read_phase
 from eqcorrscan.utils.catalog_to_dd import write_event
 from eqcorrscan.utils.mag_calc import dist_calc
-from eqcorrscan.utils.timer import Timer
+from eqcorrscan.helpers.timer import Timer
 
 
 class TestCatalogMethods(unittest.TestCase):

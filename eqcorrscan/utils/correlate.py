@@ -28,14 +28,13 @@ import contextlib
 import copy
 import ctypes
 import os
-import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from future.utils import native_str
 
-from eqcorrscan.utils.libnames import _load_cdll
+from eqcorrscan.helpers.libnames import _load_cdll
 
 # This is for building docs on readthedocs, which has an old version of
 # scipy - without this, this module cannot be imported, which breaks the docs

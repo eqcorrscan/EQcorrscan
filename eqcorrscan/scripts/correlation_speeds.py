@@ -14,13 +14,11 @@ algorithm for their dataset and architecture is.
 """
 
 import time
-import resource
-import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 
-from memory_profiler import memory_usage
 from obspy import Trace, Stream
 from multiprocessing import cpu_count
 
@@ -28,37 +26,26 @@ from eqcorrscan.utils.correlate import (
     XCOR_FUNCS, XCORR_STREAM_METHODS, get_stream_xcorr)
 from eqcorrscan.utils import correlate
 from eqcorrscan.utils.parameters import EQcorrscanConfig, CorrelationDefaults
+from eqcorrscan.helpers.memory_managerment import MemoryChecker
 
 
-# TODO: Need to find a cross-platform way to limit memory
-def memory_limit():
-    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-    resource.setrlimit(resource.RLIMIT_AS, (get_memory() * 1024, hard))
-    # resource is Unix specific
-
-
-def get_memory():
-    with open('/proc/meminfo', 'r') as mem:
-        free_memory = 0
-        for i in mem:
-            sline = i.split()
-            if str(sline[0]) in ('MemFree:', 'Buffers:', 'Cached:'):
-                free_memory += int(sline[1])
-    return free_memory
+MIN_MEM = 512 ** 3  # Limit minimum memory available to 0.5 GB
+# MIN_MEM = 25 * (1024 ** 3)  # Limit minimum memory available to 20 GB
 
 
 # TODO: consider whether randn is good approx of data for timing purposes
 def generate_dataset(n_templates, n_stations, n_channels, data_len,
                      template_len, sampling_rate):
     """
+    Generate a synthetic dataset to test correlations within
 
-    :param n_templates:
-    :param n_stations:
-    :param n_channels:
-    :param data_len:
-    :param template_len:
-    :param sampling_rate:
-    :return:
+    :param n_templates: Number of templates to create
+    :param n_stations: Number of stations to create data for
+    :param n_channels: Number of channels for each station to create data for
+    :param data_len: Length of continuous data in seconds
+    :param template_len: Length of templates in seconds
+    :param sampling_rate: Sampling-rate for all data in Hz
+    :return: Dictionary of dataset keyed by "templates" and "data"
     """
     print("=" * 80)
     print("Generating dataset".center(80))
@@ -81,36 +68,54 @@ def run_correlation(func, threads, dataset, loops=3):
     Run the given correlation function and profile time and memory usage.
 
     :param func:
-    :param threads:
-    :param dataset:
-    :param loops:
-    :return:
+        Callable correlation function with the standard EQcorrscan signature.
+    :param threads: Number of threads to run on for concurrent methods
+    :param dataset: Dictionary of dataset including templates and data
+    :param loops: Number of loops to average over.
+    :return: tuple of average memory and average time in GB and S respectively.
     """
     max_mem = []
     timings = []
     for loop in range(loops):
+        overrun = False
         tic = time.time()
-        max_mem = memory_usage((func, (dataset['templates'], dataset['data']),
-                                {'cores': threads}), max_usage=True,
-                               include_children=True, multiprocess=True)
+        try:
+            mem_checker = MemoryChecker(
+                interval=0.5, min_mem=MIN_MEM, pid=os.getpid())
+            func(dataset['templates'], dataset['data'], cores=threads)
+        except MemoryError as e:
+            overrun = True
+            print(e)
         toc = time.time()
-        timings.append(toc - tic)
-    return np.mean(max_mem[0]), np.mean(timings)
+        mem_checker.stop()
+        max_mem.append(mem_checker.max_mem / (1024 ** 3))
+        if not overrun:
+            timings.append(toc - tic)
+        else:
+            timings.append(np.nan)
+    return np.mean(max_mem), np.mean(timings)
 
 
 def plot_profiles(times, memory_use):
     """
+    Plot profiling information.
 
-    :param times:
-    :param memory_use:
-    :return:
+    :param times: Dictionary of times in seconds, keyed by method
+    :param memory_use: Dictionary of memory usage in GB keyed by method
     """
     plt.xkcd()
-    markers = itertools.cycle((',', '+', '.', 'o', '*'))
-    for key in times.keys():
-        plt.scatter(memory_use[key], times[key], s=10**2, marker=next(markers),
-                    label=key)
-    plt.xlabel('Memory use (MB)')
+    colors = itertools.cycle(('k', 'r', 'b', 'g', 'c', 'y'))
+    keys = sorted(list(times.keys()))
+    methods = list(set([key.split('.')[0] for key in keys]))
+    concurrencies = list(set([key.split('.')[1] for key in keys]))
+    for method in methods:
+        color = next(colors)
+        markers = itertools.cycle((',', '+', '.', 'o', '*'))
+        for concurrency in concurrencies:
+            key = method + '.' + concurrency
+            plt.scatter(memory_use[key], times[key], s=10 ** 2, c=color,
+                        marker=next(markers), label=key)
+    plt.xlabel('Memory use (GB)')
     plt.ylabel('Time (s)')
     plt.legend()
     plt.show()
@@ -119,14 +124,15 @@ def plot_profiles(times, memory_use):
 def run_profiling(n_templates, n_stations, n_channels, data_len,
                   template_len, sampling_rate, loops=3):
     """
+    Run profiling for available correlation functions and write config file.
 
-    :param n_templates:
-    :param n_stations:
-    :param n_channels:
-    :param data_len:
-    :param template_len:
-    :param sampling_rate:
-    :return:
+    :param n_templates: Number of templates to create
+    :param n_stations: Number of stations to create data for
+    :param n_channels: Number of channels for each station to create data for
+    :param data_len: Length of continuous data in seconds
+    :param template_len: Length of templates in seconds
+    :param sampling_rate: Sampling-rate for all data in Hz
+    :param loops: Number of loops to avergae times and memory over.
     """
     print("Found EQcorrscan correlation functions in %s" % correlate.__file__)
     MAXTHREADS = cpu_count()
@@ -148,12 +154,9 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     times = {}
     memory_use = {}
     best_time = {'None': np.inf}
-    # Limit the memory
-    memory_limit()
     for corr_func in XCOR_FUNCS.keys():
         if corr_func == 'default':
             continue
-        # TODO: Use a helper function for printing - logging helper?
         print("=" * 80)
         print(("Running %s" % corr_func).center(80))
         print("=" * 80)
@@ -166,7 +169,7 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
                 memory_use.update({'.'.join([corr_func, method]): mem})
                 print(("Average time from %i loops: %f seconds" %
                        (loops, avtime)).center(80))
-                print(("Average Max Memory: %f MB" % (mem)).center(80))
+                print(("Average Max Memory: %f GB" % (mem)).center(80))
                 print('-' * 80)
                 if avtime < list(best_time.values())[0]:
                     best_time = {'.'.join([corr_func, method]): avtime}
@@ -177,25 +180,40 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     best_correlation = CorrelationDefaults(corr_func=list(best_time.keys())[0])
     best_correlation.__dict__.update(dataset_size)
     config.defaults.append(best_correlation)
-    config.write()
+    config.uniq().write(append=False)
 
 
 if __name__ == '__main__':
-    # TODO: Use something nicer for getting args and giving feedback/help
-    # Get arguments / print help
-    help_msg = ("Profile correlation functions. Needs an ordered list of "
-                "arguments as follows:\n"
-                "Usage: python correlation_speeds.py n_templates n_stations "
-                "n_channels data_len template_len sampling_rate loops")
-    if len(sys.argv) == 1 or sys.argv[1] == "-h":
-        print(help_msg)
-        exit()
-    try:
-        run_profiling(
-            n_templates=int(sys.argv[1]), n_stations=int(sys.argv[2]),
-            n_channels=int(sys.argv[3]), data_len=float(sys.argv[4]),
-            template_len=float(sys.argv[5]), sampling_rate=float(sys.argv[6]),
-            loops=int(sys.argv[7]))
-    except IndexError:
-        print("Insufficient arguments.")
-        print(help_msg)
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Profile correlation functions to find out the fastest for"
+                    " your system and dataset size.")
+    parser.add_argument(
+        '-t', '--n-templates', help="Number of templates for test dataset",
+        required=True)
+    parser.add_argument(
+        '-s', '--n-stations', help="Number of stations for test dataset",
+        required=True)
+    parser.add_argument(
+        '-c', '--n-channels',
+        help="Number of channels for each station in test dataset",
+        required=True)
+    parser.add_argument(
+        '-d', '--data-len', help="Length of continuous test data in seconds",
+        required=True)
+    parser.add_argument(
+        '-l', '--template-len', help="Length of templates in seconds",
+        required=True)
+    parser.add_argument(
+        '-r', '--sampling-rate', help="Sampling-rate in Hz for test dataset",
+        required=True)
+    parser.add_argument(
+        '-p', '--loops', help="Number of loops to average over", required=True)
+    args = vars(parser.parse_args())
+    run_profiling(
+        n_templates=int(args['n_templates']),
+        n_stations=int(args['n_stations']),
+        n_channels=int(args['n_channels']), data_len=float(args['data_len']),
+        template_len=float(args['template_len']),
+        sampling_rate=float(args['sampling_rate']), loops=int(args['loops']))

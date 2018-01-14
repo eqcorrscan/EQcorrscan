@@ -43,7 +43,7 @@ from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import (
     get_array_xcorr, get_stream_xcorr, set_xcorr)
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.helpers.debug_log import debug_print
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.parameters import get_default_xcorr
 from eqcorrscan.utils.plotting import cumulative_detections

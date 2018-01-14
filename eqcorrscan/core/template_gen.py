@@ -49,7 +49,7 @@ import glob
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.helpers.debug_log import debug_print
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
 
@@ -784,7 +784,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
     """
-    from eqcorrscan.utils.debug_log import debug_print
+    from eqcorrscan.helpers.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.core.bright_lights import _rms
     stations = []

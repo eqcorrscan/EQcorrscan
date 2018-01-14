@@ -26,7 +26,7 @@ from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.helpers.debug_log import debug_print
 
 
 class LagCalcError(Exception):

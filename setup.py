@@ -311,7 +311,7 @@ def setup_package():
     if not READ_THE_DOCS:
         install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
                             'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12',
-                            'h5py']
+                            'h5py', 'psutil']
     else:
         install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
                             'mock']
@@ -360,13 +360,14 @@ def setup_package():
     else:
         setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
                                   'eqcorrscan.core', 'eqcorrscan.lib',
-                                  'eqcorrscan.tutorials']
+                                  'eqcorrscan.tutorials', 'eqcorrscan.helpers']
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
     if os.path.isdir("build"):
         shutil.rmtree("build")
     setup(**setup_args)
+
 
 if __name__ == '__main__':
     setup_package()

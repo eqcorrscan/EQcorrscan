@@ -11,3 +11,4 @@ pytest-pep8
 pytest-xdist
 pytest-rerunfailures
 codecov
+psutil

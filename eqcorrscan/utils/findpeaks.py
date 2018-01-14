@@ -221,7 +221,7 @@ def decluster(peaks, index, trig_int):
 
     :return: list of tuples of (value, sample)
     """
-    from eqcorrscan.utils.libnames import _load_cdll
+    from eqcorrscan.helpers.libnames import _load_cdll
     import ctypes
     from future.utils import native_str
     from itertools import compress

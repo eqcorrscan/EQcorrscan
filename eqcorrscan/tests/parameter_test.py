@@ -54,7 +54,7 @@ class TestConfigIO(unittest.TestCase):
             sampling_rate=200.0, template_len=2.0,
             corr_func='fftw.stream_xcorr')]
         config = EQcorrscanConfig()
-        config.defaults=input_defaults
+        config.defaults = input_defaults
         self.assertEqual(config.defaults, input_defaults)
         config.write(filename=self.config_filename)
         self.assertTrue(os.path.isfile(self.config_filename))

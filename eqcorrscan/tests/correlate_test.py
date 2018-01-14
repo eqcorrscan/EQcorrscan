@@ -14,7 +14,7 @@ from obspy import Trace, Stream
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
-from eqcorrscan.utils.timer import time_func
+from eqcorrscan.helpers.timer import time_func
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
