@@ -29,8 +29,7 @@ from eqcorrscan.utils.parameters import EQcorrscanConfig, CorrelationDefaults
 from eqcorrscan.helpers.memory_managerment import MemoryChecker
 
 
-MIN_MEM = 512 ** 3  # Limit minimum memory available to 0.5 GB
-# MIN_MEM = 25 * (1024 ** 3)  # Limit minimum memory available to 20 GB
+MIN_MEM = 102.4 ** 3  # Limit minimum memory available to 0.1 GB
 
 
 # TODO: consider whether randn is good approx of data for timing purposes
@@ -52,18 +51,20 @@ def generate_dataset(n_templates, n_stations, n_channels, data_len,
     print("=" * 80)
     dataset = {'data': Stream(), 'templates': []}
     for i in range(n_stations * n_channels):
-        dataset['data'] += Trace(np.random.randn(
-            int(data_len * sampling_rate)))
+        _tr = np.random.randn(int(data_len * sampling_rate))
+        _tr = _tr * _tr ** 10
+        dataset['data'] += Trace(_tr)
     for t in range(n_templates):
         template = Stream()
         for i in range(n_stations * n_channels):
-            template += Trace(np.random.randn(
-                int(template_len * sampling_rate)))
+            _tr = np.random.randn(int(template_len * sampling_rate))
+            _tr = _tr * _tr ** 4
+            template += Trace(_tr)
         dataset['templates'].append(template)
     return dataset
 
 
-def run_correlation(func, threads, dataset, loops=3):
+def run_correlation(func, threads, dataset, loops=3, timeout=600):
     """
     Run the given correlation function and profile time and memory usage.
 
@@ -72,24 +73,33 @@ def run_correlation(func, threads, dataset, loops=3):
     :param threads: Number of threads to run on for concurrent methods
     :param dataset: Dictionary of dataset including templates and data
     :param loops: Number of loops to average over.
+    :param timeout: Timeout limit for correlations - defaults to 600
+
     :return: tuple of average memory and average time in GB and S respectively.
     """
     max_mem = []
     timings = []
     for loop in range(loops):
         overrun = False
+        overtime = False
         tic = time.time()
         try:
             mem_checker = MemoryChecker(
-                interval=0.5, min_mem=MIN_MEM, pid=os.getpid())
-            func(dataset['templates'], dataset['data'], cores=threads)
+                interval=0.05, min_mem=MIN_MEM, timeout=timeout,
+                pid=os.getpid(),
+                function=func,
+                function_args=(dataset['templates'], dataset['data']),
+                function_kwargs={'cores': threads}, verbose=False)
+            mem_checker.stop()
         except MemoryError as e:
             overrun = True
-            print(e)
+            print("MemoryError: " + str(e))
+        except RuntimeError as e:
+            overtime = True
+            print("RuntimeError: " + str(e))
         toc = time.time()
-        mem_checker.stop()
         max_mem.append(mem_checker.max_mem / (1024 ** 3))
-        if not overrun:
+        if not overrun and not overtime:
             timings.append(toc - tic)
         else:
             timings.append(np.nan)
@@ -122,7 +132,7 @@ def plot_profiles(times, memory_use):
 
 
 def run_profiling(n_templates, n_stations, n_channels, data_len,
-                  template_len, sampling_rate, loops=3):
+                  template_len, sampling_rate, loops=3, timeout=600):
     """
     Run profiling for available correlation functions and write config file.
 
@@ -132,7 +142,8 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     :param data_len: Length of continuous data in seconds
     :param template_len: Length of templates in seconds
     :param sampling_rate: Sampling-rate for all data in Hz
-    :param loops: Number of loops to avergae times and memory over.
+    :param loops: Number of loops to average times and memory over.
+    :param timeout: Timeout limit for correlations - defaults to 600
     """
     print("Found EQcorrscan correlation functions in %s" % correlate.__file__)
     MAXTHREADS = cpu_count()
@@ -164,7 +175,8 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
             try:
                 print(("Testing %s method" % method).center(80))
                 func = get_stream_xcorr(corr_func, method)
-                mem, avtime = run_correlation(func, MAXTHREADS, dataset, loops)
+                mem, avtime = run_correlation(
+                    func, MAXTHREADS, dataset, loops, timeout)
                 times.update({'.'.join([corr_func, method]): avtime})
                 memory_use.update({'.'.join([corr_func, method]): mem})
                 print(("Average time from %i loops: %f seconds" %
@@ -210,10 +222,18 @@ if __name__ == '__main__':
         required=True)
     parser.add_argument(
         '-p', '--loops', help="Number of loops to average over", required=True)
+    parser.add_argument(
+        '--timeout', help="Timeout limit for correlations - defaults to 600",
+        required=False)
     args = vars(parser.parse_args())
+    if args['timeout'] is not None:
+        timeout = float(args['timeout'])
+    else:
+        timeout = 600
     run_profiling(
         n_templates=int(args['n_templates']),
         n_stations=int(args['n_stations']),
         n_channels=int(args['n_channels']), data_len=float(args['data_len']),
         template_len=float(args['template_len']),
-        sampling_rate=float(args['sampling_rate']), loops=int(args['loops']))
+        sampling_rate=float(args['sampling_rate']), loops=int(args['loops']),
+        timeout=timeout)
