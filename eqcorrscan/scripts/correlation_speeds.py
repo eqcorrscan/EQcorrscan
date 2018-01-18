@@ -86,10 +86,9 @@ def run_correlation(func, threads, dataset, loops=3, timeout=600):
         try:
             mem_checker = MemoryChecker(
                 interval=0.05, min_mem=MIN_MEM, timeout=timeout,
-                pid=os.getpid(),
-                function=func,
-                function_args=(dataset['templates'], dataset['data']),
-                function_kwargs={'cores': threads}, verbose=False)
+                pid=os.getpid(), target=func,
+                target_args=(dataset['templates'], dataset['data']),
+                target_kwargs={'cores': threads}, verbose=False)
             mem_checker.stop()
         except MemoryError as e:
             overrun = True

@@ -48,25 +48,6 @@ def _get_child_memory(process):
         yield 0.0
 
 
-class BaseThread(Thread):
-    """
-    Taken from:
-        https://gist.github.com/amirasaran/e91c7253c03518b8f7b7955df0e954bb
-    """
-    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
-        target = kwargs.pop('target')
-        super(BaseThread, self).__init__(
-            target=self.target_with_callback, *args, **kwargs)
-        self.callback = callback
-        self.method = target
-        self.callback_args = callback_args
-
-    def target_with_callback(self):
-        self.method()
-        if self.callback is not None:
-            self.callback(*self.callback_args)
-
-
 class MemoryChecker(object):
     """
     Process to run a memory check in the background.
@@ -75,8 +56,7 @@ class MemoryChecker(object):
     master/memory_profiler.py
     """
     def __init__(self, interval=1, min_mem=1024, timeout=None, pid=os.getpid(),
-                 function=None, function_args=(), function_kwargs={},
-                 verbose=False):
+                 target=None, target_args=(), target_kwargs={}, verbose=False):
         """
         Initializer
 
@@ -84,9 +64,9 @@ class MemoryChecker(object):
         :param min_mem:
             Minimum memory available before raising an error in Bytes
         :param timeout: Timeout period in seconds
-        :param function: function to run and check memory and timing
-        :param function_args: args for function
-        :param function_kwargs: kwargs for function
+        :param target: function to run and check memory and timing
+        :param target_args: args for function
+        :param target_kwargs: kwargs for function
         :param verbose: Output memory and timing as it goes.
         """
         self.interval = interval
@@ -107,7 +87,7 @@ class MemoryChecker(object):
         self.checker_thread = Thread(target=self.run)
         self.checker_thread.start()
         self.worker_process = Process(
-            target=function, args=function_args, kwargs=function_kwargs)
+            target=target, args=target_args, kwargs=target_kwargs)
         self.worker_process.start()
 
     def run(self):
