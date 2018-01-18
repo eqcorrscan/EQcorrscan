@@ -10,6 +10,7 @@ omit =
   eqcorrscan/utils/sfile_util.py
   eqcorrscan/utils/src/*
   eqcorrscan/lib/*
+  eqcorrscan/scripts/*
 [report]
 exclude_lines =
     pragma: no cover
