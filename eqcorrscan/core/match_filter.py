@@ -2471,7 +2471,7 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
-        template_groups = [[]]
+        template_groups = []
         for master in self.templates:
             for group in template_groups:
                 if master in group:

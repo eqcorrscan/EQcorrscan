@@ -815,8 +815,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
     from eqcorrscan.core.bright_lights import _rms
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
-    if swin not in ['P', 'all', 'S', 'P_all', 'S_all']:
-        raise IOError('Phase type is not in [all, P, S, S_all, P_all]')
+    assert swin in ['P', 'all', 'S', 'P_all', 'S_all']
     for pick in picks_copy:
         if not pick.waveform_id:
             print('Pick not associated with waveform, will not use it.')
@@ -896,13 +895,17 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         starttimes.append(starttime)
     # Cut the data
     st1 = Stream()
-    for starttime in starttimes:
-        print(starttime)
+    for _starttime in starttimes:
+        debug_print("Working on channel %s.%s" %
+                    (_starttime['station'], _starttime['channel']),
+                    debug_level=0, print_level=debug)
         tr = st.select(
-            station=starttime['station'], channel=starttime['channel'])[0]
+            station=_starttime['station'], channel=_starttime['channel'])[0]
+        debug_print("Found Trace %s" % tr.__str__(), debug_level=0,
+                    print_level=debug)
         noise_amp = _rms(tr.data)
         used_tr = False
-        for pick in starttime['picks']:
+        for pick in _starttime['picks']:
             if not pick.phase_hint:
                 msg = ('Pick for ' + pick.waveform_id.station_code + '.' +
                        pick.waveform_id.channel_code + ' has no phase ' +
