@@ -1975,10 +1975,10 @@ class Template(object):
                       'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
-        func = getattr(template_gen, method)
-        st, event, process_length = func(
-            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        st, event, process_length = template_gen.template_gen(
+            method=method, lowcut=lowcut, highcut=highcut,
+            filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
+            return_event=True, **kwargs)
         self.name = name
         for tr in st:
             if not np.any(tr.data.astype(np.float16)):
@@ -2172,7 +2172,7 @@ class Tribe(object):
         >>> tribe.remove(tribe.templates[0])
         Tribe of 2 templates
         """
-        self.templates.remove(template)
+        self.templates = [t for t in self.templates if t != template]
         return self
 
     def copy(self):
@@ -2760,14 +2760,10 @@ class Tribe(object):
 
         .. Note:: Templates will be named according to their start-time.
         """
-        if method in ['from_contbase', 'from_sfile', 'from_sac']:
-            raise NotImplementedError('Tribe.construct does not support '
-                                      'single-event methods, use '
-                                      'Template.construct instead.')
-        func = getattr(template_gen, method)
-        templates, catalog, process_lengths = func(
-            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        templates, catalog, process_lengths = template_gen.template_gen(
+            method=method, lowcut=lowcut, highcut=highcut,
+            filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
+            return_event=True, **kwargs)
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()

@@ -31,6 +31,8 @@
 * Added `P_all` and `S_all` options to template generation functions
   to allow creation of multi-channel templates starting at the P and S
   times respectively.
+* Refactored `template_gen`, all options are available via 
+  `template_gen(method=...)`, and depreciation warnings are in place.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
