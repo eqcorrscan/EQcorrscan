@@ -398,10 +398,10 @@ class Party(object):
             raise MatchFilterError('Need a list defining a date range')
         new_party = Party()
         for fam in self.families:
-            new_fam = Family(template=fam.template,
-                             detections=[det for det in fam
-                                         if det.detect_time < dates[1]
-                                         and det.detect_time > dates[0]])
+            new_fam = Family(
+                template=fam.template,
+                detections=[det for det in fam if
+                            dates[0] < det.detect_time < dates[1]])
             if len(new_fam) >= min_dets:
                 new_party.families.append(new_fam)
         return new_party

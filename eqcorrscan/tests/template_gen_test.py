@@ -152,9 +152,9 @@ class TestTemplateGeneration(unittest.TestCase):
         self.assertEqual(len(templates[0]), len(p_stations) * 3)
         for tr in templates[0]:
             pick = [
-                pick for pick in catalog[0].picks
-                if pick.waveform_id.station_code == tr.stats.station and
-                pick.phase_hint.upper() == 'P'][0]
+                p for p in catalog[0].picks
+                if p.waveform_id.station_code == tr.stats.station and
+                p.phase_hint.upper() == 'P'][0]
             print(tr)
             print(pick)
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
@@ -167,9 +167,9 @@ class TestTemplateGeneration(unittest.TestCase):
         self.assertEqual(len(templates[0]), len(s_stations) * 3)
         for tr in templates[0]:
             pick = [
-                pick for pick in catalog[0].picks
-                if pick.waveform_id.station_code == tr.stats.station and
-                pick.phase_hint.upper() == 'S'][0]
+                p for p in catalog[0].picks
+                if p.waveform_id.station_code == tr.stats.station and
+                p.phase_hint.upper() == 'S'][0]
             print(tr)
             print(pick)
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),

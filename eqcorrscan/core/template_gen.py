@@ -261,7 +261,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         debug_print('Pre-processing data', 0, debug)
         st.merge()
         if process:
-            data_len = max([len(tr.data) / tr.stats.sampling_rate for tr in st])
+            data_len = max([len(tr.data) / tr.stats.sampling_rate
+                            for tr in st])
             if 80000 < data_len < 90000:
                 daylong = True
             else:
@@ -526,7 +527,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         or not.  To this end we will **only** use Z channels if they have a \
         P-pick, and will use one or other horizontal channels **only** if \
         there is an S-pick on it.
-        
+
     .. note:: swin argument: Setting to `P` will return only data for channels
         with P picks, starting at the pick time (minus the prepick).
         Setting to `S` will return only data for channels with
@@ -538,8 +539,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         will start at the P-pick (minus the prepick) and horizontal channels
         will start at the S-pick time (minus the prepick).
         `P_all` will return cut traces starting at the P-pick time for all
-         channels. `S_all` will return cut traces starting at the S-pick 
-         time for all channels.
+        channels. `S_all` will return cut traces starting at the S-pick
+        time for all channels.
 
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
