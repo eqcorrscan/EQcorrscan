@@ -884,7 +884,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
     ...     # Hack around seisan 2-letter channel naming
     ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-    >>> template = template_gen.template_gen(event.picks, st, 2)
+    >>> template = template_gen._template_gen(event.picks, st, 2)
     >>> times = [min([pk.time -0.05 for pk in event.picks])]
     >>> detection_multiplot(stream=st, template=template,
     ...                     times=times) # doctest: +SKIP
@@ -907,7 +907,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        template = template_gen.template_gen(event.picks, st, 2)
+        template = template_gen._template_gen(event.picks, st, 2)
         times = [min([pk.time -0.05 for pk in event.picks])]
         detection_multiplot(stream=st, template=template,
                             times=times)
@@ -1260,7 +1260,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     ...     tr = tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
     ...     # Hack around seisan 2-letter channel naming
     ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-    >>> template = template_gen.template_gen(event.picks, st, 2)
+    >>> template = template_gen._template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
     ...                      picks=event.picks) # doctest: +SKIP
 
@@ -1282,7 +1282,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         for tr in st:
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-        template = template_gen.template_gen(event.picks, st, 2)
+        template = template_gen._template_gen(event.picks, st, 2)
         pretty_template_plot(template, background=st,
                              picks=event.picks)
     """

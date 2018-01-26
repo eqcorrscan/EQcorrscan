@@ -89,11 +89,11 @@ class TestMethods(unittest.TestCase):
     def test_channel_loop_with_spicks(self):
         """Test using s-picks."""
         det_spicks = self.detection_spicks.copy()
-        det_spicks += det_spicks.select(station='GCSZ', channel='EZ')[0].copy()
+        det_spicks += det_spicks.select(station='WZ02', channel='EZ')[0].copy()
         det_spicks[-1].stats.channel = 'HA'
         temp_spicks = self.template_spicks.copy()
-        temp_spicks += temp_spicks.select(station='GCSZ',
-                                          channel='EZ')[0].copy()
+        temp_spicks += temp_spicks.select(
+            station='WZ02', channel='EZ')[0].copy()
         temp_spicks[-1].stats.channel = 'HA'
         with warnings.catch_warnings(record=True) as w:
             i, event = _channel_loop(
@@ -121,12 +121,12 @@ class TestMethods(unittest.TestCase):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.0, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=8, detect_chans=13)
+                pre_lag_ccsum=6, detect_chans=7)
         with self.assertRaises(LagCalcError):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=8, detect_chans=13)
+                pre_lag_ccsum=6, detect_chans=7)
 
     def test_interpolate(self):
         """Test channel loop with interpolation."""

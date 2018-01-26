@@ -19,10 +19,9 @@ from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
-from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
-from eqcorrscan.core.template_gen import from_meta_file, from_client
-from eqcorrscan.core.template_gen import multi_template_gen
-from eqcorrscan.core.template_gen import template_gen, extract_from_stack
+from eqcorrscan.core.template_gen import (
+    from_sac, _group_events, from_seishub, from_meta_file, from_client,
+    multi_template_gen, template_gen, extract_from_stack, _template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -44,10 +43,12 @@ class TestTemplateGeneration(unittest.TestCase):
             streamlist = [read(f) for f in glob.glob(test_files)]
             stream = read(test_files)
             for sac_files in [filelist, streamlist, stream]:
-                template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
-                                    samp_rate=samp_rate, filt_order=4,
-                                    length=length, swin='all', prepick=0.1,
-                                    debug=0, plot=False)
+                templates = from_sac(
+                    sac_files, lowcut=2.0, highcut=8.0, samp_rate=samp_rate,
+                    filt_order=4, length=length, swin='all', prepick=0.1,
+                    debug=0, plot=False)
+                self.assertEqual(len(templates), 1)
+                template = templates[0]
                 self.assertEqual(len(template), len(sactoevent(stream).picks))
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
@@ -55,7 +56,8 @@ class TestTemplateGeneration(unittest.TestCase):
     @pytest.mark.network
     @pytest.mark.flaky(reruns=2)
     def test_tutorial_template_gen(self):
-        """Test template generation from tutorial, uses from_client method.
+        """
+        Test template generation from tutorial, uses from_client method.
 
         Checks that the tutorial generates the templates we expect it to!
         """
@@ -71,7 +73,7 @@ class TestTemplateGeneration(unittest.TestCase):
                     station=tr.stats.station, channel=tr.stats.channel)[0]
                 self.assertTrue((expected_tr.data.astype(np.float32) ==
                                  tr.data.astype(np.float32)).all())
-            del(template)
+            del template
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
     @pytest.mark.network
@@ -272,41 +274,41 @@ class TestEdgeGen(unittest.TestCase):
         cls.picks = event.picks
 
     def test_undefined_phase_type(self):
-        with self.assertRaises(IOError):
-            template_gen(
+        with self.assertRaises(AssertionError):
+            _template_gen(
                 picks=self.picks, st=self.st.copy(), length=2, swin='bob')
 
     def test_warn_zeros(self):
         st = self.st.copy()
-        template = template_gen(self.picks, st.copy(), 10)
+        template = _template_gen(self.picks, st.copy(), 10)
         self.assertTrue('LABE' in [tr.stats.station for tr in template])
         st.select(station='LABE', channel='SN')[0].data = np.zeros(10000)
-        template = template_gen(self.picks, st, 10)
+        template = _template_gen(self.picks, st, 10)
         self.assertFalse('LABE' in [tr.stats.station for tr in template])
 
     def test_missing_data(self):
         picks = copy.deepcopy(self.picks)
         picks.append(picks[-1])
         picks[-1].waveform_id.station_code = 'DUMMY'
-        template = template_gen(picks, self.st.copy(), 10)
+        template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse('DUMMY' in [tr.stats.station for tr in template])
 
     def test_no_matched_picks(self):
         picks = [copy.deepcopy(self.picks[0])]
         picks[0].waveform_id.station_code = 'DUMMY'
-        template = template_gen(picks, self.st.copy(), 10)
+        template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
 
     def test_debug_levels(self):
         print(len(self.picks))
         print(len(self.st))
-        template = template_gen(self.picks, self.st.copy(), 10, debug=3)
+        template = _template_gen(self.picks, self.st.copy(), 10, debug=3)
         self.assertEqual(len(template), len(self.picks))
 
     def test_extract_from_stack(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(stack, template, length=length,
                                        pre_pick=0.3, pre_pad=45)
         self.assertEqual(len(template), len(extracted))
@@ -317,7 +319,7 @@ class TestEdgeGen(unittest.TestCase):
     def test_extract_from_stack_and_process(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(
             stack, template, length=length, pre_pick=0.3, pre_pad=45,
             pre_processed=False, samp_rate=20, lowcut=2, highcut=8)
@@ -329,7 +331,7 @@ class TestEdgeGen(unittest.TestCase):
     def test_extract_from_stack_including_z(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(
             stack, template, length=length, pre_pick=0.3, pre_pad=45,
             Z_include=True)
@@ -337,6 +339,7 @@ class TestEdgeGen(unittest.TestCase):
         for tr in extracted:
             self.assertEqual(tr.stats.endtime - tr.stats.starttime,
                              length)
+
 
 if __name__ == '__main__':
     unittest.main()

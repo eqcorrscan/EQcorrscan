@@ -51,10 +51,10 @@ def mktemplates(network_code='GEONET',
                 event.picks.remove(pick)
 
     # Now we can generate the templates
-    templates = template_gen.from_client(
-        catalog=catalog, client_id=network_code, lowcut=2.0, highcut=9.0,
-        samp_rate=20.0, filt_order=4, length=3.0, prepick=0.15, swin='all',
-        process_len=3600, debug=0, plot=plot)
+    templates = template_gen.template_gen(
+        method='from_client', catalog=catalog, client_id=network_code,
+        lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4, length=3.0,
+        prepick=0.15, swin='all', process_len=3600, debug=0, plot=plot)
 
     # We now have a series of templates! Using Obspy's Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the

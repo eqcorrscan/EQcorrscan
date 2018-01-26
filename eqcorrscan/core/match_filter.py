@@ -1975,11 +1975,14 @@ class Template(object):
                       'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
-        st, event, process_length = template_gen.template_gen(
+        streams, events, process_lengths = template_gen.template_gen(
             method=method, lowcut=lowcut, highcut=highcut,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
             return_event=True, **kwargs)
         self.name = name
+        st = streams[0]
+        event = events[0]
+        process_length = process_lengths[0]
         for tr in st:
             if not np.any(tr.data.astype(np.float16)):
                 warnings.warn('Data are zero in float16, missing data,'

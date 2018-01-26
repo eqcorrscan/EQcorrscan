@@ -172,7 +172,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     ...    method='from_client', catalog=catalog, client_id='NCEDC',
     ...    lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4, length=3.0,
     ...    prepick=0.15, swin='all', process_len=300, all_horiz=True)
-    Pre-processing data
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
     .. figure:: ../../plots/template_gen.from_client.png
@@ -189,6 +188,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
     ...    swin='S', all_horiz=True)
     >>> print(len(templates[0]))
+    10
+    >>> templates = template_gen(
+    ...    method='from_meta_file', meta_file=quakeml, st=st, lowcut=2.0,
+    ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
+    ...    swin='S_all', all_horiz=True)
+    >>> print(len(templates[0]))
     15
 
     .. rubric:: Example
@@ -197,13 +202,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> import glob
     >>> # Get all the SAC-files associated with one event.
     >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
-    >>> template = template_gen(
+    >>> templates = template_gen(
     ...    method='from_sac', sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...    samp_rate=25.0, filt_order=4, length=2.0, swin='all', prepick=0.1,
     ...    all_horiz=True)
-    >>> print(template[0].stats.sampling_rate)
+    >>> print(templates[0][0].stats.sampling_rate)
     25.0
-    >>> print(len(template))
+    >>> print(len(templates[0]))
     15
     """
     client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
@@ -212,7 +217,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     process = True
     if method in ['from_client', 'from_seishub']:
         catalog = kwargs.get('catalog', Catalog())
-        data_pad = kwargs.get('data_pad', None)
+        data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
         sub_catalogs = _group_events(
             catalog=catalog, process_len=process_len, data_pad=data_pad)
@@ -233,8 +238,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     elif method == 'from_sac':
         sac_files = kwargs.get('sac_files')
         if isinstance(sac_files, list):
-            if isinstance(sac_files[0], Stream) or isinstance(sac_files[0],
-                                                              Trace):
+            if isinstance(sac_files[0], (Stream, Trace)):
                 # This is a list of streams...
                 st = Stream(sac_files[0])
                 for sac_file in sac_files[1:]:
@@ -245,7 +249,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         else:
             st = sac_files
         # Make an event object...
-        catalog = Catalog(sactoevent(st, debug=debug))
+        catalog = Catalog([sactoevent(st, debug=debug)])
         sub_catalogs = [catalog]
 
     temp_list = []
@@ -318,10 +322,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             for tr in st:
                 st_stachans.append('.'.join([tr.stats.station,
                                              tr.stats.channel]))
-            for i in range(len(stations)):
-                if not '.'.join([stations[i], channels[i]]) in st_stachans:
-                    warnings.warn('No data provided for ' + stations[i] + '.' +
-                                  channels[i])
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
@@ -428,7 +428,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     Internal function to handle downloading from either seishub or fdsn client
     """
     st = Stream()
-    catalog = Catalog(catalog.events.sort(key=lambda e: e.origins[0].time))
+    catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
     all_waveform_info = []
     for event in catalog:
         for pick in event.picks:
@@ -455,7 +455,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
             debug_print("Station not found in SeisHub DB", 0, debug)
             dropped_pick_stations += 1
             continue
-        debug_print('Downloading for \n\tstart-time: %s\n\tend-time' %
+        debug_print('Downloading for \n\tstart-time: %s\n\tend-time: %s' %
                     (str(starttime), str(endtime)), 0, debug)
         debug_print('.'.join([net, sta, loc, chan]), 0, debug)
         try:
@@ -600,9 +600,16 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 continue
             starttime.update({'picks': s_pick})
         if swin == 'all':
-            channel_pick = [
-                pick for pick in station_picks
-                if pick.waveform_id.channel_code == tr.stats.channel]
+            if all_horiz and tr.stats.channel[-1] in ['1', '2', 'N', 'E']:
+                # Get all picks on horizontal channels
+                channel_pick = [
+                    pick for pick in station_picks
+                    if pick.waveform_id.channel_code[-1] in
+                    ['1', '2', 'N', 'E']]
+            else:
+                channel_pick = [
+                    pick for pick in station_picks
+                    if pick.waveform_id.channel_code == tr.stats.channel]
             if len(channel_pick) == 0:
                 continue
             starttime.update({'picks': channel_pick})
@@ -614,14 +621,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 continue
             starttime.update({'picks': p_pick})
         if swin == 'S':
+            if tr.stats.channel[-1] in ['Z', 'U']:
+                continue
             s_pick = [pick for pick in station_picks
                       if pick.phase_hint.upper()[0] == 'S']
             if not all_horiz:
                 s_pick = [pick for pick in s_pick
                           if pick.waveform_id.channel_code == tr.stats.channel]
-            else:
-                if tr.stats.channel[-1] in ['Z', 'U']:
-                    continue
             starttime.update({'picks': s_pick})
             if len(starttime['picks']) == 0:
                 continue
@@ -702,15 +708,12 @@ def _group_events(catalog, process_len, data_pad):
     :return: List of catalogs
     :rtype: list
     """
-    from obspy.core.event import Catalog
     # case for catalog only containing one event
     if len(catalog) == 1:
         return [catalog]
     sub_catalogs = []
     # Sort catalog by date
-    cat_list = [(event, event.origins[0].time) for event in catalog]
-    cat_list.sort(key=lambda tup: tup[1])
-    catalog = Catalog([tup[0] for tup in cat_list])
+    catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
     sub_catalog = Catalog([catalog[0]])
     for event in catalog[1:]:
         if (event.origins[0].time + data_pad) - \
@@ -794,7 +797,7 @@ def multi_template_gen(catalog, st, length, swin='all', prepick=0.05,
         "template_gen.template_gen instead.")
     temp_list = template_gen(
         method="from_meta_file", process=False, meta_file=catalog, st=st,
-        lowcut=None, highcut=None, samp_rate=None,
+        lowcut=None, highcut=None, samp_rate=st[0].stats.sampling_rate,
         filt_order=None, length=length, prepick=prepick,
         swin=swin, all_horiz=all_horiz, delayed=delayed, plot=plot,
         debug=debug, return_event=return_event, min_snr=min_snr,
@@ -886,7 +889,6 @@ def from_client(catalog, client_id, lowcut, highcut, samp_rate, filt_order,
     ...                         filt_order=4, length=3.0, prepick=0.15,
     ...                         swin='all', process_len=300,
     ...                         all_horiz=True)
-    Pre-processing data
     >>> templates[0].plot(equal_scale=False, size=(800,600)) # doctest: +SKIP
 
     .. figure:: ../../plots/template_gen.from_client.png
@@ -1052,12 +1054,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
     >>> import glob
     >>> # Get all the SAC-files associated with one event.
     >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
-    >>> template = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
-    ...                     samp_rate=25.0, filt_order=4, length=2.0,
-    ...                     swin='all', prepick=0.1, all_horiz=True)
-    >>> print(template[0].stats.sampling_rate)
+    >>> templates = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
+    ...                      samp_rate=25.0, filt_order=4, length=2.0,
+    ...                      swin='all', prepick=0.1, all_horiz=True)
+    >>> print(templates[0][0].stats.sampling_rate)
     25.0
-    >>> print(len(template))
+    >>> print(len(templates[0]))
     15
     """
     EQcorrscanDeprecationWarning(
@@ -1154,7 +1156,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
     ...                            length=2, prepick=0.1, swin='S',
     ...                            all_horiz=True)
     >>> print(len(templates[0]))
-    15
+    10
     """
     EQcorrscanDeprecationWarning(
         "Function is depreciated and will be removed soon. Use "
