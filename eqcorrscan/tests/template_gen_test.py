@@ -21,7 +21,7 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
 from eqcorrscan.core.template_gen import (
     from_sac, _group_events, from_seishub, from_meta_file, from_client,
-    multi_template_gen, template_gen, extract_from_stack, _template_gen)
+    multi_template_gen, extract_from_stack, _template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
