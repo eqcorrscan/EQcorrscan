@@ -97,7 +97,6 @@ to their start-time, but you can rename them later if you wish:
      ...      method='from_client', catalog=catalog, client_id='NCEDC', lowcut=2.0,
      ...      highcut=8.0,  samp_rate=20.0, filt_order=4, length=6.0, prepick=0.1,
      ...      swin='all', process_len=3600, all_horiz=True)
-     Pre-processing data
 
 Matched-filter detection using a Tribe
 --------------------------------------

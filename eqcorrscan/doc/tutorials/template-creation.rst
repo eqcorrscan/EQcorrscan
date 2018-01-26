@@ -31,7 +31,6 @@ FDSN (see |obspy_fdsn| for a list of possible clients):
     ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
     ...                         filt_order=4, length=3.0, prepick=0.15,
     ...                         swin='all', process_len=200)
-    Pre-processing data
 
 This will download data for a single event (given by eventid) from the NCEDC
 database, then use that information to download relevant waveform data.  These

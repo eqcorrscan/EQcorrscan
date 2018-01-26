@@ -121,12 +121,12 @@ class TestMethods(unittest.TestCase):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.0, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=6, detect_chans=7)
+                pre_lag_ccsum=6.5, detect_chans=7)
         with self.assertRaises(LagCalcError):
             _channel_loop(
                 detection=self.detection_spicks, template=self.template_spicks,
                 min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=6, detect_chans=7)
+                pre_lag_ccsum=6.5, detect_chans=7)
 
     def test_interpolate(self):
         """Test channel loop with interpolation."""
