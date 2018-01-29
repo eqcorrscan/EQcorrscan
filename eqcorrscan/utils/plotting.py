@@ -891,17 +891,16 @@ def detection_multiplot(stream, template, times, streamcolour='k',
 
     .. plot::
 
-        from obspy import read
+        from obspy import read, read_events
         import os
         from eqcorrscan.core import template_gen
         from eqcorrscan.utils.plotting import detection_multiplot
-        from eqcorrscan.utils.sfile_util import readpicks
         test_file = os.path.realpath('../../..') + \
             '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
         test_wavefile = os.path.realpath('../../..') +\
             '/tests/test_data/WAV/TEST_/' +\
             '2013-09-01-0410-35.DFDPC_024_00'
-        event = readpicks(test_file)
+        event = read_events(test_file)[0]
         st = read(test_wavefile)
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:
@@ -1179,6 +1178,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
     .. Note::
         See :func:`eqcorrscan.utils.plotting.obspy_3d_plot` for example output.
     """
+    from mpl_toolkits.mplot3d import Axes3D
     _check_save_args(save, savefile)
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
@@ -1199,7 +1199,7 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
     stalongs = _stalongs
     evdepths = [-1 * depth for depth in evdepths]
     fig = plt.figure(figsize=size)
-    ax = fig.add_subplot(111, projection='3d')
+    ax = Axes3D(fig)
     ax.scatter(evlats, evlongs, evdepths, marker="x", c="k",
                label='Hypocenters')
     ax.scatter(stalats, stalongs, staelevs, marker="v", c="r",
@@ -1266,17 +1266,16 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
 
     .. plot::
 
-        from obspy import read
+        from obspy import read, read_events
         from eqcorrscan.core import template_gen
         from eqcorrscan.utils.plotting import pretty_template_plot
-        from eqcorrscan.utils.sfile_util import readpicks
         import os
         test_file = os.path.realpath('../../..') + \
             '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
         test_wavefile = os.path.realpath('../../..') +\
             '/tests/test_data/WAV/TEST_/' +\
             '2013-09-01-0410-35.DFDPC_024_00'
-        event = readpicks(test_file)
+        event = read_events(test_file)[0]
         st = read(test_wavefile)
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)
         for tr in st:

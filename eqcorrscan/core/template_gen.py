@@ -129,22 +129,23 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :rtype: list
 
     .. note::
-        Method specific arguments:
-        - from_client requires:
+        *Method specific arguments:*
+
+        - `from_client` requires:
             :param str client_id: string passable by obspy to generate Client
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
-        - from_seishub requires:
+        - `from_seishub` requires:
             :param str url: url to seishub database
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
-        - from_sac requires:
+        - `from_sac` requires:
             :param list sac_files:
                 osbpy.core.stream.Stream of sac waveforms, or list of paths to
                 sac waveforms.
-        - from_meta_file requires:
+        - `from_meta_file` requires:
             :param str meta_file: Path to obspy-readable event file.
             :param `obspy.core.stream.Stream` st:
                 Stream containing waveform data for template. Note that this

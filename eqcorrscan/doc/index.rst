@@ -47,13 +47,8 @@ Also within this package are:
 * :doc:`Clustering routines for seismic data </submodules/utils.clustering>`;
 * :doc:`Peak finding algorithm (basic) </submodules/utils.findpeaks>`;
 * :doc:`Automatic amplitude picker for local magnitude scale </submodules/utils.mag_calc>`;
-* |seisan_link| :doc:`S-file integration </submodules/utils.sfile_util>` for database management and routine earthquake location;
 * :doc:`Stacking routines </submodules/utils.stacking>` including phase-weighted stacking based on Thurber at al. (2014);
 * :doc:`Brightness based template creation </submodules/core.bright_lights>` based on the work of Frank et al. (2014)
-
-.. |seisan_link| raw:: html
-
-  <a href="http://seisan.info/" target="_blank">Seisan</a>
 
 This package is written by Calum Chamberlain and Chet Hopp of Victoria
 University of Wellington, New Zealand, and is distributed under the LGPL GNU

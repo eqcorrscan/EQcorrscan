@@ -135,6 +135,7 @@ class Party(object):
     def __repr__(self):
         """
         Print short info about the Party.
+
         :return: str
 
         .. rubric:: Example
@@ -171,7 +172,7 @@ class Party(object):
         :param other: Another party to merge with the current family.
         :return: Works in place on self.
 
-        .. Note:: Works in place on party, will alter this original party.
+        .. note:: Works in place on party, will alter this original party.
 
         .. rubric:: Example
 
@@ -215,7 +216,6 @@ class Party(object):
         Traceback (most recent call last):
         NotImplementedError: Ambiguous add, only allowed Party or Family \
         additions
-
         """
         if isinstance(other, Family):
             families = [other]
@@ -379,6 +379,8 @@ class Party(object):
 
     def filter(self, dates=None, min_dets=1):
         """
+        Return a new Party filtered according to conditions.
+
         Return a new Party with only detections within a date range and
         only families with a minimum number of detections.
 
@@ -467,7 +469,8 @@ class Party(object):
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """
         Remove detections from the Party that are below a new threshold.
-        Note, threshold can only be set higher.
+
+        .. Note:: threshold can only be set higher.
 
         .. Warning::
             Works in place on Party.
@@ -1480,8 +1483,10 @@ class Family(object):
 
 class Template(object):
     """
-    Template object holder. Contains waveform data and metadata parameters
-    used to generate the template.
+    Template object holder.
+
+    Contains waveform data and metadata parameters used to generate the
+    template.
     """
 
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,
@@ -2301,8 +2306,10 @@ class Tribe(object):
 
     def cluster(self, method, **kwargs):
         """
-        Cluster the tribe, returns multiple tribes each of which could be
-        stacked.
+        Cluster the tribe.
+
+        Cluster templates within a tribe: returns multiple tribes each of
+        which could be stacked.
 
         :type method: str
         :param method:
@@ -2732,8 +2739,9 @@ class Tribe(object):
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
                   prepick, **kwargs):
         """
-        Generate a Tribe of Templates.  See :mod:`eqcorrscan.core.template_gen`
-        for available methods.
+        Generate a Tribe of Templates.
+
+        See :mod:`eqcorrscan.core.template_gen` for available methods.
 
         :param method: Method of Tribe generation.
         :param kwargs: Arguments for the given method.
@@ -3712,7 +3720,7 @@ def match_filter(template_names, template_list, st, threshold,
     """
     Main matched-filter detection function.
 
-    Over-arching code to run the correlations of given templates with a \
+    Over-arching code to run the correlations of given templates with a
     day of seismic data and output the detections based on a given threshold.
     For a functional example see the tutorials.
 
@@ -3784,31 +3792,31 @@ def match_filter(template_names, template_list, st, threshold,
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
 
-    .. rubric::
+    .. note::
+        **Returns:**
+
         If neither `output_cat` or `extract_detections` are set to `True`,
         then only the list of :class:`eqcorrscan.core.match_filter.Detection`'s
         will be output:
 
-    :return:
-        :class:`eqcorrscan.core.match_filter.Detection` detections for each
-        detection made.
-    :rtype: list
+        :return:
+            :class:`eqcorrscan.core.match_filter.Detection` detections for each
+            detection made.
+        :rtype: list
 
-    .. rubric::
         If `output_cat` is set to `True`, then the
         :class:`obspy.core.event.Catalog` will also be output:
 
-    :return: Catalog containing events for each detection, see above.
-    :rtype: :class:`obspy.core.event.Catalog`
+        :return: Catalog containing events for each detection, see above.
+        :rtype: :class:`obspy.core.event.Catalog`
 
-    .. rubric::
         If `extract_detections` is set to `True` then the list of
         :class:`obspy.core.stream.Stream`'s will also be output.
 
-    :return:
-        list of :class:`obspy.core.stream.Stream`'s for each detection, see
-        above.
-    :rtype: list
+        :return:
+            list of :class:`obspy.core.stream.Stream`'s for each detection, see
+            above.
+        :rtype: list
 
     .. warning::
         Plotting within the match-filter routine uses the Agg backend
@@ -3856,7 +3864,7 @@ def match_filter(template_names, template_list, st, threshold,
 
         .. math::
 
-            av\_chan\_corr\_thresh=threshold \\times (cccsum / len(template))
+            av\_chan\_corr\_thresh=threshold \\times (cccsum\ /\ len(template))
 
         where :math:`template` is a single template from the input and the
         length is the number of channels within this template.
@@ -3876,33 +3884,35 @@ def match_filter(template_names, template_list, st, threshold,
         then the pick time generated by match_filter for that phase will be
         0.1 seconds early.
 
-    .. Note:: xcorr_func can be used as follows:
+    .. Note::
+        xcorr_func can be used as follows:
 
-    .. rubric:: Example
-    >>> import obspy
-    >>> import numpy as np
-    >>> from eqcorrscan.core.match_filter import match_filter
-    >>> from eqcorrscan.utils.correlate import time_multi_normxcorr
-    >>> # define a custom xcorr function
-    >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
-    ...     # Just to keep example short call other xcorr function
-    ...     # in practice you would define your own function here
-    ...     print('calling custom xcorr function')
-    ...     return time_multi_normxcorr(templates, stream, pads)
-    >>> # generate some toy templates and stream
-    >>> random = np.random.RandomState(42)
-    >>> template = obspy.read()
-    >>> stream = obspy.read()
-    >>> for num, tr in enumerate(stream):  # iter stream and embed templates
-    ...     data = tr.data
-    ...     tr.data = random.randn(6000) * 5
-    ...     tr.data[100: 100 + len(data)] = data
-    >>> # call match_filter ane ensure the custom function is used
-    >>> detections = match_filter(
-    ...     template_names=['1'], template_list=[template], st=stream,
-    ...     threshold=.5, threshold_type='absolute', trig_int=1, plotvar=False,
-    ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
-    calling custom xcorr function...
+        .. rubric::xcorr_func argument example
+
+        >>> import obspy
+        >>> import numpy as np
+        >>> from eqcorrscan.core.match_filter import match_filter
+        >>> from eqcorrscan.utils.correlate import time_multi_normxcorr
+        >>> # define a custom xcorr function
+        >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
+        ...     # Just to keep example short call other xcorr function
+        ...     # in practice you would define your own function here
+        ...     print('calling custom xcorr function')
+        ...     return time_multi_normxcorr(templates, stream, pads)
+        >>> # generate some toy templates and stream
+        >>> random = np.random.RandomState(42)
+        >>> template = obspy.read()
+        >>> stream = obspy.read()
+        >>> for num, tr in enumerate(stream):  # iter stream and embed templates
+        ...     data = tr.data
+        ...     tr.data = random.randn(6000) * 5
+        ...     tr.data[100: 100 + len(data)] = data
+        >>> # call match_filter ane ensure the custom function is used
+        >>> detections = match_filter(
+        ...     template_names=['1'], template_list=[template], st=stream,
+        ...     threshold=.5, threshold_type='absolute', trig_int=1, plotvar=False,
+        ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
+        calling custom xcorr function...
     """
     _spike_test(st)
     import matplotlib

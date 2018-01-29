@@ -249,7 +249,7 @@ def decluster(peaks, index, trig_int):
     ret = utilslib.find_peaks(
         arr, inds, length, 0, np.float32(1), out)
     if ret != 0:
-        raise MemoryError("Issue with c-routine")
+        raise MemoryError("Issue with c-routine, returned %i" % ret)
     peaks_out = list(compress(peaks_sort, out))
     return peaks_out
 
