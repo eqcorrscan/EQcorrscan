@@ -28,7 +28,6 @@ import contextlib
 import copy
 import ctypes
 import os
-import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 

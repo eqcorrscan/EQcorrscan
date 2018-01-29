@@ -2271,7 +2271,7 @@ def subspace_fc_plot(detector, stachans, size, show):
                 av_fc_dict[j].append(float(np.dot(ai[:j].T, ai[:j])))
                 fcs.append(float(np.dot(ai[:j].T, ai[:j])))
             axis.plot(fcs, color='grey')
-        avg = [np.average(dim[1]) for dim in av_fc_dict.items()]
+        avg = [np.average(_dim[1]) for _dim in av_fc_dict.items()]
         axis.plot(avg, color='red', linewidth=3.)
         if column % ncols == 0 or column == 0:
             axis.set_ylabel('Frac. E Capture (Fc)')

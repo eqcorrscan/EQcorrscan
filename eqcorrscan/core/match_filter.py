@@ -3903,14 +3903,15 @@ def match_filter(template_names, template_list, st, threshold,
         >>> random = np.random.RandomState(42)
         >>> template = obspy.read()
         >>> stream = obspy.read()
-        >>> for num, tr in enumerate(stream):  # iter stream and embed templates
+        >>> for num, tr in enumerate(stream):  # iter st and embed templates
         ...     data = tr.data
         ...     tr.data = random.randn(6000) * 5
         ...     tr.data[100: 100 + len(data)] = data
         >>> # call match_filter ane ensure the custom function is used
         >>> detections = match_filter(
         ...     template_names=['1'], template_list=[template], st=stream,
-        ...     threshold=.5, threshold_type='absolute', trig_int=1, plotvar=False,
+        ...     threshold=.5, threshold_type='absolute', trig_int=1,
+        ...     plotvar=False,
         ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
         calling custom xcorr function...
     """

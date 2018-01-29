@@ -33,7 +33,7 @@ import os
 from obspy import Stream, Trace, read as obsread
 from multiprocessing import Pool, cpu_count
 from copy import deepcopy
-from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
+from obspy.core.event import Event, Pick, WaveformStreamID, Origin
 from obspy.core.event import EventDescription, CreationInfo, Comment
 from obspy.core.trace import Stats
 
