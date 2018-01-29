@@ -600,12 +600,12 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 continue
             starttime.update({'picks': s_pick})
         if swin == 'all':
-            if all_horiz and tr.stats.channel[-1] in ['1', '2', 'N', 'E']:
+            if all_horiz and tr.stats.channel[-1] in ['1', '2', '3', 'N', 'E']:
                 # Get all picks on horizontal channels
                 channel_pick = [
                     pick for pick in station_picks
                     if pick.waveform_id.channel_code[-1] in
-                    ['1', '2', 'N', 'E']]
+                    ['1', '2', '3', 'N', 'E']]
             else:
                 channel_pick = [
                     pick for pick in station_picks
