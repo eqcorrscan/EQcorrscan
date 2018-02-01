@@ -122,6 +122,30 @@ data by running the following:
      ...      endtime=UTCDateTime(2016, 1, 3), threshold=8, threshold_type='MAD',
      ...      trig_int=6, plotvar=False, return_stream=True)
 
+Generating a Party from a Detection csv
+---------------------------------------
+
+If you are moving from detections written out as a csv file from an older
+version of EQcorrscan, but want to use Party objects now, then this section is
+for you!
+
+First, you need to generate a Tribe from the templates you used to make the
+detections.  Instructions for this are in the
+:doc:`Template creation tutorial </tutorials/template-creation>`
+section.
+
+Once you have a Tribe, you can generate a Party using the following:
+
+.. code-block:: python
+
+     >>> detections = read_detections(detection_file) # doctest:+SKIP
+     >>> party = Party() # doctest:+SKIP
+     >>> for template in tribe: # doctest:+SKIP
+     ...    template_detections = [d for d in detections
+     ...                           if d.template_name == template.name]
+     ...    family = Family(template=template, detections=template_detections)
+     ...    party += family
+
 Lag-calc using a Party
 ----------------------
 

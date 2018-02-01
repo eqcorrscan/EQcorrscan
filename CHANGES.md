@@ -33,6 +33,8 @@
   times respectively.
 * Refactored `template_gen`, all options are available via 
   `template_gen(method=...)`, and depreciation warnings are in place.
+* Added some docs for converting older templates and detections into Template
+  and Party objects.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
