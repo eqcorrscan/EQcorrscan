@@ -425,9 +425,9 @@ class TestDayLong(unittest.TestCase):
     @slow
     def test_day_long_processing(self):
         templates = template_gen(
-            method='from_meta_file', meta_file=self.cat, st=self.st, lowcut=2.0,
-            highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
-            swin='P', all_horiz=True)
+            method='from_meta_file', meta_file=self.cat, st=self.st,
+            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=3, length=2,
+            prepick=0.1, swin='P', all_horiz=True)
         self.assertEqual(len(templates), 1)
         self.assertEqual(len(templates[0]), 3)
 
