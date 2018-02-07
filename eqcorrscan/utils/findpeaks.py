@@ -20,6 +20,7 @@ from scipy import ndimage
 from multiprocessing import Pool
 
 from eqcorrscan.utils.correlate import pool_boy
+from eqcorrscan.utils.debug_log import debug_print
 
 
 def is_prime(number):
@@ -123,13 +124,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     image = np.copy(arr)
     image = np.abs(image)
     image[image < thresh] = 0
+    debug_print("Threshold: {0}\tMax: {1}".format(thresh, max(image)),
+                2, debug)
     if len(image[image > thresh]) == 0:
-        if debug > 0:
-            print('No values over threshold found')
+        debug_print("No values over threshold {0}".format(thresh), 0, debug)
         return []
-    if debug > 0:
-        print(' '.join(['Found', str(len(image[image > thresh])),
-                        'samples above the threshold']))
+    debug_print('Found {0} samples above the threshold'.format(
+        len(image[image > thresh])), 0, debug)
     initial_peaks = []
     # Find the peaks
     labeled_image, number_of_objects = ndimage.label(image)

@@ -133,6 +133,7 @@ def get_mkl():
         # this assume we are in a conda env (not root)
         if not mkl_found:
             conda = os.getenv("CONDA_PREFIX")
+            print(conda)
             if conda is not None:
                 # look for MKL lib
                 libs = glob.glob(os.path.join(conda, "lib", "libmkl_rt.*"))
@@ -146,15 +147,16 @@ def get_mkl():
                                                    "fftw3.h")):
                         mkl_inc = [os.path.join(conda, "include", "fftw")]
                         mkl_found = True
-
+                    elif os.path.exists(os.path.join(conda, "include",
+                                                     "fftw3.h")):
+                        mkl_inc = [os.path.join(conda, "include")]
+                        mkl_found = True
     if mkl_found:
         print("Found MKL:")
         print("  MKL includes:", mkl_inc)
         print("  MKL lib dirs:", mkl_libdir)
         print("  MKL libs:", mkl_lib)
-
         return mkl_inc, mkl_libdir, mkl_lib
-
     else:
         return None
 
@@ -192,10 +194,10 @@ def get_extensions():
         'include_dirs': get_include_dirs(),
         'library_dirs': get_library_dirs()}
 
-    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'find_peaks.c')]
-    exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
+    sources = [os.path.join('eqcorrscan', 'src', 'multi_corr.c'),
+               os.path.join('eqcorrscan', 'src', 'time_corr.c'),
+               os.path.join('eqcorrscan', 'src', 'find_peaks.c')]
+    exp_symbols = export_symbols("eqcorrscan/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
         extra_link_args = ['-lm', '-lgomp']
