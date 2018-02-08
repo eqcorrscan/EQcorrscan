@@ -17,5 +17,5 @@ call 7z.exe e %FFTW_DLL_FILENAME% -oeqcorrscan\utils\lib *.dll
 call 7z.exe e %FFTW_DLL_FILENAME% -oeqcorrscan\utils\lib *.def
 ECHO Generating def files
 call lib /machine:%MACHINE% /def:eqcorrscan\utils\lib\libfftw3-3.def
-call lib /machine:%MACHINE% /def:eqcorrscan\utisl\lib\libfftw3f-3.def
+call lib /machine:%MACHINE% /def:eqcorrscan\utils\lib\libfftw3f-3.def
 call lib /machine:%MACHINE% /def:eqcorrscan\utils\lib\libfftw3l-3.def
