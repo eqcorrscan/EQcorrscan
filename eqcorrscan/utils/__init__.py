@@ -13,9 +13,9 @@ import warnings
 
 __all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils', 'clustering',
            'correlate', 'debug_log', 'despike', 'findpeaks', 'mag_calc',
-           'normalise', 'parameters', 'picker', 'plotting', 'pre_processing',
+           'parameters', 'picker', 'plotting', 'pre_processing',
            'sac_util', 'seismo_logs', 'stacking', 'synth_seis', 'timer',
-           'trigger']
+           'trigger', 'lib']
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {

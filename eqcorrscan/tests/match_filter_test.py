@@ -635,8 +635,10 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key],
                             atol=0.2))
                     else:
-                        self.assertEqual(
-                            det.__dict__[key], check_det.__dict__[key])
+                        if not det.__dict__[key] == check_det.__dict__[key]:
+                            print(key)
+                        self.assertAlmostEqual(
+                            det.__dict__[key], check_det.__dict__[key], 6)
             # self.assertEqual(fam.template, check_fam.template)
 
     def test_tribe_detect_masked_data(self):
@@ -651,7 +653,7 @@ class TestMatchObjects(unittest.TestCase):
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent', debug=4)
+            xcorr_func='fftw', concurrency='concurrent', debug=0)
         self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
