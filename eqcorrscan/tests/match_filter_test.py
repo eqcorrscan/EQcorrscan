@@ -679,8 +679,8 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key],
                             atol=0.2))
                     else:
-                        self.assertEqual(
-                            det.__dict__[key], check_det.__dict__[key])
+                        self.assertAlmotEqual(
+                            det.__dict__[key], check_det.__dict__[key], 6)
             # self.assertEqual(fam.template, check_fam.template)
 
     @pytest.mark.flaky(reruns=2)

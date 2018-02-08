@@ -67,7 +67,7 @@ def get_package_dir():
     package_dir = {}
     if get_build_platform() in ('win32', 'win-amd64'):
         package_dir['eqcorrscan.utils.lib'] = os.path.join(
-            'eqcorrscan', 'utils','lib')
+            'eqcorrscan', 'utils', 'lib')
 
     return package_dir
 
