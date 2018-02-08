@@ -56,7 +56,7 @@ install:
   # list package versions
   - "conda list"
   # Copy the windows fftw header file
-  - "cp misc/appveyor/fftw3.h eqcorrscan/lib/fftw3.h"
+  - "cp misc/appveyor/fftw3.h eqcorrscan/utils/lib/fftw3.h"
 
 # Not a .NET project
 build: false
