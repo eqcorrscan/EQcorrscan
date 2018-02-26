@@ -35,15 +35,15 @@ from os.path import join
 
 import numpy as np
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
-from obspy.core.event import Comment, WaveformStreamID
-from obspy.core.event import Event, Pick, CreationInfo, ResourceIdentifier
+from obspy.core.event import (
+    Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier)
 
 from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.debug_log import debug_print
-from eqcorrscan.utils.findpeaks import find_peaks2_short, decluster
+from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc
 
@@ -57,7 +57,7 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
-def _spike_test(stream, percent=0.99, multiplier=1e6):
+def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
 
@@ -377,7 +377,37 @@ class Party(object):
         self.families.sort(key=lambda x: x.template.name)
         return self
 
-    def plot(self, plot_grouped=False):
+    def filter(self, dates=None, min_dets=1):
+        """
+        Return a new Party with only detections within a date range and
+        only families with a minimum number of detections.
+
+        :type dates: list of obspy.core.UTCDateTime objects
+        :param dates: A start and end date for the new Party
+        :type min_dets: int
+        :param min_dets: Minimum number of detections per family
+
+        .. rubric:: Example
+
+        >>> from obspy import UTCDateTime
+        >>> Party().read().filter(dates=[UTCDateTime(2016, 1, 1),
+        ...                              UTCDateTime(2017, 1, 1)],
+        ...                       min_dets=30) # doctest: +SKIP
+        """
+        if dates is None:
+            raise MatchFilterError('Need a list defining a date range')
+        new_party = Party()
+        for fam in self.families:
+            new_fam = Family(template=fam.template,
+                             detections=[det for det in fam
+                                         if det.detect_time < dates[1]
+                                         and det.detect_time > dates[0]])
+            if len(new_fam) >= min_dets:
+                new_party.families.append(new_fam)
+        return new_party
+
+    def plot(self, plot_grouped=False, dates=None, min_dets=1, rate=False,
+             **kwargs):
         """
         Plot the cumulative detections in time.
 
@@ -385,20 +415,54 @@ class Party(object):
         :param plot_grouped:
             Whether to plot all families together (plot_grouped=True), or each
             as a separate line.
+        :type dates: list
+        :param dates: list of obspy.core.UTCDateTime objects bounding the
+            plot. The first should be the start date, the last the end date.
+        :type min_dets: int
+        :param min_dets: Plot only families with this number of detections
+            or more.
+        :type rate: bool
+        :param rate: Whether or not to plot the daily rate of detection as
+            opposed to cumulative number. Only works with plot_grouped=True.
+        :param \**kwargs: Any other arguments accepted by
+            :func:`eqcorrscan.utils.plotting.cumulative_detections`
 
-        .. Example::
+        .. rubric:: Examples
 
-        >>> Party().read().plot(plot_grouped=True)  # doctest: +SKIP
+        Plot cumulative detections for all templates individually:
 
-        .. plot::
+        >>> Party().read().plot()  # doctest: +SKIP
 
-            from eqcorrscan.core.match_filter import Party
-            Party().read().plot(plot_grouped=True)
+        Plot cumulative detections for all templates grouped together:
+
+        >>> Party().read().plot(plot_grouped=True) # doctest: +SKIP
+
+        Plot the rate of detection for all templates grouped together:
+
+        >>> Party().read().plot(plot_grouped=True, rate=True) # doctest: +SKIP
+
+        Plot cumulative detections for all templates with more than five
+        detections between June 1st, 2012 and July 31st, 2012:
+
+        >>> from obspy import UTCDateTime
+        >>> Party().read().plot(dates=[UTCDateTime(2012, 6, 1),
+        ...                            UTCDateTime(2012, 7, 31)],
+        ...                     min_dets=5) # doctest: +SKIP
+
         """
         all_dets = []
-        for fam in self.families:
-            all_dets.extend(fam.detections)
-        cumulative_detections(detections=all_dets, plot_grouped=plot_grouped)
+        if dates:
+            new_party = self.filter(dates=dates, min_dets=min_dets)
+            for fam in new_party.families:
+                all_dets.extend(fam.detections)
+        else:
+            for fam in self.families:
+                all_dets.extend(fam.detections)
+        ax = cumulative_detections(detections=all_dets,
+                                   plot_grouped=plot_grouped,
+                                   rate=rate,
+                                   **kwargs)
+        return ax
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """
@@ -413,7 +477,7 @@ class Party(object):
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
 
-        .. rubric:: Example
+        .. rubric:: Examples
 
         Using the MAD threshold on detections made using the MAD threshold:
 
@@ -440,6 +504,7 @@ class Party(object):
         4
         """
         for family in self.families:
+            rethresh_detections = []
             for d in family.detections:
                 if new_threshold_type == 'MAD' and d.threshold_type == 'MAD':
                     new_thresh = (d.threshold /
@@ -456,8 +521,12 @@ class Party(object):
                     raise MatchFilterError(
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
-                if d.detect_val < new_thresh:
-                    family.detections.remove(d)
+                if d.detect_val >= new_thresh:
+                    d.threshold = new_thresh
+                    d.threshold_input = new_threshold
+                    d.threshold_type = new_threshold_type
+                    rethresh_detections.append(d)
+            family.detections = rethresh_detections
             family.catalog = Catalog([d.event for d in family])
         return self
 
@@ -521,12 +590,16 @@ class Party(object):
         else:
             raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
-        detect_info = [(d[1], _total_microsec(d[0].datetime, min_det.datetime))
-                       for d in detect_info]
-        peaks_out, inds_out = decluster(
-            peaks=detect_info, trig_int=trig_int * 10 ** 6, return_ind=True)
+        detect_vals = np.array([d[1] for d in detect_info])
+        detect_times = np.array([
+            _total_microsec(d[0].datetime, min_det.datetime)
+            for d in detect_info])
+        peaks_out = decluster(
+            peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
         # Trig_int must be converted from seconds to micro-seconds
-        declustered_detections = [all_detections[ind] for ind in inds_out]
+        declustered_detections = [
+            all_detections[np.where(detect_times == ind[1])[0][0]]
+            for ind in peaks_out]
         # Convert this list into families
         template_names = list(set([d.template_name
                                    for d in declustered_detections]))
@@ -558,7 +631,7 @@ class Party(object):
         """
         return copy.deepcopy(self)
 
-    def write(self, filename, format='tar'):
+    def write(self, filename, format='tar', debug=0):
         """
         Write Family out, select output format.
 
@@ -568,6 +641,8 @@ class Party(object):
             catalog output. See note below on formats
         :type filename: str
         :param filename: Path to write file to.
+        :type debug: int
+        :param debug: Whether to output progress or not.
 
         .. NOTE::
             csv format will write out detection objects, all other
@@ -585,7 +660,7 @@ class Party(object):
         .. rubric:: Example
 
         >>> party = Party().read()
-        >>> party.write('test_tar_write', format='tar')
+        >>> party.write('test_tar_write', format='tar', debug=1)
         Writing family 0
         Writing family 1
         Writing family 2
@@ -593,7 +668,7 @@ class Party(object):
         Party of 4 Families.
         >>> party.write('test_csv_write.csv', format='csv')
         Party of 4 Families.
-        >>> party.write('test_quakeml.ml', format='quakeml')
+        >>> party.write('test_quakeml.xml', format='quakeml')
         Party of 4 Families.
         """
         if format.lower() == 'csv':
@@ -618,7 +693,7 @@ class Party(object):
                     all_cat.write(join(temp_dir, 'catalog.xml'),
                                   format='QUAKEML')
                 for i, family in enumerate(self.families):
-                    print('Writing family %i' % i)
+                    debug_print('Writing family %i' % i, 0, debug)
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
@@ -1322,7 +1397,6 @@ class Family(object):
         ...               typeofdet='corr', threshold_type='MAD',
         ...               threshold_input=8.0)])
         >>> family.write('test_family')
-        Writing family 0
         """
         Party(families=[self]).write(filename=filename, format=format)
         return
@@ -1694,7 +1768,8 @@ class Template(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                pre_processed=False, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               ignore_length=False, overlap="calculate", debug=0):
+               ignore_length=False, overlap="calculate", debug=0,
+               full_peaks=False):
         """
         Detect using a single template within a continuous stream.
 
@@ -1760,6 +1835,8 @@ class Template(object):
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
             4 and 5, detections will not be computed in parallel.
+        :type full_peaks:
+        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
         :returns: Family of detections.
 
@@ -1826,7 +1903,7 @@ class Template(object):
             plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
-            overlap=overlap, debug=debug)
+            overlap=overlap, debug=debug, full_peaks=full_peaks)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -1898,10 +1975,16 @@ class Template(object):
                       'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
-        func = getattr(template_gen, method)
-        st, event, process_length = func(
-            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        if not method is None:
+            func = getattr(template_gen, method)
+            st, event, process_length = func(
+                lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+                samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        else:
+            st = kwargs.get('st')
+            process_length = kwargs.get('process_length')
+            prepick = kwargs.get('prepick')
+            event = kwargs.get('event')
         self.name = name
         for tr in st:
             if not np.any(tr.data.astype(np.float16)):
@@ -2251,7 +2334,8 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
-               group_size=None, overlap="calculate", debug=0):
+               group_size=None, overlap="calculate", debug=0,
+               full_peaks=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2307,13 +2391,15 @@ class Tribe(object):
         :param overlap:
             Either None, "calculate" or a float of number of seconds to
             overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calcualting cross-correlation sums. Setting
+            the delay-and-stack in calculating cross-correlation sums. Setting
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
             4 and 5, detections will not be computed in parallel.
+        :type full_peaks: bool
+        :param full_peaks: See `eqcorrscan.utils.findpeak.find_peaks2_short`
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -2414,19 +2500,22 @@ class Tribe(object):
                 plotvar=plotvar, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
-                ignore_length=ignore_length, overlap=overlap, debug=debug)
+                ignore_length=ignore_length, overlap=overlap, debug=debug,
+                full_peaks=full_peaks)
             party += group_party
-        for family in party:
-            if family is not None:
-                family.detections = family._uniq().detections
-                family.catalog = family._uniq().catalog
+        if len(party) > 0:
+            for family in party:
+                if family is not None:
+                    family.detections = family._uniq().detections
+                    family.catalog = family._uniq().catalog
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plotvar, daylong=False,
                       parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
-                      group_size=None, debug=0, return_stream=False):
+                      group_size=None, debug=0, return_stream=False,
+                      full_peaks=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2482,6 +2571,8 @@ class Tribe(object):
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
             consumption, if unset will use all templates.
+        :type full_peaks: bool
+        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
         :type debug: int
         :param debug:
@@ -2594,9 +2685,30 @@ class Tribe(object):
                     starttime + ((i + 1) * data_length) + (pad + buff)))
             try:
                 st = client.get_waveforms_bulk(bulk_info)
-                st.merge(fill_value='interpolate')
+                # Get gaps and remove traces as necessary
+                gaps = st.get_gaps(
+                    min_gap=2 * self.templates[0].st[0].stats.npts /
+                    self.templates[0].st[0].stats.sampling_rate)
+                if len(gaps) > 0:
+                    print("Large gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
+                                               for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            print("Removing gappy channel: %s" % str(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
+                st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
+                if return_stream:
+                    stream += st
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
@@ -2604,9 +2716,7 @@ class Tribe(object):
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
-                    overlap=None, debug=debug)
-                if return_stream:
-                    stream += st
+                    overlap=None, debug=debug, full_peaks=full_peaks)
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
@@ -2923,8 +3033,9 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                     return False
             elif key == "arrivals":
                 if len(ori_1[key]) != len(ori_2[key]):
-                    print('%i is not the same as %i for key %s' %
-                          (len(ori_1[key]), len(ori_2[key]), key))
+                    if verbose:
+                        print('%i is not the same as %i for key %s' %
+                              (len(ori_1[key]), len(ori_2[key]), key))
                     return False
                 for arr_1, arr_2 in zip(ori_1[key], ori_2[key]):
                     for arr_key in arr_1.keys():
@@ -3026,7 +3137,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
                   cores=None, ignore_length=False, overlap="calculate",
-                  debug=0):
+                  debug=0, full_peaks=False):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -3094,13 +3205,15 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param overlap:
         Either None, "calculate" or a float of number of seconds to
         overlap detection streams by.  This is to counter the effects of
-        the delay-and-stack in calcualting cross-correlation sums. Setting
+        the delay-and-stack in calculating cross-correlation sums. Setting
         overlap = "calculate" will work out the appropriate overlap based
         on the maximum lags within templates.
     :type debug: int
     :param debug:
         Debug level from 0-5 where five is more output, for debug levels
         4 and 5, detections will not be computed in parallel.
+    :type full_peaks: bool
+    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
 
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
@@ -3127,8 +3240,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             cores=cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
-        warnings.warn('Not performing any processing on the '
-                      'continuous data.')
+        warnings.warn('Not performing any processing on the continuous data.')
         st = [stream]
     detections = []
     party = Party()
@@ -3162,7 +3274,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_list=[t.st for t in template_group], st=st_chunk,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores)
+                trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores,
+                full_peaks=full_peaks)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -3209,6 +3322,12 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
+    # Check whether any processing actually needs to be done.
+    if kwargs['highcut'] is None and kwargs['lowcut'] is None:
+        st_samp_rates = set([tr.stats.sampling_rate for tr in stream])
+        if len(st_samp_rates) == 1 and \
+           st_samp_rates.pop() == kwargs['samp_rate']:
+            return [stream]
     if daylong:
         if not master.process_length == 86400:
             warnings.warn(
@@ -3230,8 +3349,9 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         func = shortproc
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
-    n_chunks = int((endtime - starttime + 1) / (master.process_length -
-                                                overlap))
+    data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
+    chunk_len_samps = (master.process_length - overlap) * master.samp_rate
+    n_chunks = int(data_len_samps / chunk_len_samps)
     if n_chunks == 0:
         print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):
@@ -3268,7 +3388,7 @@ def _par_read(dirname, compressed=True):
             arc.close()
             raise MatchFilterError(
                 'No template parameter file in archive')
-        parfile = arc.extractfile(member[0])
+        parfile = arc.extractfile(_parfile[0])
     else:
         parfile = open(dirname + '/' + 'template_parameters.csv', 'r')
     for line in parfile:
@@ -3391,7 +3511,7 @@ def _read_family(fname, all_cat):
                              'threshold_type']:
                     det_dict.update({key: value})
                 elif key == 'no_chans':
-                    det_dict.update({key: int(value)})
+                    det_dict.update({key: int(float(value))})
                 elif len(key) == 0:
                     continue
                 else:
@@ -3596,7 +3716,7 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
-                 arg_check=True):
+                 arg_check=True, full_peaks=False):
     """
     Main matched-filter detection function.
 
@@ -3669,6 +3789,8 @@ def match_filter(template_names, template_list, st, threshold,
     :param arg_check:
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
+    :type full_peaks: bool
+    :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
 
     .. rubric::
         If neither `output_cat` or `extract_detections` are set to `True`,
@@ -3817,13 +3939,19 @@ def match_filter(template_names, template_list, st, threshold,
             raise MatchFilterError(msg)
         for tr in st:
             if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
-                raise MatchFilterError('Sampling rates are not equal')
+                raise MatchFilterError('Sampling rates are not equal %f: %f' %
+                                       (tr.stats.sampling_rate,
+                                        st[0].stats.sampling_rate))
         for template in template_list:
             for tr in template:
                 if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
+    if cores is not None:
+        parallel = True
+    else:
+        parallel = False
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -3862,6 +3990,19 @@ def match_filter(template_names, template_list, st, threshold,
                                      (tr.stats.starttime - min_start_time)))
             end_pad = np.zeros(int(tr.stats.sampling_rate *
                                    (max_end_time - tr.stats.endtime)))
+            # In some cases there will be one sample missing when sampling
+            # time-stamps are not set consistently between channels, this
+            # results in start_pad and end_pad being len==0
+            if len(start_pad) == 0 and len(end_pad) == 0:
+                debug_print("start and end pad are both zero, padding at one "
+                            "end", 2, debug)
+                if (tr.stats.starttime - min_start_time) > (
+                   max_end_time - tr.stats.endtime):
+                    start_pad = np.zeros(
+                        int(longest_trace_length - tr.stats.npts))
+                else:
+                    end_pad = np.zeros(
+                        int(longest_trace_length - tr.stats.npts))
             tr.data = np.concatenate([start_pad, tr.data, end_pad])
     # Perform check that all template lengths are internally consistent
     for i, temp in enumerate(template_list):
@@ -3900,10 +4041,9 @@ def match_filter(template_names, template_list, st, threshold,
             for template in templates:
                 if template.select(network=stachan[0], station=stachan[1],
                                    location=stachan[2], channel=stachan[3]):
-                    for tr in template.select(network=stachan[0],
-                                              station=stachan[1],
-                                              location=stachan[2],
-                                              channel=stachan[3]):
+                    for tr in template.select(
+                            network=stachan[0], station=stachan[1],
+                            location=stachan[2], channel=stachan[3]):
                         template.remove(tr)
                         print('Removing template channel %s.%s.%s.%s due to'
                               ' no matches in continuous data' %
@@ -3982,27 +4122,27 @@ def match_filter(template_names, template_list, st, threshold,
     detections = []
     if output_cat:
         det_cat = Catalog()
+    if str(threshold_type) == str("absolute"):
+        thresholds = [threshold for _ in range(len(cccsums))]
+    elif str(threshold_type) == str('MAD'):
+        thresholds = [threshold * np.median(np.abs(cccsum))
+                      for cccsum in cccsums]
+    else:
+        thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
+    all_peaks = multi_find_peaks(
+        arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
+        trig_int=int(trig_int * stream[0].stats.sampling_rate),
+        full_peaks=full_peaks)
     for i, cccsum in enumerate(cccsums):
-        template = templates[i]
-        if str(threshold_type) == str('MAD'):
-            rawthresh = threshold * np.median(np.abs(cccsum))
-        elif str(threshold_type) == str('absolute'):
-            rawthresh = threshold
-        elif str(threshold_type) == str('av_chan_corr'):
-            rawthresh = threshold * no_chans[i]
-        # Findpeaks returns a list of tuples in the form [(cccsum, sample)]
-        debug_print("Threshold is set at: %f\nMax of data is %f\nMean of "
-                    "data is %f" % (rawthresh, max(cccsum), np.mean(cccsum)),
-                    0, debug)
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintains timing
         if plotvar:
-            _match_filter_plot(stream=stream, cccsum=cccsum,
-                               template_names=_template_names,
-                               rawthresh=rawthresh, plotdir=plotdir,
-                               plot_format=plot_format, i=i)
+            _match_filter_plot(
+                stream=stream, cccsum=cccsum, template_names=_template_names,
+                rawthresh=thresholds[i], plotdir=plotdir,
+                plot_format=plot_format, i=i)
         if debug >= 4:
             np.save(_template_names[i] +
                     stream[0].stats.starttime.datetime.strftime('%Y%j'),
@@ -4011,21 +4151,12 @@ def match_filter(template_names, template_list, st, threshold,
             ' '.join(['Saved the cccsum to:', _template_names[i],
                       stream[0].stats.starttime.datetime.strftime('%Y%j')]),
             4, debug)
-        tic = time.clock()
-        if max(cccsum) > rawthresh:
-            peaks = find_peaks2_short(
-                arr=cccsum, thresh=rawthresh,
-                trig_int=trig_int * stream[0].stats.sampling_rate,
-                debug=debug,
-                starttime=stream[0].stats.starttime,
-                samp_rate=stream[0].stats.sampling_rate)
-        else:
-            debug_print('No peaks found above threshold', 0, debug)
-            peaks = False
-        toc = time.clock()
-        debug_print('Finding peaks took: %f s' % (toc - tic), 0, debug)
-        if peaks:
-            for peak in peaks:
+        if all_peaks[i]:
+            if len(all_peaks[i]) > 1000:
+                 warnings.warn('Detections: more than 1000 peaks for template ' + \
+                    _template_names[i] + ' on ' + stream[0].stats.starttime.datetime.strftime('%Y%m%d%H'))
+            for peak in all_peaks[i]:
+                # TODO: This should be abstracted out into a peak_to_det func
                 detecttime = stream[0].stats.starttime + \
                              peak[1] / stream[0].stats.sampling_rate
                 # Detect time must be valid QuakeML uri within resource_id.
@@ -4041,7 +4172,7 @@ def match_filter(template_names, template_list, st, threshold,
                     ev.creation_info = CreationInfo(
                         author='EQcorrscan', creation_time=UTCDateTime())
                     ev.comments.append(
-                        Comment(text='threshold=' + str(rawthresh)))
+                        Comment(text='threshold=' + str(thresholds[i])))
                     ev.comments.append(
                         Comment(text='detect_val=' + str(peak[0])))
                     ev.comments.append(Comment(
@@ -4058,8 +4189,9 @@ def match_filter(template_names, template_list, st, threshold,
                                                     min_template_tm)
                             wv_id = WaveformStreamID(
                                 network_code=tr.stats.network,
-                                station_code=tr.stats.station,
-                                channel_code=tr.stats.channel)
+                               station_code=tr.stats.station,
+                                channel_code=tr.stats.channel,
+                                location_code=tr.stats.location)
                             ev.picks.append(
                                 Pick(time=pick_tm, waveform_id=wv_id))
                     if not output_event:
@@ -4069,7 +4201,7 @@ def match_filter(template_names, template_list, st, threshold,
                 detections.append(Detection(
                     template_name=_template_names[i], detect_time=detecttime,
                     no_chans=no_chans[i], detect_val=peak[0],
-                    threshold=rawthresh, typeofdet='corr', chans=chans[i],
+                    threshold=thresholds[i], typeofdet='corr', chans=chans[i],
                     event=det_ev, threshold_type=threshold_type,
                     threshold_input=threshold))
                 if output_cat:
