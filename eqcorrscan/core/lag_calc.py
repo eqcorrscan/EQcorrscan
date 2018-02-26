@@ -197,7 +197,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 print('Template is %i long' % len(tr.data))
                 continue
             cc_max = np.amax(ccc)
-            if math.isnan(shift) or math.isnan(cc_max):
+            if math.isnan(cc_max):
                 print('Problematic trace, no cross correlation possible')
                 continue
             else:
