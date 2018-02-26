@@ -55,11 +55,11 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
     num_cores = cpu_count()
     if debug >= 1:
         data_in = tr.copy()
-    # Note - might be worth finding spikes in filtered data
+    ## Note - might be worth finding spikes in filtered data
     filt = tr.copy()
     filt.detrend('linear')
-    filt.filter('bandpass', freqmin=10.0,
-                freqmax=(tr.stats.sampling_rate / 2) - 1)
+    #filt.filter('bandpass', freqmin=9.999,
+    #            freqmax=(tr.stats.sampling_rate / 2) - 1)
     data = filt.data
     del(filt)
     # Loop through windows
