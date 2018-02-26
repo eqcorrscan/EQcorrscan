@@ -1975,16 +1975,10 @@ class Template(object):
                       'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
-        if not method is None:
-            func = getattr(template_gen, method)
-            st, event, process_length = func(
-                lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
-        else:
-            st = kwargs.get('st')
-            process_length = kwargs.get('process_length')
-            prepick = kwargs.get('prepick')
-            event = kwargs.get('event')
+        func = getattr(template_gen, method)
+        st, event, process_length = func(
+            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
         self.name = name
         for tr in st:
             if not np.any(tr.data.astype(np.float16)):
