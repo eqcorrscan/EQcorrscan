@@ -57,7 +57,7 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
-def _spike_test(stream, percent=0.99, multiplier=1e6):
+def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
 
@@ -1975,10 +1975,16 @@ class Template(object):
                       'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
-        func = getattr(template_gen, method)
-        st, event, process_length = func(
-            lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        if not method is None:
+            func = getattr(template_gen, method)
+            st, event, process_length = func(
+                lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+                samp_rate=samp_rate, prepick=prepick, return_event=True, **kwargs)
+        else:
+            st = kwargs.get('st')
+            process_length = kwargs.get('process_length')
+            prepick = kwargs.get('prepick')
+            event = kwargs.get('event')
         self.name = name
         for tr in st:
             if not np.any(tr.data.astype(np.float16)):
@@ -2497,10 +2503,11 @@ class Tribe(object):
                 ignore_length=ignore_length, overlap=overlap, debug=debug,
                 full_peaks=full_peaks)
             party += group_party
-        for family in party:
-            if family is not None:
-                family.detections = family._uniq().detections
-                family.catalog = family._uniq().catalog
+        if len(party) > 0:
+            for family in party:
+                if family is not None:
+                    family.detections = family._uniq().detections
+                    family.catalog = family._uniq().catalog
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -4145,6 +4152,9 @@ def match_filter(template_names, template_list, st, threshold,
                       stream[0].stats.starttime.datetime.strftime('%Y%j')]),
             4, debug)
         if all_peaks[i]:
+            if len(all_peaks[i]) > 1000:
+                 warnings.warn('Detections: more than 1000 peaks for template ' + \
+                    _template_names[i] + ' on ' + stream[0].stats.starttime.datetime.strftime('%Y%m%d%H'))
             for peak in all_peaks[i]:
                 # TODO: This should be abstracted out into a peak_to_det func
                 detecttime = stream[0].stats.starttime + \
