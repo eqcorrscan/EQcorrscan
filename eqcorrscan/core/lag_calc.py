@@ -182,7 +182,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 cc_max = np.amax(ccc)
                 shift = np.argmax(ccc) * image[0].stats.delta
             # Convert the maximum cross-correlation time to an actual time
-            if math.isnan(shift) or math.isnan(cc_max):
+            if math.isnan(cc_max):
                 print('Problematic trace, no cross correlation possible')
                 continue
             else:
