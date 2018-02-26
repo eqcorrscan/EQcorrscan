@@ -150,6 +150,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     :rtype: :class:`obspy.core.event.Event`
     """
     from eqcorrscan.core.match_filter import normxcorr2
+    import math
     event = Event()
     s_stachans = {}
     cccsum = 0
@@ -242,11 +243,11 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     event.comments.append(Comment(text=ccc_str))
     if used_chans == detect_chans:
         if pre_lag_ccsum is not None and\
-           checksum - pre_lag_ccsum < -(0.30 * pre_lag_ccsum):
+           checksum - pre_lag_ccsum < -(0.3 * pre_lag_ccsum):
             msg = ('lag-calc has decreased cccsum from %f to %f - '
                    % (pre_lag_ccsum, checksum))
-            # warnings.warn(msg)
-            raise LagCalcError(msg)
+            warnings.warn(msg)
+            #raise LagCalcError(msg)
     else:
         warnings.warn('Cannot check if cccsum is better, used %i channels '
                       'for detection, but %i are used here'
@@ -583,6 +584,27 @@ def lag_calc(detections, detect_data, template_names, templates,
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
         t_delays = [d for d in delays if d[0] == template[0]][0][1]
+        #Check template-channels against triggered detection-channels. If the 
+        #detection was made without template-channels that would have triggered
+        #earlier, then adjust the detection by that delay/earliness.
+        delaylist = list(t_delays.items())
+        delaylist.sort(key=lambda tup: tup[1])
+        for detection in template_detections:
+            #Find the channel with smallest delay on which the detection
+            #triggered. Use that delay to reduce the detection-time.
+            detection_stachans = list()
+            for stachan in detection.chans:
+                detection_stachans.append(stachan[0] + '.' + stachan[1]) 
+            #find the earliest template-channel which triggered during detection
+            earlier = 0
+            for delay in delaylist:
+                delay_stachan = delay[0]
+                if delay_stachan in detection_stachans:
+                    earlier = delay[1]
+                    break
+            detection.detect_time = detection.detect_time - earlier
+            if earlier > 0:
+                print('Adjusting ' + detection.id + ' by ' + str(earlier))
         debug_print(
             'There are %i detections' % len(template_detections), 2, debug)
         detect_streams = _prepare_data(
