@@ -4147,8 +4147,9 @@ def match_filter(template_names, template_list, st, threshold,
             4, debug)
         if all_peaks[i]:
             if len(all_peaks[i]) > 1000:
-                 warnings.warn('Detections: more than 1000 peaks for template ' + \
-                    _template_names[i] + ' on ' + stream[0].stats.starttime.datetime.strftime('%Y%m%d%H'))
+                warnings.warn('Detections: more than 1000 peaks per processing' +
+                    ' for template ' + _template_names[i] + ' on ' + 
+                    stream[0].stats.starttime.datetime.strftime('%Y%m%d%H'))
             for peak in all_peaks[i]:
                 # TODO: This should be abstracted out into a peak_to_det func
                 detecttime = stream[0].stats.starttime + \
