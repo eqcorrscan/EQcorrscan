@@ -836,7 +836,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
         else:
             st_stachans.append('.'.join([tr.stats.station,
                                ''.join([tr.stats.channel[0],
-                               tr.stats.channel[-1]])]))
+                                        tr.stats.channel[-1]])]))
     for i, station in enumerate(stations):
         if '.'.join([station, channels[i]]) not in st_stachans and debug > 0:
             warnings.warn('No data provided for ' + station + '.' +
@@ -867,10 +867,12 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                 else:
                     # Compare only first and last letter of channel code for
                     # now, otherwise not all channels are properly matched.
+                    pick_chan = ''.join([pick.waveform_id.channel_code[0],
+                                        pick.waveform_id.channel_code[-1]])
+                    trace_chan = ''.join([tr.stats.channel[0],
+                                         tr.stats.channel[-1]])
                     if pick.waveform_id.station_code == tr.stats.station and \
-                        ''.join([pick.waveform_id.channel_code[0],
-                                 pick.waveform_id.channel_code[-1]]) ==\
-                        ''.join([tr.stats.channel[0],tr.stats.channel[-1]]):
+                            pick_chan == trace_chan:   
                         starttime = pick.time - prepick
                     # Cope with taking all the horizontals for S-picks.
                     elif all_horiz and pick.waveform_id.station_code ==\
