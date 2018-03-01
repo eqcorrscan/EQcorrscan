@@ -872,7 +872,7 @@ def template_gen(picks, st, length, swin='all', prepick=0.05,
                     trace_chan = ''.join([tr.stats.channel[0],
                                          tr.stats.channel[-1]])
                     if pick.waveform_id.station_code == tr.stats.station and \
-                            pick_chan == trace_chan:   
+                            pick_chan == trace_chan:
                         starttime = pick.time - prepick
                     # Cope with taking all the horizontals for S-picks.
                     elif all_horiz and pick.waveform_id.station_code ==\
