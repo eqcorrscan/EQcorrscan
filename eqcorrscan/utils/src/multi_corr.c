@@ -628,7 +628,6 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         /* get the id of this thread */
         tid = omp_get_thread_num();
         #endif
-
         /* initialise memory to zero */
         memset(template_ext[tid], 0, (size_t) fft_len * n_templates * sizeof(float));
         memset(image_ext[tid], 0, (size_t) fft_len * sizeof(float));

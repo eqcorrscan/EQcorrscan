@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import itertools
 import sys
-import shutil
 import copy
 import random
 import pickle
@@ -31,7 +30,7 @@ from scipy.signal import iirfilter
 from collections import Counter
 from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
-from obspy import UTCDateTime, read
+from obspy import UTCDateTime
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 

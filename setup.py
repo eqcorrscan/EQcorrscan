@@ -55,7 +55,7 @@ def get_package_data():
     package_data = {}
 
     if get_build_platform() in ('win32', 'win-amd64'):
-        package_data['eqcorrscan.lib'] = [
+        package_data['eqcorrscan.utils.lib'] = [
             'libfftw3-3.dll', 'libfftw3f-3.dll', 'libfftw3l-3.dll']
 
     return package_data
@@ -66,7 +66,8 @@ def get_package_dir():
 
     package_dir = {}
     if get_build_platform() in ('win32', 'win-amd64'):
-        package_dir['eqcorrscan.lib'] = os.path.join('eqcorrscan', 'lib')
+        package_dir['eqcorrscan.utils.lib'] = os.path.join(
+            'eqcorrscan', 'utils', 'lib')
 
     return package_dir
 
@@ -76,7 +77,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'lib'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
@@ -91,7 +92,8 @@ def get_library_dirs():
 
     library_dirs = []
     if get_build_platform() in ('win32', 'win-amd64'):
-        library_dirs.append(os.path.join(os.getcwd(), 'eqcorrscan', 'lib'))
+        library_dirs.append(os.path.join(os.getcwd(), 'eqcorrscan', 'utils',
+                                         'lib'))
         library_dirs.append(os.path.join(sys.prefix, 'bin'))
 
     library_dirs.append(os.path.join(sys.prefix, 'lib'))
@@ -133,6 +135,7 @@ def get_mkl():
         # this assume we are in a conda env (not root)
         if not mkl_found:
             conda = os.getenv("CONDA_PREFIX")
+            print(conda)
             if conda is not None:
                 # look for MKL lib
                 libs = glob.glob(os.path.join(conda, "lib", "libmkl_rt.*"))
@@ -146,15 +149,16 @@ def get_mkl():
                                                    "fftw3.h")):
                         mkl_inc = [os.path.join(conda, "include", "fftw")]
                         mkl_found = True
-
+                    elif os.path.exists(os.path.join(conda, "include",
+                                                     "fftw3.h")):
+                        mkl_inc = [os.path.join(conda, "include")]
+                        mkl_found = True
     if mkl_found:
         print("Found MKL:")
         print("  MKL includes:", mkl_inc)
         print("  MKL lib dirs:", mkl_libdir)
         print("  MKL libs:", mkl_lib)
-
         return mkl_inc, mkl_libdir, mkl_lib
-
     else:
         return None
 
@@ -192,10 +196,10 @@ def get_extensions():
         'include_dirs': get_include_dirs(),
         'library_dirs': get_library_dirs()}
 
-    sources = [os.path.join('eqcorrscan', 'lib', 'multi_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'lib', 'find_peaks.c')]
-    exp_symbols = export_symbols("eqcorrscan/lib/libutils.def")
+    sources = [os.path.join('eqcorrscan', 'utils', 'src', 'multi_corr.c'),
+               os.path.join('eqcorrscan', 'utils', 'src', 'time_corr.c'),
+               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c')]
+    exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
         extra_link_args = ['-lm', '-lgomp']
@@ -237,7 +241,7 @@ def get_extensions():
         else:
             common_extension_args['libraries'] = libraries
     ext_modules = [
-        Extension('eqcorrscan.lib.libutils', sources=sources,
+        Extension('eqcorrscan.utils.lib.libutils', sources=sources,
                   **common_extension_args)]
     return ext_modules
 
@@ -359,7 +363,7 @@ def setup_package():
         pass
     else:
         setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
-                                  'eqcorrscan.core', 'eqcorrscan.lib',
+                                  'eqcorrscan.core', 'eqcorrscan.utils.lib',
                                   'eqcorrscan.tutorials']
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
@@ -367,6 +371,7 @@ def setup_package():
     if os.path.isdir("build"):
         shutil.rmtree("build")
     setup(**setup_args)
+
 
 if __name__ == '__main__':
     setup_package()

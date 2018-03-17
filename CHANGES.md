@@ -28,6 +28,13 @@
   * mag_calc.pick_db
   All removed functions will error and tell you to use obspy.io.nordic.core.
   This now means that you can use obspy's `read_events` to read in sfiles.
+* Added `P_all` and `S_all` options to template generation functions
+  to allow creation of multi-channel templates starting at the P and S
+  times respectively.
+* Refactored `template_gen`, all options are available via 
+  `template_gen(method=...)`, and depreciation warnings are in place.
+* Added some docs for converting older templates and detections into Template
+  and Party objects.
 
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;

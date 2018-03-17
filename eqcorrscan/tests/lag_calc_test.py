@@ -92,8 +92,8 @@ class TestMethods(unittest.TestCase):
         det_spicks += det_spicks.select(station='GCSZ', channel='EZ')[0].copy()
         det_spicks[-1].stats.channel = 'HA'
         temp_spicks = self.template_spicks.copy()
-        temp_spicks += temp_spicks.select(station='GCSZ',
-                                          channel='EZ')[0].copy()
+        temp_spicks += temp_spicks.select(
+            station='GCSZ', channel='EZ')[0].copy()
         temp_spicks[-1].stats.channel = 'HA'
         with warnings.catch_warnings(record=True) as w:
             i, event = _channel_loop(
