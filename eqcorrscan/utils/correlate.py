@@ -745,7 +745,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
         cores_inner)
     if ret < 0:
-        raise MemoryError()
+        raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
         print('Maximum cccs %f at %s' %

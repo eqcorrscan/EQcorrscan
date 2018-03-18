@@ -33,13 +33,13 @@ import os
 from obspy import Stream, Trace, read as obsread
 from multiprocessing import Pool, cpu_count
 from copy import deepcopy
-from obspy.core.event import Catalog, Event, Pick, WaveformStreamID, Origin
+from obspy.core.event import Event, Pick, WaveformStreamID, Origin
 from obspy.core.event import EventDescription, CreationInfo, Comment
 from obspy.core.trace import Stats
 
 from eqcorrscan.core.match_filter import Detection, normxcorr2
 from eqcorrscan.utils import findpeaks
-from eqcorrscan.core.template_gen import template_gen
+from eqcorrscan.core.template_gen import _template_gen
 
 
 class BrightnessError(Exception):
@@ -792,7 +792,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                             detection.detect_time + pre_pick,
                             onset='emergent', evalutation_mode='automatic'))
             debug_print('Generating template for detection: %i' % j, 0, debug)
-            template = template_gen(
+            template = _template_gen(
                 picks=event.picks, st=copy_of_stream, length=template_length,
                 swin='all')
             template_name = template_saveloc + '/' +\

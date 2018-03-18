@@ -50,7 +50,7 @@ def _load_cdll(name):
     """
     # our custom defined part of the extension file name
     libname = _get_lib_name(name)
-    libdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib')
+    libdir = os.path.join(os.path.dirname(__file__), 'lib')
     libpath = os.path.join(libdir, libname)
     static_fftw = os.path.join(libdir, 'libfftw3-3.dll')
     static_fftwf = os.path.join(libdir, 'libfftw3f-3.dll')

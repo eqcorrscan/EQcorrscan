@@ -19,13 +19,20 @@ from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
-from eqcorrscan.core.template_gen import from_sac, _group_events, from_seishub
-from eqcorrscan.core.template_gen import from_meta_file, from_client
-from eqcorrscan.core.template_gen import multi_template_gen
-from eqcorrscan.core.template_gen import template_gen, extract_from_stack
+from eqcorrscan.core.template_gen import (
+    from_sac, _group_events, from_seishub, from_meta_file, from_client,
+    multi_template_gen, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.sac_util import sactoevent
+
+slow = pytest.mark.skipif(
+    not pytest.config.getoption("--runslow"),
+    reason="need --runslow option to run"
+)
+
+warnings.simplefilter('always')
 
 
 class TestTemplateGeneration(unittest.TestCase):
@@ -36,25 +43,28 @@ class TestTemplateGeneration(unittest.TestCase):
         length = 8
 
         for event in ['2014p611252', 'No_head']:
-            test_files = os.path.join(os.path.abspath(os.path.
-                                                      dirname(__file__)),
-                                      'test_data', 'SAC', event, '*')
+            test_files = os.path.join(os.path.abspath(
+                os.path.dirname(__file__)), 'test_data', 'SAC', event, '*')
             # Test with various input types
             filelist = glob.glob(test_files)
             streamlist = [read(f) for f in glob.glob(test_files)]
             stream = read(test_files)
             for sac_files in [filelist, streamlist, stream]:
-                template = from_sac(sac_files, lowcut=2.0, highcut=8.0,
-                                    samp_rate=samp_rate, filt_order=4,
-                                    length=length, swin='all', prepick=0.1,
-                                    debug=0, plot=False)
+                templates = from_sac(
+                    sac_files, lowcut=2.0, highcut=8.0, samp_rate=samp_rate,
+                    filt_order=4, length=length, swin='all', prepick=0.1,
+                    debug=0, plot=False)
+                self.assertEqual(len(templates), 1)
+                template = templates[0]
+                self.assertEqual(len(template), len(sactoevent(stream).picks))
                 for tr in template:
                     self.assertEqual(len(tr.data), length * samp_rate)
 
     @pytest.mark.network
     @pytest.mark.flaky(reruns=2)
     def test_tutorial_template_gen(self):
-        """Test template generation from tutorial, uses from_client method.
+        """
+        Test template generation from tutorial, uses from_client method.
 
         Checks that the tutorial generates the templates we expect it to!
         """
@@ -70,7 +80,7 @@ class TestTemplateGeneration(unittest.TestCase):
                     station=tr.stats.station, channel=tr.stats.channel)[0]
                 self.assertTrue((expected_tr.data.astype(np.float32) ==
                                  tr.data.astype(np.float32)).all())
-            del(template)
+            del template
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
     @pytest.mark.network
@@ -128,6 +138,51 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
+
+    def test_all_phase_methods(self):
+        sfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data', 'REA', 'TEST_',
+                             '01-0411-15L.S201309')
+        catalog = read_events(sfile)
+        p_stations = list(set(
+            [pick.waveform_id.station_code
+             for pick in catalog[0].picks if pick.phase_hint == 'P']))
+        s_stations = list(set(
+            [pick.waveform_id.station_code
+             for pick in catalog[0].picks if pick.phase_hint == 'S']))
+        st = read(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'test_data', 'WAV', 'TEST_',
+                               '2013-09-01-0410-35.DFDPC_024_00'))
+        templates = from_meta_file(
+            meta_file=sfile, st=st, lowcut=2,
+            highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
+            swin='P_all')
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(len(templates[0]), len(p_stations) * 3)
+        for tr in templates[0]:
+            pick = [
+                p for p in catalog[0].picks
+                if p.waveform_id.station_code == tr.stats.station and
+                p.phase_hint.upper() == 'P'][0]
+            print(tr)
+            print(pick)
+            self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
+                            tr.stats.delta)
+        templates = from_meta_file(
+            meta_file=sfile, st=st, lowcut=2,
+            highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
+            swin='S_all')
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(len(templates[0]), len(s_stations) * 3)
+        for tr in templates[0]:
+            pick = [
+                p for p in catalog[0].picks
+                if p.waveform_id.station_code == tr.stats.station and
+                p.phase_hint.upper() == 'S'][0]
+            print(tr)
+            print(pick)
+            self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
+                            tr.stats.delta)
 
     def test_seishub(self):
         """Test the seishub method, use obspy default seishub client."""
@@ -226,39 +281,41 @@ class TestEdgeGen(unittest.TestCase):
         cls.picks = event.picks
 
     def test_undefined_phase_type(self):
-        with self.assertRaises(IOError):
-            template_gen(
+        with self.assertRaises(AssertionError):
+            _template_gen(
                 picks=self.picks, st=self.st.copy(), length=2, swin='bob')
 
     def test_warn_zeros(self):
         st = self.st.copy()
-        template = template_gen(self.picks, st.copy(), 10)
+        template = _template_gen(self.picks, st.copy(), 10)
         self.assertTrue('LABE' in [tr.stats.station for tr in template])
         st.select(station='LABE', channel='SN')[0].data = np.zeros(10000)
-        template = template_gen(self.picks, st, 10)
+        template = _template_gen(self.picks, st, 10)
         self.assertFalse('LABE' in [tr.stats.station for tr in template])
 
     def test_missing_data(self):
         picks = copy.deepcopy(self.picks)
         picks.append(picks[-1])
         picks[-1].waveform_id.station_code = 'DUMMY'
-        template = template_gen(picks, self.st.copy(), 10)
+        template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse('DUMMY' in [tr.stats.station for tr in template])
 
     def test_no_matched_picks(self):
         picks = [copy.deepcopy(self.picks[0])]
         picks[0].waveform_id.station_code = 'DUMMY'
-        template = template_gen(picks, self.st.copy(), 10)
+        template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
 
     def test_debug_levels(self):
-        template = template_gen(self.picks, self.st.copy(), 10, debug=3)
+        print(len(self.picks))
+        print(len(self.st))
+        template = _template_gen(self.picks, self.st.copy(), 10, debug=3)
         self.assertEqual(len(template), len(self.picks))
 
     def test_extract_from_stack(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(stack, template, length=length,
                                        pre_pick=0.3, pre_pad=45)
         self.assertEqual(len(template), len(extracted))
@@ -269,7 +326,7 @@ class TestEdgeGen(unittest.TestCase):
     def test_extract_from_stack_and_process(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(
             stack, template, length=length, pre_pick=0.3, pre_pad=45,
             pre_processed=False, samp_rate=20, lowcut=2, highcut=8)
@@ -281,7 +338,7 @@ class TestEdgeGen(unittest.TestCase):
     def test_extract_from_stack_including_z(self):
         length = 3
         stack = self.st.copy()
-        template = template_gen(self.picks, self.st.copy(), 2)
+        template = _template_gen(self.picks, self.st.copy(), 2)
         extracted = extract_from_stack(
             stack, template, length=length, pre_pick=0.3, pre_pad=45,
             Z_include=True)
@@ -289,6 +346,91 @@ class TestEdgeGen(unittest.TestCase):
         for tr in extracted:
             self.assertEqual(tr.stats.endtime - tr.stats.starttime,
                              length)
+
+    def test_warn_no_phase_hint(self):
+        picks = copy.deepcopy(self.picks)
+        for pick in picks:
+            setattr(pick, 'phase_hint', None)
+        with warnings.catch_warnings(record=True) as w:
+            template = _template_gen(picks, self.st.copy(), 10)
+        self.assertGreater(len(w), 0)
+        self.assertEqual(len(template), 11)
+        _w = ' '.join([warning.message.__str__() for warning in w])
+        self.assertTrue("no phase hint given" in _w)
+
+    def test_no_station_code(self):
+        picks = copy.deepcopy(self.picks)
+        for pick in picks:
+            setattr(pick.waveform_id, 'station_code', None)
+        template = _template_gen(picks, self.st.copy(), 10)
+        self.assertEqual(len(template), 0)
+
+    def test_no_channel_code(self):
+        picks = copy.deepcopy(self.picks)
+        for pick in picks:
+            setattr(pick.waveform_id, 'channel_code', None)
+        template = _template_gen(picks, self.st.copy(), 10)
+        self.assertEqual(len(template), 0)
+
+    def test_swin_P(self):
+        p_picks = []
+        for pick in self.picks:
+            if pick.phase_hint == 'P':
+                p_picks.append(pick)
+        template = _template_gen(self.picks, self.st.copy(), 10, swin='P')
+        self.assertEqual(len(template), len(p_picks))
+        used_stations = [tr.stats.station for tr in template]
+        for pick in p_picks:
+            self.assertTrue(pick.waveform_id.station_code in used_stations)
+
+    def test_swin_all_and_all_horiz(self):
+        template = _template_gen(self.picks, self.st.copy(), 10, swin='all',
+                                 all_horiz=True)
+        for pick in self.picks:
+            if pick.phase_hint == 'S':
+                self.assertGreaterEqual(
+                    len(template.select(
+                        station=pick.waveform_id.station_code)), 2)
+
+    def test_snr_cutoff(self):
+        template = _template_gen(self.picks, self.st.copy(), 10, min_snr=100)
+        self.assertEqual(len(template), 1)
+
+    def test_no_data_for_channel(self):
+        st = self.st.copy()
+        st.select(station='LABE', channel='SN')[0].stats.starttime += 2000
+        template = _template_gen(self.picks, st, 10)
+        self.assertEqual(len(template), 10)
+
+
+class TestDayLong(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.testing_path = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        cls.st = read(os.path.join(cls.testing_path, 'test_data',
+                                   'day_vols', 'Y2012', 'R086.01', '*'))
+        event = read_events(os.path.join(
+            cls.testing_path, 'test_data', 'REA', 'TEST_',
+            '15-0931-08L.S201309'))[0]
+        event.picks = event.picks[0:3]
+        for pick, station in zip(event.picks, ['GOVA', 'EORO', 'WHYM']):
+            setattr(pick, 'time', UTCDateTime(2012, 3, 26, 2, 0, 0))
+            setattr(pick.waveform_id, 'channel_code', 'SHZ')
+            setattr(pick.waveform_id, 'network_code', 'AF')
+            setattr(pick.waveform_id, 'station_code', station)
+            setattr(pick, 'phase_hint', 'P')
+        cls.cat = Catalog([event])
+
+    @slow
+    def test_day_long_processing(self):
+        templates = template_gen(
+            method='from_meta_file', meta_file=self.cat, st=self.st,
+            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=3, length=2,
+            prepick=0.1, swin='P', all_horiz=True)
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(len(templates[0]), 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -33,7 +33,7 @@ def clean_up_test_files():
     files_to_kill = [
         'test_csv_write.csv',
         'test_family.tgz',
-        'test_quakeml.ml',
+        'test_quakeml.xml',
         'test_tar_write.tgz',
         'test_template.tgz',
         'test_template_read.tgz',
