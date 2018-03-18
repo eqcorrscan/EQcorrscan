@@ -123,9 +123,9 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     # Set everything below the threshold to zero
     image = np.copy(arr)
     image = np.abs(image)
-    image[image < thresh] = 0
     debug_print("Threshold: {0}\tMax: {1}".format(thresh, max(image)),
                 2, debug)
+    image[image < thresh] = 0
     if len(image[image > thresh]) == 0:
         debug_print("No values over threshold {0}".format(thresh), 0, debug)
         return []
