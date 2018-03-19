@@ -56,15 +56,74 @@ fftw3 (files named fftw3f...). On CentOS you can install the `fftw-libs` package
 Non-Python dependencies--OSX:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For MacOS/OS-X systems we have tested using homebrew (macports and fink options
-are available, but we haven't tested them).  You will need a recent version of
-gcc (the homebrew gcc-4.9 port has issues with openMP).
-We test the following:
+For MacOS/OS-X systems we have tested using homebrew and macports (fink options
+are available, but we haven't tested them).
+
+**Homebrew**
+
+You will need a recent version of gcc (the homebrew gcc-4.9 port has issues with openMP).
+We have tested the following and found it to work (note that you may need to prepend
+sudo depending on your configuration):
 
 .. code-block:: bash
 
     brew install gcc6
     brew install fftw
+
+Then run the following to install EQcorrscan (note the need to select CC=gcc, clang,
+the default compiler, does not support modern openMP pragmas):
+
+.. code-block:: bash
+
+    CC=gcc pip install eqcorrscan
+
+
+**MacPorts**
+
+The following has been tested and found to work (note that you may need to prepend
+sudo depending on your configuration):
+
+1. Install an up-to-date gcc (gcc is needed for openmp compatibility) - any gcc should work (>4), here we use gcc6 for example:
+
+.. code-block:: bash
+
+    port install gcc6
+
+2. Install python from macports (tested for python35, but its up to you)
+
+.. code-block:: bash
+
+    port install python35`
+    # optional: select python35 as default python for terminal:
+    port select --set python python35
+
+3. Install numpy and pip from macports:
+
+.. code-block:: bash
+
+    port install py35-numpy py35-pip
+    # optional, select pip35 as default pip
+    port select --set pip pip35
+
+4. Install fftw3 from source, use `--enable-threads and --enable-float` (fftw-3 and fftw-3-single from macports also available, but not tested)
+
+	a. |fftw-3.3.7| - link to fftw 3.3.7, most recent as of 10/01/2018
+	b. unzip/untar
+    c. Run the following from within the expanded directory:
+
+.. code-block:: bash
+
+    ./configure --enable-threads --enable-float && make
+    make install
+    ./configure --enable-threads && make # Need both double and float precision files
+    make install
+
+5. Run: (if you didn't run the `port select --set pip pip35` command you will need to replace `pip` with `pip35`)
+
+.. code-block:: bash
+
+    CC=gcc pip install eqcorrscan
+
 
 Non-Python dependencies--Windows:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +154,10 @@ Once you have installed fftw the EQcorrscan install should be as simple as:
 .. |fftw-install| raw:: html
 
     <a href="http://www.fftw.org/fftw3_doc/Installation-on-Unix.html#Installation-on-Unix" target="_blank">fftw installation</a>
+
+.. |fftw-3.3.7| raw:: html
+
+    <a href="http://www.fftw.org/fftw-3.3.7.tar.gz" target="_blank">Download</a>
 
 .. |fftw-windows| raw:: html
 
@@ -131,6 +194,17 @@ MUST test you install using the instructions here: :ref:`RunningTests`.
 
     <a href="https://github.com/eqcorrscan/EQcorrscan" target="_blank">github</a>
 
+Using Intel's MKL
+~~~~~~~~~~~~~~~~~
+
+For version 0.3.0 EQcorrscan supports compilation against the Intel Math Kernel
+Libraries (MKL). This has shown |speed-ups| compared to the standard FFTW library.
+To enable this you must install MKL before compiling EQcorrscan.  MKL is available from
+most package managers (including conda). Once you have MKL installed you can
+follow the `Installation from source`_ section.  Check that near the top of the
+install that the MKL libraries are found.
+
+
 Notes
 -----
 
@@ -149,3 +223,7 @@ required to give.
 .. |NLLoc_link| raw:: html
 
   <a href="http://alomax.free.fr/nlloc/" target="_blank">NonLinLoc</a>
+
+.. |speed-ups| raw:: html
+
+  <a href="https://github.com/eqcorrscan/EQcorrscan/pull/168" target="_blank">speed ups</a>
