@@ -14,6 +14,7 @@ matcherr_*
 build
 dist
 EQcorrscan.egg-info
+.pytest_cache
 .cache
 .eggs
 .tox

@@ -20,7 +20,7 @@ from scipy import ndimage
 from multiprocessing import Pool
 
 from eqcorrscan.utils.correlate import pool_boy
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.helpers.debug_log import debug_print
 
 
 def is_prime(number):
