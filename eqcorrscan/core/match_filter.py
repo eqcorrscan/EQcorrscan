@@ -3930,6 +3930,8 @@ def match_filter(template_names, template_list, st, threshold,
                                        str('av_chan_corr')]:
             msg = 'threshold_type must be one of: MAD, absolute, av_chan_corr'
             raise MatchFilterError(msg)
+        if not isinstance(st, Stream):
+            raise MatchFilterError("st must be a Stream object")
         for tr in st:
             if not tr.stats.sampling_rate == st[0].stats.sampling_rate:
                 raise MatchFilterError('Sampling rates are not equal %f: %f' %
