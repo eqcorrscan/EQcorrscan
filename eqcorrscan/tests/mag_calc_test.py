@@ -13,20 +13,17 @@ import os
 import datetime as dt
 import glob
 import warnings
-import shutil
 
 from obspy.core.util import NamedTemporaryFile
-from obspy import UTCDateTime, read
+from obspy import UTCDateTime, read, read_events
 from obspy.clients.fdsn import Client
 from obspy.clients.iris import Client as OldIris_Client
-from obspy.core.event import Event
+from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils.mag_calc import dist_calc, _sim_WA, _max_p2t
 from eqcorrscan.utils.mag_calc import _GSE2_PAZ_read, _find_resp, _pairwise
-from eqcorrscan.utils.mag_calc import amp_pick_sfile, svd_moments
-from eqcorrscan.utils.mag_calc import amp_pick_event, pick_db
+from eqcorrscan.utils.mag_calc import svd_moments, amp_pick_event
 from eqcorrscan.utils.clustering import svd
-from eqcorrscan.utils.sfile_util import read_event, readwavename
 
 
 class TestMagCalcMethods(unittest.TestCase):
@@ -67,21 +64,32 @@ class TestMagCalcMethods(unittest.TestCase):
         # Test without PAZ or seedresp
         _sim_WA(trace=tr, PAZ=None, seedresp=None, water_level=10)
         tr = tr_safe.copy()
-        with NamedTemporaryFile() as tf:
+        with open("Temp_resp", "w") as tf:
             respf = tf.name
             old_iris_client = OldIris_Client()
             # fetch RESP information from "old" IRIS web service, see
             # obspy.fdsn for accessing the new IRIS FDSN web services
             old_iris_client.resp('NZ', 'BFZ', '10', 'HHZ', t1, t2,
                                  filename=respf)
-            date = t1
+            # Hack around unit issues
+        with open("Temp_resp", "r") as tf:
+            resp_contents = [line for line in tf]
+        corrected_contents = []
+        for line in resp_contents:
+            if "COUNT" in line:
+                line = line.replace("COUNT", "COUNTS")
+            corrected_contents.append(line)
+        with open("Temp_resp", "w") as tf:
+            for line in corrected_contents:
+                tf.write(line)
+        date = t1
 
-            seedresp = {
-                'filename': respf, 'date': date, 'network': tr.stats.network,
-                'station': tr.stats.station, 'channel': tr.stats.channel,
-                'location': tr.stats.location, 'units': 'DIS'
-                        }
-            _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
+        seedresp = {
+            'filename': respf, 'date': date, 'network': tr.stats.network,
+            'station': tr.stats.station, 'channel': tr.stats.channel,
+            'location': tr.stats.location, 'units': 'DIS'}
+        _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
+        os.remove(respf)
 
     def test_max_p2t(self):
         """Test the minding of maximum peak-to-trough."""
@@ -178,22 +186,6 @@ class TestMagCalcMethods(unittest.TestCase):
             self.assertEqual(pair[0] + 1, pair[1])
         self.assertEqual(i, 18)
 
-    def test_amp_pick_sfile(self):
-        """Test the amplitude picker wrapper."""
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
-        sfile = os.path.join(testing_path, 'REA', 'TEST_',
-                             '01-0411-15L.S201309')
-        datapath = os.path.join(testing_path, 'WAV', 'TEST_')
-        respdir = testing_path
-        event = amp_pick_sfile(
-            sfile=sfile, datapath=datapath, respdir=respdir, chans=['Z'],
-            var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True,
-            lowcut=1.0, highcut=20.0, corners=4)
-        self.assertTrue(isinstance(event, Event))
-        self.assertTrue(os.path.isfile('mag_calc.out'))
-        os.remove('mag_calc.out')
-
     def test_SVD_mag(self):
         """Test the SVD magnitude calculator."""
         # Do the set-up
@@ -221,29 +213,6 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertEqual(len(M), len(stream_list))
         self.assertEqual(len(events_out), len(stream_list))
 
-    def test_pick_db(self):
-        """Test that the loop for picking a database works."""
-        testing_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), 'test_data')
-        if not os.path.isdir(os.path.join(testing_path, 'REA', 'PICK_')):
-            os.makedirs(os.path.join(testing_path, 'REA', 'PICK_', '2013',
-                                     '09'))
-        else:
-            shutil.rmtree(os.path.join(testing_path, 'REA', 'PICK_'))
-            os.makedirs(os.path.join(testing_path, 'REA', 'PICK_',
-                                     '2013', '09'))
-        pick_db(indir=os.path.join(testing_path, 'REA', 'TEST_'),
-                outdir=os.path.join(testing_path, 'REA', 'PICK_'),
-                calpath=testing_path,
-                startdate=UTCDateTime(2013, 9, 1).datetime,
-                enddate=UTCDateTime(2013, 10, 1).datetime,
-                wavepath=os.path.join(testing_path, 'WAV', 'TEST_'))
-        self.assertEqual(len(glob.glob(os.path.join(testing_path, 'REA',
-                                                    'PICK_', '2013', '09',
-                                                    '*'))),
-                         5)
-        shutil.rmtree(os.path.join(testing_path, 'REA', 'PICK_'))
-
 
 class TestAmpPickEvent(unittest.TestCase):
     @classmethod
@@ -252,7 +221,7 @@ class TestAmpPickEvent(unittest.TestCase):
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         sfile = os.path.join(cls.testing_path, 'REA', 'TEST_',
                              '01-0411-15L.S201309')
-        cls.event = read_event(sfile)
+        cls.event = read_events(sfile)[0]
         cls.wavfiles = readwavename(sfile)
         cls.datapath = os.path.join(cls.testing_path, 'WAV', 'TEST_')
         cls.st = read(os.path.join(cls.datapath, cls.wavfiles[0]))
@@ -274,10 +243,9 @@ class TestAmpPickEvent(unittest.TestCase):
     def test_amp_pick_missing_channel(self):
         warnings.simplefilter("always")
         with warnings.catch_warnings(record=True) as w:
-            picked_event = amp_pick_event(event=self.event.copy(),
-                                          st=self.st.copy()[0:-4],
-                                          respdir=self.respdir,
-                                          remove_old=True)
+            picked_event = amp_pick_event(
+                event=self.event.copy(), st=self.st.copy()[0:-4],
+                respdir=self.respdir, remove_old=True)
             missed = False
             for m in w:
                 if 'no station and channel match' in str(m.message):

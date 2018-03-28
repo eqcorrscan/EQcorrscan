@@ -43,8 +43,11 @@ import matplotlib.pyplot as plt
 
 from obspy.core.event import Catalog
 from obspy import read
+try:
+    from obspy.io.nordic.core import read_nordic, readheader, readwavename
+except ImportError:
+    raise ImportError("Needs obspy >= 1.1.0")
 
-from eqcorrscan.utils import sfile_util
 from eqcorrscan.utils.mag_calc import dist_calc
 
 
@@ -98,21 +101,21 @@ def _av_weight(W1, W2):
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
         W1 = 0
+    elif float(W1) < 0:
+        warnings.warn('Negative weight found, setting to zero')
+        W1 = 0
     else:
         W1 = 1 - (int(W1) / 4.0)
-    if W1 < 0:
-        warnings.warn('Negative weight found, setting to zero')
-        W2 = 0
 
     if str(W2) in [' ', '']:
         W2 = 1
     elif str(W2) in ['-9', '9', '9.0', '-9.0']:
         W2 = 0
-    else:
-        W2 = 1 - (int(W2) / 4.0)
-    if W2 < 0:
+    elif float(W2) < 0:
         warnings.warn('Negative weight found, setting to zero')
         W2 = 0
+    else:
+        W2 = 1 - (int(W2) / 4.0)
 
     W = (W1 + W2) / 2
     if W < 0:
@@ -193,14 +196,14 @@ def sfiles_to_event(sfile_list):
     :returns: List of tuples of event ID (int) and Sfile name
     """
     event_list = []
-    sort_list = [(sfile_util.readheader(sfile).origins[0].time, sfile)
+    sort_list = [(readheader(sfile).origins[0].time, sfile)
                  for sfile in sfile_list]
     sort_list.sort(key=lambda tup: tup[0])
     sfile_list = [sfile[1] for sfile in sort_list]
     catalog = Catalog()
     for i, sfile in enumerate(sfile_list):
         event_list.append((i, sfile))
-        catalog.append(sfile_util.readheader(sfile))
+        catalog.append(readheader(sfile))
     # Hand off to sister function
     write_event(catalog)
     return event_list
@@ -224,7 +227,7 @@ def write_event(catalog):
         except IndexError:
             Mag_1 = 0.0
         try:
-            t_RMS = event.origins[0].time_errors.Time_Residual_RMS
+            t_RMS = event.origins[0].quality['standard_error']
 
         except AttributeError:
             print('No time residual in header')
@@ -284,7 +287,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     for i, master in enumerate(event_list):
         master_sfile = master[1]
         master_event_id = master[0]
-        master_event = sfile_util.readpicks(master_sfile)
+        master_event = read_nordic(master_sfile)[0]
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
@@ -331,7 +334,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                 str(slave_event_id).rjust(10) + '\n'
             event_text2 = '#' + str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10) + '\n'
-            slave_event = sfile_util.readpicks(slave_sfile)
+            slave_event = read_nordic(slave_sfile)[0]
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
@@ -459,13 +462,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         if debug > 1:
             print('Computing correlations for master: %s' % master_sfile)
         master_event_id = master[0]
-        master_picks = sfile_util.readpicks(master_sfile).picks
-        master_event = sfile_util.readheader(master_sfile)
+        master_event = read_nordic(master_sfile)[0]
+        master_picks = master_event.picks
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
                            master_event.origins[0].depth / 1000.0)
-        master_wavefiles = sfile_util.readwavename(master_sfile)
+        master_wavefiles = readwavename(master_sfile)
         masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
         if masterpath:
             masterstream = read(masterpath[0])
@@ -482,7 +485,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             if debug > 2:
                 print('Comparing to event: %s' % slave_sfile)
             slave_event_id = event_list[j][0]
-            slave_wavefiles = sfile_util.readwavename(slave_sfile)
+            slave_wavefiles = readwavename(slave_sfile)
             try:
                 slavestream = read(wavbase + os.sep + slave_wavefiles[0])
             except:
@@ -501,8 +504,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 str(slave_event_id).rjust(10) + ' 0.0   \n'
             event_text2 = '#' + str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10) + ' 0.0   \n'
-            slave_picks = sfile_util.readpicks(slave_sfile).picks
-            slave_event = sfile_util.readheader(slave_sfile)
+            slave_event = read_nordic(slave_sfile)[0]
+            slave_picks = slave_event.picks
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
@@ -669,7 +672,7 @@ def _phase_to_event(event_text):
     :returns: obspy.core.event.Event
     """
     from obspy.core.event import Event, Origin, Magnitude
-    from obspy.core.event import Pick, WaveformStreamID, Arrival
+    from obspy.core.event import Pick, WaveformStreamID, Arrival, OriginQuality
     from obspy import UTCDateTime
     ph_event = Event()
     # Extract info from header line
@@ -685,7 +688,8 @@ def _phase_to_event(event_text):
     ph_event.origins[0].latitude = float(header[7])
     ph_event.origins[0].longitude = float(header[8])
     ph_event.origins[0].depth = float(header[9]) * 1000
-    ph_event.origins[0].time_errors['Time_Residual_RMS'] = float(header[13])
+    ph_event.origins[0].quality = OriginQuality(
+        standard_error=float(header[13]))
     ph_event.magnitudes.append(Magnitude())
     ph_event.magnitudes[0].mag = float(header[10])
     ph_event.magnitudes[0].magnitude_type = 'M'

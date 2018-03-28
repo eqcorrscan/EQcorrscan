@@ -15,16 +15,12 @@ recursive-include eqcorrscan/tutorials *.py
 recursive-include eqcorrscan/doc *
 recursive-include eqcorrscan/core *.py
 recursive-include eqcorrscan/tests *.py
-include eqcorrscan/lib/libutils.def
-include eqcorrscan/lib/multi_corr.c
-include eqcorrscan/lib/time_corr.c
+include eqcorrscan/utils/src/libutils.def
+recursive-include eqcorrscan/utils/src *.c
 
 # exclude rules
 # global-exclude *.pyc *.ms *.tgz
 prune eqcorrscan/doc/_build/latex
-prune eqcorrscan/plot
-prune eqcorrscan/detections
-prune eqcorrscan/grid
 prune eqcorrscan/tests/test_data
 prune misc
 # prune eqcorrscan/stack_templates

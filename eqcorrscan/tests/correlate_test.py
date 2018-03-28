@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import copy
 import itertools
-import time
 from collections import defaultdict
 from functools import wraps
 
@@ -15,6 +14,7 @@ from obspy import Trace, Stream
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
+from eqcorrscan.utils.timer import time_func
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
@@ -31,16 +31,6 @@ def gen_xcorr_func(name):
 
     func.__name__ = str(name)
     return func
-
-
-def time_func(func, name, *args, **kwargs):
-    """ call a func with args and kwargs, print name of func and how
-    long it took. """
-    tic = time.time()
-    out = func(*args, **kwargs)
-    toc = time.time()
-    print('%s took %0.2f seconds' % (name, toc - tic))
-    return out
 
 
 def measure_counts(self, func):
@@ -138,7 +128,7 @@ def pads(array_template):
 
 @pytest.fixture(scope='module')
 def array_ccs(array_template, array_stream, pads):
-    """  use each function stored in the normcorr cache to correlate the
+    """ Use each function stored in the normxcorr cache to correlate the
      templates and arrays, return a dict with keys as func names and values
      as the cc calculated by said function"""
     out = {}
@@ -151,6 +141,20 @@ def array_ccs(array_template, array_stream, pads):
     return out
 
 
+@pytest.fixture(scope='module')
+def array_ccs_low_amp(array_template, array_stream, pads):
+    """ Use each function stored in the normxcorr cache to correlate the
+     templates and arrays, return a dict with keys as func names and values
+     as the cc calculated by said function.
+     This specifically tests low amplitude streams as raised in issue #181."""
+    out = {}
+    for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
+        func = corr.get_array_xcorr(name)
+        print("Running %s" % name)
+        cc, _ = time_func(
+            func, name, array_template, array_stream * 10e-8, pads)
+        out[name] = cc
+    return out
 # stream fixtures
 
 
@@ -212,6 +216,12 @@ class TestArrayCorrelateFunctions:
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
+
+    def test_non_zero_median(self, array_ccs_low_amp):
+        """ Ensure that the median of correlations returned is non-zero,
+        this happens with v.0.2.7 when the amplitudes are low."""
+        for name, cc in array_ccs_low_amp.items():
+            assert np.median(cc) != 0.0
 
 
 @pytest.mark.serial

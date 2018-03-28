@@ -46,25 +46,17 @@ install:
   #      else
   #        PYFLAKES="pyflakes=0.9.0"
   #      fi
-  - "conda install -q --yes pip numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml"
+  - "conda install -q --yes pip obspy numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml"
   # additional dependecies
   - "pip install pyimgur"
 
-    # Obspy 1.0.3 conda clashes with numpy >= 1.12...(because of matplotlib 1.5.*?) install via git until 1.1.0
-  - "mkdir obspy && cd obspy && git init"
-  - "git remote add -f origin https://github.com/obspy/obspy.git"
-  - "git pull origin master"
-  - "python setup.py install"
-  - "cd .."
-  - "rm -rf obspy"
-
   # Install other pip dependancies
   - "pip install -U future"
-  - "pip install pytest pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures codecov"
+  - "pip install pytest==3.2.4 pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures codecov"
   # list package versions
   - "conda list"
   # Copy the windows fftw header file
-  - "cp misc/appveyor/fftw3.h eqcorrscan/lib/fftw3.h"
+  - "cp misc/appveyor/fftw3.h eqcorrscan/utils/lib/fftw3.h"
 
 # Not a .NET project
 build: false

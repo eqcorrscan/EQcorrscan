@@ -37,19 +37,24 @@ Recommended install method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In general we recommend users to install EQcorrscan in a virtual environment,
-|conda| will simplify your install greatly - we recommend creating a conda
+|conda| will simplify your install greatly (install instuction for anaconda 
+or miniconda are here: |conda-install|) - we recommend creating a conda
 environment with the following:
 
 .. code-block:: bash
 
+    conda config --add channels conda-forge
     conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
+    # If using bash run:
     source activate eqcorrscan
+    # If not you should get away with:
+    activate eqcorrscan
     
 To then install EQcorrscan you can simply run:
 
 .. code-block:: bash
 
-    conda install -c conda-forge eqcorrscan
+    conda install eqcorrscan
 
 Not-recomended but workable methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +67,18 @@ you do chose not to use conda then you should definitely test your install.
 .. |conda| raw:: html
 
     <a href="https://conda.io/docs/" target="_blank">conda</a>
+
+.. |conda-install| raw:: html
+
+    <a href="https://conda.io/docs/user-guide/install/index.html#installing-conda-on-a-system-that-has-other-python-installations-or-packages" target="_blank">conda installation</a>
+
+.. |fftw-install| raw:: html
+
+    <a href="http://www.fftw.org/fftw3_doc/Installation-on-Unix.html#Installation-on-Unix" target="_blank">fftw installation</a>
+
+.. |fftw-windows| raw:: html
+
+    <a href="http://www.fftw.org/install/windows.html" target="_blank">fftw-windows install</a>
 
 .. |pyasdf| raw:: html
 

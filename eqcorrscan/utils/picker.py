@@ -17,7 +17,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from obspy import UTCDateTime
 from obspy.signal.cross_correlation import xcorr
@@ -261,11 +260,11 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
             wav_id = WaveformStreamID(station_code=tr.stats.station,
                                       channel_code=tr.stats.channel,
                                       network_code=tr.stats.network)
-            pick = Pick(waveform_id=wav_id, phase_hint=phase, time=on)
+            p = Pick(waveform_id=wav_id, phase_hint=phase, time=on)
             if debug > 2:
                 print('Pick made:')
-                print(pick)
-            picks.append(pick)
+                print(p)
+            picks.append(p)
     # QC picks
     pick_stations = list(set([pick.waveform_id.station_code
                               for pick in picks]))

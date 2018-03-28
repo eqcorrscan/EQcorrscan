@@ -13,21 +13,17 @@ import warnings
 
 __all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils', 'clustering',
            'correlate', 'debug_log', 'despike', 'findpeaks', 'mag_calc',
-           'normalise', 'parameters', 'picker', 'plotting', 'pre_processing',
-           'sac_util', 'seismo_logs', 'sfile_util', 'stacking',
-           'synth_seis', 'timer', 'trigger']
+           'parameters', 'picker', 'plotting', 'pre_processing',
+           'sac_util', 'seismo_logs', 'stacking', 'synth_seis', 'timer',
+           'trigger', 'lib']
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {
     "catalogue2DD": "catalog_to_dd",
     "EQcorrscan_plotting": "plotting",
-    "Sfile_util": "sfile_util",
 }
 
-_function_map = {
-    "Sfile_util.eventtoSfile": "sfile_util.eventtosfile",
-    "Sfile_util.populateSfile": "sfile_util.populatesfile"
-}
+_depreciated = ['sfile_util', 'Sfile_util']
 
 
 class EQcorrscanDeprecationWarning(UserWarning):
@@ -63,6 +59,8 @@ class EQcorrscanRestructureAndLoad(object):
         # Otherwise check if the name is part of the import map.
         elif name in _import_map:
             new_name = _import_map[name]
+        elif name in _depreciated:
+            raise ImportError("sfile_util has moved to obspy.io.nordic")
         else:
             new_name = name
             for old, new in _import_map.items():

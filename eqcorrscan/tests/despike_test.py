@@ -40,7 +40,7 @@ class DespikeTesting(unittest.TestCase):
                                    windowlength=0.5, interp_len=0.05, debug=0)
         self.assertNotEqual(despiked.data[100], 20)
         self.assertNotEqual(despiked.data[400], 40)
-        self.assertEqual(despiked.data[450], -40)
+        self.assertNotEqual(despiked.data[450], -40)
 
 
 if __name__ == '__main__':

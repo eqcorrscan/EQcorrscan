@@ -1,8 +1,45 @@
+## 0.3.0
+* Compiled peak-finding routine written to speed-up peak-finding.
+* Change default match-filter plotting to not decimate unless it has to.
+* BUG-FIX: changed minimum variance for fftw correlation backend.
+* Do not try to process when no processing needs to be done in 
+  core.match_filter._group_process.
+* Length checking in core.match_filter._group_process done in samples rather
+  than time.
+* BUG-FIX: Fix bug where data lengths were not correct in 
+  match_filter.Tribe.detect when sampling time-stamps were inconsistent between
+  channels, which previously resulted in error.
+* BUG-FIX: Fix memory-leak in tribe.construct
+* Add plotting options for plotting rate to Party.plot
+* Add filtering detections by date as Party.filter
+* BUG-FIX: Change method for Party.rethreshold: list.remove was not reliable.
+* Add option `full_peaks` to detect methods to map to find_peaks.
+* pre-processing (and match-filter object methods) are now gap-aware and will
+  accept gappy traces and can return gappy traces. By default gaps are filled to
+  maintain backwards compatibility. Note that the fftw correlation backend
+  requires gaps to be padded with zeros.
+* **Removed sfile_utils** This support for Nordic IO has been upgraded and moved
+  to obspy for obspy version 1.1.0.  All functions are there and many bugs have
+  been fixed. This also means the removal of nordic-specific functions in
+  EQcorrscan - the following functions have been removed:
+  * template_gen.from_sfile
+  * template_gen.from_contbase
+  * mag_calc.amp_pick_sfile
+  * mag_calc.pick_db
+  All removed functions will error and tell you to use obspy.io.nordic.core.
+  This now means that you can use obspy's `read_events` to read in sfiles.
+* Added `P_all` and `S_all` options to template generation functions
+  to allow creation of multi-channel templates starting at the P and S
+  times respectively.
+* Refactored `template_gen`, all options are available via 
+  `template_gen(method=...)`, and depreciation warnings are in place.
+* Added some docs for converting older templates and detections into Template
+  and Party objects.
+
 ## 0.2.7
 * Patch multi_corr.c to work with more versions of MSVC;
 * Revert to using single-precision floats for correlations (as in previous,
   < 0.2.x versions) for memory efficiency.
-
 
 ## 0.2.6
 * Added the ability to change the correlation functions used in detection
@@ -112,13 +149,17 @@ fewer traces than template;
     * OpenCV has been removed as a dependancy;
     * eqcorrscan.core.match_filter.normxcorr2 now calls a compiled C routine;
     * Parallel workflows handled by openMP rather than Python Multiprocessing
-    for matched-filter operations to allow better memory handling.
+      for matched-filter operations to allow better memory handling.
         * It is worth noting that we tried re-writing using SciPy internals
         which led to a significant speed-up, but with high memory costs,
         we ended up going with this option, which was the more difficult
         option, because it allows effective use on SLURM managed systems
         where python multiprocessing results in un-real memory spikes
         (issue #88).
+        
+## 0.2.0-0.2.3
+* See 0.2.4: these versions were not fully released while trying to get
+  anaconda packages to build properly.
 
 ## 0.1.6
 * Fix bug introduced in version 0.1.5 for match_filter where looping

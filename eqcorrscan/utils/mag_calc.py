@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import itertools
 import sys
-import shutil
 import copy
 import random
 import pickle
@@ -31,11 +30,10 @@ from scipy.signal import iirfilter
 from collections import Counter
 from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
-from obspy import UTCDateTime, read
+from obspy import UTCDateTime
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
-from eqcorrscan.utils import sfile_util
 from eqcorrscan.core.match_filter import MatchFilterError
 from eqcorrscan.utils.catalog_utils import _get_origin
 
@@ -212,14 +210,16 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
     if plotvar:
         fig, ax1 = plt.subplots()
-        b_vals = ax1.scatter(zip(*b_values)[0], zip(*b_values)[1], c='k')
-        resid = ax1.scatter(zip(*b_values)[0],
-                            [100 - b for b in zip(*b_values)[2]], c='r')
+        b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],
+                             c='k')
+        resid = ax1.scatter(list(zip(*b_values))[0],
+                            [100 - b for b in list(zip(*b_values))[2]], c='r')
         ax1.set_ylabel('b-value and residual')
         plt.xlabel('Completeness magnitude')
         ax2 = ax1.twinx()
         ax2.set_ylabel('Number of events used in fit')
-        n_ev = ax2.scatter(zip(*b_values)[0], zip(*b_values)[3], c='g')
+        n_ev = ax2.scatter(list(zip(*b_values))[0], list(zip(*b_values))[3],
+                           c='g')
         fig.legend((b_vals, resid, n_ev),
                    ('b-values', 'residuals', 'number of events'),
                    'lower right')
@@ -429,12 +429,11 @@ def _find_resp(station, channel, network, time, delta, directory):
             try:
                 # Attempt to evaluate the response for this information, if not
                 # then this is not the correct response info!
-                freq_resp, freqs = evalresp(delta, 100, seedresp['filename'],
-                                            seedresp['date'],
-                                            units=seedresp['units'], freq=True,
-                                            network=seedresp['network'],
-                                            station=seedresp['station'],
-                                            channel=seedresp['channel'])
+                freq_resp, freqs = evalresp(
+                    delta, 100, seedresp['filename'], seedresp['date'],
+                    units=seedresp['units'], freq=True,
+                    network=seedresp['network'], station=seedresp['station'],
+                    channel=seedresp['channel'])
             except:
                 print('Issues with RESP file')
                 seedresp = []
@@ -811,109 +810,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     return event
 
 
-def amp_pick_sfile(sfile, datapath, respdir, chans=['Z'], var_wintype=True,
-                   winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
-                   highcut=20.0, corners=4, min_snr=1.0, plot=False,
-                   remove_old=False, velocity=False):
-    """
-    Function to pick amplitudes for local magnitudes from NORDIC s-files.
-
-    Reads information from a SEISAN s-file, load the data and the \
-    picks, cut the data for the channels given around the S-window, simulate \
-    a Wood Anderson seismometer, then pick the maximum peak-to-trough \
-    amplitude.
-
-    Output will be put into a mag_calc.out file which will be in full S-file \
-    format and can be copied to a REA database.
-
-    See docs for :func:`eqcorrscan.utils.mag_calc.amp_pick_event` for methods
-    used here for stabilisation.
-
-    :type sfile: str
-    :param sfile: Path to NORDIC format s-file
-    :type datapath: str
-    :param datapath: Path to the waveform files - usually the path to the WAV \
-        directory
-    :type respdir: str
-    :param respdir: Path to the response information directory
-    :type chans: list
-    :param chans: List of the channels to pick on, defaults to ['Z'] - should \
-        just be the orientations, e.g. Z,1,2,N,E
-    :type var_wintype: bool
-    :param var_wintype: If True, the winlen will be \
-        multiplied by the P-S time if both P and S picks are \
-        available, otherwise it will be multiplied by the \
-        hypocentral distance*0.34 - derived using a p-s ratio of \
-        1.68 and S-velocity of 1.5km/s to give a large window, \
-        defaults to True
-    :type winlen: float
-    :param winlen: Length of window, see above parameter, if var_wintype is \
-        False then this will be in seconds, otherwise it is the \
-        multiplier to the p-s time, defaults to 0.5.
-    :type pre_pick: float
-    :param pre_pick: Time before the s-pick to start the cut window, defaults \
-        to 0.2
-    :type pre_filt: bool
-    :param pre_filt: To apply a pre-filter or not, defaults to True
-    :type lowcut: float
-    :param lowcut: Lowcut in Hz for the pre-filter, defaults to 1.0
-    :type highcut: float
-    :param highcut: Highcut in Hz for the pre-filter, defaults to 20.0
-    :type corners: int
-    :param corners: Number of corners to use in the pre-filter
-    :type min_snr: float
-    :param min_snr: Minimum signal-to-noise ratio to allow a pick - see note \
-        in amp_pick_event on signal-to-noise ratio calculation.
-    :type plot: bool
-    :param plot: Turn plotting on or off.
-    :type remove_old: bool
-    :param remove_old:
-        If True, will remove old amplitude picks from event and overwrite with
-        new picks. Defaults to False.
-    :type velocity: bool
-    :param velocity:
-        Whether to make the pick in velocity space or not. Original definition
-        of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
-        and Antelope uses a velocity measurement.
-
-    :returns: Picked event
-    :rtype: :class:`obspy.core.event.event.Event`
-    """
-    # First we need to work out what stations have what picks
-    event = sfile_util.readpicks(sfile)
-    # Read in waveforms
-    try:
-        stream = read(os.path.join(datapath,
-                                   sfile_util.readwavename(sfile)[0]))
-    except IOError:
-        stream = read(os.path.join(datapath,
-                                   str(event.origins[0].time.year),
-                                   str(event.origins[0].time.month).zfill(2),
-                                   sfile_util.readwavename(sfile)[0]))
-    if len(sfile_util.readwavename(sfile)) > 1:
-        for wavfile in sfile_util.readwavename(sfile):
-            try:
-                stream += read(os.path.join(datapath, wavfile))
-            except IOError:
-                stream += read(os.path.join(datapath,
-                                            str(event.origins[0].time.year),
-                                            str(event.origins[0].time.month).
-                                            zfill(2),
-                                            wavfile))
-    stream.merge()  # merge the data, just in case!
-    event_picked = amp_pick_event(event=event, st=stream, respdir=respdir,
-                                  chans=chans, var_wintype=var_wintype,
-                                  winlen=winlen, pre_pick=pre_pick,
-                                  pre_filt=pre_filt, lowcut=lowcut,
-                                  highcut=highcut, corners=corners,
-                                  min_snr=min_snr, plot=plot,
-                                  remove_old=remove_old, velocity=velocity)
-    new_sfile = sfile_util.eventtosfile(event=event_picked, userID=str('EQCO'),
-                                        evtype=str('L'), outdir=str('.'),
-                                        wavefiles=sfile_util.
-                                        readwavename(sfile))
-    shutil.move(new_sfile, 'mag_calc.out')
-    return event_picked
+def amp_pick_sfile(*args, **kwargs):
+    raise ImportError(
+        "Sfile support is depreciated, read in using obspy.io.nordic")
 
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
@@ -1127,57 +1026,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     # XXX TODO This still needs an outlier removal step
     return M, events_out
 
-
-def pick_db(indir, outdir, calpath, startdate, enddate, wavepath=None):
-    """
-    Wrapper to loop through a SEISAN database and make a lot of magnitude \
-    picks.
-
-    :type indir: str
-    :param indir: Path to the seisan REA directory (not including yyyy/mm)
-    :type outdir: str
-    :param outdir: Path to output seisan REA directory (not including yyyy/mm)
-    :type calpath: str
-    :param calpath: Path to the directory containing the response files
-    :type startdate: datetime.datetime
-    :param startdate: Date to start looking for S-files
-    :type enddate: datetime.datetime
-    :param enddate: Date to stop looking for S-files
-    :type wavepath: str
-    :param wavepath: Path to the seisan WAV directory (not including yyyy/mm)
-    """
-    kdays = ((enddate + dt.timedelta(1)) - startdate).days
-    for i in range(kdays):
-        day = startdate + dt.timedelta(i)
-        print('Working on ' + str(day))
-        sfiles = glob.glob(os.path.join(indir, str(day.year),
-                                        str(day.month).zfill(2),
-                                        str(day.day).zfill(2) + '-*L.S' +
-                                        str(day.year) +
-                                        str(day.month).zfill(2)))
-        datetimes = [dt.datetime.strptime(os.path.split(sfiles[i])[-1],
-                                          '%d-%H%M-%SL.S%Y%m')
-                     for i in range(len(sfiles))]
-        sfiles = [sfiles[i] for i in range(len(sfiles))
-                  if startdate < datetimes[i] < enddate]
-        if not wavepath:
-            wavedir = os.path.join(os.path.split(indir), 'WAV',
-                                   os.path.split(indir)[-1],
-                                   str(day.year), str(day.month).zfill(2))
-        else:
-            wavedir = os.path.join(wavepath, str(day.year),
-                                   str(day.month).zfill(2))
-        sfiles.sort()
-        for sfile in sfiles:
-            # Make the picks!
-            print('\tWorking on Sfile: ' + sfile)
-            event = amp_pick_sfile(sfile, wavedir, calpath)
-            del event
-            # Copy the mag_calc.out file to the correct place
-            shutil.copyfile('mag_calc.out',
-                            os.path.join(outdir, str(day.year),
-                                         str(day.month).zfill(2),
-                                         os.path.split(sfile)[-1]))
 
 if __name__ == "__main__":
     import doctest

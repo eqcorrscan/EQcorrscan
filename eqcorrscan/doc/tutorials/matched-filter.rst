@@ -97,7 +97,6 @@ to their start-time, but you can rename them later if you wish:
      ...      method='from_client', catalog=catalog, client_id='NCEDC', lowcut=2.0,
      ...      highcut=8.0,  samp_rate=20.0, filt_order=4, length=6.0, prepick=0.1,
      ...      swin='all', process_len=3600, all_horiz=True)
-     Pre-processing data
 
 Matched-filter detection using a Tribe
 --------------------------------------
@@ -122,6 +121,30 @@ data by running the following:
      ...      client=client, starttime=UTCDateTime(2016, 1, 2),
      ...      endtime=UTCDateTime(2016, 1, 3), threshold=8, threshold_type='MAD',
      ...      trig_int=6, plotvar=False, return_stream=True)
+
+Generating a Party from a Detection csv
+---------------------------------------
+
+If you are moving from detections written out as a csv file from an older
+version of EQcorrscan, but want to use Party objects now, then this section is
+for you!
+
+First, you need to generate a Tribe from the templates you used to make the
+detections.  Instructions for this are in the
+:doc:`Template creation tutorial </tutorials/template-creation>`
+section.
+
+Once you have a Tribe, you can generate a Party using the following:
+
+.. code-block:: python
+
+     >>> detections = read_detections(detection_file) # doctest:+SKIP
+     >>> party = Party() # doctest:+SKIP
+     >>> for template in tribe: # doctest:+SKIP
+     ...    template_detections = [d for d in detections
+     ...                           if d.template_name == template.name]
+     ...    family = Family(template=template, detections=template_detections)
+     ...    party += family
 
 Lag-calc using a Party
 ----------------------

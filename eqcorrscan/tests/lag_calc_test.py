@@ -11,11 +11,13 @@ import os
 import numpy as np
 import warnings
 
+from obspy import read_events, read
+from obspy.io.nordic.core import readwavename
+
 from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
 from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
-from eqcorrscan.core.template_gen import from_sfile
 from eqcorrscan.core.match_filter import normxcorr2, Detection
-from eqcorrscan.utils.sfile_util import read_event
+from eqcorrscan.core.template_gen import from_meta_file
 
 warnings.simplefilter("always")
 
@@ -25,26 +27,29 @@ class TestMethods(unittest.TestCase):
     def setUpClass(cls):
         cls.testing_path = os.path.join(os.path.abspath(
             os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
-        cls.template = from_sfile(
-            sfile=os.path.join(cls.testing_path, '21-1412-02L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
-            swin='all', prepick=0.05)
-        cls.detection = from_sfile(
-            sfile=os.path.join(cls.testing_path, '21-1759-04L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
-            swin='all', prepick=0.55)
-        cls.template_spicks = from_sfile(
-            sfile=os.path.join(cls.testing_path, '18-2120-53L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=3,
-            swin='all', prepick=0.05)
-        cls.detection_spicks = from_sfile(
-            sfile=os.path.join(cls.testing_path, '18-2350-08L.S201309'),
-            lowcut=5, highcut=15, samp_rate=40, filt_order=4, length=4,
-            swin='all', prepick=0.55)
-        detection_event = read_event(os.path.join(cls.testing_path,
-                                                  '21-1759-04L.S201309'))
-        detection_spicks_event = read_event(
-            os.path.join(cls.testing_path, '18-2350-07L.S201309'))
+        cls.wave_path = os.path.join(os.path.abspath(
+            os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
+        key_dict = [
+            {'name': 'template', 'sfile': '21-1412-02L.S201309'},
+            {'name': 'detection', 'sfile': '21-1759-04L.S201309'},
+            {'name': 'template_spicks', 'sfile': '18-2120-53L.S201309'},
+            {'name': 'detection_spicks', 'sfile': '18-2350-08L.S201309'}]
+        for item in key_dict:
+            st = read(os.path.join(
+                cls.wave_path, readwavename(os.path.join(
+                    cls.testing_path, item['sfile']))[0]))
+            for tr in st:
+                tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+            item.update({'st': st, 'sfile': os.path.join(
+                cls.testing_path, item['sfile'])})
+            setattr(cls, item['name'], from_meta_file(
+                meta_file=item['sfile'], lowcut=5, highcut=15, samp_rate=40,
+                filt_order=4, length=3, swin='all', prepick=0.05,
+                st=item['st'])[0])
+        detection_event = read_events(os.path.join(
+            cls.testing_path, '21-1759-04L.S201309'))[0]
+        detection_spicks_event = read_events(
+            os.path.join(cls.testing_path, '18-2350-07L.S201309'))[0]
         cls.detections = [Detection(
             detect_time=detection_event.origins[0].time, detect_val=2.0,
             no_chans=5, threshold=1.9, typeofdet='corr', event=detection_event,
@@ -87,8 +92,8 @@ class TestMethods(unittest.TestCase):
         det_spicks += det_spicks.select(station='GCSZ', channel='EZ')[0].copy()
         det_spicks[-1].stats.channel = 'HA'
         temp_spicks = self.template_spicks.copy()
-        temp_spicks += temp_spicks.select(station='GCSZ',
-                                          channel='EZ')[0].copy()
+        temp_spicks += temp_spicks.select(
+            station='GCSZ', channel='EZ')[0].copy()
         temp_spicks[-1].stats.channel = 'HA'
         with warnings.catch_warnings(record=True) as w:
             i, event = _channel_loop(

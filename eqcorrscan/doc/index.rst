@@ -47,13 +47,8 @@ Also within this package are:
 * :doc:`Clustering routines for seismic data </submodules/utils.clustering>`;
 * :doc:`Peak finding algorithm (basic) </submodules/utils.findpeaks>`;
 * :doc:`Automatic amplitude picker for local magnitude scale </submodules/utils.mag_calc>`;
-* |seisan_link| :doc:`S-file integration </submodules/utils.sfile_util>` for database management and routine earthquake location;
 * :doc:`Stacking routines </submodules/utils.stacking>` including phase-weighted stacking based on Thurber at al. (2014);
 * :doc:`Brightness based template creation </submodules/core.bright_lights>` based on the work of Frank et al. (2014)
-
-.. |seisan_link| raw:: html
-
-  <a href="http://seisan.info/" target="_blank">Seisan</a>
 
 This package is written by the EQcorrscan developers, and is 
 distributed under the LGPL GNU Licence, Copyright EQcorrscan
@@ -62,7 +57,7 @@ developers 2017.
 Citation
 --------
 If you use this package in your work, please cite the following paper:
-Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters, `Accepted`
+Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters, `2017`
 
 References
 ----------
