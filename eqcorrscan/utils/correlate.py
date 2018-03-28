@@ -8,7 +8,7 @@ both in terms of overall speed, and in memory usage.  The time-domain is the
 most memory efficient but slowest routine (although fast for small cases of
 less than a few hundred correlations), the Numpy routine is fast, but memory
 inefficient due to a need to store large double-precision arrays for
-normalisation.  The fftw compiled routine is fastest and more memory efficient
+normalisation.  The fftw compiled routine is faster and more memory efficient
 than the Numpy routine.
 
 :copyright:
