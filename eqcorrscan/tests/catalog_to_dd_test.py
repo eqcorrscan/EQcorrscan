@@ -350,10 +350,11 @@ class FullTestCases(unittest.TestCase):
             max_shift_len = 0.2
             with Timer() as t:
                 write_correlations(
-                    self.event_list, self.wavbase, extract_len=2, pre_pick=0.5,
-                    shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
-                    max_sep=self.maximum_separation, min_link=self.minimum_links,
-                    cc_thresh=0.0, plotvar=False, parallel=parallel, cores=2)
+                    self.event_list, self.wavbase, extract_len=2, 
+                    pre_pick=0.5, shift_len=max_shift_len, lowcut=2.0, 
+                    highcut=10.0, max_sep=self.maximum_separation, 
+                    min_link=self.minimum_links, cc_thresh=0.0, 
+                    plotvar=False, parallel=parallel, cores=2)
             msg = 'Running ' + str(len(list(self.event_list))) + \
                   ' events took %s s' % t.secs
             print(msg)
@@ -364,8 +365,10 @@ class FullTestCases(unittest.TestCase):
             pair = cc.readline().split()[1:3]
             for line in cc:
                 if line[0] == '#':
-                    # Append old observations to the previous pair and put in pairs
-                    cc_pairs.append({'pair': pair, 'observations': observations})
+                    # Append old observations to the previous pair 
+                    # and put in pairs
+                    cc_pairs.append({'pair': pair, 'observations':\
+                                     observations})
                     pair = line.split()[1:3]
                     observations = []
                 else:
@@ -380,7 +383,8 @@ class FullTestCases(unittest.TestCase):
             pair = ct.readline().split()[1:3]
             for line in ct:
                 if line[0] == '#':
-                    # Append old observations to the previous pair and put in pairs
+                    # Append old observations to the previous pair and put 
+                    # in pairs
                     ct_pairs.append({'pair': pair,
                                      'observations': observations})
                     pair = line.split()[1:3]
@@ -403,7 +407,7 @@ class FullTestCases(unittest.TestCase):
                             for ct_obs in ct_pair['observations']:
                                 if cc_obs['station'] == ct_obs['station'] and\
                                    cc_obs['phase'] == ct_obs['phase']:
-                                    corr_correction = abs(ct_obs['diff_time'] -
+                                    corr_correction = abs(ct_obs['diff_time']-
                                                           cc_obs['diff_time'])
                                     self.assertTrue(corr_correction <
                                                     max_shift_len)

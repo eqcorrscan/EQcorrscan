@@ -289,8 +289,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
     fphase = open('phase.dat', 'w')
     stations = []
     evcount = 0
-    
-    #First read in all events
+    # First read in all events
     event_ids = list()
     catalog = Catalog()
     for i, master in enumerate(event_list):
@@ -298,15 +297,11 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         event_ids.append(master[0])
         event = read_nordic(sfile)[0]
         catalog += event
-        
-    #for i, master in enumerate(event_list):
+    # Loop over all master-events        
     i = -1
     for master_event in catalog:
         i += 1
-        #master_sfile = master[1]
-        #master_event_id = master[0]
         master_event_id = event_ids[i]
-        #master_event = read_nordic(master_sfile)[0]
         master_ori_time = master_event.origins[0].time
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
@@ -345,18 +340,15 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                                        master_ori_time, 3).rjust(6) +
                              '   ' + str(weight).ljust(5) +
                              pick.phase_hint + '\n')
-        for j in range(i + 1, len(event_list)):
-            # Use this tactic to only output unique event pairings
+        # Use this tactic to only output unique event pairings                             
+        for j in range(i + 1, len(event_list)):            
             slave_event = catalog[j]
-            #slave_sfile = event_list[j][1]
-            #slave_event_id = event_list[j][0]
             slave_event_id = event_ids[j]
             # Write out the header line
             event_text = '#' + str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10) + '\n'
             event_text2 = '#' + str(master_event_id).rjust(10) +\
                 str(slave_event_id).rjust(10) + '\n'
-            #slave_event = read_nordic(slave_sfile)[0]
             slave_ori_time = slave_event.origins[0].time
             slave_location = (slave_event.origins[0].latitude,
                               slave_event.origins[0].longitude,
@@ -365,13 +357,13 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                 continue
             links = 0  # Count the number of linkages
             for pick in master_event.picks:
+                # Only use P and S picks, not amplitude or 'other'
+                # Added by Carolin
                 if not hasattr(pick, 'phase_hint') or\
                                 len(pick.phase_hint) == 0:
                     continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
                     continue
-                    # Only use P and S picks, not amplitude or 'other'
-                # Added by Carolin
                 slave_matches = [p for p in slave_event.picks
                                  if hasattr(p, 'phase_hint') and
                                  p.phase_hint == pick.phase_hint and
@@ -410,7 +402,6 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                 f2.write(event_text2)
                 evcount += 1
     print('You have ' + str(evcount) + ' links')
-    # f.write('\n')
     f.close()
     f2.close()
     fphase.close()
@@ -430,54 +421,54 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     as the square of the cross-correlation.
 
     :type event_list: list
-    :param event_list: 
+    :param event_list:
         List of tuples of event_id (int) and sfile (String)
     :type wavbase: str
-    :param wavbase: 
+    :param wavbase:
         Path to the seisan wave directory that the wavefiles in the S-files are
         stored
     :type extract_len: float
     :param extract_len: 
         Length in seconds to extract around the pick
     :type pre_pick: float
-    :param pre_pick: 
+    :param pre_pick:
         Time before the pick to start the correlation window
     :type shift_len: float
-    :param shift_len: 
+    :param shift_len:
         Time to allow pick to vary
     :type lowcut: float
-    :param lowcut: 
+    :param lowcut:
         Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: 
+    :param highcut:
         Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: 
+    :param max_sep:
         Maximum separation between event pairs in km
     :type min_link: int
-    :param min_link: 
+    :param min_link:
         Minimum links for an event to be paired
     :type cc_thresh: float
-    :param cc_thresh: 
+    :param cc_thresh:
         Threshold to include cross-correlation results.
     :type plotvar: bool
-    :param plotvar: 
+    :param plotvar:
         To show the pick-correction plots, defualts to False.
     :type parallel: bool
-    :param parallel: 
+    :param parallel:
         To run the slave-loop in parallel.
     :type cores: int
-    :param cores: 
+    :param cores:
         Number of parallel workers, defaults to the number of cores available.
     :type debug: int
-    :param debug: 
+    :param debug:
         Variable debug levels from 0-5, higher=more output.
 
     .. warning::
         In contrast to seisan's corr routine, but in accordance with the
         hypoDD manual, this outputs corrected differential time.
         
-    .. note:: 
+    .. note::
         This routine is now much quicker than before, but may require more 
         memory. It now loads all event- and waveform-data in the beginning and
         is able to run the cross-correlation between one master-event and each
@@ -503,7 +494,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     f = open('dt.cc', 'w')
     f2 = open('dt.cc2', 'w')
     k_events = len(list(event_list))
-    #first read in all events and waveform-files
+    # First read in all events and waveform-files
     catalog = Catalog()
     stream_list = list()
     event_ids = list()
@@ -600,32 +591,14 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     i = -1
     for master_event in catalog[0:len(catalog.events)-1]:
         i += 1
-        #master_sfile = master[1]
         master_sfile = event_list[i][1]
         if debug > 1:
             print('Computing correlations for master: %s' % master_sfile)
-        #master_event_id = master[0]
         master_event_id = event_ids[i]
         masterstream = stream_list[i]
         master_location = (master_event.origins[0].latitude,
                            master_event.origins[0].longitude,
                            master_event.origins[0].depth / 1000.0)
-
-        #master_wavefiles = readwavename(master_sfile)
-        #masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
-        #if masterpath:
-        #    masterstream = read(masterpath[0])
-        #if len(master_wavefiles) > 1:
-        #    for wavefile in master_wavefiles:
-        #        try:
-        #            masterstream += read(os.join(wavbase, wavefile))
-        #        except:
-        #            raise IOError("Couldn't find wavefile")
-        #            continue
-        
-        
-        #if num_cores > k_events-i-1:
-        #    num_cores = k_events-i-1
         event_text_list = list()
         event_text2_list = list()
         links_list = list()
@@ -645,19 +618,19 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                      'slave_event': catalog[j],
                      'slavestream': stream_list[j],
                      'max_sep': max_sep,
-                     'pre_pick': pre_pick, 
-                     'extract_len': extract_len, 
-                     'shift_len': shift_len, 
-                     'lowcut': lowcut, 
-                     'highcut': highcut, 
-                     'plotvar': plotvar, 
+                     'pre_pick': pre_pick,
+                     'extract_len': extract_len,
+                     'shift_len': shift_len,
+                     'lowcut': lowcut,
+                     'highcut': highcut,
+                     'plotvar': plotvar,
                      'cc_thresh': cc_thresh,
                      'debug': debug})
-                       for j in range(i + 1, k_events) if dist_calc(\
+                       for j in range(i + 1, k_events) if dist_calc(
                                      master_location,
                                      (catalog[j].origins[0].latitude,
                                       catalog[j].origins[0].longitude,
-                                      catalog[j].origins[0].depth / 1000.0))\
+                                      catalog[j].origins[0].depth / 1000.0))
                                       <= max_sep]
             slave_loop_results = [p.get() for p in results]
             event_text_list = [result[0] for result in slave_loop_results]
@@ -675,16 +648,17 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     event_text, event_text2, links, phases =\
                         _slave_loop(master_sfile=master_sfile, 
                                     master_event_id=master_event_id, 
-                                    master_event=master_event, 
-                                    masterstream=masterstream, 
-                                    slave_sfile=event_list[j][1], 
-                                    slave_event_id=event_ids[j], 
-                                    slave_event= catalog[j], 
-                                    slavestream=stream_list[j], 
-                                    max_sep=max_sep, pre_pick=pre_pick, 
-                                    extract_len=extract_len, shift_len=shift_len, 
-                                    lowcut=lowcut, highcut=highcut, 
-                                    cc_thresh=cc_thresh, plotvar=plotvar, 
+                                    master_event=master_event,
+                                    masterstream=masterstream,
+                                    slave_sfile=event_list[j][1],
+                                    slave_event_id=event_ids[j],
+                                    slave_event= catalog[j],
+                                    slavestream=stream_list[j],
+                                    max_sep=max_sep, pre_pick=pre_pick,
+                                    extract_len=extract_len,
+                                    shift_len=shift_len,
+                                    lowcut=lowcut, highcut=highcut,
+                                    cc_thresh=cc_thresh, plotvar=plotvar,
                                     debug=debug)
                     event_text_list.append(event_text)
                     event_text2_list.append(event_text2)
@@ -702,7 +676,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     if parallel:
         pool.close()
         pool.join()
-    # f.write('\n')
     f.close()
     f2.close()
     return
