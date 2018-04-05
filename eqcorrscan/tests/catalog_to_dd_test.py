@@ -245,7 +245,8 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile('dt.ct'))
         write_correlations(event_list, wavbase, extract_len=2, pre_pick=0.5,
                            shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
-                           max_sep=1, min_link=8, cc_thresh=0.0, plotvar=False)
+                           max_sep=1, min_link=8, cc_thresh=0.0, plotvar=False,
+                           parallel=False, cores=1)
         self.assertTrue(os.path.isfile('dt.cc'))
 
 
@@ -345,66 +346,67 @@ class FullTestCases(unittest.TestCase):
         Test that the write_correlations function works as it should.
         Hard to test accurately...
         """
-        max_shift_len = 0.2
-        with Timer() as t:
-            write_correlations(
-                self.event_list, self.wavbase, extract_len=2, pre_pick=0.5,
-                shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
-                max_sep=self.maximum_separation, min_link=self.minimum_links,
-                cc_thresh=0.0, plotvar=False)
-        msg = 'Running ' + str(len(list(self.event_list))) + \
-              ' events took %s s' % t.secs
-        print(msg)
-        self.assertTrue(os.path.isfile('dt.cc'))
-        cc = open('dt.cc', 'r')
-        cc_pairs = []
-        observations = []
-        pair = cc.readline().split()[1:3]
-        for line in cc:
-            if line[0] == '#':
-                # Append old observations to the previous pair and put in pairs
-                cc_pairs.append({'pair': pair, 'observations': observations})
-                pair = line.split()[1:3]
-                observations = []
-            else:
-                obs = line.split()
-                observations.append({
-                    'station': obs[0], 'diff_time': float(obs[1]),
-                    'weight': float(obs[2]), 'phase': obs[3]})
-        cc.close()
-        ct = open('dt.ct', 'r')
-        ct_pairs = []
-        observations = []
-        pair = ct.readline().split()[1:3]
-        for line in ct:
-            if line[0] == '#':
-                # Append old observations to the previous pair and put in pairs
-                ct_pairs.append({'pair': pair,
-                                 'observations': observations})
-                pair = line.split()[1:3]
-                observations = []
-            else:
-                obs = line.split()
-                # for sub in line.split('-'):
-                #     for item in sub.split():
-                #         obs.append(item)
-                observations.append({
-                    'station': obs[0], 'weight': float(obs[3]),
-                    'phase': obs[4],
-                    'diff_time': float(obs[1]) - float(obs[2])})
-        ct.close()
-        # Everything is in memory, now we need to find matching pairs
-        for cc_pair in cc_pairs:
-            for ct_pair in ct_pairs:
-                if cc_pair['pair'] == ct_pair['pair']:
-                    for cc_obs in cc_pair['observations']:
-                        for ct_obs in ct_pair['observations']:
-                            if cc_obs['station'] == ct_obs['station'] and\
-                               cc_obs['phase'] == ct_obs['phase']:
-                                corr_correction = abs(ct_obs['diff_time'] -
-                                                      cc_obs['diff_time'])
-                                self.assertTrue(corr_correction <
-                                                max_shift_len)
+        for parallel in [False, True]:
+            max_shift_len = 0.2
+            with Timer() as t:
+                write_correlations(
+                    self.event_list, self.wavbase, extract_len=2, pre_pick=0.5,
+                    shift_len=max_shift_len, lowcut=2.0, highcut=10.0,
+                    max_sep=self.maximum_separation, min_link=self.minimum_links,
+                    cc_thresh=0.0, plotvar=False, parallel=parallel, cores=2)
+            msg = 'Running ' + str(len(list(self.event_list))) + \
+                  ' events took %s s' % t.secs
+            print(msg)
+            self.assertTrue(os.path.isfile('dt.cc'))
+            cc = open('dt.cc', 'r')
+            cc_pairs = []
+            observations = []
+            pair = cc.readline().split()[1:3]
+            for line in cc:
+                if line[0] == '#':
+                    # Append old observations to the previous pair and put in pairs
+                    cc_pairs.append({'pair': pair, 'observations': observations})
+                    pair = line.split()[1:3]
+                    observations = []
+                else:
+                    obs = line.split()
+                    observations.append({
+                        'station': obs[0], 'diff_time': float(obs[1]),
+                        'weight': float(obs[2]), 'phase': obs[3]})
+            cc.close()
+            ct = open('dt.ct', 'r')
+            ct_pairs = []
+            observations = []
+            pair = ct.readline().split()[1:3]
+            for line in ct:
+                if line[0] == '#':
+                    # Append old observations to the previous pair and put in pairs
+                    ct_pairs.append({'pair': pair,
+                                     'observations': observations})
+                    pair = line.split()[1:3]
+                    observations = []
+                else:
+                    obs = line.split()
+                    # for sub in line.split('-'):
+                    #     for item in sub.split():
+                    #         obs.append(item)
+                    observations.append({
+                        'station': obs[0], 'weight': float(obs[3]),
+                        'phase': obs[4],
+                        'diff_time': float(obs[1]) - float(obs[2])})
+            ct.close()
+            # Everything is in memory, now we need to find matching pairs
+            for cc_pair in cc_pairs:
+                for ct_pair in ct_pairs:
+                    if cc_pair['pair'] == ct_pair['pair']:
+                        for cc_obs in cc_pair['observations']:
+                            for ct_obs in ct_pair['observations']:
+                                if cc_obs['station'] == ct_obs['station'] and\
+                                   cc_obs['phase'] == ct_obs['phase']:
+                                    corr_correction = abs(ct_obs['diff_time'] -
+                                                          cc_obs['diff_time'])
+                                    self.assertTrue(corr_correction <
+                                                    max_shift_len)
 
 if __name__ == '__main__':
     unittest.main()
