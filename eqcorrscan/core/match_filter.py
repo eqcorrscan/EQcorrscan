@@ -379,11 +379,8 @@ class Party(object):
 
     def filter(self, dates=None, min_dets=1):
         """
-<<<<<<< HEAD
         Return a new Party filtered according to conditions.
 
-=======
->>>>>>> Check for empty parties
         Return a new Party with only detections within a date range and
         only families with a minimum number of detections.
 
@@ -3795,12 +3792,9 @@ def match_filter(template_names, template_list, st, threshold,
         certain of your arguments, then set to False.
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
-<<<<<<< HEAD
 
     .. note::
         **Returns:**
-=======
->>>>>>> Check for empty parties
 
         If neither `output_cat` or `extract_detections` are set to `True`,
         then only the list of :class:`eqcorrscan.core.match_filter.Detection`'s
