@@ -110,6 +110,8 @@ command line arguments to the script to generate templates from other
 FDSN databases.  Note that some data-centers do not support full FDSN quakeml
 files, and working out which do is quite painful.
 
+.. literalinclude:: ../../tutorials/template_creation.py
+
 Try this example for another, Northern California Data Center earthquake:
 
 ``python template_creation.py NCEDC 72572665``
@@ -157,8 +159,6 @@ are there to aid you, but if you look at the source code, all they are doing is:
 * and cutting.
 
 If you want to do these things another way you are more then welcome to!
-
-.. literalinclude:: ../../tutorials/template_creation.py
 
 Converting from templates to Template and Tribe objects
 -------------------------------------------------------
