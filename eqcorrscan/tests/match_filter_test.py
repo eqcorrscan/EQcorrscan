@@ -166,11 +166,9 @@ class TestGeoNetCase(unittest.TestCase):
         client = Client('GEONET')
         cls.t1 = UTCDateTime(2016, 9, 4)
         cls.t2 = cls.t1 + 86400
-        client = Client("GEONET")
         catalog = client.get_events(
             starttime=cls.t1, endtime=cls.t2, minmagnitude=4, minlatitude=-49,
-            maxlatitude=-35, minlongitude=175.0, maxlongitude=185.0,
-            includearrivals=True)
+            maxlatitude=-35, minlongitude=175.0, maxlongitude=-175.0)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         for event in catalog:

@@ -27,7 +27,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     cat = client.get_events(
         minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
         maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
-        endtime=UTCDateTime(2016, 5, 20), includearrivals=True)
+        endtime=UTCDateTime(2016, 5, 20))
     print("Downloaded a catalog of %i events" % len(cat))
     # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!

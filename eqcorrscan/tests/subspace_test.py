@@ -141,13 +141,10 @@ class SubspaceTestingMethods(unittest.TestCase):
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(
                 identity, np.diag(np.ones(len(identity), dtype=np.float16))))
-        comparison_detector = \
-            subspace.read_detector(os.path.
-                                   join(os.path.
-                                        abspath(os.path.
-                                                dirname(__file__)),
-                                        'test_data', 'subspace',
-                                        'master_detector_multi_unaligned.h5'))
+        comparison_detector = subspace.read_detector(
+                os.path.join(os.path.abspath(
+                    os.path.dirname(__file__)), 'test_data', 'subspace',
+                    'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -391,7 +388,7 @@ def get_test_data():
     cat = client.get_events(
         minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
         maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 11),
-        endtime=UTCDateTime(2016, 5, 13), includearrivals=True)
+        endtime=UTCDateTime(2016, 5, 13))
     cat = filter_picks(catalog=cat, top_n_picks=5)
     stachans = list(set([(pick.waveform_id.station_code,
                           pick.waveform_id.channel_code) for event in cat

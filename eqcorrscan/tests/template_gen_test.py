@@ -91,7 +91,7 @@ class TestTemplateGeneration(unittest.TestCase):
         cat = client.get_events(
             minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
             maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
-            enddtime=UTCDateTime(2016, 5, 2), includearrival=True)
+            endtime=UTCDateTime(2016, 5, 2))
         cat = filter_picks(catalog=cat, top_n_picks=5)
         template = from_client(
             catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
