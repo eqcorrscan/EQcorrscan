@@ -23,7 +23,6 @@ from eqcorrscan.core.match_filter import read_detections, get_catalog
 from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
 from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 
@@ -167,9 +166,11 @@ class TestGeoNetCase(unittest.TestCase):
         client = Client('GEONET')
         cls.t1 = UTCDateTime(2016, 9, 4)
         cls.t2 = cls.t1 + 86400
-        catalog = get_geonet_events(
-            startdate=cls.t1, enddate=cls.t2, minmag=4, minlat=-49, maxlat=-35,
-            minlon=175.0, maxlon=185.0)
+        client = Client("GEONET")
+        catalog = client.get_events(
+            starttime=cls.t1, endtime=cls.t2, minmagnitude=4, minlatitude=-49,
+            maxlatitude=-35, minlongitude=175.0, maxlongitude=185.0,
+            includearrivals=True)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         for event in catalog:

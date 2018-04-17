@@ -23,7 +23,6 @@ from eqcorrscan.core.template_gen import (
     from_sac, _group_events, from_seishub, from_meta_file, from_client,
     multi_template_gen, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
 
@@ -88,9 +87,11 @@ class TestTemplateGeneration(unittest.TestCase):
     def test_not_delayed(self):
         """Test the method of template_gen without applying delays to
         channels."""
-        cat = get_geonet_events(
-            minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
-            startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 2))
+        client = Client("GEONET")
+        cat = client.get_events(
+            minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+            maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
+            enddtime=UTCDateTime(2016, 5, 2), includearrival=True)
         cat = filter_picks(catalog=cat, top_n_picks=5)
         template = from_client(
             catalog=cat, client_id='GEONET', lowcut=None, highcut=None,

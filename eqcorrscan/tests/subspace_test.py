@@ -382,15 +382,16 @@ def get_test_data():
     :return: List of cut templates with no filters applied
     :rtype: list
     """
-    from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
     from obspy import UTCDateTime
     from eqcorrscan.utils.catalog_utils import filter_picks
     from eqcorrscan.utils.clustering import space_cluster
     from obspy.clients.fdsn import Client
 
-    cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                            maxlon=175.5, startdate=UTCDateTime(2016, 5, 11),
-                            enddate=UTCDateTime(2016, 5, 13))
+    client = Client("GEONET")
+    cat = client.get_events(
+        minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+        maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 11),
+        endtime=UTCDateTime(2016, 5, 13), includearrivals=True)
     cat = filter_picks(catalog=cat, top_n_picks=5)
     stachans = list(set([(pick.waveform_id.station_code,
                           pick.waveform_id.channel_code) for event in cat
@@ -418,6 +419,7 @@ def get_test_data():
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     return design_set, st
+
 
 if __name__ == '__main__':
     unittest.main()

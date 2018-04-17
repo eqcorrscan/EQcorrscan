@@ -12,7 +12,6 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime
 
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.clustering import space_cluster
 from eqcorrscan.core import subspace
@@ -24,15 +23,11 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
 
     :return: detections
     """
-    # We are going to use data from the GeoNet (New Zealand) catalogue. GeoNet
-    # do not implement the full FDSN system yet, so we have a hack to get
-    # around this.  It is not strictly part of EQcorrscan, so we haven't
-    # included it here, but you can find it in the tutorials directory of the
-    # github repository
-
-    cat = get_geonet_events(
-        minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
-        startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 20))
+    client = Client("GEONET")
+    cat = client.get_events(
+        minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+        maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
+        endtime=UTCDateTime(2016, 5, 20), includearrivals=True)
     print("Downloaded a catalog of %i events" % len(cat))
     # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!
