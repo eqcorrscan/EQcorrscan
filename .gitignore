@@ -37,3 +37,4 @@ eqcorrscan/utils/lib/*.pyd
 eqcorrscan/utils/lib/*.def
 eqcorrscan/utils/lib/*.dll
 eqcorrscan/utils/lib/fftw3.h
+.pytest_cache

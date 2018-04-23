@@ -21,7 +21,7 @@ from eqcorrscan.utils.correlate import (  # NOQA
 
 __all__ = ['core', 'utils', 'tutorials', 'helpers']
 
-__version__ = '0.2.7-dev'
+__version__ = '0.3.0'
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {

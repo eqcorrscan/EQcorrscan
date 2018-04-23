@@ -2,13 +2,12 @@
 ## A python package for the detection and analysis of repeating and near-repeating earthquakes.
 
 # Citation:
-We have a manuscript in review, if you make use of EQcorrscan please cite the folloing paper:
+We have a manuscript on the development of EQcorrscan, if you make use of EQcorrscan please cite the folloing paper:
 
-Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters *in review*
+Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., [EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python.](https://pubs.geoscienceworld.org/ssa/srl/article/89/1/173/524875/eqcorrscan-repeating-and-near-repeating-earthquake) Seismological Research Letters *2017*
 
 If you want to you should also cite the version number:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.893621.svg)](https://doi.org/10.5281/zenodo.893621)
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1209403.svg)](https://doi.org/10.5281/zenodo.1209403)
 
 # Test status
 Note that tests for travis and appveyor are run daily on master as cron jobs, and may reflect time-out issues.
@@ -94,7 +93,7 @@ to highlight key functions.
 
 This package was initially written by Calum Chamberlain and Chet Hopp
 of Victoria University of Wellington, and is distributed under the
-LGPL GNU License, Copyright EQcorrscan developers 2015, 2016, 2017.
+LGPL GNU License, Copyright EQcorrscan developers 2015, 2016, 2017, 2018.
 
 
 # Contributing

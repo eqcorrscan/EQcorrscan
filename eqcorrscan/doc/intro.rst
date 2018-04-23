@@ -33,6 +33,9 @@ documentation.
 Installation - Updated for version 0.2.7
 ----------------------------------------
 
+Recommended install method
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 In general we recommend users to install EQcorrscan in a virtual environment,
 |conda| will simplify your install greatly (install instuction for anaconda 
 or miniconda are here: |conda-install|) - we recommend creating a conda
@@ -53,59 +56,13 @@ To then install EQcorrscan you can simply run:
 
     conda install eqcorrscan
 
-And you are done! Otherwise, if you want to install via pip then the following applies:
+Not-recomended but workable methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Non-Python dependancies (without conda): Ubuntu:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Prior to installing the python routines you will need to install the fftw
-library.  On linux use apt (or your default package manager - note you may need
-sudo access):
-
-.. code-block:: bash
-
-    apt-get install libfftw3-dev
-
-Non-Python dependancies: OSX:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For OS-X systems install fftw from conda, available via the menpo channel:
-
-.. code-block:: bash
-
-    conda install -c menpo fftw
-    
-On OSX you will have to ensure that the gcc used for install is an actual gcc,
-not clang. To do this you should also install gcc into your conda environment:
-
-.. code-block:: bash
-
-    conda install gcc
-    
-Note that you can install fftw and gcc from other sources, however, we know there
-is an issue with homebrew gcc-4.9 (but not with macports gcc-4.9) - other
-gcc versions tested do work however.
-
-Non-Python dependancies: Windows:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For Windows systems you should follow the instructions on the |fftw-windows|
-page and use the pre-compiled dynamic libraries. These should be installed
-somewhere on your system path, or the install location added to your path.
-The correlation routines use openMP for parallel workflows, however, some aspects
-of this run into issues with version of MSVC < 10.0 (due to old C standards being
-used), as such, by default, the correlation routines are compiled as serial
-workflows on windows.  If you have a need for this threading in windows please
-get in touch with the developers.
-
-EQcorrscan install via pip:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Once you have installed fftw the EQcorrscan install should be as simple as:
-
-.. code-block:: bash
-
-    pip install eqcorrscan
+There are a myriad of other ways to install EQcorrscan and it's dependancies,
+some details for some of those cases can be found :doc:`here</installation>`.
+We do note that the other methods are more involved, and can be problematic. If
+you do chose not to use conda then you should definitely test your install.
 
 .. |conda| raw:: html
 
@@ -138,23 +95,6 @@ Once you have installed fftw the EQcorrscan install should be as simple as:
 .. |cv3_ubuntu| raw:: html
 
    <a href="http://www.pyimagesearch.com/2015/07/20/install-opencv-3-0-and-python-3-4-on-ubuntu/" target="_blank">install cv3 on ubuntu</a>
-
-
-Note you may have issues with these installs if you don't have numpy installed: but if
-you don't have numpy installed then you have bigger issues...
-
-If you plan to run the *bright_lights* or generating a synthetic grid of
-templates you will need to have grid csv files, which the authors have
-previously used NonLinLoc to generate.  This is not provided here and should
-be sourced from |NLLoc_link|. This will provide
-the Grid2Time routine which is required to set-up a lag-time grid for your
-velocity model.  You should read the NonLinLoc documentation for more
-information regarding how this process works and the input files you are
-required to give.
-
-.. |NLLoc_link| raw:: html
-
-  <a href="http://alomax.free.fr/nlloc/" target="_blank">NonLinLoc</a>
 
 Supported environments
 ----------------------
@@ -207,6 +147,8 @@ parallelisation on a day level when computing detections over multiple days.
 I tend to run one day per node of a cluster computer, with each day running
 templates in parallel.
 
+.. _RunningTests:
+
 Running tests
 -------------
 
@@ -241,6 +183,22 @@ You can then run the tests from within the repository directory:
 .. code-block:: bash
 
     python setup.py test
+
+If this fails with an error like:
+
+.. code-block:: bash
+
+    error: invalid command 'pytest'
+
+Then you can instead run the tests using the following:
+
+.. code-block:: bash
+
+    python setup.py develop
+    py.test
+
+Note that if you needed to prepend CC=gcc (if the default compiler is `clang`)
+then you will also need to here for the setup.py command.
 
 Tests will take about half an hour to run (as of v.0.1.4) and will provide
 a coverage report at the end and notify you of any failures.

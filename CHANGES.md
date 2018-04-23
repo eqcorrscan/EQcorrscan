@@ -1,5 +1,7 @@
 ## Current
 * Added memory management functions in helpers.memory_management
+
+## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
 * Add script to test what is the fastest correlation routine for a given dataset
     * This script will write out to a .eqcorrscan.rc file in the users home
