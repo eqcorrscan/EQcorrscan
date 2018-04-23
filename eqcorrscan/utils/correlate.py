@@ -429,13 +429,10 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
     restype = ctypes.c_int
-    if threaded:
-        func = utilslib.multi_normxcorr_time_threaded
-        argtypes.append(ctypes.c_int)
-    else:
-        func = utilslib.multi_normxcorr_time
+    func = utilslib.multi_normxcorr_time
     func.argtypes = argtypes
     func.restype = restype
     # Need to de-mean everything
@@ -453,6 +450,8 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
                  np.ascontiguousarray(stream, np.float32), image_len, ccc]
     if threaded:
         time_args.append(kwargs.get('cores', cpu_count()))
+    else:
+        time_args.append(1)
     func(*time_args)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
@@ -509,7 +508,6 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
-
     if threaded:
         func = utilslib.normxcorr_fftw_threaded
     else:

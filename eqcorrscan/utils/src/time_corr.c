@@ -28,95 +28,56 @@
     #endif
 #endif
 
-int normxcorr_time_threaded(float*, int, float*, int, float*, int);
+int multi_normxcorr_time(float*, int, int, float*, int, float*, int);
 
-int normxcorr_time(float*, int, float*, int, float*);
-
-int multi_normxcorr_time(float*, int, int, float*, int, float*);
-
-int multi_normxcorr_time_threaded(float*, int, int, float*, int, float*, int);
-
-int normxcorr_time_threaded(float *template, int template_len, float *image, int image_len, float *ccc, int num_threads){
-    // Time domain cross-correlation - requires zero-mean template
-	int p, k;
+int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image,
+                         int image_len, float *ccc, int num_threads){
+	int i, p, k;
 	int steps = image_len - template_len + 1;
-	double * mean = (double *) calloc(steps, sizeof(double));
-	double numerator = 0.0, denom;
-	double auto_a = 0.0, auto_b = 0.0;
+	double * running_mean = (double *) calloc(steps, sizeof(double));
+	double * auto_b = (double *) calloc(steps, sizeof(double));
 
-    mean[0] = 0;
-    for (k=0; k < template_len; ++k){
-		mean[0] += image[k];
+
+    // Pre-compute the running mean
+	running_mean[0] = 0;
+    for (i = 0; i < template_len; ++i){
+		running_mean[0] += image[i];
 	}
-	mean[0] = mean[0] / template_len;
+	running_mean[0] = running_mean[0] / template_len;
 
-    for(k = 1; k < steps; ++k){
-        mean[k] = mean[k - 1] + (image[k + template_len - 1] - image[k - 1]) / template_len;
+    for(i = 1; i < steps; ++i){
+        running_mean[i] = running_mean[i - 1] + (image[i + template_len - 1] - image[i - 1]) / template_len;
     }
-	for(p = 0; p < template_len; ++p){
-		auto_a += (double) template[p] * (double) template[p];
-	}
-	#pragma omp parallel for private(numerator, denom, auto_b, p) num_threads(num_threads)
-	for(k = 0; k < steps; ++k){
-	    numerator = 0.0;
-	    auto_b = 0.0;
-		for(p = 0; p < template_len; ++p){
-			numerator += (double) template[p] * ((double) image[p + k] - mean[k]);
-			auto_b += ((double) image[p + k] - mean[k]) * ((double) image[p + k] - mean[k]);
-		}
-		denom = sqrt(auto_a * auto_b);
-		ccc[k] = (float) (numerator / denom);
-	}
-	free(mean);
-	return 0;
-}
 
-int normxcorr_time(float *template, int template_len, float *image, int image_len, float *ccc){
-    // Time domain cross-correlation - requires zero-mean template
-	int p, k;
-	int steps = image_len - template_len + 1;
-	double * mean = (double *) calloc(steps, sizeof(double));
-	double numerator = 0.0, denom;
-	double auto_a = 0.0, auto_b = 0.0;
-
-    mean[0] = 0;
-    for (k=0; k < template_len; ++k){
-		mean[0] += image[k];
-	}
-	mean[0] = mean[0] / template_len;
-
-    for(k = 1; k < steps; ++k){
-        mean[k] = mean[k - 1] + (image[k + template_len - 1] - image[k - 1]) / template_len;
+    // Pre-compute the image autocorrelation
+    #pragma omp parallel for num_threads(num_threads)
+    for(i = 0; i < steps; ++i){
+        double _auto_b = 0.0;
+        for(p = 0; p < template_len; ++p){
+            _auto_b += ((double) image[p + k] - running_mean[k]) * ((double) image[p + k] - running_mean[k]);
+        }
+        auto_b[i] = _auto_b;
     }
-	for(p = 0; p < template_len; ++p){
-		auto_a += (double) template[p] * (double) template[p];
+
+	for (i = 0; i < n_templates; ++i){
+	    double auto_a = 0.0;
+	    #pragma omp parallel for reduction(+:auto_a) num_threads(num_threads)
+    	for(p = 0; p < template_len; ++p){
+	    	auto_a += (double) templates[(template_len * i) + p] * (double) templates[(template_len * i) + p];
+    	}
+
+        #pragma omp parallel for num_threads(num_threads)
+    	for(k = 0; k < steps; ++k){
+	        double numerator = 0.0, denom;
+    		for(p = 0; p < template_len; ++p){
+	    		numerator += (double) templates[(template_len * i) + p] * ((double) image[p + k] - running_mean[k]);
+    		}
+    		denom = sqrt(auto_a * auto_b[k]);
+		    ccc[((image_len - template_len + 1) * i) + k] = (float) (numerator / denom);
+    	}
 	}
-	for(k = 0; k < steps; ++k){
-	    numerator = 0.0;
-	    auto_b = 0.0;
-		for(p = 0; p < template_len; ++p){
-			numerator += (double) template[p] * ((double) image[p + k] - mean[k]);
-			auto_b += ((double) image[p + k] - mean[k]) * ((double) image[p + k] - mean[k]);
-		}
-		denom = sqrt(auto_a * auto_b);
-		ccc[k] = (float) (numerator / denom);
-	}
-	free(mean);
+	free(running_mean);
+	free(auto_b);
 	return 0;
 }
 
-int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
-	int i;
-	for (i = 0; i < n_templates; ++i){
-		normxcorr_time(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i]);
-	}
-	return 0;
-}
-
-int multi_normxcorr_time_threaded(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int num_threads){
-	int i;
-	for (i = 0; i < n_templates; ++i){
-		normxcorr_time_threaded(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i], num_threads);
-	}
-	return 0;
-}
