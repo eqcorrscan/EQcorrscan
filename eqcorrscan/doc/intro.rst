@@ -183,6 +183,9 @@ You can then run the tests from within the repository directory:
 .. code-block:: bash
 
     python setup.py test
+    
+Note that if you needed to prepend CC=gcc (if the default compiler is `clang`)
+then you will also need to here for the setup.py command.
 
 If this fails with an error like:
 
@@ -190,15 +193,21 @@ If this fails with an error like:
 
     error: invalid command 'pytest'
 
-Then you can instead run the tests using the following:
+If you already have an install of EQcorrscan then you can instead run the
+tests using the following:
 
 .. code-block:: bash
 
-    python setup.py develop
+    pip install requirements.txt
     py.test
 
-Note that if you needed to prepend CC=gcc (if the default compiler is `clang`)
-then you will also need to here for the setup.py command.
+Otherwise, if you have the pytest error and no previous install of EQcorrscan
+you can install from source and run the tests using:
 
-Tests will take about half an hour to run (as of v.0.1.4) and will provide
+.. code-block:: bash
+
+    python setup.py install
+    py.test
+
+Tests will take about half an hour to run (as of v.0.3.0) and will provide
 a coverage report at the end and notify you of any failures.
