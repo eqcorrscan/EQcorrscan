@@ -46,8 +46,8 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
     :param allow_shift:
         Whether to allow the optimum alignment to be found for coherence,
         defaults to `False` for strict coherence
-    :type shift_len: int
-    :param shift_len: Samples to shift, only used if `allow_shift=True`
+    :type shift_len: float
+    :param shift_len: Seconds to shift, only used if `allow_shift=True`
     :type i: int
     :param i: index used for parallel async processing, returned unaltered
     :type xcorr_func: str, callable
@@ -105,8 +105,8 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         matrix for
     :type allow_shift: bool
     :param allow_shift: To allow templates to shift or not?
-    :type shift_len: int
-    :param shift_len: How many samples for templates to shift in time
+    :type shift_len: float
+    :param shift_len: How many seconds for templates to shift
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
@@ -176,8 +176,8 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :type allow_shift: bool
     :param allow_shift:
         Whether to allow the templates to shift when correlating
-    :type shift_len: int
-    :param shift_len: How many samples to allow the templates to shift in time
+    :type shift_len: float
+    :param shift_len: How many seconds to allow the templates to shift
     :type save_corrmat: bool
     :param save_corrmat:
         If True will save the distance matrix to dist_mat.npy in the local
