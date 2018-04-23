@@ -50,9 +50,14 @@ Also within this package are:
 * :doc:`Stacking routines </submodules/utils.stacking>` including phase-weighted stacking based on Thurber at al. (2014);
 * :doc:`Brightness based template creation </submodules/core.bright_lights>` based on the work of Frank et al. (2014)
 
-This package is written by Calum Chamberlain and Chet Hopp of Victoria
-University of Wellington, New Zealand, and is distributed under the LGPL GNU
-Licence, Copyright Calum Chamberlain & Chet Hopp 2015 & 2016.
+This package is written by the EQcorrscan developers, and is 
+distributed under the LGPL GNU Licence, Copyright EQcorrscan
+developers 2017.
+
+Citation
+--------
+If you use this package in your work, please cite the following paper:
+Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python. Seismological Research Letters, `2017`
 
 References
 ----------
@@ -68,6 +73,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   installation
    updates
    tutorial
    core

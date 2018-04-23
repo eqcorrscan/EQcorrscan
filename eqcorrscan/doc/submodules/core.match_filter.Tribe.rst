@@ -1,6 +1,10 @@
 match_filter.Tribe
 ==================
 
+See notes and warnings on correlations here: correlation_warnings_
+
+.. _correlation_warnings: utils.correlate.html#notes-on-accuracy
+
 .. currentmodule:: eqcorrscan.core.match_filter
 
 .. autoclass:: Tribe

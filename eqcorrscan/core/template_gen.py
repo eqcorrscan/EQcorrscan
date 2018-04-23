@@ -232,7 +232,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         if isinstance(kwargs.get('meta_file'), Catalog):
             catalog = kwargs.get('meta_file')
         else:
-            catalog = read_events(kwargs.get('meta_file', None))
+            catalog = read_events(kwargs.get('meta_file'))
         sub_catalogs = [catalog]
         st = kwargs.get('st', Stream())
         process = kwargs.get('process', True)
