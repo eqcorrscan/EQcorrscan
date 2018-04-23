@@ -390,9 +390,9 @@ def get_test_data():
         maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 11),
         endtime=UTCDateTime(2016, 5, 13))
     cat = filter_picks(catalog=cat, top_n_picks=5)
-    stachans = list(set([(pick.waveform_id.station_code,
-                          pick.waveform_id.channel_code) for event in cat
-                         for pick in event.picks]))
+    stachans = list(set([
+        (pick.waveform_id.station_code, pick.waveform_id.channel_code)
+        for event in cat for pick in event.picks]))
     clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     client = Client('GEONET')
@@ -410,9 +410,8 @@ def get_test_data():
         design_set.append(st.copy().trim(t1, t2))
     t1 = UTCDateTime(2016, 5, 11, 19)
     t2 = UTCDateTime(2016, 5, 11, 20)
-    bulk_info = [('NZ', stachan[0], '*',
-                  stachan[1][0:2] + '?',
-                  t1, t2) for stachan in stachans]
+    bulk_info = [('NZ', stachan[0], '*', stachan[1][0:2] + '?', t1, t2)
+                 for stachan in stachans]
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     return design_set, st
