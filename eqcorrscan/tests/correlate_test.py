@@ -212,7 +212,7 @@ class TestArrayCorrelateFunctions:
             assert np.allclose(cc1, cc2, atol=self.atol)
 
     def test_test_autocorrelation(self, array_ccs):
-        """ ensure an auto correlationoccurred in each of ccs where it is
+        """ ensure an auto correlation occurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)

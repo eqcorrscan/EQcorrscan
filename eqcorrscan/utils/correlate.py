@@ -554,9 +554,6 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     return ccc, used_chans
 
 
-# The time-domain routine can be sped up massively on large machines (many
-# threads) using the openMP threaded functions.
-
 @time_multi_normxcorr.register('multithread')
 @time_multi_normxcorr.register('concurrent')
 def _time_threaded_normxcorr(templates, stream, *args, **kwargs):

@@ -47,11 +47,13 @@ class Timer(object):
 def time_func(func, name, *args, **kwargs):
     """ call a func with args and kwargs, print name of func and how
     long it took. """
+    print("Running {0}".format(name))
     tic = time.time()
     out = func(*args, **kwargs)
     toc = time.time()
-    print('%s took %0.2f seconds' % (name, toc - tic))
+    print('\t{0} took {1:0.2f} seconds'.format(name, toc - tic))
     return out
+
 
 if __name__ == "__main__":
     """Doc-test."""

@@ -165,12 +165,14 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     memory_use = {}
     best_time = {'None': np.inf}
     for corr_func in XCOR_FUNCS.keys():
-        if corr_func == 'default':
+        if corr_func in ['default', 'numpy']:
             continue
         print("=" * 80)
         print(("Running %s" % corr_func).center(80))
         print("=" * 80)
         for method in XCORR_STREAM_METHODS:
+            if method in ['multiprocess', 'concurrent', 'stream_xcorr']:
+                continue
             try:
                 print(("Testing %s method" % method).center(80))
                 func = get_stream_xcorr(corr_func, method)
