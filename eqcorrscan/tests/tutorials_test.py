@@ -116,6 +116,7 @@ class TestTutorialScripts(unittest.TestCase):
         detections = subspace.run_tutorial(plot=False)
         self.assertEqual(len(detections), 11)
 
+
 if __name__ == '__main__':
     """
     Run tutorial tests

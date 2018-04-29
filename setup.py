@@ -15,9 +15,11 @@ import os
 import sys
 import shutil
 import glob
-import eqcorrscan
 
-VERSION = eqcorrscan.__version__
+with open("eqcorrscan/__init__.py", "r") as init_file:
+    version_line = [line for line in init_file
+                    if '__version__' in line][0]
+VERSION = version_line.split()[-1].split("'")[1]
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
