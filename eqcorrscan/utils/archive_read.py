@@ -18,6 +18,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+import warnings
+import glob
+
+from multiprocessing import Pool, cpu_count
+from obspy import read, UTCDateTime, Stream
+from obspy.clients.fdsn.header import FDSNException
+from obspy.clients.seishub import Client as SeishubClient
+from obspy.clients.fdsn import Client as FDSNClient
+
 
 def read_data(archive, arc_type, day, stachans, length=86400):
     """
@@ -52,7 +62,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
 
     .. rubric:: Example
 
-    >>> from eqcorrscan.utils.archive_read import read_data
     >>> from obspy import UTCDateTime
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> stachans = [('JCNB', 'SP1')]
@@ -64,8 +73,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
 
     .. rubric:: Example, missing data
 
-    >>> from eqcorrscan.utils.archive_read import read_data
-    >>> from obspy import UTCDateTime
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> stachans = [('JCNB', 'SP1'), ('GCSZ', 'HHZ')]
     >>> st = read_data('NCEDC', 'FDSN', t1, stachans)
@@ -77,8 +84,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
 
     .. rubric:: Example, local day-volumes
 
-    >>> from eqcorrscan.utils.archive_read import read_data
-    >>> from obspy import UTCDateTime
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> stachans = [('WHYM', 'SHZ'), ('EORO', 'SHZ')]
     >>> st = read_data('eqcorrscan/tests/test_data/day_vols', 'day_vols',
@@ -90,22 +95,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     AF.EORO..SHZ | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.000000Z \
 | 1.0 Hz, 86400 samples
     """
-    import obspy
-    import os
-    from obspy.clients.fdsn.header import FDSNException
-    if arc_type.lower() == 'seishub':
-        if int(obspy.__version__.split('.')[0]) >= 1:
-            from obspy.clients.seishub import Client
-        else:
-            from obspy.seishub import Client
-    else:
-        if int(obspy.__version__.split('.')[0]) >= 1:
-            from obspy.clients.fdsn import Client
-        else:
-            from obspy.fdsn import Client
-    from obspy import read, UTCDateTime
-    import warnings
-
     st = []
     available_stations = _check_available_data(archive, arc_type, day)
     for station in stachans:
@@ -122,14 +111,19 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                             day.strftime('%Y/%m/%d')])
             warnings.warn(msg)
             continue
-        if arc_type.lower() in ['seishub', 'fdsn']:
-            client = Client(archive)
+        if arc_type.lower() == 'seishub':
+            client = SeishubClient(archive)
+            st += client.get_waveforms(
+                    network='*', station=station_map[0], location='*',
+                    channel=station_map[1], starttime=UTCDateTime(day),
+                    endtime=UTCDateTime(day) + length)
+        elif arc_type.upper() == "FDSN":
+            client = FDSNClient(archive)
             try:
-                st += client.get_waveforms(network='*', station=station_map[0],
-                                           location='*',
-                                           channel=station_map[1],
-                                           starttime=UTCDateTime(day),
-                                           endtime=UTCDateTime(day) + length)
+                st += client.get_waveforms(
+                    network='*', station=station_map[0], location='*',
+                    channel=station_map[1], starttime=UTCDateTime(day),
+                    endtime=UTCDateTime(day) + length)
             except FDSNException:
                 warnings.warn('No data on server despite station being ' +
                               'available...')
@@ -142,7 +136,7 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                                          station_map[0], station_map[1])
             for wavfile in wavfiles:
                 st += read(wavfile, starttime=day, endtime=day + length)
-    st = obspy.Stream(st)
+    st = Stream(st)
     return st
 
 
@@ -157,9 +151,6 @@ def _get_station_file(path_name, station, channel, debug=0):
 
     :returns: list of filenames, str
     """
-    import glob
-    import os
-    from multiprocessing import Pool, cpu_count
     pool = Pool(processes=cpu_count())
     wavfiles = glob.glob(path_name + os.sep + '*')
 
@@ -186,7 +177,6 @@ def _parallel_checking_loop(wavfile, station, channel, debug=0):
     :type debug: int
     :param debug: Debug level, if > 1, will output what it it working on.
     """
-    from obspy import read
     if debug > 1:
         print('Checking ' + wavfile)
     st = read(wavfile, headonly=True)
@@ -212,10 +202,6 @@ def _check_available_data(archive, arc_type, day):
     .. note:: Currently the seishub options are untested.
 
     """
-    from obspy import read, UTCDateTime
-    import glob
-    import os
-
     available_stations = []
     if arc_type.lower() == 'day_vols':
         wavefiles = glob.glob(os.path.join(archive, day.strftime('Y%Y'),
@@ -225,15 +211,13 @@ def _check_available_data(archive, arc_type, day):
             available_stations.append((header[0].stats.station,
                                        header[0].stats.channel))
     elif arc_type.lower() == 'seishub':
-        from obspy.clients.seishub import Client
-        client = Client(archive)
+        client = SeishubClient(archive)
         st = client.get_previews(starttime=UTCDateTime(day),
                                  endtime=UTCDateTime(day) + 86400)
         for tr in st:
             available_stations.append((tr.stats.station, tr.stats.channel))
     elif arc_type.lower() == 'fdsn':
-        from obspy.clients.fdsn import Client
-        client = Client(archive)
+        client = FDSNClient(archive)
         inventory = client.get_stations(starttime=UTCDateTime(day),
                                         endtime=UTCDateTime(day) + 86400,
                                         level='channel')

@@ -217,14 +217,14 @@ def _get_origin(event):
     :param event: Event to get the origin of.
     :return: :class:`obspy.core.event.Origin`
     """
-    from eqcorrscan.core.match_filter import MatchFilterError
     if event.preferred_origin() is not None:
         origin = event.preferred_origin()
     elif len(event.origins) > 0:
         origin = event.origins[0]
     else:
-        raise MatchFilterError('No origin set, cannot constrain')
+        raise IndexError('No origin set, cannot constrain')
     return origin
+
 
 if __name__ == "__main__":
     import doctest
