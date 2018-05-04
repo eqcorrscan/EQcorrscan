@@ -1131,6 +1131,7 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
         template, where signal-to-noise ratio is calculated as the ratio of
         the maximum amplitude in the template window to the rms amplitude in
         the whole window given.
+
     :returns: List of :class:`obspy.core.stream.Stream` newly cut templates
     :rtype: list
 
