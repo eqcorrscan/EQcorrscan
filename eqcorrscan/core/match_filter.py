@@ -42,7 +42,7 @@ from eqcorrscan.core import template_gen
 from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import (
-    get_array_xcorr, get_stream_xcorr, set_xcorr)
+    get_array_xcorr, get_stream_xcorr)
 from eqcorrscan.helpers.debug_log import debug_print
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.parameters import get_default_xcorr
@@ -4103,7 +4103,7 @@ def match_filter(template_names, template_list, st, threshold,
     for template in templates:
         debug_print(template.__str__(), 3, debug)
     debug_print(stream.__str__(), 3, debug)
-    # ------------------ ACTUALLY DO THE MATCH-FILTERING -----------------------
+    # ------------------ ACTUALLY DO THE MATCH-FILTERING ----------------------
     # TODO: Is this the best place to do it - will do it a lot...
     # Could do it in the objects as-well and set xcorr_func there?
     if xcorr_func is None:
