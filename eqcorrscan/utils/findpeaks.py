@@ -24,7 +24,7 @@ from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.helpers.debug_log import debug_print
-from eqcorrscan.utils.libnames import _load_cdll
+from eqcorrscan.helpers.libnames import _load_cdll
 
 
 def is_prime(number):
