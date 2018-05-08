@@ -57,7 +57,7 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
-def _spike_test(stream, percent=0.99, multiplier=1e6):
+def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
 
@@ -2507,10 +2507,11 @@ class Tribe(object):
                 ignore_length=ignore_length, overlap=overlap, debug=debug,
                 full_peaks=full_peaks)
             party += group_party
-        for family in party:
-            if family is not None:
-                family.detections = family._uniq().detections
-                family.catalog = family._uniq().catalog
+        if len(party) > 0:
+            for family in party:
+                if family is not None:
+                    family.detections = family._uniq().detections
+                    family.catalog = family._uniq().catalog
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
