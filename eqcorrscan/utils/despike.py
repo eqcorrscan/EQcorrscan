@@ -17,12 +17,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
 from multiprocessing import Pool, cpu_count
+from obspy import Trace
 
 from eqcorrscan.helpers.timer import Timer
+from eqcorrscan.utils.plotting import peaks_plot
+from eqcorrscan.core.match_filter import normxcorr2
+from eqcorrscan.utils.findpeaks import find_peaks2_short
 
 
 def median_filter(tr, multiplier=10, windowlength=0.5,
@@ -58,10 +63,13 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
     # Note - might be worth finding spikes in filtered data
     filt = tr.copy()
     filt.detrend('linear')
-    filt.filter('bandpass', freqmin=10.0,
-                freqmax=(tr.stats.sampling_rate / 2) - 1)
+    try:
+        filt.filter('bandpass', freqmin=10.0,
+                    freqmax=(tr.stats.sampling_rate / 2) - 1)
+    except Exception as e:
+        print("Could not filter due to error: {0}".format(e))
     data = filt.data
-    del(filt)
+    del filt
     # Loop through windows
     _windowlength = int(windowlength * tr.stats.sampling_rate)
     _interp_len = int(interp_len * tr.stats.sampling_rate)
@@ -113,9 +121,6 @@ def _median_window(window, window_start, multiplier, starttime, sampling_rate,
     :returns: peaks
     :rtype: list
     """
-    from eqcorrscan.utils.findpeaks import find_peaks2_short
-    from eqcorrscan.utils.plotting import peaks_plot
-
     MAD = np.median(np.abs(window))
     thresh = multiplier * MAD
     if debug >= 2:
@@ -180,13 +185,6 @@ def template_remove(tr, template, cc_thresh, windowlength,
     :returns: tr, works in place.
     :rtype: :class:`obspy.core.trace.Trace`
     """
-    from eqcorrscan.core.match_filter import normxcorr2
-    from eqcorrscan.utils.findpeaks import find_peaks2_short
-    from obspy import Trace
-    from eqcorrscan.helpers.timer import Timer
-    import matplotlib.pyplot as plt
-    import warnings
-
     data_in = tr.copy()
     _interp_len = int(tr.stats.sampling_rate * interp_len)
     if _interp_len < len(template.data):

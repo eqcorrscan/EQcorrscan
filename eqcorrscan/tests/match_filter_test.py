@@ -750,7 +750,7 @@ class TestMatchObjects(unittest.TestCase):
                                  for d in declustered_dets if d != det]
                     for dif in time_difs:
                         self.assertTrue(dif > trig_int)
-                with self.assertRaises(MatchFilterError):
+                with self.assertRaises(IndexError):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
 

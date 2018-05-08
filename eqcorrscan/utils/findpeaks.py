@@ -12,15 +12,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import ctypes
 import random
 import numpy as np
 
 from obspy import UTCDateTime
 from scipy import ndimage
 from multiprocessing import Pool
+from future.utils import native_str
+from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.helpers.debug_log import debug_print
+from eqcorrscan.utils.libnames import _load_cdll
 
 
 def is_prime(number):
@@ -222,11 +226,6 @@ def decluster(peaks, index, trig_int):
 
     :return: list of tuples of (value, sample)
     """
-    from eqcorrscan.helpers.libnames import _load_cdll
-    import ctypes
-    from future.utils import native_str
-    from itertools import compress
-
     utilslib = _load_cdll('libutils')
 
     length = np.int32(len(peaks))
