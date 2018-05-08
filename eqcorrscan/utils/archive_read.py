@@ -22,7 +22,6 @@ import os
 import warnings
 import glob
 
-from multiprocessing import Pool, cpu_count
 from obspy import read, UTCDateTime, Stream
 from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.seishub import Client as SeishubClient
@@ -129,11 +128,9 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                               'available...')
                 continue
         elif arc_type.lower() == 'day_vols':
-            wavfiles = _get_station_file(os.path.join(archive,
-                                                      day.strftime('Y%Y' +
-                                                                   os.sep +
-                                                                   'R%j.01')),
-                                         station_map[0], station_map[1])
+            wavfiles = _get_station_file(os.path.join(
+                archive, day.strftime('Y%Y' + os.sep + 'R%j.01')),
+                station_map[0], station_map[1])
             for wavfile in wavfiles:
                 st += read(wavfile, starttime=day, endtime=day + length)
     st = Stream(st)
@@ -151,20 +148,15 @@ def _get_station_file(path_name, station, channel, debug=0):
 
     :returns: list of filenames, str
     """
-    pool = Pool(processes=cpu_count())
     wavfiles = glob.glob(path_name + os.sep + '*')
 
-    results = [pool.apply_async(_parallel_checking_loop,
-                                args=(wavfile, station, channel, debug))
-               for wavfile in wavfiles]
-    pool.close()
-    out_files = [p.get() for p in results]
-    pool.join()
+    out_files = [_check_data(wavfile, station, channel, debug=debug)
+                 for wavfile in wavfiles]
     out_files = list(set(out_files))
     return out_files
 
 
-def _parallel_checking_loop(wavfile, station, channel, debug=0):
+def _check_data(wavfile, station, channel, debug=0):
     """
     Inner loop for parallel checks.
 
