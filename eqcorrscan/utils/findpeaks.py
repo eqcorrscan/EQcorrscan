@@ -72,11 +72,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and \
-        peaks will not be found in.
+    :param thresh:
+        The threshold below which will be considered noise and peaks will
+        not be found in.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,\
-        if multiple peaks within this window this code will find the highest.
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
     :type starttime: obspy.core.utcdatetime.UTCDateTime
@@ -180,7 +182,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         The threshold below which will be considered noise and peaks will not
         be found in. One threshold per array.
     :type trig_int: int
-    :param trig_int: 
+    :param trig_int:
         The minimum difference in samples between triggers, if multiple
         peaks within this window this code will find the highest.
     :type debug: int
@@ -195,7 +197,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
     :type cores: int
-    :param cores: 
+    :param cores:
         Maximum number of processes to spin up for parallel peak-finding
 
     :returns:
