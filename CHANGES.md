@@ -1,3 +1,7 @@
+## Current
+* Cleaned imports in utils modules
+* Removed parallel checking loop in archive_read.
+
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
 * Change default match-filter plotting to not decimate unless it has to.
