@@ -588,8 +588,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         # are not all zeros
         if np.all(tr.data.astype(np.float16) == 0):
             logger.warning(
-                'Trace {0} is all zeros at float16 level, either gain or check.'
-                ' Not using in template.'.format(tr.id))
+                'Trace {0} is all zeros at float16 level, either gain or '
+                'check. Not using in template.'.format(tr.id))
             st.remove(tr)
     if plot:
         stplot = st.copy()

@@ -4122,7 +4122,8 @@ def match_filter(template_names, template_list, st, threshold,
                         logger.warning(
                             'Removing template channel {0}.{1}.{2}.{3} due to '
                             'no matches in continuous data'.format(
-                                stachan[0], stachan[1], stachan[2], stachan[3]))
+                                stachan[0], stachan[1], stachan[2],
+                                stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
     for tr in stream:

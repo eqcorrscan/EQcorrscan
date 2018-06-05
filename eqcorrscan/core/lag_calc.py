@@ -253,9 +253,10 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                    % (pre_lag_ccsum, checksum))
             raise LagCalcError(msg)
     else:
-        logger.warning('Cannot check if cccsum is better, used {0} channels '
-                       'for detection, but {1} are used here'.format(
-            detect_chans, used_chans))
+        logger.warning(
+            'Cannot check if cccsum is better, used {0} channels '
+            'for detection, but {1} are used here'.format(
+                detect_chans, used_chans))
     return i, event
 
 
