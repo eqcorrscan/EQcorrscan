@@ -2,6 +2,9 @@
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
+* Convert most print statements in match-filter functions to logging calls. The user
+  can provide a logger themselves for better control of output (e.g. can log all log
+  calls to a file and only some to screen, or nothing/anything in between).
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
