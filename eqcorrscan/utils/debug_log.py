@@ -17,6 +17,10 @@ from __future__ import unicode_literals
 import logging
 
 
+DEBUG_MAP = {0: logging.CRITICAL, 1: logging.ERROR, 2: logging.WARNING,
+             3: logging.INFO, 4: logging.DEBUG}
+
+
 def debug_print(string, debug_level, print_level):
     """
     Print the string if the print_level exceeds the debug_level.
@@ -59,7 +63,7 @@ def debug_logger(name, debug_level):
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch = logging.StreamHandler()
     ch.setFormatter(formatter)
-    ch.setLevel(debug_level * 10)
+    ch.setLevel(DEBUG_MAP[debug_level])
     logger.addHandler(ch)
     return logger
 

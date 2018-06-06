@@ -191,7 +191,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> templates = template_gen(
     ...    method='from_meta_file', meta_file=quakeml, st=st, lowcut=2.0,
     ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
-    ...    swin='S', all_horiz=True)
+    ...    swin='S', all_horiz=True, debug=4)
     >>> print(len(templates[0]))
     10
     >>> templates = template_gen(
@@ -217,8 +217,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     15
     """
     if not logger:
-        logger = debug_logger(name="eqcorrscan.core.template_gen.template_gen",
-                              debug_level=debug)
+        logger = debug_logger(name=__name__, debug_level=debug)
     client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
     assert method in ('from_client', 'from_seishub', 'from_meta_file',
                       'from_sac')

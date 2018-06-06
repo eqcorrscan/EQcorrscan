@@ -17,12 +17,14 @@ from __future__ import unicode_literals
 
 import numpy as np
 import datetime as dt
+import logging
 
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
 from eqcorrscan.utils.debug_log import debug_logger
+from eqcorrscan.utils.correlate import pool_boy
 
 
 def _check_daylong(tr):
@@ -180,18 +182,14 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
-        if num_cores > len(st):
-            num_cores = len(st)
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {
-            'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps, 'logger': logger})
-                   for tr in st]
-        pool.close()
-        stream_list = [p.get() for p in results]
-        pool.join()
+        with pool_boy(Pool=Pool, traces=len(st), cores=num_cores) as pool:
+            results = [pool.apply_async(process, (tr,), {
+                'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
+                'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
+                'clip': False, 'seisan_chan_names': seisan_chan_names,
+                'fill_gaps': fill_gaps})
+                       for tr in st]
+            stream_list = [p.get() for p in results]
         st = Stream(stream_list)
     else:
         for i, tr in enumerate(st):
@@ -332,19 +330,14 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
-        if num_cores > len(st):
-            num_cores = len(st)
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {
-            'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
-            'clip': True, 'ignore_length': ignore_length, 'length': 86400,
-            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps,
-            'logger': logger})
-                   for tr in st]
-        pool.close()
-        stream_list = [p.get() for p in results]
-        pool.join()
+        with pool_boy(Pool=Pool, traces=len(st), cores=num_cores) as pool:
+            results = [pool.apply_async(process, (tr,), {
+                'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
+                'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+                'clip': True, 'ignore_length': ignore_length, 'length': 86400,
+                'seisan_chan_names': seisan_chan_names,
+                'fill_gaps': fill_gaps}) for tr in st]
+            stream_list = [p.get() for p in results]
         st = Stream(stream_list)
     else:
         for i, tr in enumerate(st):
@@ -411,8 +404,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :type: :class:`obspy.core.stream.Trace`
     """
     if not logger:
-        logger = debug_logger(name="eqcorrscan.utils.pre_processing.process",
-                              debug_level=debug)
+        logger = logging # To allow parallel processing, use the default
+        # config for logging
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
