@@ -24,7 +24,7 @@ from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.utils.debug_log import debug_logger
 
 
 def is_prime(number):
@@ -63,7 +63,7 @@ def is_prime(number):
 
 
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0, full_peaks=False):
+                      samp_rate=1.0, full_peaks=False, logger=None):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -89,6 +89,10 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         data-sections above the threshold, rather than just taking the peak
         within that section. This will take more time. This defaults to True
         for match_filter.
+    :type logger: `logging.logger`
+    :param logger:
+        Logger for output, use your own logger to allow more advanced
+        logging output.
 
     :return: peaks: Lists of tuples of peak values and locations.
     :rtype: list
@@ -122,19 +126,22 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         trigger intervals are usually large and thresholds high.
 
     """
+    if not logger:
+        logger = debug_logger(
+            name="eqcorrscan.utils.findpeaks.find_peaks2_short",
+            debug_level=debug)
     if not starttime:
         starttime = UTCDateTime(0)
     # Set everything below the threshold to zero
     image = np.copy(arr)
     image = np.abs(image)
-    debug_print("Threshold: {0}\tMax: {1}".format(thresh, max(image)),
-                2, debug)
+    logger.debug("Threshold: {0}\tMax: {1}".format(thresh, max(image)))
     image[image < thresh] = 0
     if len(image[image > thresh]) == 0:
-        debug_print("No values over threshold {0}".format(thresh), 0, debug)
+        logger.info("No values over threshold {0}".format(thresh))
         return []
-    debug_print('Found {0} samples above the threshold'.format(
-        len(image[image > thresh])), 0, debug)
+    logger.info('Found {0} samples above the threshold'.format(
+        len(image[image > thresh])))
     initial_peaks = []
     # Find the peaks
     labeled_image, number_of_objects = ndimage.label(image)
@@ -163,12 +170,12 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
-        print('No peaks for you!')
         return []
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True, full_peaks=False):
+                     samp_rate=1.0, parallel=True, full_peaks=False,
+                     logger=None):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -192,6 +199,10 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         Whether to compute in parallel or not - will use multiprocessing
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :type logger: `logging.logger`
+    :param logger:
+        Logger for output, use your own logger to allow more advanced
+        logging output.
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays
@@ -202,11 +213,11 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
             peaks.append(find_peaks2_short(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
                 starttime=starttime, samp_rate=samp_rate,
-                full_peaks=full_peaks))
+                full_peaks=full_peaks, logger=logger))
     else:
         with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
-                       False, 1.0, full_peaks)
+                       False, 1.0, full_peaks, logger)
                       for sub_arr, arr_thresh in zip(arr, thresh))
             results = [pool.apply_async(find_peaks2_short, param)
                        for param in params]

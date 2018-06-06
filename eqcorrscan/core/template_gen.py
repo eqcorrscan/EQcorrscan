@@ -50,7 +50,7 @@ from obspy.core.event import Catalog
 from obspy.clients.fdsn import Client as FDSNClient
 from obspy.clients.seishub import Client as SeisHubClient
 
-from eqcorrscan.utils.debug_log import debug_print
+from eqcorrscan.utils.debug_log import debug_print, debug_logger
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
 from eqcorrscan.core import EQcorrscanDeprecationWarning
@@ -77,7 +77,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False, debug=0,
                  return_event=False, min_snr=None, parallel=False,
-                 **kwargs):
+                 logger=None, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -124,6 +124,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         the whole window given.
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
+    :type logger: `logging.logger`
+    :param logger:
+        Logger for output, use your own logger to allow more advanced
+        logging output.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -187,7 +191,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> templates = template_gen(
     ...    method='from_meta_file', meta_file=quakeml, st=st, lowcut=2.0,
     ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
-    ...    swin='S', all_horiz=True)
+    ...    swin='S', all_horiz=True, debug=4)
     >>> print(len(templates[0]))
     10
     >>> templates = template_gen(
@@ -212,6 +216,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
+    if not logger:
+        logger = debug_logger(name=__name__, debug_level=debug)
     client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
     assert method in ('from_client', 'from_seishub', 'from_meta_file',
                       'from_sac')
@@ -263,7 +269,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 catalog=sub_catalog, data_pad=data_pad,
                 process_len=process_len, available_stations=available_stations,
                 debug=debug)
-        debug_print('Pre-processing data', 0, debug)
+        logger.info('Pre-processing data')
         st.merge()
         if process:
             data_len = max([len(tr.data) / tr.stats.sampling_rate
@@ -283,12 +289,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
-                    parallel=parallel, starttime=UTCDateTime(starttime))
+                    parallel=parallel, starttime=UTCDateTime(starttime),
+                    logger=logger)
             else:
                 st = pre_processing.shortproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, parallel=parallel,
-                    samp_rate=samp_rate, debug=debug)
+                    samp_rate=samp_rate, debug=debug, logger=logger)
         data_start = min([tr.stats.starttime for tr in st])
         data_end = max([tr.stats.endtime for tr in st])
 
@@ -301,22 +308,22 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Check that the event is within the data
             for pick in event.picks:
                 if not data_start < pick.time < data_end:
-                    debug_print("Pick outside of data span:\nPick time %s\n"
-                                "Start time %s\nEnd time: %s" %
-                                (str(pick.time), str(data_start),
-                                 str(data_end)), 0, debug)
+                    logger.warning(
+                        "Pick outside of data span:\nPick time {0}\n"
+                        "Start time {1}\nEnd time: {2}".format(
+                            pick.time, data_start, data_end))
                     use_event = False
             if not use_event:
-                warnings.warn('Event is not within data time-span')
+                logger.warning('Event is not within data time-span')
                 continue
             # Read in pick info
-            debug_print("I have found the following picks", 0, debug)
+            logger.debug("I have found the following picks:")
             for pick in event.picks:
                 if not pick.waveform_id:
-                    print('Pick not associated with waveforms, will not use.')
-                    print(pick)
+                    logger.warning('Pick not associated with waveforms, will '
+                                   'not use: {0}'.format(pick))
                     continue
-                debug_print(pick, 0, debug)
+                logger.debug(pick.__str__())
                 stations.append(pick.waveform_id.station_code)
                 channels.append(pick.waveform_id.channel_code)
             # Check to see if all picks have a corresponding waveform
@@ -327,7 +334,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
                 debug=debug, all_horiz=all_horiz, delayed=delayed,
-                min_snr=min_snr)
+                min_snr=min_snr, logger=logger)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
         del st
@@ -479,7 +486,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  debug=0):
+                  debug=0, logger=None):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -517,6 +524,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         the whole window given.
     :type debug: int
     :param debug: Debug output level from 0-5.
+    :type logger: `logging.logger`
+    :param logger:
+        Logger for output, use your own logger to allow more advanced
+        logging output.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -546,35 +557,38 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     .. warning:: If there is no phase_hint included in picks, and swin=all, \
         all channels with picks will be used.
     """
-    from eqcorrscan.utils.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.core.bright_lights import _rms
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
+    if not logger:
+        logger = debug_logger(
+            name="eqcorrscan.core.template_gen._template_gen",
+            debug_level=debug)
     assert swin in ['P', 'all', 'S', 'P_all', 'S_all']
     for pick in picks_copy:
         if not pick.waveform_id:
-            print('Pick not associated with waveform, will not use it.')
-            print(pick)
+            logger.warning('Pick not associated with waveform, '
+                           'will not use it: \n{0}'.format(pick))
             picks_copy.remove(pick)
             continue
         if not pick.waveform_id.station_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
+            logger.warning('Pick not associated with a station, '
+                           'will not use it: \n{0}'.format(pick))
             picks_copy.remove(pick)
             continue
         if not pick.waveform_id.channel_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
+            logger.warning('Pick not associated with a channel, '
+                           'will not use it: \n{0}'.format(pick))
             picks_copy.remove(pick)
             continue
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
         if np.all(tr.data.astype(np.float16) == 0):
-            warnings.warn('Trace is all zeros at float16 level,'
-                          'either gain or check. Not using in template.')
-            print(tr)
+            logger.warning(
+                'Trace {0} is all zeros at float16 level, either gain or '
+                'check. Not using in template.'.format(tr.id))
             st.remove(tr)
     if plot:
         stplot = st.copy()
@@ -638,51 +652,45 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for _starttime in starttimes:
-        debug_print("Working on channel %s.%s" %
-                    (_starttime['station'], _starttime['channel']),
-                    debug_level=0, print_level=debug)
+        logger.info("Working on channel {0}.{1}".format(
+            _starttime['station'], _starttime['channel']))
         tr = st.select(
             station=_starttime['station'], channel=_starttime['channel'])[0]
-        debug_print("Found Trace %s" % tr.__str__(), debug_level=0,
-                    print_level=debug)
+        logger.debug("Found Trace {0}".format(tr.__str__()))
         noise_amp = _rms(tr.data)
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:
-                msg = ('Pick for ' + pick.waveform_id.station_code + '.' +
-                       pick.waveform_id.channel_code + ' has no phase ' +
-                       'hint given, you should not use this template for ' +
-                       'cross-correlation re-picking!')
-                warnings.warn(msg)
+                logger.warning(
+                    'Pick for {0}.{1} has no phase hint given, you should not '
+                    'use this template for cross-correlation '
+                    're-picking!'.format(pick.waveform_id.station_code,
+                                         pick.waveform_id.channel_code))
             starttime = pick.time - prepick
-            debug_print(
-                "Cutting " + tr.stats.station + '.' + tr.stats.channel, 0,
-                debug)
+            logger.debug("Cutting {0}".format(tr.id))
             tr_cut = tr.slice(
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
             if len(tr_cut.data) == 0:
-                print('No data provided for %s.%s starting at %s' %
-                      (tr.stats.station, tr.stats.channel, str(starttime)))
+                logger.debug('No data provided for {0} starting at {1}'.format(
+                      tr.id, starttime))
                 continue
             # Ensure that the template is the correct length
             if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
                                     length) + 1:
                 tr_cut.data = tr_cut.data[0:-1]
-            debug_print(
-                'Cut starttime = %s\nCut endtime %s' %
-                (str(tr_cut.stats.starttime), str(tr_cut.stats.endtime)), 0,
-                debug)
+            logger.debug(
+                'Cut starttime = {0}\tCut endtime {1}'.format(
+                    tr_cut.stats.starttime, tr_cut.stats.endtime))
             if min_snr is not None and \
                max(tr_cut.data) / noise_amp < min_snr:
-                print('Signal-to-noise ratio below threshold for %s.%s' %
-                      (tr_cut.stats.station, tr_cut.stats.channel))
+                logger.info('Signal-to-noise ratio below threshold for '
+                            '{0}'.format(tr.id))
                 continue
             st1 += tr_cut
             used_tr = True
         if not used_tr:
-            debug_print('No pick for ' + tr.stats.station + '.' +
-                        tr.stats.channel, 0, debug)
+            logger.info('No pick for {0}'.format(tr.id))
     if plot:
         background = stplot.trim(
             st1.sort(['starttime'])[0].stats.starttime - 10,
