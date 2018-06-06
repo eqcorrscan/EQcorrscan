@@ -1,6 +1,6 @@
 before_script:
   - apt-get update -qq && apt-get install -y -qq libfftw3-dev
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-linux-x86_64.sh -O miniconda.sh;
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
