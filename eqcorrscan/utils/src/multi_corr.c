@@ -43,25 +43,25 @@
 #define WARN_DIFF 1e-10
 
 // Prototypes
-int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*);
+int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*);
 
 static inline int set_ncc(long t, long i, long template_len, long image_len, float value, int *used_chans, int *pad_array, float *ncc);
 
 int normxcorr_fftw_main(float*, long, long, float*, long, float*, long, float*, float*, float*,
-        fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan, int*, int*, int);
+        fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan, int*, int*, int, int*);
 
-int normxcorr_fftw_threaded(float*, long, long, float*, long, float*, long, int*, int*);
+int normxcorr_fftw_threaded(float*, long, long, float*, long, float*, long, int*, int*, int*);
 
 void free_fftwf_arrays(int, float**, float**, float**, fftwf_complex**, fftwf_complex**, fftwf_complex**);
 
 void free_fftw_arrays(int, double**, double**, double**, fftw_complex**, fftw_complex**, fftw_complex**);
 
-int multi_normxcorr_fftw(float*, long, long, long, float*, long, float*, long, int*, int*, int, int);
+int multi_normxcorr_fftw(float*, long, long, long, float*, long, float*, long, int*, int*, int, int, int*);
 
 // Functions
 int normxcorr_fftw_threaded(float *templates, long template_len, long n_templates,
                             float *image, long image_len, float *ncc, long fft_len,
-                            int *used_chans, int *pad_array) {
+                            int *used_chans, int *pad_array, int *variance_warning) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -79,7 +79,8 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     long N2 = fft_len / 2 + 1;
     long i, t, startind;
     int status = 0;
-    double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0;
+    int flatline_count = 0;
+    double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, old_var=0.0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
     float * template_ext = (float *) calloc(fft_len * n_templates, sizeof(float));
     float * image_ext = (float *) calloc(fft_len, sizeof(float));
@@ -147,7 +148,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
         if (var <= WARN_DIFF){
-            printf("Low variance, possible zeros, check result. Index: 0 Variance: %g\n", var);
+            variance_warning[0] = 1;
         }
     }
     // Center and divide by length to generate scaled convolution
@@ -158,15 +159,22 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
         old_samp = (double) image[i - 1];
         old_mean = mean;
         mean = mean + (new_samp - old_samp) / template_len;
+        old_var = var;
         var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
+        if (old_var == var) {
+            flatline_count += 1;
+         }
+         else {
+            flatline_count = 0;
+        }
         stdev = sqrt(var);
-        if (var >= ACCEPTED_DIFF) {
+        if (var >= ACCEPTED_DIFF && flatline_count < template_len) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
             }
             if (var <= WARN_DIFF){
-                printf("Low variance, possible zeros, check result. Index: %li Variance: %g\n", i, var);
+                variance_warning[0] += 1;
             }
         }
     }
@@ -192,7 +200,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 
 int normxcorr_fftw(float *templates, long template_len, long n_templates,
                    float *image, long image_len, float *ncc, long fft_len,
-                   int *used_chans, int *pad_array){
+                   int *used_chans, int *pad_array, int *variance_warning){
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -233,7 +241,7 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
     // Note: forcing inner threads to 1 for now (could be passed from Python)
     status = normxcorr_fftw_main(templates, template_len, n_templates, image, image_len,
             ncc, fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
-            used_chans, pad_array, 1);
+            used_chans, pad_array, 1, variance_warning);
 
     // free memory and plans
     fftwf_destroy_plan(pa);
@@ -259,7 +267,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                         float *template_ext, float *image_ext, float *ccc,
                         fftwf_complex *outa, fftwf_complex *outb, fftwf_complex *out,
                         fftwf_plan pa, fftwf_plan pb, fftwf_plan px, int *used_chans,
-                        int *pad_array, int num_threads) {
+                        int *pad_array, int num_threads, int *variance_warning) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -288,6 +296,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     long N2 = fft_len / 2 + 1;
     long i, t, startind;
     int status = 0, unused_corr = 0;
+    int * flatline_count = (int *) calloc(image_len - template_len + 1, sizeof(int));
     double *mean, *var;
     double new_samp, old_samp, sum=0.0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
@@ -369,7 +378,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
         if (var[0] <= WARN_DIFF){
-            printf("Low variance, possible zeros, check result. Index: 0 Variance: %g\n", var[0]);
+            variance_warning[0] = 1;
         }
     } else {
         unused_corr = 1;
@@ -383,12 +392,18 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         old_samp = (double) image[i - 1];
         mean[i] = mean[i - 1] + (new_samp - old_samp) / template_len;
         var[i] = var[i - 1] + (new_samp - old_samp) * (new_samp - mean[i] + old_samp - mean[i - 1]) / (template_len);
+        if (var[i] == var[i - 1]) {
+            flatline_count[i] = flatline_count[i - 1] + 1;
+        }
+        else {
+            flatline_count[i] = 0;
+        }
     }
 
     // Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= ACCEPTED_DIFF) {
+        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len) {
             double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
@@ -396,7 +411,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
             }
             if (var[i] <= WARN_DIFF){
-                printf("Low variance, possible zeros, check result. Index: %li Variance: %g\n", i, var[i]);
+                variance_warning[0] += 1;
             }
         } else {
             unused_corr = 1;
@@ -414,6 +429,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     free(norm_sums);
     free(mean);
     free(var);
+    free(flatline_count);
 
     return status;
 }
@@ -492,7 +508,7 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
         float *image, long image_len, float *ncc, long fft_len, int *used_chans, int *pad_array,
-        int num_threads_outer, int num_threads_inner) {
+        int num_threads_outer, int num_threads_inner, int *variance_warning) {
     int i;
     int r=0, inner_status=0;
     size_t N2 = (size_t) fft_len / 2 + 1;
@@ -651,7 +667,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  n_templates, &image[(size_t) image_len * i], image_len, ncc, fft_len,
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
-                                 &pad_array[(size_t) i * n_templates], num_threads_inner);
+                                 &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i]);
     }
 
     // Conduct error handling
