@@ -549,7 +549,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         msg = ("Some correlations not computed, are there "
                "zeros in data? If not, consider increasing gain.")
         print(msg)
-    if variance_warning[0]:
+    if variance_warning[0] and variance_warning[0] > template_length:
         print("Low variance found in {0} positions, check result.".format(
             variance_warning[0]))
 
@@ -761,7 +761,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                "zeros in data? If not, consider increasing gain.")
         print(msg)
     for i, variance_warning in enumerate(variance_warnings):
-        if variance_warning:
+        if variance_warning and variance_warning > template_len:
             print("Low variance found in {0} places for {1}, "
                   "check result.".format(variance_warning, seed_ids[i]))
 
