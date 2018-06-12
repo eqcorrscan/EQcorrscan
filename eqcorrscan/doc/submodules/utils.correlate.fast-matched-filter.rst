@@ -47,12 +47,133 @@ write a function like:
 
     import numpy as np
 
-    from fastmatchedfilter import fastmatchedfilter
+    from eqcorrscan.utils.correlate import register_array_xcorr
+    from fast_matched_filter import matched_filter as fmf
 
-    def fmf_time(templates, stream, pads, args, **kwargs):
-        weights = np.ones()
-        used_chans = []
-        ccc = fastmatchedfilter()
+
+    def flatten_data(templates, stream):
+        """
+        Helper function to convert to fast-matched-filter's
+        require input shapes.
+        """
+        # Do some reshaping
+        stream.sort(['network', 'station', 'location', 'channel'])
+        t_starts = []
+        for template in templates:
+            template.sort(['network', 'station', 'location', 'channel'])
+            t_starts.append(min([tr.stats.starttime for tr in template]))
+        stations = list(set([tr.stats.station for tr in template
+                             for template in templates]))
+        channels = {}
+        for station in stations:
+            channels.update({station: list(set(
+                [tr.stats.channel for tr in template.select(station=station)
+                 for template in templates]))})
+        template_array = []
+        stream_array = []
+        pad_array = []
+        for template in templates:
+            sta_array = []
+            pads = []
+            t_start = template.sort(['starttime'])[0].stats.starttime
+            for station in stations:
+                chan_array = []
+                chan_pad_array = []
+                for channel in channels[station]:
+                    chan = template.select(station=station, channel=channel)
+                    if len(chan) == 0:
+                        print("Padding template {0}.{1} with zeros".format(
+                              station, channel))
+                        chan = template.select(station=station)
+                        if len(chan) == 0:
+                            chan = template[0].copy()
+                        else:
+                            chan = chan[0].copy()
+                        chan.data = np.zeros(len(chan.data))
+                    else:
+                        chan = chan[0]
+                    chan_array.append(chan.data - np.mean(chan.data))
+                    chan_pad_array.append(
+                        int((chan.stats.starttime - t_start) *
+                            chan.stats.sampling_rate))
+                pads.append(chan_pad_array)
+                sta_array.append(chan_array)
+            template_array.append(sta_array)
+            pad_array.append(pads)
+        for station in stations:
+            chan_array = []
+            for channel in channels[station]:
+                chan = stream.select(station=station, channel=channel)
+                if len(chan) == 0:
+                    print("Padding continuous data {0}.{1} with zeros".format(
+                        station, channel))
+                    chan = stream[0].copy()
+                    chan.data = np.zeros(len(chan.data))
+                else:
+                    chan = chan[0]
+                    chan = chan.data
+                    chan -= np.mean(chan)
+                    chan_array.append(chan)
+            stream_array.append(chan_array)
+        template_array = np.ascontiguousarray(
+            template_array, dtype=np.float32)
+        stream_array = np.ascontiguousarray(stream_array, dtype=np.float32)
+        pad_array = np.ascontiguousarray(pad_array, dtype=np.float32)
+        return template_array, stream_array, pad_array
+
+
+    def get_weights(templates, stream):
+        """
+        Get the weighting array - note that your could define
+        default weights here for some stations.
+        """
+        # Use channel_weights to define relative weighting
+        # for specific channel ID's
+        channel_weights = {'NZ.FOZ.10.HHZ': 0.5}
+        # Set a default weight for everything else.
+        default_weight = 1.0
+
+        weights = []
+        for template in templates:
+            template_weights = []
+            for station in set([tr.stats.station for tr in stream]):
+                station_weights = []
+                for tr in stream.select(station=station):
+                    try:
+                        station_weights.append(channel_weights[tr.id])
+                    except KeyError:
+                        station_weights.append(default_weight)
+                template_weights.append(station_weights)
+            weights.append(template_weights)
+        return np.ascontiguousarray(weights, dtype=np.float32)
+
+
+    @register_array_xcorr("fmf")
+    def fmf_xcorr(templates, stream, pads, *args, **kwargs):
+        """ Reshape arrays and call fast-matched-filter. """
+        t_arr, d_arr, pads = flatten_data(templates, stream)
+        weights = get_weights(templates, stream)
+        cccsums = fmf(
+            templates=t_arr, weights=weights, moveouts=pads,
+            data=d_arr, step=1, arch='cpu')
+        # Use the cpu architecture for single-channels - feel
+        # free to change this!
+        return cccsums[0]
+
+    @fmf_xcorr.register("concurrent")
+    def fmf_multi_xcorr(templates, stream, pads, *args, **kwargs):
+        t_arr, d_arr, pads = flatten_data(templates, stream)
+        weights = get_weights(templates, stream)
+        cccsums = fmf(
+            templates=t_arr, weights=weights, moveouts=pads,
+            data=d_arr, step=1, arch='cpu')
+        # set arch='gpu' if you want to use the gpu and it
+        # is available.
+        no_chans = []
+        chans = []
+        for template in templates:
+            no_chans.append(len(template))
+            chans.append([tr.id for tr in template])
         return ccc, used_chans
 
 This function can then either be passed to any of the matched_filter_ functions
