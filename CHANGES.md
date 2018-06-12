@@ -2,6 +2,9 @@
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
+* Check for the same value in a row in continuous data when computing
+  correlations and zero resulting correlations where the whole window
+  is the same value repeated (#224, #230).
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.

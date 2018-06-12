@@ -80,7 +80,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     long i, t, startind;
     int status = 0;
     int flatline_count = 0;
-    double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0, old_var=0.0;
+    double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
     float * template_ext = (float *) calloc(fft_len * n_templates, sizeof(float));
     float * image_ext = (float *) calloc(fft_len, sizeof(float));
@@ -159,9 +159,8 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
         old_samp = (double) image[i - 1];
         old_mean = mean;
         mean = mean + (new_samp - old_samp) / template_len;
-        old_var = var;
         var += (new_samp - old_samp) * (new_samp - mean + old_samp - old_mean) / (template_len);
-        if (old_var == var) {
+        if (new_samp == (double) image[i + template_len - 2]) {
             flatline_count += 1;
          }
          else {
@@ -392,7 +391,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         old_samp = (double) image[i - 1];
         mean[i] = mean[i - 1] + (new_samp - old_samp) / template_len;
         var[i] = var[i - 1] + (new_samp - old_samp) * (new_samp - mean[i] + old_samp - mean[i - 1]) / (template_len);
-        if (var[i] == var[i - 1]) {
+        if (new_samp == (double) image[i + template_len - 2]) {
             flatline_count[i] = flatline_count[i - 1] + 1;
         }
         else {
