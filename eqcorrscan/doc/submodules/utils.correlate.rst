@@ -81,7 +81,7 @@ or an NVIDIA GPU card is available) with less memory consumption. Documentation
 on how to call Fast Matched Filter from within EQcorrscan is provided here: 
 fast_matched_filter_
 
-.. _fast_matched_filter: fast_matched_filter.html
+.. _fast_matched_filter: utils.correlate.fast_matched_filter.html
 
 .. |FMF| raw:: html
 
