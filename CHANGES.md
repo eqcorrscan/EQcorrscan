@@ -4,6 +4,8 @@
 * Add better checks for timing in lag-calc functions (#207)
 * Removed gap-threshold of twice the template length in `Tribe.client_detect`, see
   issue #224.
+* Bug-fix: give multi_find_peaks a cores kwarg to limit thread
+  usage.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
