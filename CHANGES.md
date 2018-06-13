@@ -2,6 +2,8 @@
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
+* Bug-fix: give multi_find_peaks a cores kwarg to limit thread
+  usage.
 * Check for the same value in a row in continuous data when computing
   correlations and zero resulting correlations where the whole window
   is the same value repeated (#224, #230).
