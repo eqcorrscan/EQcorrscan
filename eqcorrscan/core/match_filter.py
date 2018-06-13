@@ -4140,7 +4140,7 @@ def match_filter(template_names, template_list, st, threshold,
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
-        full_peaks=full_peaks)
+        full_peaks=full_peaks, cores=cores)
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')

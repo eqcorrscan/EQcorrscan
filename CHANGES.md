@@ -3,6 +3,8 @@
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
+* Bug-fix: give multi_find_peaks a cores kwarg to limit thread
+  usage.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
