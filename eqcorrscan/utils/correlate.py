@@ -28,6 +28,7 @@ import contextlib
 import copy
 import ctypes
 import os
+import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -546,12 +547,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         print('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        msg = ("Some correlations not computed, are there "
-               "zeros in data? If not, consider increasing gain.")
-        print(msg)
+        warnings.warn("Some correlations not computed, are there "
+                      "zeros in data? If not, consider increasing gain.")
     if variance_warning[0] and variance_warning[0] > template_length:
-        print("Low variance found in {0} positions, check result.".format(
-            variance_warning[0]))
+        warnings.warn(
+            "Low variance found in {0} positions, check result.".format(
+                variance_warning[0]))
 
     return ccc, used_chans
 
@@ -757,13 +758,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
               (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        msg = ("Some correlations not computed, are there "
-               "zeros in data? If not, consider increasing gain.")
-        print(msg)
+        warnings.warn("Some correlations not computed, are there "
+                      "zeros in data? If not, consider increasing gain.")
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
-            print("Low variance found in {0} places for {1}, "
-                  "check result.".format(variance_warning, seed_ids[i]))
+            warnings.warn("Low variance found in {0} places for {1},"
+                          " check result.".format(variance_warning,
+                                                  seed_ids[i]))
 
     return cccs, used_chans
 
