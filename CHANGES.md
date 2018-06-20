@@ -6,6 +6,9 @@
   issue #224.
 * Bug-fix: give multi_find_peaks a cores kwarg to limit thread
   usage.
+* Check for the same value in a row in continuous data when computing
+  correlations and zero resulting correlations where the whole window
+  is the same value repeated (#224, #230).
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
