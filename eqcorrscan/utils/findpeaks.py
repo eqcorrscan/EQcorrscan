@@ -168,7 +168,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True, full_peaks=False):
+                     samp_rate=1.0, parallel=True, full_peaks=False,
+                     cores=None):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -192,6 +193,8 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         Whether to compute in parallel or not - will use multiprocessing
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :type cores: int
+    :param cores: Number of processes to spool for parallel peak finding.
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays
@@ -204,7 +207,9 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
                 starttime=starttime, samp_rate=samp_rate,
                 full_peaks=full_peaks))
     else:
-        with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
+        if cores is None:
+            cores = arr.shape[0]
+        with pool_boy(Pool=Pool, traces=cores) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
                        False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
