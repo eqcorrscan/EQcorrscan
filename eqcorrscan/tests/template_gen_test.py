@@ -102,7 +102,21 @@ class TestTemplateGeneration(unittest.TestCase):
             tr.stats.starttime.precision = 6
         starttime = template[0].stats.starttime
         length = template[0].stats.npts
-        print(template)
+        self.assertEqual(len(template), 5)
+        for tr in template:
+            self.assertTrue(abs((tr.stats.starttime - starttime)) <=
+                            tr.stats.delta)
+            self.assertEqual(tr.stats.npts, length)
+        template = from_client(
+            catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
+            samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
+            swin='P_all', process_len=3600, debug=0, plot=False,
+            delayed=False)[0]
+        for tr in template:
+            tr.stats.starttime.precision = 6
+        starttime = template[0].stats.starttime
+        length = template[0].stats.npts
+        self.assertEqual(len(template), 15)
         for tr in template:
             self.assertTrue(abs((tr.stats.starttime - starttime)) <=
                             tr.stats.delta)
