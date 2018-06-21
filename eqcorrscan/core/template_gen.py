@@ -256,13 +256,17 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     temp_list = []
     process_lengths = []
 
+    if swin in ["P_all", "S_all", "all"]:
+        all_channels = True
+    else:
+        all_channels = False
     for sub_catalog in sub_catalogs:
         if method in ['from_seishub', 'from_client']:
             st = _download_from_client(
                 client=client, client_type=client_map[method],
                 catalog=sub_catalog, data_pad=data_pad,
                 process_len=process_len, available_stations=available_stations,
-                debug=debug)
+                all_channels=all_channels, debug=debug)
         debug_print('Pre-processing data', 0, debug)
         st.merge()
         if process:
@@ -424,7 +428,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 
 
 def _download_from_client(client, client_type, catalog, data_pad, process_len,
-                          available_stations=[], debug=0):
+                          available_stations=[], all_channels=False, debug=0):
     """
     Internal function to handle downloading from either seishub or fdsn client
     """
@@ -437,7 +441,13 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 print('Pick not associated with waveforms, will not use.')
                 print(pick)
                 continue
-            all_waveform_info.append(pick.waveform_id)
+            if all_channels:
+                channel_code = pick.waveform_id.channel_code[0:2] + "?"
+            else:
+                channel_code = pick.waveform_id.channel_code
+            all_waveform_info.append((
+                pick.waveform_id.network_code, pick.waveform_id.station_code,
+                channel_code, pick.waveform_id.location_code))
     starttime = UTCDateTime(
         catalog[0].origins[0].time - data_pad)
     endtime = starttime + process_len
@@ -445,10 +455,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     if not endtime > catalog[-1].origins[0].time + data_pad:
         raise TemplateGenError(
             'Events do not fit in processing window')
-    all_waveform_info = list(set([
-        (w.network_code, w.station_code, w.channel_code, w.location_code)
-        for w in all_waveform_info]))
-    all_waveform_info.sort()
+    all_waveform_info = sorted(list(set(all_waveform_info)))
     dropped_pick_stations = 0
     for waveform_info in all_waveform_info:
         net, sta, chan, loc = waveform_info
