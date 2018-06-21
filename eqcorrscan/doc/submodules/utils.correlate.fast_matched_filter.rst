@@ -45,11 +45,11 @@ write a function like:
 
 .. code-block:: python
 
+
+
     import numpy as np
 
     from eqcorrscan.utils.correlate import register_array_xcorr
-    from fast_matched_filter import matched_filter as fmf
-
 
     def flatten_data(templates, stream):
         """
@@ -134,7 +134,8 @@ write a function like:
         default_weight = 1.0
 
         weights = []
-        for template in templates:
+        i = 0
+        while i < len(templates):
             template_weights = []
             for station in set([tr.stats.station for tr in stream]):
                 station_weights = []
@@ -145,23 +146,49 @@ write a function like:
                         station_weights.append(default_weight)
                 template_weights.append(station_weights)
             weights.append(template_weights)
+            i += 1
         return np.ascontiguousarray(weights, dtype=np.float32)
 
 
     @register_array_xcorr("fmf")
     def fmf_xcorr(templates, stream, pads, *args, **kwargs):
-        """ Reshape arrays and call fast-matched-filter. """
-        t_arr, d_arr, pads = flatten_data(templates, stream)
-        weights = get_weights(templates, stream)
-        cccsums = fmf(
-            templates=t_arr, weights=weights, moveouts=pads,
-            data=d_arr, step=1, arch='cpu')
-        # Use the cpu architecture for single-channels - feel
-        # free to change this!
-        return cccsums[0]
+        print("This function is just here as a mapper and does nothing.")
+        return numpy_normxcorr(templates, stream, pads, *args, **kwargs)
 
+
+    @fmf_xcorr.register("stream_xcorr")
     @fmf_xcorr.register("concurrent")
-    def fmf_multi_xcorr(templates, stream, pads, *args, **kwargs):
+    @fmf_xcorr.register("multiprocess")
+    @fmf_xcorr.register("multithread")
+    def fmf_multi_xcorr(templates, stream, *args, **kwargs):
+        """
+        Apply FastMatchedFilter routine concurrently.
+
+        :type templates: list
+        :param templates:
+            A list of templates, where each one should be an obspy.Stream object
+            containing multiple traces of seismic data and the relevant header
+            information.
+        :type stream: obspy.core.stream.Stream
+        :param stream:
+            A single Stream object to be correlated with the templates.
+
+        :returns:
+            New list of :class:`numpy.ndarray` objects.  These will contain
+            the correlation sums for each template for this day of data.
+        :rtype: list
+        :returns:
+            list of ints as number of channels used for each cross-correlation.
+        :rtype: list
+        :returns:
+            list of list of tuples of station, channel for all cross-correlations.
+        :rtype: list
+        """
+        try:
+            from fast_matched_filter import matched_filter as fmf
+        except ImportError:
+            raise ImportError("FastMatchedFilter is not available")
+
         t_arr, d_arr, pads = flatten_data(templates, stream)
         weights = get_weights(templates, stream)
         cccsums = fmf(
@@ -174,7 +201,7 @@ write a function like:
         for template in templates:
             no_chans.append(len(template))
             chans.append([tr.id for tr in template])
-        return ccc, used_chans
+        return cccsums, no_chans, chans
 
 This function can then either be passed to any of the matched_filter_ functions
 and methods, or set as a default correlation routine as shown in set_correlation_.
