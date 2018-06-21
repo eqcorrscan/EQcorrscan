@@ -256,7 +256,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     temp_list = []
     process_lengths = []
 
-    if swin in ["P_all", "S_all", "all"]:
+    if swin in ["P_all", "S_all"]:
         all_channels = True
     else:
         all_channels = False
