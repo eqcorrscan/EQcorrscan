@@ -263,6 +263,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         all_channels = False
     for sub_catalog in sub_catalogs:
         if method in ['from_seishub', 'from_client']:
+            debug_print("Downloading data", 1, debug)
             st = _download_from_client(
                 client=client, client_type=client_map[method],
                 catalog=sub_catalog, data_pad=data_pad,
@@ -573,7 +574,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 "{0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
-        if not pick.waveform_id.station_code or pick.waveform_id.channel_code:
+        if not pick.waveform_id.station_code or not pick.waveform_id.channel_code:
             debug_print(
                 "Pick not associated with a channel, will not use it:"
                 " {0}".format(pick), 1, debug)
