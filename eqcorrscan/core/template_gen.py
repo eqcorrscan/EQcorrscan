@@ -441,8 +441,9 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     for event in catalog:
         for pick in event.picks:
             if not pick.waveform_id:
-                print('Pick not associated with waveforms, will not use.')
-                print(pick)
+                debug_print(
+                    "Pick not associated with waveforms, will not use:"
+                    " {0}".format(pick), 1, debug)
                 continue
             if all_channels:
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
@@ -567,18 +568,15 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         assert _swin in ['P', 'all', 'S', 'P_all', 'S_all']
     for pick in picks_copy:
         if not pick.waveform_id:
-            print('Pick not associated with waveform, will not use it.')
-            print(pick)
+            debug_print(
+                "Pick not associated with waveform, will not use it: "
+                "{0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
-        if not pick.waveform_id.station_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
-            picks_copy.remove(pick)
-            continue
-        if not pick.waveform_id.channel_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
+        if not pick.waveform_id.station_code or pick.waveform_id.channel_code:
+            debug_print(
+                "Pick not associated with a channel, will not use it:"
+                " {0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
     for tr in st:
@@ -681,8 +679,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
             if len(tr_cut.data) == 0:
-                print('No data provided for %s.%s starting at %s' %
-                      (tr.stats.station, tr.stats.channel, str(starttime)))
+                debug_print(
+                    "No data provided for {0}.{1} starting at {2}".format(
+                        tr.stats.station, tr.stats.channel, starttime), 3,
+                    debug)
                 continue
             # Ensure that the template is the correct length
             if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
@@ -694,8 +694,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 debug)
             if min_snr is not None and \
                max(tr_cut.data) / noise_amp < min_snr:
-                print('Signal-to-noise ratio below threshold for %s.%s' %
-                      (tr_cut.stats.station, tr_cut.stats.channel))
+                debug_print(
+                    "Signal-to-noise ratio below threshold for {0}.{1}".format(
+                        tr_cut.stats.station, tr_cut.stats.channel), 3, debug)
                 continue
             st1 += tr_cut
             used_tr = True
