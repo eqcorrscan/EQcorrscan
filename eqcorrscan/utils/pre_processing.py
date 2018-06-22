@@ -529,7 +529,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # Final visual check for debug
     if debug > 4:
         tr.plot()
-    return tr, True
+    return tr
 
 
 def _zero_pad_gaps(tr, gaps, fill_gaps=True):
