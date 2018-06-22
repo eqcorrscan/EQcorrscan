@@ -667,11 +667,12 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:
-                debug_print("Pick for {0}.{1} has no phase hint given, you "
-                            "should not use this template for cross-correlation"
-                            " re-picking!".format(
-                    pick.waveform_id.station_code,
-                    pick.waveform_id.channel_code), 2, debug)
+                debug_print(
+                    "Pick for {0}.{1} has no phase hint given, you should not "
+                    "use this template for cross-correlation"
+                    " re-picking!".format(
+                        pick.waveform_id.station_code,
+                        pick.waveform_id.channel_code), 2, debug)
             starttime = pick.time - prepick
             debug_print(
                 "Cutting " + tr.stats.station + '.' + tr.stats.channel, 0,
