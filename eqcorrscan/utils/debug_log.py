@@ -42,7 +42,7 @@ def debug_print(string, debug_level, print_level, use_logging=True):
         print(string)
     if use_logging:
         try:
-            LOG[print_level](string)
+            LOG[debug_level](string)
         except IndexError:
             LOG[4](string)
 
