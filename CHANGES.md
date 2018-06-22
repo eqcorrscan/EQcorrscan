@@ -9,6 +9,11 @@
   is the same value repeated (#224, #230).
 * BUG-FIX: template generation `from_client` methods for swin=P_all or S_all
   now download all channels and return them (as they should). See #235 and #206
+* Change standard debug printing to logging (#229).
+* Change from raising an error if data from a station are not long enough, to
+  logging a critical warning and not using the station.
+* Add ability to give multiple `swin` options as a list. Remains backwards
+  compatible with single `swin` arguments.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.

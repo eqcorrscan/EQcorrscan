@@ -337,6 +337,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 samp_rate=samp_rate, debug=debug, starttime=starttime,
                 clip=True, length=86400, ignore_length=ignore_length,
                 seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+    for tr in st:
+        if len(tr.data) == 0:
+            st.remove(tr)
     if tracein:
         st.merge()
         return st[0]
@@ -431,11 +434,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
-            msg = ('Data for %s.%s is %i hours long, which is less than 0.8 '
-                   'of the desired length, will not pad' %
-                   (tr.stats.station, tr.stats.channel,
-                    (tr.stats.endtime - tr.stats.starttime) / 3600))
-            raise NotImplementedError(msg)
+            debug_print(
+                "Data for {0}.{1} is {2} hours long, which is less than 80 "
+                "percent of the desired length, will not pad".format(
+                    tr.stats.station, tr.stats.channel,
+                    (tr.stats.endtime - tr.stats.starttime) / 3600), 4, debug)
+            tr.data = np.ndarray(0)
+            return tr
         # trim, then calculate length of any pads required
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
         pre_pad_secs = tr.stats.starttime - starttime
@@ -459,7 +464,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if not tr.stats.sampling_rate * length == tr.stats.npts:
                 raise ValueError('Data are not daylong for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
-
         debug_print('I now have %i data points after enforcing length'
                     % len(tr.data), 0, debug)
     # Check sampling rate and resample
@@ -525,7 +529,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # Final visual check for debug
     if debug > 4:
         tr.plot()
-    return tr
+    return tr, True
 
 
 def _zero_pad_gaps(tr, gaps, fill_gaps=True):
