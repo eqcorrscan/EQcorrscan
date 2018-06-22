@@ -306,8 +306,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 startdates.append((tr.stats.starttime + 86400).date)
                 debug_print(
                     '{0} starts within 1 sample of the next day, using this '
-                    'time {1}'.format(tr.id, (tr.stats.starttime + 86400).date),
-                    2, debug)
+                    'time {1}'.format(
+                        tr.id, (tr.stats.starttime + 86400).date), 2, debug)
             else:
                 startdates.append(tr.stats.starttime.date)
         # Check that all traces start on the same date...
