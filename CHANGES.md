@@ -13,6 +13,8 @@
   logging a critical warning and not using the station.
 * Add ability to give multiple `swin` options as a list. Remains backwards
   compatible with single `swin` arguments.
+* Add option to `save_progress` for long running `Tribe` methods. Files
+  are written to temporary files local to the caller.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.

@@ -43,6 +43,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 import copy
+import os
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
@@ -76,7 +77,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False, debug=0,
                  return_event=False, min_snr=None, parallel=False,
-                 **kwargs):
+                 save_progress=False, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -123,6 +124,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         the whole window given.
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
+    :type save_progress: bool
+    :param save_progress: 
+        Whether to save the resulting party at every data step or not.
+        Useful for long-running processes.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -338,6 +343,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 min_snr=min_snr)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
+        if save_progress:
+            if not os.path.isdir("eqcorrscan_temporary_templates"):
+                os.path.makedirs("eqcorrscan_temporary_templates")
+            for template in temp_list:
+                template.write(
+                    "eqcorrscan_temporary_templates{0}{1}.ms".format(
+                        os.path.sep, template[0].stats.starttime))
         del st
     if return_event:
         return temp_list, catalog, process_lengths
