@@ -14,6 +14,7 @@ import numpy as np
 import warnings
 import inspect
 import copy
+import shutil
 
 from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
@@ -131,12 +132,7 @@ class TestTemplateGeneration(unittest.TestCase):
         """
         client = Client('GEONET')
         # get the events
-        catalog = Catalog()
-        data_stream = client._download(
-            'http://quakeml.geonet.org.nz/quakeml/1.2/2016p008194')
-        data_stream.seek(0, 0)
-        catalog += read_events(data_stream, format="quakeml")
-        data_stream.close()
+        catalog = client.get_events(eventid='2016p008194')
         # Select 3 channels to use and download
         sta_chans = [(pick.waveform_id.station_code,
                       pick.waveform_id.channel_code)
@@ -153,6 +149,34 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
+
+    @pytest.mark.network
+    def test_save_progress(self):
+        """ Test template creation with progress saving """
+        client = Client('GEONET')
+        catalog = client.get_events(
+            starttime=UTCDateTime(2016, 1, 4, 0, 50),
+            endtime=UTCDateTime(2016, 1, 4, 1, 20))
+        # Gets a catalog of 2 events separated by 127s
+        # Need a bigger gap to allow moveouts
+        catalog[0].origins[0].time -= 600
+        for pick in catalog[0].picks:
+            pick.time -= 600
+        catalog = filter_picks(catalog=catalog, top_n_picks=5)
+        templates = template_gen(
+            method="from_client", catalog=catalog, client_id="GEONET",
+            lowcut=2, highcut=5, samp_rate=20, filt_order=4, prepick=0.4,
+            process_len=600, swin="P", save_progress=True, length=2)
+        assert(os.path.isdir("eqcorrscan_temporary_templates"))
+        saved_templates = [
+            read(f) for f in sorted(
+                glob.glob("eqcorrscan_temporary_templates/*.ms"))]
+        # Writing to miniseed adds miniseed stats dict
+        for saved_template, template in zip(saved_templates, templates):
+            for saved_tr in saved_template:
+                tr = template.select(id=saved_tr.id)[0]
+                assert(np.allclose(saved_tr.data, tr.data, atol=0.01))
+        shutil.rmtree("eqcorrscan_temporary_templates")
 
     def test_all_phase_methods(self):
         sfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),

@@ -228,7 +228,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
         sub_catalogs = _group_events(
-            catalog=catalog, process_len=process_len, data_pad=data_pad)
+            catalog=catalog, process_len=process_len)
         if method == 'from_client':
             client = FDSNClient(kwargs.get('client_id', None))
             available_stations = []
@@ -346,11 +346,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             temp_list.append(template)
         if save_progress:
             if not os.path.isdir("eqcorrscan_temporary_templates"):
-                os.path.makedirs("eqcorrscan_temporary_templates")
+                os.makedirs("eqcorrscan_temporary_templates")
             for template in temp_list:
                 template.write(
                     "eqcorrscan_temporary_templates{0}{1}.ms".format(
-                        os.path.sep, template[0].stats.starttime))
+                        os.path.sep, template[0].stats.starttime),
+                    format="MSEED")
         del st
     if return_event:
         return temp_list, catalog, process_lengths
@@ -732,7 +733,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     return st1
 
 
-def _group_events(catalog, process_len, data_pad):
+def _group_events(catalog, process_len):
     """
     Internal function to group events into sub-catalogs based on process_len.
 
@@ -740,10 +741,6 @@ def _group_events(catalog, process_len, data_pad):
     :type catalog: obspy.core.event.Catalog
     :param process_len: Length in seconds that data will be processed in
     :type process_len: int
-    :param data_pad: Length of data (in seconds) required before and after \
-        any event for processing, use to reduce edge-effects of filtering on \
-        the templates.
-    :type data_pad: int
 
     :return: List of catalogs
     :rtype: list
@@ -753,11 +750,13 @@ def _group_events(catalog, process_len, data_pad):
         return [catalog]
     sub_catalogs = []
     # Sort catalog by date
-    catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
+    catalog.events = sorted(
+        catalog.events,
+        key=lambda e: (e.preferred_origin() or e.origins[0]).time)
     sub_catalog = Catalog([catalog[0]])
     for event in catalog[1:]:
-        if (event.origins[0].time + data_pad) - \
-                (sub_catalog[0].origins[0].time - data_pad) < process_len:
+        origin_time = (event.preferred_origin() or event.origins[0]).time
+        if origin_time - sub_catalog[0].origins[0].time < process_len:
             sub_catalog.append(event)
         else:
             sub_catalogs.append(sub_catalog)
