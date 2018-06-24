@@ -2750,7 +2750,7 @@ class Tribe(object):
             return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  prepick, save_progress, **kwargs):
+                  prepick, save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
