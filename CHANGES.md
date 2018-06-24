@@ -1,3 +1,7 @@
+## Future
+* Changed all prints to calls to logging, as a result, debug is no longer
+  an argument for function calls.
+
 ## Current
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
