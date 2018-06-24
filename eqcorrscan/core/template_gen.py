@@ -492,12 +492,19 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     if not st and dropped_pick_stations == len(event.picks):
         raise Exception('No data available, is the server down?')
     st.merge()
-    # clients download chunks, we need to assert that the data are
+    # clients download chunks, we need to check that the data are
     # the desired length
     for tr in st:
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
+        if tr.stats.endtime - tr.stats.starttime < 0.8 * process_len:
+            debug_print(
+                "Data for {0}.{1} is {2} hours long, which is less than 80 "
+                "percent of the desired length, will not pad".format(
+                    tr.stats.station, tr.stats.channel,
+                    (tr.stats.endtime - tr.stats.starttime) / 3600), 4, debug)
+            st.remove(tr)
     return st
 
 

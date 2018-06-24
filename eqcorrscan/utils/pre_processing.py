@@ -434,13 +434,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
-            debug_print(
+            raise NotImplementedError(
                 "Data for {0}.{1} is {2} hours long, which is less than 80 "
                 "percent of the desired length, will not pad".format(
                     tr.stats.station, tr.stats.channel,
-                    (tr.stats.endtime - tr.stats.starttime) / 3600), 4, debug)
-            tr.data = np.ndarray(0)
-            return tr
+                    (tr.stats.endtime - tr.stats.starttime) / 3600))
         # trim, then calculate length of any pads required
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
         pre_pad_secs = tr.stats.starttime - starttime
