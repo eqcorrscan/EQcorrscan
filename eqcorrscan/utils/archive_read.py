@@ -19,13 +19,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import warnings
+import logging
 import glob
 
 from obspy import read, UTCDateTime, Stream
 from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.seishub import Client as SeishubClient
 from obspy.clients.fdsn import Client as FDSNClient
+
+
+Logger = logging.getLogger(__name__)
 
 
 def read_data(archive, arc_type, day, stachans, length=86400):
@@ -108,7 +111,7 @@ def read_data(archive, arc_type, day, stachans, length=86400):
         if station_map not in available_stations_map:
             msg = ' '.join([station[0], station_map[1], 'is not available for',
                             day.strftime('%Y/%m/%d')])
-            warnings.warn(msg)
+            Logger.warning(msg)
             continue
         if arc_type.lower() == 'seishub':
             client = SeishubClient(archive)
@@ -124,8 +127,8 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                     channel=station_map[1], starttime=UTCDateTime(day),
                     endtime=UTCDateTime(day) + length)
             except FDSNException:
-                warnings.warn('No data on server despite station being ' +
-                              'available...')
+                Logger.warning('No data on server despite station being ' +
+                               'available...')
                 continue
         elif arc_type.lower() == 'day_vols':
             wavfiles = _get_station_file(os.path.join(
@@ -170,7 +173,7 @@ def _check_data(wavfile, station, channel, debug=0):
     :param debug: Debug level, if > 1, will output what it it working on.
     """
     if debug > 1:
-        print('Checking ' + wavfile)
+        Logger.debug('Checking ' + wavfile)
     st = read(wavfile, headonly=True)
     for tr in st:
         if tr.stats.station == station and tr.stats.channel == channel:

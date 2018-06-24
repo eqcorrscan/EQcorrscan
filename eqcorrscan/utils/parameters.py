@@ -13,13 +13,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import warnings
+import logging
 import os
 import getpass
 
 from obspy import UTCDateTime
 
 import eqcorrscan
+
+
+Logger = logging.getLogger(__name__)
 
 
 class EQcorrscanParameters:
@@ -90,7 +93,7 @@ class EQcorrscanParameters:
         if self.samp_rate <= 2 * self.highcut:
             msg = ('Highcut must be less than the Nyquist, setting to ' +
                    str((self.samp_rate / 2.0) - 1))
-            warnings.warn(msg)
+            Logger.warning(msg)
             self.highcut = (self.samp_rate / 2.0) - 1
         self.debug = int(debug)
         self.startdate = UTCDateTime(startdate)
@@ -189,7 +192,7 @@ class EQcorrscanParameters:
         for parameter in parameters:
             f.write(parameter.lstrip() + '\n')
         f.close()
-        print('Written parameter file: ' + outfile)
+        Logger.info('Written parameter file: ' + outfile)
 
 
 def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
@@ -208,7 +211,7 @@ def read_parameters(infile='../parameters/EQcorrscan_parameters.txt'):
         import configparser as ConfigParser
     import ast
     f = open(infile, 'r')
-    print('Reading parameters with the following header:')
+    Logger.info('Reading parameters with the following header:')
     for line in f:
         if line[0] == '#':
             print(line.rstrip('\n').lstrip('\n'))

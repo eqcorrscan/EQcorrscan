@@ -16,6 +16,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import numpy as np
 
 from obspy import UTCDateTime
@@ -27,6 +28,10 @@ from obspy.signal.trigger import classic_sta_lta, trigger_onset
 from obspy.signal.trigger import plot_trigger
 
 import eqcorrscan.utils.plotting as plotting
+
+
+Logger = logging.getLogger(__name__)
+
 
 # def synth_compare(stream, stream_list, cores=4, debug=0):
 #     """
@@ -97,7 +102,7 @@ import eqcorrscan.utils.plotting as plotting
 #     return index, cccsum
 
 
-def cross_net(stream, env=False, debug=0, master=False):
+def cross_net(stream, env=False, master=False):
     """
     Generate picks using a simple envelope cross-correlation.
 
@@ -110,8 +115,6 @@ def cross_net(stream, env=False, debug=0, master=False):
     :param stream: Stream to pick
     :type env: bool
     :param env: To compute cross-correlations on the envelope or not.
-    :type debug: int
-    :param debug: Debug level from 0-5
     :type master: obspy.core.trace.Trace
     :param master:
         Trace to use as master, if False, will use the first trace in stream.
@@ -139,14 +142,12 @@ def cross_net(stream, env=False, debug=0, master=False):
     event.comments.append(Comment(text='cross_net'))
     samp_rate = stream[0].stats.sampling_rate
     if not env:
-        if debug > 2:
-            print('Using the raw data')
+        Logger.info('Using the raw data')
         st = stream.copy()
         st.resample(samp_rate)
     else:
         st = stream.copy()
-        if debug > 2:
-            print('Computing envelope')
+        Logger.info('Computing envelope')
         for tr in st:
             tr.resample(samp_rate)
             tr.data = envelope(tr.data)
@@ -157,13 +158,9 @@ def cross_net(stream, env=False, debug=0, master=False):
     master.data = np.nan_to_num(master.data)
     for i, tr in enumerate(st):
         tr.data = np.nan_to_num(tr.data)
-        if debug > 2:
-            msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
-                            'with the master'])
-            print(msg)
+        Logger.debug('Comparing {0} with the master'.format(tr.id))
         shift_len = int(0.3 * len(tr))
-        if debug > 2:
-            print('Shift length is set to ' + str(shift_len) + ' samples')
+        Logger.debug('Shift length is set to ' + str(shift_len) + ' samples')
         index, cc = xcorr(master, tr, shift_len)
         wav_id = WaveformStreamID(station_code=tr.stats.station,
                                   channel_code=tr.stats.channel,
@@ -173,8 +170,7 @@ def cross_net(stream, env=False, debug=0, master=False):
                                 waveform_id=wav_id,
                                 phase_hint='S',
                                 onset='emergent'))
-        if debug > 2:
-            print(event.picks[i])
+        Logger.debug(event.picks[i])
     event.origins[0].time = min([pick.time for pick in event.picks]) - 1
     # event.origins[0].latitude = float('nan')
     # event.origins[0].longitude = float('nan')
@@ -184,7 +180,7 @@ def cross_net(stream, env=False, debug=0, master=False):
 
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
-                freqmax=False, debug=0, show=False):
+                freqmax=False, show=False):
     """
     Basic sta/lta picker, suggest using alternative in obspy.
 
@@ -210,8 +206,6 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :param freqmin: Low-cut frequency in Hz for bandpass filter
     :type freqmax: float
     :param freqmax: High-cut frequency in Hz for bandpass filter
-    :type debug: int
-    :param debug: Debug output level from 0-5.
     :type show: bool
     :param show: Show picks on waveform.
 
@@ -251,8 +245,6 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                       corners=3, zerophase=True)
         df = tr.stats.sampling_rate
         cft = classic_sta_lta(tr.data, int(stalen * df), int(ltalen * df))
-        if debug > 3:
-            plot_trigger(tr, cft, trig_on, trig_off)
         triggers = trigger_onset(cft, trig_on, trig_off)
         for trigger in triggers:
             on = tr.stats.starttime + (trigger[0] / df)
@@ -261,9 +253,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                                       channel_code=tr.stats.channel,
                                       network_code=tr.stats.network)
             p = Pick(waveform_id=wav_id, phase_hint=phase, time=on)
-            if debug > 2:
-                print('Pick made:')
-                print(p)
+            Logger.info('Pick made: {0}'.format(p))
             picks.append(p)
     # QC picks
     pick_stations = list(set([pick.waveform_id.station_code
@@ -279,7 +269,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
         if p_time > s_time:
             p_pick = [pick for pick in station_picks if pick.phase_hint == 'P']
             for pick in p_pick:
-                print('P pick after S pick, removing P pick')
+                Logger.info('P pick after S pick, removing P pick')
                 picks.remove(pick)
     if show:
         plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',

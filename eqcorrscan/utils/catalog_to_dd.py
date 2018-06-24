@@ -38,7 +38,7 @@ from __future__ import unicode_literals
 
 import os
 import glob
-import warnings
+import logging
 import matplotlib.pyplot as plt
 
 from obspy import read, UTCDateTime
@@ -52,6 +52,9 @@ except ImportError:
     raise ImportError("Needs obspy >= 1.1.0")
 
 from eqcorrscan.utils.mag_calc import dist_calc
+
+
+Logger = logging.getLogger(__name__)
 
 
 def _cc_round(num, dp):
@@ -103,7 +106,7 @@ def _av_weight(W1, W2):
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
         W1 = 0
     elif float(W1) < 0:
-        warnings.warn('Negative weight found, setting to zero')
+        Logger.warning('Negative weight found, setting to zero')
         W1 = 0
     else:
         W1 = 1 - (int(W1) / 4.0)
@@ -113,16 +116,16 @@ def _av_weight(W1, W2):
     elif str(W2) in ['-9', '9', '9.0', '-9.0']:
         W2 = 0
     elif float(W2) < 0:
-        warnings.warn('Negative weight found, setting to zero')
+        Logger.warning('Negative weight found, setting to zero')
         W2 = 0
     else:
         W2 = 1 - (int(W2) / 4.0)
 
     W = (W1 + W2) / 2
     if W < 0:
-        print('Weight 1: ' + str(W1))
-        print('Weight 2: ' + str(W2))
-        print('Final weight: ' + str(W))
+        Logger.info('Weight 1: ' + str(W1))
+        Logger.info('Weight 2: ' + str(W2))
+        Logger.info('Final weight: ' + str(W))
         raise IOError('Negative average weight calculated, setting to zero')
     return _cc_round(W, 4)
 
@@ -231,7 +234,7 @@ def write_event(catalog):
             t_RMS = event.origins[0].quality['standard_error']
 
         except AttributeError:
-            print('No time residual in header')
+            Logger.error('No time residual in header')
             t_RMS = 0.0
         f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
                 str(evinfo.time.day).zfill(2) + '  ' +
@@ -249,7 +252,7 @@ def write_event(catalog):
     return
 
 
-def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
+def write_catalog(event_list, max_sep=8, min_link=8):
     """
     Generate a dt.ct for hypoDD for a series of events.
 
@@ -267,8 +270,6 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         Minimum links for an event to be paired, e.g. minimum number of picks
         from the same station and channel (and phase) that are shared between
         two events for them to be paired.
-    :type debug: int
-    :param debug: Debug output level.
 
     :returns: list of stations that have been used in this catalog
 
@@ -307,8 +308,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         fphase.write(header + '\n')
         for pick in master_event.picks:
             if not hasattr(pick, 'phase_hint') or len(pick.phase_hint) == 0:
-                warnings.warn('No phase-hint for pick:')
-                print(pick)
+                Logger.warning('No phase-hint for pick: {0}'.format(pick))
                 continue
             if pick.phase_hint[0].upper() in ['P', 'S']:
                 weight = [arrival.time_weight
@@ -388,7 +388,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                 f.write(event_text)
                 f2.write(event_text2)
                 evcount += 1
-    print('You have ' + str(evcount) + ' links')
+    Logger.info('You have ' + str(evcount) + ' links')
     # f.write('\n')
     f.close()
     f2.close()
@@ -398,7 +398,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
 
 def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                        lowcut=1.0, highcut=10.0, max_sep=8, min_link=8,
-                       cc_thresh=0.0, plotvar=False, debug=0):
+                       cc_thresh=0.0, plotvar=False):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -430,8 +430,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     :param cc_thresh: Threshold to include cross-correlation results.
     :type plotvar: bool
     :param plotvar: To show the pick-correction plots, defualts to False.
-    :type debug: int
-    :param debug: Variable debug levels from 0-5, higher=more output.
 
     .. warning:: This is not a fast routine!
 
@@ -450,6 +448,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         desire this functionality, you should apply the taper before calling
         this.  Note the :func:`obspy.Trace.taper` functions.
     """
+    import warnings
     warnings.filterwarnings(action="ignore",
                             message="Maximum of cross correlation " +
                                     "lower than 0.8: *")
@@ -459,8 +458,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     k_events = len(list(event_list))
     for i, master in enumerate(event_list):
         master_sfile = master[1]
-        if debug > 1:
-            print('Computing correlations for master: %s' % master_sfile)
+        Logger.info('Computing correlations for master: %s' % master_sfile)
         master_event_id = master[0]
         master_event = read_nordic(master_sfile)[0]
         master_picks = master_event.picks
@@ -478,12 +476,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     masterstream += read(os.join(wavbase, wavefile))
                 except:
                     raise IOError("Couldn't find wavefile")
-                    continue
         for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
-            if debug > 2:
-                print('Comparing to event: %s' % slave_sfile)
+            Logger.info('Comparing to event: %s' % slave_sfile)
             slave_event_id = event_list[j][0]
             slave_wavefiles = readwavename(slave_sfile)
             try:
@@ -496,8 +492,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     try:
                         slavestream += read(wavbase + os.sep + wavefile)
                     except IOError:
-                        print('No waveform found: %s' %
-                              (wavbase + os.sep + wavefile))
+                        Logger.error('No waveform found: %s' %
+                                    (wavbase + os.sep + wavefile))
                         continue
             # Write out the header line
             event_text = '#' + str(master_event_id).rjust(10) +\
@@ -511,21 +507,19 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                               slave_event.origins[0].longitude,
                               slave_event.origins[0].depth / 1000.0)
             if dist_calc(master_location, slave_location) > max_sep:
-                if debug > 0:
-                    print('Seperation exceeds max_sep: %s' %
-                          (dist_calc(master_location, slave_location)))
+                Logger.info('Seperation exceeds max_sep: %s' %
+                            (dist_calc(master_location, slave_location)))
                 continue
             links = 0
             phases = 0
             for pick in master_picks:
                 if not hasattr(pick, 'phase_hint') or \
                                 len(pick.phase_hint) == 0:
-                    warnings.warn('No phase-hint for pick:')
-                    print(pick)
+                    Logger.warning('No phase-hint for pick: {0}'.format(pick))
                     continue
                 if pick.phase_hint[0].upper() not in ['P', 'S']:
-                    warnings.warn('Will only use P or S phase picks')
-                    print(pick)
+                    Logger.warning(
+                        'Will only use P or S phase picks: {0}'.format(pick))
                     continue
                     # Only use P and S picks, not amplitude or 'other'
                 # Find station, phase pairs
@@ -543,13 +537,9 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         select(station=pick.waveform_id.station_code,
                                channel='*' +
                                pick.waveform_id.channel_code[-1])[0]
-                elif debug > 1:
-                    print('No waveform data for ' +
-                          pick.waveform_id.station_code + '.' +
-                          pick.waveform_id.channel_code)
-                    print(pick.waveform_id.station_code +
-                          '.' + pick.waveform_id.channel_code +
-                          ' ' + slave_sfile + ' ' + master_sfile)
+                else:
+                    Logger.warning(
+                        'No waveform data for {0}'.format(pick.waveform_id))
                     break
                 # Loop through the matches
                 for slave_pick in slave_matches:
@@ -562,12 +552,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                    channel='*' + slave_pick.waveform_id.
                                    channel_code[-1])[0]
                     else:
-                        print('No slave data for ' +
-                              slave_pick.waveform_id.station_code + '.' +
-                              slave_pick.waveform_id.channel_code)
-                        print(pick.waveform_id.station_code +
-                              '.' + pick.waveform_id.channel_code +
-                              ' ' + slave_sfile + ' ' + master_sfile)
+                        Logger.warning(
+                            'No slave data for {0}'.format(pick.waveform_id))
                         break
                     # Correct the picks
                     try:
@@ -586,7 +572,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         # correlation function is increasing at the end of the
                         # window.
                         if abs(correction) > shift_len:
-                            warnings.warn('Shift correction too large, ' +
+                            Logger.warning('Shift correction too large, ' +
                                           'will not use')
                             continue
                         correction = (pick.time - master_ori_time) -\
@@ -605,14 +591,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                                 rjust(11) +\
                                 _cc_round(weight * weight, 3).rjust(8) +\
                                 ' ' + pick.phase_hint + '\n'
-                            if debug > 3:
-                                print(event_text)
+                            Logger.debug(event_text)
                         else:
-                            print('cc too low: %s' % cc)
+                            Logger.info('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
                     except:
                         msg = "Couldn't compute correlation correction"
-                        warnings.warn(msg)
+                        Logger.warning(msg)
                         continue
             if links >= min_link and phases > 0:
                 f.write(event_text)

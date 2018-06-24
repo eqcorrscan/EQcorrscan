@@ -18,11 +18,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import warnings
+import logging
 
 import obspy
 from obspy import Stream, UTCDateTime
 from obspy.core.event import Event, Origin, WaveformStreamID, Pick
+
+
+Logger = logging.getLogger(__name__)
 
 
 def _version_check():
@@ -134,7 +137,7 @@ def sactoevent(st, debug=0):
                         msg = 'No pick in position ' + pick_key + \
                             ' for trace: ' + tr.stats.station + '.' + \
                             tr.stats.channel
-                        warnings.warn(msg)
+                        Logger.warning(msg)
                     continue
                 pick_time = reference_time + tr.stats.sac[pick_key]
                 phase_hint = tr.stats.sac[phase_key].split()[0]
@@ -142,12 +145,12 @@ def sactoevent(st, debug=0):
                 if debug > 1:
                     msg = 'No pick in position ' + pick_key + ' for trace: ' +\
                         tr.stats.station + '.' + tr.stats.channel
-                    warnings.warn(msg)
+                    Logger.warning(msg)
                 continue
             if debug > 0:
                 msg = 'Found pick in position ' + pick_key + ' for trace: ' +\
                     tr.stats.station + '.' + tr.stats.channel
-                print(msg)
+                Logger.info(msg)
             waveform_id = WaveformStreamID(station_code=tr.stats.station,
                                            network_code=tr.stats.network,
                                            channel_code=tr.stats.channel)
@@ -162,7 +165,7 @@ def sactoevent(st, debug=0):
                     msg = 'No pick in position ' + pick_key + \
                         ' for trace: ' + tr.stats.station + '.' + \
                         tr.stats.channel
-                    warnings.warn(msg)
+                    Logger.warning(msg)
                 continue
             pick_time = reference_time + tr.stats.sac['a']
             phase_hint = tr.stats.sac['ka'].split()[0]
@@ -170,12 +173,12 @@ def sactoevent(st, debug=0):
             if debug > 1:
                 msg = 'No pick in position ' + pick_key + ' for trace: ' +\
                     tr.stats.station + '.' + tr.stats.channel
-                warnings.warn(msg)
+                Logger.warning(msg)
             continue
         if debug > 0:
             msg = 'Found pick in position a for trace: ' +\
                 tr.stats.station + '.' + tr.stats.channel
-            print(msg)
+            Logger.info(msg)
         waveform_id = WaveformStreamID(station_code=tr.stats.station,
                                        network_code=tr.stats.network,
                                        channel_code=tr.stats.channel)

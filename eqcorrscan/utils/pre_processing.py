@@ -17,14 +17,12 @@ from __future__ import unicode_literals
 
 import numpy as np
 import logging
-import warnings
 import datetime as dt
 
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
-from eqcorrscan.utils.debug_log import debug_print
 
 
 Logger = logging.getLogger(__name__)

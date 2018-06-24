@@ -16,11 +16,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
+import logging
 
 from obspy import Stream, Trace, UTCDateTime
 
 from eqcorrscan.utils import clustering
+
+
+Logger = logging.getLogger(__name__)
 
 
 def seis_sim(sp, amp_ratio=1.5, flength=False, phaseout='all'):
@@ -211,8 +214,8 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
-                warnings.warn('Cannot make a bulk synthetic with this fixed ' +
-                              'length for station ' + station)
+                Logger.warning('Cannot make a bulk synthetic with this fixed ' +
+                               'length for station ' + station)
             elif phaseout == 'all':
                 tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
@@ -240,7 +243,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 
 
 def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
-                        max_amp, max_lag, debug=0):
+                        max_amp, max_lag):
     """
     Generate a synthetic dataset to be used for testing.
 
@@ -266,8 +269,6 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     :param max_amp: Maximum signal-to-noise ratio of seeds.
     :param max_lag: Maximum lag time in seconds (randomised).
     :type max_lag: float
-    :type debug: int
-    :param debug: Debug level, bigger the number, the more plotting/output.
 
     :returns: Templates: List of :class:`obspy.core.stream.Stream`
     :rtype: list
@@ -288,17 +289,15 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     stations = ['ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
                 'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
                 'MALC']
-    if debug > 1:
-        print(nodes)
-        print(t_times)
-        print(stations[0:nsta])
+    Logger.debug(nodes)
+    Logger.debug(t_times)
+    Logger.debug(stations[0:nsta])
     templates = template_grid(stations=stations[0:nsta], nodes=nodes,
                               travel_times=t_times, phase='S',
                               samp_rate=samp_rate,
                               flength=int(t_length * samp_rate))
-    if debug > 2:
-        for template in templates:
-            print(template)
+    for template in templates:
+        Logger.debug(template)
     # Now we want to create a day of synthetic data
     seeds = []
     data = templates[0].copy()  # Copy a template to get the correct length

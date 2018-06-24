@@ -11,8 +11,11 @@ Helpers to get library names. Edited for our use from obspy.core.util.libnames
 
 import os
 import ctypes
-import warnings
+import logging
 from distutils import sysconfig
+
+
+Logger = logging.getLogger(__name__)
 
 
 def _get_lib_name(lib):
@@ -29,10 +32,10 @@ def _get_lib_name(lib):
         try:
             ext_suffix = sysconfig.get_config_var("SO")
         except Exception as e:
-            msg = ("Empty 'EXT_SUFFIX' encountered while building CDLL "
-                   "filename and fallback to 'SO' variable failed "
-                   "(%s)." % str(e))
-            warnings.warn(msg)
+            Logger.warning(
+                "Empty 'EXT_SUFFIX' encountered while building CDLL "
+                "filename and fallback to 'SO' variable failed "
+                "(%s)." % str(e))
             pass
     if ext_suffix:
         libname = lib + ext_suffix

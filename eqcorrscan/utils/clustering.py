@@ -14,7 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import warnings
+import logging
 from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
@@ -28,6 +28,9 @@ from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 from eqcorrscan.utils.correlate import get_array_xcorr
 from eqcorrscan.utils.mag_calc import dist_calc
+
+
+Logger = logging.getLogger(__name__)
 
 
 def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
@@ -69,8 +72,8 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
                          channel=tr.stats.channel)
         if len(tr2) > 0 and tr.stats.sampling_rate != \
                 tr2[0].stats.sampling_rate:
-            warnings.warn('Sampling rates do not match, not using: %s.%s'
-                          % (tr.stats.station, tr.stats.channel))
+            Logger.warning(
+                'Sampling rates do not match, not using {0}'.format(tr.id))
         if len(tr2) > 0 and allow_shift:
             index, corval = xcorr(tr, tr2[0],
                                   int(shift_len * tr.stats.sampling_rate))
@@ -86,7 +89,7 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
         cccoh /= kchan
         return np.round(cccoh, 6), i
     else:
-        warnings.warn('No matching channels')
+        Logger.error('No matching channels')
         return 0, i
 
 
@@ -150,7 +153,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
 
 def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
-            shift_len=0, save_corrmat=False, cores='all', debug=1):
+            shift_len=0, save_corrmat=False, cores='all'):
     """
     Cluster template waveforms based on average correlations.
 
@@ -186,10 +189,6 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :param cores:
         number of cores to use when computing the distance matrix, defaults to
         'all' which will work out how many cpus are available and hog them.
-    :type debug: int
-    :param debug:
-        Level of debugging from 1-5, higher is more output,
-        currently only level 1 implemented.
 
     :returns:
         List of groups. Each group is a list of
@@ -202,40 +201,32 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     # Extract only the Streams from stream_list
     stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
-    if debug >= 1:
-        print('Computing the distance matrix using %i cores' % num_cores)
+    Logger.info('Computing the distance matrix using %i cores' % num_cores)
     dist_mat = distance_matrix(stream_list, allow_shift, shift_len,
                                cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
-        if debug >= 1:
-            print('Saved the distance matrix as dist_mat.npy')
+        Logger.info('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    if debug >= 1:
-        print('Computing linkage')
+    Logger.debug('Computing linkage')
     Z = linkage(dist_vec)
     if show:
-        if debug >= 1:
-            print('Plotting the dendrogram')
+        Logger.debug('Plotting the dendrogram')
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
     # Get the indices of the groups
-    if debug >= 1:
-        print('Clustering')
+    Logger.debug('Clustering')
     indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
     # Indices start at 1...
     group_ids = list(set(indices))  # Unique list of group ids
-    if debug >= 1:
-        msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
-        print(msg)
+    Logger.info('Found {0} groups'.format(len(group_ids)))
     # Convert to tuple of (group id, stream id)
     indices = [(indices[i], i) for i in range(len(indices))]
     # Sort by group id
     indices.sort(key=lambda tup: tup[0])
     groups = []
-    if debug >= 1:
-        print('Extracting and grouping')
+    Logger.info('Extracting and grouping')
     for group_id in group_ids:
         group = []
         for ind in indices:
@@ -273,9 +264,8 @@ def group_delays(stream_list):
     stream_list.sort(key=lambda tup: tup[1])
     stream_list = [st[0] for st in stream_list]
     for i, st in enumerate(stream_list):
-        msg = ' '.join(['Working on waveform', str(i), 'of',
-                        str(len(stream_list))])
-        print(msg)
+        Logger.info(
+            'Working on waveform {0} of {1}'.format(i, len(stream_list)))
         # Calculate the delays
         starttimes = []
         chans = []
@@ -334,7 +324,7 @@ def SVD(stream_list, full=False):
     """
     Depreciated. Use svd.
     """
-    warnings.warn('Depreciated, use svd instead.')
+    Logger.warning('Depreciated, use svd instead.')
     return svd(stream_list=stream_list, full=full)
 
 
@@ -379,8 +369,8 @@ def svd(stream_list, full=False):
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                warnings.warn('Stream does not contain %s'
-                              % '.'.join(list(stachan)))
+                Logger.warning(
+                    'Stream does not contain %s' % '.'.join(list(stachan)))
                 continue
             lengths.append(len(tr.data))
         min_length = min(lengths)
@@ -393,15 +383,15 @@ def svd(stream_list, full=False):
                             chan[0].stats.sampling_rate:
                         raise IndexError('More than 0.1 s length '
                                          'difference, align and fix')
-                    warnings.warn('Channels are not equal length, trimming')
+                    Logger.warning('Channels are not equal length, trimming')
                     chan[0].data = chan[0].data[0:min_length]
                 if 'chan_mat' not in locals():
                     chan_mat = chan[0].data
                 else:
                     chan_mat = np.vstack((chan_mat, chan[0].data))
         if not len(chan_mat.shape) > 1:
-            warnings.warn('Matrix of traces is less than 2D for %s'
-                          % '.'.join(list(stachan)))
+            Logger.warning('Matrix of traces is less than 2D for %s'
+                           % '.'.join(list(stachan)))
             continue
         # Be sure to transpose chan_mat as waveforms must define columns
         chan_mat = np.asarray(chan_mat)
@@ -417,7 +407,7 @@ def empirical_SVD(stream_list, linear=True):
     """
     Depreciated. Use empirical_svd.
     """
-    warnings.warn('Depreciated, use empirical_svd instead.')
+    Logger.warning('Depreciated, use empirical_svd instead.')
     return empirical_svd(stream_list=stream_list, linear=linear)
 
 
@@ -459,8 +449,9 @@ def empirical_svd(stream_list, linear=True):
                 if abs(len(tr.data) - min_length) > (0.1 * sr):
                     msg = 'More than 0.1 s length difference, align and fix'
                     raise IndexError(msg)
-                msg = ' is not the same length as others, trimming the end'
-                warnings.warn(str(tr) + msg)
+                Logger.warning(
+                    '{0} is not the same length as others, '
+                    'trimming the end'.format(tr))
                 tr.data = tr.data[0:min_length]
     if linear:
         first_subspace = stacking.linstack(stream_list)
@@ -479,7 +470,7 @@ def SVD_2_stream(uvectors, stachans, k, sampling_rate):
     """
     Depreciated. Use svd_to_stream
     """
-    warnings.warn('Depreciated, use svd_to_stream instead.')
+    Logger.warning('Depreciated, use svd_to_stream instead.')
     return svd_to_stream(uvectors=uvectors, stachans=stachans, k=k,
                          sampling_rate=sampling_rate)
 
@@ -510,10 +501,10 @@ def svd_to_stream(uvectors, stachans, k, sampling_rate):
         svstream = []
         for j, stachan in enumerate(stachans):
             if len(uvectors[j]) <= k:
-                warnings.warn('Too few traces at %s for a %02d dimensional '
-                              'subspace. Detector streams will not include '
-                              'this channel.' % ('.'.join(stachan[0],
-                                                          stachan[1]), k))
+                Logger.warning('Too few traces at %s for a %02d dimensional '
+                               'subspace. Detector streams will not include '
+                               'this channel.' % ('.'.join(stachan[0],
+                                                           stachan[1]), k))
             else:
                 svstream.append(Trace(uvectors[j][i],
                                       header={'station': stachan[0],
@@ -557,7 +548,7 @@ def corr_cluster(trace_list, thresh=0.9):
             output[i] = True
             group1.append(tr)
     if not group1:
-        warnings.warn('Nothing made it past the first 0.6 threshold')
+        Logger.warning('Nothing made it past the first 0.6 threshold')
         return output
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []
@@ -733,18 +724,18 @@ def extract_detections(detections, templates, archive, arc_type,
         all_delays = new_all_delays
         all_stachans = new_all_stachans
     if not len(additional_stations) == 0:
-        print('Adding additional stations')
+        Logger.info('Adding additional stations')
         for t, template in enumerate(all_stachans):
             av_delay = np.mean(all_delays[t][1])
             for sta in additional_stations:
                 if sta not in template[1]:
-                    print('Added station ' + '.'.join(sta))
+                    Logger.info('Added station ' + '.'.join(sta))
                     template[1].append(sta)
                     all_delays[t][1].append(av_delay)
     del stachans
     # Loop through the days
     for detection_day in detection_days:
-        print('Working on detections for day: ' + str(detection_day))
+        Logger.info('Working on detections for day: ' + str(detection_day))
         stachans = list(set([stachans[1] for stachans in all_stachans][0]))
         # List of all unique stachans - read in all data
         st = read_data(archive=archive, arc_type=arc_type, day=detection_day,
@@ -755,8 +746,8 @@ def extract_detections(detections, templates, archive, arc_type,
                           detection_day]
         del stachans, delays
         for detection in day_detections:
-            print('Cutting for detections at: ' +
-                  detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
+            Logger.info('Cutting for detections at: ' +
+                        detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
                 t1 = UTCDateTime(detection.detect_time) - extract_len / 2
@@ -771,10 +762,11 @@ def extract_detections(detections, templates, archive, arc_type,
                                               strftime('%Y-%m-%d_%H-%M-%S') +
                                               '.ms'),
                                  format='MSEED')
-                print('Written file: %s' %
-                      '/'.join([outdir, detection.template_name,
-                                detection.detect_time.
-                               strftime('%Y-%m-%d_%H-%M-%S') + '.ms']))
+                Logger.info(
+                    'Written file: %s' % '/'.join(
+                        [outdir, detection.template_name,
+                         detection.detect_time.strftime(
+                             '%Y-%m-%d_%H-%M-%S') + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
@@ -984,8 +976,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     .. Warning:: Only works if thresholding was done by MAD.
     """
     from eqcorrscan.core.match_filter import read_detections
-    warnings.warn('Legacy function, please use '
-                  'eqcorrscan.core.match_filter.Party.rethreshold.')
+    Logger.warning('Legacy function, please use '
+                   'eqcorrscan.core.match_filter.Party.rethreshold.')
     old_detections = read_detections(path)
     old_thresh = float(old_thresh)
     new_thresh = float(new_thresh)
@@ -1002,8 +994,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
         if all([con1, con2, con3]):
             detections_out += 1
             detections.append(detection)
-    print('Read in %i detections' % detections_in)
-    print('Left with %i detections' % detections_out)
+    Logger.info('Read in %i detections' % detections_in)
+    Logger.info('Left with %i detections' % detections_out)
     return detections
 
 
