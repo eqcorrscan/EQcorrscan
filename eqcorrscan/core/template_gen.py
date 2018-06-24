@@ -125,7 +125,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
     :type save_progress: bool
-    :param save_progress: 
+    :param save_progress:
         Whether to save the resulting party at every data step or not.
         Useful for long-running processes.
 
@@ -593,7 +593,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 "{0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
-        if not pick.waveform_id.station_code or not pick.waveform_id.channel_code:
+        if not pick.waveform_id.station_code or not \
+                pick.waveform_id.channel_code:
             debug_print(
                 "Pick not associated with a channel, will not use it:"
                 " {0}".format(pick), 1, debug)

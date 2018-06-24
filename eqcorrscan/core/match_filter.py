@@ -2405,7 +2405,7 @@ class Tribe(object):
         :type full_peaks: bool
         :param full_peaks: See `eqcorrscan.utils.findpeak.find_peaks2_short`
         :type save_progress: bool
-        :param save_progress: 
+        :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
 
@@ -2584,7 +2584,7 @@ class Tribe(object):
         :type full_peaks: bool
         :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
         :type save_progress: bool
-        :param save_progress: 
+        :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
 
@@ -2773,7 +2773,7 @@ class Tribe(object):
         :type prepick: float
         :param prepick: Pre-pick time in seconds
         :type save_progress: bool
-        :param save_progress: 
+        :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
 
