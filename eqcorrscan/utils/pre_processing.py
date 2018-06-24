@@ -538,20 +538,35 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
 
     :type tr: :class:`osbpy.core.stream.Trace`
     :param tr: A trace that has had the gaps padded
-    :param gaps: List of dict of start-time and end-time as UTCDateTimes
+    :param gaps: List of dict of start-time and end-time as UTCDateTime objects
     :type gaps: list
 
     :return: :class:`obspy.core.stream.Trace`
     """
+    start_in, end_in = (tr.stats.starttime, tr.stats.endtime)
     for gap in gaps:
         stream = Stream()
-        stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
-        stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
+        if gap['starttime'] > tr.stats.starttime:
+            stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
+        if gap['endtime'] < tr.stats.endtime:
+            # Note this can happen when gaps are calculated for a trace that
+            # is longer than `length`, e.g. gaps are calculated pre-trim.
+            stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
         tr = stream.merge()[0]
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
         tr = tr.merge(fill_value=0)[0]
+        # Need to check length - if a gap happened overlapping the end or start
+        #  of the trace this will be lost.
+        if tr.stats.starttime != start_in:
+            # pad with zeros
+            tr.data = np.concatenate(
+                [np.zeros(int(tr.stats.starttime - start_in)), tr.data])
+            tr.stats.starttime = start_in
+        if tr.stats.endtime != end_in:
+            tr.data = np.concatenate(
+                [tr.data, np.zeros(int(end_in - tr.stats.endtime))])
     return tr
 
 

@@ -15,6 +15,9 @@
   compatible with single `swin` arguments.
 * Add option to `save_progress` for long running `Tribe` methods. Files
   are written to temporary files local to the caller.
+* Fix bug where if gaps overlapped the endtime set in pre_processing an error
+  was raised - happened when downloading data with a deliberate pad at either
+  end.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
