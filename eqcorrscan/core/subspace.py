@@ -18,7 +18,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
+import logging
 import time
 import h5py
 import getpass
@@ -32,10 +32,12 @@ from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick
 
 from eqcorrscan.utils.clustering import svd
-from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
 from eqcorrscan.core.match_filter import Detection, extract_from_stream
 from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
+
+
+Logger = logging.getLogger(__name__)
 
 
 class Detector(object):
@@ -251,7 +253,7 @@ class Detector(object):
             return 100 * (percent_capture / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
-               process=True, extract_detections=False, debug=0):
+               process=True, extract_detections=False):
         """
         Detect within continuous data using the subspace method.
 
@@ -279,8 +281,6 @@ class Detector(object):
         :param extract_detections:
             Whether to extract waveforms for each detection or not, if True
             will return detections and streams.
-        :type debug: int
-        :param debug: Debug output level from 0-5.
 
         :return: list of :class:`eqcorrscan.core.match_filter.Detection`
         :rtype: list
@@ -314,8 +314,7 @@ class Detector(object):
         """
         return _detect(detector=self, st=st, threshold=threshold,
                        trig_int=trig_int, moveout=moveout, min_trig=min_trig,
-                       process=process, extract_detections=extract_detections,
-                       debug=debug)
+                       process=process, extract_detections=extract_detections)
 
     def write(self, filename):
         """
@@ -441,7 +440,7 @@ class Detector(object):
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
-            process=True, extract_detections=False, debug=0):
+            process=True, extract_detections=False):
     """
     Detect within continuous data using the subspace method.
 
@@ -469,8 +468,6 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     :type extract_detections: bool
     :param extract_detections: Whether to extract waveforms for each \
         detection or not, if true will return detections and streams.
-    :type debug: int
-    :param debug: Debug output level from 0-5.
 
     :return: list of detections
     :rtype: list of eqcorrscan.core.match_filter.Detection
@@ -478,7 +475,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
     detections = []
     # First process the stream
     if process:
-        debug_print('Processing Stream', 0, debug)
+        Logger.info('Processing Stream')
         stream, stachans = _subspace_process(
             streams=[st.copy()], lowcut=detector.lowcut,
             highcut=detector.highcut, filt_order=detector.filt_order,
@@ -500,8 +497,8 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         Nc = 1
     # Here do all ffts
     fft_vars = _do_ffts(detector, stream, Nc)
-    debug_print('Computing detection statistics', 0, debug)
-    debug_print('Preallocating stats matrix', 0, debug)
+    Logger.info('Computing detection statistics')
+    Logger.info('Preallocating stats matrix')
     stats = np.zeros((len(stream[0]),
                       (len(stream[0][0]) // Nc) - (fft_vars[4] // Nc) + 1))
     for det_freq, data_freq_sq, data_freq, i in zip(fft_vars[0], fft_vars[1],
@@ -510,25 +507,13 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
         # Calculate det_statistic in frequency domain
         stats[i] = _det_stat_freq(det_freq, data_freq_sq, data_freq,
                                   fft_vars[3], Nc, fft_vars[4], fft_vars[5])
-        debug_print('Stats matrix is shape %s' % str(stats[i].shape), 0, debug)
-        if debug >= 3:
-            fig, ax = plt.subplots()
-            t = np.arange(len(stats[i]))
-            ax.plot(t, stats[i], color='k')
-            ax.axis('tight')
-            ax.set_ylim([0, 1])
-            ax.plot([min(t), max(t)], [threshold, threshold], color='r', lw=1,
-                    label='Threshold')
-            ax.legend()
-            plt.title('%s' % str(stream[0][i].stats.station))
-            plt.show()
+        Logger.info('Stats matrix is shape %s' % str(stats[i].shape))
     trig_int_samples = detector.sampling_rate * trig_int
-    debug_print('Finding peaks', 0, debug)
+    Logger.info('Finding peaks')
     peaks = []
     for i in range(len(stream[0])):
         peaks.append(findpeaks.find_peaks2_short(
-            arr=stats[i], thresh=threshold, trig_int=trig_int_samples,
-            debug=debug))
+            arr=stats[i], thresh=threshold, trig_int=trig_int_samples))
     if not detector.multiplex:
         # Conduct network coincidence triggering
         peaks = findpeaks.coin_trig(
@@ -572,7 +557,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                           threshold_type='abs', threshold_input=threshold,
                           chans=detector.stachans, event=ev))
     outtoc = time.clock()
-    print('Detection took %s seconds' % str(outtoc - outtic))
+    Logger.info('Detection took %s seconds' % str(outtoc - outtic))
     if extract_detections:
         detection_streams = extract_from_stream(st, detections)
         return detections, detection_streams
@@ -723,7 +708,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                 dummy, tr = _internal_process(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, sampling_rate=sampling_rate,
-                    first_length=first_length, stachan=stachan, debug=0)
+                    first_length=first_length, stachan=stachan)
                 processed_stream += tr
             processed_streams.append(processed_stream)
         else:
@@ -732,7 +717,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                 _internal_process, (st,),
                 {'lowcut': lowcut, 'highcut': highcut,
                  'filt_order': filt_order, 'sampling_rate': sampling_rate,
-                 'first_length': first_length, 'stachan': stachan, 'debug': 0,
+                 'first_length': first_length, 'stachan': stachan,
                  'i': i}) for i, stachan in enumerate(input_stachans)]
             pool.close()
             processed_stream = [p.get() for p in results]
@@ -744,7 +729,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
             for tr in processed_stream:
                 if np.count_nonzero(tr.data) == 0:
                     processed_streams.remove(processed_stream)
-                    print('Removed stream with empty trace')
+                    Logger.info('Removed stream with empty trace')
                     break
     if align:
         processed_streams = align_design(
@@ -782,7 +767,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
 
 
 def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
-                      first_length, stachan, debug, i=0):
+                      first_length, stachan, i=0):
     tr = st.select(station=stachan[0], channel=stachan[1])
     if len(tr) == 0:
         tr = Trace(np.zeros(int(first_length * sampling_rate)))
@@ -791,14 +776,14 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
         tr.stats.sampling_rate = sampling_rate
         tr.stats.starttime = st[0].stats.starttime  # Do this to make more
         # sensible plots
-        warnings.warn('Padding stream with zero trace for ' +
-                      'station ' + stachan[0] + '.' + stachan[1])
+        Logger.warning('Padding stream with zero trace for ' +
+                       'station ' + stachan[0] + '.' + stachan[1])
     elif len(tr) == 1:
         tr = tr[0]
         tr.detrend('simple')
         tr = pre_processing.process(
             tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=sampling_rate, debug=debug, seisan_chan_names=False)
+            samp_rate=sampling_rate, seisan_chan_names=False)
     else:
         msg = ('Multiple channels for ' + stachan[0] + '.' +
                stachan[1] + ' in a single design stream.')
@@ -900,8 +885,8 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                 trace_list.append(tr[0])
                 trace_ids.append(i)
             if len(tr) > 1:
-                warnings.warn('Too many matches for %s %s' % (stachan[0],
-                                                              stachan[1]))
+                Logger.warning(
+                    'Too many matches for %s %s' % (stachan[0], stachan[1]))
         shift_len_samples = int(shift_len * trace_list[0].stats.sampling_rate)
         shifts, cccs = stacking.align_traces(
             trace_list=trace_list, shift_len=shift_len_samples, positive=True)
@@ -921,17 +906,18 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                         int(clip_len * (st.select(
                             station=stachan[0],
                             channel=stachan[1])[0].stats.sampling_rate) + 1))
-                    warnings.warn('Padding stream with zero trace for ' +
-                                  'station ' + stachan[0] + '.' + stachan[1])
-                    print('zero padding')
+                    Logger.warning('Padding stream with zero trace for ' +
+                                   'station ' + stachan[0] + '.' + stachan[1])
+                    Logger.debug('zero padding')
                 elif multiplex and no_missed:
                     remove_set.append(st)
-                    warnings.warn('Will remove stream due to low-correlation')
+                    Logger.warning('Will remove stream due to low-correlation')
                     continue
                 else:
                     st.remove(st.select(station=stachan[0],
                               channel=stachan[1])[0])
-                    print('Removed channel with correlation at %s' % cccs[i])
+                    Logger.warning(
+                        'Removed channel with correlation at %s' % cccs[i])
                     continue
     if no_missed:
         for st in remove_set:
@@ -948,7 +934,8 @@ def align_design(design_set, shift_len, reject, multiplex, no_missed=True,
                 plotting.multi_trace_plot(traces=trace_list, corr=True,
                                           stack=None, title='.'.join(stachan))
             else:
-                print('No plot for you, only one trace left after rejection')
+                Logger.error(
+                    'No plot for you, only one trace left after rejection')
     return design_set
 
 
@@ -1022,7 +1009,7 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
                 detections += _detect(
                     detector=detector, st=stream[0], threshold=threshold,
                     trig_int=trig_int, moveout=moveout, min_trig=min_trig,
-                    process=False, extract_detections=False, debug=0)
+                    process=False, extract_detections=False)
         else:
             if num_cores:
                 ncores = num_cores
